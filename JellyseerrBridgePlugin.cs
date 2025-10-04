@@ -1,64 +1,35 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
 using Jellyfin.Plugin.JellyseerrBridge.Tasks;
-using MediaBrowser.Common.Plugins;
-using MediaBrowser.Controller.Plugins;
+using Jellyfin.Plugin.JellyseerrBridge.Api;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.JellyseerrBridge;
-
-/// <summary>
-/// The main plugin class.
-/// </summary>
-public class JellyseerrBridgePlugin : BasePlugin<PluginConfiguration>
+namespace Jellyfin.Plugin.JellyseerrBridge
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JellyseerrBridgePlugin"/> class.
-    /// </summary>
-    /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
-    /// <param name="loggerFactory">Instance of the <see cref="ILoggerFactory"/> interface.</param>
-    public JellyseerrBridgePlugin(IApplicationPaths applicationPaths, ILoggerFactory loggerFactory)
-        : base(applicationPaths, loggerFactory)
+    public class JellyseerrBridgePlugin
     {
-        Instance = this;
+        public string Name => "Jellyseerr Bridge";
+
+        public string Description => "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests";
+
+        public string Version => "0.1";
+
+        public Guid Id => new Guid("12345678-1234-1234-1234-123456789012");
+
+        public PluginConfiguration Configuration { get; set; } = new PluginConfiguration();
     }
 
-    /// <summary>
-    /// Gets the plugin instance.
-    /// </summary>
-    public static JellyseerrBridgePlugin? Instance { get; private set; }
-
-    /// <inheritdoc />
-    public override string Name => "Jellyseerr Bridge";
-
-    /// <inheritdoc />
-    public override Guid Id => Guid.Parse("12345678-1234-1234-1234-123456789012");
-
-    /// <inheritdoc />
-    public override string Description => "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests";
-
-    /// <inheritdoc />
-    public override string ConfigurationFileName => "jellyseerr-bridge.json";
-
-    /// <summary>
-    /// Gets the plugin configuration.
-    /// </summary>
-    public PluginConfiguration PluginConfiguration => Configuration;
-}
-
-/// <summary>
-/// Plugin service registration.
-/// </summary>
-public class JellyseerrBridgeServiceRegistrator : IPluginServiceRegistrator
-{
-    /// <inheritdoc />
-    public void RegisterServices(IServiceCollection serviceCollection)
+    public class JellyseerrBridgeServiceRegistrator
     {
-        serviceCollection.AddSingleton<JellyseerrApiService>();
-        serviceCollection.AddSingleton<ShowSyncService>();
-        serviceCollection.AddSingleton<WebhookHandlerService>();
-        serviceCollection.AddSingleton<ConfigurationService>();
-        serviceCollection.AddSingleton<LibraryManagementService>();
-        serviceCollection.AddSingleton<IScheduledTask, ShowSyncTask>();
+        public void RegisterServices(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddScoped<ConfigurationService>();
+            serviceCollection.AddScoped<JellyseerrApiService>();
+            serviceCollection.AddScoped<LibraryManagementService>();
+            serviceCollection.AddScoped<ShowSyncService>();
+            serviceCollection.AddScoped<WebhookHandlerService>();
+            serviceCollection.AddScoped<ShowSyncTask>();
+        }
     }
 }

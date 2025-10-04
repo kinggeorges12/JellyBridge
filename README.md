@@ -123,11 +123,91 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 ## Development
 
-This plugin is built using:
-- .NET 6.0
-- Jellyfin Plugin SDK
-- ASP.NET Core for API endpoints
-- Newtonsoft.Json for JSON handling
+### Prerequisites
+
+- .NET 8.0 SDK
+- Jellyfin 10.10.7 or later
+- Visual Studio 2022 or VS Code (optional)
+
+### Building the Plugin
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/Jellyseerr-Bridge.git
+   cd Jellyseerr-Bridge
+   ```
+
+2. **Restore dependencies**
+   ```bash
+   dotnet restore
+   ```
+
+3. **Build the plugin**
+   ```bash
+   dotnet build --configuration Release
+   ```
+
+4. **Create release package**
+   ```bash
+   # Create release directory (if it doesn't exist)
+   if not exist "release\JellyseerrBridge" mkdir release\JellyseerrBridge
+   
+   # Copy built files
+   copy bin\Release\net8.0\JellyseerrBridge.dll release\JellyseerrBridge\
+   copy manifest.json release\JellyseerrBridge\
+   
+   # Create ZIP package (overwrites existing)
+   powershell Compress-Archive -Path "release\JellyseerrBridge\*" -DestinationPath "release\JellyseerrBridge-0.1.zip" -Force
+   ```
+
+### Project Structure
+
+```
+Jellyseerr-Bridge/
+├── Api/                          # REST API controllers
+│   ├── ConfigurationController.cs
+│   ├── ConfigurationPageController.cs
+│   └── WebhookController.cs
+├── Configuration/                 # Configuration classes
+│   └── PluginConfiguration.cs
+├── Services/                      # Business logic services
+│   ├── ConfigurationService.cs
+│   ├── JellyseerrApiService.cs
+│   ├── LibraryManagementService.cs
+│   ├── ShowSyncService.cs
+│   └── WebhookHandlerService.cs
+├── Tasks/                        # Scheduled tasks
+│   └── ShowSyncTask.cs
+├── JellyseerrBridgePlugin.cs     # Main plugin class
+├── JellyseerrBridge.csproj       # Project file
+├── manifest.json                 # Plugin manifest
+├── nuget.config                 # NuGet configuration
+└── README.md                    # This file
+```
+
+### Dependencies
+
+This plugin uses:
+- **.NET 8.0** - Target framework
+- **Jellyfin 10.10.7** - Plugin SDK packages
+- **ASP.NET Core** - For API endpoints
+- **Microsoft.Extensions** - For dependency injection and logging
+- **Newtonsoft.Json** - For JSON serialization
+
+### Development Setup
+
+1. **Install Jellyfin development environment**
+2. **Configure NuGet sources** (nuget.config is included)
+3. **Build and test** using the commands above
+4. **Deploy to Jellyfin** for testing
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
