@@ -369,3 +369,6 @@ FodyWeavers.xsd
 # Plugin specific
 # Keep release directory but ignore ZIP files
 release/*.zip
+
+# Configuration files with sensitive data
+nuget.config

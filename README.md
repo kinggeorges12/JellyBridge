@@ -162,15 +162,42 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 ### Publishing to GitHub Packages
 
-1. **Create a GitHub Personal Access Token**
-   - Go to GitHub Settings → Developer settings → Personal access tokens
+1. **Create a GitHub Personal Access Token (Classic)**
+   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
    - Generate a token with `write:packages` and `read:packages` permissions
+   - Copy the token for use in configuration
 
-2. **Configure authentication**
+2. **Configure nuget.config**
+   Copy the template and add your credentials:
    ```bash
-   # Set up GitHub Packages authentication
-   dotnet nuget add source --username YOUR_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
+   # Copy the template
+   copy nuget.config.template nuget.config
    ```
+   
+   Then edit `nuget.config` with your details:
+   ```xml
+   <?xml version="1.0" encoding="utf-8"?>
+   <configuration>
+       <packageSources>
+           <clear />
+           <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+           <add key="github" value="https://nuget.pkg.github.com/NAMESPACE/index.json" />
+       </packageSources>
+       <packageSourceCredentials>
+           <github>
+               <add key="Username" value="USERNAME" />
+               <add key="ClearTextPassword" value="TOKEN" />
+           </github>
+       </packageSourceCredentials>
+   </configuration>
+   ```
+   
+   Replace:
+   - `NAMESPACE` with your GitHub username or organization name
+   - `USERNAME` with your GitHub username
+   - `TOKEN` with your personal access token
+   
+   **⚠️ Security Note:** The `nuget.config` file is ignored by git to protect your credentials. Only the template (`nuget.config.template`) is committed.
 
 3. **Pack the plugin**
    ```bash
@@ -184,14 +211,49 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 ### Installing from GitHub Packages
 
-Users can install the plugin from GitHub Packages by adding the source:
+Users can install the plugin from GitHub Packages by configuring their `nuget.config`:
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+        <clear />
+        <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+        <add key="github" value="https://nuget.pkg.github.com/NAMESPACE/index.json" />
+    </packageSources>
+    <packageSourceCredentials>
+        <github>
+            <add key="Username" value="USERNAME" />
+            <add key="ClearTextPassword" value="TOKEN" />
+        </github>
+    </packageSourceCredentials>
+</configuration>
+```
+
+Then install the package:
 ```bash
-# Add GitHub Packages source
-dotnet nuget add source --username YOUR_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
-
-# Install the package
 dotnet add package JellyseerrBridge --source github
+```
+
+### GitHub Actions Integration
+
+For automated publishing in GitHub Actions, use the `GITHUB_TOKEN`:
+
+```yaml
+- name: Setup .NET
+  uses: actions/setup-dotnet@v3
+  with:
+    dotnet-version: '8.0.x'
+
+- name: Add GitHub Packages source
+  run: |
+    dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+- name: Pack
+  run: dotnet pack --configuration Release
+
+- name: Push to GitHub Packages
+  run: dotnet nuget push bin/Release/*.nupkg --source github
 ```
 
 ### Project Structure
