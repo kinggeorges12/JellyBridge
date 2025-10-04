@@ -160,6 +160,40 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
    powershell Compress-Archive -Path "release\JellyseerrBridge\*" -DestinationPath "release\JellyseerrBridge-0.1.zip" -Force
    ```
 
+### Publishing to GitHub Packages
+
+1. **Create a GitHub Personal Access Token**
+   - Go to GitHub Settings → Developer settings → Personal access tokens
+   - Generate a token with `write:packages` and `read:packages` permissions
+
+2. **Configure authentication**
+   ```bash
+   # Set up GitHub Packages authentication
+   dotnet nuget add source --username YOUR_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
+   ```
+
+3. **Pack the plugin**
+   ```bash
+   dotnet pack --configuration Release
+   ```
+
+4. **Publish to GitHub Packages**
+   ```bash
+   dotnet nuget push bin\Release\JellyseerrBridge.0.1.0.nupkg --source github
+   ```
+
+### Installing from GitHub Packages
+
+Users can install the plugin from GitHub Packages by adding the source:
+
+```bash
+# Add GitHub Packages source
+dotnet nuget add source --username YOUR_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
+
+# Install the package
+dotnet add package JellyseerrBridge --source github
+```
+
 ### Project Structure
 
 ```
