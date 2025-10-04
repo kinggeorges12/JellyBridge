@@ -11,13 +11,13 @@
     <FileVersion>0.1.0.0</FileVersion>
     
     <!-- NuGet Package Properties -->
-    <PackageId>JellyseerrBridge</PackageId>
-    <Version>0.1.0</Version>
-    <Authors>Your Name</Authors>
-    <Company>Your Company</Company>
+    <PackageId>JellyseerrBridge.Plugin</PackageId>
+    <Version>0.1.2</Version>
+    <Authors>kinggeorges12</Authors>
+    <Company>kinggeorges12</Company>
     <Description>Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests</Description>
-    <PackageProjectUrl>https://github.com/YOUR_USERNAME/Jellyseerr-Bridge</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/YOUR_USERNAME/Jellyseerr-Bridge</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kinggeorges12/Jellyseerr-Bridge</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kinggeorges12/Jellyseerr-Bridge</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>jellyfin;plugin;jellyseerr;bridge;streaming</PackageTags>
