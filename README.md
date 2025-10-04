@@ -15,7 +15,26 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 
 ## Installation
 
-1. Download the plugin DLL file
+### Method 1: Automatic Installation (Recommended)
+
+1. **Add Plugin Repository to Jellyfin:**
+   - Go to Jellyfin Admin Dashboard → Plugins → Catalog
+   - Click "Settings" (gear icon)
+   - Click "Add Repository"
+   - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/Jellyseerr-Bridge/refs/heads/main/manifest.json`
+   - Click "Add"
+
+2. **Install Plugin:**
+   - Go to Plugins → Catalog
+   - Find "JellyseerrBridge.Plugin"
+   - Click "Install"
+   - Restart Jellyfin when prompted
+
+3. **Configure the plugin** through the admin interface
+
+### Method 2: Manual Installation
+
+1. Download the plugin DLL file from the [releases](../../releases)
 2. Place it in your Jellyfin plugins directory
 3. Restart Jellyfin
 4. Configure the plugin through the admin interface
@@ -211,7 +230,14 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 ### Installing from GitHub Packages
 
-Users can install the plugin from GitHub Packages by configuring their `nuget.config`:
+#### For Jellyfin Users (Automatic Installation)
+Add the plugin repository to Jellyfin:
+1. **Jellyfin Admin Dashboard** → **Plugins** → **Catalog** → **Settings** (gear icon)
+2. **Add Repository URL:** `https://raw.githubusercontent.com/kinggeorges12/Jellyseerr-Bridge/refs/heads/main/manifest.json`
+3. **Install** "Jellyseerr Bridge" from the catalog
+
+#### For Developers (Manual Installation)
+Configure your `nuget.config` for development:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -219,12 +245,12 @@ Users can install the plugin from GitHub Packages by configuring their `nuget.co
     <packageSources>
         <clear />
         <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-        <add key="github" value="https://nuget.pkg.github.com/NAMESPACE/index.json" />
+        <add key="github" value="https://nuget.pkg.github.com/kinggeorges12/index.json" />
     </packageSources>
     <packageSourceCredentials>
         <github>
-            <add key="Username" value="USERNAME" />
-            <add key="ClearTextPassword" value="TOKEN" />
+            <add key="Username" value="kinggeorges12" />
+            <add key="ClearTextPassword" value="YOUR_GITHUB_TOKEN" />
         </github>
     </packageSourceCredentials>
 </configuration>
@@ -232,7 +258,7 @@ Users can install the plugin from GitHub Packages by configuring their `nuget.co
 
 Then install the package:
 ```bash
-dotnet add package JellyseerrBridge --source github
+dotnet add package JellyseerrBridge.Plugin --source github
 ```
 
 ### GitHub Actions Integration
