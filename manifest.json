@@ -5,7 +5,7 @@
     "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
     "owner": "kinggeorges12",
     "category": "Other",
-    "imageUrl": "https://raw.githubusercontent.com/kinggeorges12/Jellyseerr-Bridge/main/logo.png",
+    "imageUrl": "https://docs.jellyseerr.dev/img/logo.svg",
     "versions": [
       {
         "version": "0.1.0.0",
