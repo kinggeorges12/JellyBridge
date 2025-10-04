@@ -1,0 +1,14 @@
+{
+  "Name": "Jellyseerr Bridge",
+  "Description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
+  "Version": "1.0.0.0",
+  "Category": "Other",
+  "ImageUrl": "",
+  "Owner": "JellyseerrBridge",
+  "TargetAbi": "10.8.0.0",
+  "Timestamp": "2024-01-01T00:00:00.000Z",
+  "Checksum": "",
+  "SourceUrl": "",
+  "Overview": "This plugin creates placeholder directories for shows from streaming services and automatically requests downloads when you mark shows as favorites in Jellyfin.",
+  "Changelog": "Initial release with Jellyseerr integration"
+}
