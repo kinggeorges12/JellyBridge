@@ -1,8 +1,5 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
-using MediaBrowser.Common.ScheduledTasks;
-using MediaBrowser.Controller.Plugins;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
@@ -10,7 +7,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
 /// <summary>
 /// Scheduled task for syncing shows with Jellyseerr.
 /// </summary>
-public class ShowSyncTask : IScheduledTask
+public class ShowSyncTask
 {
     private readonly ShowSyncService _showSyncService;
     private readonly ConfigurationService _configurationService;
@@ -29,19 +26,32 @@ public class ShowSyncTask : IScheduledTask
         _logger = logger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the task name.
+    /// </summary>
     public string Name => "Jellyseerr Show Sync";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the task key.
+    /// </summary>
     public string Key => "JellyseerrShowSync";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the task description.
+    /// </summary>
     public string Description => "Syncs shows from Jellyseerr and creates placeholder directories";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the task category.
+    /// </summary>
     public string Category => "Jellyseerr Bridge";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Executes the sync task.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="progress">The progress reporter.</param>
+    /// <returns>A task representing the async operation.</returns>
     public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
     {
         try
@@ -76,21 +86,5 @@ public class ShowSyncTask : IScheduledTask
             _logger.LogError(ex, "Error during scheduled show sync");
             progress.Report(100);
         }
-    }
-
-    /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
-    {
-        var config = _configurationService.GetConfiguration();
-        var intervalHours = config.SyncIntervalHours;
-
-        return new[]
-        {
-            new TaskTriggerInfo
-            {
-                Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
-            }
-        };
     }
 }

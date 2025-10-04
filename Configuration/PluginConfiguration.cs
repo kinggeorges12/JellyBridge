@@ -5,7 +5,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
 /// <summary>
 /// Plugin configuration.
 /// </summary>
-public class PluginConfiguration : BasePluginConfiguration
+public class PluginConfiguration
 {
     /// <summary>
     /// Gets or sets the Jellyseerr base URL.

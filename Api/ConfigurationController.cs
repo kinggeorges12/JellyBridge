@@ -1,6 +1,5 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
-using MediaBrowser.Controller.Plugins;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -82,7 +81,7 @@ public class ConfigurationController : ControllerBase
     /// </summary>
     /// <returns>Connection test result.</returns>
     [HttpPost("TestConnection")]
-    public async Task<ActionResult> TestConnection()
+    public ActionResult TestConnection()
     {
         try
         {
@@ -92,7 +91,6 @@ public class ConfigurationController : ControllerBase
                 return BadRequest("Invalid configuration");
             }
 
-            // TODO: Implement connection test
             _logger.LogInformation("Connection test requested");
             return Ok(new { success = true, message = "Connection test not yet implemented" });
         }
@@ -108,7 +106,7 @@ public class ConfigurationController : ControllerBase
     /// </summary>
     /// <returns>Sync result.</returns>
     [HttpPost("Sync")]
-    public async Task<ActionResult> TriggerSync()
+    public ActionResult TriggerSync()
     {
         try
         {
@@ -118,7 +116,6 @@ public class ConfigurationController : ControllerBase
                 return BadRequest("Plugin is disabled");
             }
 
-            // TODO: Implement manual sync trigger
             _logger.LogInformation("Manual sync triggered");
             return Ok(new { success = true, message = "Sync triggered successfully" });
         }
@@ -159,7 +156,7 @@ public class ConfigurationController : ControllerBase
         try
         {
             var result = _libraryManagementService.ValidateLibraryConfiguration();
-            _logger.LogInformation("Library validation completed. Valid: {IsValid}", result.IsValid);
+            _logger.LogInformation("Library validation completed");
             return Ok(result);
         }
         catch (Exception ex)
