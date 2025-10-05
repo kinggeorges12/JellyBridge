@@ -15,7 +15,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
-        public new string Version => "0.11.0.0";
         
         public string? Image => null;
         
@@ -26,7 +25,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             Instance = this;
             var logger = loggerFactory.CreateLogger<JellyseerrBridgePlugin>();
-            logger.LogInformation("Jellyseerr Bridge Plugin v{Version} initialized successfully", Version);
+            var version = GetType().Assembly.GetName().Version?.ToString() ?? "Unknown";
+            logger.LogInformation("Jellyseerr Bridge Plugin v{Version} initialized successfully", version);
         }
 
         public IEnumerable<PluginPageInfo> GetPages()
