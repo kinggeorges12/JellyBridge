@@ -11,16 +11,19 @@ public class LibraryManagementService
 {
     private readonly ILogger<LibraryManagementService> _logger;
     private readonly PluginConfiguration _configuration;
+    private readonly LibraryFilterService _libraryFilterService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LibraryManagementService"/> class.
     /// </summary>
     /// <param name="logger">The logger.</param>
     /// <param name="configuration">The plugin configuration.</param>
-    public LibraryManagementService(ILogger<LibraryManagementService> logger, PluginConfiguration configuration)
+    /// <param name="libraryFilterService">The library filter service.</param>
+    public LibraryManagementService(ILogger<LibraryManagementService> logger, PluginConfiguration configuration, LibraryFilterService libraryFilterService)
     {
         _logger = logger;
         _configuration = configuration;
+        _libraryFilterService = libraryFilterService;
     }
 
     /// <summary>
@@ -111,5 +114,72 @@ public class LibraryManagementService
                 _logger.LogError(ex, "Failed to update library directory path");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Filters shows based on plugin configuration.
+        /// </summary>
+        /// <param name="showPaths">List of show paths to filter.</param>
+        /// <param name="targetLibraryType">The type of library being processed.</param>
+        /// <returns>Filtered list of show paths.</returns>
+        public List<string> FilterShows(List<string> showPaths, LibraryType targetLibraryType)
+        {
+            try
+            {
+                _logger.LogInformation("Filtering {Count} shows for {LibraryType} library", showPaths.Count, targetLibraryType);
+                
+                var filteredShows = new List<string>();
+                
+                foreach (var showPath in showPaths)
+                {
+                    if (_libraryFilterService.ShouldIncludeInLibrary(showPath, targetLibraryType))
+                    {
+                        filteredShows.Add(showPath);
+                        _logger.LogDebug("Including show: {Path}", showPath);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Excluding show: {Path}", showPath);
+                    }
+                }
+                
+                _logger.LogInformation("Filtered {OriginalCount} shows to {FilteredCount} shows", showPaths.Count, filteredShows.Count);
+                return filteredShows;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering shows");
+                return showPaths; // Return original list on error
+            }
+        }
+
+        /// <summary>
+        /// Checks if a show should be excluded from main libraries.
+        /// </summary>
+        /// <param name="showPath">The path to the show.</param>
+        /// <returns>True if the show should be excluded.</returns>
+        public bool ShouldExcludeFromMainLibraries(string showPath)
+        {
+            return _libraryFilterService.ShouldExcludeFromMainLibraries(showPath);
+        }
+
+        /// <summary>
+        /// Checks if a show is a placeholder (has no actual media content).
+        /// </summary>
+        /// <param name="showPath">The path to the show.</param>
+        /// <returns>True if the show is a placeholder.</returns>
+        public bool IsPlaceholderShow(string showPath)
+        {
+            return _libraryFilterService.IsPlaceholderShow(showPath);
+        }
+
+        /// <summary>
+        /// Gets the library type for a show.
+        /// </summary>
+        /// <param name="showPath">The path to the show.</param>
+        /// <returns>The library type.</returns>
+        public LibraryType GetLibraryType(string showPath)
+        {
+            return _libraryFilterService.GetLibraryType(showPath);
         }
 }

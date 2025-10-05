@@ -40,6 +40,14 @@
                 
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
+                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" />
+                        <span>Exclude placeholder shows from main libraries</span>
+                    </label>
+                    <div class="fieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
+                </div>
+                
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
                         <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" />
                         <span>Create separate libraries for streaming services</span>
                     </label>
@@ -50,14 +58,6 @@
                     <label class="inputLabel inputLabelUnfocused" for="libraryPrefix">Library Prefix</label>
                     <input id="libraryPrefix" type="text" is="emby-input" class="emby-input" placeholder="Streaming - ">
                     <div class="fieldDescription">Prefix for streaming service libraries</div>
-                </div>
-                
-                <div class="checkboxContainer checkboxContainer-withDescription">
-                    <label class="emby-checkbox-label">
-                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" />
-                        <span>Exclude placeholder shows from main libraries</span>
-                    </label>
-                    <div class="fieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
                 </div>
                 
                 <div class="checkboxContainer checkboxContainer-withDescription">

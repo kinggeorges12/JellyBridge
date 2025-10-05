@@ -15,6 +15,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
+        public new string Version => "0.7.0.0";
         
         public string? Image => null;
         
@@ -45,6 +46,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             serviceCollection.AddScoped<ConfigurationService>();
             serviceCollection.AddScoped<JellyseerrApiService>();
             serviceCollection.AddScoped<LibraryManagementService>();
+            serviceCollection.AddScoped<LibraryFilterService>();
             serviceCollection.AddScoped<ShowSyncService>();
             serviceCollection.AddScoped<WebhookHandlerService>();
             serviceCollection.AddScoped<ShowSyncTask>();

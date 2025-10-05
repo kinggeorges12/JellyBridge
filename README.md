@@ -54,7 +54,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ### 📁 Library Configuration
 - **Library Directory**: Path to Jellyseerr's library directory (default: `/data/Jellyseerr`)
-- **Create Separate Libraries**: Creates dedicated libraries for each streaming service
+- **Create Separate Libraries**: Creates dedicated libraries for each streaming service (default: disabled)
 - **Library Prefix**: Prefix for streaming service libraries (default: `Streaming - `)
 - **Exclude from Main Libraries**: Prevents placeholder shows from appearing in main libraries
 
@@ -69,6 +69,22 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **🔍 Test Connection**: Validates Jellyseerr connection
 - **🔄 Trigger Sync**: Manual sync trigger
 - **Real-time Status**: Success/error messages with auto-dismiss
+
+### 🔧 Advanced Features
+
+#### Placeholder Show Filtering
+The plugin intelligently detects and filters placeholder shows (shows that are requested but don't have actual media files yet):
+
+- **Automatic Detection**: Identifies shows with no media files (only .nfo, .txt, etc.)
+- **Smart Filtering**: Excludes placeholders from main libraries when enabled
+- **Streaming Libraries**: Always includes placeholders in dedicated streaming libraries
+- **Configurable**: Enable/disable exclusion via the configuration interface
+
+#### Library Management
+- **Separate Libraries**: Creates dedicated libraries for each streaming service
+- **Library Prefixing**: Customizable prefix for streaming service libraries
+- **Path Detection**: Automatically detects library types based on directory structure
+- **Content Filtering**: Filters content based on actual media file presence
 
 ### Service Configuration
 
