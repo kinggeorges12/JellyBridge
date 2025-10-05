@@ -54,7 +54,6 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ### 📁 Library Configuration
 - **Library Directory**: Path to Jellyseerr's library directory (default: `/data/Jellyseerr`)
-- **Root Folder**: Root folder for downloads (default: `/data/Jellyseerr`)
 - **Create Separate Libraries**: Creates dedicated libraries for each streaming service
 - **Library Prefix**: Prefix for streaming service libraries (default: `Streaming - `)
 - **Exclude from Main Libraries**: Prevents placeholder shows from appearing in main libraries
@@ -63,8 +62,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Enable Plugin**: Enable or disable the plugin
 - **Sync Interval**: How often to sync shows (1-168 hours, default: 24)
 - **Webhook Port**: Port for webhook events (1024-65535, default: 5000)
-- **User ID**: Jellyfin user ID for requests (default: 1)
-- **Request 4K Content**: Request 4K quality content when available
+- **Jellyseerr User ID**: Jellyseerr user ID for making requests (found in Jellyseerr user management)
 
 ### 🎮 Interactive Controls
 - **💾 Save Configuration**: Saves all settings

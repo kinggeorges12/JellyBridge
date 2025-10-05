@@ -38,15 +38,9 @@
                     <div class="fieldDescription">Path to Jellyseerr's library directory</div>
                 </div>
                 
-                <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="rootFolder">Root Folder</label>
-                    <input id="rootFolder" type="text" is="emby-input" class="emby-input" placeholder="/data/Jellyseerr">
-                    <div class="fieldDescription">Root folder for downloads</div>
-                </div>
-                
-                <div class="inputContainer">
-                    <label class="checkboxContainer">
-                        <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" />
                         <span>Create separate libraries for streaming services</span>
                     </label>
                     <div class="fieldDescription">Creates dedicated libraries for each streaming service (e.g., 'Streaming - Netflix')</div>
@@ -58,17 +52,17 @@
                     <div class="fieldDescription">Prefix for streaming service libraries</div>
                 </div>
                 
-                <div class="inputContainer">
-                    <label class="checkboxContainer">
-                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" />
                         <span>Exclude placeholder shows from main libraries</span>
                     </label>
                     <div class="fieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
                 </div>
                 
-                <div class="inputContainer">
-                    <label class="checkboxContainer">
-                        <input id="isEnabled" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="isEnabled" type="checkbox" is="emby-checkbox" />
                         <span>Enable Plugin</span>
                     </label>
                     <div class="fieldDescription">Enable or disable the plugin</div>
@@ -87,17 +81,9 @@
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="userId">User ID</label>
+                    <label class="inputLabel inputLabelUnfocused" for="userId">Jellyseerr User ID</label>
                     <input id="userId" type="number" is="emby-input" class="emby-input" min="1" placeholder="1">
-                    <div class="fieldDescription">Jellyfin user ID for requests</div>
-                </div>
-                
-                <div class="inputContainer">
-                    <label class="checkboxContainer">
-                        <input id="request4K" type="checkbox" is="emby-checkbox" class="emby-checkbox">
-                        <span>Request 4K Content</span>
-                    </label>
-                    <div class="fieldDescription">Request 4K quality content when available</div>
+                    <div class="fieldDescription">Jellyseerr user ID for making requests (found in Jellyseerr user management)</div>
                 </div>
             </div>
             
@@ -136,15 +122,13 @@
                         JellyseerrUrl: document.querySelector("#jellyseerrUrl").value,
                         ApiKey: document.querySelector("#apiKey").value,
                         LibraryDirectory: document.querySelector("#libraryDirectory").value,
-                        RootFolder: document.querySelector("#rootFolder").value,
                         CreateSeparateLibraries: document.querySelector("#createSeparateLibraries").checked,
                         LibraryPrefix: document.querySelector("#libraryPrefix").value,
                         ExcludeFromMainLibraries: document.querySelector("#excludeFromMainLibraries").checked,
                         IsEnabled: document.querySelector("#isEnabled").checked,
                         SyncIntervalHours: parseInt(document.querySelector("#syncIntervalHours").value) || 24,
                         WebhookPort: parseInt(document.querySelector("#webhookPort").value) || 5000,
-                        UserId: parseInt(document.querySelector("#userId").value) || 1,
-                        Request4K: document.querySelector("#request4K").checked
+                        UserId: parseInt(document.querySelector("#userId").value) || 1
                     };
 
                     window.ApiClient.updatePluginConfiguration(JellyseerrBridgeConfig.pluginId, config)
@@ -163,18 +147,16 @@
                     window.ApiClient.getPluginConfiguration(JellyseerrBridgeConfig.pluginId)
                         .then(function (config) {
                             if (config) {
-                                document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
-                                document.querySelector("#apiKey").value = config.ApiKey || "";
-                                document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
-                                document.querySelector("#rootFolder").value = config.RootFolder || "/data/Jellyseerr";
-                                document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
+                            document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
+                            document.querySelector("#apiKey").value = config.ApiKey || "";
+                            document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
+                            document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
                                 document.querySelector("#libraryPrefix").value = config.LibraryPrefix || "Streaming - ";
                                 document.querySelector("#excludeFromMainLibraries").checked = config.ExcludeFromMainLibraries || false;
                                 document.querySelector("#isEnabled").checked = config.IsEnabled || false;
-                                document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
-                                document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
-                                document.querySelector("#userId").value = config.UserId || 1;
-                                document.querySelector("#request4K").checked = config.Request4K || false;
+                            document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
+                            document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
+                            document.querySelector("#userId").value = config.UserId || 1;
                             }
                         })
                         .catch(function (error) {
