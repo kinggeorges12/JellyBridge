@@ -105,118 +105,139 @@
     </div>
     
     <script type="text/javascript">
-        if (typeof JellyseerrBridgeConfig == 'undefined') {
+        (function () {
+            'use strict';
             
-            const JellyseerrBridgeConfig = {
-                pluginId: "8ecc808c-d6e9-432f-9219-b638fbfb37e6",
+            const pluginId = "8ecc808c-d6e9-432f-9219-b638fbfb37e6";
+            
+            function saveConfig(e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
                 
-                btnSave: document.querySelector("#saveConfig"),
-                btnTestConnection: document.querySelector("#testConnection"),
-                btnTriggerSync: document.querySelector("#triggerSync"),
+                const config = {
+                    JellyseerrUrl: document.querySelector("#jellyseerrUrl").value,
+                    ApiKey: document.querySelector("#apiKey").value,
+                    LibraryDirectory: document.querySelector("#libraryDirectory").value,
+                    CreateSeparateLibraries: document.querySelector("#createSeparateLibraries").checked,
+                    LibraryPrefix: document.querySelector("#libraryPrefix").value,
+                    ExcludeFromMainLibraries: document.querySelector("#excludeFromMainLibraries").checked,
+                    IsEnabled: document.querySelector("#isEnabled").checked,
+                    SyncIntervalHours: parseInt(document.querySelector("#syncIntervalHours").value) || 24,
+                    WebhookPort: parseInt(document.querySelector("#webhookPort").value) || 5000,
+                    UserId: parseInt(document.querySelector("#userId").value) || 1
+                };
 
-                saveConfig: function (e) {
-                    e.preventDefault();
-                    Dashboard.showLoadingMsg();
-                    
-                    const config = {
-                        JellyseerrUrl: document.querySelector("#jellyseerrUrl").value,
-                        ApiKey: document.querySelector("#apiKey").value,
-                        LibraryDirectory: document.querySelector("#libraryDirectory").value,
-                        CreateSeparateLibraries: document.querySelector("#createSeparateLibraries").checked,
-                        LibraryPrefix: document.querySelector("#libraryPrefix").value,
-                        ExcludeFromMainLibraries: document.querySelector("#excludeFromMainLibraries").checked,
-                        IsEnabled: document.querySelector("#isEnabled").checked,
-                        SyncIntervalHours: parseInt(document.querySelector("#syncIntervalHours").value) || 24,
-                        WebhookPort: parseInt(document.querySelector("#webhookPort").value) || 5000,
-                        UserId: parseInt(document.querySelector("#userId").value) || 1
-                    };
-
-                    ApiClient.updatePluginConfiguration(JellyseerrBridgeConfig.pluginId, config)
-                        .then(Dashboard.processPluginConfigurationUpdateResult)
-                        .catch(function (error) {
-                            console.error(error);
-                            Dashboard.alert("Error saving configuration: " + error.message);
-                        })
-                        .finally(function () {
-                            Dashboard.hideLoadingMsg();
-                        });
-                },
+                ApiClient.updatePluginConfiguration(pluginId, config)
+                    .then(Dashboard.processPluginConfigurationUpdateResult)
+                    .catch(function (error) {
+                        console.error(error);
+                        Dashboard.alert("Error saving configuration: " + error.message);
+                    })
+                    .finally(function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+            }
+            
+            function loadConfig() {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId)
+                    .then(function (config) {
+                        if (config) {
+                            document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
+                            document.querySelector("#apiKey").value = config.ApiKey || "";
+                            document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
+                            document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
+                            document.querySelector("#libraryPrefix").value = config.LibraryPrefix || "Streaming - ";
+                            document.querySelector("#excludeFromMainLibraries").checked = config.ExcludeFromMainLibraries || false;
+                            document.querySelector("#isEnabled").checked = config.IsEnabled || false;
+                            document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
+                            document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
+                            document.querySelector("#userId").value = config.UserId || 1;
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                        Dashboard.alert("Error loading configuration: " + error.message);
+                    })
+                    .finally(function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+            }
+            
+            function testConnection() {
+                Dashboard.showLoadingMsg();
                 
-                loadConfig: function () {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(JellyseerrBridgeConfig.pluginId)
-                        .then(function (config) {
-                            if (config) {
-                                document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
-                                document.querySelector("#apiKey").value = config.ApiKey || "";
-                                document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
-                                document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
-                                document.querySelector("#libraryPrefix").value = config.LibraryPrefix || "Streaming - ";
-                                document.querySelector("#excludeFromMainLibraries").checked = config.ExcludeFromMainLibraries || false;
-                                document.querySelector("#isEnabled").checked = config.IsEnabled || false;
-                                document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
-                                document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
-                                document.querySelector("#userId").value = config.UserId || 1;
-                            }
-                        })
-                        .catch(function (error) {
-                            console.error(error);
-                            Dashboard.alert("Error loading configuration: " + error.message);
-                        })
-                        .finally(function () {
-                            Dashboard.hideLoadingMsg();
-                        });
-                },
+                // Use fetch API instead of ApiClient.post
+                fetch("/Plugins/JellyseerrBridge/TestConnection", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    console.log("Test connection response:", data);
+                    if (data && data.success) {
+                        Dashboard.alert("✅ " + data.message);
+                    } else {
+                        Dashboard.alert("❌ " + (data.message || "Connection test failed"));
+                    }
+                })
+                .catch(function (error) {
+                    console.error("Test connection error:", error);
+                    Dashboard.alert("❌ Connection test failed: " + (error.message || "Unknown error"));
+                })
+                .finally(function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+            
+            function triggerSync() {
+                Dashboard.showLoadingMsg();
+                fetch("/Plugins/JellyseerrBridge/Sync", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(response => response.json())
+                .then(function (data) {
+                    Dashboard.alert("Sync triggered successfully!");
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    Dashboard.alert("Sync failed: " + error.message);
+                })
+                .finally(function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+            
+            function init() {
+                const btnSave = document.querySelector("#saveConfig");
+                const btnTestConnection = document.querySelector("#testConnection");
+                const btnTriggerSync = document.querySelector("#triggerSync");
                 
-                testConnection: function () {
-                    Dashboard.showLoadingMsg();
-                    
-                    // Use the correct Jellyfin API client method
-                    ApiClient.post("/Plugins/JellyseerrBridge/TestConnection")
-                        .then(function (response) {
-                            console.log("Test connection response:", response);
-                            if (response && response.success) {
-                                Dashboard.alert("✅ " + response.message);
-                            } else {
-                                Dashboard.alert("❌ " + (response.message || "Connection test failed"));
-                            }
-                        })
-                        .catch(function (error) {
-                            console.error("Test connection error:", error);
-                            Dashboard.alert("❌ Connection test failed: " + (error.message || "Unknown error"));
-                        })
-                        .finally(function () {
-                            Dashboard.hideLoadingMsg();
-                        });
-                },
-                
-                triggerSync: function () {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.post("/Plugins/JellyseerrBridge/Sync")
-                        .then(function (response) {
-                            Dashboard.alert("Sync triggered successfully!");
-                        })
-                        .catch(function (error) {
-                            console.error(error);
-                            Dashboard.alert("Sync failed: " + error.message);
-                        })
-                        .finally(function () {
-                            Dashboard.hideLoadingMsg();
-                        });
-                },
-                
-                init: function () {
-                    JellyseerrBridgeConfig.btnSave.addEventListener("click", JellyseerrBridgeConfig.saveConfig);
-                    JellyseerrBridgeConfig.btnTestConnection.addEventListener("click", JellyseerrBridgeConfig.testConnection);
-                    JellyseerrBridgeConfig.btnTriggerSync.addEventListener("click", JellyseerrBridgeConfig.triggerSync);
-                    JellyseerrBridgeConfig.loadConfig();
+                if (btnSave) {
+                    btnSave.addEventListener("click", saveConfig);
                 }
+                if (btnTestConnection) {
+                    btnTestConnection.addEventListener("click", testConnection);
+                }
+                if (btnTriggerSync) {
+                    btnTriggerSync.addEventListener("click", triggerSync);
+                }
+                
+                loadConfig();
             }
 
-            document.querySelector('#jellyseerrBridgeConfigurationPage').addEventListener("pageshow", function () {
-                JellyseerrBridgeConfig.init();
-            });
-        }
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
     </script>
 </div>
 </body>
