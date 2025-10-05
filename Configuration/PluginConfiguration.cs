@@ -27,16 +27,6 @@ public class PluginConfiguration : BasePluginConfiguration
     public string LibraryDirectory { get; set; } = "/data/Jellyseerr";
 
     /// <summary>
-    /// Gets or sets the service directories configuration.
-    /// </summary>
-    public Dictionary<string, string> ServiceDirectories { get; set; } = new();
-
-    /// <summary>
-    /// Gets or sets the service IDs mapping.
-    /// </summary>
-    public Dictionary<string, int> ServiceIds { get; set; } = new();
-
-    /// <summary>
     /// Gets or sets the services to fetch.
     /// </summary>
     public List<string> ServicesToFetch { get; set; } = new();
