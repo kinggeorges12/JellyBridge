@@ -9,12 +9,12 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "version": "0.14.0.0",
-        "changelog": "Fixed JavaScript errors in configuration page - removed 'for' attributes from labels and used proper ApiClient.ajax method",
+        "version": "0.15.0.0",
+        "changelog": "Fixed UI styling - use proper Jellyfin checkboxes with material icons, removed emojis from buttons, made save button full-width",
         "targetAbi": "10.10.7.0",
-        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.14.zip",
-        "checksum": "552F6C816A3296D0D406BF2EDA41DF69",
-        "timestamp": "2025-01-27T22:00:00",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.15.zip",
+        "checksum": "EB4C21209B6BFA7D2C008C570EAB4CB0",
+        "timestamp": "2025-01-27T23:00:00",
         "dependencies": []
       },
       {
