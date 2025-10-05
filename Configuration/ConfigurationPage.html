@@ -172,11 +172,16 @@
                     Dashboard.showLoadingMsg();
                     window.ApiClient.post("/Plugins/JellyseerrBridge/TestConnection")
                         .then(function (response) {
-                            Dashboard.alert("Connection test successful!");
+                            console.log("Test connection response:", response);
+                            if (response && response.success) {
+                                Dashboard.alert("✅ " + response.message);
+                            } else {
+                                Dashboard.alert("❌ " + (response.message || "Connection test failed"));
+                            }
                         })
                         .catch(function (error) {
-                            console.error(error);
-                            Dashboard.alert("Connection test failed: " + error.message);
+                            console.error("Test connection error:", error);
+                            Dashboard.alert("❌ Connection test failed: " + (error.message || "Unknown error"));
                         })
                         .finally(function () {
                             Dashboard.hideLoadingMsg();
