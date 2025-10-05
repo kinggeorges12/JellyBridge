@@ -2,6 +2,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Api;
 
@@ -81,23 +82,37 @@ public class ConfigurationController : ControllerBase
     /// </summary>
     /// <returns>Connection test result.</returns>
     [HttpPost("TestConnection")]
-    public ActionResult TestConnection()
+    public async Task<ActionResult> TestConnection()
     {
         try
         {
             var config = _configurationService.GetConfiguration();
             if (!_configurationService.ValidateConfiguration(config))
             {
-                return BadRequest("Invalid configuration");
+                return BadRequest(new { success = false, message = "Invalid configuration. Please check your Jellyseerr URL and API key." });
             }
 
-            _logger.LogInformation("Connection test requested");
-            return Ok(new { success = true, message = "Connection test not yet implemented" });
+            _logger.LogInformation("Testing connection to Jellyseerr at {Url}", config.JellyseerrUrl);
+            
+            // Test the actual connection using the API service
+            var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
+            var connectionSuccessful = await apiService.TestConnectionAsync(config);
+            
+            if (connectionSuccessful)
+            {
+                _logger.LogInformation("Connection test successful");
+                return Ok(new { success = true, message = "Connection successful! Jellyseerr is reachable." });
+            }
+            else
+            {
+                _logger.LogWarning("Connection test failed");
+                return Ok(new { success = false, message = "Connection failed. Please check your Jellyseerr URL and ensure Jellyseerr is running." });
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error testing connection");
-            return StatusCode(500, "Error testing connection");
+            return Ok(new { success = false, message = $"Connection test error: {ex.Message}" });
         }
     }
 
