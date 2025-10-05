@@ -16,6 +16,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
         
+        public string? Image => null;
+        
         public static JellyseerrBridgePlugin Instance { get; private set; } = null!;
         
         public JellyseerrBridgePlugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer) 
