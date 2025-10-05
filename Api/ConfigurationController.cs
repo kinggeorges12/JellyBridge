@@ -165,4 +165,95 @@ public class ConfigurationController : ControllerBase
             return StatusCode(500, "Error validating libraries");
         }
     }
+
+    /// <summary>
+    /// Gets the current library directory path.
+    /// </summary>
+    /// <returns>The library directory path.</returns>
+    [HttpGet("LibraryDirectory")]
+    public ActionResult GetLibraryDirectory()
+    {
+        try
+        {
+            var directory = _libraryManagementService.GetLibraryDirectory();
+            _logger.LogInformation("Library directory retrieved: {Directory}", directory);
+            return Ok(new { directory });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving library directory");
+            return StatusCode(500, "Error retrieving library directory");
+        }
+    }
+
+    /// <summary>
+    /// Updates the library directory path.
+    /// </summary>
+    /// <param name="request">The request containing the new directory path.</param>
+    /// <returns>Success status.</returns>
+    [HttpPost("LibraryDirectory")]
+    public ActionResult UpdateLibraryDirectory([FromBody] UpdateLibraryDirectoryRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Directory))
+            {
+                return BadRequest("Directory path cannot be empty");
+            }
+
+            var success = _libraryManagementService.UpdateLibraryDirectory(request.Directory);
+            if (success)
+            {
+                _logger.LogInformation("Library directory updated to: {Directory}", request.Directory);
+                return Ok(new { success = true, message = "Library directory updated successfully" });
+            }
+            else
+            {
+                return BadRequest("Failed to update library directory");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating library directory");
+            return StatusCode(500, "Error updating library directory");
+        }
+    }
+
+    /// <summary>
+    /// Ensures the library directory exists.
+    /// </summary>
+    /// <returns>Success status.</returns>
+    [HttpPost("EnsureLibraryDirectory")]
+    public ActionResult EnsureLibraryDirectory()
+    {
+        try
+        {
+            var success = _libraryManagementService.EnsureLibraryDirectoryExists();
+            if (success)
+            {
+                _logger.LogInformation("Library directory ensured successfully");
+                return Ok(new { success = true, message = "Library directory ensured successfully" });
+            }
+            else
+            {
+                return BadRequest("Failed to ensure library directory exists");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ensuring library directory");
+            return StatusCode(500, "Error ensuring library directory");
+        }
+    }
+}
+
+/// <summary>
+/// Request model for updating library directory.
+/// </summary>
+public class UpdateLibraryDirectoryRequest
+{
+    /// <summary>
+    /// Gets or sets the new directory path.
+    /// </summary>
+    public string Directory { get; set; } = string.Empty;
 }

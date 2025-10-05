@@ -26,7 +26,7 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 
 2. **Install Plugin:**
    - Go to Plugins → Catalog
-   - Find "JellyseerrBridge.Plugin"
+   - Find "Jellyseerr Bridge"
    - Click "Install"
    - Restart Jellyfin when prompted
 
@@ -34,22 +34,43 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 
 ### Method 2: Manual Installation
 
-1. Download the plugin DLL file from the [releases](../../releases)
-2. Place it in your Jellyfin plugins directory
+1. Download the plugin ZIP file from the [releases](../../releases)
+2. Extract the contents to your Jellyfin plugins directory
 3. Restart Jellyfin
-4. Configure the plugin through the admin interface
+4. Configure the plugin through the web interface
 
 ## Configuration
 
-Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyseerrBridge`
+Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyseerrBridge/ConfigurationPage`
 
-### Required Settings
+The plugin provides a comprehensive web-based configuration interface with the following sections:
 
+### 🔗 Jellyseerr Connection Settings
 - **Jellyseerr URL**: The base URL of your Jellyseerr instance (e.g., `http://localhost:5055`)
-- **API Key**: Your Jellyseerr API key
+- **API Key**: Your Jellyseerr API key (found in Settings → General)
 - **Email**: Your Jellyseerr login email
 - **Password**: Your Jellyseerr login password
-- **Shows Directory**: Base directory where show placeholders will be created
+- **Test Connection**: Button to validate your Jellyseerr connection
+
+### 📁 Library Configuration
+- **Library Directory**: Path to Jellyseerr's library directory (default: `/data/Jellyseerr`)
+- **Root Folder**: Root folder for downloads (default: `/data/Jellyseerr`)
+- **Create Separate Libraries**: Creates dedicated libraries for each streaming service
+- **Library Prefix**: Prefix for streaming service libraries (default: `Streaming - `)
+- **Exclude from Main Libraries**: Prevents placeholder shows from appearing in main libraries
+
+### ⚙️ Plugin Settings
+- **Enable Plugin**: Enable or disable the plugin
+- **Sync Interval**: How often to sync shows (1-168 hours, default: 24)
+- **Webhook Port**: Port for webhook events (1024-65535, default: 5000)
+- **User ID**: Jellyfin user ID for requests (default: 1)
+- **Request 4K Content**: Request 4K quality content when available
+
+### 🎮 Interactive Controls
+- **💾 Save Configuration**: Saves all settings
+- **🔍 Test Connection**: Validates Jellyseerr connection
+- **🔄 Trigger Sync**: Manual sync trigger
+- **Real-time Status**: Success/error messages with auto-dismiss
 
 ### Service Configuration
 
@@ -86,11 +107,24 @@ Example service configuration:
 
 ## Usage
 
-1. **Configure the plugin** with your Jellyseerr credentials and directory paths
-2. **Enable the plugin** and trigger an initial sync
-3. **Create separate libraries** (recommended) for each streaming service to avoid confusion
-4. **Scan your Jellyfin library** to see the placeholder shows
-5. **Mark shows as favorites** in Jellyfin to automatically request downloads
+1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
+2. **Test the connection** to ensure Jellyseerr is accessible
+3. **Enable the plugin** and trigger an initial sync
+4. **Create separate libraries** (recommended) for each streaming service to avoid confusion
+5. **Scan your Jellyfin library** to see the placeholder shows
+6. **Mark shows as favorites** in Jellyfin to automatically request downloads
+
+## Web Interface
+
+The plugin includes a modern, responsive web interface accessible at:
+`http://your-jellyfin-server/Plugins/JellyseerrBridge/ConfigurationPage`
+
+### Features:
+- **Real-time Configuration**: Update settings without restarting Jellyfin
+- **Connection Testing**: Validate Jellyseerr connection before saving
+- **Manual Sync**: Trigger immediate synchronization
+- **Status Feedback**: Clear success/error messages
+- **Mobile Friendly**: Responsive design works on all devices
 
 ### Library Setup Recommendations
 
@@ -167,16 +201,17 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
    ```
 
 4. **Create release package**
-   ```bash
+   ```powershell
    # Create release directory (if it doesn't exist)
-   if not exist "release\JellyseerrBridge" mkdir release\JellyseerrBridge
+   if (-not (Test-Path release\JellyseerrBridge)) { mkdir release\JellyseerrBridge }
    
    # Copy built files
    copy bin\Release\net8.0\JellyseerrBridge.dll release\JellyseerrBridge\
+   copy bin\Release\net8.0\JellyseerrBridge.deps.json release\JellyseerrBridge\
    copy manifest.json release\JellyseerrBridge\
    
    # Create ZIP package (overwrites existing)
-   powershell Compress-Archive -Path "release\JellyseerrBridge\*" -DestinationPath "release\JellyseerrBridge-0.1.zip" -Force
+   Compress-Archive -Path release\JellyseerrBridge\* -DestinationPath release\JellyseerrBridge-0.2.zip -Force
    ```
 
 ### Publishing to GitHub Packages

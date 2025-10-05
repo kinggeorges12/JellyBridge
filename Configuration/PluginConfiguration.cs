@@ -35,7 +35,7 @@ public class PluginConfiguration
     /// Gets or sets the base directory for shows.
     /// </summary>
     [Required]
-    public string ShowsDirectory { get; set; } = string.Empty;
+    public string ShowsDirectory { get; set; } = "/data/Jellyseerr";
 
     /// <summary>
     /// Gets or sets the service directories configuration.
@@ -75,7 +75,7 @@ public class PluginConfiguration
     /// <summary>
     /// Gets or sets the root folder for downloads.
     /// </summary>
-    public string RootFolder { get; set; } = "/media/movie/Movies";
+    public string RootFolder { get; set; } = "/data/Jellyseerr";
 
     /// <summary>
     /// Gets or sets whether to request 4K content.
