@@ -28,7 +28,7 @@ public class PluginConfiguration : BasePluginConfiguration
         jellyseerrUrl: string.Empty,
         apiKey: string.Empty,
         libraryDirectory: "/data/Jellyseerr",
-        createSeparateLibraries: true,
+        createSeparateLibraries: false,
         libraryPrefix: "Streaming - ",
         excludeFromMainLibraries: true,
         isEnabled: true,
