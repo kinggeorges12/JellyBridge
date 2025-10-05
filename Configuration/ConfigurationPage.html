@@ -21,19 +21,19 @@
         <form class="jellyseerrBridgeConfigurationForm">
             <div class="verticalSection">
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="jellyseerrUrl">Jellyseerr URL</label>
+                    <label class="inputLabel inputLabelUnfocused">Jellyseerr URL</label>
                     <input id="jellyseerrUrl" type="text" is="emby-input" class="emby-input" placeholder="http://localhost:5055">
                     <div class="fieldDescription">The base URL of your Jellyseerr instance</div>
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="apiKey">API Key</label>
+                    <label class="inputLabel inputLabelUnfocused">API Key</label>
                     <input id="apiKey" type="password" is="emby-input" class="emby-input" placeholder="Your Jellyseerr API key">
                     <div class="fieldDescription">Your Jellyseerr API key (found in Settings → General)</div>
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="libraryDirectory">Library Directory</label>
+                    <label class="inputLabel inputLabelUnfocused">Library Directory</label>
                     <input id="libraryDirectory" type="text" is="emby-input" class="emby-input" placeholder="/data/Jellyseerr">
                     <div class="fieldDescription">Path to Jellyseerr's library directory</div>
                 </div>
@@ -55,7 +55,7 @@
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="libraryPrefix">Library Prefix</label>
+                    <label class="inputLabel inputLabelUnfocused">Library Prefix</label>
                     <input id="libraryPrefix" type="text" is="emby-input" class="emby-input" placeholder="Streaming - ">
                     <div class="fieldDescription">Prefix for streaming service libraries</div>
                 </div>
@@ -69,19 +69,19 @@
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="syncIntervalHours">Sync Interval (hours)</label>
+                    <label class="inputLabel inputLabelUnfocused">Sync Interval (hours)</label>
                     <input id="syncIntervalHours" type="number" is="emby-input" class="emby-input" min="1" max="168" placeholder="24">
                     <div class="fieldDescription">How often to sync shows (1-168 hours)</div>
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="webhookPort">Webhook Port</label>
+                    <label class="inputLabel inputLabelUnfocused">Webhook Port</label>
                     <input id="webhookPort" type="number" is="emby-input" class="emby-input" min="1024" max="65535" placeholder="5000">
                     <div class="fieldDescription">Port for webhook events (1024-65535)</div>
                 </div>
                 
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="userId">Jellyseerr User ID</label>
+                    <label class="inputLabel inputLabelUnfocused">Jellyseerr User ID</label>
                     <input id="userId" type="number" is="emby-input" class="emby-input" min="1" placeholder="1">
                     <div class="fieldDescription">Jellyseerr user ID for making requests (found in Jellyseerr user management)</div>
                 </div>
@@ -167,48 +167,38 @@
             function testConnection() {
                 Dashboard.showLoadingMsg();
                 
-                // Use fetch API instead of ApiClient.post
-                fetch("/Plugins/JellyseerrBridge/TestConnection", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                })
-                .then(response => response.json())
-                .then(function (data) {
+                // Use the proper Jellyfin API client method
+                ApiClient.ajax({
+                    url: ApiClient.getUrl("/Plugins/JellyseerrBridge/TestConnection"),
+                    type: "POST",
+                    dataType: "json"
+                }).done(function (data) {
                     console.log("Test connection response:", data);
                     if (data && data.success) {
                         Dashboard.alert("✅ " + data.message);
                     } else {
                         Dashboard.alert("❌ " + (data.message || "Connection test failed"));
                     }
-                })
-                .catch(function (error) {
+                }).fail(function (xhr, status, error) {
                     console.error("Test connection error:", error);
-                    Dashboard.alert("❌ Connection test failed: " + (error.message || "Unknown error"));
-                })
-                .finally(function () {
+                    Dashboard.alert("❌ Connection test failed: " + (error || "Unknown error"));
+                }).always(function () {
                     Dashboard.hideLoadingMsg();
                 });
             }
             
             function triggerSync() {
                 Dashboard.showLoadingMsg();
-                fetch("/Plugins/JellyseerrBridge/Sync", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                })
-                .then(response => response.json())
-                .then(function (data) {
+                ApiClient.ajax({
+                    url: ApiClient.getUrl("/Plugins/JellyseerrBridge/Sync"),
+                    type: "POST",
+                    dataType: "json"
+                }).done(function (data) {
                     Dashboard.alert("Sync triggered successfully!");
-                })
-                .catch(function (error) {
+                }).fail(function (xhr, status, error) {
                     console.error(error);
-                    Dashboard.alert("Sync failed: " + error.message);
-                })
-                .finally(function () {
+                    Dashboard.alert("Sync failed: " + error);
+                }).always(function () {
                     Dashboard.hideLoadingMsg();
                 });
             }
@@ -241,4 +231,5 @@
     </script>
 </div>
 </body>
+</html>
 </html>
