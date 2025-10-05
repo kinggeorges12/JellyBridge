@@ -18,6 +18,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public Guid Id => new Guid("12345678-1234-1234-1234-123456789012");
 
         public PluginConfiguration Configuration { get; set; } = new PluginConfiguration();
+
+        public JellyseerrBridgePlugin()
+        {
+            Instance = this;
+        }
+
+        public static JellyseerrBridgePlugin Instance { get; private set; }
     }
 
     public class JellyseerrBridgeServiceRegistrator

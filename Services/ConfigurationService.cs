@@ -9,7 +9,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 public class ConfigurationService
 {
     private readonly ILogger<ConfigurationService> _logger;
-    private PluginConfiguration? _cachedConfiguration;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigurationService"/> class.
@@ -26,11 +25,7 @@ public class ConfigurationService
     /// <returns>The plugin configuration.</returns>
     public PluginConfiguration GetConfiguration()
     {
-        if (_cachedConfiguration == null)
-        {
-            _cachedConfiguration = new PluginConfiguration();
-        }
-        return _cachedConfiguration;
+        return JellyseerrBridgePlugin.Instance.Configuration;
     }
 
     /// <summary>
@@ -39,7 +34,7 @@ public class ConfigurationService
     /// <param name="configuration">The configuration to save.</param>
     public void SaveConfiguration(PluginConfiguration configuration)
     {
-        _cachedConfiguration = configuration;
+        JellyseerrBridgePlugin.Instance.Configuration = configuration;
         _logger.LogInformation("Configuration saved");
     }
 
