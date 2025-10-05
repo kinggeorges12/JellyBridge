@@ -88,17 +88,17 @@
             </div>
             
             <div class="verticalSection">
-                <button id="testConnection" is="emby-button" type="button" class="raised button block">
-                    <span>Test Connection</span>
+                <button id="testConnection" is="emby-button" type="button" class="emby-button raised button-submit" style="margin-right: 10px;">
+                    <span>🔍 Test Connection</span>
                 </button>
-                <button id="triggerSync" is="emby-button" type="button" class="raised button block">
-                    <span>Trigger Sync</span>
+                <button id="triggerSync" is="emby-button" type="button" class="emby-button raised button-submit">
+                    <span>🔄 Trigger Sync</span>
                 </button>
             </div>
             
             <div class="verticalSection">
-                <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit block">
-                    <span>Save</span>
+                <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit">
+                    <span>💾 Save Configuration</span>
                 </button>
             </div>
         </form>
@@ -131,7 +131,7 @@
                         UserId: parseInt(document.querySelector("#userId").value) || 1
                     };
 
-                    window.ApiClient.updatePluginConfiguration(JellyseerrBridgeConfig.pluginId, config)
+                    ApiClient.updatePluginConfiguration(JellyseerrBridgeConfig.pluginId, config)
                         .then(Dashboard.processPluginConfigurationUpdateResult)
                         .catch(function (error) {
                             console.error(error);
@@ -144,19 +144,19 @@
                 
                 loadConfig: function () {
                     Dashboard.showLoadingMsg();
-                    window.ApiClient.getPluginConfiguration(JellyseerrBridgeConfig.pluginId)
+                    ApiClient.getPluginConfiguration(JellyseerrBridgeConfig.pluginId)
                         .then(function (config) {
                             if (config) {
-                            document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
-                            document.querySelector("#apiKey").value = config.ApiKey || "";
-                            document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
-                            document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
+                                document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
+                                document.querySelector("#apiKey").value = config.ApiKey || "";
+                                document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
+                                document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
                                 document.querySelector("#libraryPrefix").value = config.LibraryPrefix || "Streaming - ";
                                 document.querySelector("#excludeFromMainLibraries").checked = config.ExcludeFromMainLibraries || false;
                                 document.querySelector("#isEnabled").checked = config.IsEnabled || false;
-                            document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
-                            document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
-                            document.querySelector("#userId").value = config.UserId || 1;
+                                document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
+                                document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
+                                document.querySelector("#userId").value = config.UserId || 1;
                             }
                         })
                         .catch(function (error) {
@@ -170,7 +170,9 @@
                 
                 testConnection: function () {
                     Dashboard.showLoadingMsg();
-                    window.ApiClient.post("/Plugins/JellyseerrBridge/TestConnection")
+                    
+                    // Use the correct Jellyfin API client method
+                    ApiClient.post("/Plugins/JellyseerrBridge/TestConnection")
                         .then(function (response) {
                             console.log("Test connection response:", response);
                             if (response && response.success) {
@@ -190,7 +192,7 @@
                 
                 triggerSync: function () {
                     Dashboard.showLoadingMsg();
-                    window.ApiClient.post("/Plugins/JellyseerrBridge/Sync")
+                    ApiClient.post("/Plugins/JellyseerrBridge/Sync")
                         .then(function (response) {
                             Dashboard.alert("Sync triggered successfully!");
                         })
