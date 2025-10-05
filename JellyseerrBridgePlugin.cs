@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
 
         public string Description => "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests";
 
-        public string Version => "0.3";
+        public string Version => "0.4";
 
         public Guid Id => new Guid("12345678-1234-1234-1234-123456789012");
 
