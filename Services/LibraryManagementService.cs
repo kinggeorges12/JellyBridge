@@ -43,73 +43,73 @@ public class LibraryManagementService
         return new { isValid = true, message = "Library validation not yet implemented" };
     }
 
-    /// <summary>
-    /// Ensures the Jellyseerr library directory exists.
-    /// </summary>
-    /// <returns>True if directory exists or was created successfully.</returns>
-    public bool EnsureLibraryDirectoryExists()
-    {
-        try
+        /// <summary>
+        /// Ensures the Jellyseerr library directory exists.
+        /// </summary>
+        /// <returns>True if directory exists or was created successfully.</returns>
+        public bool EnsureLibraryDirectoryExists()
         {
-            var libraryPath = _configuration.ShowsDirectory;
-            if (string.IsNullOrEmpty(libraryPath))
+            try
             {
-                _logger.LogError("Library directory path is not configured");
+                var libraryPath = _configuration.LibraryDirectory;
+                if (string.IsNullOrEmpty(libraryPath))
+                {
+                    _logger.LogError("Library directory path is not configured");
+                    return false;
+                }
+
+                if (!Directory.Exists(libraryPath))
+                {
+                    _logger.LogInformation("Creating Jellyseerr library directory: {Path}", libraryPath);
+                    Directory.CreateDirectory(libraryPath);
+                    _logger.LogInformation("Jellyseerr library directory created successfully");
+                }
+                else
+                {
+                    _logger.LogInformation("Jellyseerr library directory already exists: {Path}", libraryPath);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to ensure library directory exists");
                 return false;
             }
-
-            if (!Directory.Exists(libraryPath))
-            {
-                _logger.LogInformation("Creating Jellyseerr library directory: {Path}", libraryPath);
-                Directory.CreateDirectory(libraryPath);
-                _logger.LogInformation("Jellyseerr library directory created successfully");
-            }
-            else
-            {
-                _logger.LogInformation("Jellyseerr library directory already exists: {Path}", libraryPath);
-            }
-
-            return true;
         }
-        catch (Exception ex)
+
+        /// <summary>
+        /// Gets the current library directory path.
+        /// </summary>
+        /// <returns>The library directory path.</returns>
+        public string GetLibraryDirectory()
         {
-            _logger.LogError(ex, "Failed to ensure library directory exists");
-            return false;
+            return _configuration.LibraryDirectory;
         }
-    }
 
-    /// <summary>
-    /// Gets the current library directory path.
-    /// </summary>
-    /// <returns>The library directory path.</returns>
-    public string GetLibraryDirectory()
-    {
-        return _configuration.ShowsDirectory;
-    }
-
-    /// <summary>
-    /// Updates the library directory path.
-    /// </summary>
-    /// <param name="newPath">The new library directory path.</param>
-    /// <returns>True if the path was updated successfully.</returns>
-    public bool UpdateLibraryDirectory(string newPath)
-    {
-        try
+        /// <summary>
+        /// Updates the library directory path.
+        /// </summary>
+        /// <param name="newPath">The new library directory path.</param>
+        /// <returns>True if the path was updated successfully.</returns>
+        public bool UpdateLibraryDirectory(string newPath)
         {
-            if (string.IsNullOrEmpty(newPath))
+            try
             {
-                _logger.LogError("Cannot set empty library directory path");
+                if (string.IsNullOrEmpty(newPath))
+                {
+                    _logger.LogError("Cannot set empty library directory path");
+                    return false;
+                }
+
+                _configuration.LibraryDirectory = newPath;
+                _logger.LogInformation("Library directory updated to: {Path}", newPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update library directory path");
                 return false;
             }
-
-            _configuration.ShowsDirectory = newPath;
-            _logger.LogInformation("Library directory updated to: {Path}", newPath);
-            return true;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update library directory path");
-            return false;
-        }
-    }
 }

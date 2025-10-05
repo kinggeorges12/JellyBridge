@@ -34,7 +34,7 @@ public class ConfigurationService
     /// <param name="configuration">The configuration to save.</param>
     public void SaveConfiguration(PluginConfiguration configuration)
     {
-        JellyseerrBridgePlugin.Instance.Configuration = configuration;
+        JellyseerrBridgePlugin.Instance.UpdateConfiguration(configuration);
         _logger.LogInformation("Configuration saved");
     }
 
