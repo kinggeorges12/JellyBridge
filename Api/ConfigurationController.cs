@@ -86,10 +86,16 @@ public class ConfigurationController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("TestConnection endpoint called");
+            
             var config = _configurationService.GetConfiguration();
+            _logger.LogInformation("Configuration retrieved: URL={Url}, HasApiKey={HasApiKey}", 
+                config.JellyseerrUrl, !string.IsNullOrEmpty(config.ApiKey));
+            
             if (!_configurationService.ValidateConfiguration(config))
             {
-                return BadRequest(new { success = false, message = "Invalid configuration. Please check your Jellyseerr URL and API key." });
+                _logger.LogWarning("Configuration validation failed");
+                return Ok(new { success = false, message = "Invalid configuration. Please check your Jellyseerr URL and API key." });
             }
 
             _logger.LogInformation("Testing connection to Jellyseerr at {Url}", config.JellyseerrUrl);
