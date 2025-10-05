@@ -15,7 +15,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
-        public new string Version => "0.10.0.0";
+        public new string Version => "0.11.0.0";
         
         public string? Image => null;
         
