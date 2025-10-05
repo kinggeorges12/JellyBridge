@@ -26,16 +26,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             Instance = this;
         }
 
-        public IEnumerable<PluginPageInfo> GetPages()
-        {
-            string? prefix = GetType().Namespace;
-
-            yield return new PluginPageInfo
+            public IEnumerable<PluginPageInfo> GetPages()
             {
-                Name = Name,
-                EmbeddedResourcePath = $"{prefix}.ConfigurationPage.html"
-            };
-        }
+                string? prefix = GetType().Namespace;
+
+                yield return new PluginPageInfo
+                {
+                    Name = Name,
+                    EmbeddedResourcePath = $"{prefix}.Configuration.ConfigurationPage.html"
+                };
+            }
     }
 
     public class JellyseerrBridgeServiceRegistrator

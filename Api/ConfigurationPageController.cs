@@ -182,11 +182,6 @@ public class ConfigurationPageController : ControllerBase
                     <div class='help-text'>Path to Jellyseerr's library directory</div>
                 </div>
                 
-                <div class='form-group'>
-                    <label for='rootFolder'>Root Folder:</label>
-                    <input type='text' id='rootFolder' name='rootFolder' value='{config.RootFolder}' placeholder='/data/Jellyseerr' required>
-                    <div class='help-text'>Root folder for downloads</div>
-                </div>
                 
                 <div class='form-group'>
                     <label>
@@ -239,13 +234,6 @@ public class ConfigurationPageController : ControllerBase
                     <div class='help-text'>Jellyfin user ID for requests</div>
                 </div>
                 
-                <div class='form-group'>
-                    <label>
-                        <input type='checkbox' id='request4K' name='request4K' {(config.Request4K ? "checked" : "")}>
-                        Request 4K Content
-                    </label>
-                    <div class='help-text'>Request 4K quality content when available</div>
-                </div>
             </div>
             
             <div class='form-group'>
@@ -268,15 +256,13 @@ public class ConfigurationPageController : ControllerBase
                     jellyseerrUrl: formData.get('jellyseerrUrl'),
                     apiKey: formData.get('apiKey'),
                     libraryDirectory: formData.get('libraryDirectory'),
-                    rootFolder: formData.get('rootFolder'),
                     createSeparateLibraries: formData.get('createSeparateLibraries') === 'on',
                     libraryPrefix: formData.get('libraryPrefix'),
                     excludeFromMainLibraries: formData.get('excludeFromMainLibraries') === 'on',
                     isEnabled: formData.get('isEnabled') === 'on',
                     syncIntervalHours: parseInt(formData.get('syncIntervalHours')),
                     webhookPort: parseInt(formData.get('webhookPort')),
-                    userId: parseInt(formData.get('userId')),
-                    request4K: formData.get('request4K') === 'on'
+                    userId: parseInt(formData.get('userId'))
                 }};
             
             fetch('/Plugins/JellyseerrBridge/Configuration', {{
