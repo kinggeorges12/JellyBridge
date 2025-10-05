@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
 
 /// <summary>
 /// Plugin configuration.
 /// </summary>
-public class PluginConfiguration
+public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
     /// Gets or sets the Jellyseerr base URL.
@@ -20,22 +21,10 @@ public class PluginConfiguration
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the Jellyseerr email for authentication.
+    /// Gets or sets the library directory.
     /// </summary>
     [Required]
-    public string Email { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the Jellyseerr password for authentication.
-    /// </summary>
-    [Required]
-    public string Password { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the base directory for shows.
-    /// </summary>
-    [Required]
-    public string ShowsDirectory { get; set; } = "/data/Jellyseerr";
+    public string LibraryDirectory { get; set; } = "/data/Jellyseerr";
 
     /// <summary>
     /// Gets or sets the service directories configuration.

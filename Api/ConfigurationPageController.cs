@@ -161,36 +161,24 @@ public class ConfigurationPageController : ControllerBase
         <form id='configForm'>
             <div class='section'>
                 <h3>🔗 Jellyseerr Connection</h3>
-                <div class='form-group'>
-                    <label for='jellyseerrUrl'>Jellyseerr URL:</label>
-                    <input type='text' id='jellyseerrUrl' name='jellyseerrUrl' value='{config.JellyseerrUrl}' placeholder='http://localhost:5055' required>
-                    <div class='help-text'>The base URL of your Jellyseerr instance</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='apiKey'>API Key:</label>
-                    <input type='password' id='apiKey' name='apiKey' value='{config.ApiKey}' placeholder='Your Jellyseerr API key' required>
-                    <div class='help-text'>Your Jellyseerr API key (found in Settings → General)</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='email'>Email:</label>
-                    <input type='text' id='email' name='email' value='{config.Email}' placeholder='your@email.com' required>
-                    <div class='help-text'>Your Jellyseerr login email</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='password'>Password:</label>
-                    <input type='password' id='password' name='password' value='{config.Password}' placeholder='Your Jellyseerr password' required>
-                    <div class='help-text'>Your Jellyseerr login password</div>
-                </div>
+                    <div class='form-group'>
+                        <label for='jellyseerrUrl'>Jellyseerr URL:</label>
+                        <input type='text' id='jellyseerrUrl' name='jellyseerrUrl' value='{config.JellyseerrUrl}' placeholder='http://localhost:5055' required>
+                        <div class='help-text'>The base URL of your Jellyseerr instance</div>
+                    </div>
+                    
+                    <div class='form-group'>
+                        <label for='apiKey'>API Key:</label>
+                        <input type='password' id='apiKey' name='apiKey' value='{config.ApiKey}' placeholder='Your Jellyseerr API key' required>
+                        <div class='help-text'>Your Jellyseerr API key (found in Settings → General)</div>
+                    </div>
             </div>
             
             <div class='section'>
                 <h3>📁 Library Configuration</h3>
                 <div class='form-group'>
-                    <label for='showsDirectory'>Library Directory:</label>
-                    <input type='text' id='showsDirectory' name='showsDirectory' value='{config.ShowsDirectory}' placeholder='/data/Jellyseerr' required>
+                    <label for='libraryDirectory'>Library Directory:</label>
+                    <input type='text' id='libraryDirectory' name='libraryDirectory' value='{config.LibraryDirectory}' placeholder='/data/Jellyseerr' required>
                     <div class='help-text'>Path to Jellyseerr's library directory</div>
                 </div>
                 
@@ -274,24 +262,22 @@ public class ConfigurationPageController : ControllerBase
             saveConfiguration();
         }});
         
-        function saveConfiguration() {{
-            const formData = new FormData(document.getElementById('configForm'));
-            const config = {{
-                jellyseerrUrl: formData.get('jellyseerrUrl'),
-                apiKey: formData.get('apiKey'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                showsDirectory: formData.get('showsDirectory'),
-                rootFolder: formData.get('rootFolder'),
-                createSeparateLibraries: formData.get('createSeparateLibraries') === 'on',
-                libraryPrefix: formData.get('libraryPrefix'),
-                excludeFromMainLibraries: formData.get('excludeFromMainLibraries') === 'on',
-                isEnabled: formData.get('isEnabled') === 'on',
-                syncIntervalHours: parseInt(formData.get('syncIntervalHours')),
-                webhookPort: parseInt(formData.get('webhookPort')),
-                userId: parseInt(formData.get('userId')),
-                request4K: formData.get('request4K') === 'on'
-            }};
+            function saveConfiguration() {{
+                const formData = new FormData(document.getElementById('configForm'));
+                const config = {{
+                    jellyseerrUrl: formData.get('jellyseerrUrl'),
+                    apiKey: formData.get('apiKey'),
+                    libraryDirectory: formData.get('libraryDirectory'),
+                    rootFolder: formData.get('rootFolder'),
+                    createSeparateLibraries: formData.get('createSeparateLibraries') === 'on',
+                    libraryPrefix: formData.get('libraryPrefix'),
+                    excludeFromMainLibraries: formData.get('excludeFromMainLibraries') === 'on',
+                    isEnabled: formData.get('isEnabled') === 'on',
+                    syncIntervalHours: parseInt(formData.get('syncIntervalHours')),
+                    webhookPort: parseInt(formData.get('webhookPort')),
+                    userId: parseInt(formData.get('userId')),
+                    request4K: formData.get('request4K') === 'on'
+                }};
             
             fetch('/Plugins/JellyseerrBridge/Configuration', {{
                 method: 'POST',

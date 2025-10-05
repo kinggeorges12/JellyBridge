@@ -1,6 +1,6 @@
 [
   {
-    "guid": "12345678-1234-1234-1234-123456789012",
+    "guid": "8ecc808c-d6e9-432f-9219-b638fbfb37e6",
     "name": "Jellyseerr Bridge",
     "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
     "owner": "kinggeorges12",
@@ -12,7 +12,7 @@
             "changelog": "Stable release with working configuration interface accessible via direct URL",
             "targetAbi": "10.10.7.0",
             "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.4.zip",
-            "checksum": "PLACEHOLDER_CHECKSUM_V04",
+            "checksum": "C4C0F535C623418BA7D7357783019EA9",
             "timestamp": "2025-01-27T13:00:00",
             "dependencies": []
           },

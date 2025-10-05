@@ -1,296 +1,234 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
-    <title>Jellyseerr Bridge Configuration</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #f5f5f5; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #333; 
-            border-bottom: 2px solid #007bff; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-            color: #555; 
-        }
-        input[type='text'], input[type='password'], input[type='number'], select { 
-            width: 100%; 
-            max-width: 400px; 
-            padding: 8px 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            font-size: 14px; 
-        }
-        input[type='checkbox'] { 
-            margin-right: 8px; 
-        }
-        button { 
-            padding: 10px 20px; 
-            background: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 14px; 
-            margin-right: 10px; 
-        }
-        button:hover { 
-            background: #0056b3; 
-        }
-        .btn-secondary { 
-            background: #6c757d; 
-        }
-        .btn-secondary:hover { 
-            background: #545b62; 
-        }
-        .status { 
-            padding: 10px; 
-            border-radius: 4px; 
-            margin-bottom: 20px; 
-        }
-        .status.success { 
-            background: #d4edda; 
-            color: #155724; 
-            border: 1px solid #c3e6cb; 
-        }
-        .status.error { 
-            background: #f8d7da; 
-            color: #721c24; 
-            border: 1px solid #f5c6cb; 
-        }
-        .section { 
-            margin-bottom: 30px; 
-            padding: 20px; 
-            border: 1px solid #e9ecef; 
-            border-radius: 4px; 
-        }
-        .section h3 { 
-            margin-top: 0; 
-            color: #007bff; 
-        }
-        .help-text { 
-            font-size: 12px; 
-            color: #666; 
-            margin-top: 5px; 
-        }
-    </style>
+    <title>Jellyseerr Bridge</title>
 </head>
 <body>
-    <div class='container'>
-        <h1>🎬 Jellyseerr Bridge Configuration</h1>
-        
-        <div id='status'></div>
-        
-        <form id='configForm'>
-            <div class='section'>
-                <h3>🔗 Jellyseerr Connection</h3>
-                <div class='form-group'>
-                    <label for='jellyseerrUrl'>Jellyseerr URL:</label>
-                    <input type='text' id='jellyseerrUrl' name='jellyseerrUrl' value='{{PluginConfiguration.JellyseerrUrl}}' placeholder='http://localhost:5055' required>
-                    <div class='help-text'>The base URL of your Jellyseerr instance</div>
+<div data-role="page" id="jellyseerrBridgeConfigurationPage" class="page type-interior pluginConfigurationPage fullWidthContent">
+    <div class="content-primary">
+        <div class="verticalSection">
+            <div class="sectionTitleContainer">
+                <h2 class="sectionTitle">Jellyseerr Bridge</h2>
+                <a is="emby-linkbutton" class="raised raised-mini" style="margin-left: 2em;" target="_blank"
+                   href="https://github.com/kinggeorges12/Jellyseerr-Bridge">
+                    <i class="md-icon button-icon button-icon-left secondaryText"></i>
+                    <span>Help</span>
+                </a>
+            </div>
+        </div>
+        <hr class="solid">
+
+        <form class="jellyseerrBridgeConfigurationForm">
+            <div class="verticalSection">
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="jellyseerrUrl">Jellyseerr URL</label>
+                    <input id="jellyseerrUrl" type="text" is="emby-input" class="emby-input" placeholder="http://localhost:5055">
+                    <div class="fieldDescription">The base URL of your Jellyseerr instance</div>
                 </div>
                 
-                <div class='form-group'>
-                    <label for='apiKey'>API Key:</label>
-                    <input type='password' id='apiKey' name='apiKey' value='{{PluginConfiguration.ApiKey}}' placeholder='Your Jellyseerr API key' required>
-                    <div class='help-text'>Your Jellyseerr API key (found in Settings → General)</div>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="apiKey">API Key</label>
+                    <input id="apiKey" type="password" is="emby-input" class="emby-input" placeholder="Your Jellyseerr API key">
+                    <div class="fieldDescription">Your Jellyseerr API key (found in Settings → General)</div>
                 </div>
                 
-                <div class='form-group'>
-                    <label for='email'>Email:</label>
-                    <input type='text' id='email' name='email' value='{{PluginConfiguration.Email}}' placeholder='your@email.com' required>
-                    <div class='help-text'>Your Jellyseerr login email</div>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="libraryDirectory">Library Directory</label>
+                    <input id="libraryDirectory" type="text" is="emby-input" class="emby-input" placeholder="/data/Jellyseerr">
+                    <div class="fieldDescription">Path to Jellyseerr's library directory</div>
                 </div>
                 
-                <div class='form-group'>
-                    <label for='password'>Password:</label>
-                    <input type='password' id='password' name='password' value='{{PluginConfiguration.Password}}' placeholder='Your Jellyseerr password' required>
-                    <div class='help-text'>Your Jellyseerr login password</div>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="rootFolder">Root Folder</label>
+                    <input id="rootFolder" type="text" is="emby-input" class="emby-input" placeholder="/data/Jellyseerr">
+                    <div class="fieldDescription">Root folder for downloads</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="checkboxContainer">
+                        <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                        <span>Create separate libraries for streaming services</span>
+                    </label>
+                    <div class="fieldDescription">Creates dedicated libraries for each streaming service (e.g., 'Streaming - Netflix')</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="libraryPrefix">Library Prefix</label>
+                    <input id="libraryPrefix" type="text" is="emby-input" class="emby-input" placeholder="Streaming - ">
+                    <div class="fieldDescription">Prefix for streaming service libraries</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="checkboxContainer">
+                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                        <span>Exclude placeholder shows from main libraries</span>
+                    </label>
+                    <div class="fieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="checkboxContainer">
+                        <input id="isEnabled" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                        <span>Enable Plugin</span>
+                    </label>
+                    <div class="fieldDescription">Enable or disable the plugin</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="syncIntervalHours">Sync Interval (hours)</label>
+                    <input id="syncIntervalHours" type="number" is="emby-input" class="emby-input" min="1" max="168" placeholder="24">
+                    <div class="fieldDescription">How often to sync shows (1-168 hours)</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="webhookPort">Webhook Port</label>
+                    <input id="webhookPort" type="number" is="emby-input" class="emby-input" min="1024" max="65535" placeholder="5000">
+                    <div class="fieldDescription">Port for webhook events (1024-65535)</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="userId">User ID</label>
+                    <input id="userId" type="number" is="emby-input" class="emby-input" min="1" placeholder="1">
+                    <div class="fieldDescription">Jellyfin user ID for requests</div>
+                </div>
+                
+                <div class="inputContainer">
+                    <label class="checkboxContainer">
+                        <input id="request4K" type="checkbox" is="emby-checkbox" class="emby-checkbox">
+                        <span>Request 4K Content</span>
+                    </label>
+                    <div class="fieldDescription">Request 4K quality content when available</div>
                 </div>
             </div>
             
-            <div class='section'>
-                <h3>📁 Library Configuration</h3>
-                <div class='form-group'>
-                    <label for='showsDirectory'>Library Directory:</label>
-                    <input type='text' id='showsDirectory' name='showsDirectory' value='{{PluginConfiguration.ShowsDirectory}}' placeholder='/data/Jellyseerr' required>
-                    <div class='help-text'>Path to Jellyseerr's library directory</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='rootFolder'>Root Folder:</label>
-                    <input type='text' id='rootFolder' name='rootFolder' value='{{PluginConfiguration.RootFolder}}' placeholder='/data/Jellyseerr' required>
-                    <div class='help-text'>Root folder for downloads</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label>
-                        <input type='checkbox' id='createSeparateLibraries' name='createSeparateLibraries' {{#if PluginConfiguration.CreateSeparateLibraries}}checked{{/if}}>
-                        Create separate libraries for streaming services
-                    </label>
-                    <div class='help-text'>Creates dedicated libraries for each streaming service (e.g., 'Streaming - Netflix')</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='libraryPrefix'>Library Prefix:</label>
-                    <input type='text' id='libraryPrefix' name='libraryPrefix' value='{{PluginConfiguration.LibraryPrefix}}' placeholder='Streaming - '>
-                    <div class='help-text'>Prefix for streaming service libraries</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label>
-                        <input type='checkbox' id='excludeFromMainLibraries' name='excludeFromMainLibraries' {{#if PluginConfiguration.ExcludeFromMainLibraries}}checked{{/if}}>
-                        Exclude placeholder shows from main libraries
-                    </label>
-                    <div class='help-text'>Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
-                </div>
+            <div class="verticalSection">
+                <button id="testConnection" is="emby-button" type="button" class="raised button block">
+                    <span>Test Connection</span>
+                </button>
+                <button id="triggerSync" is="emby-button" type="button" class="raised button block">
+                    <span>Trigger Sync</span>
+                </button>
             </div>
             
-            <div class='section'>
-                <h3>⚙️ Plugin Settings</h3>
-                <div class='form-group'>
-                    <label>
-                        <input type='checkbox' id='isEnabled' name='isEnabled' {{#if PluginConfiguration.IsEnabled}}checked{{/if}}>
-                        Enable Plugin
-                    </label>
-                    <div class='help-text'>Enable or disable the plugin</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='syncIntervalHours'>Sync Interval (hours):</label>
-                    <input type='number' id='syncIntervalHours' name='syncIntervalHours' value='{{PluginConfiguration.SyncIntervalHours}}' min='1' max='168'>
-                    <div class='help-text'>How often to sync shows (1-168 hours)</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='webhookPort'>Webhook Port:</label>
-                    <input type='number' id='webhookPort' name='webhookPort' value='{{PluginConfiguration.WebhookPort}}' min='1024' max='65535'>
-                    <div class='help-text'>Port for webhook events (1024-65535)</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label for='userId'>User ID:</label>
-                    <input type='number' id='userId' name='userId' value='{{PluginConfiguration.UserId}}' min='1'>
-                    <div class='help-text'>Jellyfin user ID for requests</div>
-                </div>
-                
-                <div class='form-group'>
-                    <label>
-                        <input type='checkbox' id='request4K' name='request4K' {{#if PluginConfiguration.Request4K}}checked{{/if}}>
-                        Request 4K Content
-                    </label>
-                    <div class='help-text'>Request 4K quality content when available</div>
-                </div>
-            </div>
-            
-            <div class='form-group'>
-                <button type='submit'>💾 Save Configuration</button>
-                <button type='button' onclick='testConnection()' class='btn-secondary'>🔍 Test Connection</button>
-                <button type='button' onclick='triggerSync()' class='btn-secondary'>🔄 Trigger Sync</button>
+            <div class="verticalSection">
+                <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit block">
+                    <span>Save</span>
+                </button>
             </div>
         </form>
     </div>
     
-    <script>
-        document.getElementById('configForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveConfiguration();
-        });
-        
-        function saveConfiguration() {
-            const formData = new FormData(document.getElementById('configForm'));
-            const config = {
-                jellyseerrUrl: formData.get('jellyseerrUrl'),
-                apiKey: formData.get('apiKey'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                showsDirectory: formData.get('showsDirectory'),
-                rootFolder: formData.get('rootFolder'),
-                createSeparateLibraries: formData.get('createSeparateLibraries') === 'on',
-                libraryPrefix: formData.get('libraryPrefix'),
-                excludeFromMainLibraries: formData.get('excludeFromMainLibraries') === 'on',
-                isEnabled: formData.get('isEnabled') === 'on',
-                syncIntervalHours: parseInt(formData.get('syncIntervalHours')),
-                webhookPort: parseInt(formData.get('webhookPort')),
-                userId: parseInt(formData.get('userId')),
-                request4K: formData.get('request4K') === 'on'
-            };
+    <script type="text/javascript">
+        if (typeof JellyseerrBridgeConfig == 'undefined') {
             
-            fetch('/Plugins/JellyseerrBridge/Configuration', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const JellyseerrBridgeConfig = {
+                pluginId: "8ecc808c-d6e9-432f-9219-b638fbfb37e6",
+                
+                btnSave: document.querySelector("#saveConfig"),
+                btnTestConnection: document.querySelector("#testConnection"),
+                btnTriggerSync: document.querySelector("#triggerSync"),
+
+                saveConfig: function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    
+                    const config = {
+                        JellyseerrUrl: document.querySelector("#jellyseerrUrl").value,
+                        ApiKey: document.querySelector("#apiKey").value,
+                        LibraryDirectory: document.querySelector("#libraryDirectory").value,
+                        RootFolder: document.querySelector("#rootFolder").value,
+                        CreateSeparateLibraries: document.querySelector("#createSeparateLibraries").checked,
+                        LibraryPrefix: document.querySelector("#libraryPrefix").value,
+                        ExcludeFromMainLibraries: document.querySelector("#excludeFromMainLibraries").checked,
+                        IsEnabled: document.querySelector("#isEnabled").checked,
+                        SyncIntervalHours: parseInt(document.querySelector("#syncIntervalHours").value) || 24,
+                        WebhookPort: parseInt(document.querySelector("#webhookPort").value) || 5000,
+                        UserId: parseInt(document.querySelector("#userId").value) || 1,
+                        Request4K: document.querySelector("#request4K").checked
+                    };
+
+                    window.ApiClient.updatePluginConfiguration(JellyseerrBridgeConfig.pluginId, config)
+                        .then(Dashboard.processPluginConfigurationUpdateResult)
+                        .catch(function (error) {
+                            console.error(error);
+                            Dashboard.alert("Error saving configuration: " + error.message);
+                        })
+                        .finally(function () {
+                            Dashboard.hideLoadingMsg();
+                        });
                 },
-                body: JSON.stringify(config)
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus('Configuration saved successfully!', 'success');
-            })
-            .catch(error => {
-                showStatus('Error saving configuration: ' + error.message, 'error');
-            });
-        }
-        
-        function testConnection() {
-            fetch('/Plugins/JellyseerrBridge/TestConnection', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Connection test successful!', 'success');
-                } else {
-                    showStatus('Connection test failed: ' + data.message, 'error');
+                
+                loadConfig: function () {
+                    Dashboard.showLoadingMsg();
+                    window.ApiClient.getPluginConfiguration(JellyseerrBridgeConfig.pluginId)
+                        .then(function (config) {
+                            if (config) {
+                                document.querySelector("#jellyseerrUrl").value = config.JellyseerrUrl || "";
+                                document.querySelector("#apiKey").value = config.ApiKey || "";
+                                document.querySelector("#libraryDirectory").value = config.LibraryDirectory || "/data/Jellyseerr";
+                                document.querySelector("#rootFolder").value = config.RootFolder || "/data/Jellyseerr";
+                                document.querySelector("#createSeparateLibraries").checked = config.CreateSeparateLibraries || false;
+                                document.querySelector("#libraryPrefix").value = config.LibraryPrefix || "Streaming - ";
+                                document.querySelector("#excludeFromMainLibraries").checked = config.ExcludeFromMainLibraries || false;
+                                document.querySelector("#isEnabled").checked = config.IsEnabled || false;
+                                document.querySelector("#syncIntervalHours").value = config.SyncIntervalHours || 24;
+                                document.querySelector("#webhookPort").value = config.WebhookPort || 5000;
+                                document.querySelector("#userId").value = config.UserId || 1;
+                                document.querySelector("#request4K").checked = config.Request4K || false;
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            Dashboard.alert("Error loading configuration: " + error.message);
+                        })
+                        .finally(function () {
+                            Dashboard.hideLoadingMsg();
+                        });
+                },
+                
+                testConnection: function () {
+                    Dashboard.showLoadingMsg();
+                    window.ApiClient.post("/Plugins/JellyseerrBridge/TestConnection")
+                        .then(function (response) {
+                            Dashboard.alert("Connection test successful!");
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            Dashboard.alert("Connection test failed: " + error.message);
+                        })
+                        .finally(function () {
+                            Dashboard.hideLoadingMsg();
+                        });
+                },
+                
+                triggerSync: function () {
+                    Dashboard.showLoadingMsg();
+                    window.ApiClient.post("/Plugins/JellyseerrBridge/Sync")
+                        .then(function (response) {
+                            Dashboard.alert("Sync triggered successfully!");
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            Dashboard.alert("Sync failed: " + error.message);
+                        })
+                        .finally(function () {
+                            Dashboard.hideLoadingMsg();
+                        });
+                },
+                
+                init: function () {
+                    JellyseerrBridgeConfig.btnSave.addEventListener("click", JellyseerrBridgeConfig.saveConfig);
+                    JellyseerrBridgeConfig.btnTestConnection.addEventListener("click", JellyseerrBridgeConfig.testConnection);
+                    JellyseerrBridgeConfig.btnTriggerSync.addEventListener("click", JellyseerrBridgeConfig.triggerSync);
+                    JellyseerrBridgeConfig.loadConfig();
                 }
-            })
-            .catch(error => {
-                showStatus('Error testing connection: ' + error.message, 'error');
+            }
+
+            document.querySelector('#jellyseerrBridgeConfigurationPage').addEventListener("pageshow", function () {
+                JellyseerrBridgeConfig.init();
             });
-        }
-        
-        function triggerSync() {
-            fetch('/Plugins/JellyseerrBridge/Sync', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Sync triggered successfully!', 'success');
-                } else {
-                    showStatus('Sync failed: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showStatus('Error triggering sync: ' + error.message, 'error');
-            });
-        }
-        
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerHTML = '<div class="status ' + type + '">' + message + '</div>';
-            setTimeout(() => {
-                statusDiv.innerHTML = '';
-            }, 5000);
         }
     </script>
+</div>
 </body>
 </html>
