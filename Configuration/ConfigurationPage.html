@@ -40,18 +40,26 @@
                 
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
-                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" />
-                        <span>Exclude placeholder shows from main libraries</span>
+                        <input id="excludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox">
+                        <span class="checkboxLabel">Exclude placeholder shows from main libraries</span>
+                        <span class="checkboxOutline">
+                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                        </span>
                     </label>
-                    <div class="fieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
+                    <div class="fieldDescription checkboxFieldDescription">Prevents placeholder shows from appearing in your main Jellyfin libraries</div>
                 </div>
                 
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
-                        <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" />
-                        <span>Create separate libraries for streaming services</span>
+                        <input id="createSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox">
+                        <span class="checkboxLabel">Create separate libraries for streaming services</span>
+                        <span class="checkboxOutline">
+                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                        </span>
                     </label>
-                    <div class="fieldDescription">Creates dedicated libraries for each streaming service (e.g., 'Streaming - Netflix')</div>
+                    <div class="fieldDescription checkboxFieldDescription">Creates dedicated libraries for each streaming service (e.g., 'Streaming - Netflix')</div>
                 </div>
                 
                 <div class="inputContainer">
@@ -62,10 +70,14 @@
                 
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
-                        <input id="isEnabled" type="checkbox" is="emby-checkbox" />
-                        <span>Enable Plugin</span>
+                        <input id="isEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox">
+                        <span class="checkboxLabel">Enable Plugin</span>
+                        <span class="checkboxOutline">
+                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                        </span>
                     </label>
-                    <div class="fieldDescription">Enable or disable the plugin</div>
+                    <div class="fieldDescription checkboxFieldDescription">Enable or disable the plugin</div>
                 </div>
                 
                 <div class="inputContainer">
@@ -89,16 +101,16 @@
             
             <div class="verticalSection">
                 <button id="testConnection" is="emby-button" type="button" class="emby-button raised button-submit" style="margin-right: 10px;">
-                    <span>🔍 Test Connection</span>
+                    Test Connection
                 </button>
                 <button id="triggerSync" is="emby-button" type="button" class="emby-button raised button-submit">
-                    <span>🔄 Trigger Sync</span>
+                    Trigger Sync
                 </button>
             </div>
             
             <div class="verticalSection">
-                <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit">
-                    <span>💾 Save Configuration</span>
+                <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit" style="width: 100%;">
+                    Save Configuration
                 </button>
             </div>
         </form>
