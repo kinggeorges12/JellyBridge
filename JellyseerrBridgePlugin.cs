@@ -21,22 +21,25 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         
         public static JellyseerrBridgePlugin Instance { get; private set; } = null!;
         
-        public JellyseerrBridgePlugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer) 
+        public JellyseerrBridgePlugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory) 
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
+            var logger = loggerFactory.CreateLogger<JellyseerrBridgePlugin>();
+            logger.LogInformation("Jellyseerr Bridge Plugin v{Version} initialized successfully", Version);
         }
 
-            public IEnumerable<PluginPageInfo> GetPages()
-            {
-                string? prefix = GetType().Namespace;
+        public IEnumerable<PluginPageInfo> GetPages()
+        {
+            string? prefix = GetType().Namespace;
 
-                yield return new PluginPageInfo
-                {
-                    Name = Name,
-                    EmbeddedResourcePath = $"{prefix}.Configuration.ConfigurationPage.html"
-                };
-            }
+            yield return new PluginPageInfo
+            {
+                Name = Name,
+                EmbeddedResourcePath = $"{prefix}.Configuration.ConfigurationPage.html"
+            };
+        }
+
     }
 
     public class JellyseerrBridgeServiceRegistrator
@@ -50,6 +53,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             serviceCollection.AddScoped<ShowSyncService>();
             serviceCollection.AddScoped<WebhookHandlerService>();
             serviceCollection.AddScoped<ShowSyncTask>();
+            
+            // Register API controllers
+            serviceCollection.AddScoped<ConfigurationController>();
+            serviceCollection.AddScoped<ConfigurationPageController>();
+            serviceCollection.AddScoped<WebhookController>();
+            serviceCollection.AddScoped<LibraryController>();
         }
     }
 }
