@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.29.0.0",
+        "changelog": "RESTRUCTURED TO MATCH CUSTOM TABS - Reorganized project structure to match working Custom Tabs plugin: proper src folder, Plugin.cs class name, correct embedded resource path, and v0.5 working GUID. This should finally install properly.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.29.zip",
+        "checksum": "6BB44DB51C5A0A34DB46ACF7989380B9",
+        "timestamp": "2025-10-06T10:33:07",
+        "dependencies": []
+      },
+      {
         "version": "0.28.0.0",
         "changelog": "MINIMAL BASIC CONFIG - Stripped down to absolute basics: only plugin class, basic configuration (URL, API key, library directory, user ID), and simple settings page. Removed all services, controllers, and complex features to ensure it installs and loads.",
         "targetAbi": "10.10.7.0",
