@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Jellyseerr Bridge v0.37 - FIXED TEST CONNECTION</title>
+    <title>Jellyseerr Bridge v0.38 - FIXED CONTROLLER REGISTRATION</title>
 </head>
 <body>
     <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
@@ -22,7 +22,7 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused">Jellyseerr URL</label>
-                            <input id="JellyseerrUrl" type="text" is="emby-input" value="http://localhost:5055" />
+                            <input id="JellyseerrUrl" type="url" is="emby-input" value="http://localhost:5055" autocomplete="url" />
                             <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://localhost:5055)</div>
                         </div>
 
@@ -34,13 +34,13 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused">Library Directory</label>
-                            <input id="LibraryDirectory" type="text" is="emby-input" value="/data/Jellyseerr" />
+                            <input id="LibraryDirectory" type="text" is="emby-input" value="/data/Jellyseerr" autocomplete="off" />
                             <div class="fieldDescription">Directory path for Jellyseerr library files</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused">User ID</label>
-                            <input id="UserId" type="number" is="emby-input" min="1" value="1" />
+                            <input id="UserId" type="number" is="emby-input" min="1" value="1" autocomplete="off" />
                             <div class="fieldDescription">Jellyseerr user ID for requests</div>
                         </div>
 
@@ -54,7 +54,7 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused">Sync Interval (Hours)</label>
-                            <input id="SyncIntervalHours" type="number" is="emby-input" min="1" value="24" />
+                            <input id="SyncIntervalHours" type="number" is="emby-input" min="1" value="24" autocomplete="off" />
                             <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
                         </div>
 
@@ -76,13 +76,13 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused">Library Prefix</label>
-                            <input id="LibraryPrefix" type="text" is="emby-input" value="Streaming - " />
+                            <input id="LibraryPrefix" type="text" is="emby-input" value="Streaming - " autocomplete="off" />
                             <div class="fieldDescription">Prefix for streaming service library names</div>
                         </div>
                     </fieldset>
 
                     <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit block" style="width: 100%;">
-                        <span>Save Configuration</span>
+                        <span>Save</span>
                     </button>
                 </form>
             </div>
@@ -114,7 +114,9 @@
                     };
 
                     window.ApiClient.updatePluginConfiguration(JellyseerrConfig.pluginId, config)
-                        .then(Dashboard.processPluginConfigurationUpdateResult)
+                        .then(function(response) {
+                            Dashboard.processPluginConfigurationUpdateResult(response);
+                        })
                         .catch(function (error) {
                             console.error('Configuration save error:', error);
                             Dashboard.alert('❌ Failed to save configuration: ' + error.message);
