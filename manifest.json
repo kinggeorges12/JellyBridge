@@ -9,12 +9,12 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "version": "0.22.0.0",
-        "changelog": "FRESH START with new GUID 088e8efc-6855-42ec-bcc9-24fde6da7149. Version 0.22.0.0. This will appear as a completely new plugin to Jellyfin, bypassing all caching issues.",
+        "version": "0.23.0.0",
+        "changelog": "PROPER GUID RELEASE - Using Microsoft-generated GUID 088e8efc-6855-42ec-bcc9-24fde6da7149. Version 0.23.0.0. This ensures Jellyfin recognizes it as a completely new plugin with proper GUID format.",
         "targetAbi": "10.10.7.0",
-        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.22.zip",
-        "checksum": "7743140528CA4A3B33B4548B5894F6E8",
-        "timestamp": "2025-01-28T00:30:00",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.23.zip",
+        "checksum": "EC8FD2B96AEE83AB9DB35BF151810AF6",
+        "timestamp": "2025-01-28T00:45:00",
         "dependencies": []
       },
       {
