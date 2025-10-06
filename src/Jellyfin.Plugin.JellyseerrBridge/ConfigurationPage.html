@@ -120,22 +120,15 @@
                         LibraryPrefix: document.querySelector("#LibraryPrefix").value
                     };
 
-                    ApiClient.ajax({
-                        url: ApiClient.getUrl('Plugins/Configuration', { key: JellyseerrConfig.pluginId }),
-                        type: 'POST',
-                        data: JSON.stringify(config),
-                        contentType: 'application/json'
-                    }).then(function(response) {
-                        Dashboard.processPluginConfigurationUpdateResult(response);
-                        Dashboard.alert('✅ Configuration saved successfully!');
-                    })
-                      .catch(function (error) {
-                          console.error('Configuration save error:', error);
-                          Dashboard.alert('❌ Failed to save configuration: ' + error.message);
-                      })
-                      .finally(function () {
-                          Dashboard.hideLoadingMsg();
-                      });
+                    window.ApiClient.updatePluginConfiguration(JellyseerrConfig.pluginId, config)
+                        .then(Dashboard.processPluginConfigurationUpdateResult)
+                        .catch(function (error) {
+                            console.error('Configuration save error:', error);
+                            Dashboard.alert('❌ Failed to save configuration: ' + error.message);
+                        })
+                        .finally(function () {
+                            Dashboard.hideLoadingMsg();
+                        });
                 },
 
                 testConnection: function () {
