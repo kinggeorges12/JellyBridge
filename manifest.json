@@ -13,7 +13,7 @@
         "changelog": "MINIMAL BASIC CONFIG - Stripped down to absolute basics: only plugin class, basic configuration (URL, API key, library directory, user ID), and simple settings page. Removed all services, controllers, and complex features to ensure it installs and loads.",
         "targetAbi": "10.10.7.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.28.zip",
-        "checksum": "092F888D284069ACBD246B8D0D6D702C",
+        "checksum": "86887295BC8B1BA83C2223BE56559426",
         "timestamp": "2025-10-06T09:44:06",
         "dependencies": []
       },
