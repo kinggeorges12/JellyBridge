@@ -41,7 +41,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 EmbeddedResourcePath = $"{prefix}.Configuration.ConfigurationPage.html"
             };
         }
-
     }
 
     public class JellyseerrBridgeServiceRegistrator
