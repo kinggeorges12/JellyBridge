@@ -372,3 +372,6 @@ release/*.zip
 
 # Configuration files with sensitive data
 nuget.config
+
+# Codebase directory with reference materials
+codebase/

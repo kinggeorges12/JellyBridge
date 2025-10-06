@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Jellyfin.Plugin.JellyseerrBridge.Api
 {
     [ApiController]
-    [Route("Plugins/JellyseerrBridge")]
+    [Route("JellyseerrBridge")]
     public class ConfigurationController : ControllerBase
     {
         private readonly ILogger<ConfigurationController> _logger;
