@@ -1,6 +1,7 @@
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JellyseerrBridge
 {
@@ -12,8 +13,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
-            // Register any services needed by the plugin here
-            // For now, we don't need any additional services
+            // Register logging services for the plugin
+            serviceCollection.AddLogging();
+            
+            // Register any other services needed by the plugin here
         }
     }
 }

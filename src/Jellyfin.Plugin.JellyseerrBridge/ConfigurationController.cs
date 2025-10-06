@@ -15,6 +15,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
         public ConfigurationController(ILogger<ConfigurationController> logger)
         {
             _logger = logger;
+            _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
         [HttpPost("TestConnection")]
