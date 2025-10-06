@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Jellyseerr Bridge v0.42 - Configuration</title>
+    <title>Jellyseerr Bridge v0.43 - Configuration</title>
 </head>
 <body>
     <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
@@ -50,10 +50,6 @@
                             <input id="UserId" type="number" is="emby-input" min="1" value="1" autocomplete="off" />
                             <div class="fieldDescription">Jellyseerr user ID for requests</div>
                         </div>
-
-                        <button id="testConnection" is="emby-button" type="button" class="emby-button raised block" style="width: 100%; margin-bottom: 1em;">
-                            <span>Test Connection</span>
-                        </button>
                     </fieldset>
 
                     <fieldset class="verticalSection-extrabottompadding">
@@ -88,6 +84,10 @@
                         </div>
                     </fieldset>
 
+                    <button id="testConnection" is="emby-button" type="button" class="emby-button raised block" style="width: 100%; margin-bottom: 1em;">
+                        <span>Test Connection</span>
+                    </button>
+
                     <button id="saveConfig" is="emby-button" type="submit" class="emby-button raised button-submit block" style="width: 100%;">
                         <span>Save</span>
                     </button>
@@ -121,9 +121,13 @@
                     };
 
                     window.ApiClient.updatePluginConfiguration(JellyseerrConfig.pluginId, config)
-                        .then(Dashboard.processPluginConfigurationUpdateResult)
+                        .then(function(result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                            Dashboard.alert('Settings saved successfully!');
+                        })
                         .catch(function (error) {
                             console.error('Save configuration error:', error);
+                            Dashboard.alert('Error saving settings: ' + error.message);
                         })
                         .finally(function () {
                             Dashboard.hideLoadingMsg();
@@ -137,7 +141,7 @@
                     const apiKey = document.querySelector("#ApiKey").value;
                     
                     if (!url) {
-                        console.log('Please enter a Jellyseerr URL first');
+                        Dashboard.alert('Please enter a Jellyseerr URL first');
                         Dashboard.hideLoadingMsg();
                         return;
                     }
@@ -147,21 +151,21 @@
                         ApiKey: apiKey
                     };
 
-                        window.ApiClient.fetch({
-                            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+                    window.ApiClient.fetch({
+                        url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
                         method: 'POST',
                         data: JSON.stringify(testData),
                         contentType: 'application/json'
                     }).then(function (response) {
                         console.log('Test connection response:', response);
                         if (response.success) {
-                            console.log('✅ ' + response.message);
+                            Dashboard.alert('✅ ' + response.message);
                         } else {
-                            console.log('❌ ' + response.message);
+                            Dashboard.alert('❌ ' + response.message);
                         }
                     }).catch(function (error) {
                         console.error('Connection test error:', error);
-                        console.log('❌ Connection test failed: ' + error.message);
+                        Dashboard.alert('❌ Connection test failed: ' + error.message);
                     }).finally(function () {
                         Dashboard.hideLoadingMsg();
                     });

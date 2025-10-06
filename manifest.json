@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.43.0.0",
+        "changelog": "v0.43 - FIXED CONFIG PAGE BUTTONS: Fixed duplicate button IDs causing DOM warnings. Added proper visual feedback for Save and Test Connection buttons. Save button now shows 'Settings saved successfully!' notification. Test Connection button now shows success/error alerts instead of console-only output. Moved Test Connection button outside fieldset to prevent duplicate IDs.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.43/JellyseerrBridge-0.43-DLL.zip",
+        "checksum": "0ad7d47fbc34c084cedc68808de3c4cb",
+        "timestamp": "2025-10-06T21:04:44.528Z",
+        "dependencies": []
+      },
+      {
         "version": "0.42.0.0",
         "changelog": "v0.42 - VERSION INCREMENT: Incremented version numbers in all project files. Fixed constructor issues and removed problematic interfaces. Plugin should now load properly without malfunction status. Removed copyright. Fixed GUID mismatch. Added JellyfinVersion attribute. Removed image from config page. Updated plugin structure based on intro-skipper patterns. Added PluginServiceRegistrator. Simplified API routes.",
         "targetAbi": "10.10.7.0",
