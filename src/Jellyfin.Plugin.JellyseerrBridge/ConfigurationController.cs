@@ -11,12 +11,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
     public class ConfigurationController : ControllerBase
     {
         private readonly ILogger<ConfigurationController> _logger;
-        private readonly HttpClient _httpClient;
 
-        public ConfigurationController(ILogger<ConfigurationController> logger, IHttpClientFactory httpClientFactory)
+        public ConfigurationController(ILogger<ConfigurationController> logger)
         {
             _logger = logger;
-            _httpClient = httpClientFactory.CreateClient();
         }
 
         [HttpPost("TestConnection")]
@@ -35,7 +33,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
                 var statusUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/status";
                 _logger.LogInformation("Testing status endpoint: {StatusUrl}", statusUrl);
 
-                var statusResponse = await _httpClient.GetAsync(statusUrl);
+                using var httpClient = new HttpClient();
+                var statusResponse = await httpClient.GetAsync(statusUrl);
                 
                 if (!statusResponse.IsSuccessStatusCode)
                 {
@@ -54,7 +53,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
                     var requestMessage = new HttpRequestMessage(HttpMethod.Get, userUrl);
                     requestMessage.Headers.Add("X-Api-Key", request.ApiKey);
 
-                    var userResponse = await _httpClient.SendAsync(requestMessage);
+                    var userResponse = await httpClient.SendAsync(requestMessage);
                     
                     if (!userResponse.IsSuccessStatusCode)
                     {
