@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Jellyseerr Bridge v0.32 - ENHANCED CONFIGURATION</title>
+    <title>Jellyseerr Bridge v0.33 - FIXED BUTTONS AND DEFAULTS</title>
 </head>
 <body>
     <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
@@ -125,10 +125,13 @@
                         type: 'POST',
                         data: JSON.stringify(config),
                         contentType: 'application/json'
-                    }).then(Dashboard.processPluginConfigurationUpdateResult)
+                    }).then(function(response) {
+                        Dashboard.processPluginConfigurationUpdateResult(response);
+                        Dashboard.alert('✅ Configuration saved successfully!');
+                    })
                       .catch(function (error) {
                           console.error('Configuration save error:', error);
-                          Dashboard.alert('Failed to save configuration: ' + error.message);
+                          Dashboard.alert('❌ Failed to save configuration: ' + error.message);
                       })
                       .finally(function () {
                           Dashboard.hideLoadingMsg();
@@ -191,14 +194,40 @@
                         document.querySelector("#LibraryPrefix").value = config.LibraryPrefix || 'Streaming - ';
                     }).catch(function (error) {
                         console.error('Configuration load error:', error);
+                        // Set defaults if config load fails
+                        document.querySelector("#IsEnabled").checked = true;
+                        document.querySelector("#JellyseerrUrl").value = 'http://localhost:5055';
+                        document.querySelector("#ApiKey").value = '';
+                        document.querySelector("#LibraryDirectory").value = '/data/Jellyseerr';
+                        document.querySelector("#UserId").value = 1;
+                        document.querySelector("#SyncIntervalHours").value = 24;
+                        document.querySelector("#WebhookPort").value = 5000;
+                        document.querySelector("#ExcludeFromMainLibraries").checked = true;
+                        document.querySelector("#CreateSeparateLibraries").checked = false;
+                        document.querySelector("#LibraryPrefix").value = 'Streaming - ';
                     }).finally(function () {
                         Dashboard.hideLoadingMsg();
                     });
                 },
 
                 init: function () {
+                    // Set defaults first
+                    document.querySelector("#IsEnabled").checked = true;
+                    document.querySelector("#JellyseerrUrl").value = 'http://localhost:5055';
+                    document.querySelector("#ApiKey").value = '';
+                    document.querySelector("#LibraryDirectory").value = '/data/Jellyseerr';
+                    document.querySelector("#UserId").value = 1;
+                    document.querySelector("#SyncIntervalHours").value = 24;
+                    document.querySelector("#WebhookPort").value = 5000;
+                    document.querySelector("#ExcludeFromMainLibraries").checked = true;
+                    document.querySelector("#CreateSeparateLibraries").checked = false;
+                    document.querySelector("#LibraryPrefix").value = 'Streaming - ';
+
+                    // Add event listeners
                     JellyseerrConfig.btnSave.addEventListener("click", JellyseerrConfig.saveConfig);
                     JellyseerrConfig.btnTest.addEventListener("click", JellyseerrConfig.testConnection);
+                    
+                    // Load saved config (will override defaults if config exists)
                     JellyseerrConfig.loadConfig();
                 }
             };
