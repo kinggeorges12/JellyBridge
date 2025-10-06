@@ -9,12 +9,12 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "version": "0.44.0.0",
-        "changelog": "v0.44 - COMPREHENSIVE LOGGING: Added detailed logging throughout the plugin for debugging and monitoring. Backend logging includes plugin initialization, configuration updates, and test connection details with request/response information. Frontend logging tracks all user interactions including button clicks, form submissions, and API responses. All log messages are prefixed with [JellyseerrBridge] for easy filtering in Jellyfin logs.",
+        "version": "0.45.0.0",
+        "changelog": "v0.45 - SIMPLIFIED FRONTEND: Removed complex JavaScript object structure and console.log statements that don't work in Jellyfin. Implemented proper Jellyfin frontend patterns using Dashboard.showLoadingMsg(), Dashboard.hideLoadingMsg(), and Dashboard.alert() for user feedback. Used DOMContentLoaded event and direct event listeners following intro-skipper plugin patterns. Configuration page buttons should now work correctly with proper visual feedback.",
         "targetAbi": "10.10.7.0",
-        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.44/JellyseerrBridge-0.44-DLL.zip",
-        "checksum": "be7c54d6945b480899ae074db7a3c87a",
-        "timestamp": "2025-10-06T21:10:01.901Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.45/JellyseerrBridge-0.45-DLL.zip",
+        "checksum": "0a2870044c40bb60c7fda12a504a8389",
+        "timestamp": "2025-10-06T22:48:12.108Z",
         "dependencies": []
       },
       {
