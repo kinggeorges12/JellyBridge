@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.31.0.0",
+        "changelog": "CORRECTED GUID AND DLL STRUCTURE - Fixed GUID mismatch between manifest and plugin class. Both now use the working v0.5 GUID: 8ecc808c-d6e9-432f-9219-b638fbfb37e6. This ZIP contains the compiled DLL files that Jellyfin expects.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.31/JellyseerrBridge-0.31-DLL.zip",
+        "checksum": "F51B083D7B5A177CFCA1A15EE646A887",
+        "timestamp": "2025-10-06T12:20:55",
+        "dependencies": []
+      },
+      {
         "version": "0.30.0.0",
         "changelog": "PROPER CUSTOM TABS STRUCTURE - Fixed project structure to exactly match Custom Tabs: moved .csproj and Properties folder into src/Jellyfin.Plugin.JellyseerrBridge/. This is the correct structure that Custom Tabs uses.",
         "targetAbi": "10.10.7.0",
