@@ -14,9 +14,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     public class JellyseerrBridgePlugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, IHasWebPages
     {
         public override Guid Id => new Guid("088e8efc-6855-42ec-bcc9-24fde6da7149");
-        public override string Name => "Jellyseerr Bridge v0.23";
+        public override string Name => "Jellyseerr Bridge v0.24";
         
-        public new string Version => "0.23.0.0";
+        public new string Version => "0.24.0.0";
         
         public string? Image => null;
         
