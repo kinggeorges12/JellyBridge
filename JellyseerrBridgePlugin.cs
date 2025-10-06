@@ -13,10 +13,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge
 {
     public class JellyseerrBridgePlugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, IHasWebPages
     {
-        public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
-        public override string Name => "Jellyseerr Bridge v0.21";
+        public override Guid Id => new Guid("9fdd909d-e7fa-543g-a032-c749gcfc48f7");
+        public override string Name => "Jellyseerr Bridge v0.22";
         
-        public new string Version => "0.21.0.0";
+        public new string Version => "0.22.0.0";
         
         public string? Image => null;
         
