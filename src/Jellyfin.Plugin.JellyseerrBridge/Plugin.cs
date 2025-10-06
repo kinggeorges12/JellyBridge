@@ -38,7 +38,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         public void RegisterServices(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddScoped<ConfigurationController>();
             serviceCollection.AddHttpClient();
         }
     }

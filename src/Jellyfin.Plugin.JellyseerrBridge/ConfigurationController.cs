@@ -13,10 +13,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
         private readonly ILogger<ConfigurationController> _logger;
         private readonly HttpClient _httpClient;
 
-        public ConfigurationController(ILogger<ConfigurationController> logger, HttpClient httpClient)
+        public ConfigurationController(ILogger<ConfigurationController> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient();
         }
 
         [HttpPost("TestConnection")]
