@@ -7,12 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Version>0.25.0.0</Version>
+    <Version>0.26.0.0</Version>
     <AssemblyName>JellyseerrBridge</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.JellyseerrBridge</RootNamespace>
     
     <!-- NuGet Package Properties -->
     <PackageId>JellyseerrBridge.Plugin</PackageId>
+    <Version>0.26.0</Version>
     <Authors>kinggeorges12</Authors>
     <Company>kinggeorges12</Company>
     <Description>Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests</Description>
@@ -42,7 +43,6 @@
 
       <ItemGroup>
         <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
-        <EmbeddedResource Include="manifest.json" />
         <None Include="README.md" Pack="true" PackagePath="\" />
       </ItemGroup>
 
