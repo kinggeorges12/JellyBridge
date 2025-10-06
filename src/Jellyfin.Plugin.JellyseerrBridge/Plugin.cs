@@ -1,5 +1,7 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using Jellyfin.Plugin.JellyseerrBridge.Api;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Common.Configuration;
@@ -29,6 +31,15 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 Name = Name,
                 EmbeddedResourcePath = $"{prefix}.ConfigurationPage.html"
             };
+        }
+    }
+
+    public class JellyseerrBridgeServiceRegistrator
+    {
+        public void RegisterServices(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddScoped<ConfigurationController>();
+            serviceCollection.AddHttpClient();
         }
     }
 }
