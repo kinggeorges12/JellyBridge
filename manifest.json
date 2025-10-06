@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.49.0.0",
+        "changelog": "v0.49 - FIXED CONFIGURATION PAGE FUNCTIONALITY: Completely rewrote configuration page JavaScript to match file transformation plugin pattern. Fixed save button to use click event listener instead of form submit. Fixed test connection button to use Dashboard.alert() popup for user feedback. Changed page ID to 'jellyseerrBridgeConfigurationPage' and implemented proper JellyseerrBridgeConfig object pattern. Save button should now show 'Settings saved.' notification and test connection should show success/error popups.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.49/JellyseerrBridge-0.49-DLL.zip",
+        "checksum": "9dcda8850eb19d633a448fb3afc182d3",
+        "timestamp": "2025-10-06T23:52:12.716Z",
+        "dependencies": []
+      },
+      {
         "version": "0.48.0.0",
         "changelog": "v0.48 - FIXED CONFIGURATION PAGE: Comprehensive fixes based on analysis of all working Jellyfin plugins. Added missing 'configPage' class, fixed form selector to use '.configForm', implemented proper 'pageshow' event listener on '.configPage', added input event dispatching for proper form validation, and corrected loading states. Configuration page should now properly notify Jellyfin app and buttons should work correctly with 'Settings saved.' notifications.",
         "targetAbi": "10.10.7.0",
