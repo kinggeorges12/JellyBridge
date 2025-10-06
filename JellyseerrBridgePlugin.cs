@@ -1,8 +1,4 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
-using Jellyfin.Plugin.JellyseerrBridge.Services;
-using Jellyfin.Plugin.JellyseerrBridge.Tasks;
-using Jellyfin.Plugin.JellyseerrBridge.Api;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -38,26 +34,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 Name = Name,
                 EmbeddedResourcePath = $"{prefix}.Configuration.ConfigurationPage.html"
             };
-        }
-    }
-
-    public class JellyseerrBridgeServiceRegistrator
-    {
-        public void RegisterServices(IServiceCollection serviceCollection)
-        {
-            serviceCollection.AddScoped<ConfigurationService>();
-            serviceCollection.AddScoped<JellyseerrApiService>();
-            serviceCollection.AddScoped<LibraryManagementService>();
-            serviceCollection.AddScoped<LibraryFilterService>();
-            serviceCollection.AddScoped<ShowSyncService>();
-            serviceCollection.AddScoped<WebhookHandlerService>();
-            serviceCollection.AddScoped<ShowSyncTask>();
-            
-            // Register API controllers
-            serviceCollection.AddScoped<ConfigurationController>();
-            serviceCollection.AddScoped<ConfigurationPageController>();
-            serviceCollection.AddScoped<WebhookController>();
-            serviceCollection.AddScoped<LibraryController>();
         }
     }
 }
