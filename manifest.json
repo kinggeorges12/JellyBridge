@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.39.0.0",
+        "changelog": "FIXED MALFUNCTION - Fixed plugin malfunction by removing IPluginServiceRegistrator interface that does not exist in Jellyfin 10.10.7. Simplified ConfigurationController to use direct HttpClient instead of dependency injection to avoid runtime errors.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.39/JellyseerrBridge-0.39-DLL.zip",
+        "checksum": "4EA304F0FF8035E4D52D3D7B13215A5A",
+        "timestamp": "2025-10-06T19:30:23",
+        "dependencies": []
+      },
+      {
         "version": "0.38.0.0",
         "changelog": "FIXED CONTROLLER REGISTRATION - Fixed controller registration by implementing IPluginServiceRegistrator to properly register ConfigurationController with Jellyfin's API system. Changed save button text to 'Save', added proper autocomplete attributes to all form fields, and ensured Dashboard.processPluginConfigurationUpdateResult receives proper response format for success notifications.",
         "targetAbi": "10.10.7.0",
