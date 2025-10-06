@@ -42,11 +42,6 @@ public class PluginConfiguration : BasePluginConfiguration
     public int SyncIntervalHours { get; set; } = 24;
 
     /// <summary>
-    /// Gets or sets the webhook port.
-    /// </summary>
-    public int WebhookPort { get; set; } = 5000;
-
-    /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.
     /// </summary>
     public bool CreateSeparateLibraries { get; set; } = false;
