@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Version>0.24.0.0</Version>
+    <Version>0.25.0.0</Version>
     <AssemblyName>JellyseerrBridge</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.JellyseerrBridge</RootNamespace>
     
@@ -42,6 +42,7 @@
 
       <ItemGroup>
         <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
+        <EmbeddedResource Include="manifest.json" />
         <None Include="README.md" Pack="true" PackagePath="\" />
       </ItemGroup>
 
