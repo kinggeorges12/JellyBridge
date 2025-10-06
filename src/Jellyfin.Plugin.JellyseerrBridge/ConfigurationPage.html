@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Jellyseerr Bridge v0.38 - FIXED CONTROLLER REGISTRATION</title>
+    <title>Jellyseerr Bridge v0.42 - Configuration</title>
 </head>
 <body>
     <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer">
+                        <h2 class="sectionTitle">Jellyseerr Bridge</h2>
+                    </div>
+                </div>
+                <hr class="solid">
+                
                 <form id="JellyseerrConfigForm">
                     <fieldset class="verticalSection-extrabottompadding">
                         <legend>Basic Configuration</legend>
@@ -100,26 +107,23 @@
                 saveConfig: function (e) {
                     e.preventDefault();
                     Dashboard.showLoadingMsg();
-
+                    
                     const config = {
                         IsEnabled: document.querySelector("#IsEnabled").checked,
                         JellyseerrUrl: document.querySelector("#JellyseerrUrl").value,
                         ApiKey: document.querySelector("#ApiKey").value,
                         LibraryDirectory: document.querySelector("#LibraryDirectory").value,
-                        UserId: parseInt(document.querySelector("#UserId").value) || 1,
-                        SyncIntervalHours: parseInt(document.querySelector("#SyncIntervalHours").value) || 24,
+                        UserId: parseInt(document.querySelector("#UserId").value),
+                        SyncIntervalHours: parseInt(document.querySelector("#SyncIntervalHours").value),
                         ExcludeFromMainLibraries: document.querySelector("#ExcludeFromMainLibraries").checked,
                         CreateSeparateLibraries: document.querySelector("#CreateSeparateLibraries").checked,
                         LibraryPrefix: document.querySelector("#LibraryPrefix").value
                     };
 
                     window.ApiClient.updatePluginConfiguration(JellyseerrConfig.pluginId, config)
-                        .then(function(response) {
-                            Dashboard.processPluginConfigurationUpdateResult(response);
-                        })
+                        .then(Dashboard.processPluginConfigurationUpdateResult)
                         .catch(function (error) {
-                            console.error('Configuration save error:', error);
-                            Dashboard.alert('❌ Failed to save configuration: ' + error.message);
+                            console.error('Save configuration error:', error);
                         })
                         .finally(function () {
                             Dashboard.hideLoadingMsg();
@@ -133,31 +137,31 @@
                     const apiKey = document.querySelector("#ApiKey").value;
                     
                     if (!url) {
-                        Dashboard.alert('Please enter a Jellyseerr URL first');
+                        console.log('Please enter a Jellyseerr URL first');
                         Dashboard.hideLoadingMsg();
                         return;
                     }
 
-                    // Use backend API for proper connection testing
                     const testData = {
                         JellyseerrUrl: url,
                         ApiKey: apiKey
                     };
 
-                    ApiClient.ajax({
-                        url: ApiClient.getUrl('Plugins/JellyseerrBridge/TestConnection'),
-                        type: 'POST',
+                        window.ApiClient.fetch({
+                            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+                        method: 'POST',
                         data: JSON.stringify(testData),
                         contentType: 'application/json'
                     }).then(function (response) {
+                        console.log('Test connection response:', response);
                         if (response.success) {
-                            Dashboard.alert('✅ ' + response.message);
+                            console.log('✅ ' + response.message);
                         } else {
-                            Dashboard.alert('❌ ' + response.message);
+                            console.log('❌ ' + response.message);
                         }
                     }).catch(function (error) {
                         console.error('Connection test error:', error);
-                        Dashboard.alert('❌ Connection test failed: ' + error.message);
+                        console.log('❌ Connection test failed: ' + error.message);
                     }).finally(function () {
                         Dashboard.hideLoadingMsg();
                     });
@@ -166,10 +170,8 @@
                 loadConfig: function () {
                     Dashboard.showLoadingMsg();
 
-                    ApiClient.ajax({
-                        url: ApiClient.getUrl('Plugins/Configuration', { key: JellyseerrConfig.pluginId }),
-                        type: 'GET'
-                    }).then(function (config) {
+                    window.ApiClient.getPluginConfiguration(JellyseerrConfig.pluginId)
+                        .then(function (config) {
                         document.querySelector("#IsEnabled").checked = config.IsEnabled !== false;
                         document.querySelector("#JellyseerrUrl").value = config.JellyseerrUrl || 'http://localhost:5055';
                         document.querySelector("#ApiKey").value = config.ApiKey || '';

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Jellyfin.Plugin.JellyseerrBridge.Attributes;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -9,9 +10,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("kinggeorges12")]
 [assembly: AssemblyProduct("Jellyseerr Bridge")]
-[assembly: AssemblyCopyright("Copyright © kinggeorges12 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from
@@ -19,7 +17,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("088e8efc-6855-42ec-bcc9-24fde6da7149")]
+[assembly: Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -31,6 +29,9 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.38.0.0")]
-[assembly: AssemblyFileVersion("0.38.0.0")]
-[assembly: AssemblyInformationalVersion("0.38.0.0")]
+[assembly: AssemblyVersion("0.42.0.0")]
+[assembly: AssemblyFileVersion("0.42.0.0")]
+[assembly: AssemblyInformationalVersion("0.42.0.0")]
+
+// Jellyfin version compatibility
+[assembly: JellyfinVersion("10.10.7")]

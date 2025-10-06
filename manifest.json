@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.42.0.0",
+        "changelog": "v0.42 - VERSION INCREMENT: Incremented version numbers in all project files. Fixed constructor issues and removed problematic interfaces. Plugin should now load properly without malfunction status. Removed copyright. Fixed GUID mismatch. Added JellyfinVersion attribute. Removed image from config page. Updated plugin structure based on intro-skipper patterns. Added PluginServiceRegistrator. Simplified API routes.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.42/JellyseerrBridge-0.42-DLL.zip",
+        "checksum": "3972a8bf2f63950a2c3cc3779cf659fb",
+        "timestamp": "2025-10-06T20:26:43.149Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.41.0.0",
+        "changelog": "v0.41 - VERSION INCREMENT: Incremented version numbers in all project files. Fixed constructor issues and removed problematic interfaces. Plugin should now load properly without malfunction status.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.41/JellyseerrBridge-0.41-DLL.zip",
+        "checksum": "525B7E5890DEC86E7FF0EB8C9F50AD27",
+        "timestamp": "2025-10-06T19:41:27",
+        "dependencies": []
+      },
+      {
         "version": "0.40.0.0",
         "changelog": "FIXED CONSTRUCTOR ISSUE - Reverted to standard constructor without parameterless constructor to avoid MissingMethodException. Removed IPluginServiceRegistrator interface that does not exist in Jellyfin 10.10.7 and simplified ConfigurationController to use direct HttpClient.",
         "targetAbi": "10.10.7.0",
