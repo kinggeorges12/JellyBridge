@@ -42,8 +42,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="src\Jellyfin.Plugin.JellyseerrBridge\ConfigurationPage.html" />
-    <None Include="README.md" Pack="true" PackagePath="\" />
+    <EmbeddedResource Include="ConfigurationPage.html" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
