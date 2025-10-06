@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.44.0.0",
+        "changelog": "v0.44 - COMPREHENSIVE LOGGING: Added detailed logging throughout the plugin for debugging and monitoring. Backend logging includes plugin initialization, configuration updates, and test connection details with request/response information. Frontend logging tracks all user interactions including button clicks, form submissions, and API responses. All log messages are prefixed with [JellyseerrBridge] for easy filtering in Jellyfin logs.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.44/JellyseerrBridge-0.44-DLL.zip",
+        "checksum": "be7c54d6945b480899ae074db7a3c87a",
+        "timestamp": "2025-10-06T21:10:01.901Z",
+        "dependencies": []
+      },
+      {
         "version": "0.43.0.0",
         "changelog": "v0.43 - FIXED CONFIG PAGE BUTTONS: Fixed duplicate button IDs causing DOM warnings. Added proper visual feedback for Save and Test Connection buttons. Save button now shows 'Settings saved successfully!' notification. Test Connection button now shows success/error alerts instead of console-only output. Moved Test Connection button outside fieldset to prevent duplicate IDs.",
         "targetAbi": "10.10.7.0",
