@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-        <title>Jellyseerr Bridge v0.47 - Configuration</title>
+        <title>Jellyseerr Bridge v0.48 - Configuration</title>
 </head>
 <body>
-    <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+    <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage configPage fullWidthContent" data-require="emby-input,emby-button,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
                 <div class="verticalSection">
@@ -15,7 +15,7 @@
                 </div>
                 <hr class="solid">
                 
-                <form id="JellyseerrConfigForm">
+                <form class="configForm">
                     <fieldset class="verticalSection-extrabottompadding">
                         <legend>Basic Configuration</legend>
                         
@@ -113,15 +113,20 @@
             "CreateSeparateLibraries"
         ];
 
-        // Load configuration on page load
-        document.addEventListener("DOMContentLoaded", function() {
+        // Load configuration on page show
+        document.querySelector('.configPage').addEventListener('pageshow', function () {
+            Dashboard.showLoadingMsg();
             ApiClient.getPluginConfiguration("8ecc808c-d6e9-432f-9219-b638fbfb37e6")
-                .then((config) => {
+                .then(function (config) {
                     // Set text field values
                     for (const field of configurationFields) {
                         const element = document.querySelector("#" + field);
                         if (element && config[field] !== undefined) {
                             element.value = config[field];
+                            element.dispatchEvent(new Event('change', {
+                                bubbles: true,
+                                cancelable: false
+                            }));
                         }
                     }
 
@@ -132,8 +137,9 @@
                             element.checked = config[field];
                         }
                     }
+                    Dashboard.hideLoadingMsg();
                 })
-                .catch((error) => {
+                .catch(function (error) {
                     // Set defaults if config load fails
                     document.querySelector("#IsEnabled").checked = true;
                     document.querySelector("#JellyseerrUrl").value = 'http://localhost:5055';
@@ -144,14 +150,15 @@
                     document.querySelector("#ExcludeFromMainLibraries").checked = true;
                     document.querySelector("#CreateSeparateLibraries").checked = false;
                     document.querySelector("#LibraryPrefix").value = 'Streaming - ';
+                    Dashboard.hideLoadingMsg();
                 });
         });
 
         // Handle form submission
-        document.querySelector("#JellyseerrConfigForm").addEventListener("submit", (e) => {
+        document.querySelector('.configForm').addEventListener('submit', function (e) {
             Dashboard.showLoadingMsg();
             ApiClient.getPluginConfiguration("8ecc808c-d6e9-432f-9219-b638fbfb37e6")
-                .then((config) => {
+                .then(function (config) {
                     // Update text field values
                     for (const field of configurationFields) {
                         config[field] = document.querySelector("#" + field).value;
@@ -163,13 +170,7 @@
                     }
 
                     ApiClient.updatePluginConfiguration("8ecc808c-d6e9-432f-9219-b638fbfb37e6", config)
-                        .then(Dashboard.processPluginConfigurationUpdateResult)
-                        .finally(function () {
-                            Dashboard.hideLoadingMsg();
-                        });
-                })
-                .catch((error) => {
-                    Dashboard.hideLoadingMsg();
+                        .then(Dashboard.processPluginConfigurationUpdateResult);
                 });
 
             e.preventDefault();
