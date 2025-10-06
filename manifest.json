@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.37.0.0",
+        "changelog": "FIXED TEST CONNECTION - Fixed test connection button by correcting ConfigurationController to inherit from ControllerBase and use IHttpClientFactory for proper dependency injection. Added default values to all form fields and autocomplete attribute to password field.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.37/JellyseerrBridge-0.37-DLL.zip",
+        "checksum": "3C7E9900D9058F63209484A832A9FA29",
+        "timestamp": "2025-10-06T18:42:12",
+        "dependencies": []
+      },
+      {
         "version": "0.35.0.0",
         "changelog": "REMOVED WEBHOOK PORT - Removed WebhookPort setting as Jellyfin doesn't have webhook ports. All API requests must go through the main Jellyfin server. Plugins can create API controllers to receive external requests through Jellyfin's main API.",
         "targetAbi": "10.10.7.0",
