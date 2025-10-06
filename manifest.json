@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.32.0.0",
+        "changelog": "ENHANCED CONFIGURATION - Added all configuration options including enable checkbox, test connection button, sync interval, webhook port, library management options, and backend API controller for proper connection testing.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.32/JellyseerrBridge-0.32-DLL.zip",
+        "checksum": "4D793814F682EECDCD1A5E4F47DB9114",
+        "timestamp": "2025-10-06T16:34:16",
+        "dependencies": []
+      },
+      {
         "version": "0.31.0.0",
         "changelog": "CORRECTED GUID AND DLL STRUCTURE - Fixed GUID mismatch between manifest and plugin class. Both now use the working v0.5 GUID: 8ecc808c-d6e9-432f-9219-b638fbfb37e6. This ZIP contains the compiled DLL files that Jellyfin expects.",
         "targetAbi": "10.10.7.0",
