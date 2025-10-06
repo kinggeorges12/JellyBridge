@@ -21,7 +21,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             _logger = logger;
             Instance = this;
-            _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully");
+            _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version 0.46.0.0");
+            _logger.LogInformation("[JellyseerrBridge] Plugin ID: {PluginId}", Id);
+            _logger.LogInformation("[JellyseerrBridge] Plugin Name: {PluginName}", Name);
         }
 
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
