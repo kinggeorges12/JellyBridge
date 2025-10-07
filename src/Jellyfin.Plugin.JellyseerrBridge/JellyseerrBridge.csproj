@@ -7,8 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyseerrBridge</RootNamespace>
-    <AssemblyVersion>0.70.0.0</AssemblyVersion>
-    <FileVersion>0.70.0.0</FileVersion>
+    <AssemblyVersion>0.71.0.0</AssemblyVersion>
+    <FileVersion>0.71.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
