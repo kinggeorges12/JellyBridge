@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "F3652D872C3825AE386DB2EC91271AED",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.85.0.0/JellyseerrBridge-0.85.0.0-DLL.zip",
+        "timestamp": "2025-10-07T22:16:42.810Z",
+        "targetAbi": "10.10.7.0",
+        "version": "0.85.0.0",
+        "changelog": "v0.85.0.0 - Fixed Watch Provider Regions JSON Deserialization - CRITICAL BUG FIX: Fixed JSON deserialization for watch provider regions by adding correct JsonPropertyName attributes, Corrected property mapping from Jellyseerr API (iso_3166_1, english_name, native_name), Disabled case-insensitive JSON matching to use explicit property names, Resolved empty region data issue that was causing blank dropdown. TECHNICAL IMPROVEMENTS: Added System.Text.Json.Serialization using directive for JsonPropertyName support, Enhanced model structure to match actual Jellyseerr API response format, Improved JSON deserialization accuracy with explicit property mapping, Better debugging capabilities with detailed API response logging. This update resolves the watch provider regions dropdown not populating by correctly mapping the Jellyseerr API response properties to our model."
+      },
+      {
         "version": "0.84.0.0",
         "dependencies": [],
         "changelog": "v0.84.0.0 - Enhanced Debug Logging for Watch Provider Regions API - DEBUGGING IMPROVEMENTS: Added detailed API response preview logging to identify actual Jellyseerr API structure, Enhanced logging to show first region deserialization results, Changed logging level to Warning to ensure visibility in Jellyfin logs, Added null safety checks in frontend JavaScript to prevent localeCompare errors. TECHNICAL IMPROVEMENTS: Improved error handling for empty region names in frontend, Better debugging capabilities to identify JSON deserialization issues, Enhanced logging to track actual API response format vs expected model structure, Added filtering for regions with valid names to prevent UI errors. This update provides comprehensive debugging to identify why watch provider regions are not populating correctly despite successful API calls.",

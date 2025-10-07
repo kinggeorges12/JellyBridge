@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 
@@ -274,7 +275,7 @@ public class JellyseerrApiService
             
             var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = false
             });
 
             _logger.LogInformation("Retrieved {Count} watch provider regions from Jellyseerr", regions?.Count ?? 0);
@@ -416,8 +417,13 @@ public class JellyseerrUser
 /// </summary>
 public class JellyseerrWatchProviderRegion
 {
+    [JsonPropertyName("iso_3166_1")]
     public string Iso31661 { get; set; } = string.Empty;
+    
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("native_name")]
     public string NativeName { get; set; } = string.Empty;
 }
 
