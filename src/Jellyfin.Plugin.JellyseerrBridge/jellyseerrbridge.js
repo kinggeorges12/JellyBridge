@@ -71,12 +71,6 @@ export default function (view) {
         const url = view.querySelector('#JellyseerrUrl').value;
         const apiKey = view.querySelector('#ApiKey').value;
         
-        if (!url) {
-            Dashboard.hideLoadingMsg();
-            Dashboard.alert('Please enter a Jellyseerr URL first');
-            return;
-        }
-
         const testData = {
             JellyseerrUrl: url,
             ApiKey: apiKey
@@ -90,22 +84,26 @@ export default function (view) {
 
         Dashboard.alert('🔍 SENDING REQUEST:\n\n' + debugRequest);
 
-        ApiClient.ajax({
+        ApiClient.fetch({
             url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            type: 'POST',
-            data: JSON.stringify(testData),
-            contentType: 'application/json'
+            method: 'POST',
+            body: JSON.stringify(testData),
+            headers: {
+                'Content-Type': 'application/json'
+            }
         }).then(function (response) {
+            return response.json();
+        }).then(function (data) {
             Dashboard.hideLoadingMsg();
             const debugInfo = 'RESPONSE DEBUG:\n' +
-                'Response exists: ' + (response ? 'YES' : 'NO') + '\n' +
-                'Response type: ' + typeof response + '\n' +
-                'Response success: ' + (response?.success ? 'YES' : 'NO') + '\n' +
-                'Response message: ' + (response?.message || 'UNDEFINED') + '\n' +
-                'Full response: ' + JSON.stringify(response) + '\n' +
-                'Response keys: ' + (response ? Object.keys(response).join(', ') : 'NONE');
+                'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
+                'Response type: ' + typeof data + '\n' +
+                'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
+                'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
+                'Full response: ' + JSON.stringify(data) + '\n' +
+                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
             
-            if (response && response.success) {
+            if (data && data.success) {
                 Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
             } else {
                 Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);

@@ -42,7 +42,7 @@
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" />
+                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" required value="http://localhost:5055" />
                         <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://localhost:5055)</div>
                     </div>
 
@@ -52,17 +52,17 @@
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
+                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" value="/data/Jellyseerr" />
                         <div class="fieldDescription">Directory path for Jellyseerr library files</div>
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="number" id="UserId" label="User ID" />
+                        <input is="emby-input" type="number" id="UserId" label="User ID" value="1" />
                         <div class="fieldDescription">Jellyseerr user ID for requests</div>
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" />
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" value="24" />
                         <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
                     </div>
 
