@@ -298,7 +298,7 @@ public class JellyseerrApiService
     {
         try
         {
-            var providersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?region={region}";
+            var providersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?watchRegion={region}";
             var requestMessage = new HttpRequestMessage(HttpMethod.Get, providersUrl);
             requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
             
@@ -313,6 +313,10 @@ public class JellyseerrApiService
             var content = await response.Content.ReadAsStringAsync();
             
             _logger.LogDebug("[JellyseerrBridge] Watch Providers API Response: {Content}", content);
+            
+            // Log first few characters to see the structure
+            var preview = content.Length > 200 ? content.Substring(0, 200) + "..." : content;
+            _logger.LogWarning("[JellyseerrBridge] Watch Providers API Response Preview: {Preview}", preview);
             
             var providers = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(content, new JsonSerializerOptions
             {
@@ -471,10 +475,10 @@ public class JellyseerrWatchProvider
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
     
-    [JsonPropertyName("logo_path")]
+    [JsonPropertyName("logoPath")]
     public string LogoPath { get; set; } = string.Empty;
     
-    [JsonPropertyName("display_priority")]
+    [JsonPropertyName("displayPriority")]
     public int DisplayPriority { get; set; }
 }
 
