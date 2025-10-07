@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.84.0.0",
+        "dependencies": [],
+        "changelog": "v0.84.0.0 - Enhanced Debug Logging for Watch Provider Regions API - DEBUGGING IMPROVEMENTS: Added detailed API response preview logging to identify actual Jellyseerr API structure, Enhanced logging to show first region deserialization results, Changed logging level to Warning to ensure visibility in Jellyfin logs, Added null safety checks in frontend JavaScript to prevent localeCompare errors. TECHNICAL IMPROVEMENTS: Improved error handling for empty region names in frontend, Better debugging capabilities to identify JSON deserialization issues, Enhanced logging to track actual API response format vs expected model structure, Added filtering for regions with valid names to prevent UI errors. This update provides comprehensive debugging to identify why watch provider regions are not populating correctly despite successful API calls.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.84.0.0/JellyseerrBridge-0.84.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-07T22:11:34.364Z",
+        "checksum": "D1F90446D32D8F7B2D4A7FE1D8AC80C9"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.83.0.0/JellyseerrBridge-0.83.0.0-DLL.zip",
         "version": "0.83.0.0",
         "changelog": "v0.83.0.0 - Added Debug Logging for Watch Provider Regions Issue - DEBUGGING IMPROVEMENTS: Added comprehensive debug logging to WatchProviderRegions API endpoint, Enhanced ConfigurationController with detailed logging for regions API calls, Added frontend debug alerts to show regions API response details, Improved error handling and logging for regions retrieval failures. TECHNICAL IMPROVEMENTS: Added null checks and better error messages for regions API, Enhanced logging to track configuration values (URL and API key status), Added warning logs when no regions are returned from API service, Better debugging capabilities to identify why dropdown appears blank. This update adds extensive debugging to help identify why the watch provider regions dropdown is not populating despite successful sync operations.",
