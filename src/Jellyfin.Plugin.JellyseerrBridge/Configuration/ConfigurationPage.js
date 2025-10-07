@@ -118,4 +118,49 @@ export default function (view) {
         
         xhr.send(JSON.stringify(testData));
     });
+
+    const syncButton = view.querySelector('#manualSync');
+    if (!syncButton) {
+        Dashboard.alert('❌ Jellyseerr Bridge: Manual sync button not found');
+        return;
+    }
+    
+    syncButton.addEventListener('click', function () {
+        Dashboard.showLoadingMsg();
+        
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyseerrBridge/Sync'),
+            type: 'POST',
+            data: '{}',
+            contentType: 'application/json',
+            dataType: 'json'
+        }).then(function (data) {
+            Dashboard.hideLoadingMsg();
+            
+            const debugInfo = 'SYNC RESPONSE DEBUG:\n' +
+                'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
+                'Response type: ' + typeof data + '\n' +
+                'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
+                'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
+                'Full response: ' + JSON.stringify(data) + '\n' +
+                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
+            
+            if (data && data.success) {
+                Dashboard.alert('✅ SYNC SUCCESS!\n\n' + debugInfo);
+            } else {
+                Dashboard.alert('❌ SYNC FAILED!\n\n' + debugInfo);
+            }
+        }).catch(function (error) {
+            Dashboard.hideLoadingMsg();
+            const debugInfo = 'SYNC ERROR DEBUG:\n' +
+                'Error exists: ' + (error ? 'YES' : 'NO') + '\n' +
+                'Error type: ' + typeof error + '\n' +
+                'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
+                'Error name: ' + (error?.name || 'UNDEFINED') + '\n' +
+                'Error status: ' + (error?.status || 'UNDEFINED') + '\n' +
+                'Full error: ' + JSON.stringify(error);
+            
+            Dashboard.alert('❌ SYNC ERROR!\n\n' + debugInfo);
+        });
+    });
 }

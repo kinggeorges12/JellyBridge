@@ -55,4 +55,24 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to exclude placeholder shows from main libraries.
     /// </summary>
     public bool ExcludeFromMainLibraries { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether to auto-sync on startup.
+    /// </summary>
+    public bool AutoSyncOnStartup { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the request timeout in seconds.
+    /// </summary>
+    public int RequestTimeout { get; set; } = 30;
+
+    /// <summary>
+    /// Gets or sets the number of retry attempts.
+    /// </summary>
+    public int RetryAttempts { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets whether to enable debug logging.
+    /// </summary>
+    public bool EnableDebugLogging { get; set; } = false;
 }
