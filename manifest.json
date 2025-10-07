@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.91.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.91.0.0/JellyseerrBridge-0.91.0.0-DLL.zip",
+        "checksum": "7BFF00135F3C8B21A6E2C02BC4A46B25",
+        "changelog": "v0.91.0.0 - Enhanced User Experience with Confirmation Dialogs and Code Refactoring - USER EXPERIENCE IMPROVEMENTS: Added confirmation dialog for test connection success asking users to save settings, Implemented clean 'Save' vs 'Cancel' workflow for connection testing, Removed debug clutter from success messages for cleaner user interface, Enhanced workflow with automatic settings persistence after successful connection test. CODE REFACTORING: Created reusable savePluginConfiguration() function to eliminate code duplication, Consolidated save logic used by Save button, Test Connection button, and Manual Sync button, Improved maintainability with single source of truth for configuration saving, Enhanced error handling with centralized save operation management. TECHNICAL IMPROVEMENTS: Better separation of concerns with dedicated save function, Cleaner event listeners with reduced code complexity, Consistent error handling across all save operations, Improved code readability and maintainability. This update provides a more intuitive user experience with confirmation dialogs and significantly cleaner, more maintainable code architecture.",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-07T23:26:46.942Z"
+      },
+      {
         "checksum": "E97B46FDEAC89DB43CB28C8C66B6CF95",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.90.0.0/JellyseerrBridge-0.90.0.0-DLL.zip",
         "version": "0.90.0.0",

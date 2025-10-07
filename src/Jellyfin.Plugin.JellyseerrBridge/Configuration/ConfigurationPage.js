@@ -2,6 +2,31 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
+// Function to save plugin configuration
+function savePluginConfiguration(view) {
+    const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
+    return ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
+        // Update config with current form values
+        config.IsEnabled = form.querySelector('#IsEnabled').checked;
+        config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
+        config.ApiKey = form.querySelector('#ApiKey').value;
+        config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+        config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
+        config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
+        config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
+        config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
+        config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+        config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
+        config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
+        config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
+        config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
+        config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
+        
+        // Save the configuration
+        return ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config);
+    });
+}
+
 export default function (view) {
     if (!view) {
         Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
@@ -41,25 +66,8 @@ export default function (view) {
     
     form.addEventListener('submit', function (e) {
         Dashboard.showLoadingMsg();
-        const form = this;
-        ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
-            config.IsEnabled = form.querySelector('#IsEnabled').checked;
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-            config.ApiKey = form.querySelector('#ApiKey').value;
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
-            config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
-            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
-            config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
-            config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
-            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
-            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
-            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
-            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
-            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value || 'US';
-
-            ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config).then(Dashboard.processPluginConfigurationUpdateResult);
-        });
+        // Use the reusable function to save configuration
+        savePluginConfiguration(view).then(Dashboard.processPluginConfigurationUpdateResult);
         e.preventDefault();
         return false;
     });
@@ -100,7 +108,22 @@ export default function (view) {
                 'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
             
             if (data && data.success) {
-                Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
+                // Show confirmation dialog for saving settings
+                Dashboard.confirm({
+                    title: 'Connection Success!',
+                    text: 'Connection success!\nSave connection settings now?',
+                    confirmText: 'Save',
+                    cancelText: 'Cancel'
+                }).then(function (confirmed) {
+                    if (confirmed) {
+                        // Save the current settings using the reusable function
+                        savePluginConfiguration(view).then(function () {
+                            Dashboard.alert('✅ Settings saved successfully!');
+                        }).catch(function (error) {
+                            Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
+                        });
+                    }
+                });
             } else {
                 Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
             }
@@ -127,28 +150,8 @@ export default function (view) {
     syncButton.addEventListener('click', function () {
         Dashboard.showLoadingMsg();
         
-        // First save the current settings
-        const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
-        ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
-            // Update config with current form values
-            config.IsEnabled = form.querySelector('#IsEnabled').checked;
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-            config.ApiKey = form.querySelector('#ApiKey').value;
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
-            config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
-            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
-            config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
-            config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
-            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
-            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
-            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
-            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
-            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
-            
-            // Save the configuration
-            return ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config);
-        }).then(function () {
+        // First save the current settings using the reusable function
+        savePluginConfiguration(view).then(function () {
             // Settings saved, now load watch provider regions
             loadWatchProviderRegions(view);
             
