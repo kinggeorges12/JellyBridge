@@ -3,6 +3,11 @@ const JellyseerrBridgeConfigurationPage = {
 };
 
 export default function (view) {
+    if (!view) {
+        Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
+        return;
+    }
+    
     view.addEventListener('viewshow', function () {
         Dashboard.showLoadingMsg();
         const page = this;
@@ -16,11 +21,21 @@ export default function (view) {
             page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
             page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
             page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || 'Streaming - ';
+            page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
+            page.querySelector('#RequestTimeout').value = config.RequestTimeout || 30;
+            page.querySelector('#RetryAttempts').value = config.RetryAttempts || 3;
+            page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
             Dashboard.hideLoadingMsg();
         });
     });
     
-    view.querySelector('#jellyseerrBridgeConfigurationForm').addEventListener('submit', function (e) {
+    const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
+    if (!form) {
+        Dashboard.alert('❌ Jellyseerr Bridge: Configuration form not found');
+        return;
+    }
+    
+    form.addEventListener('submit', function (e) {
         Dashboard.showLoadingMsg();
         const form = this;
         ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
@@ -33,6 +48,10 @@ export default function (view) {
             config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
             config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
+            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
+            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
+            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
 
             ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config).then(Dashboard.processPluginConfigurationUpdateResult);
         });
@@ -40,7 +59,13 @@ export default function (view) {
         return false;
     });
 
-    view.querySelector('#testConnection').addEventListener('click', function () {
+    const testButton = view.querySelector('#testConnection');
+    if (!testButton) {
+        Dashboard.alert('❌ Jellyseerr Bridge: Test connection button not found');
+        return;
+    }
+    
+    testButton.addEventListener('click', function () {
         Dashboard.showLoadingMsg();
         
         const url = view.querySelector('#JellyseerrUrl').value;
@@ -64,14 +89,28 @@ export default function (view) {
             contentType: 'application/json'
         }).then(function (response) {
             Dashboard.hideLoadingMsg();
-            if (response.success) {
-                Dashboard.alert('✅ ' + response.message);
+            const debugInfo = 'RESPONSE DEBUG:\n' +
+                'Response exists: ' + (response ? 'YES' : 'NO') + '\n' +
+                'Response type: ' + typeof response + '\n' +
+                'Response success: ' + (response?.success ? 'YES' : 'NO') + '\n' +
+                'Response message: ' + (response?.message || 'UNDEFINED') + '\n' +
+                'Full response: ' + JSON.stringify(response);
+            
+            if (response && response.success) {
+                Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
             } else {
-                Dashboard.alert('❌ ' + response.message);
+                Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
             }
         }).catch(function (error) {
             Dashboard.hideLoadingMsg();
-            Dashboard.alert('❌ Connection test failed: ' + error.message);
+            const debugInfo = 'ERROR DEBUG:\n' +
+                'Error exists: ' + (error ? 'YES' : 'NO') + '\n' +
+                'Error type: ' + typeof error + '\n' +
+                'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
+                'Error name: ' + (error?.name || 'UNDEFINED') + '\n' +
+                'Full error: ' + JSON.stringify(error);
+            
+            Dashboard.alert('❌ CONNECTION ERROR!\n\n' + debugInfo);
         });
     });
 }
