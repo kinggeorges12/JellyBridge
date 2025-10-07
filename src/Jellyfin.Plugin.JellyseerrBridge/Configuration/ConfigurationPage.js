@@ -82,40 +82,40 @@ export default function (view) {
             'Data: ' + JSON.stringify(testData) + '\n' +
             'Content-Type: application/json';
 
-        console.log('🔍 SENDING REQUEST:\n\n' + debugRequest);
-
-        fetch(ApiClient.getUrl('JellyseerrBridge/TestConnection'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(testData)
-        }).then(response => response.json()).then(function (data) {
-            Dashboard.hideLoadingMsg();
-            const debugInfo = 'RESPONSE DEBUG:\n' +
-                'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
-                'Response type: ' + typeof data + '\n' +
-                'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
-                'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
-                'Full response: ' + JSON.stringify(data) + '\n' +
-                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
-            
-            if (data && data.success) {
-                Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
-            } else {
-                Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', ApiClient.getUrl('JellyseerrBridge/TestConnection'), true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                Dashboard.hideLoadingMsg();
+                
+                let data = {};
+                try {
+                    data = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    data = { error: 'Failed to parse response', raw: xhr.responseText };
+                }
+                
+                const debugInfo = 'RESPONSE DEBUG:\n' +
+                    'Status: ' + xhr.status + '\n' +
+                    'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
+                    'Response type: ' + typeof data + '\n' +
+                    'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
+                    'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
+                    'Response status: ' + (data?.status || 'UNDEFINED') + '\n' +
+                    'Full response: ' + JSON.stringify(data) + '\n' +
+                    'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE') + '\n' +
+                    'Raw response: ' + xhr.responseText;
+                
+                if (data && data.success) {
+                    Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
+                } else {
+                    Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
+                }
             }
-        }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
-            const debugInfo = 'ERROR DEBUG:\n' +
-                'Error exists: ' + (error ? 'YES' : 'NO') + '\n' +
-                'Error type: ' + typeof error + '\n' +
-                'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
-                'Error name: ' + (error?.name || 'UNDEFINED') + '\n' +
-                'Error status: ' + (error?.status || 'UNDEFINED') + '\n' +
-                'Full error: ' + JSON.stringify(error);
-            
-            Dashboard.alert('❌ CONNECTION ERROR!\n\n' + debugInfo);
-        });
+        };
+        
+        xhr.send(JSON.stringify(testData));
     });
 }
