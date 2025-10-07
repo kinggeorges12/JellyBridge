@@ -15,8 +15,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             // Register logging services for the plugin
             serviceCollection.AddLogging();
-            
-            // Register any other services needed by the plugin here
         }
     }
 }

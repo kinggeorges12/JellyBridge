@@ -51,12 +51,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 new PluginPageInfo
                 {
                     Name = Name,
-                    EmbeddedResourcePath = GetType().Namespace + ".ConfigurationPage.html",
+                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.html",
                 },
                 new PluginPageInfo
                 {
                     Name = "jellyseerrbridgejs",
-                    EmbeddedResourcePath = GetType().Namespace + ".jellyseerrbridge.js"
+                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.jellyseerrbridge.js"
                 }
             };
         }

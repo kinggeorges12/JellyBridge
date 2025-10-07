@@ -4,7 +4,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace Jellyfin.Plugin.JellyseerrBridge.Api
+namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
     [ApiController]
     [Route("JellyseerrBridge")]
@@ -64,25 +64,81 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
                 // If API key is provided, test authentication
                 if (!string.IsNullOrEmpty(request.ApiKey))
                 {
-                    var userUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/user";
-                    _logger.LogInformation("[JellyseerrBridge] Testing user endpoint with API key");
+                    var authUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/auth/me";
+                    _logger.LogInformation("[JellyseerrBridge] Testing auth/me endpoint with API key");
 
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, userUrl);
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, authUrl);
                     requestMessage.Headers.Add("X-Api-Key", request.ApiKey);
 
-                    var userResponse = await httpClient.SendAsync(requestMessage);
-                    _logger.LogInformation("[JellyseerrBridge] User endpoint response: {StatusCode}", userResponse.StatusCode);
+                    var authResponse = await httpClient.SendAsync(requestMessage);
+                    _logger.LogInformation("[JellyseerrBridge] Auth/me endpoint response: {StatusCode}", authResponse.StatusCode);
                     
-                    if (!userResponse.IsSuccessStatusCode)
+                    if (!authResponse.IsSuccessStatusCode)
                     {
-                        _logger.LogWarning("[JellyseerrBridge] API key authentication failed with status: {StatusCode}", userResponse.StatusCode);
+                        _logger.LogWarning("[JellyseerrBridge] API key authentication failed with status: {StatusCode}", authResponse.StatusCode);
                         return Ok(new { 
                             success = false, 
-                            message = $"API key authentication failed with status {userResponse.StatusCode}" 
+                            message = $"API key authentication failed with status {authResponse.StatusCode}" 
                         });
                     }
 
-                    _logger.LogInformation("[JellyseerrBridge] API key authentication successful");
+                    // Parse the response to get user info
+                    var authResponseContent = await authResponse.Content.ReadAsStringAsync();
+                    _logger.LogInformation("[JellyseerrBridge] API key authentication successful. Response: {Response}", authResponseContent);
+
+                    // Test if we can get the list of users (tests API permissions)
+                    var usersUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/user";
+                    _logger.LogInformation("[JellyseerrBridge] Testing user list endpoint to verify API permissions");
+
+                    var usersRequestMessage = new HttpRequestMessage(HttpMethod.Get, usersUrl);
+                    usersRequestMessage.Headers.Add("X-Api-Key", request.ApiKey);
+
+                    var usersResponse = await httpClient.SendAsync(usersRequestMessage);
+                    _logger.LogInformation("[JellyseerrBridge] User list endpoint response: {StatusCode}", usersResponse.StatusCode);
+                    
+                    if (usersResponse.IsSuccessStatusCode)
+                    {
+                        var usersResponseContent = await usersResponse.Content.ReadAsStringAsync();
+                        
+                        try
+                        {
+                            // Parse the JSON response to count users
+                            var usersData = JsonSerializer.Deserialize<JsonElement>(usersResponseContent);
+                            int userCount = 0;
+                            
+                            _logger.LogDebug("[JellyseerrBridge] Parsing user list response. Root element type: {ElementType}", usersData.ValueKind);
+                            
+                            // Jellyseerr API returns: {"pageInfo": {"pages":1,"pageSize":10,"results":6,"page":1}, "results": [...]}
+                            if (usersData.TryGetProperty("results", out var resultsArray) && resultsArray.ValueKind == JsonValueKind.Array)
+                            {
+                                userCount = resultsArray.GetArrayLength();
+                                _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users in 'results' array", userCount);
+                            }
+                            // Fallback: if response is a direct array
+                            else if (usersData.ValueKind == JsonValueKind.Array)
+                            {
+                                userCount = usersData.GetArrayLength();
+                                _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users in direct array", userCount);
+                            }
+                            // Fallback: if response is a single user object
+                            else if (usersData.ValueKind == JsonValueKind.Object)
+                            {
+                                userCount = 1;
+                                _logger.LogDebug("[JellyseerrBridge] Found single user object");
+                            }
+                            
+                            _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", userCount);
+                        }
+                        catch (JsonException ex)
+                        {
+                            _logger.LogWarning("[JellyseerrBridge] Failed to parse user list response: {Error}", ex.Message);
+                            _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list (unable to parse count)");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] User list endpoint failed with status: {StatusCode} - API key may have limited permissions", usersResponse.StatusCode);
+                    }
                 }
                 else
                 {

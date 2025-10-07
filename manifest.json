@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.59.0.0",
+          "changelog": "v0.59 - ENHANCED CONNECTION TESTING: Fixed ConfigurationController routing by moving to Controllers namespace for proper Jellyfin auto-discovery. Updated API key validation to use correct Jellyseerr /auth/me endpoint. Added comprehensive user list API test to verify API key permissions. Enhanced JSON parsing with exact user count logging. Improved error handling and debugging information for connection testing.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.59/JellyseerrBridge-0.59-DLL.zip",
+          "checksum": "01DB477415EAAA9262554726F817386B",
+          "timestamp": "2025-10-07T03:37:22.142Z",
+          "dependencies": []
+        },
+        {
           "version": "0.58.0.0",
           "changelog": "v0.58 - HTML5 VALIDATION & DEFAULT VALUES: Added HTML5 validation with 'required' attribute to Jellyseerr URL field. Added default values to all input fields (URL: http://localhost:5055, Library Directory: /data/Jellyseerr, User ID: 1, Sync Interval: 24 hours). Removed custom JavaScript validation in favor of browser's built-in validation. Improved user experience with pre-filled sensible defaults.",
           "targetAbi": "10.10.7.0",
