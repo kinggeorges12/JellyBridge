@@ -9,7 +9,16 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "timestamp": "2025-10-07T16:46:28.670Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.79.0.0/JellyseerrBridge-0.79.0.0-DLL.zip",
+        "changelog": "v0.79.0.0 - Watch Provider Region Selection Fixes and Logo Update - BUG FIXES: Fixed watch provider region dropdown selection logic, Ensured proper default region (US) selection, Added fallback logic for invalid region values, Removed non-functional console.log statements from Jellyfin environment. UI IMPROVEMENTS: Updated plugin logo to use official Seerr logo from GitHub repository, Enhanced region selection to maintain user's chosen region after sync, Improved error handling for region loading failures. TECHNICAL IMPROVEMENTS: Fixed JavaScript region selection to properly set current value, Added validation to ensure US is selected if no valid region is found, Cleaned up error handling and removed debugging statements, Improved region dropdown population logic. This update ensures the watch provider region selection works correctly and displays the proper Seerr branding.",
+        "timestamp": "2025-10-07T17:04:53.518Z",
+        "dependencies": [],
+        "version": "0.79.0.0",
+        "targetAbi": "10.10.7.0",
+        "checksum": "D972C75B17770677E821AD62BC5192CA"
+      },
+      {
+        "timestamp": "2025-10-07T16:46:28.67Z",
         "dependencies": [],
         "version": "0.78.0.0",
         "checksum": "483C5C071B1135633532E02C9FEF68AE",
