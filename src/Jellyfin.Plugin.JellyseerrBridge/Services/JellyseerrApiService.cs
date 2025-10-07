@@ -187,6 +187,41 @@ public class JellyseerrApiService
             return null;
         }
     }
+
+    /// <summary>
+    /// Get watch provider regions from Jellyseerr.
+    /// </summary>
+    public async Task<List<JellyseerrWatchProviderRegion>> GetWatchProviderRegionsAsync(PluginConfiguration config)
+    {
+        try
+        {
+            var regionsUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/regions";
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, regionsUrl);
+            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
+            
+            var response = await _httpClient.SendAsync(requestMessage);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to get watch provider regions with status: {StatusCode}", response.StatusCode);
+                return new List<JellyseerrWatchProviderRegion>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            _logger.LogInformation("Retrieved {Count} watch provider regions from Jellyseerr", regions?.Count ?? 0);
+            return regions ?? new List<JellyseerrWatchProviderRegion>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get watch provider regions from Jellyseerr");
+            return new List<JellyseerrWatchProviderRegion>();
+        }
+    }
 }
 
 /// <summary>
@@ -269,4 +304,14 @@ public class JellyseerrUser
     public int Permissions { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// Jellyseerr watch provider region model.
+/// </summary>
+public class JellyseerrWatchProviderRegion
+{
+    public string Iso31661 { get; set; } = string.Empty;
+    public string EnglishName { get; set; } = string.Empty;
+    public string NativeName { get; set; } = string.Empty;
 }
