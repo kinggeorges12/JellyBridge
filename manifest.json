@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.76.0.0/JellyseerrBridge-0.76.0.0-DLL.zip",
+        "changelog": "v0.76.0.0 - AUTO-GENERATED RELEASE: Automated release using publish.ps1 script. This release includes the latest fixes and improvements.",
+        "dependencies": [],
+        "version": "0.76.0.0",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-07T15:54:44.500Z",
+        "checksum": "A6F91CD2AB7F3A33AAFCA02627EDF111"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "checksum": "6443EC0807A998EF735972FF3B2CFD02",
         "changelog": "v0.75.0.0 - AUTO-GENERATED RELEASE: Automated release using publish.ps1 script. This release includes the latest fixes and improvements.",

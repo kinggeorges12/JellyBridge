@@ -148,7 +148,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 _logger.LogInformation("[JellyseerrBridge] Connection test completed successfully");
                 return Ok(new { 
                     success = true, 
-                    message = "Connection successful! Jellyseerr is reachable and API key is valid." 
+                    message = "Connection successful! Jellyseerr is reachable and API key is valid.",
+                    status = "ok"
                 });
             }
             catch (HttpRequestException ex)
