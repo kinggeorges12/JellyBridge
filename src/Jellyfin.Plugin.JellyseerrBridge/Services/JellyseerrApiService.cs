@@ -80,13 +80,16 @@ public class JellyseerrApiService
 
             try
             {
-                var requests = JsonSerializer.Deserialize<List<JellyseerrRequest>>(content, new JsonSerializerOptions
+                // First, deserialize as a paginated response
+                var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                _logger.LogInformation("Retrieved {Count} requests from Jellyseerr", requests?.Count ?? 0);
-                return requests ?? new List<JellyseerrRequest>();
+                var requests = paginatedResponse?.Results ?? new List<JellyseerrRequest>();
+
+                _logger.LogInformation("Retrieved {Count} requests from Jellyseerr", requests.Count);
+                return requests;
             }
             catch (JsonException jsonEx)
             {
@@ -371,4 +374,24 @@ public class JellyseerrWatchProviderRegion
     public string Iso31661 { get; set; } = string.Empty;
     public string EnglishName { get; set; } = string.Empty;
     public string NativeName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Jellyseerr paginated response model.
+/// </summary>
+public class JellyseerrPaginatedResponse
+{
+    public JellyseerrPageInfo PageInfo { get; set; } = new();
+    public List<JellyseerrRequest> Results { get; set; } = new();
+}
+
+/// <summary>
+/// Jellyseerr page info model.
+/// </summary>
+public class JellyseerrPageInfo
+{
+    public int Pages { get; set; }
+    public int PageSize { get; set; }
+    public int Results { get; set; }
+    public int Page { get; set; }
 }

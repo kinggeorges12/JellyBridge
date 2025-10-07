@@ -66,6 +66,12 @@
                         <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
                     </div>
 
+                    <div>
+                        <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
+                            <span>Test Connection</span>
+                        </button>
+                    </div>
+
                     <details id="syncSettings">
                         <summary>Sync Settings</summary>
                         <br>
@@ -110,6 +116,20 @@
                             </label>
                             <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
                         </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region</label>
+                            <select id="WatchProviderRegion" is="emby-select" class="emby-select">
+                                <option value="US">United States (United States of America)</option>
+                            </select>
+                            <div class="fieldDescription">Select your region for watch provider information. This determines which streaming services are shown for movies and TV shows.</div>
+                        </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
+                                <span>Manual Sync</span>
+                            </button>
+                        </div>
                     </details>
 
                     <details id="advancedSettings">
@@ -140,28 +160,6 @@
                         </div>
 
                     </details>
-
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region</label>
-                        <select id="WatchProviderRegion" is="emby-select" class="emby-select">
-                            <option value="US">United States (United States of America)</option>
-                        </select>
-                        <div class="fieldDescription">Select your region for watch provider information. This determines which streaming services are shown for movies and TV shows.</div>
-                    </div>
-
-                    <br>
-
-                    <div>
-                        <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
-                            <span>Test Connection</span>
-                        </button>
-                    </div>
-
-                    <div>
-                        <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
-                            <span>Manual Sync</span>
-                        </button>
-                    </div>
 
                     <div>
                         <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block emby-button">
