@@ -173,6 +173,16 @@ function loadWatchProviderRegions(page) {
         type: 'GET',
         dataType: 'json'
     }).then(function (data) {
+        // Debug logging
+        const debugInfo = 'REGIONS API RESPONSE DEBUG:\n' +
+            'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
+            'Response type: ' + typeof data + '\n' +
+            'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
+            'Regions count: ' + (data?.regions ? data.regions.length : 'UNDEFINED') + '\n' +
+            'Full response: ' + JSON.stringify(data);
+        
+        Dashboard.alert('🔍 REGIONS API DEBUG:\n\n' + debugInfo);
+        
         if (data && data.success && data.regions) {
             const select = page.querySelector('#WatchProviderRegion');
             if (select) {
@@ -204,5 +214,12 @@ function loadWatchProviderRegions(page) {
         }
     }).catch(function (error) {
         // Error loading regions - keep default US option
+        const debugInfo = 'REGIONS API ERROR DEBUG:\n' +
+            'Error exists: ' + (error ? 'YES' : 'NO') + '\n' +
+            'Error type: ' + typeof error + '\n' +
+            'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
+            'Full error: ' + JSON.stringify(error);
+        
+        Dashboard.alert('❌ REGIONS API ERROR:\n\n' + debugInfo);
     });
 }
