@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.66.0.0",
+          "changelog": "v0.66 - EMBEDDED RESOURCE LOGICAL NAME FIX: Fixed embedded resource inclusion by using LogicalName with $(RootNamespace) to ensure resources are properly embedded in the DLL with the correct namespace path. This addresses the 'Failed to get resource' errors by ensuring the embedded resource paths match exactly what Jellyfin expects. Updated project file to use dynamic namespace resolution for embedded resources.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.66/JellyseerrBridge-0.66-DLL.zip",
+          "checksum": "8368ACBC3558D063E0A293773940F4D5",
+          "timestamp": "2025-10-07T05:04:33.777Z",
+          "dependencies": []
+        },
+        {
           "version": "0.65.0.0",
           "changelog": "v0.65 - BINARY UPLOAD FIX: Fixed GitHub upload script to properly handle binary ZIP files instead of corrupting them with UTF-8 text conversion. This release addresses the root cause of checksum mismatch errors by ensuring ZIP files are uploaded as raw binary data. Updated upload process to prevent file corruption during GitHub release creation.",
           "targetAbi": "10.10.7.0",
