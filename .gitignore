@@ -375,3 +375,6 @@ nuget.config
 
 # Codebase directory with reference materials
 codebase/
+
+# Scripts directory
+scripts/
