@@ -10,6 +10,15 @@
     "versions": [
       {
         "targetAbi": "10.10.7.0",
+        "version": "0.87.0.0",
+        "dependencies": [],
+        "checksum": "FE7A6DC32B095930A9582ED7FF8E7296",
+        "timestamp": "2025-10-07T22:56:39.609Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.87.0.0/JellyseerrBridge-0.87.0.0-DLL.zip",
+        "changelog": "v0.87.0.0 - Added Watch Providers Functionality - NEW FEATURE: Added watch providers API integration to fetch streaming services by region, Implemented GetWatchProvidersAsync method to retrieve watch providers from Jellyseerr API, Added JellyseerrWatchProvider model with id, name, logo_path, and display_priority properties, Created /JellyseerrBridge/WatchProviders endpoint to serve watch providers data. FRONTEND IMPROVEMENTS: Enhanced Manual Sync button to fetch watch providers for selected region before sync, Added comprehensive debug alert showing both sync results and watch providers list, Displays first 10 providers with names and IDs in debug output, Shows region-specific watch provider information during manual sync. TECHNICAL IMPROVEMENTS: Added proper JSON property mapping for watch provider data structure, Enhanced error handling for watch providers API calls, Improved debugging capabilities with detailed provider information, Better integration between region selection and provider fetching. This update adds complete watch providers functionality that fetches and displays streaming services available for the selected region when manual sync is performed."
+      },
+      {
+        "targetAbi": "10.10.7.0",
         "changelog": "v0.86.0.0 - Fixed Watch Provider Regions Frontend JavaScript - CRITICAL BUG FIX: Fixed frontend JavaScript to use correct property names from Jellyseerr API response, Updated JavaScript to access region.english_name, region.iso_3166_1, and region.native_name instead of camelCase versions, Resolved property name mismatch between backend model and frontend JavaScript, Fixed watch provider regions dropdown not populating despite correct API data. TECHNICAL IMPROVEMENTS: Corrected JavaScript property access to match actual API response structure, Enhanced frontend data processing to handle snake_case property names, Improved dropdown population logic with proper region filtering and sorting, Better alignment between backend JSON deserialization and frontend data consumption. This update completes the watch provider regions functionality by fixing the final frontend JavaScript property name mismatch issue.",
         "timestamp": "2025-10-07T22:24:40.277Z",
         "dependencies": [],
