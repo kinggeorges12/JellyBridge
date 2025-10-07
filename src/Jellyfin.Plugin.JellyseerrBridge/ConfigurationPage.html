@@ -2,68 +2,117 @@
     <div data-role="content">
         <div class="content-primary">
             <form id="jellyseerrBridgeConfigurationForm">
-                <div class="checkboxContainer">
-                    <label class="emby-checkbox-label">
-                        <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
-                        <span>Enable Plugin</span>
-                    </label>
-                </div>
+                <fieldset class="verticalSection-extrabottompadding">
+                    <legend>Jellyseerr Bridge Configuration</legend>
+                    
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
+                            <span>Enable Plugin</span>
+                        </label>
+                    </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" />
-                    <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://localhost:5055)</div>
-                </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" />
+                        <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://localhost:5055)</div>
+                    </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="password" id="ApiKey" label="API Key" />
-                    <div class="fieldDescription">Your Jellyseerr API key</div>
-                </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="ApiKey" label="API Key" />
+                        <div class="fieldDescription">Your Jellyseerr API key</div>
+                    </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
-                    <div class="fieldDescription">Directory path for Jellyseerr library files</div>
-                </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
+                        <div class="fieldDescription">Directory path for Jellyseerr library files</div>
+                    </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="number" id="UserId" label="User ID" />
-                    <div class="fieldDescription">Jellyseerr user ID for requests</div>
-                </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="UserId" label="User ID" />
+                        <div class="fieldDescription">Jellyseerr user ID for requests</div>
+                    </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" />
-                    <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
-                </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" />
+                        <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
+                    </div>
 
-                <div class="checkboxContainer">
-                    <label class="emby-checkbox-label">
-                        <input is="emby-checkbox" type="checkbox" id="ExcludeFromMainLibraries" />
-                        <span>Exclude placeholder shows from main libraries</span>
-                    </label>
-                </div>
+                    <details id="syncSettings">
+                        <summary>Sync Settings</summary>
+                        <br>
+                        <div class="checkboxContainer">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="ExcludeFromMainLibraries" />
+                                <span>Exclude placeholder shows from main libraries</span>
+                            </label>
+                        </div>
 
-                <div class="checkboxContainer">
-                    <label class="emby-checkbox-label">
-                        <input is="emby-checkbox" type="checkbox" id="CreateSeparateLibraries" />
-                        <span>Create separate libraries for streaming services</span>
-                    </label>
-                </div>
+                        <div class="checkboxContainer">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="CreateSeparateLibraries" />
+                                <span>Create separate libraries for streaming services</span>
+                            </label>
+                        </div>
 
-                <div class="inputContainer">
-                    <input is="emby-input" type="text" id="LibraryPrefix" label="Library Prefix" />
-                    <div class="fieldDescription">Prefix for streaming service library names</div>
-                </div>
+                        <div class="inputContainer">
+                            <input is="emby-input" type="text" id="LibraryPrefix" label="Library Prefix" />
+                            <div class="fieldDescription">Prefix for streaming service library names</div>
+                        </div>
 
-                <div>
-                    <button is="emby-button" type="button" id="testConnection" class="raised button block">
-                        <span>Test Connection</span>
-                    </button>
-                </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="AutoSyncOnStartup" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Auto-sync on Plugin Startup</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
+                        </div>
+                    </details>
 
-                <div>
-                    <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block">
-                        <span>Save</span>
-                    </button>
-                </div>
+                    <details id="advancedSettings">
+                        <summary>Advanced Configuration</summary>
+                        <br>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="RequestTimeout">Request Timeout (seconds)</label>
+                            <input id="RequestTimeout" type="number" is="emby-input" min="5" max="300" class="emby-input" />
+                            <div class="fieldDescription">Timeout for API requests to Jellyseerr. Default is 30 seconds.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="RetryAttempts">Retry Attempts</label>
+                            <input id="RetryAttempts" type="number" is="emby-input" min="0" max="10" class="emby-input" />
+                            <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableDebugLogging" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Enable Debug Logging</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This will generate more verbose logs in the Jellyfin server logs.</div>
+                        </div>
+
+                    </details>
+
+                    <div>
+                        <button is="emby-button" type="button" id="testConnection" class="raised button block">
+                            <span>Test Connection</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </fieldset>
             </form>
         </div>
     </div>
