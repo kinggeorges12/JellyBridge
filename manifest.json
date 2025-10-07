@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.64.0.0",
+          "changelog": "v0.64 - CHECKSUM VERIFICATION FIX: Rebuilt plugin with fresh checksum to resolve installation issues. This release addresses checksum mismatch errors that were preventing plugin installation. Updated version to 0.64 with verified checksum to ensure proper Jellyfin plugin installation.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.64/JellyseerrBridge-0.64-DLL.zip",
+          "checksum": "CEBB471065943F28EDDBD382A21E162A",
+          "timestamp": "2025-10-07T04:13:01.560Z",
+          "dependencies": []
+        },
+        {
           "version": "0.63.0.0",
           "changelog": "v0.63 - EMBEDDED RESOURCE PATH FIX: Fixed embedded resource paths to use GetType().Namespace pattern matching other Jellyfin plugins (Intro Skipper, Custom Tabs). Updated JavaScript page name from 'jellyseerrbridgejs' to 'configurationpagejs' for consistency. Updated HTML data-controller attribute to match new JavaScript page name. This follows the established Jellyfin plugin patterns and should resolve 'Failed to get resource' errors.",
           "targetAbi": "10.10.7.0",
