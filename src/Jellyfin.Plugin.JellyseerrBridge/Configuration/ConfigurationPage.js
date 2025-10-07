@@ -127,19 +127,42 @@ export default function (view) {
     syncButton.addEventListener('click', function () {
         Dashboard.showLoadingMsg();
         
-        // Load watch provider regions first
-        loadWatchProviderRegions(view);
-        
-        // Get selected region for watch providers
-        const selectedRegion = view.querySelector('#WatchProviderRegion')?.value || 'US';
-        
-        // Fetch watch providers for the selected region
-        ApiClient.ajax({
-            url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${selectedRegion}`),
-            type: 'GET',
-            dataType: 'json'
+        // First save the current settings
+        const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
+        ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
+            // Update config with current form values
+            config.IsEnabled = form.querySelector('#IsEnabled').checked;
+            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
+            config.ApiKey = form.querySelector('#ApiKey').value;
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+            config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
+            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
+            config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
+            config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
+            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
+            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
+            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
+            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
+            
+            // Save the configuration
+            return ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config);
+        }).then(function () {
+            // Settings saved, now load watch provider regions
+            loadWatchProviderRegions(view);
+            
+            // Get selected region for watch providers
+            const selectedRegion = view.querySelector('#WatchProviderRegion')?.value || 'US';
+            
+            // Fetch watch providers for the selected region
+            return ApiClient.ajax({
+                url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${selectedRegion}`),
+                type: 'GET',
+                dataType: 'json'
+            });
         }).then(function (providersData) {
-            // Now do the sync
+            // Now do the sync using saved plugin settings
             return ApiClient.ajax({
                 url: ApiClient.getUrl('JellyseerrBridge/Sync'),
                 type: 'POST',
@@ -157,7 +180,7 @@ export default function (view) {
                     'Response message: ' + (syncData?.message || 'UNDEFINED') + '\n\n';
                 
                 debugInfo += 'WATCH PROVIDERS DEBUG:\n' +
-                    'Region: ' + selectedRegion + '\n' +
+                    'Region: ' + (view.querySelector('#WatchProviderRegion')?.value || 'US') + '\n' +
                     'Providers response exists: ' + (providersData ? 'YES' : 'NO') + '\n' +
                     'Providers success: ' + (providersData?.success ? 'YES' : 'NO') + '\n' +
                     'Providers count: ' + (providersData?.providers ? providersData.providers.length : 'UNDEFINED') + '\n\n';

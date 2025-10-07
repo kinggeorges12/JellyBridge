@@ -298,34 +298,88 @@ public class JellyseerrApiService
     {
         try
         {
-            var providersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?watchRegion={region}";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, providersUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
+            var movieProvidersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?watchRegion={region}";
+            var tvProvidersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/tv?watchRegion={region}";
             
-            var response = await _httpClient.SendAsync(requestMessage);
+            var movieRequest = new HttpRequestMessage(HttpMethod.Get, movieProvidersUrl);
+            movieRequest.Headers.Add("X-Api-Key", config.ApiKey);
             
-            if (!response.IsSuccessStatusCode)
+            var tvRequest = new HttpRequestMessage(HttpMethod.Get, tvProvidersUrl);
+            tvRequest.Headers.Add("X-Api-Key", config.ApiKey);
+            
+            // Fetch both movie and TV providers concurrently
+            var movieTask = _httpClient.SendAsync(movieRequest);
+            var tvTask = _httpClient.SendAsync(tvRequest);
+            
+            await Task.WhenAll(movieTask, tvTask);
+            
+            var movieResponse = await movieTask;
+            var tvResponse = await tvTask;
+            
+            var allProviders = new List<JellyseerrWatchProvider>();
+            var providerIds = new HashSet<int>(); // To avoid duplicates
+            
+            // Process movie providers
+            if (movieResponse.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Failed to get watch providers with status: {StatusCode}", response.StatusCode);
-                return new List<JellyseerrWatchProvider>();
+                var movieContent = await movieResponse.Content.ReadAsStringAsync();
+                _logger.LogDebug("[JellyseerrBridge] Movie Providers API Response: {Content}", movieContent);
+                
+                var movieProviders = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(movieContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = false
+                });
+                
+                if (movieProviders != null)
+                {
+                    foreach (var provider in movieProviders)
+                    {
+                        if (providerIds.Add(provider.Id)) // Only add if not already present
+                        {
+                            allProviders.Add(provider);
+                        }
+                    }
+                }
             }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            _logger.LogDebug("[JellyseerrBridge] Watch Providers API Response: {Content}", content);
-            
-            // Log first few characters to see the structure
-            var preview = content.Length > 200 ? content.Substring(0, 200) + "..." : content;
-            _logger.LogWarning("[JellyseerrBridge] Watch Providers API Response Preview: {Preview}", preview);
-            
-            var providers = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(content, new JsonSerializerOptions
+            else
             {
-                PropertyNameCaseInsensitive = false
-            });
-
-            _logger.LogInformation("Retrieved {Count} watch providers for region {Region} from Jellyseerr", providers?.Count ?? 0, region);
+                _logger.LogWarning("Failed to get movie watch providers with status: {StatusCode}", movieResponse.StatusCode);
+            }
             
-            return providers ?? new List<JellyseerrWatchProvider>();
+            // Process TV providers
+            if (tvResponse.IsSuccessStatusCode)
+            {
+                var tvContent = await tvResponse.Content.ReadAsStringAsync();
+                _logger.LogDebug("[JellyseerrBridge] TV Providers API Response: {Content}", tvContent);
+                
+                var tvProviders = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(tvContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = false
+                });
+                
+                if (tvProviders != null)
+                {
+                    foreach (var provider in tvProviders)
+                    {
+                        if (providerIds.Add(provider.Id)) // Only add if not already present
+                        {
+                            allProviders.Add(provider);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Failed to get TV watch providers with status: {StatusCode}", tvResponse.StatusCode);
+            }
+            
+            // Log combined results
+            var preview = allProviders.Count > 0 ? $"Found {allProviders.Count} unique providers" : "No providers found";
+            _logger.LogWarning("[JellyseerrBridge] Combined Watch Providers Result: {Preview}", preview);
+            
+            _logger.LogInformation("Retrieved {Count} combined watch providers for region {Region} from Jellyseerr", allProviders.Count, region);
+            
+            return allProviders;
         }
         catch (Exception ex)
         {
