@@ -12,10 +12,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Api
     {
         private readonly ILogger<ConfigurationController> _logger;
 
-        public ConfigurationController(ILogger<ConfigurationController> logger)
+        public ConfigurationController(ILoggerFactory loggerFactory)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger<ConfigurationController>();
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
+        }
+
+        [HttpGet("GetConfiguration")]
+        public IActionResult GetConfiguration()
+        {
+            _logger.LogInformation("[JellyseerrBridge] Configuration page accessed - GetConfiguration endpoint called");
+            return Ok(new { message = "Configuration page loaded successfully" });
         }
 
         [HttpPost("TestConnection")]

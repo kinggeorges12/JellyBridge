@@ -16,12 +16,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         
         public static Plugin Instance { get; private set; } = null!;
         
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger) 
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory) 
             : base(applicationPaths, xmlSerializer)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger<Plugin>();
             Instance = this;
-                _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version 0.49.0.0");
+            _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version 0.50.0.0");
             _logger.LogInformation("[JellyseerrBridge] Plugin ID: {PluginId}", Id);
             _logger.LogInformation("[JellyseerrBridge] Plugin Name: {PluginName}", Name);
         }
@@ -29,6 +29,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
         {
             _logger.LogInformation("[JellyseerrBridge] Configuration update requested");
+            _logger.LogInformation("[JellyseerrBridge] Configuration update method called - this means the save button was clicked!");
             
             var pluginConfig = (PluginConfiguration)configuration;
             _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, UserId: {UserId}, SyncInterval: {SyncInterval}", 
@@ -45,12 +46,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge
 
         public IEnumerable<PluginPageInfo> GetPages()
         {
-            string? prefix = GetType().Namespace;
-
-            yield return new PluginPageInfo
+            return new[]
             {
-                Name = Name,
-                EmbeddedResourcePath = $"{prefix}.ConfigurationPage.html"
+                new PluginPageInfo
+                {
+                    Name = Name,
+                    EmbeddedResourcePath = GetType().Namespace + ".ConfigurationPage.html",
+                },
+                new PluginPageInfo
+                {
+                    Name = "jellyseerrbridgejs",
+                    EmbeddedResourcePath = GetType().Namespace + ".jellyseerrbridge.js"
+                }
             };
         }
     }
