@@ -68,13 +68,31 @@ public class JellyseerrApiService
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var requests = JsonSerializer.Deserialize<List<JellyseerrRequest>>(content, new JsonSerializerOptions
+            
+            _logger.LogDebug("[JellyseerrBridge] Requests API Response: {Content}", content);
+            
+            // Handle empty response
+            if (string.IsNullOrWhiteSpace(content))
             {
-                PropertyNameCaseInsensitive = true
-            });
+                _logger.LogInformation("Empty response received for requests");
+                return new List<JellyseerrRequest>();
+            }
 
-            _logger.LogInformation("Retrieved {Count} requests from Jellyseerr", requests?.Count ?? 0);
-            return requests ?? new List<JellyseerrRequest>();
+            try
+            {
+                var requests = JsonSerializer.Deserialize<List<JellyseerrRequest>>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                _logger.LogInformation("Retrieved {Count} requests from Jellyseerr", requests?.Count ?? 0);
+                return requests ?? new List<JellyseerrRequest>();
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogWarning(jsonEx, "Failed to deserialize requests JSON. Content: {Content}", content);
+                return new List<JellyseerrRequest>();
+            }
         }
         catch (Exception ex)
         {
@@ -103,13 +121,31 @@ public class JellyseerrApiService
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var movies = JsonSerializer.Deserialize<List<JellyseerrMovie>>(content, new JsonSerializerOptions
+            
+            _logger.LogDebug("[JellyseerrBridge] Movies API Response: {Content}", content);
+            
+            // Handle empty response
+            if (string.IsNullOrWhiteSpace(content))
             {
-                PropertyNameCaseInsensitive = true
-            });
+                _logger.LogInformation("Empty response received for movies");
+                return new List<JellyseerrMovie>();
+            }
 
-            _logger.LogInformation("Retrieved {Count} movies from Jellyseerr", movies?.Count ?? 0);
-            return movies ?? new List<JellyseerrMovie>();
+            try
+            {
+                var movies = JsonSerializer.Deserialize<List<JellyseerrMovie>>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                _logger.LogInformation("Retrieved {Count} movies from Jellyseerr", movies?.Count ?? 0);
+                return movies ?? new List<JellyseerrMovie>();
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogWarning(jsonEx, "Failed to deserialize movies JSON. Content: {Content}", content);
+                return new List<JellyseerrMovie>();
+            }
         }
         catch (Exception ex)
         {
@@ -138,13 +174,31 @@ public class JellyseerrApiService
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var shows = JsonSerializer.Deserialize<List<JellyseerrTvShow>>(content, new JsonSerializerOptions
+            
+            _logger.LogDebug("[JellyseerrBridge] TV Shows API Response: {Content}", content);
+            
+            // Handle empty response
+            if (string.IsNullOrWhiteSpace(content))
             {
-                PropertyNameCaseInsensitive = true
-            });
+                _logger.LogInformation("Empty response received for TV shows");
+                return new List<JellyseerrTvShow>();
+            }
 
-            _logger.LogInformation("Retrieved {Count} TV shows from Jellyseerr", shows?.Count ?? 0);
-            return shows ?? new List<JellyseerrTvShow>();
+            try
+            {
+                var shows = JsonSerializer.Deserialize<List<JellyseerrTvShow>>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                _logger.LogInformation("Retrieved {Count} TV shows from Jellyseerr", shows?.Count ?? 0);
+                return shows ?? new List<JellyseerrTvShow>();
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogWarning(jsonEx, "Failed to deserialize TV shows JSON. Content: {Content}", content);
+                return new List<JellyseerrTvShow>();
+            }
         }
         catch (Exception ex)
         {
@@ -208,6 +262,9 @@ public class JellyseerrApiService
             }
 
             var content = await response.Content.ReadAsStringAsync();
+            
+            _logger.LogDebug("[JellyseerrBridge] Watch Provider Regions API Response: {Content}", content);
+            
             var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
