@@ -176,7 +176,7 @@ function loadWatchProviderRegions(page) {
         if (data && data.success && data.regions) {
             const select = page.querySelector('#WatchProviderRegion');
             if (select) {
-                // Clear existing options except the default US option
+                // Clear existing options
                 select.innerHTML = '';
                 
                 // Sort regions by English name
@@ -190,14 +190,19 @@ function loadWatchProviderRegions(page) {
                     select.appendChild(option);
                 });
                 
-                // Set the current value if it exists
-                const currentValue = page.querySelector('#WatchProviderRegion').getAttribute('data-current-value') || 'US';
+                // Ensure US is selected by default if no current value is set
+                const currentValue = select.getAttribute('data-current-value') || 'US';
                 select.value = currentValue;
+                
+                // If the current value doesn't exist in the list, default to US
+                if (!select.value || select.value === '') {
+                    select.value = 'US';
+                }
             }
         } else {
-            console.warn('Failed to load watch provider regions:', data);
+            // Failed to load regions - keep default US option
         }
     }).catch(function (error) {
-        console.error('Error loading watch provider regions:', error);
+        // Error loading regions - keep default US option
     });
 }
