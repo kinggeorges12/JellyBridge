@@ -144,8 +144,8 @@ public class JellyseerrSyncService
         {
             try
             {
-                _logger.LogDebug("Processing request {RequestId} for {MediaTitle} ({MediaType})",
-                    request.Id, request.MediaTitle, request.MediaType);
+                _logger.LogDebug("Processing request {RequestId} for {MediaType} (ID: {MediaId})",
+                    request.Id, request.Media?.MediaType ?? "Unknown", request.Media?.Id ?? 0);
 
                 // Update request status in Jellyfin metadata
                 await UpdateRequestStatusAsync(request);
@@ -212,7 +212,8 @@ public class JellyseerrSyncService
     /// </summary>
     private async Task UpdateRequestStatusAsync(JellyseerrRequest request)
     {
-        _logger.LogDebug("Updating request status for {MediaTitle}: {Status}", request.MediaTitle, request.Status);
+        _logger.LogDebug("Updating request status for {MediaType} (ID: {MediaId}): {Status}", 
+            request.Media?.MediaType ?? "Unknown", request.Media?.Id ?? 0, request.Status);
         
         // Update request status in Jellyfin metadata
         // Implementation depends on Jellyfin's internal APIs

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-07T21:44:30.829Z",
+        "version": "0.82.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.82.0.0/JellyseerrBridge-0.82.0.0-DLL.zip",
+        "checksum": "6FCDD68306B56CEEF529D08245BCA020",
+        "dependencies": [],
+        "changelog": "v0.82.0.0 - Fixed Jellyseerr Request Model Data Types - CRITICAL BUG FIX: Fixed JSON deserialization error for Jellyseerr request status field, Corrected data type mismatch where API returns numeric status but model expected string, Updated JellyseerrRequest model to properly handle numeric values from Jellyseerr API, Resolved 'Cannot get the value of a token type Number as a string' error. MODEL IMPROVEMENTS: Updated JellyseerrRequest model with correct data types (Status as int, not string), Added comprehensive JellyseerrRequestMedia model for nested media information, Enhanced model structure to match actual Jellyseerr API response format, Added missing fields like Type, Is4k, SeasonCount, CanRemove. TECHNICAL IMPROVEMENTS: Fixed JellyseerrSyncService to use new model structure, Updated logging to access media information through nested Media property, Improved error handling and debugging capabilities, Better alignment with Jellyseerr API response structure. This update resolves the critical sync functionality by properly handling the Jellyseerr API response data types.",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "timestamp": "2025-10-07T21:10:50.952Z",
         "targetAbi": "10.10.7.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.81.0.0/JellyseerrBridge-0.81.0.0-DLL.zip",

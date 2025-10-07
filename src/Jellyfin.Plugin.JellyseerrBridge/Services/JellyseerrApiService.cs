@@ -290,13 +290,45 @@ public class JellyseerrApiService
 public class JellyseerrRequest
 {
     public int Id { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public string MediaType { get; set; } = string.Empty;
-    public int MediaId { get; set; }
-    public string MediaTitle { get; set; } = string.Empty;
+    public int Status { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public bool Is4k { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public JellyseerrRequestMedia? Media { get; set; }
+    public JellyseerrUser? ModifiedBy { get; set; }
     public JellyseerrUser? RequestedBy { get; set; }
+    public int SeasonCount { get; set; }
+    public bool CanRemove { get; set; }
+}
+
+/// <summary>
+/// Jellyseerr request media model.
+/// </summary>
+public class JellyseerrRequestMedia
+{
+    public int Id { get; set; }
+    public string MediaType { get; set; } = string.Empty;
+    public int TmdbId { get; set; }
+    public int? TvdbId { get; set; }
+    public string? ImdbId { get; set; }
+    public int Status { get; set; }
+    public int Status4k { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime? MediaAddedAt { get; set; }
+    public int ServiceId { get; set; }
+    public int? ServiceId4k { get; set; }
+    public int ExternalServiceId { get; set; }
+    public int? ExternalServiceId4k { get; set; }
+    public string ExternalServiceSlug { get; set; } = string.Empty;
+    public string? ExternalServiceSlug4k { get; set; }
+    public string? RatingKey { get; set; }
+    public string? RatingKey4k { get; set; }
+    public string? JellyfinMediaId { get; set; }
+    public string? JellyfinMediaId4k { get; set; }
+    public string? MediaUrl { get; set; }
+    public string? ServiceUrl { get; set; }
 }
 
 /// <summary>
