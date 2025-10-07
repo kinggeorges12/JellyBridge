@@ -9,12 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-07T16:17:31.019Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.77.0.0/JellyseerrBridge-0.77.0.0-DLL.zip",
+        "version": "0.77.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.77.0.0 - Complete Jellyfin API Implementation - MAJOR FEATURES: Implemented complete Jellyseerr API service with HTTP client, Added JellyseerrSyncService for library synchronization, Created scheduled task for automatic syncing, Added manual sync button in configuration UI, Implemented proper dependency injection and service registration. TECHNICAL IMPROVEMENTS: Fixed configuration parameter passing throughout services, Updated API service to use proper HTTP headers and authentication, Added comprehensive error handling and logging, Implemented proper Jellyfin plugin patterns and conventions, Fixed frontend API calls to use ApiClient.ajax() instead of XMLHttpRequest. API ENDPOINTS: /JellyseerrBridge/TestConnection - Test Jellyseerr connectivity, /JellyseerrBridge/Sync - Manual sync trigger, Scheduled task for automatic periodic syncing. CONFIGURATION: Added missing configuration properties (AutoSyncOnStartup, RequestTimeout, etc.), Enhanced configuration validation and error handling, Improved configuration UI with manual sync functionality. This release establishes the complete foundation for Jellyseerr-Jellyfin integration with proper API communication, data synchronization, and user interface controls.",
+        "dependencies": [],
+        "checksum": "EE21D5E5F16CCFB0C2EC89B2571A2EFC"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.76.0.0/JellyseerrBridge-0.76.0.0-DLL.zip",
         "changelog": "v0.76.0.0 - AUTO-GENERATED RELEASE: Automated release using publish.ps1 script. This release includes the latest fixes and improvements.",
         "dependencies": [],
         "version": "0.76.0.0",
         "targetAbi": "10.10.7.0",
-        "timestamp": "2025-10-07T15:54:44.500Z",
+        "timestamp": "2025-10-07T15:54:44.5Z",
         "checksum": "A6F91CD2AB7F3A33AAFCA02627EDF111"
       },
       {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using System.Net.Http;
 using System.Text.Json;
+using Jellyfin.Plugin.JellyseerrBridge.Services;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
@@ -11,10 +12,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     public class ConfigurationController : ControllerBase
     {
         private readonly ILogger<ConfigurationController> _logger;
+        private readonly JellyseerrSyncService _syncService;
 
-        public ConfigurationController(ILoggerFactory loggerFactory)
+        public ConfigurationController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService)
         {
             _logger = loggerFactory.CreateLogger<ConfigurationController>();
+            _syncService = syncService;
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
@@ -174,6 +177,31 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 return Ok(new { 
                     success = false, 
                     message = $"Unexpected error: {ex.Message}" 
+                });
+            }
+        }
+
+        [HttpPost("Sync")]
+        public async Task<IActionResult> Sync()
+        {
+            _logger.LogInformation("[JellyseerrBridge] Manual sync requested");
+            
+            try
+            {
+                await _syncService.SyncAsync();
+                
+                _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
+                return Ok(new { 
+                    success = true, 
+                    message = "Sync completed successfully" 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
+                return Ok(new { 
+                    success = false, 
+                    message = $"Sync failed: {ex.Message}" 
                 });
             }
         }
