@@ -189,8 +189,10 @@ function loadWatchProviderRegions(page) {
                 // Clear existing options
                 select.innerHTML = '';
                 
-                // Sort regions by English name
-                const sortedRegions = data.regions.sort((a, b) => a.englishName.localeCompare(b.englishName));
+                // Sort regions by English name (with null safety)
+                const sortedRegions = data.regions
+                    .filter(region => region.englishName && region.englishName.trim() !== '')
+                    .sort((a, b) => a.englishName.localeCompare(b.englishName));
                 
                 // Add options for each region
                 sortedRegions.forEach(region => {

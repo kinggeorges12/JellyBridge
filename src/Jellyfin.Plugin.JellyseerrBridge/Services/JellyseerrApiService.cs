@@ -268,12 +268,25 @@ public class JellyseerrApiService
             
             _logger.LogDebug("[JellyseerrBridge] Watch Provider Regions API Response: {Content}", content);
             
+            // Log first few characters to see the structure
+            var preview = content.Length > 200 ? content.Substring(0, 200) + "..." : content;
+            _logger.LogWarning("[JellyseerrBridge] Watch Provider Regions API Response Preview: {Preview}", preview);
+            
             var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
             _logger.LogInformation("Retrieved {Count} watch provider regions from Jellyseerr", regions?.Count ?? 0);
+            
+            // Log first region to see what we got
+            if (regions != null && regions.Count > 0)
+            {
+                var firstRegion = regions[0];
+                _logger.LogWarning("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
+                    firstRegion.Iso31661, firstRegion.EnglishName, firstRegion.NativeName);
+            }
+            
             return regions ?? new List<JellyseerrWatchProviderRegion>();
         }
         catch (Exception ex)
