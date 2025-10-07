@@ -2,8 +2,9 @@ using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Jellyfin.Plugin.JellyseerrBridge.Controllers;
 
-namespace Jellyfin.Plugin.JellyseerrBridge
+namespace Jellyfin.Plugin.JellyseerrBridge.Services
 {
     /// <summary>
     /// Register Jellyseerr Bridge services.
@@ -15,6 +16,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             // Register logging services for the plugin
             serviceCollection.AddLogging();
+            
+            // Register the API controller
+            serviceCollection.AddScoped<ConfigurationController>();
         }
     }
 }
