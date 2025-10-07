@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.54.0.0",
+          "changelog": "v0.54 - LICENSE UPDATE: Changed project license from MIT to GPL-3.0 to comply with GPL-licensed code reuse from Intro Skipper and Custom Tabs plugins. Updated acknowledgments to properly credit GPL-licensed code reuse. Added proper LICENSE file downloaded from Custom Tabs repository.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.54/JellyseerrBridge-0.54-DLL.zip",
+          "checksum": "DCAA4388670D7F343193639AFC2E4AA9",
+          "timestamp": "2025-10-07T01:25:14.390Z",
+          "dependencies": []
+        },
+        {
+          "version": "0.53.0.0",
+          "changelog": "v0.53 - FIXED BUTTON STYLING: Added missing 'emby-button' class to Test Connection and Save buttons to match Intro Skipper styling. Buttons should now display with proper size and appearance. This patch release ensures the JavaScript connection test fix from v0.52 is properly deployed.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.53/JellyseerrBridge-0.53-DLL.zip",
+          "checksum": "3DDEB5CEFCA1E1B24E8253AED2542DBF",
+          "timestamp": "2025-10-07T00:54:23.838Z",
+          "dependencies": []
+        },
+        {
           "version": "0.52.0.0",
           "changelog": "v0.52 - FIXED CONNECTION TEST & IMPROVED UI: Fixed JavaScript connection test by replacing ApiClient.fetch() with ApiClient.ajax() to resolve 'Request with GET/HEAD method cannot have body' error. Enhanced configuration page with bordered fieldset styling matching Intro Skipper plugin. Added collapsible 'Sync Settings' and 'Advanced Configuration' sections for better organization. Moved library management and auto-sync settings to Sync Settings section. Test Connection button should now work properly with success/error popups.",
           "targetAbi": "10.10.7.0",
