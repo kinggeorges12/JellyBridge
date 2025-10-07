@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.52.0.0",
+          "changelog": "v0.52 - FIXED CONNECTION TEST & IMPROVED UI: Fixed JavaScript connection test by replacing ApiClient.fetch() with ApiClient.ajax() to resolve 'Request with GET/HEAD method cannot have body' error. Enhanced configuration page with bordered fieldset styling matching Intro Skipper plugin. Added collapsible 'Sync Settings' and 'Advanced Configuration' sections for better organization. Moved library management and auto-sync settings to Sync Settings section. Test Connection button should now work properly with success/error popups.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.52/JellyseerrBridge-0.52-DLL.zip",
+          "checksum": "43545D6BA24B730BA9DFA91A2CCD8A51",
+          "timestamp": "2025-10-07T00:50:06.415Z",
+          "dependencies": []
+        },
+        {
           "version": "0.51.0.0",
           "changelog": "v0.51 - VERSION INCREMENT: Incremented version to 0.51.0.0 for next release. Updated all project files with new version numbers. Built and packaged DLL files for distribution.",
           "targetAbi": "10.10.7.0",

@@ -57,9 +57,9 @@ export default function (view) {
             ApiKey: apiKey
         };
 
-        ApiClient.fetch({
+        ApiClient.ajax({
             url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            method: 'POST',
+            type: 'POST',
             data: JSON.stringify(testData),
             contentType: 'application/json'
         }).then(function (response) {
