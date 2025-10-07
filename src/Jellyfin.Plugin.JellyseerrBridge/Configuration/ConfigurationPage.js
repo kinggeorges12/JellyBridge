@@ -84,15 +84,11 @@ export default function (view) {
 
         console.log('🔍 SENDING REQUEST:\n\n' + debugRequest);
 
-        ApiClient.fetch({
+        ApiClient.ajax({
             url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            method: 'POST',
-            body: JSON.stringify(testData),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(function (response) {
-            return response.json();
+            type: 'POST',
+            data: JSON.stringify(testData),
+            contentType: 'application/json'
         }).then(function (data) {
             Dashboard.hideLoadingMsg();
             const debugInfo = 'RESPONSE DEBUG:\n' +
