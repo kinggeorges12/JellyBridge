@@ -215,11 +215,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             try
             {
                 var config = Plugin.Instance.Configuration;
+                _logger.LogInformation("[JellyseerrBridge] Config - JellyseerrUrl: {Url}, ApiKey: {ApiKey}", 
+                    config.JellyseerrUrl, 
+                    string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
+                
                 var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
                 
                 var regions = await apiService.GetWatchProviderRegionsAsync(config);
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch provider regions", regions.Count);
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch provider regions", regions?.Count ?? 0);
+                
+                if (regions == null || regions.Count == 0)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] No regions returned from API service");
+                    return Ok(new { 
+                        success = false, 
+                        message = "No regions returned from Jellyseerr API",
+                        regions = new List<object>()
+                    });
+                }
+                
                 return Ok(new { 
                     success = true, 
                     regions = regions 
