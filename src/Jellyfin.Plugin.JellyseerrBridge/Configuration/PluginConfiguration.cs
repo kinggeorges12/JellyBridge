@@ -80,4 +80,33 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the watch provider region (ISO 3166-1 country code).
     /// </summary>
     public string WatchProviderRegion { get; set; } = "US";
+
+    /// <summary>
+    /// Gets the default list of networks/streaming services.
+    /// </summary>
+    public static List<string> JellyseerrDefaultNetworks => new List<string>
+    {
+        "Netflix",
+        "Disney+",
+        "Prime Video",
+        "Apple TV+",
+        "Hulu",
+        "HBO",
+        "Discovery+",
+        "ABC",
+        "FOX",
+        "Cinemax",
+        "AMC",
+        "Showtime",
+        "Starz",
+        "The CW",
+        "NBC",
+        "CBS",
+        "Paramount+",
+        "BBC One",
+        "Cartoon Network",
+        "Adult Swim",
+        "Nickelodeon",
+        "Peacock"
+    };
 }

@@ -67,7 +67,13 @@ export default function (view) {
     form.addEventListener('submit', function (e) {
         Dashboard.showLoadingMsg();
         // Use the reusable function to save configuration
-        savePluginConfiguration(view).then(Dashboard.processPluginConfigurationUpdateResult);
+        savePluginConfiguration(view).then(function (result) {
+            Dashboard.hideLoadingMsg();
+            Dashboard.processPluginConfigurationUpdateResult(result);
+        }).catch(function (error) {
+            Dashboard.hideLoadingMsg();
+            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+        });
         e.preventDefault();
         return false;
     });
@@ -111,13 +117,13 @@ export default function (view) {
                 // Show confirmation dialog for saving settings
                 Dashboard.confirm({
                     title: 'Connection Success!',
-                    text: 'Connection success!\nSave connection settings now?',
-                    confirmText: 'Save',
+                    text: 'Connection success!<br>Save connection settings now?',
+                    confirmText: 'Confirm',
                     cancelText: 'Cancel'
                 }).then(function (confirmed) {
                     if (confirmed) {
                         // Save the current settings using the reusable function
-                        savePluginConfiguration(view).then(function () {
+                        savePluginConfiguration(view).then(function (result) {
                             Dashboard.alert('✅ Settings saved successfully!');
                         }).catch(function (error) {
                             Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
