@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
       "versions": [
         {
+          "version": "0.68.0.0",
+          "changelog": "v0.68 - COMPLETE EMBEDDED RESOURCE FIX: Added RootNamespace property and None Remove + EmbeddedResource pattern matching Intro Skipper exactly. This ensures embedded resources are properly named as 'Jellyfin.Plugin.JellyseerrBridge.Configuration.ConfigurationPage.html' and embedded (not copied) in the DLL. Fixed JavaScript page name references. This should completely resolve the 'Failed to get resource' errors by using the exact same embedded resource approach as other working Jellyfin plugins.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.68/JellyseerrBridge-0.68-DLL.zip",
+          "checksum": "D0301B4F3802FCA909C6C962EEE129E1",
+          "timestamp": "2025-10-07T06:55:32.162Z",
+          "dependencies": []
+        },
+        {
           "version": "0.67.0.0",
           "changelog": "v0.67 - STANDARD EMBEDDED RESOURCE FIX: Removed LogicalName from embedded resources to use standard MSBuild behavior like other Jellyfin plugins. Updated Plugin.cs to use dynamic version from assembly. This follows the exact same pattern as Intro Skipper, Custom Tabs, Webhook, and KodiSyncQueue plugins. Should resolve 'Failed to get resource' errors by using the standard embedded resource approach.",
           "targetAbi": "10.10.7.0",
@@ -46,7 +55,7 @@
         },
         {
           "version": "0.63.0.0",
-          "changelog": "v0.63 - EMBEDDED RESOURCE PATH FIX: Fixed embedded resource paths to use GetType().Namespace pattern matching other Jellyfin plugins (Intro Skipper, Custom Tabs). Updated JavaScript page name from 'jellyseerrbridgejs' to 'configurationpagejs' for consistency. Updated HTML data-controller attribute to match new JavaScript page name. This follows the established Jellyfin plugin patterns and should resolve 'Failed to get resource' errors.",
+          "changelog": "v0.63 - EMBEDDED RESOURCE PATH FIX: Fixed embedded resource paths to use GetType().Namespace pattern matching other Jellyfin plugins (Intro Skipper, Custom Tabs). Updated JavaScript page name from 'jellyseerrbridgejs' to 'ConfigurationPage.js' for consistency. Updated HTML data-controller attribute to match new JavaScript page name. This follows the established Jellyfin plugin patterns and should resolve 'Failed to get resource' errors.",
           "targetAbi": "10.10.7.0",
           "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.63/JellyseerrBridge-0.63-DLL.zip",
           "checksum": "054D85DD6787DA31C27513836AD28874",

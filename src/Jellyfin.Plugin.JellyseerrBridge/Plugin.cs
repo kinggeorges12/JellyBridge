@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         private readonly ILogger<Plugin> _logger;
 
-        public override Guid Id => new Guid("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
+        public override Guid Id => Guid.Parse("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
         
         public static Plugin Instance { get; private set; } = null!;
@@ -56,7 +56,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 },
                 new PluginPageInfo
                 {
-                    Name = "configurationpagejs",
+                    Name = "ConfigurationPage.js",
                     EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.js"
                 }
             };
