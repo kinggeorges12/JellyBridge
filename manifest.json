@@ -4,12 +4,30 @@
     "name": "Jellyseerr Bridge",
     "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
     "owner": "kinggeorges12",
-    "category": "Library",
+    "category": "Metadata",
     "imageUrl": "https://docs.jellyseerr.dev/img/logo.svg",
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
-    "versions": [
-      {
-        "version": "0.49.0.0",
+      "versions": [
+        {
+          "version": "0.51.0.0",
+          "changelog": "v0.51 - VERSION INCREMENT: Incremented version to 0.51.0.0 for next release. Updated all project files with new version numbers. Built and packaged DLL files for distribution.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.51/JellyseerrBridge-0.51-DLL.zip",
+          "checksum": "55FAFF06C1770425C5FD26C6DED3DC9A",
+          "timestamp": "2025-10-07T00:18:29.187Z",
+          "dependencies": []
+        },
+        {
+          "version": "0.50.0.0",
+          "changelog": "v0.50 - KODISYNC QUEUE PATTERNS: Implemented kodisync queue patterns for proper logging and configuration. Updated Plugin.cs and ConfigurationController.cs to use ILoggerFactory for proper logging. Created separate jellyseerrbridge.js file following kodisync queue pattern with viewshow event and form submit handling. Simplified HTML structure to match kodisync queue. Save button should now work with proper 'Settings saved.' notifications and test connection should show success/error popups.",
+          "targetAbi": "10.10.7.0",
+          "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.50/JellyseerrBridge-0.50-DLL.zip",
+          "checksum": "E5F265165CBAC0DF1F4ADA591BAFED14",
+          "timestamp": "2025-10-07T00:14:20.531Z",
+          "dependencies": []
+        },
+        {
+          "version": "0.49.0.0",
         "changelog": "v0.49 - FIXED CONFIGURATION PAGE FUNCTIONALITY: Completely rewrote configuration page JavaScript to match file transformation plugin pattern. Fixed save button to use click event listener instead of form submit. Fixed test connection button to use Dashboard.alert() popup for user feedback. Changed page ID to 'jellyseerrBridgeConfigurationPage' and implemented proper JellyseerrBridgeConfig object pattern. Save button should now show 'Settings saved.' notification and test connection should show success/error popups.",
         "targetAbi": "10.10.7.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.49/JellyseerrBridge-0.49-DLL.zip",
