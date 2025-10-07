@@ -191,14 +191,14 @@ function loadWatchProviderRegions(page) {
                 
                 // Sort regions by English name (with null safety)
                 const sortedRegions = data.regions
-                    .filter(region => region.englishName && region.englishName.trim() !== '')
-                    .sort((a, b) => a.englishName.localeCompare(b.englishName));
+                    .filter(region => region.english_name && region.english_name.trim() !== '')
+                    .sort((a, b) => a.english_name.localeCompare(b.english_name));
                 
                 // Add options for each region
                 sortedRegions.forEach(region => {
                     const option = document.createElement('option');
-                    option.value = region.iso31661;
-                    option.textContent = `${region.englishName} (${region.nativeName})`;
+                    option.value = region.iso_3166_1;
+                    option.textContent = `${region.english_name} (${region.native_name})`;
                     select.appendChild(option);
                 });
                 
