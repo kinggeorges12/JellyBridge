@@ -130,28 +130,54 @@ export default function (view) {
         // Load watch provider regions first
         loadWatchProviderRegions(view);
         
+        // Get selected region for watch providers
+        const selectedRegion = view.querySelector('#WatchProviderRegion')?.value || 'US';
+        
+        // Fetch watch providers for the selected region
         ApiClient.ajax({
-            url: ApiClient.getUrl('JellyseerrBridge/Sync'),
-            type: 'POST',
-            data: '{}',
-            contentType: 'application/json',
+            url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${selectedRegion}`),
+            type: 'GET',
             dataType: 'json'
-        }).then(function (data) {
-            Dashboard.hideLoadingMsg();
-            
-            const debugInfo = 'SYNC RESPONSE DEBUG:\n' +
-                'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
-                'Response type: ' + typeof data + '\n' +
-                'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
-                'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
-                'Full response: ' + JSON.stringify(data) + '\n' +
-                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
-            
-            if (data && data.success) {
-                Dashboard.alert('✅ SYNC SUCCESS!\n\n' + debugInfo);
-            } else {
-                Dashboard.alert('❌ SYNC FAILED!\n\n' + debugInfo);
-            }
+        }).then(function (providersData) {
+            // Now do the sync
+            return ApiClient.ajax({
+                url: ApiClient.getUrl('JellyseerrBridge/Sync'),
+                type: 'POST',
+                data: '{}',
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function (syncData) {
+                Dashboard.hideLoadingMsg();
+                
+                // Create debug info with both sync and providers data
+                let debugInfo = 'SYNC RESPONSE DEBUG:\n' +
+                    'Response exists: ' + (syncData ? 'YES' : 'NO') + '\n' +
+                    'Response type: ' + typeof syncData + '\n' +
+                    'Response success: ' + (syncData?.success ? 'YES' : 'NO') + '\n' +
+                    'Response message: ' + (syncData?.message || 'UNDEFINED') + '\n\n';
+                
+                debugInfo += 'WATCH PROVIDERS DEBUG:\n' +
+                    'Region: ' + selectedRegion + '\n' +
+                    'Providers response exists: ' + (providersData ? 'YES' : 'NO') + '\n' +
+                    'Providers success: ' + (providersData?.success ? 'YES' : 'NO') + '\n' +
+                    'Providers count: ' + (providersData?.providers ? providersData.providers.length : 'UNDEFINED') + '\n\n';
+                
+                if (providersData?.success && providersData.providers) {
+                    debugInfo += 'PROVIDERS LIST:\n';
+                    providersData.providers.slice(0, 10).forEach(provider => {
+                        debugInfo += `- ${provider.name} (ID: ${provider.id})\n`;
+                    });
+                    if (providersData.providers.length > 10) {
+                        debugInfo += `... and ${providersData.providers.length - 10} more\n`;
+                    }
+                }
+                
+                if (syncData && syncData.success) {
+                    Dashboard.alert('✅ SYNC SUCCESS!\n\n' + debugInfo);
+                } else {
+                    Dashboard.alert('❌ SYNC FAILED!\n\n' + debugInfo);
+                }
+            });
         }).catch(function (error) {
             Dashboard.hideLoadingMsg();
             const debugInfo = 'SYNC ERROR DEBUG:\n' +
@@ -173,16 +199,6 @@ function loadWatchProviderRegions(page) {
         type: 'GET',
         dataType: 'json'
     }).then(function (data) {
-        // Debug logging
-        const debugInfo = 'REGIONS API RESPONSE DEBUG:\n' +
-            'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
-            'Response type: ' + typeof data + '\n' +
-            'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
-            'Regions count: ' + (data?.regions ? data.regions.length : 'UNDEFINED') + '\n' +
-            'Full response: ' + JSON.stringify(data);
-        
-        Dashboard.alert('🔍 REGIONS API DEBUG:\n\n' + debugInfo);
-        
         if (data && data.success && data.regions) {
             const select = page.querySelector('#WatchProviderRegion');
             if (select) {

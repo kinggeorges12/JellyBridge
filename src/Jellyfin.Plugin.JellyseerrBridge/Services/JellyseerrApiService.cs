@@ -269,9 +269,6 @@ public class JellyseerrApiService
             
             _logger.LogDebug("[JellyseerrBridge] Watch Provider Regions API Response: {Content}", content);
             
-            // Log first few characters to see the structure
-            var preview = content.Length > 200 ? content.Substring(0, 200) + "..." : content;
-            _logger.LogWarning("[JellyseerrBridge] Watch Provider Regions API Response Preview: {Preview}", preview);
             
             var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
             {
@@ -284,7 +281,7 @@ public class JellyseerrApiService
             if (regions != null && regions.Count > 0)
             {
                 var firstRegion = regions[0];
-                _logger.LogWarning("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
+                _logger.LogDebug("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
                     firstRegion.Iso31661, firstRegion.EnglishName, firstRegion.NativeName);
             }
             
@@ -294,6 +291,42 @@ public class JellyseerrApiService
         {
             _logger.LogError(ex, "Failed to get watch provider regions from Jellyseerr");
             return new List<JellyseerrWatchProviderRegion>();
+        }
+    }
+
+    public async Task<List<JellyseerrWatchProvider>> GetWatchProvidersAsync(PluginConfiguration config, string region = "US")
+    {
+        try
+        {
+            var providersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?region={region}";
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, providersUrl);
+            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
+            
+            var response = await _httpClient.SendAsync(requestMessage);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to get watch providers with status: {StatusCode}", response.StatusCode);
+                return new List<JellyseerrWatchProvider>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            
+            _logger.LogDebug("[JellyseerrBridge] Watch Providers API Response: {Content}", content);
+            
+            var providers = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = false
+            });
+
+            _logger.LogInformation("Retrieved {Count} watch providers for region {Region} from Jellyseerr", providers?.Count ?? 0, region);
+            
+            return providers ?? new List<JellyseerrWatchProvider>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get watch providers from Jellyseerr for region {Region}", region);
+            return new List<JellyseerrWatchProvider>();
         }
     }
 }
@@ -425,6 +458,24 @@ public class JellyseerrWatchProviderRegion
     
     [JsonPropertyName("native_name")]
     public string NativeName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Jellyseerr watch provider model.
+/// </summary>
+public class JellyseerrWatchProvider
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+    
+    [JsonPropertyName("logo_path")]
+    public string LogoPath { get; set; } = string.Empty;
+    
+    [JsonPropertyName("display_priority")]
+    public int DisplayPriority { get; set; }
 }
 
 /// <summary>

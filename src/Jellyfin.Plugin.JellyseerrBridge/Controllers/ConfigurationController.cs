@@ -249,6 +249,36 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 });
             }
         }
+
+        [HttpGet("WatchProviders")]
+        public async Task<IActionResult> GetWatchProviders([FromQuery] string region = "US")
+        {
+            _logger.LogInformation("[JellyseerrBridge] Watch providers requested for region: {Region}", region);
+            
+            try
+            {
+                var config = Plugin.Instance.Configuration;
+                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
+                
+                var providers = await apiService.GetWatchProvidersAsync(config, region);
+                
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch providers for region {Region}", providers?.Count ?? 0, region);
+                
+                return Ok(new { 
+                    success = true, 
+                    region = region,
+                    providers = providers 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch providers for region {Region}", region);
+                return Ok(new { 
+                    success = false, 
+                    message = $"Failed to get watch providers: {ex.Message}" 
+                });
+            }
+        }
     }
 
     public class TestConnectionRequest
