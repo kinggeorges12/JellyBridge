@@ -82,6 +82,14 @@ export default function (view) {
             ApiKey: apiKey
         };
 
+        const debugRequest = 'REQUEST DEBUG:\n' +
+            'URL: ' + ApiClient.getUrl('JellyseerrBridge/TestConnection') + '\n' +
+            'Method: POST\n' +
+            'Data: ' + JSON.stringify(testData) + '\n' +
+            'Content-Type: application/json';
+
+        Dashboard.alert('🔍 SENDING REQUEST:\n\n' + debugRequest);
+
         ApiClient.ajax({
             url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
             type: 'POST',
@@ -94,7 +102,8 @@ export default function (view) {
                 'Response type: ' + typeof response + '\n' +
                 'Response success: ' + (response?.success ? 'YES' : 'NO') + '\n' +
                 'Response message: ' + (response?.message || 'UNDEFINED') + '\n' +
-                'Full response: ' + JSON.stringify(response);
+                'Full response: ' + JSON.stringify(response) + '\n' +
+                'Response keys: ' + (response ? Object.keys(response).join(', ') : 'NONE');
             
             if (response && response.success) {
                 Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
@@ -108,6 +117,7 @@ export default function (view) {
                 'Error type: ' + typeof error + '\n' +
                 'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
                 'Error name: ' + (error?.name || 'UNDEFINED') + '\n' +
+                'Error status: ' + (error?.status || 'UNDEFINED') + '\n' +
                 'Full error: ' + JSON.stringify(error);
             
             Dashboard.alert('❌ CONNECTION ERROR!\n\n' + debugInfo);
