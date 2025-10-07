@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using System.Net.Http;
 using System.Text.Json;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
@@ -202,6 +203,34 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 return Ok(new { 
                     success = false, 
                     message = $"Sync failed: {ex.Message}" 
+                });
+            }
+        }
+
+        [HttpGet("WatchProviderRegions")]
+        public async Task<IActionResult> GetWatchProviderRegions()
+        {
+            _logger.LogInformation("[JellyseerrBridge] Watch provider regions requested");
+            
+            try
+            {
+                var config = Plugin.Instance.Configuration;
+                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
+                
+                var regions = await apiService.GetWatchProviderRegionsAsync(config);
+                
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch provider regions", regions.Count);
+                return Ok(new { 
+                    success = true, 
+                    regions = regions 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch provider regions");
+                return Ok(new { 
+                    success = false, 
+                    message = $"Failed to get watch provider regions: {ex.Message}" 
                 });
             }
         }

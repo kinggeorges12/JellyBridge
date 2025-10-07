@@ -25,6 +25,10 @@ export default function (view) {
             page.querySelector('#RequestTimeout').value = config.RequestTimeout || 30;
             page.querySelector('#RetryAttempts').value = config.RetryAttempts || 3;
             page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
+            // Store the current watch provider region value
+            const watchProviderSelect = page.querySelector('#WatchProviderRegion');
+            watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
+            
             Dashboard.hideLoadingMsg();
         });
     });
@@ -52,6 +56,7 @@ export default function (view) {
             config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
             config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
             config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
+            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value || 'US';
 
             ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config).then(Dashboard.processPluginConfigurationUpdateResult);
         });
@@ -76,47 +81,41 @@ export default function (view) {
             ApiKey: apiKey
         };
 
-        const debugRequest = 'REQUEST DEBUG:\n' +
-            'URL: ' + ApiClient.getUrl('JellyseerrBridge/TestConnection') + '\n' +
-            'Method: POST\n' +
-            'Data: ' + JSON.stringify(testData) + '\n' +
-            'Content-Type: application/json';
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', ApiClient.getUrl('JellyseerrBridge/TestConnection'), true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                Dashboard.hideLoadingMsg();
-                
-                let data = {};
-                try {
-                    data = JSON.parse(xhr.responseText);
-                } catch (e) {
-                    data = { error: 'Failed to parse response', raw: xhr.responseText };
-                }
-                
-                const debugInfo = 'RESPONSE DEBUG:\n' +
-                    'Status: ' + xhr.status + '\n' +
-                    'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
-                    'Response type: ' + typeof data + '\n' +
-                    'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
-                    'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
-                    'Response status: ' + (data?.status || 'UNDEFINED') + '\n' +
-                    'Full response: ' + JSON.stringify(data) + '\n' +
-                    'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE') + '\n' +
-                    'Raw response: ' + xhr.responseText;
-                
-                if (data && data.success) {
-                    Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
-                } else {
-                    Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
-                }
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+            type: 'POST',
+            data: JSON.stringify(testData),
+            contentType: 'application/json',
+            dataType: 'json'
+        }).then(function (data) {
+            Dashboard.hideLoadingMsg();
+            
+            const debugInfo = 'CONNECTION RESPONSE DEBUG:\n' +
+                'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
+                'Response type: ' + typeof data + '\n' +
+                'Response success: ' + (data?.success ? 'YES' : 'NO') + '\n' +
+                'Response message: ' + (data?.message || 'UNDEFINED') + '\n' +
+                'Response status: ' + (data?.status || 'UNDEFINED') + '\n' +
+                'Full response: ' + JSON.stringify(data) + '\n' +
+                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
+            
+            if (data && data.success) {
+                Dashboard.alert('✅ CONNECTION SUCCESS!\n\n' + debugInfo);
+            } else {
+                Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
             }
-        };
-        
-        xhr.send(JSON.stringify(testData));
+        }).catch(function (error) {
+            Dashboard.hideLoadingMsg();
+            const debugInfo = 'CONNECTION ERROR DEBUG:\n' +
+                'Error exists: ' + (error ? 'YES' : 'NO') + '\n' +
+                'Error type: ' + typeof error + '\n' +
+                'Error message: ' + (error?.message || 'UNDEFINED') + '\n' +
+                'Error name: ' + (error?.name || 'UNDEFINED') + '\n' +
+                'Error status: ' + (error?.status || 'UNDEFINED') + '\n' +
+                'Full error: ' + JSON.stringify(error);
+            
+            Dashboard.alert('❌ CONNECTION ERROR!\n\n' + debugInfo);
+        });
     });
 
     const syncButton = view.querySelector('#manualSync');
@@ -127,6 +126,9 @@ export default function (view) {
     
     syncButton.addEventListener('click', function () {
         Dashboard.showLoadingMsg();
+        
+        // Load watch provider regions first
+        loadWatchProviderRegions(view);
         
         ApiClient.ajax({
             url: ApiClient.getUrl('JellyseerrBridge/Sync'),
@@ -162,5 +164,40 @@ export default function (view) {
             
             Dashboard.alert('❌ SYNC ERROR!\n\n' + debugInfo);
         });
+    });
+}
+
+function loadWatchProviderRegions(page) {
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/WatchProviderRegions'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function (data) {
+        if (data && data.success && data.regions) {
+            const select = page.querySelector('#WatchProviderRegion');
+            if (select) {
+                // Clear existing options except the default US option
+                select.innerHTML = '';
+                
+                // Sort regions by English name
+                const sortedRegions = data.regions.sort((a, b) => a.englishName.localeCompare(b.englishName));
+                
+                // Add options for each region
+                sortedRegions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region.iso31661;
+                    option.textContent = `${region.englishName} (${region.nativeName})`;
+                    select.appendChild(option);
+                });
+                
+                // Set the current value if it exists
+                const currentValue = page.querySelector('#WatchProviderRegion').getAttribute('data-current-value') || 'US';
+                select.value = currentValue;
+            }
+        } else {
+            console.warn('Failed to load watch provider regions:', data);
+        }
+    }).catch(function (error) {
+        console.error('Error loading watch provider regions:', error);
     });
 }

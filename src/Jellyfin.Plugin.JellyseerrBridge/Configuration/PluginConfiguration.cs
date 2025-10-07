@@ -75,4 +75,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to enable debug logging.
     /// </summary>
     public bool EnableDebugLogging { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the watch provider region (ISO 3166-1 country code).
+    /// </summary>
+    public string WatchProviderRegion { get; set; } = "US";
 }

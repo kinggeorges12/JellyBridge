@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-07T16:46:28.670Z",
+        "dependencies": [],
+        "version": "0.78.0.0",
+        "checksum": "483C5C071B1135633532E02C9FEF68AE",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.78.0.0/JellyseerrBridge-0.78.0.0-DLL.zip",
+        "changelog": "v0.78.0.0 - Watch Provider Regions Implementation - NEW FEATURES: Added watch provider regions dropdown to configuration page, Implemented Jellyseerr API integration for fetching available regions, Added dynamic region loading on manual sync button click, Created JellyseerrWatchProviderRegion model with ISO codes and display names. TECHNICAL IMPROVEMENTS: Added GetWatchProviderRegionsAsync method to JellyseerrApiService, Created new API endpoint /JellyseerrBridge/WatchProviderRegions, Enhanced configuration with WatchProviderRegion property (defaults to US), Improved frontend JavaScript with loadWatchProviderRegions function, Added proper region sorting and formatting (English Name (Native Name)). USER EXPERIENCE: Users can now select their region for watch provider information, Region selection determines which streaming services are shown, Default region is set to United States (US), Regions are loaded dynamically from Jellyseerr API, Efficient loading only occurs when manual sync is triggered. This update enables proper regional watch provider support for accurate streaming service information display.",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "timestamp": "2025-10-07T16:17:31.019Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.77.0.0/JellyseerrBridge-0.77.0.0-DLL.zip",
         "version": "0.77.0.0",
