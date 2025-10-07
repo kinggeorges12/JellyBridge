@@ -84,12 +84,13 @@ export default function (view) {
 
         console.log('🔍 SENDING REQUEST:\n\n' + debugRequest);
 
-        ApiClient.ajax({
-            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            type: 'POST',
-            data: JSON.stringify(testData),
-            contentType: 'application/json'
-        }).then(function (data) {
+        fetch(ApiClient.getUrl('JellyseerrBridge/TestConnection'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(testData)
+        }).then(response => response.json()).then(function (data) {
             Dashboard.hideLoadingMsg();
             const debugInfo = 'RESPONSE DEBUG:\n' +
                 'Response exists: ' + (data ? 'YES' : 'NO') + '\n' +
