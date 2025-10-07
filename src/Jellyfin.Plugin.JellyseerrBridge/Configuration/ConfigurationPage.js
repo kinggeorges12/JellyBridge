@@ -82,7 +82,7 @@ export default function (view) {
             'Data: ' + JSON.stringify(testData) + '\n' +
             'Content-Type: application/json';
 
-        Dashboard.alert('🔍 SENDING REQUEST:\n\n' + debugRequest);
+        console.log('🔍 SENDING REQUEST:\n\n' + debugRequest);
 
         ApiClient.fetch({
             url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
