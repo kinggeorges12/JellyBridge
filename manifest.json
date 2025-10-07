@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-07T21:10:50.952Z",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.81.0.0/JellyseerrBridge-0.81.0.0-DLL.zip",
+        "dependencies": [],
+        "changelog": "v0.81.0.0 - Fixed Paginated API Response Handling and UI Reorganization - CRITICAL BUG FIX: Fixed JSON deserialization error for Jellyseerr requests API, Corrected handling of paginated response structure with pageInfo and results array, Added JellyseerrPaginatedResponse and JellyseerrPageInfo models for proper API response parsing, Resolved 'Failed to deserialize requests JSON' error that was preventing sync functionality. UI IMPROVEMENTS: Reorganized configuration page layout for better user experience, Moved Test Connection button above sync settings for logical workflow, Moved Watch Provider Region and Manual Sync button into Sync Settings details section, Improved configuration page organization with related settings grouped together. TECHNICAL IMPROVEMENTS: Enhanced API response handling to support Jellyseerr's paginated response format, Added proper models for pagination metadata (pages, pageSize, results, page), Improved error handling and debugging capabilities, Better separation of concerns in configuration UI layout. This update fixes the critical sync functionality and provides a more intuitive configuration interface.",
+        "version": "0.81.0.0",
+        "checksum": "8AE7ABAFDF18CE4AEC84D98A9C1F9AB4"
+      },
+      {
         "version": "0.80.0.0",
         "targetAbi": "10.10.7.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.80.0.0/JellyseerrBridge-0.80.0.0-DLL.zip",
