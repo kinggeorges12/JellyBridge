@@ -1,6 +1,35 @@
 <div id="jellyseerrBridgeConfigurationPage" data-role="page" class="page type-interior pluginConfigurationPage" data-controller="__plugin/jellyseerrbridgejs">
     <div data-role="content">
         <div class="content-primary">
+            <style>
+                summary {
+                    cursor: pointer;
+                    padding: 10px;
+                    width: inherit;
+                    margin: auto;
+                    border: none;
+                    text-align: center;
+                    font-size: 1em;
+                    outline: 2px solid rgba(155, 155, 155, 0.5);
+                }
+                h3.checkboxListLabel {
+                    font-size: 1em;
+                    margin-bottom: 4px;
+                }
+                /* Disabled state styling */
+                .disabled-block {
+                    opacity: .6;
+                }
+                .disabled-block input,
+                .disabled-block select,
+                .disabled-block button {
+                    pointer-events: none;
+                }
+                .disabled-block .inputLabel,
+                .disabled-block label.emby-checkbox-label span {
+                    font-style: italic;
+                }
+            </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
                     <legend>Jellyseerr Bridge Configuration</legend>
@@ -40,23 +69,34 @@
                     <details id="syncSettings">
                         <summary>Sync Settings</summary>
                         <br>
-                        <div class="checkboxContainer">
+                        <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="ExcludeFromMainLibraries" />
-                                <span>Exclude placeholder shows from main libraries</span>
+                                <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Exclude placeholder shows from main libraries</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
                             </label>
+                            <div class="fieldDescription">When enabled, placeholder shows from streaming services will be excluded from your main Jellyfin libraries.</div>
                         </div>
 
-                        <div class="checkboxContainer">
+                        <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="CreateSeparateLibraries" />
-                                <span>Create separate libraries for streaming services</span>
+                                <input id="CreateSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Create separate libraries for streaming services</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
                             </label>
+                            <div class="fieldDescription">When enabled, separate libraries will be created for each streaming service (Netflix, Hulu, etc.)</div>
                         </div>
 
                         <div class="inputContainer">
-                            <input is="emby-input" type="text" id="LibraryPrefix" label="Library Prefix" />
-                            <div class="fieldDescription">Prefix for streaming service library names</div>
+                            <label class="inputLabel inputLabelUnfocused" for="LibraryPrefix">Library Prefix</label>
+                            <input id="LibraryPrefix" type="text" is="emby-input" class="emby-input" />
+                            <div class="fieldDescription">Prefix for streaming service library names (e.g., "Streaming - ")</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -102,18 +142,23 @@
                     </details>
 
                     <div>
-                        <button is="emby-button" type="button" id="testConnection" class="raised button block">
+                        <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
                             <span>Test Connection</span>
                         </button>
                     </div>
 
                     <div>
-                        <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block">
+                        <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block emby-button">
                             <span>Save</span>
                         </button>
                     </div>
                 </fieldset>
             </form>
+            
+            <div style="margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.1); border-radius: 5px; font-size: 0.9em; color: #888;">
+                <p><strong>Credits & Acknowledgments:</strong></p>
+                <p>Thank you to the creator of the <a href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" target="_blank" style="color: #2196f3;">Overseer-Jellyfin Bridge Script</a> for the inspiration. Special thanks to the developers of the <a href="https://github.com/intro-skipper" target="_blank" style="color: #2196f3;"><strong>Intro Skipper</strong></a> and <a href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" target="_blank" style="color: #2196f3;"><strong>Custom Tabs</strong></a> plugins for reusing their GPL-licensed code that contributed to the UI styling and configuration patterns.</p>
+            </div>
         </div>
     </div>
 </div>
