@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             _logger = loggerFactory.CreateLogger<Plugin>();
             Instance = this;
-            _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version 0.65.0.0");
+            _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
             _logger.LogInformation("[JellyseerrBridge] Plugin ID: {PluginId}", Id);
             _logger.LogInformation("[JellyseerrBridge] Plugin Name: {PluginName}", Name);
         }
