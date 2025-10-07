@@ -6,26 +6,8 @@
     <TargetFramework Condition="'$(JellyfinVersion)' == '10.10.7'">net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-              <Version>0.58.0.0</Version>
-          <AssemblyName>JellyseerrBridge</AssemblyName>
-          <RootNamespace>Jellyfin.Plugin.JellyseerrBridge</RootNamespace>
-          
-          <!-- NuGet Package Properties -->
-          <PackageId>JellyseerrBridge.Plugin</PackageId>
-          <Version>0.58.0</Version>
-    <Authors>kinggeorges12</Authors>
-    <Company>kinggeorges12</Company>
-    <Description>Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests</Description>
-    <PackageProjectUrl>https://github.com/kinggeorges12/Jellyseerr-Bridge</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kinggeorges12/Jellyseerr-Bridge</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-    <PackageTags>jellyfin;plugin;jellyseerr;bridge;streaming</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    
-    <!-- Generate NuGet package -->
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>0.59.0.0</AssemblyVersion>
+    <FileVersion>0.59.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,9 +25,8 @@
   </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="ConfigurationPage.html" />
-      <EmbeddedResource Include="jellyseerrbridge.js" />
-      <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+      <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
+      <EmbeddedResource Include="Configuration\jellyseerrbridge.js" />
     </ItemGroup>
 
 </Project>
