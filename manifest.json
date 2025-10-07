@@ -1,1 +1,544 @@
-null
+[
+  {
+    "guid": "8ecc808c-d6e9-432f-9219-b638fbfb37e6",
+    "name": "Jellyseerr Bridge",
+    "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
+    "owner": "kinggeorges12",
+    "category": "Metadata",
+    "imageUrl": "https://docs.jellyseerr.dev/img/logo.svg",
+    "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
+    "versions": [
+      {
+        "version": "0.69.0.0",
+        "changelog": "v0.69.0.0 - AUTO-GENERATED RELEASE: Automated release using publish.ps1 script. This release includes the latest fixes and improvements.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.69.0.0/JellyseerrBridge-0.69.0.0-DLL.zip",
+        "checksum": "08BB376BA23F2A7BDDA45B33CE91CF51",
+        "timestamp": "2025-10-07T14:16:16.951Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.68.0.0",
+        "changelog": "v0.68 - COMPLETE EMBEDDED RESOURCE FIX: Added RootNamespace property and None Remove + EmbeddedResource pattern matching Intro Skipper exactly. This ensures embedded resources are properly named as 'Jellyfin.Plugin.JellyseerrBridge.Configuration.ConfigurationPage.html' and embedded (not copied) in the DLL. Fixed JavaScript page name references. This should completely resolve the 'Failed to get resource' errors by using the exact same embedded resource approach as other working Jellyfin plugins.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.68/JellyseerrBridge-0.68-DLL.zip",
+        "checksum": "D0301B4F3802FCA909C6C962EEE129E1",
+        "timestamp": "2025-10-07T06:55:32.162Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.67.0.0",
+        "changelog": "v0.67 - STANDARD EMBEDDED RESOURCE FIX: Removed LogicalName from embedded resources to use standard MSBuild behavior like other Jellyfin plugins. Updated Plugin.cs to use dynamic version from assembly. This follows the exact same pattern as Intro Skipper, Custom Tabs, Webhook, and KodiSyncQueue plugins. Should resolve 'Failed to get resource' errors by using the standard embedded resource approach.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.67/JellyseerrBridge-0.67-DLL.zip",
+        "checksum": "63194760B2D9B569733407B8C81920B3",
+        "timestamp": "2025-10-07T05:29:21.732Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.66.0.0",
+        "changelog": "v0.66 - EMBEDDED RESOURCE LOGICAL NAME FIX: Fixed embedded resource inclusion by using LogicalName with $(RootNamespace) to ensure resources are properly embedded in the DLL with the correct namespace path. This addresses the 'Failed to get resource' errors by ensuring the embedded resource paths match exactly what Jellyfin expects. Updated project file to use dynamic namespace resolution for embedded resources.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.66/JellyseerrBridge-0.66-DLL.zip",
+        "checksum": "8368ACBC3558D063E0A293773940F4D5",
+        "timestamp": "2025-10-07T05:04:33.777Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.65.0.0",
+        "changelog": "v0.65 - BINARY UPLOAD FIX: Fixed GitHub upload script to properly handle binary ZIP files instead of corrupting them with UTF-8 text conversion. This release addresses the root cause of checksum mismatch errors by ensuring ZIP files are uploaded as raw binary data. Updated upload process to prevent file corruption during GitHub release creation.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.65/JellyseerrBridge-0.65-DLL.zip",
+        "checksum": "48C3A7696F6677E24E51AD9D39F4E018",
+        "timestamp": "2025-10-07T04:20:53.654Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.64.0.0",
+        "changelog": "v0.64 - CHECKSUM VERIFICATION FIX: Rebuilt plugin with fresh checksum to resolve installation issues. This release addresses checksum mismatch errors that were preventing plugin installation. Updated version to 0.64 with verified checksum to ensure proper Jellyfin plugin installation.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.64/JellyseerrBridge-0.64-DLL.zip",
+        "checksum": "CEBB471065943F28EDDBD382A21E162A",
+        "timestamp": "2025-10-07T04:13:01.56Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.63.0.0",
+        "changelog": "v0.63 - EMBEDDED RESOURCE PATH FIX: Fixed embedded resource paths to use GetType().Namespace pattern matching other Jellyfin plugins (Intro Skipper, Custom Tabs). Updated JavaScript page name from 'jellyseerrbridgejs' to 'ConfigurationPage.js' for consistency. Updated HTML data-controller attribute to match new JavaScript page name. This follows the established Jellyfin plugin patterns and should resolve 'Failed to get resource' errors.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.63/JellyseerrBridge-0.63-DLL.zip",
+        "checksum": "054D85DD6787DA31C27513836AD28874",
+        "timestamp": "2025-10-07T04:08:39.022Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.62.0.0",
+        "changelog": "v0.62 - EMBEDDED RESOURCE PATH FIX: Fixed embedded resource paths to use full namespace 'Jellyfin.Plugin.JellyseerrBridge.Configuration.*' instead of 'JellyseerrBridge.Configuration.*'. This resolves the 'Failed to get resource' errors when Jellyfin tries to load the configuration page. Updated all embedded resource references to match Jellyfin's expected naming convention.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.62/JellyseerrBridge-0.62-DLL.zip",
+        "checksum": "2542F8A2BA8A173F7952018E05A47234",
+        "timestamp": "2025-10-07T04:02:46.197Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.61.0.0",
+        "changelog": "v0.61 - CHECKSUM FIX: Fixed checksum mismatch issue that was preventing plugin installation. Removed duplicate jellyseerrbridge.js file that was causing ZIP content changes. Updated manifest with correct checksum for proper Jellyfin plugin installation. This release resolves the 'checksum of the received data doesn't match' error.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.61/JellyseerrBridge-0.61-DLL.zip",
+        "checksum": "E08ADB164941741CE348ABC99394F3E8",
+        "timestamp": "2025-10-07T03:56:25.775Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.60.0.0",
+        "changelog": "v0.60 - PROJECT STRUCTURE REFACTORING: Reorganized project structure with proper folder organization (Configuration/, Controllers/, Services/). Fixed embedded resource paths to match new folder structure. Renamed jellyseerrbridge.js to ConfigurationPage.js for better naming consistency. Updated all namespace references and using statements. Fixed PluginServiceRegistrator namespace. Resolved 404 configuration page errors and API call issues. All references properly updated to reflect new folder structure.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.60/JellyseerrBridge-0.60-DLL.zip",
+        "checksum": "28EB36252C911ABF4E7F1E037BDCCE3B",
+        "timestamp": "2025-10-07T03:52:35.13Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.59.0.0",
+        "changelog": "v0.59 - ENHANCED CONNECTION TESTING: Fixed ConfigurationController routing by moving to Controllers namespace for proper Jellyfin auto-discovery. Updated API key validation to use correct Jellyseerr /auth/me endpoint. Added comprehensive user list API test to verify API key permissions. Enhanced JSON parsing with exact user count logging. Improved error handling and debugging information for connection testing.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.59/JellyseerrBridge-0.59-DLL.zip",
+        "checksum": "01DB477415EAAA9262554726F817386B",
+        "timestamp": "2025-10-07T03:37:22.142Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.58.0.0",
+        "changelog": "v0.58 - HTML5 VALIDATION & DEFAULT VALUES: Added HTML5 validation with 'required' attribute to Jellyseerr URL field. Added default values to all input fields (URL: http://localhost:5055, Library Directory: /data/Jellyseerr, User ID: 1, Sync Interval: 24 hours). Removed custom JavaScript validation in favor of browser's built-in validation. Improved user experience with pre-filled sensible defaults.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.58/JellyseerrBridge-0.58-DLL.zip",
+        "checksum": "B74E88191270D9CE9F3E171ACECC00B2",
+        "timestamp": "2025-10-07T02:38:55.733Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.57.0.0",
+        "changelog": "v0.57 - ENHANCED DEBUGGING: Added comprehensive request debugging to show exact URL, method, data, and content-type being sent. Added response keys debugging to show what properties exist in the response object. Added error status debugging to show HTTP status codes. This will help identify why connection tests are returning empty responses.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.57/JellyseerrBridge-0.57-DLL.zip",
+        "checksum": "F3D770E6142A303639D64CB498EB7FC4",
+        "timestamp": "2025-10-07T02:25:42.369Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.56.0.0",
+        "changelog": "v0.56 - DEBUGGING IMPROVEMENTS: Added comprehensive debugging information to connection test alerts. Fixed JavaScript safety checks to prevent undefined querySelector errors. Added proper error handling for missing DOM elements. Updated JavaScript to include all form fields (AutoSyncOnStartup, RequestTimeout, RetryAttempts, EnableDebugLogging). Added spacing after Advanced Configuration section for better UI layout.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.56/JellyseerrBridge-0.56-DLL.zip",
+        "checksum": "DC2E39E0CD0C0C54CE2E55543608A752",
+        "timestamp": "2025-10-07T02:18:29.34Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.54.0.0",
+        "changelog": "v0.54 - LICENSE UPDATE: Changed project license from MIT to GPL-3.0 to comply with GPL-licensed code reuse from Intro Skipper and Custom Tabs plugins. Updated acknowledgments to properly credit GPL-licensed code reuse. Added proper LICENSE file downloaded from Custom Tabs repository.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.54/JellyseerrBridge-0.54-DLL.zip",
+        "checksum": "DCAA4388670D7F343193639AFC2E4AA9",
+        "timestamp": "2025-10-07T01:25:14.39Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.53.0.0",
+        "changelog": "v0.53 - FIXED BUTTON STYLING: Added missing 'emby-button' class to Test Connection and Save buttons to match Intro Skipper styling. Buttons should now display with proper size and appearance. This patch release ensures the JavaScript connection test fix from v0.52 is properly deployed.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.53/JellyseerrBridge-0.53-DLL.zip",
+        "checksum": "3DDEB5CEFCA1E1B24E8253AED2542DBF",
+        "timestamp": "2025-10-07T00:54:23.838Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.52.0.0",
+        "changelog": "v0.52 - FIXED CONNECTION TEST & IMPROVED UI: Fixed JavaScript connection test by replacing ApiClient.fetch() with ApiClient.ajax() to resolve 'Request with GET/HEAD method cannot have body' error. Enhanced configuration page with bordered fieldset styling matching Intro Skipper plugin. Added collapsible 'Sync Settings' and 'Advanced Configuration' sections for better organization. Moved library management and auto-sync settings to Sync Settings section. Test Connection button should now work properly with success/error popups.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.52/JellyseerrBridge-0.52-DLL.zip",
+        "checksum": "43545D6BA24B730BA9DFA91A2CCD8A51",
+        "timestamp": "2025-10-07T00:50:06.415Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.51.0.0",
+        "changelog": "v0.51 - VERSION INCREMENT: Incremented version to 0.51.0.0 for next release. Updated all project files with new version numbers. Built and packaged DLL files for distribution.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.51/JellyseerrBridge-0.51-DLL.zip",
+        "checksum": "55FAFF06C1770425C5FD26C6DED3DC9A",
+        "timestamp": "2025-10-07T00:18:29.187Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.50.0.0",
+        "changelog": "v0.50 - KODISYNC QUEUE PATTERNS: Implemented kodisync queue patterns for proper logging and configuration. Updated Plugin.cs and ConfigurationController.cs to use ILoggerFactory for proper logging. Created separate jellyseerrbridge.js file following kodisync queue pattern with viewshow event and form submit handling. Simplified HTML structure to match kodisync queue. Save button should now work with proper 'Settings saved.' notifications and test connection should show success/error popups.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.50/JellyseerrBridge-0.50-DLL.zip",
+        "checksum": "E5F265165CBAC0DF1F4ADA591BAFED14",
+        "timestamp": "2025-10-07T00:14:20.531Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.49.0.0",
+        "changelog": "v0.49 - FIXED CONFIGURATION PAGE FUNCTIONALITY: Completely rewrote configuration page JavaScript to match file transformation plugin pattern. Fixed save button to use click event listener instead of form submit. Fixed test connection button to use Dashboard.alert() popup for user feedback. Changed page ID to 'jellyseerrBridgeConfigurationPage' and implemented proper JellyseerrBridgeConfig object pattern. Save button should now show 'Settings saved.' notification and test connection should show success/error popups.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.49/JellyseerrBridge-0.49-DLL.zip",
+        "checksum": "9dcda8850eb19d633a448fb3afc182d3",
+        "timestamp": "2025-10-06T23:52:12.716Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.48.0.0",
+        "changelog": "v0.48 - FIXED CONFIGURATION PAGE: Comprehensive fixes based on analysis of all working Jellyfin plugins. Added missing 'configPage' class, fixed form selector to use '.configForm', implemented proper 'pageshow' event listener on '.configPage', added input event dispatching for proper form validation, and corrected loading states. Configuration page should now properly notify Jellyfin app and buttons should work correctly with 'Settings saved.' notifications.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.48/JellyseerrBridge-0.48-DLL.zip",
+        "checksum": "bcfb71b1a7142a8696f14e5883a80908",
+        "timestamp": "2025-10-06T23:38:08.417Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.47.0.0",
+        "changelog": "v0.47 - COMPLETE ZIP FILES: Fixed ZIP packaging to include ALL necessary files (DLL, PDB, deps.json) from bin/Release/net8.0/* directory. This should resolve the 'No local manifest exists' error and ensure proper plugin functionality with all dependencies and debugging symbols included.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.47/JellyseerrBridge-0.47-DLL.zip",
+        "checksum": "d7d19de0539ed4c7b96907212183dee9",
+        "timestamp": "2025-10-06T23:28:43.448Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.46.0.0",
+        "changelog": "v0.46 - FIXED LOGGING: Added missing Microsoft.Extensions.Logging.Abstractions dependency and proper logging service registration in PluginServiceRegistrator. Enhanced logging with detailed plugin initialization messages including version, ID, and name. Added ConfigurationController initialization logging. All logging should now appear in Jellyfin server logs with [JellyseerrBridge] prefix for easy filtering.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.46/JellyseerrBridge-0.46-DLL.zip",
+        "checksum": "ee7c7d555643e463ae91c960b3d27f66",
+        "timestamp": "2025-10-06T23:17:37.047Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.45.0.0",
+        "changelog": "v0.45 - SIMPLIFIED FRONTEND: Removed complex JavaScript object structure and console.log statements that don't work in Jellyfin. Implemented proper Jellyfin frontend patterns using Dashboard.showLoadingMsg(), Dashboard.hideLoadingMsg(), and Dashboard.alert() for user feedback. Used DOMContentLoaded event and direct event listeners following intro-skipper plugin patterns. Configuration page buttons should now work correctly with proper visual feedback.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.45/JellyseerrBridge-0.45-DLL.zip",
+        "checksum": "0a2870044c40bb60c7fda12a504a8389",
+        "timestamp": "2025-10-06T22:48:12.108Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.44.0.0",
+        "changelog": "v0.44 - COMPREHENSIVE LOGGING: Added detailed logging throughout the plugin for debugging and monitoring. Backend logging includes plugin initialization, configuration updates, and test connection details with request/response information. Frontend logging tracks all user interactions including button clicks, form submissions, and API responses. All log messages are prefixed with [JellyseerrBridge] for easy filtering in Jellyfin logs.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.44/JellyseerrBridge-0.44-DLL.zip",
+        "checksum": "be7c54d6945b480899ae074db7a3c87a",
+        "timestamp": "2025-10-06T21:10:01.901Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.43.0.0",
+        "changelog": "v0.43 - FIXED CONFIG PAGE BUTTONS: Fixed duplicate button IDs causing DOM warnings. Added proper visual feedback for Save and Test Connection buttons. Save button now shows 'Settings saved successfully!' notification. Test Connection button now shows success/error alerts instead of console-only output. Moved Test Connection button outside fieldset to prevent duplicate IDs.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.43/JellyseerrBridge-0.43-DLL.zip",
+        "checksum": "0ad7d47fbc34c084cedc68808de3c4cb",
+        "timestamp": "2025-10-06T21:04:44.528Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.42.0.0",
+        "changelog": "v0.42 - VERSION INCREMENT: Incremented version numbers in all project files. Fixed constructor issues and removed problematic interfaces. Plugin should now load properly without malfunction status. Removed copyright. Fixed GUID mismatch. Added JellyfinVersion attribute. Removed image from config page. Updated plugin structure based on intro-skipper patterns. Added PluginServiceRegistrator. Simplified API routes.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.42/JellyseerrBridge-0.42-DLL.zip",
+        "checksum": "3972a8bf2f63950a2c3cc3779cf659fb",
+        "timestamp": "2025-10-06T20:26:43.149Z",
+        "dependencies": []
+      },
+      {
+        "version": "0.41.0.0",
+        "changelog": "v0.41 - VERSION INCREMENT: Incremented version numbers in all project files. Fixed constructor issues and removed problematic interfaces. Plugin should now load properly without malfunction status.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.41/JellyseerrBridge-0.41-DLL.zip",
+        "checksum": "525B7E5890DEC86E7FF0EB8C9F50AD27",
+        "timestamp": "2025-10-06T19:41:27",
+        "dependencies": []
+      },
+      {
+        "version": "0.40.0.0",
+        "changelog": "FIXED CONSTRUCTOR ISSUE - Reverted to standard constructor without parameterless constructor to avoid MissingMethodException. Removed IPluginServiceRegistrator interface that does not exist in Jellyfin 10.10.7 and simplified ConfigurationController to use direct HttpClient.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.40/JellyseerrBridge-0.40-DLL.zip",
+        "checksum": "A1EFA68EC35DD832AEC3FA9CF32F8723",
+        "timestamp": "2025-10-06T19:32:50",
+        "dependencies": []
+      },
+      {
+        "version": "0.39.0.0",
+        "changelog": "FIXED MALFUNCTION - Fixed plugin malfunction by removing IPluginServiceRegistrator interface that does not exist in Jellyfin 10.10.7. Simplified ConfigurationController to use direct HttpClient instead of dependency injection to avoid runtime errors.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.39/JellyseerrBridge-0.39-DLL.zip",
+        "checksum": "4EA304F0FF8035E4D52D3D7B13215A5A",
+        "timestamp": "2025-10-06T19:30:23",
+        "dependencies": []
+      },
+      {
+        "version": "0.38.0.0",
+        "changelog": "FIXED CONTROLLER REGISTRATION - Fixed controller registration by implementing IPluginServiceRegistrator to properly register ConfigurationController with Jellyfin's API system. Changed save button text to 'Save', added proper autocomplete attributes to all form fields, and ensured Dashboard.processPluginConfigurationUpdateResult receives proper response format for success notifications.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.38/JellyseerrBridge-0.38-DLL.zip",
+        "checksum": "1A7EC897F3638A23C0F2E189C44DEFF7",
+        "timestamp": "2025-10-06T19:09:33",
+        "dependencies": []
+      },
+      {
+        "version": "0.37.0.0",
+        "changelog": "FIXED TEST CONNECTION - Fixed test connection button by correcting ConfigurationController to inherit from ControllerBase and use IHttpClientFactory for proper dependency injection. Added default values to all form fields and autocomplete attribute to password field.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.37/JellyseerrBridge-0.37-DLL.zip",
+        "checksum": "3C7E9900D9058F63209484A832A9FA29",
+        "timestamp": "2025-10-06T18:42:12",
+        "dependencies": []
+      },
+      {
+        "version": "0.35.0.0",
+        "changelog": "REMOVED WEBHOOK PORT - Removed WebhookPort setting as Jellyfin doesn't have webhook ports. All API requests must go through the main Jellyfin server. Plugins can create API controllers to receive external requests through Jellyfin's main API.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.35/JellyseerrBridge-0.35-DLL.zip",
+        "checksum": "28EF92012E1127DDA44C192386F13C9A",
+        "timestamp": "2025-10-06T17:28:56",
+        "dependencies": []
+      },
+      {
+        "version": "0.34.0.0",
+        "changelog": "FIXED SAVE CONFIGURATION - Fixed save configuration button to use window.ApiClient.updatePluginConfiguration like Custom Tabs plugin for proper success message handling. Dashboard.processPluginConfigurationUpdateResult should now show the success message automatically.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.34/JellyseerrBridge-0.34-DLL.zip",
+        "checksum": "FF15BCBA36C2D5F4521BBEE754A21404",
+        "timestamp": "2025-10-06T17:10:48",
+        "dependencies": []
+      },
+      {
+        "version": "0.33.0.0",
+        "changelog": "FIXED BUTTONS AND DEFAULTS - Fixed save configuration button to show success message and added proper default values for Jellyseerr URL (http://localhost:5055), Library Directory (/data/Jellyseerr), and User ID (1).",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.33/JellyseerrBridge-0.33-DLL.zip",
+        "checksum": "F8392D9BCF4FC7327ABF4EE450388866",
+        "timestamp": "2025-10-06T16:49:34",
+        "dependencies": []
+      },
+      {
+        "version": "0.32.0.0",
+        "changelog": "ENHANCED CONFIGURATION - Added all configuration options including enable checkbox, test connection button, sync interval, webhook port, library management options, and backend API controller for proper connection testing.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.32/JellyseerrBridge-0.32-DLL.zip",
+        "checksum": "4D793814F682EECDCD1A5E4F47DB9114",
+        "timestamp": "2025-10-06T16:34:16",
+        "dependencies": []
+      },
+      {
+        "version": "0.31.0.0",
+        "changelog": "CORRECTED GUID AND DLL STRUCTURE - Fixed GUID mismatch between manifest and plugin class. Both now use the working v0.5 GUID: 8ecc808c-d6e9-432f-9219-b638fbfb37e6. This ZIP contains the compiled DLL files that Jellyfin expects.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.31/JellyseerrBridge-0.31-DLL.zip",
+        "checksum": "F51B083D7B5A177CFCA1A15EE646A887",
+        "timestamp": "2025-10-06T12:20:55",
+        "dependencies": []
+      },
+      {
+        "version": "0.30.0.0",
+        "changelog": "PROPER CUSTOM TABS STRUCTURE - Fixed project structure to exactly match Custom Tabs: moved .csproj and Properties folder into src/Jellyfin.Plugin.JellyseerrBridge/. This is the correct structure that Custom Tabs uses.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.30/JellyseerrBridge-0.30-DLL.zip",
+        "checksum": "FAE1A4E6D0E59DD3B132D550F74D3792",
+        "timestamp": "2025-10-06T10:39:14",
+        "dependencies": []
+      },
+      {
+        "version": "0.29.0.0",
+        "changelog": "RESTRUCTURED TO MATCH CUSTOM TABS - Reorganized project structure to match working Custom Tabs plugin: proper src folder, Plugin.cs class name, correct embedded resource path, and v0.5 working GUID. This should finally install properly.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.29.zip",
+        "checksum": "6BB44DB51C5A0A34DB46ACF7989380B9",
+        "timestamp": "2025-10-06T10:33:07",
+        "dependencies": []
+      },
+      {
+        "version": "0.28.0.0",
+        "changelog": "MINIMAL BASIC CONFIG - Stripped down to absolute basics: only plugin class, basic configuration (URL, API key, library directory, user ID), and simple settings page. Removed all services, controllers, and complex features to ensure it installs and loads.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.28.zip",
+        "checksum": "86887295BC8B1BA83C2223BE56559426",
+        "timestamp": "2025-10-06T09:44:06",
+        "dependencies": []
+      },
+      {
+        "version": "0.27.0.0",
+        "changelog": "CRITICAL GUID MISMATCH FIX - Fixed GUID mismatch between AssemblyInfo.cs and plugin class. Both now use 088e8efc-6855-42ec-bcc9-24fde6da7149. This was preventing plugin installation.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.27.zip",
+        "checksum": "EB1D262943576D01625794F20C7D2B88",
+        "timestamp": "2025-01-28T01:20:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.26.0.0",
+        "changelog": "FIXED STRUCTURE - Reverted to v0.12 working structure: removed embedded manifest, version override, and versioned plugin name. Uses simple 'Jellyseerr Bridge' name and duplicate Version properties like v0.12.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.26.zip",
+        "checksum": "1ED7F1B44D41FFC8EE8115CF491138E0",
+        "timestamp": "2025-01-28T01:10:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.24.0.0",
+        "changelog": "FIXED PLUGIN LOADING - Restored proper service registrator structure. Version 0.24.0.0 with GUID 088e8efc-6855-42ec-bcc9-24fde6da7149. This should resolve the plugin loading issue.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.24.zip",
+        "checksum": "37421E97416DA9F382C82716A84F289A",
+        "timestamp": "2025-01-28T00:50:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.23.0.0",
+        "changelog": "PROPER GUID RELEASE - Using Microsoft-generated GUID 088e8efc-6855-42ec-bcc9-24fde6da7149. Version 0.23.0.0. This ensures Jellyfin recognizes it as a completely new plugin with proper GUID format.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.23.zip",
+        "checksum": "EC8FD2B96AEE83AB9DB35BF151810AF6",
+        "timestamp": "2025-01-28T00:45:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.16.0.0",
+        "changelog": "Fixed JavaScript errors - ApiClient.post and htmlFor issues. Ensured embedded resources are properly updated. Fixed UI styling with proper Jellyfin checkboxes.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.16.zip",
+        "checksum": "E325E5B302703B6A8E4AA122F1C3FD9B",
+        "timestamp": "2025-01-27T23:30:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.15.0.0",
+        "changelog": "Fixed UI styling - use proper Jellyfin checkboxes with material icons, removed emojis from buttons, made save button full-width. Fixed version display in Jellyfin plugin catalog.",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.15.zip",
+        "checksum": "ADCD83D050617EBA487A3E1470F4E63F",
+        "timestamp": "2025-01-27T23:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.14.0.0",
+        "changelog": "Fixed JavaScript errors in configuration page - removed 'for' attributes from labels and used proper ApiClient.ajax method",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.14.zip",
+        "checksum": "552F6C816A3296D0D406BF2EDA41DF69",
+        "timestamp": "2025-01-27T22:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.13.0.0",
+        "changelog": "Fixed JavaScript errors in configuration page - resolved ApiClient.post issues and htmlFor property errors",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.13.zip",
+        "checksum": "767316894734C444D2D4E92D9FE84384",
+        "timestamp": "2025-01-27T21:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.12.0.0",
+        "changelog": "Fixed JavaScript API client calls, improved button styling with native Jellyfin design, and resolved version display issues",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.12.zip",
+        "checksum": "864E8F6B92B4938CF60889F3FB69E906",
+        "timestamp": "2025-01-27T20:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.11.0.0",
+        "changelog": "Fixed plugin service registration and API controller discovery for proper endpoint functionality",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.11.zip",
+        "checksum": "FD1D217CB35544A5C5049951083A18F3",
+        "timestamp": "2025-01-27T19:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.10.0.0",
+        "changelog": "Fixed test connection button with proper response handling, detailed logging, and better error messages",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.10.zip",
+        "checksum": "F5F594B22A347F50889F65DEDABDC3D0",
+        "timestamp": "2025-01-27T18:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.8.0.0",
+        "changelog": "Implemented working Jellyseerr connection testing with comprehensive error handling and API key validation",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.8.zip",
+        "checksum": "BD4E78D7D3DAB0D5E877C90E1F1C9B84",
+        "timestamp": "2025-01-27T17:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.7.0.0",
+        "changelog": "Fixed checkbox functionality, removed redundant RootFolder field, removed Request4K option, improved configuration structure",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.7.zip",
+        "checksum": "0BACDB1C38CDA700E18CFB68AFB4EDA3",
+        "timestamp": "2025-01-27T16:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.6.0.0",
+        "changelog": "Fixed XML serialization issues by removing Dictionary properties that cannot be serialized",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.6.zip",
+        "checksum": "43203DF8615AEDF5AF563DA02BFB8357",
+        "timestamp": "2025-01-27T15:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.5.0.0",
+        "changelog": "Fixed plugin settings integration with proper Jellyfin configuration interface",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.5.zip",
+        "checksum": "53CCB7EF056AF80A927A6CB21832DADF",
+        "timestamp": "2025-01-27T14:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.4.0.0",
+        "changelog": "Stable release with working configuration interface accessible via direct URL",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.4.zip",
+        "checksum": "C4C0F535C623418BA7D7357783019EA9",
+        "timestamp": "2025-01-27T13:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.3.0.0",
+        "changelog": "Fixed plugin structure for proper Jellyfin recognition and configuration interface",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.3.zip",
+        "checksum": "66ECC3B7118796721B02B7ABD58F9D37",
+        "timestamp": "2025-01-27T12:30:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.2.0.0",
+        "changelog": "Added comprehensive web-based configuration interface with Jellyseerr connection settings, library management, and interactive controls",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.2.zip",
+        "checksum": "0A2120137AB06FAFEEE6AF4DD82F9FC1",
+        "timestamp": "2025-01-27T12:00:00",
+        "dependencies": []
+      },
+      {
+        "version": "0.1.0.0",
+        "changelog": "Initial release with Jellyseerr integration",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/archive/refs/tags/v0.1.zip",
+        "checksum": "0010998C40312B3C662C91311F12D02D",
+        "timestamp": "2025-10-04T23:24:00",
+        "dependencies": []
+      }
+    ]
+  }
+]
