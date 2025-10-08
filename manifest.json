@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.112.0.0/JellyseerrBridge-0.112.0.0-DLL.zip",
+        "dependencies": [],
+        "checksum": "5DE0F335D6782C43850E10A81BB2123B",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-08T17:44:08.563Z",
+        "changelog": "v0.112.0.0 - Updated API endpoints to use correct discover paths for movies and TV shows. Implemented pagination handling for both content types. Updated models to match actual API response structure. Refactored manual sync into separate reusable functions. Added proper network ID caching and display functionality.",
+        "version": "0.112.0.0"
+      },
+      {
         "checksum": "8C37FF310F03FB7D904248ECA81ADC1F",
         "changelog": "v0.108.0.0 - Updated API endpoints to use correct discover paths for movies and TV shows. Implemented pagination handling for both content types. Updated models to match actual API response structure. Refactored manual sync into separate reusable functions. Added proper network ID caching and display functionality.",
         "version": "0.108.0.0",
