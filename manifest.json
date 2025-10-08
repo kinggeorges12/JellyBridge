@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.105.0.0 - Simplified JSON Deserialization to Always Return Lists - CLEANER APPROACH: Updated DeserializeJsonList to always return List<T> regardless of JSON structure, Removed complex array/list type checking and conversion logic, Simplified GetDefaultValue method to only handle List<T> types, All API calls now consistently return List<T> for better code consistency, This approach is cleaner and more maintainable than converting arrays to lists everywhere.",
+        "version": "0.105.0.0",
+        "checksum": "28F8AF74C2E32061E58096BA93138066",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.105.0.0/JellyseerrBridge-0.105.0.0-DLL.zip",
+        "timestamp": "2025-10-08T15:54:18.531Z"
+      },
+      {
         "dependencies": [],
         "changelog": "v0.103.0.0 - Fixed JSON Deserialization Type Mismatch - TYPE FIX: Changed from List<JellyseerrWatchProvider> to JellyseerrWatchProvider[] for direct array deserialization, Updated DeserializeJsonList to handle both arrays and lists, Fixed GetDefaultValue to return empty arrays for array types, Updated logging to use Length instead of Count for arrays, This should resolve the ThrowJsonException_DeserializeUnableToConvertValue error by matching the actual JSON structure.",
         "checksum": "08647265DAA34FE2039594CB6C36CC66",
