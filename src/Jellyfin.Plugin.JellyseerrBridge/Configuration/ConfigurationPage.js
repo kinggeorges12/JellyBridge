@@ -171,6 +171,12 @@ function loadAvailableProviders(page) {
             const availableProviders = getAvailableProviders(page, allProviders);
             
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            
+            // Show more detailed success message
+            const activeCount = page.querySelector('#activeProviders').options.length;
+            const availableCount = availableProviders.length;
+            Dashboard.alert(`✅ Refreshed providers for region ${region}. Found ${allProviders.length} total providers (${activeCount} active, ${availableCount} available).`);
+            
             return Promise.resolve();
         } else {
             // Fallback to default networks if API fails
@@ -185,6 +191,12 @@ function loadAvailableProviders(page) {
             
             const availableProviders = getAvailableProviders(page, fallbackProviders);
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            
+            // Show more detailed success message
+            const activeCount = page.querySelector('#activeProviders').options.length;
+            const availableCount = availableProviders.length;
+            Dashboard.alert(`⚠️ API failed, showing ${fallbackProviders.length} default providers (${activeCount} active, ${availableCount} available).`);
+            
             return Promise.resolve();
         }
     }).catch(function(error) {
@@ -200,6 +212,11 @@ function loadAvailableProviders(page) {
         
         const availableProviders = getAvailableProviders(page, fallbackProviders);
         populateSelectWithProviders(availableProvidersSelect, availableProviders);
+        
+        // Show detailed error message
+        const activeCount = page.querySelector('#activeProviders').options.length;
+        const availableCount = availableProviders.length;
+        Dashboard.alert(`❌ API error, showing ${fallbackProviders.length} default providers (${activeCount} active, ${availableCount} available).`);
         
         // Re-throw the error so the calling function can handle it
         throw error;
@@ -573,8 +590,14 @@ export default function (view) {
     const refreshButton = view.querySelector('#refreshProviders');
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
-            const region = view.querySelector('#WatchProviderRegion').value || 'US';
-            refreshProvidersForRegion(view, region);
+            Dashboard.showLoadingMsg();
+            loadWatchProviderRegions(view).then(function() {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('✅ Watch provider regions refreshed successfully!');
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
+            });
         });
     }
 
@@ -595,7 +618,7 @@ export default function (view) {
 }
 
 function loadWatchProviderRegions(page) {
-    ApiClient.ajax({
+    return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/WatchProviderRegions'),
         type: 'GET',
         dataType: 'json'
@@ -628,18 +651,14 @@ function loadWatchProviderRegions(page) {
                     select.value = 'US';
                 }
             }
+            return Promise.resolve();
         } else {
             // Failed to load regions - keep default US option
+            return Promise.resolve();
         }
     }).catch(function (error) {
-        // Error loading regions - keep default US option
-        const debugInfo = 'REGIONS API ERROR DEBUG:<br>' +
-            'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
-            'Error type: ' + typeof error + '<br>' +
-            'Error message: ' + (error?.message || 'UNDEFINED') + '<br>' +
-            'Full error: ' + JSON.stringify(error);
-        
-        Dashboard.alert('❌ REGIONS API ERROR!<br>' + debugInfo);
+        // Re-throw the error so the calling function can handle it
+        throw error;
     });
 }
 
@@ -781,11 +800,11 @@ function performManualSync(page) {
 // Function to refresh providers for a specific region
 function refreshProvidersForRegion(page, region) {
     const refreshButton = page.querySelector('#refreshProviders');
-    const originalText = refreshButton.querySelector('span').textContent;
+    const originalText = refreshButton.textContent;
     
     // Show loading state
     refreshButton.disabled = true;
-    refreshButton.querySelector('span').textContent = 'Refreshing...';
+    refreshButton.textContent = '...';
     
     ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
@@ -852,7 +871,7 @@ function refreshProvidersForRegion(page, region) {
     }).finally(function() {
         // Restore button state
         refreshButton.disabled = false;
-        refreshButton.querySelector('span').textContent = originalText;
+        refreshButton.textContent = originalText;
     });
 }
 

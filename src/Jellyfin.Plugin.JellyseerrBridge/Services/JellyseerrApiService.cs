@@ -101,8 +101,8 @@ public static class JellyseerrUrlBuilder
         {
             JellyseerrEndpoint.Status => JellyseerrResponseType.RawContent,
             JellyseerrEndpoint.Requests => JellyseerrResponseType.PaginatedList,
-            JellyseerrEndpoint.Movies => JellyseerrResponseType.JsonList,
-            JellyseerrEndpoint.TvShows => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.Movies => JellyseerrResponseType.PaginatedList,
+            JellyseerrEndpoint.TvShows => JellyseerrResponseType.PaginatedList,
             JellyseerrEndpoint.User => JellyseerrResponseType.JsonObject,
             JellyseerrEndpoint.WatchProviderRegions => JellyseerrResponseType.JsonList,
             JellyseerrEndpoint.WatchProviderMovies => JellyseerrResponseType.JsonList,
@@ -329,12 +329,12 @@ public class JellyseerrApiService
         try
         {
             // For paginated responses, we need to extract the Results array
-            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse>(content, new JsonSerializerOptions
+            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse<T>>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
             
-            var items = paginatedResponse?.Results ?? new List<JellyseerrRequest>();
+            var items = paginatedResponse?.Results ?? new List<T>();
             _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items.Count, operationName);
             return (T)(object)items;
         }
