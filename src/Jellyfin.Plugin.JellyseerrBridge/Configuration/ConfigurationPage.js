@@ -117,9 +117,10 @@ export default function (view) {
                 // Show confirmation dialog for saving settings
                 Dashboard.confirm({
                     title: 'Connection Success!',
-                    text: 'Connection success!<br>Save connection settings now?',
+                    text: 'Save connection settings now?',
                     confirmText: 'Confirm',
-                    cancelText: 'Cancel'
+                    cancelText: 'Cancel',
+                    primary: "confirm"
                 }).then(function (confirmed) {
                     if (confirmed) {
                         // Save the current settings using the reusable function
@@ -128,6 +129,8 @@ export default function (view) {
                         }).catch(function (error) {
                             Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
                         });
+                    } else {
+                        // User clicked "Cancel" - do nothing
                     }
                 });
             } else {
