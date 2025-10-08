@@ -221,7 +221,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 
                 var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
                 
-                var regions = await apiService.GetWatchProviderRegionsAsync(config);
+                var regions = await apiService.GetWatchProviderRegionsAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch provider regions", regions?.Count ?? 0);
                 
@@ -260,7 +260,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var config = Plugin.Instance.Configuration;
                 var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
                 
-                var providers = await apiService.GetWatchProvidersAsync(config, region);
+                var providers = await apiService.GetWatchProvidersAsync(region);
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch providers for region {Region}", providers?.Count ?? 0, region);
                 
