@@ -70,33 +70,11 @@ public class JellyseerrSyncService
             var allMovies = new List<JellyseerrMovie>();
             var allTvShows = new List<JellyseerrTvShow>();
             
-            // Get movies for all active watch providers at once
-            var networkDict = pluginConfig.GetNetworkNameToIdDictionary();
-            var activeProviderIds = networkDict.Values.ToList();
-            if (activeProviderIds.Any())
-            {
-                _logger.LogInformation("Fetching movies for {Count} active providers: {ProviderIds}", 
-                    activeProviderIds.Count, string.Join(", ", activeProviderIds));
-                allMovies = await _apiService.GetAllMoviesAsync(activeProviderIds, "en", pluginConfig.WatchProviderRegion);
-            }
+            // Get movies for all active networks
+            allMovies = await _apiService.GetAllMoviesAsync();
             
-            // Get TV shows for each network individually (since TV endpoint uses networkId)
-            foreach (var networkName in pluginConfig.ActiveNetworks)
-            {
-                if (networkDict.TryGetValue(networkName, out var networkId))
-                {
-                    _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                    
-                    var tvShows = await _apiService.GetAllTvShowsAsync(networkId);
-                    allTvShows.AddRange(tvShows);
-                    
-                    _logger.LogInformation("Retrieved {TvCount} TV shows for {NetworkName}", tvShows.Count, networkName);
-                }
-                else
-                {
-                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-                }
-            }
+            // Get TV shows for all active networks
+            allTvShows = await _apiService.GetAllTvShowsAsync();
             
             var requests = await _apiService.GetRequestsAsync();
 

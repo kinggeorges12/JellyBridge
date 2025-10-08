@@ -44,10 +44,24 @@ public static class JellyseerrUrlBuilder
     /// <param name="endpoint">The API endpoint</param>
     /// <param name="parameters">Optional query parameters</param>
     /// <returns>Complete URL string</returns>
-    public static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null)
+    public static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
     {
         var cleanBaseUrl = baseUrl.TrimEnd('/');
         var endpointPath = GetEndpointPath(endpoint);
+        
+        // Replace template placeholders in the endpoint path
+        if (templateValues != null)
+        {
+            foreach (var kvp in templateValues)
+            {
+                var placeholder = $"{{{kvp.Key}}}";
+                if (endpointPath.Contains(placeholder))
+                {
+                    endpointPath = endpointPath.Replace(placeholder, kvp.Value);
+                }
+            }
+        }
+        
         var url = $"{cleanBaseUrl}{endpointPath}";
         
         if (parameters != null && parameters.Count > 0)
@@ -68,9 +82,9 @@ public static class JellyseerrUrlBuilder
     /// <param name="method">HTTP method (defaults to GET)</param>
     /// <param name="parameters">Optional query parameters</param>
     /// <returns>Configured HttpRequestMessage</returns>
-    public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null)
+    public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
     {
-        var url = BuildUrl(baseUrl, endpoint, parameters);
+        var url = BuildUrl(baseUrl, endpoint, parameters, templateValues);
         var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
         requestMessage.Headers.Add("X-Api-Key", apiKey);
         return requestMessage;
@@ -109,7 +123,7 @@ public static class JellyseerrUrlBuilder
             JellyseerrEndpoint.Status => "/api/v1/status",
             JellyseerrEndpoint.Requests => "/api/v1/request",
             JellyseerrEndpoint.Movies => "/api/v1/discover/movies",
-            JellyseerrEndpoint.TvShows => "/api/v1/discover/tv/network",
+            JellyseerrEndpoint.TvShows => "/api/v1/discover/tv",
             JellyseerrEndpoint.User => "/api/v1/auth/me",
             JellyseerrEndpoint.WatchProviderRegions => "/api/v1/watchproviders/regions",
             JellyseerrEndpoint.WatchProviderMovies => "/api/v1/watchproviders/movies",
@@ -140,9 +154,10 @@ public class JellyseerrApiService
     /// <param name="endpoint">The API endpoint</param>
     /// <param name="config">Plugin configuration</param>
     /// <param name="parameters">Optional query parameters</param>
+    /// <param name="templateValues">Optional template values for URL path placeholders</param>
     /// <param name="operationName">Name for logging purposes</param>
     /// <returns>Deserialized response or default value</returns>
-    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, string operationName = "data")
+    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null, string operationName = "data")
     {
         try
         {
@@ -150,7 +165,7 @@ public class JellyseerrApiService
             config ??= Plugin.Instance.Configuration;
             
             _logger.LogInformation("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
-            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters);
+            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters, templateValues: templateValues);
             _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
             
             var content = await MakeApiRequestAsync(requestMessage, config);
@@ -186,6 +201,37 @@ public class JellyseerrApiService
             _logger.LogError(ex, "Failed to get {Operation} from Jellyseerr", operationName);
             return GetDefaultValue<T>();
         }
+    }
+    
+    /// <summary>
+    /// Generic pagination helper that fetches all pages for any endpoint.
+    /// </summary>
+    private async Task<List<T>> FetchAllPagesAsync<T>(JellyseerrEndpoint endpoint, Dictionary<string, string> baseParameters, string operationName)
+    {
+        var allItems = new List<T>();
+        var config = Plugin.Instance.Configuration;
+        var maxPages = config.MaxPagesPerNetwork > 0 ? config.MaxPagesPerNetwork : int.MaxValue;
+
+        for (int page = 1; page <= maxPages; page++)
+        {
+            _logger.LogInformation("Fetching {Operation} page {Page}", operationName, page);
+            
+            var parameters = new Dictionary<string, string>(baseParameters)
+            {
+                { "page", page.ToString() }
+            };
+            
+            var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<T>>(endpoint, parameters: parameters, operationName: operationName);
+            var items = paginatedResponse?.Results ?? new List<T>();
+            
+            if (items.Count == 0)
+                break;
+                
+            allItems.AddRange(items);
+        }
+        
+        _logger.LogInformation("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, Math.Min(maxPages, allItems.Count > 0 ? maxPages : 0));
+        return allItems;
     }
     
     /// <summary>
@@ -509,128 +555,117 @@ public class JellyseerrApiService
     }
 
     /// <summary>
-    /// Get movies from Jellyseerr for specific watch providers with pagination support.
+    /// Get movies from Jellyseerr for specific watch providers (single page only).
     /// </summary>
-    public async Task<(List<JellyseerrMovie> Movies, int TotalPages)> GetMoviesAsync(List<int> watchProviderIds, int page = 1, string language = "en", string watchRegion = "US")
+    public async Task<List<JellyseerrMovie>> GetMoviesAsync(List<int> watchProviderIds)
     {
-        _logger.LogInformation("Making API call to movies endpoint for providers {Providers}, page {Page}", string.Join(",", watchProviderIds), page);
+        _logger.LogInformation("Making API call to movies endpoint for providers {Providers}", string.Join(",", watchProviderIds));
         var parameters = new Dictionary<string, string> 
         { 
-            { "page", page.ToString() },
-            { "language", language },
-            { "watchRegion", watchRegion },
             { "watchProviders", string.Join("|", watchProviderIds) }
         };
         var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrMovie>>(JellyseerrEndpoint.Movies, parameters: parameters, operationName: "movies");
-        return (paginatedResponse?.Results ?? new List<JellyseerrMovie>(), paginatedResponse?.TotalPages ?? 1);
+        return paginatedResponse?.Results ?? new List<JellyseerrMovie>();
     }
 
+
     /// <summary>
-    /// Get all movies from Jellyseerr for specific watch providers (handles pagination automatically).
+    /// Get all movies from Jellyseerr for all active networks (handles pagination automatically).
     /// </summary>
-    public async Task<List<JellyseerrMovie>> GetAllMoviesAsync(List<int> watchProviderIds, string language = "en", string watchRegion = "US")
+    public async Task<List<JellyseerrMovie>> GetAllMoviesAsync()
     {
         var allMovies = new List<JellyseerrMovie>();
-        int page = 1;
-        int totalPages = 1;
-
-        do
-        {
-            _logger.LogInformation("Fetching movies page {Page} of {TotalPages}", page, totalPages);
-            var (movies, totalPagesFromResponse) = await GetMoviesAsync(watchProviderIds, page, language, watchRegion);
-            
-            if (movies.Count == 0)
-                break;
-                
-            allMovies.AddRange(movies);
-            
-            // Update total pages from the first response
-            if (page == 1)
-                totalPages = totalPagesFromResponse;
-                
-            page++;
-            
-            // Limit to first 10 pages to avoid overwhelming the API
-            if (page > 10)
-                break;
-                
-        } while (page <= totalPages);
+        var config = Plugin.Instance.Configuration;
         
-        _logger.LogInformation("Retrieved {Count} total movies across {Pages} pages", allMovies.Count, page - 1);
+        // Get network name-to-ID mapping
+        var networkDict = config.GetNetworkNameToIdDictionary();
+        
+        // Loop through each active network
+        foreach (var networkName in config.ActiveNetworks)
+        {
+            if (networkDict.TryGetValue(networkName, out var networkId))
+            {
+                _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
+                
+                var baseParameters = new Dictionary<string, string>
+                {
+                    { "watchProviders", networkId.ToString() }
+                };
+                
+                var networkMovies = await FetchAllPagesAsync<JellyseerrMovie>(
+                    JellyseerrEndpoint.Movies,
+                    baseParameters,
+                    $"movies for {networkName}"
+                );
+                
+                allMovies.AddRange(networkMovies);
+                _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", networkMovies.Count, networkName);
+            }
+            else
+            {
+                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
+            }
+        }
+        
         return allMovies;
     }
 
+
     /// <summary>
-    /// Get TV shows from Jellyseerr for a specific network with pagination support.
+    /// Get TV shows from Jellyseerr for specific watch providers (single page only).
     /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(int networkId, int page = 1, string language = "en")
+    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(List<int> watchProviderIds)
     {
-        _logger.LogInformation("Making API call to TV shows endpoint for network {NetworkId}, page {Page}", networkId, page);
+        _logger.LogInformation("Making API call to TV shows endpoint for providers {Providers}", string.Join(",", watchProviderIds));
         
-        // Build the URL with network ID in the path
-        var config = Plugin.Instance.Configuration;
-        var baseUrl = config.JellyseerrUrl.TrimEnd('/');
-        var url = $"{baseUrl}/api/v1/discover/tv/network/{networkId}";
-        
-        // Add query parameters
-        var queryParams = new Dictionary<string, string>
+        var parameters = new Dictionary<string, string>
         {
-            { "page", page.ToString() },
-            { "language", language }
+            { "watchProviders", string.Join("|", watchProviderIds) }
         };
-        var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-        var fullUrl = $"{url}?{queryString}";
         
-        _logger.LogInformation("Request URL: {Url}", fullUrl);
-        
-        var requestMessage = new HttpRequestMessage(HttpMethod.Get, fullUrl);
-        requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-        
-        var content = await MakeApiRequestAsync(requestMessage, config);
-        
-        if (content == null)
-        {
-            _logger.LogWarning("Null content received for TV shows");
-            return new List<JellyseerrTvShow>();
-        }
-        
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            _logger.LogInformation("Empty response received for TV shows");
-            return new List<JellyseerrTvShow>();
-        }
-        
-        return DeserializeJsonList<List<JellyseerrTvShow>>(content, "TV shows");
+        var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, parameters: parameters, operationName: "TV shows");
+        return paginatedResponse?.Results ?? new List<JellyseerrTvShow>();
     }
 
+
     /// <summary>
-    /// Get all TV shows from Jellyseerr for a specific network (handles pagination automatically).
+    /// Get all TV shows from Jellyseerr for all active networks (handles pagination automatically).
     /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetAllTvShowsAsync(int networkId, string language = "en")
+    public async Task<List<JellyseerrTvShow>> GetAllTvShowsAsync()
     {
         var allTvShows = new List<JellyseerrTvShow>();
-        int page = 1;
-        int totalPages = 1;
-
-        do
+        var config = Plugin.Instance.Configuration;
+        
+        // Get network name-to-ID mapping
+        var networkDict = config.GetNetworkNameToIdDictionary();
+        
+        // Loop through each active network
+        foreach (var networkName in config.ActiveNetworks)
         {
-            _logger.LogInformation("Fetching TV shows page {Page} of {TotalPages}", page, totalPages);
-            var tvShows = await GetTvShowsAsync(networkId, page, language);
-            
-            if (tvShows.Count == 0)
-                break;
+            if (networkDict.TryGetValue(networkName, out var networkId))
+            {
+                _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                 
-            allTvShows.AddRange(tvShows);
-            page++;
-            
-            // For now, we'll limit to first 10 pages to avoid overwhelming the API
-            // In a real implementation, you'd parse the totalPages from the response
-            if (page > 10)
-                break;
+                var baseParameters = new Dictionary<string, string>
+                {
+                    { "watchProviders", networkId.ToString() }
+                };
                 
-        } while (page <= totalPages);
-
-        _logger.LogInformation("Retrieved {Count} total TV shows across {Pages} pages", allTvShows.Count, page - 1);
+                var networkTvShows = await FetchAllPagesAsync<JellyseerrTvShow>(
+                    JellyseerrEndpoint.TvShows,
+                    baseParameters,
+                    $"TV shows for {networkName}"
+                );
+                
+                allTvShows.AddRange(networkTvShows);
+                _logger.LogInformation("Retrieved {TvShowCount} TV shows for {NetworkName}", networkTvShows.Count, networkName);
+            }
+            else
+            {
+                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
+            }
+        }
+        
         return allTvShows;
     }
 

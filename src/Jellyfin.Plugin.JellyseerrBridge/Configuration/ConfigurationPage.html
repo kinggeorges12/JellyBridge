@@ -302,7 +302,7 @@
                                 <!-- Available Providers (Right) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available in Jellyseerr <span class="helpIcon" title="Click 'Manual Sync' to load providers from Jellyseerr">?</span></label>
+                                        <label class="inputLabel">Available in Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load providers from Jellyseerr">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="availableSearch" placeholder="Search available providers..." is="emby-input" class="emby-input">
@@ -338,6 +338,12 @@
                             <label class="inputLabel inputLabelUnfocused" for="RetryAttempts">Retry Attempts</label>
                             <input id="RetryAttempts" type="number" is="emby-input" min="0" max="10" class="emby-input" placeholder="3" />
                             <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MaxPagesPerNetwork">Max Pages Per Network</label>
+                            <input id="MaxPagesPerNetwork" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="10" />
+                            <div class="fieldDescription">Maximum number of pages to fetch per network during sync. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
