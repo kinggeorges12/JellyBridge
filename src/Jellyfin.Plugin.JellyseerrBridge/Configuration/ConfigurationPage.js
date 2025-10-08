@@ -10,6 +10,8 @@ function initializeMultiSelect(page, config) {
     const availableSearch = page.querySelector('#availableSearch');
     const addButton = page.querySelector('#addSelected');
     const removeButton = page.querySelector('#removeSelected');
+    const clearActiveSearch = page.querySelector('#clearActiveSearch');
+    const clearAvailableSearch = page.querySelector('#clearAvailableSearch');
     
     // Store all available providers globally
     window.allAvailableProviders = [];
@@ -24,11 +26,32 @@ function initializeMultiSelect(page, config) {
     // Search functionality
     activeSearch.addEventListener('input', function() {
         filterSelect(activeProvidersSelect, this.value);
+        updateClearButtonVisibility(clearActiveSearch, this.value);
     });
     
     availableSearch.addEventListener('input', function() {
         filterSelect(availableProvidersSelect, this.value);
+        updateClearButtonVisibility(clearAvailableSearch, this.value);
     });
+    
+    // Clear button functionality
+    clearActiveSearch.addEventListener('click', function() {
+        activeSearch.value = '';
+        filterSelect(activeProvidersSelect, '');
+        updateClearButtonVisibility(clearActiveSearch, '');
+        activeSearch.focus();
+    });
+    
+    clearAvailableSearch.addEventListener('click', function() {
+        availableSearch.value = '';
+        filterSelect(availableProvidersSelect, '');
+        updateClearButtonVisibility(clearAvailableSearch, '');
+        availableSearch.focus();
+    });
+    
+    // Initialize clear button visibility
+    updateClearButtonVisibility(clearActiveSearch, activeSearch.value);
+    updateClearButtonVisibility(clearAvailableSearch, availableSearch.value);
     
     // Add/Remove functionality
     addButton.addEventListener('click', function() {
@@ -47,6 +70,14 @@ function initializeMultiSelect(page, config) {
     activeProvidersSelect.addEventListener('dblclick', function() {
         moveProviders(activeProvidersSelect, availableProvidersSelect);
     });
+}
+
+function updateClearButtonVisibility(clearButton, searchValue) {
+    if (searchValue && searchValue.trim() !== '') {
+        clearButton.style.display = 'flex';
+    } else {
+        clearButton.style.display = 'none';
+    }
 }
 
 function loadAvailableProviders(page) {
@@ -119,7 +150,12 @@ function filterSelect(selectElement, searchTerm) {
 
 function moveProviders(fromSelect, toSelect) {
     const selectedOptions = Array.from(fromSelect.selectedOptions);
+    const movedValues = [];
+    
     selectedOptions.forEach(option => {
+        // Track the value of the moved item
+        movedValues.push(option.value);
+        
         // Add to destination
         const newOption = document.createElement('option');
         newOption.value = option.value;
@@ -133,6 +169,14 @@ function moveProviders(fromSelect, toSelect) {
     // Sort both selects
     sortSelectOptions(fromSelect);
     sortSelectOptions(toSelect);
+    
+    // Select the newly moved items in the destination
+    movedValues.forEach(value => {
+        const newOption = Array.from(toSelect.options).find(option => option.value === value);
+        if (newOption) {
+            newOption.selected = true;
+        }
+    });
 }
 
 function sortSelectOptions(selectElement) {
@@ -279,9 +323,11 @@ export default function (view) {
                         if (confirmed) {
                             // Save the current settings using the reusable function
                             savePluginConfiguration(view).then(function (result) {
-                                Dashboard.alert('✅ Settings saved successfully!');
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.processPluginConfigurationUpdateResult(result);
                             }).catch(function (error) {
-                                Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                             });
                         } else {
                             Dashboard.alert('🚫 Exited without saving');
@@ -314,7 +360,9 @@ export default function (view) {
         Dashboard.showLoadingMsg();
         
         // First save the current settings using the reusable function
-        savePluginConfiguration(view).then(function () {
+        savePluginConfiguration(view).then(function (result) {
+            Dashboard.hideLoadingMsg();
+            Dashboard.processPluginConfigurationUpdateResult(result);
             // Settings saved, now load watch provider regions
             loadWatchProviderRegions(view);
             
@@ -327,6 +375,10 @@ export default function (view) {
                 type: 'GET',
                 dataType: 'json'
             });
+        }).catch(function (error) {
+            Dashboard.hideLoadingMsg();
+            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            return Promise.reject(error);
         }).then(function (providersData) {
             // Now do the sync using saved plugin settings
             return ApiClient.ajax({

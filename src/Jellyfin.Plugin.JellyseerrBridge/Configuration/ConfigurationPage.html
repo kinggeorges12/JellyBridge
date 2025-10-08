@@ -29,6 +29,97 @@
                 .disabled-block label.emby-checkbox-label span {
                     font-style: italic;
                 }
+                
+                /* Multi-select styling */
+                .multiSelectContainer {
+                    display: flex;
+                    gap: 20px;
+                    margin-top: 10px;
+                    align-items: stretch;
+                }
+                
+                .selectBox {
+                    flex: 1;
+                }
+                
+                .selectBoxHeader {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                
+                .selectBoxHeader .inputLabel {
+                    margin: 0;
+                    flex: 1;
+                }
+                
+                .arrowButtonsContainer {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 0 10px;
+                }
+                
+                .arrowButton {
+                    font-size: 18px;
+                    font-weight: bold;
+                    min-width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .selectBox .emby-input {
+                    margin-bottom: 8px;
+                }
+                
+                .selectBox .emby-select {
+                    min-height: 200px;
+                }
+                
+                /* Search input with clear button */
+                .searchInputContainer {
+                    position: relative;
+                    margin-bottom: 8px;
+                }
+                
+                .searchInputContainer .emby-input {
+                    padding-right: 30px;
+                    margin-bottom: 0;
+                }
+                
+                .clearSearchButton {
+                    position: absolute;
+                    right: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    color: #999;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    transition: all 0.2s ease;
+                }
+                
+                .clearSearchButton:hover {
+                    background-color: #666;
+                    color: #fff;
+                }
+                
+                .clearSearchButton:not([style*="display: none"]) {
+                    display: flex;
+                }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -136,27 +227,37 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Default Networks</label>
-                            <div class="multiSelectContainer" style="display: flex; gap: 20px; margin-top: 10px;">
+                            <div class="multiSelectContainer">
                                 <!-- Active Providers (Left) -->
-                                <div class="selectBox" style="flex: 1;">
-                                    <div class="selectBoxHeader" style="display: flex; align-items: center; margin-bottom: 8px;">
-                                        <label class="inputLabel" style="margin: 0; flex: 1;">Active Providers</label>
-                                        <button type="button" id="removeSelected" class="emby-button" style="padding: 4px 8px; font-size: 12px;">Remove</button>
+                                <div class="selectBox">
+                                    <div class="selectBoxHeader">
+                                        <label class="inputLabel">Active Providers</label>
                                     </div>
-                                    <input type="text" id="activeSearch" placeholder="Search active providers..." style="width: 100%; margin-bottom: 8px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-                                    <select id="activeProviders" multiple size="8" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+                                    <div class="searchInputContainer">
+                                        <input type="text" id="activeSearch" placeholder="Search active providers..." is="emby-input" class="emby-input">
+                                        <button type="button" id="clearActiveSearch" class="clearSearchButton" title="Clear search">×</button>
+                                    </div>
+                                    <select id="activeProviders" multiple size="8" is="emby-select" class="emby-select">
                                         <!-- Active providers will be populated here -->
                                     </select>
                                 </div>
                                 
+                                <!-- Arrow Buttons (Center) -->
+                                <div class="arrowButtonsContainer">
+                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected providers">→</button>
+                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected providers">←</button>
+                                </div>
+                                
                                 <!-- Available Providers (Right) -->
-                                <div class="selectBox" style="flex: 1;">
-                                    <div class="selectBoxHeader" style="display: flex; align-items: center; margin-bottom: 8px;">
-                                        <label class="inputLabel" style="margin: 0; flex: 1;">Available Providers</label>
-                                        <button type="button" id="addSelected" class="emby-button" style="padding: 4px 8px; font-size: 12px;">Add</button>
+                                <div class="selectBox">
+                                    <div class="selectBoxHeader">
+                                        <label class="inputLabel">Available Providers</label>
                                     </div>
-                                    <input type="text" id="availableSearch" placeholder="Search available providers..." style="width: 100%; margin-bottom: 8px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-                                    <select id="availableProviders" multiple size="8" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+                                    <div class="searchInputContainer">
+                                        <input type="text" id="availableSearch" placeholder="Search available providers..." is="emby-input" class="emby-input">
+                                        <button type="button" id="clearAvailableSearch" class="clearSearchButton" title="Clear search">×</button>
+                                    </div>
+                                    <select id="availableProviders" multiple size="8" is="emby-select" class="emby-select">
                                         <!-- Available providers will be populated here -->
                                     </select>
                                 </div>
@@ -206,7 +307,7 @@
 
                     <div>
                         <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block emby-button">
-                            <span>Confirm</span>
+                            <span>Save</span>
                         </button>
                     </div>
                 </fieldset>
