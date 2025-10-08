@@ -60,7 +60,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     WatchProviderRegion = config.WatchProviderRegion,
                     ActiveNetworks = config.ActiveNetworks,
                     NetworkNameToId = config.GetNetworkNameToIdDictionary(), // Convert to dictionary for JavaScript
-                    DefaultNetworks = config.DefaultNetworks
+                    DefaultNetworks = config.DefaultNetworks,
+                    JellyseerrDefaultNetworks = PluginConfiguration.JellyseerrDefaultNetworks
                 };
                 
                 return Ok(configForFrontend);
@@ -73,7 +74,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         }
 
         [HttpPost("UpdatePluginConfiguration")]
-        public IActionResult UpdatePluginConfiguration([FromBody] dynamic configData)
+        public IActionResult UpdatePluginConfiguration([FromBody] JsonElement configData)
         {
             _logger.LogInformation("[JellyseerrBridge] UpdatePluginConfiguration endpoint called");
             
@@ -81,49 +82,71 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 var config = Plugin.Instance.Configuration;
                 
-                // Update configuration properties
-                config.JellyseerrUrl = configData.JellyseerrUrl?.ToString() ?? config.JellyseerrUrl;
-                config.ApiKey = configData.ApiKey?.ToString() ?? config.ApiKey;
-                config.LibraryDirectory = configData.LibraryDirectory?.ToString() ?? config.LibraryDirectory;
-                config.UserId = configData.UserId != null ? (int)configData.UserId : config.UserId;
-                config.IsEnabled = configData.IsEnabled != null ? (bool)configData.IsEnabled : config.IsEnabled;
-                config.SyncIntervalHours = configData.SyncIntervalHours != null ? (int)configData.SyncIntervalHours : config.SyncIntervalHours;
-                config.CreateSeparateLibraries = configData.CreateSeparateLibraries != null ? (bool)configData.CreateSeparateLibraries : config.CreateSeparateLibraries;
-                config.LibraryPrefix = configData.LibraryPrefix?.ToString() ?? config.LibraryPrefix;
-                config.ExcludeFromMainLibraries = configData.ExcludeFromMainLibraries != null ? (bool)configData.ExcludeFromMainLibraries : config.ExcludeFromMainLibraries;
-                config.AutoSyncOnStartup = configData.AutoSyncOnStartup != null ? (bool)configData.AutoSyncOnStartup : config.AutoSyncOnStartup;
-                config.RequestTimeout = configData.RequestTimeout != null ? (int)configData.RequestTimeout : config.RequestTimeout;
-                config.RetryAttempts = configData.RetryAttempts != null ? (int)configData.RetryAttempts : config.RetryAttempts;
-                config.EnableDebugLogging = configData.EnableDebugLogging != null ? (bool)configData.EnableDebugLogging : config.EnableDebugLogging;
-                config.WatchProviderRegion = configData.WatchProviderRegion?.ToString() ?? config.WatchProviderRegion;
+                // Update configuration properties using JsonElement
+                if (configData.TryGetProperty("JellyseerrUrl", out var jellyseerrUrlElement))
+                    config.JellyseerrUrl = jellyseerrUrlElement.GetString() ?? config.JellyseerrUrl;
+                
+                if (configData.TryGetProperty("ApiKey", out var apiKeyElement))
+                    config.ApiKey = apiKeyElement.GetString() ?? config.ApiKey;
+                
+                if (configData.TryGetProperty("LibraryDirectory", out var libraryDirectoryElement))
+                    config.LibraryDirectory = libraryDirectoryElement.GetString() ?? config.LibraryDirectory;
+                
+                if (configData.TryGetProperty("UserId", out var userIdElement))
+                    config.UserId = userIdElement.GetInt32();
+                
+                if (configData.TryGetProperty("IsEnabled", out var isEnabledElement))
+                    config.IsEnabled = isEnabledElement.GetBoolean();
+                
+                if (configData.TryGetProperty("SyncIntervalHours", out var syncIntervalElement))
+                    config.SyncIntervalHours = syncIntervalElement.GetInt32();
+                
+                if (configData.TryGetProperty("CreateSeparateLibraries", out var createSeparateElement))
+                    config.CreateSeparateLibraries = createSeparateElement.GetBoolean();
+                
+                if (configData.TryGetProperty("LibraryPrefix", out var libraryPrefixElement))
+                    config.LibraryPrefix = libraryPrefixElement.GetString() ?? config.LibraryPrefix;
+                
+                if (configData.TryGetProperty("ExcludeFromMainLibraries", out var excludeFromMainElement))
+                    config.ExcludeFromMainLibraries = excludeFromMainElement.GetBoolean();
+                
+                if (configData.TryGetProperty("AutoSyncOnStartup", out var autoSyncElement))
+                    config.AutoSyncOnStartup = autoSyncElement.GetBoolean();
+                
+                if (configData.TryGetProperty("RequestTimeout", out var requestTimeoutElement))
+                    config.RequestTimeout = requestTimeoutElement.GetInt32();
+                
+                if (configData.TryGetProperty("RetryAttempts", out var retryAttemptsElement))
+                    config.RetryAttempts = retryAttemptsElement.GetInt32();
+                
+                if (configData.TryGetProperty("EnableDebugLogging", out var enableDebugElement))
+                    config.EnableDebugLogging = enableDebugElement.GetBoolean();
+                
+                if (configData.TryGetProperty("WatchProviderRegion", out var watchProviderElement))
+                    config.WatchProviderRegion = watchProviderElement.GetString() ?? config.WatchProviderRegion;
                 
                 // Handle ActiveNetworks array
-                if (configData.ActiveNetworks != null)
+                if (configData.TryGetProperty("ActiveNetworks", out var activeNetworksElement))
                 {
                     var activeNetworksList = new List<string>();
-                    foreach (var network in configData.ActiveNetworks)
+                    foreach (var networkElement in activeNetworksElement.EnumerateArray())
                     {
-                        activeNetworksList.Add(network.ToString());
+                        activeNetworksList.Add(networkElement.GetString() ?? string.Empty);
                     }
                     config.ActiveNetworks = activeNetworksList;
                 }
                 
                 // Handle NetworkNameToId dictionary conversion
-                if (configData.NetworkNameToId != null)
+                if (configData.TryGetProperty("NetworkNameToId", out var networkNameToIdElement))
                 {
                     var networkDict = new Dictionary<string, int>();
                     
-                    // Convert the JavaScript object to C# dictionary
-                    var networkNameToIdObj = configData.NetworkNameToId;
-                    foreach (var property in networkNameToIdObj)
+                    foreach (var property in networkNameToIdElement.EnumerateObject())
                     {
-                        if (!string.IsNullOrEmpty(property.Name))
+                        if (property.Value.ValueKind == JsonValueKind.Number && 
+                            property.Value.TryGetInt32(out int id))
                         {
-                            var valueStr = property.Value?.ToString();
-                            if (int.TryParse(valueStr, out int id))
-                            {
-                                networkDict[property.Name] = id;
-                            }
+                            networkDict[property.Name] = id;
                         }
                     }
                     

@@ -2,6 +2,12 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
+// Helper function to filter out active providers
+function getAvailableProviders(page, providers) {
+    const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
+    return providers.filter(provider => !activeProviders.includes(provider.name || provider));
+}
+
 // Function to save plugin configuration
 function initializeMultiSelect(page, config) {
     const activeProvidersSelect = page.querySelector('#activeProviders');
@@ -22,7 +28,7 @@ function initializeMultiSelect(page, config) {
     populateActiveProvidersWithIds(activeProvidersSelect, activeNetworks, networkMapping);
     
     // Don't load available providers on page load - only when Manual Sync is clicked
-    populateSelect(availableProvidersSelect, []);
+    populateSelectWithNetworkNames(availableProvidersSelect, []);
     
     // Search functionality
     activeSearch.addEventListener('input', function() {
@@ -95,38 +101,23 @@ function loadAvailableProviders(page) {
             window.allAvailableProviders = providers;
             
             // Filter out providers that are already active
-            const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-            const availableProviders = providers.filter(provider => !activeProviders.includes(provider.name));
+            const availableProviders = getAvailableProviders(page, providers);
             
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
         } else {
             // Fallback to default networks if API fails
-            const defaultNetworks = [
-                "Netflix", "Disney+", "Prime Video", "Apple TV+", "Hulu", "HBO", "Discovery+",
-                "ABC", "FOX", "Cinemax", "AMC", "Showtime", "Starz", "The CW", "NBC", "CBS",
-                "Paramount+", "BBC One", "Cartoon Network", "Adult Swim", "Nickelodeon", "Peacock"
-            ];
-            window.allAvailableProviders = defaultNetworks;
+            window.allAvailableProviders = window.jellyseerrDefaultNetworks || [];
             
-            const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-            const availableProviders = defaultNetworks.filter(name => !activeProviders.includes(name));
-            
-            populateSelect(availableProvidersSelect, availableProviders);
+            const availableProviders = getAvailableProviders(page, window.jellyseerrDefaultNetworks || []);
+            populateSelectWithNetworkNames(availableProvidersSelect, availableProviders);
         }
     }).catch(function(error) {
         console.error('Failed to load available providers:', error);
         // Use default networks as fallback
-        const defaultNetworks = [
-            "Netflix", "Disney+", "Prime Video", "Apple TV+", "Hulu", "HBO", "Discovery+",
-            "ABC", "FOX", "Cinemax", "AMC", "Showtime", "Starz", "The CW", "NBC", "CBS",
-            "Paramount+", "BBC One", "Cartoon Network", "Adult Swim", "Nickelodeon", "Peacock"
-        ];
-        window.allAvailableProviders = defaultNetworks;
+        window.allAvailableProviders = window.jellyseerrDefaultNetworks || [];
         
-        const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-        const availableProviders = defaultNetworks.filter(name => !activeProviders.includes(name));
-        
-        populateSelect(availableProvidersSelect, availableProviders);
+        const availableProviders = getAvailableProviders(page, window.jellyseerrDefaultNetworks || []);
+        populateSelectWithNetworkNames(availableProvidersSelect, availableProviders);
     });
 }
 
@@ -153,6 +144,17 @@ function populateSelectWithProviders(selectElement, providers) {
         option.value = provider.name; // Store just the name as value for compatibility
         option.textContent = provider.id ? `${provider.name} (${provider.id})` : provider.name;
         option.dataset.providerId = provider.id || ''; // Store ID separately
+        selectElement.appendChild(option);
+    });
+}
+
+function populateSelectWithNetworkNames(selectElement, networkNames) {
+    selectElement.innerHTML = '';
+    
+    networkNames.forEach(networkName => {
+        const option = document.createElement('option');
+        option.value = networkName;
+        option.textContent = networkName;
         selectElement.appendChild(option);
     });
 }
@@ -340,6 +342,9 @@ export default function (view) {
                 // Store the current watch provider region value
                 const watchProviderSelect = page.querySelector('#WatchProviderRegion');
                 watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
+                
+                // Store default networks globally for fallback use
+                window.jellyseerrDefaultNetworks = config.JellyseerrDefaultNetworks || [];
                 
                 // Initialize the multi-select interface
                 initializeMultiSelect(page, config);
@@ -531,8 +536,7 @@ function loadProvidersForRegion(page, region) {
             window.allAvailableProviders = providers;
             
             // Filter out providers that are already active
-            const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-            const availableProviders = providers.filter(provider => !activeProviders.includes(provider.name));
+            const availableProviders = getAvailableProviders(page, providers);
             
             const availableProvidersSelect = page.querySelector('#availableProviders');
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
