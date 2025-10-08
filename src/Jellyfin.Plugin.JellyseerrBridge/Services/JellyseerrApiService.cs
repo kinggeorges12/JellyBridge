@@ -188,7 +188,7 @@ public class JellyseerrApiService
         {
             var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = false
             });
             
             _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items?.Count ?? 0, operationName);
