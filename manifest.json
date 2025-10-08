@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "8C37FF310F03FB7D904248ECA81ADC1F",
+        "changelog": "v0.108.0.0 - Updated API endpoints to use correct discover paths for movies and TV shows. Implemented pagination handling for both content types. Updated models to match actual API response structure. Refactored manual sync into separate reusable functions. Added proper network ID caching and display functionality.",
+        "version": "0.108.0.0",
+        "timestamp": "2025-10-08T17:43:47.349Z",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.108.0.0/JellyseerrBridge-0.108.0.0-DLL.zip"
+      },
+      {
         "checksum": "0A1699D8337EA784989FC06CF3C0FB5E",
         "changelog": "v0.111.0.0 - Refactored API Service - Cleaner Configuration Handling - REFACTOR: Made MakeTypedApiCallAsync use Plugin.Instance.Configuration by default, Optional config parameter allows test connection to pass specific configs, Removed redundant config parameter passing from all public API methods, Cleaner method signatures: GetMoviesAsync(), GetTvShowsAsync(), GetRequestsAsync(), etc., Only TestConnectionAsync still requires config parameter for testing different configurations, Added debug logging for movies/TV shows endpoints to investigate null content issue.",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.111.0.0/JellyseerrBridge-0.111.0.0-DLL.zip",

@@ -18,7 +18,8 @@ function initializeMultiSelect(page, config) {
     
     // Load active providers from config
     const activeNetworks = config.ActiveNetworks || [];
-    populateSelect(activeProvidersSelect, activeNetworks);
+    const networkMapping = config.NetworkNameToId || {};
+    populateActiveProvidersWithIds(activeProvidersSelect, activeNetworks, networkMapping);
     
     // Don't load available providers on page load - only when Manual Sync is clicked
     populateSelect(availableProvidersSelect, []);
@@ -90,14 +91,14 @@ function loadAvailableProviders(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && response.success && response.providers) {
-            const providerNames = response.providers.map(provider => provider.name).sort();
-            window.allAvailableProviders = providerNames;
+            const providers = response.providers.sort((a, b) => a.name.localeCompare(b.name));
+            window.allAvailableProviders = providers;
             
             // Filter out providers that are already active
             const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-            const availableProviders = providerNames.filter(name => !activeProviders.includes(name));
+            const availableProviders = providers.filter(provider => !activeProviders.includes(provider.name));
             
-            populateSelect(availableProvidersSelect, availableProviders);
+            populateSelectWithProviders(availableProvidersSelect, availableProviders);
         } else {
             // Fallback to default networks if API fails
             const defaultNetworks = [
@@ -129,20 +130,29 @@ function loadAvailableProviders(page) {
     });
 }
 
-function populateSelect(selectElement, items) {
+function populateActiveProvidersWithIds(selectElement, networkNames, networkMapping) {
     selectElement.innerHTML = '';
-    // Ensure unique items only
-    const uniqueItems = [...new Set(items)];
     
-    // Sort items only for available providers, maintain order for active providers
-    const sortedItems = selectElement.id === 'availableProviders' 
-        ? uniqueItems.sort((a, b) => a.localeCompare(b))
-        : uniqueItems;
-    
-    sortedItems.forEach(item => {
+    networkNames.forEach(networkName => {
         const option = document.createElement('option');
-        option.value = item;
-        option.textContent = item;
+        option.value = networkName;
+        const networkId = networkMapping[networkName];
+        option.textContent = networkId ? `${networkName} (${networkId})` : networkName;
+        if (networkId) {
+            option.dataset.providerId = networkId.toString();
+        }
+        selectElement.appendChild(option);
+    });
+}
+
+function populateSelectWithProviders(selectElement, providers) {
+    selectElement.innerHTML = '';
+    
+    providers.forEach(provider => {
+        const option = document.createElement('option');
+        option.value = provider.name; // Store just the name as value for compatibility
+        option.textContent = provider.id ? `${provider.name} (${provider.id})` : provider.name;
+        option.dataset.providerId = provider.id || ''; // Store ID separately
         selectElement.appendChild(option);
     });
 }
@@ -176,6 +186,9 @@ function moveProviders(fromSelect, toSelect) {
         const newOption = document.createElement('option');
         newOption.value = option.value;
         newOption.textContent = option.textContent;
+        if (option.dataset.providerId) {
+            newOption.dataset.providerId = option.dataset.providerId;
+        }
         toSelect.appendChild(newOption);
         
         // Remove from source
@@ -214,6 +227,19 @@ function getActiveNetworks(page) {
     return [...new Set(networks)];
 }
 
+function getNetworkNameToIdMapping(page) {
+    const activeProvidersSelect = page.querySelector('#activeProviders');
+    const mapping = {};
+    
+    Array.from(activeProvidersSelect.options).forEach(option => {
+        if (option.dataset.providerId) {
+            mapping[option.value] = parseInt(option.dataset.providerId);
+        }
+    });
+    
+    return mapping;
+}
+
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     return ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
@@ -230,6 +256,7 @@ function savePluginConfiguration(view) {
         config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
         config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
         config.ActiveNetworks = getActiveNetworks(view);
+        config.NetworkNameToId = getNetworkNameToIdMapping(view);
         config.DefaultNetworks = config.ActiveNetworks.join('\n'); // Keep for backward compatibility
         config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
         config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
@@ -411,78 +438,7 @@ export default function (view) {
     }
     
     syncButton.addEventListener('click', function () {
-        Dashboard.showLoadingMsg();
-        
-        // First save the current settings using the reusable function
-        savePluginConfiguration(view).then(function (result) {
-            Dashboard.hideLoadingMsg();
-            Dashboard.processPluginConfigurationUpdateResult(result);
-            // Settings saved, now load watch provider regions
-            loadWatchProviderRegions(view);
-            
-            // Get selected region for watch providers
-            const selectedRegion = view.querySelector('#WatchProviderRegion')?.value || 'US';
-            
-            // Fetch watch providers for the selected region and populate available providers
-            return ApiClient.ajax({
-                url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${selectedRegion}`),
-                type: 'GET',
-                dataType: 'json'
-            }).then(function(providersResponse) {
-                if (providersResponse && providersResponse.success && providersResponse.providers) {
-                    const providerNames = providersResponse.providers.map(provider => provider.name).sort();
-                    const availableProvidersSelect = view.querySelector('#availableProviders');
-                    
-                    // Filter out providers that are already active to prevent duplicates
-                    const activeProviders = Array.from(view.querySelector('#activeProviders').options).map(option => option.value);
-                    const uniqueAvailableProviders = providerNames.filter(name => !activeProviders.includes(name));
-                    
-                    populateSelect(availableProvidersSelect, uniqueAvailableProviders);
-                    Dashboard.alert(`✅ Loaded ${uniqueAvailableProviders.length} watch providers for region ${selectedRegion} (${providerNames.length - uniqueAvailableProviders.length} already active)`);
-                } else {
-                    Dashboard.alert('⚠️ No watch providers found for the selected region');
-                }
-            });
-        }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-            return Promise.reject(error);
-        }).then(function () {
-            // Now do the sync using saved plugin settings
-            return ApiClient.ajax({
-                url: ApiClient.getUrl('JellyseerrBridge/Sync'),
-                type: 'POST',
-                data: '{}',
-                contentType: 'application/json',
-                dataType: 'json'
-            }).then(function (syncData) {
-                Dashboard.hideLoadingMsg();
-                
-                // Show sync result
-                let debugInfo = 'SYNC RESPONSE:<br>' +
-                    'Response exists: ' + (syncData ? 'YES' : 'NO') + '<br>' +
-                    'Response type: ' + typeof syncData + '<br>' +
-                    'Response success: ' + (syncData?.success ? 'YES' : 'NO') + '<br>' +
-                    'Response message: ' + (syncData?.message || 'UNDEFINED');
-                
-                if (syncData && syncData.success) {
-                    Dashboard.alert('✅ SYNC SUCCESS!<br>' + debugInfo);
-                } else {
-                    Dashboard.alert('❌ SYNC FAILED!<br>' + debugInfo);
-                }
-            });
-        }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
-            const debugInfo = 'SYNC ERROR DEBUG:<br>' +
-                'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
-                'Error type: ' + typeof error + '<br>' +
-                'Error message: ' + (error?.message || 'UNDEFINED') + '<br>' +
-                'Error name: ' + (error?.name || 'UNDEFINED') + '<br>' +
-                'Error status: ' + (error?.status || 'UNDEFINED') + '<br>' +
-                'Full error: ' + JSON.stringify(error);
-            
-            Dashboard.alert('❌ SYNC ERROR!<br>' + debugInfo);
-        });
+        performManualSync(view);
     });
 }
 
@@ -532,5 +488,75 @@ function loadWatchProviderRegions(page) {
             'Full error: ' + JSON.stringify(error);
         
         Dashboard.alert('❌ REGIONS API ERROR!<br>' + debugInfo);
+    });
+}
+
+// Step 2: Retrieve providers for a specific region
+function loadProvidersForRegion(page, region) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${region}`),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(response) {
+        if (response && response.success && response.providers) {
+            const providers = response.providers.sort((a, b) => a.name.localeCompare(b.name));
+            window.allAvailableProviders = providers;
+            
+            // Filter out providers that are already active
+            const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
+            const availableProviders = providers.filter(provider => !activeProviders.includes(provider.name));
+            
+            const availableProvidersSelect = page.querySelector('#availableProviders');
+            populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            
+            return providers;
+        } else {
+            throw new Error('Failed to load watch providers');
+        }
+    });
+}
+
+// Step 3: Retrieve movies and TV shows from active providers
+function loadMoviesAndTvFromProviders(page) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/Sync'),
+        type: 'POST',
+        data: '{}',
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function(syncData) {
+        if (syncData && syncData.success) {
+            return syncData;
+        } else {
+            throw new Error(syncData?.message || 'Sync failed');
+        }
+    });
+}
+
+// Complete manual sync workflow
+function performManualSync(page) {
+    Dashboard.showLoadingMsg();
+    
+    // Step 1: Save current configuration
+    return savePluginConfiguration(page).then(function(result) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.processPluginConfigurationUpdateResult(result);
+        
+        // Step 2: Load regions
+        return loadWatchProviderRegions(page);
+    }).then(function(regions) {
+        // Step 3: Get selected region and load providers
+        const selectedRegion = page.querySelector('#WatchProviderRegion')?.value || 'US';
+        return loadProvidersForRegion(page, selectedRegion);
+    }).then(function(providers) {
+        // Step 4: Load movies and TV shows
+        return loadMoviesAndTvFromProviders(page);
+    }).then(function(syncData) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert('✅ Manual sync completed successfully!<br>' +
+            `Loaded ${syncData?.message || 'data'} from Jellyseerr`);
+    }).catch(function(error) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert('❌ Manual sync failed: ' + (error?.message || 'Unknown error'));
     });
 }

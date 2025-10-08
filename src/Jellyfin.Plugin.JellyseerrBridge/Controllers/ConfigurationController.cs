@@ -250,6 +250,33 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
+        /// <summary>
+        /// Update the network name-to-ID mapping in the configuration.
+        /// </summary>
+        [HttpPost("UpdateNetworkMapping")]
+        public async Task<IActionResult> UpdateNetworkMapping()
+        {
+            try
+            {
+                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
+                var config = Plugin.Instance.Configuration;
+                
+                _logger.LogInformation("Updating network name-to-ID mapping for region: {Region}", config.WatchProviderRegion);
+                
+                var networks = await apiService.GetNetworksAsync(config.WatchProviderRegion);
+                config.NetworkNameToId = networks.ToDictionary(n => n.Name, n => n.Id);
+                
+                _logger.LogInformation("Updated network mapping with {Count} networks", config.NetworkNameToId.Count);
+                
+                return Ok(new { success = true, count = config.NetworkNameToId.Count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating network mapping");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
         [HttpGet("WatchProviders")]
         public async Task<IActionResult> GetWatchProviders([FromQuery] string region = "US")
         {
