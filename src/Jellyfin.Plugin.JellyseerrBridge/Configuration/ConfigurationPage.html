@@ -51,9 +51,10 @@
                         <div class="fieldDescription">Your Jellyseerr API key</div>
                     </div>
 
-                    <div class="inputContainer">
-                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" value="/data/Jellyseerr" />
-                        <div class="fieldDescription">Directory path for Jellyseerr library files</div>
+                    <div>
+                        <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
+                            <span>Test Connection</span>
+                        </button>
                     </div>
 
                     <div class="inputContainer">
@@ -66,17 +67,16 @@
                         <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
                     </div>
 
-                    <div>
-                        <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
-                            <span>Test Connection</span>
-                        </button>
-                    </div>
-
                     <br>
 
-                    <details id="syncSettings">
-                        <summary>Sync Settings</summary>
+                    <details id="librarySettings">
+                        <summary>Library Settings</summary>
                         <br>
+                        <div class="inputContainer">
+                            <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" value="/data/Jellyseerr" />
+                            <div class="fieldDescription">Directory path for Jellyseerr library files</div>
+                        </div>
+
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
@@ -106,6 +106,13 @@
                             <input id="LibraryPrefix" type="text" is="emby-input" class="emby-input" />
                             <div class="fieldDescription">Prefix for streaming service library names (e.g., "Streaming - ")</div>
                         </div>
+                    </details>
+
+                    <br>
+
+                    <details id="syncSettings">
+                        <summary>Sync Settings</summary>
+                        <br>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -125,6 +132,36 @@
                                 <option value="US">United States of America (United States)</option>
                             </select>
                             <div class="fieldDescription">Select your region for watch provider information. This determines which streaming services are shown for movies and TV shows.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Default Networks</label>
+                            <div class="multiSelectContainer" style="display: flex; gap: 20px; margin-top: 10px;">
+                                <!-- Active Providers (Left) -->
+                                <div class="selectBox" style="flex: 1;">
+                                    <div class="selectBoxHeader" style="display: flex; align-items: center; margin-bottom: 8px;">
+                                        <label class="inputLabel" style="margin: 0; flex: 1;">Active Providers</label>
+                                        <button type="button" id="removeSelected" class="emby-button" style="padding: 4px 8px; font-size: 12px;">Remove</button>
+                                    </div>
+                                    <input type="text" id="activeSearch" placeholder="Search active providers..." style="width: 100%; margin-bottom: 8px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <select id="activeProviders" multiple size="8" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+                                        <!-- Active providers will be populated here -->
+                                    </select>
+                                </div>
+                                
+                                <!-- Available Providers (Right) -->
+                                <div class="selectBox" style="flex: 1;">
+                                    <div class="selectBoxHeader" style="display: flex; align-items: center; margin-bottom: 8px;">
+                                        <label class="inputLabel" style="margin: 0; flex: 1;">Available Providers</label>
+                                        <button type="button" id="addSelected" class="emby-button" style="padding: 4px 8px; font-size: 12px;">Add</button>
+                                    </div>
+                                    <input type="text" id="availableSearch" placeholder="Search available providers..." style="width: 100%; margin-bottom: 8px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <select id="availableProviders" multiple size="8" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+                                        <!-- Available providers will be populated here -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Select providers from the right box and move them to the left box. Use the search boxes to filter providers. Active providers will be used for filtering and categorization.</div>
                         </div>
 
                         <div>

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "673C54D7CFD1857EC0D718CA09D8A912",
+        "dependencies": [],
+        "version": "0.95.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.95.0.0 - Advanced Multi-Select Provider Interface and UI Reorganization - NEW FEATURES: Implemented sophisticated two-column multi-select interface for managing network providers, Added real-time search functionality for both active and available provider lists, Created dynamic provider loading from Jellyseerr API with fallback to default networks, Added double-click and button-based provider movement between lists, Implemented auto-sorting and duplicate prevention for provider lists. UI IMPROVEMENTS: Moved Test Connection button below API Key input for better workflow, Reorganized Library Settings into dedicated collapsible section above Sync Settings, Added Default Networks multi-select interface in Sync Settings section, Improved overall configuration page layout and user experience. TECHNICAL IMPROVEMENTS: Added ActiveNetworks property to PluginConfiguration for better data management, Enhanced JavaScript with comprehensive multi-select functionality, Improved error handling and fallback mechanisms, Better separation of concerns between UI components and data management.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.95.0.0/JellyseerrBridge-0.95.0.0-DLL.zip",
+        "timestamp": "2025-10-08T02:09:44.015Z"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.94.0.0/JellyseerrBridge-0.94.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
         "changelog": "v0.94.0.0 - Fixed Test Connection Confirmation Dialog Implementation - BUG FIX: Properly implemented Emby's Dashboard.confirm wrapper that converts Promise-based confirm module to callback-based API, Fixed 'Cannot read properties of undefined (reading 'then')' error by using correct require(['confirm']) pattern, Updated confirmation dialog to use proper Promise resolution (resolves on 'Save', rejects on 'Cancel'), Set primary button to 'confirm' for better user experience, Enhanced error handling and user feedback throughout configuration page. TECHNICAL IMPROVEMENTS: Correctly implemented Emby's legacy Dashboard.confirm wrapper pattern, Improved code consistency with Jellyfin's established patterns, Better Promise chain management in JavaScript event handlers, Proper integration with Jellyfin's webpack build process.",
