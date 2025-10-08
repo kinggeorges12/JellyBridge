@@ -195,21 +195,38 @@ public class JellyseerrApiService
         
         try
         {
-            // Always deserialize as array first, then convert to list
-            var arrayItems = JsonSerializer.Deserialize<T[]>(content, new JsonSerializerOptions
+            // Get the element type from List<T>
+            var elementType = typeof(T).GetGenericArguments()[0];
+            
+            // Deserialize as array of the element type
+            var arrayType = elementType.MakeArrayType();
+            var deserializedArray = JsonSerializer.Deserialize(content, arrayType, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
             
-            var listItems = arrayItems?.ToList() ?? new List<T>();
-            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", listItems.Count, operationName);
+            // Convert array to List<T>
+            var listType = typeof(List<>).MakeGenericType(elementType);
+            var list = Activator.CreateInstance(listType);
+            var addMethod = listType.GetMethod("Add");
             
-            if (listItems.Count > 0)
+            if (deserializedArray is Array array)
             {
-                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, listItems[0]);
+                foreach (var item in array)
+                {
+                    addMethod?.Invoke(list, new[] { item });
+                }
             }
             
-            return (T)(object)listItems;
+            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", ((System.Collections.ICollection)list!).Count, operationName);
+            
+            if (((System.Collections.ICollection)list!).Count > 0)
+            {
+                var firstItem = ((System.Collections.IList)list)[0];
+                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", elementType.Name, firstItem);
+            }
+            
+            return (T)list!;
         }
         catch (JsonException jsonEx)
         {

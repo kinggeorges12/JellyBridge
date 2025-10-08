@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.109.0.0 - Fixed JSON Deserialization - Proper Array-to-List Conversion - CRITICAL FIX: Fixed JSON deserialization to properly handle raw JSON arrays by deserializing as element array first, then converting to List<T> using reflection, MakeTypedApiCallAsync now always returns List<T> regardless of internal deserialization, Calling methods can expect consistent List<T> return types, UI IMPROVEMENT: Added hover tooltips with ? icons next to Watch Provider Region and Available Providers labels to guide users to click Manual Sync.",
+        "dependencies": [],
+        "checksum": "C97385BB2E1BA81C05AC1B3B6DC3E032",
+        "timestamp": "2025-10-08T16:29:32.758Z",
+        "version": "0.109.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.109.0.0/JellyseerrBridge-0.109.0.0-DLL.zip"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.108.0.0/JellyseerrBridge-0.108.0.0-DLL.zip",
         "dependencies": [],
         "checksum": "E7DFF22E8159B3921E306BACB4E09D1A",
