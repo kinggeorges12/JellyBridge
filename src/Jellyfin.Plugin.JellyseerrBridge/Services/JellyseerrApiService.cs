@@ -195,39 +195,21 @@ public class JellyseerrApiService
         
         try
         {
-            // First try to deserialize as raw JSON array (T[])
+            // Always deserialize as array first, then convert to list
             var arrayItems = JsonSerializer.Deserialize<T[]>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
             
-            if (arrayItems != null)
+            var listItems = arrayItems?.ToList() ?? new List<T>();
+            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", listItems.Count, operationName);
+            
+            if (listItems.Count > 0)
             {
-                var listItems = arrayItems.ToList();
-                _logger.LogInformation("Successfully deserialized {Count} {Operation} items from JSON array", listItems.Count, operationName);
-                
-                if (listItems.Count > 0)
-                {
-                    _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, listItems[0]);
-                }
-                
-                return (T)(object)listItems;
+                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, listItems[0]);
             }
             
-            // Fallback: try to deserialize as List<T>
-            var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-            
-            _logger.LogInformation("Successfully deserialized {Count} {Operation} items from JSON list", items?.Count ?? 0, operationName);
-            
-            if (items != null && items.Count > 0)
-            {
-                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, items[0]);
-            }
-            
-            return (T)(object)(items ?? new List<T>());
+            return (T)(object)listItems;
         }
         catch (JsonException jsonEx)
         {
@@ -351,6 +333,12 @@ public class JellyseerrApiService
                         _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
                     }
                     return null!;
+                }
+                
+                // Log successful response
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
                 }
                 
                 // Read the response content

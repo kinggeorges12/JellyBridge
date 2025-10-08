@@ -54,23 +54,32 @@
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
-                    gap: 10px;
-                    padding: 0 10px;
+                    width: 10%
                 }
                 
                 .arrowButton {
                     font-size: 18px;
                     font-weight: bold;
-                    min-width: 40px;
-                    height: 40px;
+                    min-width: 10px;
+                    min-height: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                 }
                 
+                .selectBox {
+                    width: 40%;
+                }
+                
+                .selectBox .emby-select {
+                    min-height: 200px;
+                    flex: 1;
+                    margin-bottom: 8px;
+                }
+                
                 /* Scrollbar styling for emby-select */
                 .emby-select::-webkit-scrollbar {
-                    width: 12px;
+                    width: 20px;
                     height: 12px;
                 }
                 
@@ -86,36 +95,30 @@
                     background-clip: content-box;
                 }
                 
-        .emby-select::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-            background-clip: content-box;
-        }
-        
-        /* Help icon styling */
-        .helpIcon {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background: #0078d4;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 16px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: 5px;
-            cursor: help;
-            vertical-align: middle;
-        }
-        
-        .helpIcon:hover {
-            background: #106ebe;
-        }
+                .emby-select::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.5);
+                    background-clip: content-box;
+                }
                 
-                .selectBox .emby-select {
-                    min-height: 200px;
-                    flex: 1;
-                    margin-bottom: 8px;
+                /* Help icon styling */
+                .helpIcon {
+                    display: inline-block;
+                    width: 16px;
+                    height: 16px;
+                    background: #0078d4;
+                    color: white;
+                    border-radius: 50%;
+                    text-align: center;
+                    line-height: 16px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: 5px;
+                    cursor: help;
+                    vertical-align: middle;
+                }
+                
+                .helpIcon:hover {
+                    background: #106ebe;
                 }
                 
                 /* Search input with clear button */
