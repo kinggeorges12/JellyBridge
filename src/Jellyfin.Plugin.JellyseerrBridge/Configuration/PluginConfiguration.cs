@@ -4,6 +4,22 @@ using MediaBrowser.Model.Plugins;
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
 
 /// <summary>
+/// Represents a network name to ID mapping for XML serialization compatibility.
+/// </summary>
+public class NetworkMapping
+{
+    /// <summary>
+    /// Gets or sets the network name.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the network ID.
+    /// </summary>
+    public int Id { get; set; }
+}
+
+/// <summary>
 /// Plugin configuration.
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
@@ -84,17 +100,20 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the list of active/default networks.
     /// </summary>
-    public List<string> ActiveNetworks { get; set; } = new List<string>(JellyseerrDefaultNetworks);
+    public List<string> ActiveNetworks { get; set; } = new List<string>();
 
     /// <summary>
     /// Gets or sets the mapping of network names to their IDs (populated after API communication).
+    /// This is stored as a list of key-value pairs for XML serialization compatibility.
     /// </summary>
-    public Dictionary<string, int> NetworkNameToId { get; set; } = new Dictionary<string, int>();
+    public List<NetworkMapping> NetworkNameToId { get; set; } = new List<NetworkMapping>();
 
     /// <summary>
-    /// Gets or sets the default networks list as a newline-separated string (for backward compatibility).
+    /// Gets the default networks list as a newline-separated string (for backward compatibility).
+    /// This is a computed property that doesn't get serialized to avoid conflicts.
     /// </summary>
-    public string DefaultNetworks { get; set; } = string.Join("\n", JellyseerrDefaultNetworks);
+    [System.Xml.Serialization.XmlIgnore]
+    public string DefaultNetworks => string.Join("\n", ActiveNetworks);
 
     /// <summary>
     /// Gets the default list of networks/streaming services.
@@ -124,4 +143,32 @@ public class PluginConfiguration : BasePluginConfiguration
         "Nickelodeon",
         "Peacock"
     };
+
+    /// <summary>
+    /// Gets the network name to ID mapping as a dictionary for easier access.
+    /// </summary>
+    public Dictionary<string, int> GetNetworkNameToIdDictionary()
+    {
+        return NetworkNameToId.ToDictionary(m => m.Name, m => m.Id);
+    }
+
+    /// <summary>
+    /// Sets the network name to ID mapping from a dictionary.
+    /// </summary>
+    /// <param name="mapping">The dictionary mapping network names to IDs.</param>
+    public void SetNetworkNameToIdDictionary(Dictionary<string, int> mapping)
+    {
+        NetworkNameToId = mapping.Select(kvp => new NetworkMapping { Name = kvp.Key, Id = kvp.Value }).ToList();
+    }
+
+    /// <summary>
+    /// Ensures that ActiveNetworks is initialized with default networks if it's empty.
+    /// </summary>
+    public void EnsureDefaultNetworks()
+    {
+        if (!ActiveNetworks.Any())
+        {
+            ActiveNetworks = new List<string>(JellyseerrDefaultNetworks);
+        }
+    }
 }

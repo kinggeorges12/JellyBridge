@@ -203,6 +203,13 @@ public class JellyseerrApiService
             
             // Deserialize as array of the element type
             var arrayType = elementType.MakeArrayType();
+            
+            if (string.IsNullOrEmpty(content))
+            {
+                _logger.LogWarning("Empty or null content provided for {Operation}", operationName);
+                return default(T)!;
+            }
+            
             var deserializedArray = JsonSerializer.Deserialize(content, arrayType, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true

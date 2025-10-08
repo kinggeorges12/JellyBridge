@@ -29,6 +29,120 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             return Ok(new { message = "Configuration page loaded successfully" });
         }
 
+        [HttpGet("GetPluginConfiguration")]
+        public IActionResult GetPluginConfiguration()
+        {
+            _logger.LogInformation("[JellyseerrBridge] GetPluginConfiguration endpoint called");
+            
+            try
+            {
+                var config = Plugin.Instance.Configuration;
+                
+                // Ensure default networks are loaded if ActiveNetworks is empty
+                config.EnsureDefaultNetworks();
+                
+                // Convert the internal list format to dictionary format for JavaScript
+                var configForFrontend = new
+                {
+                    JellyseerrUrl = config.JellyseerrUrl,
+                    ApiKey = config.ApiKey,
+                    LibraryDirectory = config.LibraryDirectory,
+                    UserId = config.UserId,
+                    IsEnabled = config.IsEnabled,
+                    SyncIntervalHours = config.SyncIntervalHours,
+                    CreateSeparateLibraries = config.CreateSeparateLibraries,
+                    LibraryPrefix = config.LibraryPrefix,
+                    ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
+                    AutoSyncOnStartup = config.AutoSyncOnStartup,
+                    RequestTimeout = config.RequestTimeout,
+                    RetryAttempts = config.RetryAttempts,
+                    EnableDebugLogging = config.EnableDebugLogging,
+                    WatchProviderRegion = config.WatchProviderRegion,
+                    ActiveNetworks = config.ActiveNetworks,
+                    NetworkNameToId = config.GetNetworkNameToIdDictionary(), // Convert to dictionary for JavaScript
+                    DefaultNetworks = config.DefaultNetworks
+                };
+                
+                return Ok(configForFrontend);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting plugin configuration");
+                return StatusCode(500, new { error = "Failed to get configuration" });
+            }
+        }
+
+        [HttpPost("UpdatePluginConfiguration")]
+        public IActionResult UpdatePluginConfiguration([FromBody] dynamic configData)
+        {
+            _logger.LogInformation("[JellyseerrBridge] UpdatePluginConfiguration endpoint called");
+            
+            try
+            {
+                var config = Plugin.Instance.Configuration;
+                
+                // Update configuration properties
+                config.JellyseerrUrl = configData.JellyseerrUrl?.ToString() ?? config.JellyseerrUrl;
+                config.ApiKey = configData.ApiKey?.ToString() ?? config.ApiKey;
+                config.LibraryDirectory = configData.LibraryDirectory?.ToString() ?? config.LibraryDirectory;
+                config.UserId = configData.UserId != null ? (int)configData.UserId : config.UserId;
+                config.IsEnabled = configData.IsEnabled != null ? (bool)configData.IsEnabled : config.IsEnabled;
+                config.SyncIntervalHours = configData.SyncIntervalHours != null ? (int)configData.SyncIntervalHours : config.SyncIntervalHours;
+                config.CreateSeparateLibraries = configData.CreateSeparateLibraries != null ? (bool)configData.CreateSeparateLibraries : config.CreateSeparateLibraries;
+                config.LibraryPrefix = configData.LibraryPrefix?.ToString() ?? config.LibraryPrefix;
+                config.ExcludeFromMainLibraries = configData.ExcludeFromMainLibraries != null ? (bool)configData.ExcludeFromMainLibraries : config.ExcludeFromMainLibraries;
+                config.AutoSyncOnStartup = configData.AutoSyncOnStartup != null ? (bool)configData.AutoSyncOnStartup : config.AutoSyncOnStartup;
+                config.RequestTimeout = configData.RequestTimeout != null ? (int)configData.RequestTimeout : config.RequestTimeout;
+                config.RetryAttempts = configData.RetryAttempts != null ? (int)configData.RetryAttempts : config.RetryAttempts;
+                config.EnableDebugLogging = configData.EnableDebugLogging != null ? (bool)configData.EnableDebugLogging : config.EnableDebugLogging;
+                config.WatchProviderRegion = configData.WatchProviderRegion?.ToString() ?? config.WatchProviderRegion;
+                
+                // Handle ActiveNetworks array
+                if (configData.ActiveNetworks != null)
+                {
+                    var activeNetworksList = new List<string>();
+                    foreach (var network in configData.ActiveNetworks)
+                    {
+                        activeNetworksList.Add(network.ToString());
+                    }
+                    config.ActiveNetworks = activeNetworksList;
+                }
+                
+                // Handle NetworkNameToId dictionary conversion
+                if (configData.NetworkNameToId != null)
+                {
+                    var networkDict = new Dictionary<string, int>();
+                    
+                    // Convert the JavaScript object to C# dictionary
+                    var networkNameToIdObj = configData.NetworkNameToId;
+                    foreach (var property in networkNameToIdObj)
+                    {
+                        if (!string.IsNullOrEmpty(property.Name))
+                        {
+                            var valueStr = property.Value?.ToString();
+                            if (int.TryParse(valueStr, out int id))
+                            {
+                                networkDict[property.Name] = id;
+                            }
+                        }
+                    }
+                    
+                    config.SetNetworkNameToIdDictionary(networkDict);
+                }
+                
+                // Save the configuration
+                Plugin.Instance.UpdateConfiguration(config);
+                
+                _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
+                return Ok(new { success = true, message = "Configuration updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating plugin configuration");
+                return StatusCode(500, new { error = "Failed to update configuration" });
+            }
+        }
+
         [HttpPost("TestConnection")]
         public async Task<IActionResult> TestConnection([FromBody] TestConnectionRequest request)
         {
@@ -264,7 +378,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 _logger.LogInformation("Updating network name-to-ID mapping for region: {Region}", config.WatchProviderRegion);
                 
                 var networks = await apiService.GetNetworksAsync(config.WatchProviderRegion);
-                config.NetworkNameToId = networks.ToDictionary(n => n.Name, n => n.Id);
+                config.SetNetworkNameToIdDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
                 
                 _logger.LogInformation("Updated network mapping with {Count} networks", config.NetworkNameToId.Count);
                 

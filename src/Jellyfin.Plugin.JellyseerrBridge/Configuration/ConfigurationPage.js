@@ -242,29 +242,47 @@ function getNetworkNameToIdMapping(page) {
 
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
-    return ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
-        // Update config with current form values
-        config.IsEnabled = form.querySelector('#IsEnabled').checked;
-        config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-        config.ApiKey = form.querySelector('#ApiKey').value;
-        config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
-        config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
-        config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
-        config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
-        config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
-        config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
-        config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
-        config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
-        config.ActiveNetworks = getActiveNetworks(view);
-        config.NetworkNameToId = getNetworkNameToIdMapping(view);
-        config.DefaultNetworks = config.ActiveNetworks.join('\n'); // Keep for backward compatibility
-        config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
-        config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
-        config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
-        
-        // Save the configuration
-        return ApiClient.updatePluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId, config);
-    });
+    
+    // Use our custom endpoint to get the current configuration
+    return fetch('/JellyseerrBridge/GetPluginConfiguration')
+        .then(response => response.json())
+        .then(function (config) {
+            // Update config with current form values
+            config.IsEnabled = form.querySelector('#IsEnabled').checked;
+            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
+            config.ApiKey = form.querySelector('#ApiKey').value;
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+            config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
+            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
+            config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
+            config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
+            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
+            config.ActiveNetworks = getActiveNetworks(view);
+            config.NetworkNameToId = getNetworkNameToIdMapping(view);
+            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
+            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
+            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
+            
+            // Save the configuration using our custom endpoint
+            return fetch('/JellyseerrBridge/UpdatePluginConfiguration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+        })
+        .then(response => response.json())
+        .then(function (result) {
+            if (result.success) {
+                console.log('Configuration saved successfully');
+                return result;
+            } else {
+                throw new Error(result.error || 'Failed to save configuration');
+            }
+        });
 }
 
 function updateLibraryPrefixState(page) {
@@ -300,32 +318,42 @@ export default function (view) {
     view.addEventListener('viewshow', function () {
         Dashboard.showLoadingMsg();
         const page = this;
-        ApiClient.getPluginConfiguration(JellyseerrBridgeConfigurationPage.pluginUniqueId).then(function (config) {
-            page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
-            page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || 'http://localhost:5055';
-            page.querySelector('#ApiKey').value = config.ApiKey || '';
-            page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '/data/Jellyseerr';
-            page.querySelector('#UserId').value = config.UserId || 1;
-            page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || 24;
-            page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
-            page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
-            page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || 'Streaming - ';
-            page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
-            page.querySelector('#RequestTimeout').value = config.RequestTimeout || 30;
-            page.querySelector('#RetryAttempts').value = config.RetryAttempts || 3;
-            page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
-            // Store the current watch provider region value
-            const watchProviderSelect = page.querySelector('#WatchProviderRegion');
-            watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
-            
-            // Initialize the multi-select interface
-            initializeMultiSelect(page, config);
-            
-            // Initialize Library Prefix field state
-            updateLibraryPrefixState(page);
-            
-            Dashboard.hideLoadingMsg();
-        });
+        
+        // Use our custom endpoint to get the configuration
+        fetch('/JellyseerrBridge/GetPluginConfiguration')
+            .then(response => response.json())
+            .then(function (config) {
+                page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
+                page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || 'http://localhost:5055';
+                page.querySelector('#ApiKey').value = config.ApiKey || '';
+                page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '/data/Jellyseerr';
+                page.querySelector('#UserId').value = config.UserId || 1;
+                page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || 24;
+                page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
+                page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
+                page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || 'Streaming - ';
+                page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
+                page.querySelector('#RequestTimeout').value = config.RequestTimeout || 30;
+                page.querySelector('#RetryAttempts').value = config.RetryAttempts || 3;
+                page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
+                
+                // Store the current watch provider region value
+                const watchProviderSelect = page.querySelector('#WatchProviderRegion');
+                watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
+                
+                // Initialize the multi-select interface
+                initializeMultiSelect(page, config);
+                
+                // Initialize Library Prefix field state
+                updateLibraryPrefixState(page);
+                
+                Dashboard.hideLoadingMsg();
+            })
+            .catch(function (error) {
+                console.error('Error loading configuration:', error);
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to load configuration: ' + error.message);
+            });
     });
     
     // Add event listener for Create Separate Libraries checkbox
