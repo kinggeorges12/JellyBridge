@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.94.0.0/JellyseerrBridge-0.94.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.94.0.0 - Fixed Test Connection Confirmation Dialog Implementation - BUG FIX: Properly implemented Emby's Dashboard.confirm wrapper that converts Promise-based confirm module to callback-based API, Fixed 'Cannot read properties of undefined (reading 'then')' error by using correct require(['confirm']) pattern, Updated confirmation dialog to use proper Promise resolution (resolves on 'Save', rejects on 'Cancel'), Set primary button to 'confirm' for better user experience, Enhanced error handling and user feedback throughout configuration page. TECHNICAL IMPROVEMENTS: Correctly implemented Emby's legacy Dashboard.confirm wrapper pattern, Improved code consistency with Jellyfin's established patterns, Better Promise chain management in JavaScript event handlers, Proper integration with Jellyfin's webpack build process.",
+        "dependencies": [],
+        "checksum": "F1BF481FCBA3D061A0985F24AE1829EF",
+        "version": "0.94.0.0",
+        "timestamp": "2025-10-08T01:40:15.942Z"
+      },
+      {
         "changelog": "v0.93.0.0 - Fixed Test Connection Confirmation Dialog - BUG FIX: Replaced non-existent Dashboard.confirm() with correct Emby/Jellyfin require(['confirm']) pattern, Fixed 'Cannot read properties of undefined (reading 'then')' error in Test Connection button, Updated confirmation dialog to use proper Promise-based API that resolves on 'Save' and rejects on 'Cancel', Set primary button to 'confirm' for better user experience, Enhanced error handling and user feedback throughout configuration page. TECHNICAL IMPROVEMENTS: Properly implemented Emby's confirmation dialog pattern using require(['confirm'], function(confirm) { ... }), Improved code consistency with Jellyfin's established patterns, Better Promise chain management in JavaScript event handlers.",
         "checksum": "15F19951E7F98A3F31F1F8A9D14C308D",
         "dependencies": [],

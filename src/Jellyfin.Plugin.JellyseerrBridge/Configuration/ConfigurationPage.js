@@ -115,24 +115,28 @@ export default function (view) {
             
             if (data && data.success) {
                 // Show confirmation dialog for saving settings
-                Dashboard.confirm({
-                    title: 'Connection Success!',
-                    text: 'Save connection settings now?',
-                    confirmText: 'Confirm',
-                    cancelText: 'Cancel',
-                    primary: "confirm"
-                }).then(function (confirmed) {
-                    if (confirmed) {
-                        // Save the current settings using the reusable function
-                        savePluginConfiguration(view).then(function (result) {
-                            Dashboard.alert('✅ Settings saved successfully!');
-                        }).catch(function (error) {
-                            Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
-                        });
-                    } else {
-                        // User clicked "Cancel" - do nothing
+                Dashboard.confirm(
+                    {
+                        title: 'Connection Success!',
+                        text: 'Save connection settings now?',
+                        confirmText: 'Confirm',
+                        cancelText: 'Cancel',
+                        primary: "confirm"
+                    },
+                    'Title',
+                    (confirmed) => {
+                        if (confirmed) {
+                            // Save the current settings using the reusable function
+                            savePluginConfiguration(view).then(function (result) {
+                                Dashboard.alert('✅ Settings saved successfully!');
+                            }).catch(function (error) {
+                                Dashboard.alert('❌ Failed to save settings: ' + (error?.message || 'Unknown error'));
+                            });
+                        } else {
+                            Dashboard.alert('❌ Cancelled');
+                        }
                     }
-                });
+                );
             } else {
                 Dashboard.alert('❌ CONNECTION FAILED!\n\n' + debugInfo);
             }
