@@ -143,6 +143,8 @@ function loadAvailableNetworks(page, config) {
     const region = page.querySelector('#WatchProviderRegion').value;
     const networkMapping = config?.NetworkMap || {};
     
+    Dashboard.alert(`🔍 DEBUG: Starting loadAvailableNetworks with region: "${region}"`);
+    
     return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
         type: 'GET',
@@ -422,6 +424,29 @@ export default function (view) {
                 // Store configuration globally for other functions to use
                 window.jellyseerrConfig = config;
                 
+                // Add refresh available networks button functionality
+                const refreshAvailableButton = page.querySelector('#refreshAvailableProviders');
+                if (refreshAvailableButton) {
+                    refreshAvailableButton.addEventListener('click', function() {
+                        Dashboard.showLoadingMsg();
+                        loadAvailableNetworks(page, config).then(function(allNetworks) {
+                            // Now refresh the available networks list with the loaded data
+                            const availableProvidersSelect = page.querySelector('#availableProviders');
+                            const availableNetworks = getAvailableNetworks(page, allNetworks);
+                            
+                            populateSelectWithProviders(availableProvidersSelect, availableNetworks);
+                            
+                            Dashboard.hideLoadingMsg();
+                            const activeCount = page.querySelector('#activeProviders').options.length;
+                            const availableCount = availableNetworks.length;
+                            Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
+                        }).catch(function(error) {
+                            Dashboard.hideLoadingMsg();
+                            Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
+                        });
+                    });
+                }
+                
                 // Update placeholders with backend defaults
                 updatePlaceholdersFromBackend(page, config);
                 
@@ -563,29 +588,6 @@ export default function (view) {
             }).catch(function(error) {
                 Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
-            });
-        });
-    }
-
-    // Add refresh available providers button functionality
-    const refreshAvailableButton = view.querySelector('#refreshAvailableProviders');
-    if (refreshAvailableButton) {
-        refreshAvailableButton.addEventListener('click', function() {
-            Dashboard.showLoadingMsg();
-            loadAvailableNetworks(view, config).then(function(allNetworks) {
-                // Now refresh the available networks list with the loaded data
-                const availableProvidersSelect = view.querySelector('#availableProviders');
-                const availableNetworks = getAvailableNetworks(view, allNetworks);
-                
-                populateSelectWithProviders(availableProvidersSelect, availableNetworks);
-                
-                Dashboard.hideLoadingMsg();
-                const activeCount = view.querySelector('#activeProviders').options.length;
-                const availableCount = availableNetworks.length;
-                Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
-            }).catch(function(error) {
-                Dashboard.hideLoadingMsg();
-                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
             });
         });
     }
