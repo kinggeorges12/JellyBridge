@@ -76,6 +76,33 @@
                     margin-bottom: 8px;
                 }
                 
+                .emby-select {
+                    min-height: 200px;
+                }
+                
+                /* Scrollbar styling for emby-select */
+                .emby-select::-webkit-scrollbar {
+                    width: 12px;
+                    height: 12px;
+                }
+                
+                .emby-select::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 6px;
+                }
+                
+                .emby-select::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 6px;
+                    border: 2px solid transparent;
+                    background-clip: content-box;
+                }
+                
+                .emby-select::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.5);
+                    background-clip: content-box;
+                }
+                
                 .selectBox .emby-select {
                     min-height: 200px;
                 }
@@ -119,6 +146,16 @@
                 
                 .clearSearchButton:not([style*="display: none"]) {
                     display: flex;
+                }
+                
+                /* Disabled state for Library Prefix */
+                .disabled {
+                    opacity: 0.6;
+                    pointer-events: none;
+                }
+                
+                .disabled .inputLabel {
+                    color: #999;
                 }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
@@ -219,45 +256,45 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region</label>
-                            <select id="WatchProviderRegion" is="emby-select" class="emby-select">
+                            <select id="WatchProviderRegion" is="emby-input" class="emby-input emby-select">
                                 <option value="US">United States of America (United States)</option>
                             </select>
                             <div class="fieldDescription">Select your region for watch provider information. This determines which streaming services are shown for movies and TV shows.</div>
                         </div>
 
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Default Networks</label>
+                            <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Network Providers</label>
                             <div class="multiSelectContainer">
                                 <!-- Active Providers (Left) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Active Providers</label>
+                                        <label class="inputLabel">Synced from Jellyseerr</label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="activeSearch" placeholder="Search active providers..." is="emby-input" class="emby-input">
                                         <button type="button" id="clearActiveSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
-                                    <select id="activeProviders" multiple size="8" is="emby-select" class="emby-select">
+                                    <select id="activeProviders" multiple is="emby-input" class="emby-input emby-select">
                                         <!-- Active providers will be populated here -->
                                     </select>
                                 </div>
                                 
                                 <!-- Arrow Buttons (Center) -->
                                 <div class="arrowButtonsContainer">
-                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected providers">→</button>
-                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected providers">←</button>
+                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected providers">←</button>
+                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected providers">→</button>
                                 </div>
                                 
                                 <!-- Available Providers (Right) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available Providers</label>
+                                        <label class="inputLabel">Available in Jellyseerr</label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="availableSearch" placeholder="Search available providers..." is="emby-input" class="emby-input">
                                         <button type="button" id="clearAvailableSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
-                                    <select id="availableProviders" multiple size="8" is="emby-select" class="emby-select">
+                                    <select id="availableProviders" multiple is="emby-input" class="emby-input emby-select">
                                         <!-- Available providers will be populated here -->
                                     </select>
                                 </div>

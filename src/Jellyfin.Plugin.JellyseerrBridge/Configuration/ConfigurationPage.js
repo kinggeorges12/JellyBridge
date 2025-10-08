@@ -153,6 +153,14 @@ function moveProviders(fromSelect, toSelect) {
     const movedValues = [];
     
     selectedOptions.forEach(option => {
+        // Check if this option already exists in the destination
+        const existingOption = Array.from(toSelect.options).find(existing => existing.value === option.value);
+        if (existingOption) {
+            // Option already exists, just remove from source
+            option.remove();
+            return;
+        }
+        
         // Track the value of the moved item
         movedValues.push(option.value);
         
@@ -221,6 +229,30 @@ function savePluginConfiguration(view) {
     });
 }
 
+function updateLibraryPrefixState(page) {
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
+    const libraryPrefixLabel = page.querySelector('label[for="LibraryPrefix"]');
+    
+    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
+        return;
+    }
+    
+    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    
+    // Enable/disable the input
+    libraryPrefixInput.disabled = !isEnabled;
+    
+    // Add/remove disabled styling
+    if (isEnabled) {
+        libraryPrefixInput.classList.remove('disabled');
+        libraryPrefixLabel.classList.remove('disabled');
+    } else {
+        libraryPrefixInput.classList.add('disabled');
+        libraryPrefixLabel.classList.add('disabled');
+    }
+}
+
 export default function (view) {
     if (!view) {
         Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
@@ -251,9 +283,20 @@ export default function (view) {
             // Initialize the multi-select interface
             initializeMultiSelect(page, config);
             
+            // Initialize Library Prefix field state
+            updateLibraryPrefixState(page);
+            
             Dashboard.hideLoadingMsg();
         });
     });
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = view.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState(view);
+        });
+    }
     
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     if (!form) {

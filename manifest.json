@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-08T05:28:34.971Z",
+        "checksum": "67EABB49DE36F6E75B40118DA5EC6D4C",
+        "changelog": "v0.97.0.0 - Enhanced API Service with Generic URL Builder and Improved UI Styling - API REFACTORING: Implemented comprehensive generic API call system with automatic response type handling, Created JellyseerrUrlBuilder with enum-based endpoint management, Added centralized JSON deserialization with error handling, Eliminated code duplication across all API methods (reduced ~150 lines), Implemented automatic empty response handling and retry logic. UI IMPROVEMENTS: Updated select elements to use both emby-input and emby-select classes, Moved all sizing control from HTML attributes to CSS styling, Enhanced scrollbar styling with larger, more visible scrollbars, Improved multi-select interface with consistent styling across all select elements, Centralized styling for better maintainability and consistency.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.97.0.0/JellyseerrBridge-0.97.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.97.0.0",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-08T02:34:59.781Z",
         "version": "0.96.0.0",
