@@ -82,48 +82,21 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 var config = Plugin.Instance.Configuration;
                 
-                // Update configuration properties using JsonElement
-                if (configData.TryGetProperty("JellyseerrUrl", out var jellyseerrUrlElement))
-                    config.JellyseerrUrl = jellyseerrUrlElement.GetString() ?? config.JellyseerrUrl;
-                
-                if (configData.TryGetProperty("ApiKey", out var apiKeyElement))
-                    config.ApiKey = apiKeyElement.GetString() ?? config.ApiKey;
-                
-                if (configData.TryGetProperty("LibraryDirectory", out var libraryDirectoryElement))
-                    config.LibraryDirectory = libraryDirectoryElement.GetString() ?? config.LibraryDirectory;
-                
-                if (configData.TryGetProperty("UserId", out var userIdElement))
-                    config.UserId = userIdElement.GetInt32();
-                
-                if (configData.TryGetProperty("IsEnabled", out var isEnabledElement))
-                    config.IsEnabled = isEnabledElement.GetBoolean();
-                
-                if (configData.TryGetProperty("SyncIntervalHours", out var syncIntervalElement))
-                    config.SyncIntervalHours = syncIntervalElement.GetInt32();
-                
-                if (configData.TryGetProperty("CreateSeparateLibraries", out var createSeparateElement))
-                    config.CreateSeparateLibraries = createSeparateElement.GetBoolean();
-                
-                if (configData.TryGetProperty("LibraryPrefix", out var libraryPrefixElement))
-                    config.LibraryPrefix = libraryPrefixElement.GetString() ?? config.LibraryPrefix;
-                
-                if (configData.TryGetProperty("ExcludeFromMainLibraries", out var excludeFromMainElement))
-                    config.ExcludeFromMainLibraries = excludeFromMainElement.GetBoolean();
-                
-                if (configData.TryGetProperty("AutoSyncOnStartup", out var autoSyncElement))
-                    config.AutoSyncOnStartup = autoSyncElement.GetBoolean();
-                
-                if (configData.TryGetProperty("RequestTimeout", out var requestTimeoutElement))
-                    config.RequestTimeout = requestTimeoutElement.GetInt32();
-                
-                if (configData.TryGetProperty("RetryAttempts", out var retryAttemptsElement))
-                    config.RetryAttempts = retryAttemptsElement.GetInt32();
-                
-                if (configData.TryGetProperty("EnableDebugLogging", out var enableDebugElement))
-                    config.EnableDebugLogging = enableDebugElement.GetBoolean();
-                
-                if (configData.TryGetProperty("WatchProviderRegion", out var watchProviderElement))
-                    config.WatchProviderRegion = watchProviderElement.GetString() ?? config.WatchProviderRegion;
+                // Update configuration properties using simplified helper
+                SetValueOrDefault(configData, "JellyseerrUrl", config, (string value) => config.JellyseerrUrl = value);
+                SetValueOrDefault(configData, "ApiKey", config, (string value) => config.ApiKey = value);
+                SetValueOrDefault(configData, "LibraryDirectory", config, (string value) => config.LibraryDirectory = value);
+                SetValueOrDefault(configData, "UserId", config, (int value) => config.UserId = value);
+                SetValueOrDefault(configData, "SyncIntervalHours", config, (int value) => config.SyncIntervalHours = value);
+                SetValueOrDefault(configData, "LibraryPrefix", config, (string value) => config.LibraryPrefix = value);
+                SetValueOrDefault(configData, "RequestTimeout", config, (int value) => config.RequestTimeout = value);
+                SetValueOrDefault(configData, "RetryAttempts", config, (int value) => config.RetryAttempts = value);
+                SetValueOrDefault(configData, "IsEnabled", config, (bool value) => config.IsEnabled = value);
+                SetValueOrDefault(configData, "CreateSeparateLibraries", config, (bool value) => config.CreateSeparateLibraries = value);
+                SetValueOrDefault(configData, "ExcludeFromMainLibraries", config, (bool value) => config.ExcludeFromMainLibraries = value);
+                SetValueOrDefault(configData, "AutoSyncOnStartup", config, (bool value) => config.AutoSyncOnStartup = value);
+                SetValueOrDefault(configData, "EnableDebugLogging", config, (bool value) => config.EnableDebugLogging = value);
+                SetValueOrDefault(configData, "WatchProviderRegion", config, (string value) => config.WatchProviderRegion = value);
                 
                 // Handle ActiveNetworks array
                 if (configData.TryGetProperty("ActiveNetworks", out var activeNetworksElement))
@@ -441,6 +414,41 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     success = false, 
                     message = $"Failed to get watch providers: {ex.Message}" 
                 });
+            }
+        }
+
+        /// <summary>
+        /// Gets a value from JsonElement and applies default if null/empty.
+        /// </summary>
+        /// <typeparam name="T">The type of the property.</typeparam>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="config">The configuration object.</param>
+        /// <param name="setter">Action to set the property value.</param>
+        private static void SetValueOrDefault<T>(JsonElement configData, string propertyName, object config, Action<T> setter)
+        {
+            if (configData.TryGetProperty(propertyName, out var element))
+            {
+                T value;
+                if (typeof(T) == typeof(string))
+                {
+                    var stringValue = element.GetString();
+                    value = (T)(object)(string.IsNullOrWhiteSpace(stringValue) ? (string)PluginConfiguration.GetDefaultValue(propertyName) : stringValue);
+                }
+                else if (typeof(T) == typeof(int))
+                {
+                    value = (T)(object)(element.TryGetInt32(out int intValue) ? intValue : (int)PluginConfiguration.GetDefaultValue(propertyName));
+                }
+                else if (typeof(T) == typeof(bool))
+                {
+                    value = (T)(object)element.GetBoolean();
+                }
+                else
+                {
+                    value = (T)PluginConfiguration.GetDefaultValue(propertyName);
+                }
+                
+                setter(value);
             }
         }
     }
