@@ -82,6 +82,16 @@ public class PluginConfiguration : BasePluginConfiguration
     public string WatchProviderRegion { get; set; } = "US";
 
     /// <summary>
+    /// Gets or sets the list of active/default networks.
+    /// </summary>
+    public List<string> ActiveNetworks { get; set; } = new List<string>(JellyseerrDefaultNetworks);
+
+    /// <summary>
+    /// Gets or sets the default networks list as a newline-separated string (for backward compatibility).
+    /// </summary>
+    public string DefaultNetworks { get; set; } = string.Join("\n", JellyseerrDefaultNetworks);
+
+    /// <summary>
     /// Gets the default list of networks/streaming services.
     /// </summary>
     public static List<string> JellyseerrDefaultNetworks => new List<string>
