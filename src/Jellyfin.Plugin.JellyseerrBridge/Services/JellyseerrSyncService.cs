@@ -58,7 +58,7 @@ public class JellyseerrSyncService
             {
                 _logger.LogInformation("Network name-to-ID mapping not cached, fetching from API");
                 var networks = await _apiService.GetNetworksAsync(pluginConfig.WatchProviderRegion);
-                pluginConfig.NetworkNameToId = networks.ToDictionary(n => n.Name, n => n.Id);
+                pluginConfig.SetNetworkNameToIdDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
                 _logger.LogInformation("Cached {Count} network mappings", pluginConfig.NetworkNameToId.Count);
             }
             else
@@ -71,7 +71,8 @@ public class JellyseerrSyncService
             var allTvShows = new List<JellyseerrTvShow>();
             
             // Get movies for all active watch providers at once
-            var activeProviderIds = pluginConfig.NetworkNameToId.Values.ToList();
+            var networkDict = pluginConfig.GetNetworkNameToIdDictionary();
+            var activeProviderIds = networkDict.Values.ToList();
             if (activeProviderIds.Any())
             {
                 _logger.LogInformation("Fetching movies for {Count} active providers: {ProviderIds}", 
@@ -82,7 +83,7 @@ public class JellyseerrSyncService
             // Get TV shows for each network individually (since TV endpoint uses networkId)
             foreach (var networkName in pluginConfig.ActiveNetworks)
             {
-                if (pluginConfig.NetworkNameToId.TryGetValue(networkName, out var networkId))
+                if (networkDict.TryGetValue(networkName, out var networkId))
                 {
                     _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                     
