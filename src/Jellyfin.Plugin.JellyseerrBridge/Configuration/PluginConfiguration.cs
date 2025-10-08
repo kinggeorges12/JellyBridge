@@ -77,6 +77,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public bool AutoSyncOnStartup { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets the maximum number of pages to fetch per network during sync (0 = unlimited).
+        /// </summary>
+        public int MaxPagesPerNetwork { get; set; } = 10;
+
     /// <summary>
     /// Gets or sets the request timeout in seconds.
     /// </summary>
@@ -145,6 +150,35 @@ public class PluginConfiguration : BasePluginConfiguration
     };
 
     /// <summary>
+    /// Gets the default network name to ID mappings based on Jellyseerr's NetworkSlider configuration.
+    /// </summary>
+    public static List<NetworkMapping> JellyseerrDefaultNetworkMappings => new List<NetworkMapping>
+    {
+        new NetworkMapping { Name = "Netflix", Id = 213 },
+        new NetworkMapping { Name = "Disney+", Id = 2739 },
+        new NetworkMapping { Name = "Prime Video", Id = 1024 },
+        new NetworkMapping { Name = "Apple TV+", Id = 2552 },
+        new NetworkMapping { Name = "Hulu", Id = 453 },
+        new NetworkMapping { Name = "HBO", Id = 49 },
+        new NetworkMapping { Name = "Discovery+", Id = 4353 },
+        new NetworkMapping { Name = "ABC", Id = 2 },
+        new NetworkMapping { Name = "FOX", Id = 19 },
+        new NetworkMapping { Name = "Cinemax", Id = 359 },
+        new NetworkMapping { Name = "AMC", Id = 174 },
+        new NetworkMapping { Name = "Showtime", Id = 67 },
+        new NetworkMapping { Name = "Starz", Id = 318 },
+        new NetworkMapping { Name = "The CW", Id = 71 },
+        new NetworkMapping { Name = "NBC", Id = 6 },
+        new NetworkMapping { Name = "CBS", Id = 16 },
+        new NetworkMapping { Name = "Paramount+", Id = 4330 },
+        new NetworkMapping { Name = "BBC One", Id = 4 },
+        new NetworkMapping { Name = "Cartoon Network", Id = 56 },
+        new NetworkMapping { Name = "Adult Swim", Id = 80 },
+        new NetworkMapping { Name = "Nickelodeon", Id = 13 },
+        new NetworkMapping { Name = "Peacock", Id = 3353 }
+    };
+
+    /// <summary>
     /// Gets the network name to ID mapping as a dictionary for easier access.
     /// </summary>
     public Dictionary<string, int> GetNetworkNameToIdDictionary()
@@ -173,6 +207,17 @@ public class PluginConfiguration : BasePluginConfiguration
     }
 
     /// <summary>
+    /// Ensures that NetworkNameToId is initialized with default network mappings if it's empty.
+    /// </summary>
+    public void EnsureDefaultNetworkMappings()
+    {
+        if (!NetworkNameToId.Any())
+        {
+            NetworkNameToId = new List<NetworkMapping>(JellyseerrDefaultNetworkMappings);
+        }
+    }
+
+    /// <summary>
     /// Gets the default value for a configuration property.
     /// </summary>
     /// <param name="propertyName">The name of the property.</param>
@@ -191,6 +236,7 @@ public class PluginConfiguration : BasePluginConfiguration
             nameof(LibraryPrefix) => "Streaming - ",
             nameof(ExcludeFromMainLibraries) => true,
             nameof(AutoSyncOnStartup) => false,
+            nameof(MaxPagesPerNetwork) => 10,
             nameof(RequestTimeout) => 30,
             nameof(RetryAttempts) => 3,
             nameof(EnableDebugLogging) => false,

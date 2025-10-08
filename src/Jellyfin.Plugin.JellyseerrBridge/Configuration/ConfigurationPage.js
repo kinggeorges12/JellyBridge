@@ -136,29 +136,69 @@ function loadAvailableProviders(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && response.success && response.providers) {
-            const providers = response.providers
+            const regionProviders = response.providers
                 .filter(provider => provider && provider.name)
                 .sort((a, b) => a.name.localeCompare(b.name));
-            window.allAvailableProviders = providers;
+            
+            // Get default networks from backend
+            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+            
+            // Create a map of region providers by name for quick lookup
+            const regionProviderMap = new Map();
+            regionProviders.forEach(provider => {
+                regionProviderMap.set(provider.name, provider);
+            });
+            
+            // Add default networks that are not found in the region
+            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
+                !regionProviderMap.has(networkName)
+            );
+            
+            // Convert missing default networks to provider objects
+            const missingProviders = missingDefaultNetworks.map(networkName => ({
+                name: networkName,
+                id: null, // Will be populated when synced
+                logo_path: null
+            }));
+            
+            // Combine region providers with missing default networks
+            const allProviders = [...regionProviders, ...missingProviders]
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            window.allAvailableProviders = allProviders;
             
             // Filter out providers that are already active
-            const availableProviders = getAvailableProviders(page, providers);
+            const availableProviders = getAvailableProviders(page, allProviders);
             
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
         } else {
             // Fallback to default networks if API fails
-            window.allAvailableProviders = window.jellyseerrDefaultNetworks || [];
+            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+            const fallbackProviders = defaultNetworks.map(networkName => ({
+                name: networkName,
+                id: null,
+                logo_path: null
+            }));
             
-            const availableProviders = getAvailableProviders(page, window.jellyseerrDefaultNetworks || []);
-            populateSelectWithNetworkNames(availableProvidersSelect, availableProviders);
+            window.allAvailableProviders = fallbackProviders;
+            
+            const availableProviders = getAvailableProviders(page, fallbackProviders);
+            populateSelectWithProviders(availableProvidersSelect, availableProviders);
         }
     }).catch(function(error) {
         console.error('Failed to load available providers:', error);
         // Use default networks as fallback
-        window.allAvailableProviders = window.jellyseerrDefaultNetworks || [];
+        const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+        const fallbackProviders = defaultNetworks.map(networkName => ({
+            name: networkName,
+            id: null,
+            logo_path: null
+        }));
         
-        const availableProviders = getAvailableProviders(page, window.jellyseerrDefaultNetworks || []);
-        populateSelectWithNetworkNames(availableProvidersSelect, availableProviders);
+        window.allAvailableProviders = fallbackProviders;
+        
+        const availableProviders = getAvailableProviders(page, fallbackProviders);
+        populateSelectWithProviders(availableProvidersSelect, availableProviders);
     });
 }
 
@@ -585,18 +625,44 @@ function loadProvidersForRegion(page, region) {
         dataType: 'json'
     }).then(function(response) {
         if (response && response.success && response.providers) {
-            const providers = response.providers
+            const regionProviders = response.providers
                 .filter(provider => provider && provider.name)
                 .sort((a, b) => a.name.localeCompare(b.name));
-            window.allAvailableProviders = providers;
+            
+            // Get default networks from backend
+            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+            
+            // Create a map of region providers by name for quick lookup
+            const regionProviderMap = new Map();
+            regionProviders.forEach(provider => {
+                regionProviderMap.set(provider.name, provider);
+            });
+            
+            // Add default networks that are not found in the region
+            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
+                !regionProviderMap.has(networkName)
+            );
+            
+            // Convert missing default networks to provider objects
+            const missingProviders = missingDefaultNetworks.map(networkName => ({
+                name: networkName,
+                id: null, // Will be populated when synced
+                logo_path: null
+            }));
+            
+            // Combine region providers with missing default networks
+            const allProviders = [...regionProviders, ...missingProviders]
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            window.allAvailableProviders = allProviders;
             
             // Filter out providers that are already active
-            const availableProviders = getAvailableProviders(page, providers);
+            const availableProviders = getAvailableProviders(page, allProviders);
             
             const availableProvidersSelect = page.querySelector('#availableProviders');
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
             
-            return providers;
+            return allProviders;
         } else {
             throw new Error('Failed to load watch providers');
         }

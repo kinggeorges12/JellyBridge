@@ -41,6 +41,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Ensure default networks are loaded if ActiveNetworks is empty
                 config.EnsureDefaultNetworks();
                 
+                // Ensure default network mappings are loaded if NetworkNameToId is empty
+                config.EnsureDefaultNetworkMappings();
+                
                 // Convert the internal list format to dictionary format for JavaScript
                 var configForFrontend = new
                 {
@@ -91,6 +94,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 SetValueOrDefault(configData, "LibraryPrefix", config, (string value) => config.LibraryPrefix = value);
                 SetValueOrDefault(configData, "RequestTimeout", config, (int value) => config.RequestTimeout = value);
                 SetValueOrDefault(configData, "RetryAttempts", config, (int value) => config.RetryAttempts = value);
+                SetValueOrDefault(configData, "MaxPagesPerNetwork", config, (int value) => config.MaxPagesPerNetwork = value);
                 SetValueOrDefault(configData, "IsEnabled", config, (bool value) => config.IsEnabled = value);
                 SetValueOrDefault(configData, "CreateSeparateLibraries", config, (bool value) => config.CreateSeparateLibraries = value);
                 SetValueOrDefault(configData, "ExcludeFromMainLibraries", config, (bool value) => config.ExcludeFromMainLibraries = value);
