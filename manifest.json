@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.108.0.0/JellyseerrBridge-0.108.0.0-DLL.zip",
+        "dependencies": [],
+        "checksum": "E7DFF22E8159B3921E306BACB4E09D1A",
+        "timestamp": "2025-10-08T16:17:58.923Z",
+        "version": "0.108.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.108.0.0 - Fixed JSON Deserialization - Simple Array-to-List Approach - CRITICAL FIX: Simplified JSON deserialization to always deserialize as T[] first, then convert to List<T> using ToList(), Removed complex fallback logic and made the approach consistent, This handles raw JSON arrays from Jellyseerr API properly, UI IMPROVEMENT: Added hover tooltips with ? icons next to Watch Provider Region and Available Providers labels to guide users to click Manual Sync."
+      },
+      {
         "timestamp": "2025-10-08T16:01:24.061Z",
         "version": "0.107.0.0",
         "changelog": "v0.107.0.0 - Fixed JSON Deserialization for Raw Arrays + Added Help Tooltips - BUG FIX: Fixed JSON deserialization to handle raw JSON arrays from Jellyseerr API, Added fallback deserialization for both T[] and List<T> formats, Improved error logging for better debugging, UI IMPROVEMENT: Added hover tooltips with ? icons next to Watch Provider Region and Available Providers labels, Tooltips guide users to click Manual Sync button to load data, Enhanced user experience with clear visual cues for required actions.",
