@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.119.0.0/JellyseerrBridge-0.119.0.0-DLL.zip",
+        "changelog": "v0.119.0.0 - Fixed JSON deserialization error for movies API and URL placeholder issue for TV shows API. Added JellyseerrPaginatedResponse wrapper for paginated API responses. Fixed TV shows API to use network ID in URL path instead of query parameter. Fixed misplaced comment sections.",
+        "dependencies": [],
+        "timestamp": "2025-10-08T19:31:05.744Z",
+        "checksum": "B83F877C0FB441D2E98065F1B2ED5B73",
+        "targetAbi": "10.10.7.0",
+        "version": "0.119.0.0"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.118.0.0/JellyseerrBridge-0.118.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
         "version": "0.118.0.0",
