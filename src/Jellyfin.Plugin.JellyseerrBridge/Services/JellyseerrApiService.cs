@@ -142,10 +142,13 @@ public class JellyseerrApiService
     /// <param name="parameters">Optional query parameters</param>
     /// <param name="operationName">Name for logging purposes</param>
     /// <returns>Deserialized response or default value</returns>
-    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration config, Dictionary<string, string>? parameters = null, string operationName = "data")
+    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, string operationName = "data")
     {
         try
         {
+            // Use default plugin config if none provided
+            config ??= Plugin.Instance.Configuration;
+            
             _logger.LogDebug("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
             var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters);
             _logger.LogDebug("Request URL: {Url}", requestMessage.RequestUri);
@@ -457,25 +460,27 @@ public class JellyseerrApiService
     /// <summary>
     /// Get all requests from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrRequest>> GetRequestsAsync(PluginConfiguration config)
+    public async Task<List<JellyseerrRequest>> GetRequestsAsync()
     {
-        return await MakeTypedApiCallAsync<List<JellyseerrRequest>>(JellyseerrEndpoint.Requests, config, operationName: "requests");
+        return await MakeTypedApiCallAsync<List<JellyseerrRequest>>(JellyseerrEndpoint.Requests, operationName: "requests");
     }
 
     /// <summary>
     /// Get all movies from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrMovie>> GetMoviesAsync(PluginConfiguration config)
+    public async Task<List<JellyseerrMovie>> GetMoviesAsync()
     {
-        return await MakeTypedApiCallAsync<List<JellyseerrMovie>>(JellyseerrEndpoint.Movies, config, operationName: "movies");
+        _logger.LogDebug("Making API call to movies endpoint: {Endpoint}", JellyseerrEndpoint.Movies);
+        return await MakeTypedApiCallAsync<List<JellyseerrMovie>>(JellyseerrEndpoint.Movies, operationName: "movies");
     }
 
     /// <summary>
     /// Get all TV shows from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(PluginConfiguration config)
+    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync()
     {
-        return await MakeTypedApiCallAsync<List<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, config, operationName: "TV shows");
+        _logger.LogDebug("Making API call to TV shows endpoint: {Endpoint}", JellyseerrEndpoint.TvShows);
+        return await MakeTypedApiCallAsync<List<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, operationName: "TV shows");
     }
 
     /// <summary>
@@ -489,9 +494,9 @@ public class JellyseerrApiService
     /// <summary>
     /// Get watch provider regions from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrWatchProviderRegion>> GetWatchProviderRegionsAsync(PluginConfiguration config)
+    public async Task<List<JellyseerrWatchProviderRegion>> GetWatchProviderRegionsAsync()
     {
-        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchProviderRegion>>(JellyseerrEndpoint.WatchProviderRegions, config, operationName: "watch provider regions");
+        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchProviderRegion>>(JellyseerrEndpoint.WatchProviderRegions, operationName: "watch provider regions");
         
         // Log first region to see what we got
         if (regions != null && regions.Count > 0)
@@ -504,7 +509,7 @@ public class JellyseerrApiService
         return regions ?? new List<JellyseerrWatchProviderRegion>();
     }
 
-    public async Task<List<JellyseerrWatchProvider>> GetWatchProvidersAsync(PluginConfiguration config, string region = "US")
+    public async Task<List<JellyseerrWatchProvider>> GetWatchProvidersAsync(string region = "US")
     {
         try
         {
@@ -513,8 +518,8 @@ public class JellyseerrApiService
             
             // Fetch both movie and TV providers concurrently using the generic method
             _logger.LogDebug("Making concurrent API calls for movie and TV watch providers");
-            var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, config, parameters, "movie watch providers");
-            var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, config, parameters, "TV watch providers");
+            var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, parameters: parameters, operationName: "movie watch providers");
+            var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, parameters: parameters, operationName: "TV watch providers");
             
             await Task.WhenAll(movieTask, tvTask);
             

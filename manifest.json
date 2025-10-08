@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "0A1699D8337EA784989FC06CF3C0FB5E",
+        "changelog": "v0.111.0.0 - Refactored API Service - Cleaner Configuration Handling - REFACTOR: Made MakeTypedApiCallAsync use Plugin.Instance.Configuration by default, Optional config parameter allows test connection to pass specific configs, Removed redundant config parameter passing from all public API methods, Cleaner method signatures: GetMoviesAsync(), GetTvShowsAsync(), GetRequestsAsync(), etc., Only TestConnectionAsync still requires config parameter for testing different configurations, Added debug logging for movies/TV shows endpoints to investigate null content issue.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.111.0.0/JellyseerrBridge-0.111.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.111.0.0",
+        "timestamp": "2025-10-08T16:41:21.326Z",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "changelog": "v0.109.0.0 - Fixed JSON Deserialization - Proper Array-to-List Conversion - CRITICAL FIX: Fixed JSON deserialization to properly handle raw JSON arrays by deserializing as element array first, then converting to List<T> using reflection, MakeTypedApiCallAsync now always returns List<T> regardless of internal deserialization, Calling methods can expect consistent List<T> return types, UI IMPROVEMENT: Added hover tooltips with ? icons next to Watch Provider Region and Available Providers labels to guide users to click Manual Sync.",
         "dependencies": [],

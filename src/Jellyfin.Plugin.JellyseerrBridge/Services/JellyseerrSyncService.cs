@@ -51,9 +51,9 @@ public class JellyseerrSyncService
             }
 
             // Get data from Jellyseerr
-            var movies = await _apiService.GetMoviesAsync(config);
-            var tvShows = await _apiService.GetTvShowsAsync(config);
-            var requests = await _apiService.GetRequestsAsync(config);
+            var movies = await _apiService.GetMoviesAsync();
+            var tvShows = await _apiService.GetTvShowsAsync();
+            var requests = await _apiService.GetRequestsAsync();
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows, {RequestCount} requests from Jellyseerr",
                 movies.Count, tvShows.Count, requests.Count);
