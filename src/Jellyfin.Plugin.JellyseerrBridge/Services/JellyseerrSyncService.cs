@@ -160,62 +160,67 @@ public class JellyseerrSyncService
     /// <summary>
     /// Create a placeholder movie in Jellyfin.
     /// </summary>
-    private async Task CreatePlaceholderMovieAsync(JellyseerrMovie movie)
+    private Task CreatePlaceholderMovieAsync(JellyseerrMovie movie)
     {
         _logger.LogInformation("Creating placeholder movie: {MovieTitle}", movie.Title);
         
         // This would create a placeholder movie item in Jellyfin
         // Implementation depends on Jellyfin's internal APIs
         // For now, just log the action
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Update an existing placeholder movie.
     /// </summary>
-    private async Task UpdatePlaceholderMovieAsync(Movie? existingMovie, JellyseerrMovie movie)
+    private Task UpdatePlaceholderMovieAsync(Movie? existingMovie, JellyseerrMovie movie)
     {
-        if (existingMovie == null) return;
+        if (existingMovie == null) return Task.CompletedTask;
         
         _logger.LogDebug("Updating placeholder movie: {MovieTitle}", movie.Title);
         
         // Update movie metadata
         // Implementation depends on Jellyfin's internal APIs
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Create a placeholder TV show in Jellyfin.
     /// </summary>
-    private async Task CreatePlaceholderTvShowAsync(JellyseerrTvShow tvShow)
+    private Task CreatePlaceholderTvShowAsync(JellyseerrTvShow tvShow)
     {
         _logger.LogInformation("Creating placeholder TV show: {ShowName}", tvShow.Name);
         
         // This would create a placeholder TV show item in Jellyfin
         // Implementation depends on Jellyfin's internal APIs
         // For now, just log the action
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Update an existing placeholder TV show.
     /// </summary>
-    private async Task UpdatePlaceholderTvShowAsync(Series? existingShow, JellyseerrTvShow tvShow)
+    private Task UpdatePlaceholderTvShowAsync(Series? existingShow, JellyseerrTvShow tvShow)
     {
-        if (existingShow == null) return;
+        if (existingShow == null) return Task.CompletedTask;
         
         _logger.LogDebug("Updating placeholder TV show: {ShowName}", tvShow.Name);
         
         // Update TV show metadata
         // Implementation depends on Jellyfin's internal APIs
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Update request status in Jellyfin metadata.
     /// </summary>
-    private async Task UpdateRequestStatusAsync(JellyseerrRequest request)
+    private Task UpdateRequestStatusAsync(JellyseerrRequest request)
     {
         _logger.LogDebug("Updating request status for {MediaType} (ID: {MediaId}): {Status}", 
             request.Media?.MediaType ?? "Unknown", request.Media?.Id ?? 0, request.Status);
         
         // Update request status in Jellyfin metadata
         // Implementation depends on Jellyfin's internal APIs
+        return Task.CompletedTask;
     }
 }

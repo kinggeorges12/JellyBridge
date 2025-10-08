@@ -7,6 +7,119 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
 /// <summary>
+/// Enumeration of Jellyseerr API endpoints.
+/// </summary>
+public enum JellyseerrEndpoint
+{
+    Status,
+    Requests,
+    Movies,
+    TvShows,
+    User,
+    WatchProviderRegions,
+    WatchProviderMovies,
+    WatchProviderTv
+}
+
+/// <summary>
+/// Response type enumeration for API calls.
+/// </summary>
+public enum JellyseerrResponseType
+{
+    JsonList,
+    JsonObject,
+    PaginatedList,
+    RawContent
+}
+
+/// <summary>
+/// URL builder for Jellyseerr API endpoints.
+/// </summary>
+public static class JellyseerrUrlBuilder
+{
+    /// <summary>
+    /// Builds a complete URL for a Jellyseerr API endpoint.
+    /// </summary>
+    /// <param name="baseUrl">The base Jellyseerr URL</param>
+    /// <param name="endpoint">The API endpoint</param>
+    /// <param name="parameters">Optional query parameters</param>
+    /// <returns>Complete URL string</returns>
+    public static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null)
+    {
+        var cleanBaseUrl = baseUrl.TrimEnd('/');
+        var endpointPath = GetEndpointPath(endpoint);
+        var url = $"{cleanBaseUrl}{endpointPath}";
+        
+        if (parameters != null && parameters.Count > 0)
+        {
+            var queryString = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+            url = $"{url}?{queryString}";
+        }
+        
+        return url;
+    }
+    
+    /// <summary>
+    /// Creates an HTTP request message for a Jellyseerr API endpoint.
+    /// </summary>
+    /// <param name="baseUrl">The base Jellyseerr URL</param>
+    /// <param name="endpoint">The API endpoint</param>
+    /// <param name="apiKey">The API key</param>
+    /// <param name="method">HTTP method (defaults to GET)</param>
+    /// <param name="parameters">Optional query parameters</param>
+    /// <returns>Configured HttpRequestMessage</returns>
+    public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null)
+    {
+        var url = BuildUrl(baseUrl, endpoint, parameters);
+        var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
+        requestMessage.Headers.Add("X-Api-Key", apiKey);
+        return requestMessage;
+    }
+    
+    /// <summary>
+    /// Gets the expected response type for a given endpoint.
+    /// </summary>
+    /// <param name="endpoint">The endpoint enum</param>
+    /// <returns>Response type</returns>
+    public static JellyseerrResponseType GetResponseType(JellyseerrEndpoint endpoint)
+    {
+        return endpoint switch
+        {
+            JellyseerrEndpoint.Status => JellyseerrResponseType.RawContent,
+            JellyseerrEndpoint.Requests => JellyseerrResponseType.PaginatedList,
+            JellyseerrEndpoint.Movies => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.TvShows => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.User => JellyseerrResponseType.JsonObject,
+            JellyseerrEndpoint.WatchProviderRegions => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.WatchProviderMovies => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.WatchProviderTv => JellyseerrResponseType.JsonList,
+            _ => JellyseerrResponseType.RawContent
+        };
+    }
+    
+    /// <summary>
+    /// Gets the API path for a given endpoint.
+    /// </summary>
+    /// <param name="endpoint">The endpoint enum</param>
+    /// <returns>API path string</returns>
+    private static string GetEndpointPath(JellyseerrEndpoint endpoint)
+    {
+        return endpoint switch
+        {
+            JellyseerrEndpoint.Status => "/api/v1/status",
+            JellyseerrEndpoint.Requests => "/api/v1/request",
+            JellyseerrEndpoint.Movies => "/api/v1/movie",
+            JellyseerrEndpoint.TvShows => "/api/v1/tv",
+            JellyseerrEndpoint.User => "/api/v1/auth/me",
+            JellyseerrEndpoint.WatchProviderRegions => "/api/v1/watchproviders/regions",
+            JellyseerrEndpoint.WatchProviderMovies => "/api/v1/watchproviders/movies",
+            JellyseerrEndpoint.WatchProviderTv => "/api/v1/watchproviders/tv",
+            _ => throw new ArgumentException($"Unknown endpoint: {endpoint}")
+        };
+    }
+}
+
+/// <summary>
 /// Service for interacting with the Jellyseerr API.
 /// </summary>
 public class JellyseerrApiService
@@ -21,21 +134,268 @@ public class JellyseerrApiService
     }
 
     /// <summary>
+    /// Makes a typed API call to Jellyseerr with automatic response handling.
+    /// </summary>
+    /// <typeparam name="T">The expected return type</typeparam>
+    /// <param name="endpoint">The API endpoint</param>
+    /// <param name="config">Plugin configuration</param>
+    /// <param name="parameters">Optional query parameters</param>
+    /// <param name="operationName">Name for logging purposes</param>
+    /// <returns>Deserialized response or default value</returns>
+    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration config, Dictionary<string, string>? parameters = null, string operationName = "data")
+    {
+        try
+        {
+            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters);
+            var content = await MakeApiRequestAsync(requestMessage, config);
+            
+            if (content == null)
+            {
+                return GetDefaultValue<T>();
+            }
+            
+            // Handle empty response
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                _logger.LogInformation("Empty response received for {Operation}", operationName);
+                return GetDefaultValue<T>();
+            }
+            
+            var responseType = JellyseerrUrlBuilder.GetResponseType(endpoint);
+            
+            return responseType switch
+            {
+                JellyseerrResponseType.JsonList => DeserializeJsonList<T>(content, operationName),
+                JellyseerrResponseType.JsonObject => DeserializeJsonObject<T>(content, operationName),
+                JellyseerrResponseType.PaginatedList => DeserializePaginatedList<T>(content, operationName),
+                JellyseerrResponseType.RawContent => GetDefaultValue<T>(),
+                _ => GetDefaultValue<T>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get {Operation} from Jellyseerr", operationName);
+            return GetDefaultValue<T>();
+        }
+    }
+    
+    /// <summary>
+    /// Deserializes JSON list response.
+    /// </summary>
+    private T DeserializeJsonList<T>(string content, string operationName)
+    {
+        try
+        {
+            // Special handling for watch provider regions which need case-sensitive deserialization
+            var caseInsensitive = operationName != "watch provider regions";
+            
+            var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = caseInsensitive
+            });
+            
+            _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items?.Count ?? 0, operationName);
+            return (T)(object)(items ?? new List<T>());
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+    }
+    
+    /// <summary>
+    /// Deserializes JSON object response.
+    /// </summary>
+    private T DeserializeJsonObject<T>(string content, string operationName)
+    {
+        try
+        {
+            var item = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            _logger.LogInformation("Retrieved {Operation} from Jellyseerr", operationName);
+            return item ?? GetDefaultValue<T>();
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+    }
+    
+    /// <summary>
+    /// Deserializes paginated list response.
+    /// </summary>
+    private T DeserializePaginatedList<T>(string content, string operationName)
+    {
+        try
+        {
+            // For paginated responses, we need to extract the Results array
+            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            var items = paginatedResponse?.Results ?? new List<JellyseerrRequest>();
+            _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items.Count, operationName);
+            return (T)(object)items;
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+    }
+    
+    /// <summary>
+    /// Gets the default value for type T.
+    /// </summary>
+    private static T GetDefaultValue<T>()
+    {
+        if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
+        {
+            return (T)Activator.CreateInstance(typeof(T))!;
+        }
+        
+        return default(T)!;
+    }
+    
+    /// <summary>
+    /// Makes an HTTP request to the Jellyseerr API with retry logic, timeout, and debug logging.
+    /// Returns the response content as a string, or null if the request failed.
+    /// </summary>
+    private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
+    {
+        var timeout = TimeSpan.FromSeconds(config.RequestTimeout);
+        var retryAttempts = config.RetryAttempts;
+        var enableDebugLogging = config.EnableDebugLogging;
+        
+        Exception? lastException = null;
+        
+        for (int attempt = 1; attempt <= retryAttempts; attempt++)
+        {
+            try
+            {
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts}: {Method} {Url}", 
+                        attempt, retryAttempts, request.Method, request.RequestUri);
+                }
+                
+                // Create a new HttpClient with timeout for this request
+                using var timeoutClient = new HttpClient();
+                timeoutClient.Timeout = timeout;
+                
+                // Copy headers from the original request
+                foreach (var header in request.Headers)
+                {
+                    timeoutClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+                
+                var response = await timeoutClient.SendAsync(request);
+                
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
+                        attempt, response.StatusCode, response.ReasonPhrase);
+                }
+                
+                // Check if the response was successful
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (enableDebugLogging)
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
+                    }
+                    return null!;
+                }
+                
+                // Read the response content
+                var content = await response.Content.ReadAsStringAsync();
+                
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
+                }
+                
+                return content;
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
+                        attempt, retryAttempts, config.RequestTimeout);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} API request attempts timed out", retryAttempts);
+                    throw new TimeoutException($"API request timed out after {retryAttempts} attempts", ex);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed: {Error}", 
+                        attempt, retryAttempts, ex.Message);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} API request attempts failed", retryAttempts);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed with unexpected error: {Error}", 
+                        attempt, retryAttempts, ex.Message);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} API request attempts failed with unexpected error", retryAttempts);
+                    throw;
+                }
+            }
+            
+            // Wait before retry (exponential backoff)
+            if (attempt < retryAttempts)
+            {
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)); // 1s, 2s, 4s, etc.
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
+                }
+                await Task.Delay(delay);
+            }
+        }
+        
+        throw lastException ?? new InvalidOperationException("All retry attempts failed");
+    }
+
+    /// <summary>
     /// Test connection to Jellyseerr API.
     /// </summary>
     public async Task<bool> TestConnectionAsync(PluginConfiguration config)
     {
         try
         {
-            var statusUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/status";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, statusUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
+            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, JellyseerrEndpoint.Status, config.ApiKey);
+            var content = await MakeApiRequestAsync(requestMessage, config);
             
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
+            if (content == null)
             {
-                _logger.LogWarning("Jellyseerr status check failed with status: {StatusCode}", response.StatusCode);
                 return false;
             }
 
@@ -54,55 +414,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrRequest>> GetRequestsAsync(PluginConfiguration config)
     {
-        try
-        {
-            var requestsUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/request";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestsUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to get requests with status: {StatusCode}", response.StatusCode);
-                return new List<JellyseerrRequest>();
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            _logger.LogDebug("[JellyseerrBridge] Requests API Response: {Content}", content);
-            
-            // Handle empty response
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                _logger.LogInformation("Empty response received for requests");
-                return new List<JellyseerrRequest>();
-            }
-
-            try
-            {
-                // First, deserialize as a paginated response
-                var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                var requests = paginatedResponse?.Results ?? new List<JellyseerrRequest>();
-
-                _logger.LogInformation("Retrieved {Count} requests from Jellyseerr", requests.Count);
-                return requests;
-            }
-            catch (JsonException jsonEx)
-            {
-                _logger.LogWarning(jsonEx, "Failed to deserialize requests JSON. Content: {Content}", content);
-                return new List<JellyseerrRequest>();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get requests from Jellyseerr");
-            return new List<JellyseerrRequest>();
-        }
+        return await MakeTypedApiCallAsync<List<JellyseerrRequest>>(JellyseerrEndpoint.Requests, config, operationName: "requests");
     }
 
     /// <summary>
@@ -110,52 +422,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrMovie>> GetMoviesAsync(PluginConfiguration config)
     {
-        try
-        {
-            var moviesUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/movie";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, moviesUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to get movies with status: {StatusCode}", response.StatusCode);
-                return new List<JellyseerrMovie>();
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            _logger.LogDebug("[JellyseerrBridge] Movies API Response: {Content}", content);
-            
-            // Handle empty response
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                _logger.LogInformation("Empty response received for movies");
-                return new List<JellyseerrMovie>();
-            }
-
-            try
-            {
-                var movies = JsonSerializer.Deserialize<List<JellyseerrMovie>>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                _logger.LogInformation("Retrieved {Count} movies from Jellyseerr", movies?.Count ?? 0);
-                return movies ?? new List<JellyseerrMovie>();
-            }
-            catch (JsonException jsonEx)
-            {
-                _logger.LogWarning(jsonEx, "Failed to deserialize movies JSON. Content: {Content}", content);
-                return new List<JellyseerrMovie>();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get movies from Jellyseerr");
-            return new List<JellyseerrMovie>();
-        }
+        return await MakeTypedApiCallAsync<List<JellyseerrMovie>>(JellyseerrEndpoint.Movies, config, operationName: "movies");
     }
 
     /// <summary>
@@ -163,52 +430,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(PluginConfiguration config)
     {
-        try
-        {
-            var tvUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/tv";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, tvUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to get TV shows with status: {StatusCode}", response.StatusCode);
-                return new List<JellyseerrTvShow>();
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            _logger.LogDebug("[JellyseerrBridge] TV Shows API Response: {Content}", content);
-            
-            // Handle empty response
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                _logger.LogInformation("Empty response received for TV shows");
-                return new List<JellyseerrTvShow>();
-            }
-
-            try
-            {
-                var shows = JsonSerializer.Deserialize<List<JellyseerrTvShow>>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                _logger.LogInformation("Retrieved {Count} TV shows from Jellyseerr", shows?.Count ?? 0);
-                return shows ?? new List<JellyseerrTvShow>();
-            }
-            catch (JsonException jsonEx)
-            {
-                _logger.LogWarning(jsonEx, "Failed to deserialize TV shows JSON. Content: {Content}", content);
-                return new List<JellyseerrTvShow>();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get TV shows from Jellyseerr");
-            return new List<JellyseerrTvShow>();
-        }
+        return await MakeTypedApiCallAsync<List<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, config, operationName: "TV shows");
     }
 
     /// <summary>
@@ -216,34 +438,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<JellyseerrUser?> GetUserAsync(PluginConfiguration config)
     {
-        try
-        {
-            var userUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/auth/me";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, userUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to get user info with status: {StatusCode}", response.StatusCode);
-                return null;
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            var user = JsonSerializer.Deserialize<JellyseerrUser>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            _logger.LogInformation("Retrieved user info: {Username}", user?.Username);
-            return user;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get user info from Jellyseerr");
-            return null;
-        }
+        return await MakeTypedApiCallAsync<JellyseerrUser?>(JellyseerrEndpoint.User, config, operationName: "user info");
     }
 
     /// <summary>
@@ -251,126 +446,59 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrWatchProviderRegion>> GetWatchProviderRegionsAsync(PluginConfiguration config)
     {
-        try
+        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchProviderRegion>>(JellyseerrEndpoint.WatchProviderRegions, config, operationName: "watch provider regions");
+        
+        // Log first region to see what we got
+        if (regions != null && regions.Count > 0)
         {
-            var regionsUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/regions";
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, regionsUrl);
-            requestMessage.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var response = await _httpClient.SendAsync(requestMessage);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to get watch provider regions with status: {StatusCode}", response.StatusCode);
-                return new List<JellyseerrWatchProviderRegion>();
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            
-            _logger.LogDebug("[JellyseerrBridge] Watch Provider Regions API Response: {Content}", content);
-            
-            
-            var regions = JsonSerializer.Deserialize<List<JellyseerrWatchProviderRegion>>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = false
-            });
-
-            _logger.LogInformation("Retrieved {Count} watch provider regions from Jellyseerr", regions?.Count ?? 0);
-            
-            // Log first region to see what we got
-            if (regions != null && regions.Count > 0)
-            {
-                var firstRegion = regions[0];
-                _logger.LogDebug("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
-                    firstRegion.Iso31661, firstRegion.EnglishName, firstRegion.NativeName);
-            }
-            
-            return regions ?? new List<JellyseerrWatchProviderRegion>();
+            var firstRegion = regions[0];
+            _logger.LogDebug("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
+                firstRegion.Iso31661, firstRegion.EnglishName, firstRegion.NativeName);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get watch provider regions from Jellyseerr");
-            return new List<JellyseerrWatchProviderRegion>();
-        }
+        
+        return regions ?? new List<JellyseerrWatchProviderRegion>();
     }
 
     public async Task<List<JellyseerrWatchProvider>> GetWatchProvidersAsync(PluginConfiguration config, string region = "US")
     {
         try
         {
-            var movieProvidersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/movies?watchRegion={region}";
-            var tvProvidersUrl = $"{config.JellyseerrUrl.TrimEnd('/')}/api/v1/watchproviders/tv?watchRegion={region}";
+            var parameters = new Dictionary<string, string> { { "watchRegion", region } };
             
-            var movieRequest = new HttpRequestMessage(HttpMethod.Get, movieProvidersUrl);
-            movieRequest.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            var tvRequest = new HttpRequestMessage(HttpMethod.Get, tvProvidersUrl);
-            tvRequest.Headers.Add("X-Api-Key", config.ApiKey);
-            
-            // Fetch both movie and TV providers concurrently
-            var movieTask = _httpClient.SendAsync(movieRequest);
-            var tvTask = _httpClient.SendAsync(tvRequest);
+            // Fetch both movie and TV providers concurrently using the generic method
+            var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, config, parameters, "movie watch providers");
+            var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, config, parameters, "TV watch providers");
             
             await Task.WhenAll(movieTask, tvTask);
             
-            var movieResponse = await movieTask;
-            var tvResponse = await tvTask;
+            var movieProviders = await movieTask;
+            var tvProviders = await tvTask;
             
             var allProviders = new List<JellyseerrWatchProvider>();
             var providerIds = new HashSet<int>(); // To avoid duplicates
             
             // Process movie providers
-            if (movieResponse.IsSuccessStatusCode)
+            if (movieProviders != null)
             {
-                var movieContent = await movieResponse.Content.ReadAsStringAsync();
-                _logger.LogDebug("[JellyseerrBridge] Movie Providers API Response: {Content}", movieContent);
-                
-                var movieProviders = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(movieContent, new JsonSerializerOptions
+                foreach (var provider in movieProviders)
                 {
-                    PropertyNameCaseInsensitive = false
-                });
-                
-                if (movieProviders != null)
-                {
-                    foreach (var provider in movieProviders)
+                    if (providerIds.Add(provider.Id)) // Only add if not already present
                     {
-                        if (providerIds.Add(provider.Id)) // Only add if not already present
-                        {
-                            allProviders.Add(provider);
-                        }
+                        allProviders.Add(provider);
                     }
                 }
-            }
-            else
-            {
-                _logger.LogWarning("Failed to get movie watch providers with status: {StatusCode}", movieResponse.StatusCode);
             }
             
             // Process TV providers
-            if (tvResponse.IsSuccessStatusCode)
+            if (tvProviders != null)
             {
-                var tvContent = await tvResponse.Content.ReadAsStringAsync();
-                _logger.LogDebug("[JellyseerrBridge] TV Providers API Response: {Content}", tvContent);
-                
-                var tvProviders = JsonSerializer.Deserialize<List<JellyseerrWatchProvider>>(tvContent, new JsonSerializerOptions
+                foreach (var provider in tvProviders)
                 {
-                    PropertyNameCaseInsensitive = false
-                });
-                
-                if (tvProviders != null)
-                {
-                    foreach (var provider in tvProviders)
+                    if (providerIds.Add(provider.Id)) // Only add if not already present
                     {
-                        if (providerIds.Add(provider.Id)) // Only add if not already present
-                        {
-                            allProviders.Add(provider);
-                        }
+                        allProviders.Add(provider);
                     }
                 }
-            }
-            else
-            {
-                _logger.LogWarning("Failed to get TV watch providers with status: {StatusCode}", tvResponse.StatusCode);
             }
             
             // Log combined results
