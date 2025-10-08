@@ -135,6 +135,8 @@ function loadAvailableProviders(page) {
         type: 'GET',
         dataType: 'json'
     }).then(function(response) {
+        Dashboard.alert(`🔍 DEBUG: API Response received. Success: ${response?.success}, Providers count: ${response?.providers?.length || 0}`);
+        
         if (response && response.success && response.providers) {
             const regionProviders = response.providers
                 .filter(provider => provider && provider.name)
@@ -200,6 +202,8 @@ function loadAvailableProviders(page) {
             return Promise.resolve();
         }
     }).catch(function(error) {
+        Dashboard.alert(`❌ DEBUG: API call failed. Error: ${error?.message || 'Unknown error'}`);
+        
         // Use default networks as fallback
         const defaultNetworks = window.jellyseerrDefaultNetworks || [];
         const fallbackProviders = defaultNetworks.map(networkName => ({
