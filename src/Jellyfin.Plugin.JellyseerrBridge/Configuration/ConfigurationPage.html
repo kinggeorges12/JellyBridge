@@ -38,10 +38,6 @@
                     align-items: stretch;
                 }
                 
-                .selectBox {
-                    flex: 1;
-                }
-                
                 .selectBoxHeader {
                     display: flex;
                     align-items: center;
@@ -72,10 +68,6 @@
                     justify-content: center;
                 }
                 
-                .selectBox .emby-input {
-                    margin-bottom: 8px;
-                }
-                
                 /* Scrollbar styling for emby-select */
                 .emby-select::-webkit-scrollbar {
                     width: 12px;
@@ -94,13 +86,36 @@
                     background-clip: content-box;
                 }
                 
-                .emby-select::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.5);
-                    background-clip: content-box;
-                }
+        .emby-select::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+            background-clip: content-box;
+        }
+        
+        /* Help icon styling */
+        .helpIcon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: #0078d4;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 16px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 5px;
+            cursor: help;
+            vertical-align: middle;
+        }
+        
+        .helpIcon:hover {
+            background: #106ebe;
+        }
                 
                 .selectBox .emby-select {
                     min-height: 200px;
+                    flex: 1;
+                    margin-bottom: 8px;
                 }
                 
                 /* Search input with clear button */
@@ -251,7 +266,7 @@
                         </div>
 
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region</label>
+                            <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load regions from Jellyseerr">?</span></label>
                             <select id="WatchProviderRegion" is="emby-input" class="emby-input emby-select">
                                 <option value="US">United States of America (United States)</option>
                             </select>
@@ -284,7 +299,7 @@
                                 <!-- Available Providers (Right) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available in Jellyseerr</label>
+                                        <label class="inputLabel">Available in Jellyseerr <span class="helpIcon" title="Click 'Manual Sync' to load providers from Jellyseerr">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="availableSearch" placeholder="Search available providers..." is="emby-input" class="emby-input">

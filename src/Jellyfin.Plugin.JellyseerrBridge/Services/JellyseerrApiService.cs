@@ -195,13 +195,32 @@ public class JellyseerrApiService
         
         try
         {
-            // Always deserialize as List<T> regardless of JSON structure (array or list)
+            // First try to deserialize as raw JSON array (T[])
+            var arrayItems = JsonSerializer.Deserialize<T[]>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            if (arrayItems != null)
+            {
+                var listItems = arrayItems.ToList();
+                _logger.LogInformation("Successfully deserialized {Count} {Operation} items from JSON array", listItems.Count, operationName);
+                
+                if (listItems.Count > 0)
+                {
+                    _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, listItems[0]);
+                }
+                
+                return (T)(object)listItems;
+            }
+            
+            // Fallback: try to deserialize as List<T>
             var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
             
-            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", items?.Count ?? 0, operationName);
+            _logger.LogInformation("Successfully deserialized {Count} {Operation} items from JSON list", items?.Count ?? 0, operationName);
             
             if (items != null && items.Count > 0)
             {
