@@ -63,16 +63,16 @@ public class JellyseerrSyncService
             pluginConfig.EnsureDefaultNetworkMappings();
             
             // Get networks to map network names to IDs (if not already cached)
-            if (!pluginConfig.NetworkNameToId.Any())
+            if (!pluginConfig.NetworkMap.Any())
             {
                 _logger.LogInformation("Network name-to-ID mapping not cached, fetching from API");
                 var networks = await _apiService.GetNetworksAsync(pluginConfig.WatchProviderRegion);
-                pluginConfig.SetNetworkNameToIdDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
-                _logger.LogInformation("Cached {Count} network mappings", pluginConfig.NetworkNameToId.Count);
+                pluginConfig.SetNetworkMapDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
+                _logger.LogInformation("Cached {Count} network mappings", pluginConfig.NetworkMap.Count);
             }
             else
             {
-                _logger.LogInformation("Using cached network name-to-ID mapping ({Count} networks)", pluginConfig.NetworkNameToId.Count);
+                _logger.LogInformation("Using cached network name-to-ID mapping ({Count} networks)", pluginConfig.NetworkMap.Count);
             }
             
             // Get movies and TV shows for each active network

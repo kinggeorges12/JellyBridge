@@ -111,7 +111,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the mapping of network names to their IDs (populated after API communication).
     /// This is stored as a list of key-value pairs for XML serialization compatibility.
     /// </summary>
-    public List<NetworkMapping> NetworkNameToId { get; set; } = new List<NetworkMapping>();
+    public List<NetworkMapping> NetworkMap { get; set; } = new List<NetworkMapping>();
 
     /// <summary>
     /// Gets the default networks list as a newline-separated string (for backward compatibility).
@@ -181,18 +181,18 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets the network name to ID mapping as a dictionary for easier access.
     /// </summary>
-    public Dictionary<string, int> GetNetworkNameToIdDictionary()
+    public Dictionary<string, int> GetNetworkMapDictionary()
     {
-        return NetworkNameToId.ToDictionary(m => m.Name, m => m.Id);
+        return NetworkMap.ToDictionary(m => m.Name, m => m.Id);
     }
 
     /// <summary>
     /// Sets the network name to ID mapping from a dictionary.
     /// </summary>
     /// <param name="mapping">The dictionary mapping network names to IDs.</param>
-    public void SetNetworkNameToIdDictionary(Dictionary<string, int> mapping)
+    public void SetNetworkMapDictionary(Dictionary<string, int> mapping)
     {
-        NetworkNameToId = mapping.Select(kvp => new NetworkMapping { Name = kvp.Key, Id = kvp.Value }).ToList();
+        NetworkMap = mapping.Select(kvp => new NetworkMapping { Name = kvp.Key, Id = kvp.Value }).ToList();
     }
 
     /// <summary>
@@ -207,13 +207,13 @@ public class PluginConfiguration : BasePluginConfiguration
     }
 
     /// <summary>
-    /// Ensures that NetworkNameToId is initialized with default network mappings if it's empty.
+    /// Ensures that NetworkMap is initialized with default network mappings if it's empty.
     /// </summary>
     public void EnsureDefaultNetworkMappings()
     {
-        if (!NetworkNameToId.Any())
+        if (!NetworkMap.Any())
         {
-            NetworkNameToId = new List<NetworkMapping>(JellyseerrDefaultNetworkMappings);
+            NetworkMap = new List<NetworkMapping>(JellyseerrDefaultNetworkMappings);
         }
     }
 

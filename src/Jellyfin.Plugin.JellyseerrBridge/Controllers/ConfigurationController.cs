@@ -41,7 +41,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Ensure default networks are loaded if ActiveNetworks is empty
                 config.EnsureDefaultNetworks();
                 
-                // Ensure default network mappings are loaded if NetworkNameToId is empty
+                // Ensure default network mappings are loaded if NetworkMap is empty
                 config.EnsureDefaultNetworkMappings();
                 
                 // Convert the internal list format to dictionary format for JavaScript
@@ -62,7 +62,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     EnableDebugLogging = config.EnableDebugLogging,
                     WatchProviderRegion = config.WatchProviderRegion,
                     ActiveNetworks = config.ActiveNetworks,
-                    NetworkNameToId = config.GetNetworkNameToIdDictionary(), // Convert to dictionary for JavaScript
+                    NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
                     DefaultNetworks = config.DefaultNetworks,
                     JellyseerrDefaultNetworks = PluginConfiguration.JellyseerrDefaultNetworks
                 };
@@ -113,12 +113,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     config.ActiveNetworks = activeNetworksList;
                 }
                 
-                // Handle NetworkNameToId dictionary conversion
-                if (configData.TryGetProperty("NetworkNameToId", out var networkNameToIdElement))
+                // Handle NetworkMap dictionary conversion
+                if (configData.TryGetProperty("NetworkMap", out var networkMapElement))
                 {
                     var networkDict = new Dictionary<string, int>();
                     
-                    foreach (var property in networkNameToIdElement.EnumerateObject())
+                    foreach (var property in networkMapElement.EnumerateObject())
                     {
                         if (property.Value.ValueKind == JsonValueKind.Number && 
                             property.Value.TryGetInt32(out int id))
@@ -127,7 +127,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         }
                     }
                     
-                    config.SetNetworkNameToIdDictionary(networkDict);
+                    config.SetNetworkMapDictionary(networkDict);
                 }
                 
                 // Save the configuration
@@ -386,11 +386,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 _logger.LogInformation("Updating network name-to-ID mapping for region: {Region}", config.WatchProviderRegion);
                 
                 var networks = await apiService.GetNetworksAsync(config.WatchProviderRegion);
-                config.SetNetworkNameToIdDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
+                config.SetNetworkMapDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
                 
-                _logger.LogInformation("Updated network mapping with {Count} networks", config.NetworkNameToId.Count);
+                _logger.LogInformation("Updated network mapping with {Count} networks", config.NetworkMap.Count);
                 
-                return Ok(new { success = true, count = config.NetworkNameToId.Count });
+                return Ok(new { success = true, count = config.NetworkMap.Count });
             }
             catch (Exception ex)
             {
@@ -416,7 +416,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 return Ok(new { 
                     success = true, 
                     region = region,
-                    providers = providers 
+                    networks = providers 
                 });
             }
             catch (Exception ex)
