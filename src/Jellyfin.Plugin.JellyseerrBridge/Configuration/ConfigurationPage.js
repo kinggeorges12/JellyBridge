@@ -8,6 +8,45 @@ function getAvailableProviders(page, providers) {
     return providers.filter(provider => !activeProviders.includes(provider.name || provider));
 }
 
+// Helper function to update placeholders with backend defaults
+function updatePlaceholdersFromBackend(page, config) {
+    // Update placeholders with backend default values
+    const jellyseerrUrlField = page.querySelector('#JellyseerrUrl');
+    if (jellyseerrUrlField && !jellyseerrUrlField.value) {
+        jellyseerrUrlField.placeholder = config.JellyseerrUrl || 'http://localhost:5055';
+    }
+    
+    const userIdField = page.querySelector('#UserId');
+    if (userIdField && !userIdField.value) {
+        userIdField.placeholder = (config.UserId || 1).toString();
+    }
+    
+    const syncIntervalField = page.querySelector('#SyncIntervalHours');
+    if (syncIntervalField && !syncIntervalField.value) {
+        syncIntervalField.placeholder = (config.SyncIntervalHours || 24).toString();
+    }
+    
+    const libraryDirectoryField = page.querySelector('#LibraryDirectory');
+    if (libraryDirectoryField && !libraryDirectoryField.value) {
+        libraryDirectoryField.placeholder = config.LibraryDirectory || '/data/Jellyseerr';
+    }
+    
+    const libraryPrefixField = page.querySelector('#LibraryPrefix');
+    if (libraryPrefixField && !libraryPrefixField.value) {
+        libraryPrefixField.placeholder = config.LibraryPrefix || 'Streaming - ';
+    }
+    
+    const requestTimeoutField = page.querySelector('#RequestTimeout');
+    if (requestTimeoutField && !requestTimeoutField.value) {
+        requestTimeoutField.placeholder = (config.RequestTimeout || 30).toString();
+    }
+    
+    const retryAttemptsField = page.querySelector('#RetryAttempts');
+    if (retryAttemptsField && !retryAttemptsField.value) {
+        retryAttemptsField.placeholder = (config.RetryAttempts || 3).toString();
+    }
+}
+
 // Function to save plugin configuration
 function initializeMultiSelect(page, config) {
     const activeProvidersSelect = page.querySelector('#activeProviders');
@@ -97,7 +136,9 @@ function loadAvailableProviders(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && response.success && response.providers) {
-            const providers = response.providers.sort((a, b) => a.name.localeCompare(b.name));
+            const providers = response.providers
+                .filter(provider => provider && provider.name)
+                .sort((a, b) => a.name.localeCompare(b.name));
             window.allAvailableProviders = providers;
             
             // Filter out providers that are already active
@@ -213,7 +254,7 @@ function moveProviders(fromSelect, toSelect) {
 
 function sortSelectOptions(selectElement) {
     const options = Array.from(selectElement.options);
-    options.sort((a, b) => a.textContent.localeCompare(b.textContent));
+    options.sort((a, b) => (a.textContent || '').localeCompare(b.textContent || ''));
     
     // Clear and re-add sorted options
     selectElement.innerHTML = '';
@@ -245,20 +286,29 @@ function getNetworkNameToIdMapping(page) {
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
+    // Validate required fields
+    const apiKey = form.querySelector('#ApiKey').value.trim();
+    const jellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim() || 'http://localhost:5055';
+    
+    if (!apiKey) {
+        Dashboard.alert('API Key is required. Please enter your Jellyseerr API key.');
+        return Promise.reject('API Key is required');
+    }
+    
     // Use our custom endpoint to get the current configuration
     return fetch('/JellyseerrBridge/GetPluginConfiguration')
         .then(response => response.json())
         .then(function (config) {
             // Update config with current form values
             config.IsEnabled = form.querySelector('#IsEnabled').checked;
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-            config.ApiKey = form.querySelector('#ApiKey').value;
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+            config.JellyseerrUrl = jellyseerrUrl;
+            config.ApiKey = apiKey;
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim() || '/data/Jellyseerr';
             config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
             config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
             config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
             config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim() || 'Streaming - ';
             config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
             config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
             config.ActiveNetworks = getActiveNetworks(view);
@@ -326,17 +376,17 @@ export default function (view) {
             .then(response => response.json())
             .then(function (config) {
                 page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
-                page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || 'http://localhost:5055';
+                page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || '';
                 page.querySelector('#ApiKey').value = config.ApiKey || '';
-                page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '/data/Jellyseerr';
-                page.querySelector('#UserId').value = config.UserId || 1;
-                page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || 24;
+                page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '';
+                page.querySelector('#UserId').value = config.UserId || '';
+                page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
                 page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
                 page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
-                page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || 'Streaming - ';
+                page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || '';
                 page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
-                page.querySelector('#RequestTimeout').value = config.RequestTimeout || 30;
-                page.querySelector('#RetryAttempts').value = config.RetryAttempts || 3;
+                page.querySelector('#RequestTimeout').value = config.RequestTimeout || '';
+                page.querySelector('#RetryAttempts').value = config.RetryAttempts || '';
                 page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
                 
                 // Store the current watch provider region value
@@ -345,6 +395,9 @@ export default function (view) {
                 
                 // Store default networks globally for fallback use
                 window.jellyseerrDefaultNetworks = config.JellyseerrDefaultNetworks || [];
+                
+                // Update placeholders with backend defaults
+                updatePlaceholdersFromBackend(page, config);
                 
                 // Initialize the multi-select interface
                 initializeMultiSelect(page, config);
@@ -532,7 +585,9 @@ function loadProvidersForRegion(page, region) {
         dataType: 'json'
     }).then(function(response) {
         if (response && response.success && response.providers) {
-            const providers = response.providers.sort((a, b) => a.name.localeCompare(b.name));
+            const providers = response.providers
+                .filter(provider => provider && provider.name)
+                .sort((a, b) => a.name.localeCompare(b.name));
             window.allAvailableProviders = providers;
             
             // Filter out providers that are already active

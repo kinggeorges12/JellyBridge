@@ -171,4 +171,31 @@ public class PluginConfiguration : BasePluginConfiguration
             ActiveNetworks = new List<string>(JellyseerrDefaultNetworks);
         }
     }
+
+    /// <summary>
+    /// Gets the default value for a configuration property.
+    /// </summary>
+    /// <param name="propertyName">The name of the property.</param>
+    /// <returns>The default value for the property.</returns>
+    public static object GetDefaultValue(string propertyName)
+    {
+        return propertyName switch
+        {
+            nameof(JellyseerrUrl) => "http://localhost:5055",
+            nameof(ApiKey) => string.Empty,
+            nameof(LibraryDirectory) => "/data/Jellyseerr",
+            nameof(UserId) => 1,
+            nameof(IsEnabled) => true,
+            nameof(SyncIntervalHours) => 24,
+            nameof(CreateSeparateLibraries) => false,
+            nameof(LibraryPrefix) => "Streaming - ",
+            nameof(ExcludeFromMainLibraries) => true,
+            nameof(AutoSyncOnStartup) => false,
+            nameof(RequestTimeout) => 30,
+            nameof(RetryAttempts) => 3,
+            nameof(EnableDebugLogging) => false,
+            nameof(WatchProviderRegion) => "US",
+            _ => throw new ArgumentException($"Unknown property: {propertyName}")
+        };
+    }
 }
