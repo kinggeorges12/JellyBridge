@@ -328,15 +328,14 @@ public class JellyseerrApiService
     {
         try
         {
-            // For paginated responses, we need to extract the Results array
-            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse<T>>(content, new JsonSerializerOptions
+            // For paginated responses, we need to deserialize the full paginated response
+            var paginatedResponse = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
             
-            var items = paginatedResponse?.Results ?? new List<T>();
-            _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items.Count, operationName);
-            return (T)(object)items;
+            _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
+            return paginatedResponse ?? GetDefaultValue<T>();
         }
         catch (JsonException jsonEx)
         {
@@ -578,7 +577,7 @@ public class JellyseerrApiService
         var config = Plugin.Instance.Configuration;
         
         // Get network name-to-ID mapping
-        var networkDict = config.GetNetworkNameToIdDictionary();
+        var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
         foreach (var networkName in config.ActiveNetworks)
@@ -637,7 +636,7 @@ public class JellyseerrApiService
         var config = Plugin.Instance.Configuration;
         
         // Get network name-to-ID mapping
-        var networkDict = config.GetNetworkNameToIdDictionary();
+        var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
         foreach (var networkName in config.ActiveNetworks)
@@ -810,9 +809,16 @@ public class JellyseerrRequestMedia
 /// </summary>
 public class JellyseerrPaginatedResponse<T>
 {
+    [JsonPropertyName("page")]
     public int Page { get; set; }
+    
+    [JsonPropertyName("totalPages")]
     public int TotalPages { get; set; }
+    
+    [JsonPropertyName("totalResults")]
     public int TotalResults { get; set; }
+    
+    [JsonPropertyName("results")]
     public List<T> Results { get; set; } = new();
 }
 
@@ -821,21 +827,52 @@ public class JellyseerrPaginatedResponse<T>
 /// </summary>
 public class JellyseerrMovie
 {
+    [JsonPropertyName("id")]
     public int Id { get; set; }
+    
+    [JsonPropertyName("mediaType")]
     public string MediaType { get; set; } = string.Empty;
+    
+    [JsonPropertyName("adult")]
     public bool Adult { get; set; }
+    
+    [JsonPropertyName("genreIds")]
     public List<int> GenreIds { get; set; } = new();
+    
+    [JsonPropertyName("originalLanguage")]
     public string OriginalLanguage { get; set; } = string.Empty;
+    
+    [JsonPropertyName("originalTitle")]
     public string OriginalTitle { get; set; } = string.Empty;
+    
+    [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
+    
+    [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
+    
+    [JsonPropertyName("releaseDate")]
     public string ReleaseDate { get; set; } = string.Empty;
+    
+    [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
+    
+    [JsonPropertyName("video")]
     public bool Video { get; set; }
+    
+    [JsonPropertyName("voteAverage")]
     public double VoteAverage { get; set; }
+    
+    [JsonPropertyName("voteCount")]
     public int VoteCount { get; set; }
+    
+    [JsonPropertyName("backdropPath")]
     public string BackdropPath { get; set; } = string.Empty;
+    
+    [JsonPropertyName("posterPath")]
     public string PosterPath { get; set; } = string.Empty;
+    
+    [JsonPropertyName("mediaInfo")]
     public JellyseerrMediaInfo? MediaInfo { get; set; }
 }
 
@@ -844,20 +881,49 @@ public class JellyseerrMovie
 /// </summary>
 public class JellyseerrTvShow
 {
+    [JsonPropertyName("id")]
     public int Id { get; set; }
+    
+    [JsonPropertyName("firstAirDate")]
     public string FirstAirDate { get; set; } = string.Empty;
+    
+    [JsonPropertyName("genreIds")]
     public List<int> GenreIds { get; set; } = new();
+    
+    [JsonPropertyName("mediaType")]
     public string MediaType { get; set; } = string.Empty;
+    
+    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
+    
+    [JsonPropertyName("originCountry")]
     public List<string> OriginCountry { get; set; } = new();
+    
+    [JsonPropertyName("originalLanguage")]
     public string OriginalLanguage { get; set; } = string.Empty;
+    
+    [JsonPropertyName("originalName")]
     public string OriginalName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
+    
+    [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
+    
+    [JsonPropertyName("voteAverage")]
     public double VoteAverage { get; set; }
+    
+    [JsonPropertyName("voteCount")]
     public int VoteCount { get; set; }
+    
+    [JsonPropertyName("backdropPath")]
     public string BackdropPath { get; set; } = string.Empty;
+    
+    [JsonPropertyName("posterPath")]
     public string PosterPath { get; set; } = string.Empty;
+    
+    [JsonPropertyName("mediaInfo")]
     public JellyseerrMediaInfo? MediaInfo { get; set; }
 }
 

@@ -277,7 +277,7 @@
                                         <option value="US">United States of America (United States)</option>
                                     </select>
                                 </div>
-                                <button type="button" id="refreshProviders" is="emby-button" class="raised button emby-button" style="margin-top: 20px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh providers">
+                                <button type="button" id="refreshProviders" is="emby-button" class="raised button emby-button" style="margin-top: 20px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
                                     ↻
                                 </button>
                             </div>
@@ -293,36 +293,36 @@
                                         <label class="inputLabel">Synced from Jellyseerr</label>
                                     </div>
                                     <div class="searchInputContainer">
-                                        <input type="text" id="activeSearch" placeholder="Search active providers..." is="emby-input" class="emby-input">
+                                        <input type="text" id="activeSearch" placeholder="Search active networks..." is="emby-input" class="emby-input">
                                         <button type="button" id="clearActiveSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
                                     <select id="activeProviders" multiple is="emby-input" class="emby-input emby-select">
-                                        <!-- Active providers will be populated here -->
+                                        <!-- Active networks will be populated here -->
                                     </select>
                                 </div>
                                 
                                 <!-- Arrow Buttons (Center) -->
                                 <div class="arrowButtonsContainer">
-                                    <button type="button" id="refreshAvailableProviders" is="emby-button" class="raised button emby-button arrowButton" title="Refresh available providers">↻</button>
-                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected providers">←</button>
-                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected providers">→</button>
+                                    <button type="button" id="refreshAvailableProviders" is="emby-button" class="raised button emby-button arrowButton" title="Refresh available networks">↻</button>
+                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected networks">←</button>
+                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected networks">→</button>
                                 </div>
                                 
-                                <!-- Available Providers (Right) -->
+                                <!-- Available Networks (Right) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available in Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load providers from Jellyseerr">?</span></label>
+                                        <label class="inputLabel">Available in Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load networks from Jellyseerr">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
-                                        <input type="text" id="availableSearch" placeholder="Search available providers..." is="emby-input" class="emby-input">
+                                        <input type="text" id="availableSearch" placeholder="Search available networks..." is="emby-input" class="emby-input">
                                         <button type="button" id="clearAvailableSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
                                     <select id="availableProviders" multiple is="emby-input" class="emby-input emby-select">
-                                        <!-- Available providers will be populated here -->
+                                        <!-- Available networks will be populated here -->
                                     </select>
                                 </div>
                             </div>
-                            <div class="fieldDescription">Select providers from the right box and move them to the left box. Use the search boxes to filter providers. Active providers will be used for filtering and categorization.</div>
+                            <div class="fieldDescription">Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Active networks will be used for filtering and categorization.</div>
                         </div>
 
                         <div>

@@ -2,10 +2,23 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
-// Helper function to filter out active providers
-function getAvailableProviders(page, providers) {
-    const activeProviders = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-    return providers.filter(provider => !activeProviders.includes(provider.name || provider));
+// Helper function to filter out active networks
+function getAvailableNetworks(page, networks) {
+    const activeNetworks = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
+    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Active networks: [${activeNetworks.join(', ')}]`);
+    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Checking ${networks.length} networks`);
+    
+    const filtered = networks.filter(network => {
+        const networkName = network.name || network;
+        const isActive = activeNetworks.includes(networkName);
+        if (isActive) {
+            Dashboard.alert(`🔍 DEBUG: Filtering out active network: ${networkName}`);
+        }
+        return !isActive;
+    });
+    
+    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Filtered to ${filtered.length} available networks`);
+    return filtered;
 }
 
 // Helper function to update placeholders with backend defaults
@@ -63,7 +76,7 @@ function initializeMultiSelect(page, config) {
     
     // Load active providers from config
     const activeNetworks = config.ActiveNetworks || [];
-    const networkMapping = config.NetworkNameToId || {};
+    const networkMapping = config.NetworkMap || {};
     populateActiveProvidersWithIds(activeProvidersSelect, activeNetworks, networkMapping);
     
     // Don't load available providers on page load - only when Manual Sync is clicked
@@ -126,104 +139,49 @@ function updateClearButtonVisibility(clearButton, searchValue) {
     }
 }
 
-function loadAvailableProviders(page) {
-    const availableProvidersSelect = page.querySelector('#availableProviders');
-    const region = page.querySelector('#WatchProviderRegion').value || 'US';
+function loadAvailableNetworks(page, config) {
+    const region = page.querySelector('#WatchProviderRegion').value;
+    const networkMapping = config?.NetworkMap || {};
     
     return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
         type: 'GET',
         dataType: 'json'
     }).then(function(response) {
-        Dashboard.alert(`🔍 DEBUG: API Response received. Success: ${response?.success}, Providers count: ${response?.providers?.length || 0}`);
+        Dashboard.alert(`🔍 DEBUG: API Response received for networks. Success: ${response?.success}, Networks count: ${response?.networks?.length || 0}`);
         
-        if (response && response.success && response.providers) {
-            const regionProviders = response.providers
-                .filter(provider => provider && provider.name)
+        if (response && response.success && response.networks) {
+            const availableNetworks = response.networks
+                .filter(network => network && network.name)
                 .sort((a, b) => a.name.localeCompare(b.name));
             
-            // Get default networks from backend
-            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-            
-            // Create a map of region providers by name for quick lookup
-            const regionProviderMap = new Map();
-            regionProviders.forEach(provider => {
-                regionProviderMap.set(provider.name, provider);
+            // Create a map of available networks by name for quick lookup
+            const availableNetworkMap = new Map();
+            availableNetworks.forEach(network => {
+                availableNetworkMap.set(network.name, network);
             });
             
             // Add default networks that are not found in the region
-            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
-                !regionProviderMap.has(networkName)
-            );
+            const missingNetworks = Object.entries(networkMapping)
+                .filter(([networkName]) => !availableNetworkMap.has(networkName))
+                .map(([name, id]) => ({ name, id }));
             
-            // Convert missing default networks to provider objects
-            const missingProviders = missingDefaultNetworks.map(networkName => ({
-                name: networkName,
-                id: null, // Will be populated when synced
-                logo_path: null
-            }));
-            
-            // Combine region providers with missing default networks
-            const allProviders = [...regionProviders, ...missingProviders]
+            // Combine available networks with missing default networks
+            const allNetworks = [...availableNetworks, ...missingNetworks]
                 .sort((a, b) => a.name.localeCompare(b.name));
             
-            window.allAvailableProviders = allProviders;
-            
-            // Filter out providers that are already active
-            const availableProviders = getAvailableProviders(page, allProviders);
-            
-            populateSelectWithProviders(availableProvidersSelect, availableProviders);
-            
-            // Show more detailed success message
-            const activeCount = page.querySelector('#activeProviders').options.length;
-            const availableCount = availableProviders.length;
-            Dashboard.alert(`✅ Refreshed providers for region ${region}. Found ${allProviders.length} total providers (${activeCount} active, ${availableCount} available).`);
-            
-            return Promise.resolve();
+            // Return the networks instead of just resolving
+            return Promise.resolve(allNetworks);
         } else {
-            // Fallback to default networks if API fails
-            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-            const fallbackProviders = defaultNetworks.map(networkName => ({
-                name: networkName,
-                id: null,
-                logo_path: null
-            }));
-            
-            window.allAvailableProviders = fallbackProviders;
-            
-            const availableProviders = getAvailableProviders(page, fallbackProviders);
-            populateSelectWithProviders(availableProvidersSelect, availableProviders);
-            
-            // Show more detailed success message
-            const activeCount = page.querySelector('#activeProviders').options.length;
-            const availableCount = availableProviders.length;
-            Dashboard.alert(`⚠️ API failed, showing ${fallbackProviders.length} default providers (${activeCount} active, ${availableCount} available).`);
-            
-            return Promise.resolve();
+            // Return default networks with actual IDs from NetworkMap
+            return Promise.resolve(Object.entries(networkMapping).map(([name, id]) => ({ name, id })));
         }
     }).catch(function(error) {
-        Dashboard.alert(`❌ DEBUG: API call failed. Error: ${error?.message || 'Unknown error'}`);
+        Dashboard.alert(`❌ DEBUG: API call failed for networks. Error: ${error?.message || 'Unknown error'}`);
         
         // Use default networks as fallback
-        const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-        const fallbackProviders = defaultNetworks.map(networkName => ({
-            name: networkName,
-            id: null,
-            logo_path: null
-        }));
-        
-        window.allAvailableProviders = fallbackProviders;
-        
-        const availableProviders = getAvailableProviders(page, fallbackProviders);
-        populateSelectWithProviders(availableProvidersSelect, availableProviders);
-        
-        // Show detailed error message
-        const activeCount = page.querySelector('#activeProviders').options.length;
-        const availableCount = availableProviders.length;
-        Dashboard.alert(`❌ API error, showing ${fallbackProviders.length} default providers (${activeCount} active, ${availableCount} available).`);
-        
-        // Re-throw the error so the calling function can handle it
-        throw error;
+        // Return default networks with actual IDs from NetworkMap
+        return Promise.resolve(Object.entries(networkMapping).map(([name, id]) => ({ name, id })));
     });
 }
 
@@ -243,6 +201,8 @@ function populateActiveProvidersWithIds(selectElement, networkNames, networkMapp
 }
 
 function populateSelectWithProviders(selectElement, providers) {
+    Dashboard.alert(`🔍 DEBUG: populateSelectWithProviders called with ${providers.length} networks`);
+    
     selectElement.innerHTML = '';
     
     providers.forEach(provider => {
@@ -252,6 +212,8 @@ function populateSelectWithProviders(selectElement, providers) {
         option.dataset.providerId = provider.id || ''; // Store ID separately
         selectElement.appendChild(option);
     });
+    
+    Dashboard.alert(`🔍 DEBUG: Added ${selectElement.options.length} network options to select element`);
 }
 
 function populateSelectWithNetworkNames(selectElement, networkNames) {
@@ -377,7 +339,7 @@ function savePluginConfiguration(view) {
             config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
             config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
             config.ActiveNetworks = getActiveNetworks(view);
-            config.NetworkNameToId = getNetworkNameToIdMapping(view);
+            config.NetworkMap = getNetworkNameToIdMapping(view);
             config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
             config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
             config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
@@ -457,8 +419,8 @@ export default function (view) {
                 const watchProviderSelect = page.querySelector('#WatchProviderRegion');
                 watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
                 
-                // Store default networks globally for fallback use
-                window.jellyseerrDefaultNetworks = config.JellyseerrDefaultNetworks || [];
+                // Store configuration globally for other functions to use
+                window.jellyseerrConfig = config;
                 
                 // Update placeholders with backend defaults
                 updatePlaceholdersFromBackend(page, config);
@@ -610,12 +572,20 @@ export default function (view) {
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
-            loadAvailableProviders(view).then(function() {
+            loadAvailableNetworks(view, config).then(function(allNetworks) {
+                // Now refresh the available networks list with the loaded data
+                const availableProvidersSelect = view.querySelector('#availableProviders');
+                const availableNetworks = getAvailableNetworks(view, allNetworks);
+                
+                populateSelectWithProviders(availableProvidersSelect, availableNetworks);
+                
                 Dashboard.hideLoadingMsg();
-                Dashboard.alert('✅ Available providers refreshed successfully!');
+                const activeCount = view.querySelector('#activeProviders').options.length;
+                const availableCount = availableNetworks.length;
+                Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
             }).catch(function(error) {
                 Dashboard.hideLoadingMsg();
-                Dashboard.alert('❌ Failed to refresh available providers: ' + (error?.message || 'Unknown error'));
+                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
             });
         });
     }
@@ -663,58 +633,6 @@ function loadWatchProviderRegions(page) {
     }).catch(function (error) {
         // Re-throw the error so the calling function can handle it
         throw error;
-    });
-}
-
-// Step 2: Retrieve providers for a specific region
-function loadProvidersForRegion(page, region) {
-    return ApiClient.ajax({
-        url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${region}`),
-        type: 'GET',
-        dataType: 'json'
-    }).then(function(response) {
-        if (response && response.success && response.providers) {
-            const regionProviders = response.providers
-                .filter(provider => provider && provider.name)
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Get default networks from backend
-            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-            
-            // Create a map of region providers by name for quick lookup
-            const regionProviderMap = new Map();
-            regionProviders.forEach(provider => {
-                regionProviderMap.set(provider.name, provider);
-            });
-            
-            // Add default networks that are not found in the region
-            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
-                !regionProviderMap.has(networkName)
-            );
-            
-            // Convert missing default networks to provider objects
-            const missingProviders = missingDefaultNetworks.map(networkName => ({
-                name: networkName,
-                id: null, // Will be populated when synced
-                logo_path: null
-            }));
-            
-            // Combine region providers with missing default networks
-            const allProviders = [...regionProviders, ...missingProviders]
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            window.allAvailableProviders = allProviders;
-            
-            // Filter out providers that are already active
-            const availableProviders = getAvailableProviders(page, allProviders);
-            
-            const availableProvidersSelect = page.querySelector('#availableProviders');
-            populateSelectWithProviders(availableProvidersSelect, availableProviders);
-            
-            return allProviders;
-        } else {
-            throw new Error('Failed to load watch providers');
-        }
     });
 }
 
@@ -801,82 +719,5 @@ function performManualSync(page) {
     });
 }
 
-// Function to refresh providers for a specific region
-function refreshProvidersForRegion(page, region) {
-    const refreshButton = page.querySelector('#refreshProviders');
-    const originalText = refreshButton.textContent;
-    
-    // Show loading state
-    refreshButton.disabled = true;
-    refreshButton.textContent = '...';
-    
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
-        type: 'GET',
-        dataType: 'json'
-    }).then(function(response) {
-        if (response && response.success && response.providers) {
-            const regionProviders = response.providers
-                .filter(provider => provider && provider.name)
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Get default networks from backend
-            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-            
-            // Create a map of region providers by name for quick lookup
-            const regionProviderMap = new Map();
-            regionProviders.forEach(provider => {
-                regionProviderMap.set(provider.name, provider);
-            });
-            
-            // Add default networks that are not found in the region
-            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
-                !regionProviderMap.has(networkName)
-            );
-            
-            // Convert missing default networks to provider objects
-            const missingProviders = missingDefaultNetworks.map(networkName => ({
-                name: networkName,
-                id: null,
-                logo_path: null
-            }));
-            
-            // Combine region providers with missing default networks
-            const allProviders = [...regionProviders, ...missingProviders]
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            window.allAvailableProviders = allProviders;
-            
-            // Update the available providers select
-            const availableProvidersSelect = page.querySelector('#availableProviders');
-            const availableProviders = getAvailableProviders(page, allProviders);
-            populateSelectWithProviders(availableProvidersSelect, availableProviders);
-            
-            Dashboard.alert(`✅ Refreshed providers for region ${region}. Found ${allProviders.length} providers.`);
-        } else {
-            // Fallback to default networks if API fails
-            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
-            const fallbackProviders = defaultNetworks.map(networkName => ({
-                name: networkName,
-                id: null,
-                logo_path: null
-            }));
-            
-            window.allAvailableProviders = fallbackProviders;
-            
-            const availableProvidersSelect = page.querySelector('#availableProviders');
-            const availableProviders = getAvailableProviders(page, fallbackProviders);
-            populateSelectWithProviders(availableProvidersSelect, availableProviders);
-            
-            Dashboard.alert(`⚠️ API failed, showing ${fallbackProviders.length} default providers for region ${region}.`);
-        }
-    }).catch(function(error) {
-        Dashboard.alert('❌ Failed to refresh providers: ' + (error?.message || 'Unknown error'));
-    }).finally(function() {
-        // Restore button state
-        refreshButton.disabled = false;
-        refreshButton.textContent = originalText;
-    });
-}
 
 
