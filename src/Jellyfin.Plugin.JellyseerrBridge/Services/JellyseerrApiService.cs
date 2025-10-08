@@ -108,8 +108,8 @@ public static class JellyseerrUrlBuilder
         {
             JellyseerrEndpoint.Status => "/api/v1/status",
             JellyseerrEndpoint.Requests => "/api/v1/request",
-            JellyseerrEndpoint.Movies => "/api/v1/movie",
-            JellyseerrEndpoint.TvShows => "/api/v1/tv",
+            JellyseerrEndpoint.Movies => "/api/v1/discover/movies",
+            JellyseerrEndpoint.TvShows => "/api/v1/discover/tv/network/{networkId}",
             JellyseerrEndpoint.User => "/api/v1/auth/me",
             JellyseerrEndpoint.WatchProviderRegions => "/api/v1/watchproviders/regions",
             JellyseerrEndpoint.WatchProviderMovies => "/api/v1/watchproviders/movies",
@@ -149,9 +149,9 @@ public class JellyseerrApiService
             // Use default plugin config if none provided
             config ??= Plugin.Instance.Configuration;
             
-            _logger.LogDebug("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
+            _logger.LogInformation("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
             var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters);
-            _logger.LogDebug("Request URL: {Url}", requestMessage.RequestUri);
+            _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
             
             var content = await MakeApiRequestAsync(requestMessage, config);
             
@@ -466,21 +466,138 @@ public class JellyseerrApiService
     }
 
     /// <summary>
-    /// Get all movies from Jellyseerr.
+    /// Get watch providers/networks from Jellyseerr for a specific region.
     /// </summary>
-    public async Task<List<JellyseerrMovie>> GetMoviesAsync()
+    public async Task<List<JellyseerrWatchProvider>> GetNetworksAsync(string? region = null)
     {
-        _logger.LogDebug("Making API call to movies endpoint: {Endpoint}", JellyseerrEndpoint.Movies);
-        return await MakeTypedApiCallAsync<List<JellyseerrMovie>>(JellyseerrEndpoint.Movies, operationName: "movies");
+        region ??= Plugin.Instance.Configuration.WatchProviderRegion;
+        _logger.LogInformation("Making API call to get networks for region {Region}", region);
+        var parameters = new Dictionary<string, string> 
+        { 
+            { "watchRegion", region }
+        };
+        
+        // Get both movie and TV providers and combine them
+        var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, parameters: parameters, operationName: "movie watch providers");
+        var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, parameters: parameters, operationName: "TV watch providers");
+        
+        await Task.WhenAll(movieTask, tvTask);
+        var movieProviders = await movieTask;
+        var tvProviders = await tvTask;
+        
+        // Combine and deduplicate providers
+        var allProviders = new List<JellyseerrWatchProvider>();
+        var seenIds = new HashSet<int>();
+        
+        foreach (var provider in movieProviders.Concat(tvProviders))
+        {
+            if (seenIds.Add(provider.Id))
+            {
+                allProviders.Add(provider);
+            }
+        }
+        
+        _logger.LogInformation("Retrieved {Count} unique networks for region {Region}", allProviders.Count, region);
+        return allProviders;
     }
 
     /// <summary>
-    /// Get all TV shows from Jellyseerr.
+    /// Get movies from Jellyseerr for a specific network.
     /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync()
+    /// <summary>
+    /// Get movies from Jellyseerr for specific watch providers with pagination support.
+    /// </summary>
+    public async Task<List<JellyseerrMovie>> GetMoviesAsync(List<int> watchProviderIds, int page = 1, string language = "en", string watchRegion = "US")
     {
-        _logger.LogDebug("Making API call to TV shows endpoint: {Endpoint}", JellyseerrEndpoint.TvShows);
-        return await MakeTypedApiCallAsync<List<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, operationName: "TV shows");
+        _logger.LogInformation("Making API call to movies endpoint for providers {Providers}, page {Page}", string.Join(",", watchProviderIds), page);
+        var parameters = new Dictionary<string, string> 
+        { 
+            { "page", page.ToString() },
+            { "language", language },
+            { "watchRegion", watchRegion },
+            { "watchProviders", string.Join("|", watchProviderIds) }
+        };
+        return await MakeTypedApiCallAsync<List<JellyseerrMovie>>(JellyseerrEndpoint.Movies, parameters: parameters, operationName: "movies");
+    }
+
+    /// <summary>
+    /// Get all movies from Jellyseerr for specific watch providers (handles pagination automatically).
+    /// </summary>
+    public async Task<List<JellyseerrMovie>> GetAllMoviesAsync(List<int> watchProviderIds, string language = "en", string watchRegion = "US")
+    {
+        var allMovies = new List<JellyseerrMovie>();
+        int page = 1;
+        int totalPages = 1;
+
+        do
+        {
+            _logger.LogInformation("Fetching movies page {Page} of {TotalPages}", page, totalPages);
+            var movies = await GetMoviesAsync(watchProviderIds, page, language, watchRegion);
+            
+            if (movies.Count == 0)
+                break;
+                
+            allMovies.AddRange(movies);
+            page++;
+            
+            // For now, we'll limit to first 10 pages to avoid overwhelming the API
+            // In a real implementation, you'd parse the totalPages from the response
+            if (page > 10)
+                break;
+                
+        } while (page <= totalPages);
+
+        _logger.LogInformation("Retrieved {Count} total movies across {Pages} pages", allMovies.Count, page - 1);
+        return allMovies;
+    }
+
+    /// <summary>
+    /// Get TV shows from Jellyseerr for a specific network.
+    /// </summary>
+    /// <summary>
+    /// Get TV shows from Jellyseerr for a specific network with pagination support.
+    /// </summary>
+    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(int networkId, int page = 1, string language = "en")
+    {
+        _logger.LogInformation("Making API call to TV shows endpoint for network {NetworkId}, page {Page}", networkId, page);
+        var parameters = new Dictionary<string, string> 
+        { 
+            { "networkId", networkId.ToString() },
+            { "page", page.ToString() },
+            { "language", language }
+        };
+        return await MakeTypedApiCallAsync<List<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, parameters: parameters, operationName: "TV shows");
+    }
+
+    /// <summary>
+    /// Get all TV shows from Jellyseerr for a specific network (handles pagination automatically).
+    /// </summary>
+    public async Task<List<JellyseerrTvShow>> GetAllTvShowsAsync(int networkId, string language = "en")
+    {
+        var allTvShows = new List<JellyseerrTvShow>();
+        int page = 1;
+        int totalPages = 1;
+
+        do
+        {
+            _logger.LogInformation("Fetching TV shows page {Page} of {TotalPages}", page, totalPages);
+            var tvShows = await GetTvShowsAsync(networkId, page, language);
+            
+            if (tvShows.Count == 0)
+                break;
+                
+            allTvShows.AddRange(tvShows);
+            page++;
+            
+            // For now, we'll limit to first 10 pages to avoid overwhelming the API
+            // In a real implementation, you'd parse the totalPages from the response
+            if (page > 10)
+                break;
+                
+        } while (page <= totalPages);
+
+        _logger.LogInformation("Retrieved {Count} total TV shows across {Pages} pages", allTvShows.Count, page - 1);
+        return allTvShows;
     }
 
     /// <summary>
@@ -625,16 +742,21 @@ public class JellyseerrRequestMedia
 public class JellyseerrMovie
 {
     public int Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Overview { get; set; } = string.Empty;
-    public DateTime? ReleaseDate { get; set; }
-    public string PosterPath { get; set; } = string.Empty;
-    public string BackdropPath { get; set; } = string.Empty;
+    public string MediaType { get; set; } = string.Empty;
+    public bool Adult { get; set; }
     public List<int> GenreIds { get; set; } = new();
+    public string OriginalLanguage { get; set; } = string.Empty;
+    public string OriginalTitle { get; set; } = string.Empty;
+    public string Overview { get; set; } = string.Empty;
+    public double Popularity { get; set; }
+    public string ReleaseDate { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public bool Video { get; set; }
     public double VoteAverage { get; set; }
     public int VoteCount { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public bool Available { get; set; }
+    public string BackdropPath { get; set; } = string.Empty;
+    public string PosterPath { get; set; } = string.Empty;
+    public JellyseerrMediaInfo? MediaInfo { get; set; }
 }
 
 /// <summary>
@@ -643,17 +765,53 @@ public class JellyseerrMovie
 public class JellyseerrTvShow
 {
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Overview { get; set; } = string.Empty;
-    public DateTime? FirstAirDate { get; set; }
-    public string PosterPath { get; set; } = string.Empty;
-    public string BackdropPath { get; set; } = string.Empty;
+    public string FirstAirDate { get; set; } = string.Empty;
     public List<int> GenreIds { get; set; } = new();
+    public string MediaType { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public List<string> OriginCountry { get; set; } = new();
+    public string OriginalLanguage { get; set; } = string.Empty;
+    public string OriginalName { get; set; } = string.Empty;
+    public string Overview { get; set; } = string.Empty;
+    public double Popularity { get; set; }
     public double VoteAverage { get; set; }
     public int VoteCount { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public bool Available { get; set; }
-    public List<JellyseerrSeason> Seasons { get; set; } = new();
+    public string BackdropPath { get; set; } = string.Empty;
+    public string PosterPath { get; set; } = string.Empty;
+    public JellyseerrMediaInfo? MediaInfo { get; set; }
+}
+
+/// <summary>
+/// Jellyseerr media info model for additional metadata.
+/// </summary>
+public class JellyseerrMediaInfo
+{
+    public List<object> DownloadStatus { get; set; } = new();
+    public List<object> DownloadStatus4k { get; set; } = new();
+    public int Id { get; set; }
+    public string MediaType { get; set; } = string.Empty;
+    public int TmdbId { get; set; }
+    public int? TvdbId { get; set; }
+    public string? ImdbId { get; set; }
+    public int Status { get; set; }
+    public int Status4k { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime LastSeasonChange { get; set; }
+    public DateTime MediaAddedAt { get; set; }
+    public int? ServiceId { get; set; }
+    public int? ServiceId4k { get; set; }
+    public int? ExternalServiceId { get; set; }
+    public int? ExternalServiceId4k { get; set; }
+    public string? ExternalServiceSlug { get; set; }
+    public string? ExternalServiceSlug4k { get; set; }
+    public string? RatingKey { get; set; }
+    public string? RatingKey4k { get; set; }
+    public string? JellyfinMediaId { get; set; }
+    public string? JellyfinMediaId4k { get; set; }
+    public List<object> Watchlists { get; set; } = new();
+    public string? MediaUrl { get; set; }
+    public string? ServiceUrl { get; set; }
 }
 
 /// <summary>

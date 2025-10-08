@@ -87,6 +87,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public List<string> ActiveNetworks { get; set; } = new List<string>(JellyseerrDefaultNetworks);
 
     /// <summary>
+    /// Gets or sets the mapping of network names to their IDs (populated after API communication).
+    /// </summary>
+    public Dictionary<string, int> NetworkNameToId { get; set; } = new Dictionary<string, int>();
+
+    /// <summary>
     /// Gets or sets the default networks list as a newline-separated string (for backward compatibility).
     /// </summary>
     public string DefaultNetworks { get; set; } = string.Join("\n", JellyseerrDefaultNetworks);

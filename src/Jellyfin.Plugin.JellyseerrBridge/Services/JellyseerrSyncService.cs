@@ -51,18 +51,62 @@ public class JellyseerrSyncService
             }
 
             // Get data from Jellyseerr
-            var movies = await _apiService.GetMoviesAsync();
-            var tvShows = await _apiService.GetTvShowsAsync();
+            var pluginConfig = Plugin.Instance.Configuration;
+            
+            // Get networks to map network names to IDs (if not already cached)
+            if (!pluginConfig.NetworkNameToId.Any())
+            {
+                _logger.LogInformation("Network name-to-ID mapping not cached, fetching from API");
+                var networks = await _apiService.GetNetworksAsync(pluginConfig.WatchProviderRegion);
+                pluginConfig.NetworkNameToId = networks.ToDictionary(n => n.Name, n => n.Id);
+                _logger.LogInformation("Cached {Count} network mappings", pluginConfig.NetworkNameToId.Count);
+            }
+            else
+            {
+                _logger.LogInformation("Using cached network name-to-ID mapping ({Count} networks)", pluginConfig.NetworkNameToId.Count);
+            }
+            
+            // Get movies and TV shows for each active network
+            var allMovies = new List<JellyseerrMovie>();
+            var allTvShows = new List<JellyseerrTvShow>();
+            
+            // Get movies for all active watch providers at once
+            var activeProviderIds = pluginConfig.NetworkNameToId.Values.ToList();
+            if (activeProviderIds.Any())
+            {
+                _logger.LogInformation("Fetching movies for {Count} active providers: {ProviderIds}", 
+                    activeProviderIds.Count, string.Join(", ", activeProviderIds));
+                allMovies = await _apiService.GetAllMoviesAsync(activeProviderIds, "en", pluginConfig.WatchProviderRegion);
+            }
+            
+            // Get TV shows for each network individually (since TV endpoint uses networkId)
+            foreach (var networkName in pluginConfig.ActiveNetworks)
+            {
+                if (pluginConfig.NetworkNameToId.TryGetValue(networkName, out var networkId))
+                {
+                    _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
+                    
+                    var tvShows = await _apiService.GetAllTvShowsAsync(networkId);
+                    allTvShows.AddRange(tvShows);
+                    
+                    _logger.LogInformation("Retrieved {TvCount} TV shows for {NetworkName}", tvShows.Count, networkName);
+                }
+                else
+                {
+                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
+                }
+            }
+            
             var requests = await _apiService.GetRequestsAsync();
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows, {RequestCount} requests from Jellyseerr",
-                movies.Count, tvShows.Count, requests.Count);
+                allMovies.Count, allTvShows.Count, requests.Count);
 
             // Process movies
-            await ProcessMoviesAsync(movies);
+            await ProcessMoviesAsync(allMovies);
 
             // Process TV shows
-            await ProcessTvShowsAsync(tvShows);
+            await ProcessTvShowsAsync(allTvShows);
 
             // Process requests
             await ProcessRequestsAsync(requests);
