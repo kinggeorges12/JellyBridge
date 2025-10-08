@@ -9,11 +9,20 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.93.0.0 - Fixed Test Connection Confirmation Dialog - BUG FIX: Replaced non-existent Dashboard.confirm() with correct Emby/Jellyfin require(['confirm']) pattern, Fixed 'Cannot read properties of undefined (reading 'then')' error in Test Connection button, Updated confirmation dialog to use proper Promise-based API that resolves on 'Save' and rejects on 'Cancel', Set primary button to 'confirm' for better user experience, Enhanced error handling and user feedback throughout configuration page. TECHNICAL IMPROVEMENTS: Properly implemented Emby's confirmation dialog pattern using require(['confirm'], function(confirm) { ... }), Improved code consistency with Jellyfin's established patterns, Better Promise chain management in JavaScript event handlers.",
+        "checksum": "15F19951E7F98A3F31F1F8A9D14C308D",
+        "dependencies": [],
+        "version": "0.93.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.93.0.0/JellyseerrBridge-0.93.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-08T00:19:43.038Z"
+      },
+      {
         "changelog": "v0.92.0.0 - Enhanced Configuration UI and Default Networks - UI IMPROVEMENTS: Changed Save button text to 'Confirm' for better user clarity, Fixed Promise handling in Save and Test Connection buttons to prevent JavaScript errors, Improved button positioning and layout consistency, Enhanced confirmation dialog with proper HTML line breaks using <br> tags. NEW FEATURES: Added JellyseerrDefaultNetworks static property with 22 major streaming services and networks, Extracted network list from Seerr codebase for consistency, Provides default network reference for filtering and categorization. BUG FIXES: Resolved 'Cannot read properties of undefined (reading 'then')' error in Test Connection, Fixed Save button not actually saving configuration, Improved error handling and user feedback throughout configuration page. TECHNICAL IMPROVEMENTS: Better Promise chain management in JavaScript event handlers, Enhanced code maintainability with proper error handling, Improved user experience with clearer button labels and confirmations.",
         "version": "0.92.0.0",
         "dependencies": [],
         "targetAbi": "10.10.7.0",
-        "timestamp": "2025-10-07T23:49:39.880Z",
+        "timestamp": "2025-10-07T23:49:39.88Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.92.0.0/JellyseerrBridge-0.92.0.0-DLL.zip",
         "checksum": "77D07E23BF6D3059FEE9736224C3FC2F"
       },
