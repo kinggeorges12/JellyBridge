@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "7837CAB14B75F1D3A4B60CBA23889A61",
+        "changelog": "v0.99.0.0 - Fixed Multi-Select Duplication Issues and Simplified JSON Deserialization - DUPLICATION FIXES: Fixed Manual Sync button loading duplicate providers into available list, Added filtering to exclude active providers when loading from API, Enhanced getActiveNetworks() to return unique values only, Updated populateSelect() to ensure unique items in all lists, Improved user feedback showing loaded vs already active providers. JSON SIMPLIFICATION: Removed special case handling for different operation types, Set PropertyNameCaseInsensitive = true for all list deserialization, Simplified and cleaned up deserialization logic, More consistent behavior across all API responses. PERFORMANCE: Eliminated unnecessary API calls on page load, Faster configuration page loading, Better separation of concerns between UI and API data.",
+        "timestamp": "2025-10-08T14:58:56.802Z",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.99.0.0/JellyseerrBridge-0.99.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.99.0.0"
+      },
+      {
         "timestamp": "2025-10-08T05:28:34.971Z",
         "checksum": "67EABB49DE36F6E75B40118DA5EC6D4C",
         "changelog": "v0.97.0.0 - Enhanced API Service with Generic URL Builder and Improved UI Styling - API REFACTORING: Implemented comprehensive generic API call system with automatic response type handling, Created JellyseerrUrlBuilder with enum-based endpoint management, Added centralized JSON deserialization with error handling, Eliminated code duplication across all API methods (reduced ~150 lines), Implemented automatic empty response handling and retry logic. UI IMPROVEMENTS: Updated select elements to use both emby-input and emby-select classes, Moved all sizing control from HTML attributes to CSS styling, Enhanced scrollbar styling with larger, more visible scrollbars, Improved multi-select interface with consistent styling across all select elements, Centralized styling for better maintainability and consistency.",

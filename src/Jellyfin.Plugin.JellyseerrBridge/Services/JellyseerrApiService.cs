@@ -186,12 +186,9 @@ public class JellyseerrApiService
     {
         try
         {
-            // Special handling for watch provider regions which need case-sensitive deserialization
-            var caseInsensitive = operationName != "watch provider regions";
-            
             var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = caseInsensitive
+                PropertyNameCaseInsensitive = true
             });
             
             _logger.LogInformation("Retrieved {Count} {Operation} from Jellyseerr", items?.Count ?? 0, operationName);

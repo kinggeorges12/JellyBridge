@@ -20,8 +20,9 @@ function initializeMultiSelect(page, config) {
     const activeNetworks = config.ActiveNetworks || [];
     populateSelect(activeProvidersSelect, activeNetworks);
     
-    // Load available providers from Jellyseerr API
-    loadAvailableProviders(page);
+    // Load available providers from default networks (not from API on page load)
+    const defaultNetworks = config.DefaultNetworks ? config.DefaultNetworks.split('\n').filter(n => n.trim()) : [];
+    populateSelect(availableProvidersSelect, defaultNetworks);
     
     // Search functionality
     activeSearch.addEventListener('input', function() {
@@ -131,7 +132,9 @@ function loadAvailableProviders(page) {
 
 function populateSelect(selectElement, items) {
     selectElement.innerHTML = '';
-    items.forEach(item => {
+    // Ensure unique items only
+    const uniqueItems = [...new Set(items)];
+    uniqueItems.forEach(item => {
         const option = document.createElement('option');
         option.value = item;
         option.textContent = item;
@@ -200,7 +203,9 @@ function sortSelectOptions(selectElement) {
 
 function getActiveNetworks(page) {
     const activeProvidersSelect = page.querySelector('#activeProviders');
-    return Array.from(activeProvidersSelect.options).map(option => option.value);
+    const networks = Array.from(activeProvidersSelect.options).map(option => option.value);
+    // Return unique networks only (in case of any duplicates)
+    return [...new Set(networks)];
 }
 
 function savePluginConfiguration(view) {
@@ -412,17 +417,31 @@ export default function (view) {
             // Get selected region for watch providers
             const selectedRegion = view.querySelector('#WatchProviderRegion')?.value || 'US';
             
-            // Fetch watch providers for the selected region
+            // Fetch watch providers for the selected region and populate available providers
             return ApiClient.ajax({
                 url: ApiClient.getUrl(`JellyseerrBridge/WatchProviders?region=${selectedRegion}`),
                 type: 'GET',
                 dataType: 'json'
+            }).then(function(providersResponse) {
+                if (providersResponse && providersResponse.success && providersResponse.providers) {
+                    const providerNames = providersResponse.providers.map(provider => provider.name).sort();
+                    const availableProvidersSelect = view.querySelector('#availableProviders');
+                    
+                    // Filter out providers that are already active to prevent duplicates
+                    const activeProviders = Array.from(view.querySelector('#activeProviders').options).map(option => option.value);
+                    const uniqueAvailableProviders = providerNames.filter(name => !activeProviders.includes(name));
+                    
+                    populateSelect(availableProvidersSelect, uniqueAvailableProviders);
+                    Dashboard.alert(`✅ Loaded ${uniqueAvailableProviders.length} watch providers for region ${selectedRegion} (${providerNames.length - uniqueAvailableProviders.length} already active)`);
+                } else {
+                    Dashboard.alert('⚠️ No watch providers found for the selected region');
+                }
             });
         }).catch(function (error) {
             Dashboard.hideLoadingMsg();
             Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             return Promise.reject(error);
-        }).then(function (providersData) {
+        }).then(function () {
             // Now do the sync using saved plugin settings
             return ApiClient.ajax({
                 url: ApiClient.getUrl('JellyseerrBridge/Sync'),
@@ -433,28 +452,12 @@ export default function (view) {
             }).then(function (syncData) {
                 Dashboard.hideLoadingMsg();
                 
-                // Create debug info with both sync and providers data
-                let debugInfo = 'SYNC RESPONSE DEBUG:<br>' +
+                // Show sync result
+                let debugInfo = 'SYNC RESPONSE:<br>' +
                     'Response exists: ' + (syncData ? 'YES' : 'NO') + '<br>' +
                     'Response type: ' + typeof syncData + '<br>' +
                     'Response success: ' + (syncData?.success ? 'YES' : 'NO') + '<br>' +
-                    'Response message: ' + (syncData?.message || 'UNDEFINED') + '<br>';
-                
-                debugInfo += 'WATCH PROVIDERS DEBUG:<br>' +
-                    'Region: ' + (view.querySelector('#WatchProviderRegion')?.value || 'US') + '<br>' +
-                    'Providers response exists: ' + (providersData ? 'YES' : 'NO') + '<br>' +
-                    'Providers success: ' + (providersData?.success ? 'YES' : 'NO') + '<br>' +
-                    'Providers count: ' + (providersData?.providers ? providersData.providers.length : 'UNDEFINED') + '<br>';
-                
-                if (providersData?.success && providersData.providers) {
-                    debugInfo += 'PROVIDERS LIST:<br>';
-                    providersData.providers.slice(0, 10).forEach(provider => {
-                        debugInfo += `- ${provider.name} (ID: ${provider.id})<br>`;
-                    });
-                    if (providersData.providers.length > 10) {
-                        debugInfo += `... and ${providersData.providers.length - 10} more<br>`;
-                    }
-                }
+                    'Response message: ' + (syncData?.message || 'UNDEFINED');
                 
                 if (syncData && syncData.success) {
                     Dashboard.alert('✅ SYNC SUCCESS!<br>' + debugInfo);
