@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-08T18:16:25.269Z",
+        "dependencies": [],
+        "version": "0.116.0.0",
+        "targetAbi": "10.10.7.0",
+        "checksum": "5D12D0FD675B041D1CE5B7F55CF9AC2B",
+        "changelog": "v0.116.0.0 - Fixed publish script to use Push-Location for proper directory handling. Removed hardcoded DEFAULT_NETWORKS from JavaScript - now uses backend API. Fixed JsonElement handling in UpdatePluginConfiguration endpoint.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.116.0.0/JellyseerrBridge-0.116.0.0-DLL.zip"
+      },
+      {
         "changelog": "v0.115.0.0 - Removed hardcoded DEFAULT_NETWORKS from JavaScript. Default networks now come from backend API. Fixed JsonElement handling in UpdatePluginConfiguration endpoint.",
         "checksum": "CE8CDDA676144DCCF3598F7E5374FC76",
         "dependencies": [],
