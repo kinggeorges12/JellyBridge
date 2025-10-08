@@ -20,9 +20,8 @@ function initializeMultiSelect(page, config) {
     const activeNetworks = config.ActiveNetworks || [];
     populateSelect(activeProvidersSelect, activeNetworks);
     
-    // Load available providers from default networks (not from API on page load)
-    const defaultNetworks = config.DefaultNetworks ? config.DefaultNetworks.split('\n').filter(n => n.trim()) : [];
-    populateSelect(availableProvidersSelect, defaultNetworks);
+    // Don't load available providers on page load - only when Manual Sync is clicked
+    populateSelect(availableProvidersSelect, []);
     
     // Search functionality
     activeSearch.addEventListener('input', function() {
