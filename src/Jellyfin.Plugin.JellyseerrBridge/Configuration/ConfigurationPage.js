@@ -134,7 +134,13 @@ function populateSelect(selectElement, items) {
     selectElement.innerHTML = '';
     // Ensure unique items only
     const uniqueItems = [...new Set(items)];
-    uniqueItems.forEach(item => {
+    
+    // Sort items only for available providers, maintain order for active providers
+    const sortedItems = selectElement.id === 'availableProviders' 
+        ? uniqueItems.sort((a, b) => a.localeCompare(b))
+        : uniqueItems;
+    
+    sortedItems.forEach(item => {
         const option = document.createElement('option');
         option.value = item;
         option.textContent = item;
@@ -177,9 +183,10 @@ function moveProviders(fromSelect, toSelect) {
         option.remove();
     });
     
-    // Sort both selects
-    sortSelectOptions(fromSelect);
-    sortSelectOptions(toSelect);
+    // Only sort the destination (available providers), maintain order in active providers
+    if (toSelect.id === 'availableProviders') {
+        sortSelectOptions(toSelect);
+    }
     
     // Select the newly moved items in the destination
     movedValues.forEach(value => {
