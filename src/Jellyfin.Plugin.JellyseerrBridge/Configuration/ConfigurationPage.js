@@ -130,7 +130,7 @@ function loadAvailableProviders(page) {
     const availableProvidersSelect = page.querySelector('#availableProviders');
     const region = page.querySelector('#WatchProviderRegion').value || 'US';
     
-    ApiClient.ajax({
+    return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
         type: 'GET',
         dataType: 'json'
@@ -171,6 +171,7 @@ function loadAvailableProviders(page) {
             const availableProviders = getAvailableProviders(page, allProviders);
             
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            return Promise.resolve();
         } else {
             // Fallback to default networks if API fails
             const defaultNetworks = window.jellyseerrDefaultNetworks || [];
@@ -184,9 +185,9 @@ function loadAvailableProviders(page) {
             
             const availableProviders = getAvailableProviders(page, fallbackProviders);
             populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            return Promise.resolve();
         }
     }).catch(function(error) {
-        console.error('Failed to load available providers:', error);
         // Use default networks as fallback
         const defaultNetworks = window.jellyseerrDefaultNetworks || [];
         const fallbackProviders = defaultNetworks.map(networkName => ({
@@ -199,6 +200,9 @@ function loadAvailableProviders(page) {
         
         const availableProviders = getAvailableProviders(page, fallbackProviders);
         populateSelectWithProviders(availableProvidersSelect, availableProviders);
+        
+        // Re-throw the error so the calling function can handle it
+        throw error;
     });
 }
 
@@ -369,7 +373,6 @@ function savePluginConfiguration(view) {
         .then(response => response.json())
         .then(function (result) {
             if (result.success) {
-                console.log('Configuration saved successfully');
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
@@ -448,7 +451,6 @@ export default function (view) {
                 Dashboard.hideLoadingMsg();
             })
             .catch(function (error) {
-                console.error('Error loading configuration:', error);
                 Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
             });
@@ -566,6 +568,30 @@ export default function (view) {
     syncButton.addEventListener('click', function () {
         performManualSync(view);
     });
+
+    // Add refresh providers button functionality
+    const refreshButton = view.querySelector('#refreshProviders');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            const region = view.querySelector('#WatchProviderRegion').value || 'US';
+            refreshProvidersForRegion(view, region);
+        });
+    }
+
+    // Add refresh available providers button functionality
+    const refreshAvailableButton = view.querySelector('#refreshAvailableProviders');
+    if (refreshAvailableButton) {
+        refreshAvailableButton.addEventListener('click', function() {
+            Dashboard.showLoadingMsg();
+            loadAvailableProviders(view).then(function() {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('✅ Available providers refreshed successfully!');
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to refresh available providers: ' + (error?.message || 'Unknown error'));
+            });
+        });
+    }
 }
 
 function loadWatchProviderRegions(page) {
@@ -752,47 +778,6 @@ function performManualSync(page) {
     });
 }
 
-// Add refresh providers button functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const refreshButton = document.getElementById('refreshProviders');
-    if (refreshButton) {
-        refreshButton.addEventListener('click', function() {
-            const page = document.querySelector('.page');
-            if (page) {
-                const region = page.querySelector('#WatchProviderRegion').value || 'US';
-                refreshProvidersForRegion(page, region);
-            }
-        });
-    }
-    
-    // Create refresh available providers button dynamically
-    const arrowButtonsContainer = document.querySelector('.arrowButtonsContainer');
-    if (arrowButtonsContainer) {
-        const refreshAvailableButton = document.createElement('button');
-        refreshAvailableButton.type = 'button';
-        refreshAvailableButton.id = 'refreshAvailableProviders';
-        refreshAvailableButton.setAttribute('is', 'emby-button');
-        refreshAvailableButton.className = 'raised button emby-button';
-        refreshAvailableButton.title = 'Refresh available providers';
-        refreshAvailableButton.style.cssText = 'margin-bottom: 10px; width: 100%; font-size: 12px;';
-        
-        const span = document.createElement('span');
-        span.textContent = 'Refresh Available';
-        refreshAvailableButton.appendChild(span);
-        
-        // Insert at the beginning of the container
-        arrowButtonsContainer.insertBefore(refreshAvailableButton, arrowButtonsContainer.firstChild);
-        
-        // Add click event listener
-        refreshAvailableButton.addEventListener('click', function() {
-            const page = document.querySelector('.page');
-            if (page) {
-                loadAvailableProviders(page);
-            }
-        });
-    }
-});
-
 // Function to refresh providers for a specific region
 function refreshProvidersForRegion(page, region) {
     const refreshButton = page.querySelector('#refreshProviders');
@@ -870,4 +855,5 @@ function refreshProvidersForRegion(page, region) {
         refreshButton.querySelector('span').textContent = originalText;
     });
 }
+
 
