@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.121.0.0 - Fixed pagination architecture and moved FetchAllPagesAsync function",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.121.0.0/JellyseerrBridge-0.121.0.0-DLL.zip",
+        "version": "0.121.0.0",
+        "checksum": "ED05EDEA114688DDCB6C3961053DFE8F",
+        "dependencies": [],
+        "timestamp": "2025-10-08T21:07:20.356Z",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "dependencies": [],
         "changelog": "v0.120.0.0 - Fixed pagination architecture and moved FetchAllPagesAsync function",
         "timestamp": "2025-10-08T21:06:28.305Z",
