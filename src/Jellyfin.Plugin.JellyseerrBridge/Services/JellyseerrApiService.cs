@@ -195,42 +195,20 @@ public class JellyseerrApiService
         
         try
         {
-            // Check if T is an array type
-            if (typeof(T).IsArray)
+            // Always deserialize as List<T> regardless of JSON structure (array or list)
+            var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
             {
-                var elementType = typeof(T).GetElementType();
-                var arrayType = elementType!.MakeArrayType();
-                var deserializedArray = JsonSerializer.Deserialize(content, arrayType, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-                
-                _logger.LogInformation("Successfully deserialized array for {Operation}, length: {Length}", operationName, ((Array?)deserializedArray)?.Length ?? 0);
-                
-                if (deserializedArray is Array array && array.Length > 0)
-                {
-                    _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", elementType.Name, array.GetValue(0));
-                }
-                
-                return (T)deserializedArray!;
-            }
-            else
+                PropertyNameCaseInsensitive = true
+            });
+            
+            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", items?.Count ?? 0, operationName);
+            
+            if (items != null && items.Count > 0)
             {
-                // Handle List<T> case
-                var items = JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-                
-                _logger.LogInformation("Successfully deserialized {Count} {Operation} items", items?.Count ?? 0, operationName);
-                
-                if (items != null && items.Count > 0)
-                {
-                    _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, items[0]);
-                }
-                
-                return (T)(object)(items ?? new List<T>());
+                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", typeof(T).Name, items[0]);
             }
+            
+            return (T)(object)(items ?? new List<T>());
         }
         catch (JsonException jsonEx)
         {
@@ -301,13 +279,6 @@ public class JellyseerrApiService
         if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
         {
             return (T)Activator.CreateInstance(typeof(T))!;
-        }
-        
-        if (typeof(T).IsArray)
-        {
-            var elementType = typeof(T).GetElementType();
-            var emptyArray = Array.CreateInstance(elementType!, 0);
-            return (T)(object)emptyArray;
         }
         
         return default(T)!;
@@ -518,8 +489,8 @@ public class JellyseerrApiService
             
             // Fetch both movie and TV providers concurrently using the generic method
             _logger.LogDebug("Making concurrent API calls for movie and TV watch providers");
-            var movieTask = MakeTypedApiCallAsync<JellyseerrWatchProvider[]>(JellyseerrEndpoint.WatchProviderMovies, config, parameters, "movie watch providers");
-            var tvTask = MakeTypedApiCallAsync<JellyseerrWatchProvider[]>(JellyseerrEndpoint.WatchProviderTv, config, parameters, "TV watch providers");
+            var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, config, parameters, "movie watch providers");
+            var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, config, parameters, "TV watch providers");
             
             await Task.WhenAll(movieTask, tvTask);
             
@@ -527,7 +498,7 @@ public class JellyseerrApiService
             var tvProviders = await tvTask;
             
             _logger.LogInformation("Movie providers count: {MovieCount}, TV providers count: {TvCount}", 
-                movieProviders?.Length ?? 0, tvProviders?.Length ?? 0);
+                movieProviders?.Count ?? 0, tvProviders?.Count ?? 0);
             
             var allProviders = new List<JellyseerrWatchProvider>();
             var providerIds = new HashSet<int>(); // To avoid duplicates
