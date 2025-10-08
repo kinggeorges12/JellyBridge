@@ -269,10 +269,17 @@
                         </div>
 
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load regions from Jellyseerr">?</span></label>
-                            <select id="WatchProviderRegion" is="emby-input" class="emby-input emby-select">
-                                <option value="US">United States of America (United States)</option>
-                            </select>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load regions from Jellyseerr">?</span></label>
+                                    <select id="WatchProviderRegion" is="emby-input" class="emby-input emby-select">
+                                        <option value="US">United States of America (United States)</option>
+                                    </select>
+                                </div>
+                                <button type="button" id="refreshProviders" class="emby-button" style="margin-top: 20px; padding: 8px 12px;">
+                                    <span>Refresh Providers</span>
+                                </button>
+                            </div>
                             <div class="fieldDescription">Select your region for watch provider information. This determines which streaming services are shown for movies and TV shows.</div>
                         </div>
 

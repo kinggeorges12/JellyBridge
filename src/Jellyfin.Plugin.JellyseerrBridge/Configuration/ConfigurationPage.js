@@ -669,8 +669,10 @@ function loadProvidersForRegion(page, region) {
     });
 }
 
-// Step 3: Retrieve movies and TV shows from active providers
-function loadMoviesAndTvFromProviders(page) {
+// Shared sync function
+function performSync() {
+    Dashboard.showLoadingMsg();
+    
     return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/Sync'),
         type: 'POST',
@@ -678,38 +680,194 @@ function loadMoviesAndTvFromProviders(page) {
         contentType: 'application/json',
         dataType: 'json'
     }).then(function(syncData) {
+        Dashboard.hideLoadingMsg();
+        
         if (syncData && syncData.success) {
-            return syncData;
+            // Parse the sync results for better user feedback
+            const message = syncData.message || 'Sync completed successfully';
+            
+            // Build detailed information if available
+            let details = '';
+            if (syncData.details) {
+                details = `<br><br>Details:<br>${syncData.details.replace(/\n/g, '<br>')}`;
+            } else if (syncData.moviesProcessed !== undefined || syncData.tvShowsProcessed !== undefined) {
+                details = '<br><br>Summary:<br>';
+                if (syncData.moviesProcessed !== undefined) {
+                    details += `Movies: ${syncData.moviesProcessed} processed`;
+                    if (syncData.moviesCreated !== undefined && syncData.moviesUpdated !== undefined) {
+                        details += ` (${syncData.moviesCreated} created, ${syncData.moviesUpdated} updated)`;
+                    }
+                    details += '<br>';
+                }
+                if (syncData.tvShowsProcessed !== undefined) {
+                    details += `TV Shows: ${syncData.tvShowsProcessed} processed`;
+                    if (syncData.tvShowsCreated !== undefined && syncData.tvShowsUpdated !== undefined) {
+                        details += ` (${syncData.tvShowsCreated} created, ${syncData.tvShowsUpdated} updated)`;
+                    }
+                    details += '<br>';
+                }
+                if (syncData.requestsProcessed !== undefined) {
+                    details += `Requests: ${syncData.requestsProcessed} processed<br>`;
+                }
+            }
+            
+            Dashboard.alert('✅ Manual sync completed successfully!<br>' +
+                `${message}${details}`);
         } else {
             throw new Error(syncData?.message || 'Sync failed');
         }
-    });
-}
-
-// Complete manual sync workflow
-function performManualSync(page) {
-    Dashboard.showLoadingMsg();
-    
-    // Step 1: Save current configuration
-    return savePluginConfiguration(page).then(function(result) {
-        Dashboard.hideLoadingMsg();
-        Dashboard.processPluginConfigurationUpdateResult(result);
-        
-        // Step 2: Load regions
-        return loadWatchProviderRegions(page);
-    }).then(function(regions) {
-        // Step 3: Get selected region and load providers
-        const selectedRegion = page.querySelector('#WatchProviderRegion')?.value || 'US';
-        return loadProvidersForRegion(page, selectedRegion);
-    }).then(function(providers) {
-        // Step 4: Load movies and TV shows
-        return loadMoviesAndTvFromProviders(page);
-    }).then(function(syncData) {
-        Dashboard.hideLoadingMsg();
-        Dashboard.alert('✅ Manual sync completed successfully!<br>' +
-            `Loaded ${syncData?.message || 'data'} from Jellyseerr`);
     }).catch(function(error) {
         Dashboard.hideLoadingMsg();
         Dashboard.alert('❌ Manual sync failed: ' + (error?.message || 'Unknown error'));
     });
 }
+
+// Complete manual sync workflow
+function performManualSync(page) {
+    // Show confirmation dialog for saving settings before sync
+    Dashboard.confirm({
+        title: 'Manual Sync',
+        text: 'Save current settings before starting sync?',
+        confirmText: 'Save & Sync',
+        cancelText: 'Sync',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            // Save settings first, then sync
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                
+                // Save completed, sync will happen after this block
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            });
+        }
+        
+        // Always sync after the if statement
+        performSync();
+    });
+}
+
+// Add refresh providers button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshButton = document.getElementById('refreshProviders');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            const page = document.querySelector('.page');
+            if (page) {
+                const region = page.querySelector('#WatchProviderRegion').value || 'US';
+                refreshProvidersForRegion(page, region);
+            }
+        });
+    }
+    
+    // Create refresh available providers button dynamically
+    const arrowButtonsContainer = document.querySelector('.arrowButtonsContainer');
+    if (arrowButtonsContainer) {
+        const refreshAvailableButton = document.createElement('button');
+        refreshAvailableButton.type = 'button';
+        refreshAvailableButton.id = 'refreshAvailableProviders';
+        refreshAvailableButton.setAttribute('is', 'emby-button');
+        refreshAvailableButton.className = 'raised button emby-button';
+        refreshAvailableButton.title = 'Refresh available providers';
+        refreshAvailableButton.style.cssText = 'margin-bottom: 10px; width: 100%; font-size: 12px;';
+        
+        const span = document.createElement('span');
+        span.textContent = 'Refresh Available';
+        refreshAvailableButton.appendChild(span);
+        
+        // Insert at the beginning of the container
+        arrowButtonsContainer.insertBefore(refreshAvailableButton, arrowButtonsContainer.firstChild);
+        
+        // Add click event listener
+        refreshAvailableButton.addEventListener('click', function() {
+            const page = document.querySelector('.page');
+            if (page) {
+                loadAvailableProviders(page);
+            }
+        });
+    }
+});
+
+// Function to refresh providers for a specific region
+function refreshProvidersForRegion(page, region) {
+    const refreshButton = page.querySelector('#refreshProviders');
+    const originalText = refreshButton.querySelector('span').textContent;
+    
+    // Show loading state
+    refreshButton.disabled = true;
+    refreshButton.querySelector('span').textContent = 'Refreshing...';
+    
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(response) {
+        if (response && response.success && response.providers) {
+            const regionProviders = response.providers
+                .filter(provider => provider && provider.name)
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Get default networks from backend
+            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+            
+            // Create a map of region providers by name for quick lookup
+            const regionProviderMap = new Map();
+            regionProviders.forEach(provider => {
+                regionProviderMap.set(provider.name, provider);
+            });
+            
+            // Add default networks that are not found in the region
+            const missingDefaultNetworks = defaultNetworks.filter(networkName => 
+                !regionProviderMap.has(networkName)
+            );
+            
+            // Convert missing default networks to provider objects
+            const missingProviders = missingDefaultNetworks.map(networkName => ({
+                name: networkName,
+                id: null,
+                logo_path: null
+            }));
+            
+            // Combine region providers with missing default networks
+            const allProviders = [...regionProviders, ...missingProviders]
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            window.allAvailableProviders = allProviders;
+            
+            // Update the available providers select
+            const availableProvidersSelect = page.querySelector('#availableProviders');
+            const availableProviders = getAvailableProviders(page, allProviders);
+            populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            
+            Dashboard.alert(`✅ Refreshed providers for region ${region}. Found ${allProviders.length} providers.`);
+        } else {
+            // Fallback to default networks if API fails
+            const defaultNetworks = window.jellyseerrDefaultNetworks || [];
+            const fallbackProviders = defaultNetworks.map(networkName => ({
+                name: networkName,
+                id: null,
+                logo_path: null
+            }));
+            
+            window.allAvailableProviders = fallbackProviders;
+            
+            const availableProvidersSelect = page.querySelector('#availableProviders');
+            const availableProviders = getAvailableProviders(page, fallbackProviders);
+            populateSelectWithProviders(availableProvidersSelect, availableProviders);
+            
+            Dashboard.alert(`⚠️ API failed, showing ${fallbackProviders.length} default providers for region ${region}.`);
+        }
+    }).catch(function(error) {
+        Dashboard.alert('❌ Failed to refresh providers: ' + (error?.message || 'Unknown error'));
+    }).finally(function() {
+        // Restore button state
+        refreshButton.disabled = false;
+        refreshButton.querySelector('span').textContent = originalText;
+    });
+}
+

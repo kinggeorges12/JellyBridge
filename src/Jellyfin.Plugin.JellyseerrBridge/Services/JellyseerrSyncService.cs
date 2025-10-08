@@ -29,14 +29,17 @@ public class JellyseerrSyncService
     /// <summary>
     /// Perform a full sync of Jellyseerr data.
     /// </summary>
-    public async Task SyncAsync()
+    public async Task<SyncResult> SyncAsync()
     {
         var config = Plugin.Instance.Configuration;
+        var result = new SyncResult();
         
         if (!config.IsEnabled)
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
-            return;
+            result.Success = false;
+            result.Message = "Jellyseerr Bridge is disabled";
+            return result;
         }
 
         try
@@ -47,11 +50,17 @@ public class JellyseerrSyncService
             if (!await _apiService.TestConnectionAsync(config))
             {
                 _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync");
-                return;
+                result.Success = false;
+                result.Message = "Failed to connect to Jellyseerr API";
+                return result;
             }
 
             // Get data from Jellyseerr
             var pluginConfig = Plugin.Instance.Configuration;
+            
+            // Ensure we have active networks configured
+            pluginConfig.EnsureDefaultNetworks();
+            pluginConfig.EnsureDefaultNetworkMappings();
             
             // Get networks to map network names to IDs (if not already cached)
             if (!pluginConfig.NetworkNameToId.Any())
@@ -70,6 +79,9 @@ public class JellyseerrSyncService
             var allMovies = new List<JellyseerrMovie>();
             var allTvShows = new List<JellyseerrTvShow>();
             
+            _logger.LogInformation("Fetching movies and TV shows for {NetworkCount} active networks: {Networks}", 
+                pluginConfig.ActiveNetworks.Count, string.Join(", ", pluginConfig.ActiveNetworks));
+            
             // Get movies for all active networks
             allMovies = await _apiService.GetAllMoviesAsync();
             
@@ -82,31 +94,53 @@ public class JellyseerrSyncService
                 allMovies.Count, allTvShows.Count, requests.Count);
 
             // Process movies
-            await ProcessMoviesAsync(allMovies);
+            var movieResults = await ProcessMoviesAsync(allMovies);
+            result.MoviesProcessed = movieResults.Processed;
+            result.MoviesCreated = movieResults.Created;
+            result.MoviesUpdated = movieResults.Updated;
 
             // Process TV shows
-            await ProcessTvShowsAsync(allTvShows);
+            var tvResults = await ProcessTvShowsAsync(allTvShows);
+            result.TvShowsProcessed = tvResults.Processed;
+            result.TvShowsCreated = tvResults.Created;
+            result.TvShowsUpdated = tvResults.Updated;
 
             // Process requests
-            await ProcessRequestsAsync(requests);
+            var requestResults = await ProcessRequestsAsync(requests);
+            result.RequestsProcessed = requestResults.Processed;
+
+            result.Success = true;
+            result.Message = $"Sync completed successfully. Processed {result.MoviesProcessed} movies, {result.TvShowsProcessed} TV shows, {result.RequestsProcessed} requests";
+            result.Details = $"Movies: {result.MoviesCreated} created, {result.MoviesUpdated} updated\n" +
+                           $"TV Shows: {result.TvShowsCreated} created, {result.TvShowsUpdated} updated\n" +
+                           $"Requests: {result.RequestsProcessed} processed\n" +
+                           $"Active Networks: {string.Join(", ", pluginConfig.ActiveNetworks)}";
 
             _logger.LogInformation("Jellyseerr sync completed successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during Jellyseerr sync");
+            result.Success = false;
+            result.Message = $"Sync failed: {ex.Message}";
         }
+        
+        return result;
     }
 
     /// <summary>
     /// Process movies from Jellyseerr.
     /// </summary>
-    private async Task ProcessMoviesAsync(List<JellyseerrMovie> movies)
+    private async Task<ProcessResult> ProcessMoviesAsync(List<JellyseerrMovie> movies)
     {
+        var result = new ProcessResult();
+        
         foreach (var movie in movies)
         {
             try
             {
+                result.Processed++;
+                
                 // Check if movie already exists in Jellyfin
                 var existingMovie = _libraryManager.GetItemById($"jellyseerr-movie-{movie.Id}");
                 
@@ -114,11 +148,13 @@ public class JellyseerrSyncService
                 {
                     // Create placeholder movie
                     await CreatePlaceholderMovieAsync(movie);
+                    result.Created++;
                 }
                 else
                 {
                     // Update existing movie
                     await UpdatePlaceholderMovieAsync(existingMovie as Movie, movie);
+                    result.Updated++;
                 }
             }
             catch (Exception ex)
@@ -126,17 +162,23 @@ public class JellyseerrSyncService
                 _logger.LogError(ex, "Error processing movie {MovieTitle} (ID: {MovieId})", movie.Title, movie.Id);
             }
         }
+        
+        return result;
     }
 
     /// <summary>
     /// Process TV shows from Jellyseerr.
     /// </summary>
-    private async Task ProcessTvShowsAsync(List<JellyseerrTvShow> tvShows)
+    private async Task<ProcessResult> ProcessTvShowsAsync(List<JellyseerrTvShow> tvShows)
     {
+        var result = new ProcessResult();
+        
         foreach (var tvShow in tvShows)
         {
             try
             {
+                result.Processed++;
+                
                 // Check if TV show already exists in Jellyfin
                 var existingShow = _libraryManager.GetItemById($"jellyseerr-tv-{tvShow.Id}");
                 
@@ -144,11 +186,13 @@ public class JellyseerrSyncService
                 {
                     // Create placeholder TV show
                     await CreatePlaceholderTvShowAsync(tvShow);
+                    result.Created++;
                 }
                 else
                 {
                     // Update existing TV show
                     await UpdatePlaceholderTvShowAsync(existingShow as Series, tvShow);
+                    result.Updated++;
                 }
             }
             catch (Exception ex)
@@ -156,17 +200,23 @@ public class JellyseerrSyncService
                 _logger.LogError(ex, "Error processing TV show {ShowName} (ID: {ShowId})", tvShow.Name, tvShow.Id);
             }
         }
+        
+        return result;
     }
 
     /// <summary>
     /// Process requests from Jellyseerr.
     /// </summary>
-    private async Task ProcessRequestsAsync(List<JellyseerrRequest> requests)
+    private async Task<ProcessResult> ProcessRequestsAsync(List<JellyseerrRequest> requests)
     {
+        var result = new ProcessResult();
+        
         foreach (var request in requests)
         {
             try
             {
+                result.Processed++;
+                
                 _logger.LogDebug("Processing request {RequestId} for {MediaType} (ID: {MediaId})",
                     request.Id, request.Media?.MediaType ?? "Unknown", request.Media?.Id ?? 0);
 
@@ -178,6 +228,8 @@ public class JellyseerrSyncService
                 _logger.LogError(ex, "Error processing request {RequestId}", request.Id);
             }
         }
+        
+        return result;
     }
 
     /// <summary>
@@ -246,4 +298,31 @@ public class JellyseerrSyncService
         // Implementation depends on Jellyfin's internal APIs
         return Task.CompletedTask;
     }
+}
+
+/// <summary>
+/// Result of a sync operation.
+/// </summary>
+public class SyncResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public int MoviesProcessed { get; set; }
+    public int MoviesCreated { get; set; }
+    public int MoviesUpdated { get; set; }
+    public int TvShowsProcessed { get; set; }
+    public int TvShowsCreated { get; set; }
+    public int TvShowsUpdated { get; set; }
+    public int RequestsProcessed { get; set; }
+}
+
+/// <summary>
+/// Result of a processing operation.
+/// </summary>
+public class ProcessResult
+{
+    public int Processed { get; set; }
+    public int Created { get; set; }
+    public int Updated { get; set; }
 }

@@ -303,12 +303,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                await _syncService.SyncAsync();
+                var result = await _syncService.SyncAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
                 return Ok(new { 
-                    success = true, 
-                    message = "Sync completed successfully" 
+                    success = result.Success, 
+                    message = result.Message,
+                    details = result.Details,
+                    moviesProcessed = result.MoviesProcessed,
+                    moviesCreated = result.MoviesCreated,
+                    moviesUpdated = result.MoviesUpdated,
+                    tvShowsProcessed = result.TvShowsProcessed,
+                    tvShowsCreated = result.TvShowsCreated,
+                    tvShowsUpdated = result.TvShowsUpdated,
+                    requestsProcessed = result.RequestsProcessed
                 });
             }
             catch (Exception ex)
