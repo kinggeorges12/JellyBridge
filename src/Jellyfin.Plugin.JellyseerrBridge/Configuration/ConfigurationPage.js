@@ -8,7 +8,13 @@ export default function (view) {
         return;
     }
     
+    let isInitialized = false;
+    
     view.addEventListener('viewshow', function () {
+        if (isInitialized) {
+            return; // Prevent duplicate initialization
+        }
+        
         Dashboard.showLoadingMsg();
         const page = this;
         
@@ -28,6 +34,7 @@ export default function (view) {
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
                 
+                isInitialized = true;
                 Dashboard.hideLoadingMsg();
             })
             .catch(function (error) {
@@ -72,7 +79,7 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
     // Get currently active network names
     const activeNetworksSelect = page.querySelector('#activeNetworks');
     const activeNetworks = Array.from(activeNetworksSelect.options).map(option => option.value);
-    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Active networks count: ${activeNetworks.length}, Active networks: [${activeNetworks.join(', ')}]`);
+    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Active networks count: ${activeNetworks.length}, Active networks: [${activeNetworks.join(', ')}]`);
     
     // Create a Map to store unique networks (name -> id)
     const networkMap = new Map();
@@ -93,16 +100,16 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
         if (!activeNetworks.includes(name)) {
             networkMap.set(name, id);
         } else {
-            Dashboard.alert(`🔍 DEBUG: Excluding active network: ${name}`);
+            //Dashboard.alert(`🔍 DEBUG: Excluding active network: ${name}`);
         }
     });
     
-    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
+    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
     
     // Convert to array format
     const availableNetworks = Array.from(networkMap.entries()).map(([name, id]) => ({ name, id }));
     
-    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
+    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
     
     // Update the available networks select
     populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
@@ -455,6 +462,9 @@ function loadAvailableNetworks(page) {
                     newNetworkMap[network.name] = network.id;
                 }
             });
+            
+            // Debug: Show what the newNetworkMap contains
+            Dashboard.alert(`🔍 DEBUG: newNetworkMap contains ${Object.keys(newNetworkMap).length} networks: ${JSON.stringify(newNetworkMap, null, 2)}`);
             
             // Use updateAvailableNetworks to handle the rest
             return Promise.resolve(updateAvailableNetworks(page, newNetworkMap));
