@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.134.0.0 - Fixed HttpClient timeout issue by replacing HttpClient.Timeout modification with CancellationTokenSource. Fixed MaxDiscoverPages not auto-filling in configuration page by adding missing property to GetPluginConfiguration response. Improved retry delay logic with maximum cap of 60 seconds.",
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "timestamp": "2025-10-09T08:26:04.111Z",
+        "checksum": "4621DA5CD2CF558F59677C2D98E58FA9",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.134.0.0/JellyseerrBridge-0.134.0.0-DLL.zip",
+        "version": "0.134.0.0"
+      },
+      {
         "changelog": "v0.133.0.0 - Major refactoring: Separated API service into JellyseerrApiService and JellyseerrBridgeService for better architecture. Updated terminology from 'provider' to 'network' throughout codebase. Improved configuration management with centralized default values. Fixed HttpClient usage patterns. Removed unnecessary caching logic and obsolete methods.",
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-09T08:01:56.859Z",

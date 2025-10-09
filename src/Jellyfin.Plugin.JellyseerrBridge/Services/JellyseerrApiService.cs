@@ -405,52 +405,43 @@ public class JellyseerrApiService
                 }
                 
                 // Use the injected HttpClient with timeout for this request
-                var originalTimeout = _httpClient.Timeout;
-                _httpClient.Timeout = timeout;
+                using var cts = new CancellationTokenSource(timeout);
                 
-                try
+                var response = await _httpClient.SendAsync(request, cts.Token);
+                
+                if (enableDebugLogging)
                 {
-                    var response = await _httpClient.SendAsync(request);
-                    
-                    if (enableDebugLogging)
-                    {
-                        _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
-                            attempt, response.StatusCode, response.ReasonPhrase);
-                    }
-                    
-                    // Check if the response was successful
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        if (enableDebugLogging)
-                        {
-                            _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
-                        }
-                        return null!;
-                    }
-                    
-                    // Log successful response
-                    if (enableDebugLogging)
-                    {
-                        _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
-                    }
-                    
-                    // Read the response content
-                    var content = await response.Content.ReadAsStringAsync();
-                    
-                    if (enableDebugLogging)
-                    {
-                        _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
-                    }
-                    
-                    return content;
+                    _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
+                        attempt, response.StatusCode, response.ReasonPhrase);
                 }
-                finally
+                
+                // Check if the response was successful
+                if (!response.IsSuccessStatusCode)
                 {
-                    // Restore original timeout
-                    _httpClient.Timeout = originalTimeout;
+                    if (enableDebugLogging)
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
+                    }
+                    return null!;
                 }
+                
+                // Log successful response
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
+                }
+                
+                // Read the response content
+                var content = await response.Content.ReadAsStringAsync();
+                
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
+                }
+                
+                return content;
             }
-            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            catch (TaskCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
             {
                 lastException = ex;
                 if (enableDebugLogging)
@@ -499,7 +490,7 @@ public class JellyseerrApiService
             // Wait before retry (exponential backoff)
             if (attempt < retryAttempts)
             {
-                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)); // 1s, 2s, 4s, etc.
+                var delay = TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, attempt - 1))); // 1s, 2s, 4s, etc. up to 60 seconds
                 if (enableDebugLogging)
                 {
                     _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
