@@ -16,9 +16,9 @@ public enum JellyseerrEndpoint
     Movies,
     TvShows,
     User,
-    WatchProviderRegions,
-    WatchProviderMovies,
-    WatchProviderTv
+    WatchRegions,
+    WatchNetworkMovies,
+    WatchNetworkTv
 }
 
 /// <summary>
@@ -104,9 +104,9 @@ public static class JellyseerrUrlBuilder
             JellyseerrEndpoint.Movies => JellyseerrResponseType.PaginatedList,
             JellyseerrEndpoint.TvShows => JellyseerrResponseType.PaginatedList,
             JellyseerrEndpoint.User => JellyseerrResponseType.JsonObject,
-            JellyseerrEndpoint.WatchProviderRegions => JellyseerrResponseType.JsonList,
-            JellyseerrEndpoint.WatchProviderMovies => JellyseerrResponseType.JsonList,
-            JellyseerrEndpoint.WatchProviderTv => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.WatchRegions => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.WatchNetworkMovies => JellyseerrResponseType.JsonList,
+            JellyseerrEndpoint.WatchNetworkTv => JellyseerrResponseType.JsonList,
             _ => JellyseerrResponseType.RawContent
         };
     }
@@ -125,9 +125,9 @@ public static class JellyseerrUrlBuilder
             JellyseerrEndpoint.Movies => "/api/v1/discover/movies",
             JellyseerrEndpoint.TvShows => "/api/v1/discover/tv",
             JellyseerrEndpoint.User => "/api/v1/auth/me",
-            JellyseerrEndpoint.WatchProviderRegions => "/api/v1/watchproviders/regions",
-            JellyseerrEndpoint.WatchProviderMovies => "/api/v1/watchproviders/movies",
-            JellyseerrEndpoint.WatchProviderTv => "/api/v1/watchproviders/tv",
+            JellyseerrEndpoint.WatchRegions => "/api/v1/watchproviders/regions",
+            JellyseerrEndpoint.WatchNetworkMovies => "/api/v1/watchproviders/movies",
+            JellyseerrEndpoint.WatchNetworkTv => "/api/v1/watchproviders/tv",
             _ => throw new ArgumentException($"Unknown endpoint: {endpoint}")
         };
     }
@@ -157,7 +157,7 @@ public class JellyseerrApiService
     /// <param name="templateValues">Optional template values for URL path placeholders</param>
     /// <param name="operationName">Name for logging purposes</param>
     /// <returns>Deserialized response or default value</returns>
-    private async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null, string operationName = "data")
+    public async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null, string operationName = "data")
     {
         try
         {
@@ -404,49 +404,51 @@ public class JellyseerrApiService
                         attempt, retryAttempts, request.Method, request.RequestUri);
                 }
                 
-                // Create a new HttpClient with timeout for this request
-                using var timeoutClient = new HttpClient();
-                timeoutClient.Timeout = timeout;
+                // Use the injected HttpClient with timeout for this request
+                var originalTimeout = _httpClient.Timeout;
+                _httpClient.Timeout = timeout;
                 
-                // Copy headers from the original request
-                foreach (var header in request.Headers)
+                try
                 {
-                    timeoutClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                }
-                
-                var response = await timeoutClient.SendAsync(request);
-                
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
-                        attempt, response.StatusCode, response.ReasonPhrase);
-                }
-                
-                // Check if the response was successful
-                if (!response.IsSuccessStatusCode)
-                {
+                    var response = await _httpClient.SendAsync(request);
+                    
                     if (enableDebugLogging)
                     {
-                        _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
+                        _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
+                            attempt, response.StatusCode, response.ReasonPhrase);
                     }
-                    return null!;
+                    
+                    // Check if the response was successful
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        if (enableDebugLogging)
+                        {
+                            _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
+                        }
+                        return null!;
+                    }
+                    
+                    // Log successful response
+                    if (enableDebugLogging)
+                    {
+                        _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
+                    }
+                    
+                    // Read the response content
+                    var content = await response.Content.ReadAsStringAsync();
+                    
+                    if (enableDebugLogging)
+                    {
+                        _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
+                    }
+                    
+                    return content;
                 }
-                
-                // Log successful response
-                if (enableDebugLogging)
+                finally
                 {
-                    _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
+                    // Restore original timeout
+                    _httpClient.Timeout = originalTimeout;
                 }
-                
-                // Read the response content
-                var content = await response.Content.ReadAsStringAsync();
-                
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
-                }
-                
-                return content;
             }
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
             {
@@ -543,9 +545,9 @@ public class JellyseerrApiService
     }
 
     /// <summary>
-    /// Get watch providers/networks from Jellyseerr for a specific region.
+    /// Get watch networks from Jellyseerr for a specific region.
     /// </summary>
-    public async Task<List<JellyseerrWatchProvider>> GetNetworksAsync(string? region = null)
+    public async Task<List<JellyseerrWatchNetwork>> GetNetworksAsync(string? region = null)
     {
         region ??= Plugin.Instance.Configuration.Region;
         _logger.LogInformation("Making API call to get networks for region {Region}", region);
@@ -554,43 +556,30 @@ public class JellyseerrApiService
             { "watchRegion", region }
         };
         
-        // Get both movie and TV providers and combine them
-        var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, parameters: parameters, operationName: "movie watch providers");
-        var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, parameters: parameters, operationName: "TV watch providers");
+        // Get both movie and TV networks and combine them
+        var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchNetwork>>(JellyseerrEndpoint.WatchNetworkMovies, parameters: parameters, operationName: "movie watch networks");
+        var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchNetwork>>(JellyseerrEndpoint.WatchNetworkTv, parameters: parameters, operationName: "TV watch networks");
         
         await Task.WhenAll(movieTask, tvTask);
-        var movieProviders = await movieTask;
-        var tvProviders = await tvTask;
+        var movieNetworks = await movieTask;
+        var tvNetworks = await tvTask;
         
-        // Combine and deduplicate providers
-        var allProviders = new List<JellyseerrWatchProvider>();
+        // Combine and deduplicate networks
+        var allNetworks = new List<JellyseerrWatchNetwork>();
         var seenIds = new HashSet<int>();
         
-        foreach (var provider in movieProviders.Concat(tvProviders))
+        foreach (var network in movieNetworks.Concat(tvNetworks))
         {
-            if (seenIds.Add(provider.Id))
+            if (seenIds.Add(network.Id))
             {
-                allProviders.Add(provider);
+                allNetworks.Add(network);
             }
         }
         
-        _logger.LogInformation("Retrieved {Count} unique networks for region {Region}", allProviders.Count, region);
-        return allProviders;
+        _logger.LogInformation("Retrieved {Count} unique networks for region {Region}", allNetworks.Count, region);
+        return allNetworks;
     }
 
-    /// <summary>
-    /// Get movies from Jellyseerr for specific watch providers (single page only).
-    /// </summary>
-    public async Task<List<JellyseerrMovie>> GetMoviesAsync(List<int> watchProviderIds)
-    {
-        _logger.LogInformation("Making API call to movies endpoint for providers {Providers}", string.Join(",", watchProviderIds));
-        var parameters = new Dictionary<string, string> 
-        { 
-            { "watchProviders", string.Join("|", watchProviderIds) }
-        };
-        var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrMovie>>(JellyseerrEndpoint.Movies, parameters: parameters, operationName: "movies");
-        return paginatedResponse?.Results ?? new List<JellyseerrMovie>();
-    }
 
 
     /// <summary>
@@ -635,21 +624,6 @@ public class JellyseerrApiService
     }
 
 
-    /// <summary>
-    /// Get TV shows from Jellyseerr for specific watch providers (single page only).
-    /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetTvShowsAsync(List<int> watchProviderIds)
-    {
-        _logger.LogInformation("Making API call to TV shows endpoint for providers {Providers}", string.Join(",", watchProviderIds));
-        
-        var parameters = new Dictionary<string, string>
-        {
-            { "watchProviders", string.Join("|", watchProviderIds) }
-        };
-        
-        var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrTvShow>>(JellyseerrEndpoint.TvShows, parameters: parameters, operationName: "TV shows");
-        return paginatedResponse?.Results ?? new List<JellyseerrTvShow>();
-    }
 
 
     /// <summary>
@@ -702,84 +676,16 @@ public class JellyseerrApiService
     }
 
     /// <summary>
-    /// Get watch provider regions from Jellyseerr.
+    /// Get watch network regions from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrWatchProviderRegion>> GetWatchProviderRegionsAsync()
+    public async Task<List<JellyseerrWatchRegion>> GetWatchRegionsAsync()
     {
-        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchProviderRegion>>(JellyseerrEndpoint.WatchProviderRegions, operationName: "watch provider regions");
+        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchRegion>>(JellyseerrEndpoint.WatchRegions, operationName: "watch regions");
         
-        // Log first region to see what we got
-        if (regions != null && regions.Count > 0)
-        {
-            var firstRegion = regions[0];
-            _logger.LogDebug("[JellyseerrBridge] First region: Iso31661='{Iso31661}', EnglishName='{EnglishName}', NativeName='{NativeName}'", 
-                firstRegion.Iso31661, firstRegion.EnglishName, firstRegion.NativeName);
-        }
-        
-        return regions ?? new List<JellyseerrWatchProviderRegion>();
+        return regions ?? new List<JellyseerrWatchRegion>();
     }
 
-    public async Task<List<JellyseerrWatchProvider>> GetWatchProvidersAsync(string region = "US")
-    {
-        try
-        {
-            _logger.LogInformation("Starting watch providers fetch for region: {Region}", region);
-            var parameters = new Dictionary<string, string> { { "watchRegion", region } };
-            
-            // Fetch both movie and TV providers concurrently using the generic method
-            _logger.LogDebug("Making concurrent API calls for movie and TV watch providers");
-            var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderMovies, parameters: parameters, operationName: "movie watch providers");
-            var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchProvider>>(JellyseerrEndpoint.WatchProviderTv, parameters: parameters, operationName: "TV watch providers");
-            
-            await Task.WhenAll(movieTask, tvTask);
-            
-            var movieProviders = await movieTask;
-            var tvProviders = await tvTask;
-            
-            _logger.LogInformation("Movie providers count: {MovieCount}, TV providers count: {TvCount}", 
-                movieProviders?.Count ?? 0, tvProviders?.Count ?? 0);
-            
-            var allProviders = new List<JellyseerrWatchProvider>();
-            var providerIds = new HashSet<int>(); // To avoid duplicates
-            
-            // Process movie providers
-            if (movieProviders != null)
-            {
-                foreach (var provider in movieProviders)
-                {
-                    if (providerIds.Add(provider.Id)) // Only add if not already present
-                    {
-                        allProviders.Add(provider);
-                    }
-                }
-            }
-            
-            // Process TV providers
-            if (tvProviders != null)
-            {
-                foreach (var provider in tvProviders)
-                {
-                    if (providerIds.Add(provider.Id)) // Only add if not already present
-                    {
-                        allProviders.Add(provider);
-                    }
-                }
-            }
-            
-            // Log combined results
-            var preview = allProviders.Count > 0 ? $"Found {allProviders.Count} unique providers" : "No providers found";
-            _logger.LogWarning("[JellyseerrBridge] Combined Watch Providers Result: {Preview}", preview);
-            
-            _logger.LogInformation("Retrieved {Count} combined watch providers for region {Region} from Jellyseerr", allProviders.Count, region);
-            
-            return allProviders;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get watch providers from Jellyseerr for region {Region}", region);
-            return new List<JellyseerrWatchProvider>();
-        }
-    }
+
 }
 
 /// <summary>
@@ -1016,9 +922,9 @@ public class JellyseerrUser
 }
 
 /// <summary>
-/// Jellyseerr watch provider region model.
+/// Jellyseerr watch network region model.
 /// </summary>
-public class JellyseerrWatchProviderRegion
+public class JellyseerrWatchRegion
 {
     [JsonPropertyName("iso_3166_1")]
     public string Iso31661 { get; set; } = string.Empty;
@@ -1031,16 +937,20 @@ public class JellyseerrWatchProviderRegion
 }
 
 /// <summary>
-/// Jellyseerr watch provider model.
+/// Jellyseerr watch network model.
 /// </summary>
-public class JellyseerrWatchProvider
+public class JellyseerrWatchNetwork
 {
+    [JsonPropertyName("id")]
     public int Id { get; set; }
     
+    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
     
+    [JsonPropertyName("logo_path")]
     public string LogoPath { get; set; } = string.Empty;
     
+    [JsonPropertyName("display_priority")]
     public int DisplayPriority { get; set; }
 }
 

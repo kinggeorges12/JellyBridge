@@ -25,124 +25,6 @@ public class NetworkEntry
 public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
-    /// Gets or sets the Jellyseerr base URL.
-    /// </summary>
-    [Required]
-    public string JellyseerrUrl { get; set; } = "http://localhost:5055";
-
-    /// <summary>
-    /// Gets or sets the Jellyseerr API key.
-    /// </summary>
-    [Required]
-    public string ApiKey { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the library directory.
-    /// </summary>
-    [Required]
-    public string LibraryDirectory { get; set; } = "/data/Jellyseerr";
-
-    /// <summary>
-    /// Gets or sets the user ID for requests.
-    /// </summary>
-    public int UserId { get; set; } = 1;
-
-    /// <summary>
-    /// Gets or sets whether the plugin is enabled.
-    /// </summary>
-    public bool IsEnabled { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets the sync interval in hours.
-    /// </summary>
-    public int SyncIntervalHours { get; set; } = 24;
-
-    /// <summary>
-    /// Gets or sets whether to create separate libraries for streaming services.
-    /// </summary>
-    public bool CreateSeparateLibraries { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets the prefix for streaming service libraries.
-    /// </summary>
-    public string LibraryPrefix { get; set; } = "Streaming - ";
-
-    /// <summary>
-    /// Gets or sets whether to exclude placeholder shows from main libraries.
-    /// </summary>
-    public bool ExcludeFromMainLibraries { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets whether to auto-sync on startup.
-    /// </summary>
-    public bool AutoSyncOnStartup { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
-    /// This applies to both movies and TV shows discovery.
-    /// </summary>
-    public int MaxDiscoverPages { get; set; } = 10;
-
-    /// <summary>
-    /// Gets or sets the request timeout in seconds.
-    /// </summary>
-    public int RequestTimeout { get; set; } = 30;
-
-    /// <summary>
-    /// Gets or sets the number of retry attempts.
-    /// </summary>
-    public int RetryAttempts { get; set; } = 3;
-
-    /// <summary>
-    /// Gets or sets whether to enable debug logging.
-    /// </summary>
-    public bool EnableDebugLogging { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets the watch provider region (ISO 3166-1 country code).
-    /// </summary>
-    public string Region { get; set; } = "US";
-
-
-    /// <summary>
-    /// Gets or sets the mapping of network names to their IDs (populated after API communication).
-    /// This is stored as a list of key-value pairs for XML serialization compatibility.
-    /// </summary>
-    public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>();
-
-
-
-
-    /// <summary>
-    /// Gets the network name to ID mapping as a dictionary for easier access.
-    /// </summary>
-    public Dictionary<string, int> GetNetworkMapDictionary()
-    {
-        return NetworkMap.ToDictionary(m => m.Name, m => m.Id);
-    }
-
-    /// <summary>
-    /// Sets the network name to ID mapping from a dictionary.
-    /// </summary>
-    /// <param name="mapping">The dictionary mapping network names to IDs.</param>
-    public void SetNetworkMapDictionary(Dictionary<string, int> mapping)
-    {
-        NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Key, Id = kvp.Value }).ToList();
-    }
-
-
-    /// <summary>
-    /// Ensures that NetworkMap is initialized with default network mappings if it's empty.
-    /// </summary>
-    public void EnsureDefaultNetworkMappings()
-    {
-        if (!NetworkMap.Any())
-        {
-            NetworkMap = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues["DefaultNetworkMap"]);
-        }
-    }
-
-    /// <summary>
     /// Dictionary containing default values for all configuration properties.
     /// </summary>
     public static readonly Dictionary<string, object> DefaultValues = new()
@@ -189,4 +71,109 @@ public class PluginConfiguration : BasePluginConfiguration
             }
         }
     };
+
+    /// <summary>
+    /// Gets or sets the Jellyseerr base URL.
+    /// </summary>
+    [Required]
+    public string JellyseerrUrl { get; set; } = (string)DefaultValues[nameof(JellyseerrUrl)];
+
+    /// <summary>
+    /// Gets or sets the Jellyseerr API key.
+    /// </summary>
+    [Required]
+    public string ApiKey { get; set; } = (string)DefaultValues[nameof(ApiKey)];
+
+    /// <summary>
+    /// Gets or sets the library directory.
+    /// </summary>
+    [Required]
+    public string LibraryDirectory { get; set; } = (string)DefaultValues[nameof(LibraryDirectory)];
+
+    /// <summary>
+    /// Gets or sets the user ID for requests.
+    /// </summary>
+    public int UserId { get; set; } = (int)DefaultValues[nameof(UserId)];
+
+    /// <summary>
+    /// Gets or sets whether the plugin is enabled.
+    /// </summary>
+    public bool IsEnabled { get; set; } = (bool)DefaultValues[nameof(IsEnabled)];
+
+    /// <summary>
+    /// Gets or sets the sync interval in hours.
+    /// </summary>
+    public int SyncIntervalHours { get; set; } = (int)DefaultValues[nameof(SyncIntervalHours)];
+
+    /// <summary>
+    /// Gets or sets whether to create separate libraries for streaming services.
+    /// </summary>
+    public bool CreateSeparateLibraries { get; set; } = (bool)DefaultValues[nameof(CreateSeparateLibraries)];
+
+    /// <summary>
+    /// Gets or sets the prefix for streaming service libraries.
+    /// </summary>
+    public string LibraryPrefix { get; set; } = (string)DefaultValues[nameof(LibraryPrefix)];
+
+    /// <summary>
+    /// Gets or sets whether to exclude placeholder shows from main libraries.
+    /// </summary>
+    public bool ExcludeFromMainLibraries { get; set; } = (bool)DefaultValues[nameof(ExcludeFromMainLibraries)];
+
+    /// <summary>
+    /// Gets or sets whether to auto-sync on startup.
+    /// </summary>
+    public bool AutoSyncOnStartup { get; set; } = (bool)DefaultValues[nameof(AutoSyncOnStartup)];
+
+    /// <summary>
+    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
+    /// This applies to both movies and TV shows discovery.
+    /// </summary>
+    public int MaxDiscoverPages { get; set; } = (int)DefaultValues[nameof(MaxDiscoverPages)];
+
+    /// <summary>
+    /// Gets or sets the request timeout in seconds.
+    /// </summary>
+    public int RequestTimeout { get; set; } = (int)DefaultValues[nameof(RequestTimeout)];
+
+    /// <summary>
+    /// Gets or sets the number of retry attempts.
+    /// </summary>
+    public int RetryAttempts { get; set; } = (int)DefaultValues[nameof(RetryAttempts)];
+
+    /// <summary>
+    /// Gets or sets whether to enable debug logging.
+    /// </summary>
+    public bool EnableDebugLogging { get; set; } = (bool)DefaultValues[nameof(EnableDebugLogging)];
+
+    /// <summary>
+    /// Gets or sets the watch network region (ISO 3166-1 country code).
+    /// </summary>
+    public string Region { get; set; } = (string)DefaultValues[nameof(Region)];
+
+    /// <summary>
+    /// Gets or sets the mapping of network names to their IDs (populated after API communication).
+    /// This is stored as a list of key-value pairs for XML serialization compatibility.
+    /// </summary>
+    public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues["DefaultNetworkMap"]);
+
+
+
+
+    /// <summary>
+    /// Gets the network name to ID mapping as a dictionary for easier access.
+    /// </summary>
+    public Dictionary<string, int> GetNetworkMapDictionary()
+    {
+        return NetworkMap.ToDictionary(m => m.Name, m => m.Id);
+    }
+
+    /// <summary>
+    /// Sets the network name to ID mapping from a dictionary.
+    /// </summary>
+    /// <param name="mapping">The dictionary mapping network names to IDs.</param>
+    public void SetNetworkMapDictionary(Dictionary<string, int> mapping)
+    {
+        NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Key, Id = kvp.Value }).ToList();
+    }
 }
