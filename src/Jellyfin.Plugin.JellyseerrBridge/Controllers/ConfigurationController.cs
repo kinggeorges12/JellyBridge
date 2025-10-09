@@ -39,16 +39,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     JellyseerrUrl = config.JellyseerrUrl,
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
-                    UserId = config.UserId,
+                    UserId = config.UserId ?? (int)PluginConfiguration.DefaultValues[nameof(config.UserId)],
                     IsEnabled = config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)],
-                    SyncIntervalHours = config.SyncIntervalHours,
+                    SyncIntervalHours = config.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(config.SyncIntervalHours)],
                     CreateSeparateLibraries = config.CreateSeparateLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.CreateSeparateLibraries)],
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.ExcludeFromMainLibraries)],
                     AutoSyncOnStartup = config.AutoSyncOnStartup ?? (bool)PluginConfiguration.DefaultValues[nameof(config.AutoSyncOnStartup)],
-                    RequestTimeout = config.RequestTimeout,
-                    RetryAttempts = config.RetryAttempts,
-                    MaxDiscoverPages = config.MaxDiscoverPages,
+                    RequestTimeout = config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)],
+                    RetryAttempts = config.RetryAttempts ?? (int)PluginConfiguration.DefaultValues[nameof(config.RetryAttempts)],
+                    MaxDiscoverPages = config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)],
                     EnableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)],
                     Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
@@ -398,7 +398,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var stringValue = element.GetString()!;
                 setter((T)(object)stringValue);
             }
-            else if (typeof(T) == typeof(int))
+            else if (typeof(T) == typeof(int?))
             {
                 setter((T)(object)element.GetInt32());
             }
@@ -426,7 +426,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     return true;
 
                 // For integer types, check if the string can be parsed as an integer
-                if (typeof(T) == typeof(int) && !int.TryParse(stringValue, out _))
+                if (typeof(T) == typeof(int?) && !int.TryParse(stringValue, out _))
                     return true;
             }
 

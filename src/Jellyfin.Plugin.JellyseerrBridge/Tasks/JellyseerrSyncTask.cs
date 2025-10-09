@@ -61,7 +61,7 @@ public class JellyseerrSyncTask : IScheduledTask
             new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(config.SyncIntervalHours).Ticks
+                IntervalTicks = TimeSpan.FromHours(config.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(config.SyncIntervalHours)]).Ticks
             }
         };
     }
