@@ -463,6 +463,9 @@ function loadAvailableNetworks(page) {
                 }
             });
             
+            // Debug: Show the full response structure
+            Dashboard.alert(`🔍 DEBUG: Full API response: ${JSON.stringify(response, null, 2)}`);
+            
             // Debug: Show what the newNetworkMap contains
             Dashboard.alert(`🔍 DEBUG: newNetworkMap contains ${Object.keys(newNetworkMap).length} networks: ${JSON.stringify(newNetworkMap, null, 2)}`);
             

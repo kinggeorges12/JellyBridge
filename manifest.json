@@ -9,7 +9,16 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "timestamp": "2025-10-09T06:27:51.310Z",
+        "changelog": "v0.130.0.0 - Added debug logging to show full API response structure for troubleshooting network loading",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.130.0.0/JellyseerrBridge-0.130.0.0-DLL.zip",
+        "version": "0.130.0.0",
+        "checksum": "DB3C5B3528D2ECC915F23EAAB46B69B4",
+        "timestamp": "2025-10-09T06:35:21.493Z",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2025-10-09T06:27:51.31Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.129.0.0/JellyseerrBridge-0.129.0.0-DLL.zip",
         "checksum": "67C5E2A1E5B0A8E57AA050FE8608EA74",
         "version": "0.129.0.0",
