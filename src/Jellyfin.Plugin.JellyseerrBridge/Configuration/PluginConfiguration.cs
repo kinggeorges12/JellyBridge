@@ -4,7 +4,7 @@ using MediaBrowser.Model.Plugins;
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
 
 /// <summary>
-/// Represents a network name to ID mapping for XML serialization compatibility.
+/// Represents a network ID to name mapping for XML serialization compatibility.
 /// </summary>
 public class NetworkEntry
 {
@@ -152,7 +152,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public string Region { get; set; } = (string)DefaultValues[nameof(Region)];
 
     /// <summary>
-    /// Gets or sets the mapping of network names to their IDs (populated after API communication).
+    /// Gets or sets the mapping of network IDs to their names (populated after API communication).
     /// This is stored as a list of key-value pairs for XML serialization compatibility.
     /// </summary>
     public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues["DefaultNetworkMap"]);
@@ -161,19 +161,21 @@ public class PluginConfiguration : BasePluginConfiguration
 
 
     /// <summary>
-    /// Gets the network name to ID mapping as a dictionary for easier access.
+    /// Gets the network ID to name mapping as a dictionary for easier access.
     /// </summary>
-    public Dictionary<string, int> GetNetworkMapDictionary()
+    public Dictionary<int, string> GetNetworkMapDictionary()
     {
-        return NetworkMap.ToDictionary(m => m.Name, m => m.Id);
+        return NetworkMap
+            .GroupBy(m => m.Id)
+            .ToDictionary(g => g.Key, g => g.First().Name);
     }
 
     /// <summary>
-    /// Sets the network name to ID mapping from a dictionary.
+    /// Sets the network ID to name mapping from a dictionary.
     /// </summary>
-    /// <param name="mapping">The dictionary mapping network names to IDs.</param>
-    public void SetNetworkMapDictionary(Dictionary<string, int> mapping)
+    /// <param name="mapping">The dictionary mapping network IDs to names.</param>
+    public void SetNetworkMapDictionary(Dictionary<int, string> mapping)
     {
-        NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Key, Id = kvp.Value }).ToList();
+        NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Value, Id = kvp.Key }).ToList();
     }
 }

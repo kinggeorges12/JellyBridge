@@ -64,7 +64,7 @@ public class JellyseerrSyncService
             
             var networkDict = pluginConfig.GetNetworkMapDictionary();
             _logger.LogInformation("Fetching movies and TV shows for {NetworkCount} active networks: {Networks}", 
-                networkDict.Count, string.Join(", ", networkDict.Keys));
+                networkDict.Count, string.Join(", ", networkDict.Values));
             
             // Get movies for all active networks
             allMovies = await _apiService.GetAllMoviesAsync();
@@ -98,7 +98,7 @@ public class JellyseerrSyncService
             result.Details = $"Movies: {result.MoviesCreated} created, {result.MoviesUpdated} updated\n" +
                            $"TV Shows: {result.TvShowsCreated} created, {result.TvShowsUpdated} updated\n" +
                            $"Requests: {result.RequestsProcessed} processed\n" +
-                           $"Active Networks: {string.Join(", ", networkDict.Keys)}";
+                           $"Active Networks: {string.Join(", ", networkDict.Values)}";
 
             _logger.LogInformation("Jellyseerr sync completed successfully");
         }

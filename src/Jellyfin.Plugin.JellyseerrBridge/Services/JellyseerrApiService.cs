@@ -581,13 +581,13 @@ public class JellyseerrApiService
         var allMovies = new List<JellyseerrMovie>();
         var config = Plugin.Instance.Configuration;
         
-        // Get network name-to-ID mapping
+        // Get network ID-to-name mapping
         var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
-        foreach (var networkName in networkDict.Keys)
+        foreach (var networkId in networkDict.Keys)
         {
-            if (networkDict.TryGetValue(networkName, out var networkId))
+            if (networkDict.TryGetValue(networkId, out var networkName))
             {
                 _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                 
@@ -625,13 +625,13 @@ public class JellyseerrApiService
         var allTvShows = new List<JellyseerrTvShow>();
         var config = Plugin.Instance.Configuration;
         
-        // Get network name-to-ID mapping
+        // Get network ID-to-name mapping
         var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
-        foreach (var networkName in networkDict.Keys)
+        foreach (var networkId in networkDict.Keys)
         {
-            if (networkDict.TryGetValue(networkName, out var networkId))
+            if (networkDict.TryGetValue(networkId, out var networkName))
             {
                 _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                 
