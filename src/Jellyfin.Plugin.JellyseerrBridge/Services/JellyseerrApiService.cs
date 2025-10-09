@@ -740,6 +740,9 @@ public class JellyseerrPaginatedResponse<T>
     [JsonPropertyName("totalResults")]
     public int TotalResults { get; set; }
     
+    [JsonPropertyName("keywords")]
+    public List<object> Keywords { get; set; } = new();
+    
     [JsonPropertyName("results")]
     public List<T> Results { get; set; } = new();
 }
@@ -861,13 +864,13 @@ public class JellyseerrMediaInfo
     public List<object> DownloadStatus4k { get; set; } = new();
     
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public int? Id { get; set; }
     
     [JsonPropertyName("mediaType")]
     public string MediaType { get; set; } = string.Empty;
     
     [JsonPropertyName("tmdbId")]
-    public int TmdbId { get; set; }
+    public int? TmdbId { get; set; }
     
     [JsonPropertyName("tvdbId")]
     public int? TvdbId { get; set; }
@@ -876,10 +879,10 @@ public class JellyseerrMediaInfo
     public string? ImdbId { get; set; }
     
     [JsonPropertyName("status")]
-    public int Status { get; set; }
+    public int? Status { get; set; }
     
     [JsonPropertyName("status4k")]
-    public int Status4k { get; set; }
+    public int? Status4k { get; set; }
     
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }

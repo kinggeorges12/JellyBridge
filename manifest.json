@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "31F503FF63FF57EB19809EFC1FCFEFE9",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.148.0.0/JellyseerrBridge-0.148.0.0-DLL.zip",
+        "timestamp": "2025-10-09T22:52:25.450Z",
+        "dependencies": [],
+        "version": "0.148.0.0",
+        "changelog": "v0.148.0.0 - Fixed JSON deserialization error by adding missing keywords property to JellyseerrPaginatedResponse class, resolves deserialization failure when fetching TV shows from Jellyseerr API"
+      },
+      {
         "version": "0.147.0.0",
         "timestamp": "2025-10-09T22:47:06.766Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.147.0.0/JellyseerrBridge-0.147.0.0-DLL.zip",
