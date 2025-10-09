@@ -390,7 +390,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             if (!configData.TryGetProperty(propertyName, out var element))
                 return;
 
-            if (IsEmptyValue(element))
+            if (IsEmptyValue<T>(element))
                 return;
 
             if (typeof(T) == typeof(string))
@@ -400,10 +400,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             else if (typeof(T) == typeof(int))
             {
-                if (element.TryGetInt32(out int intValue))
-                {
-                    setter((T)(object)intValue);
-                }
+                setter((T)(object)element.GetInt32());
             }
             else if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
             {
@@ -420,6 +417,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             return element.ValueKind == JsonValueKind.Null ||
                    element.ValueKind == JsonValueKind.Undefined ||
                    (element.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(element.GetString()));
+        }
+
+        private static bool IsEmptyValue<T>(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Null ||
+                element.ValueKind == JsonValueKind.Undefined)
+                return true;
+
+            if (element.ValueKind == JsonValueKind.String)
+            {
+                var stringValue = element.GetString();
+                if (string.IsNullOrWhiteSpace(stringValue))
+                    return true;
+
+                // For integer types, check if the string can be parsed as an integer
+                if (typeof(T) == typeof(int) && !int.TryParse(stringValue, out _))
+                    return true;
+            }
+
+            return false;
         }
     }
 

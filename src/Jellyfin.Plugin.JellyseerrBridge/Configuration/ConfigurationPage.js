@@ -140,6 +140,9 @@ function initializeGeneralSettings(page) {
     
     // Sort the region options using our standard sorting function
     sortSelectOptions(regionSelect);
+                
+    // Set current value back to the original value
+    select.value = select.getAttribute('data-current-value');
     
     const testButton = page.querySelector('#testConnection');
     if (!testButton) {
@@ -637,6 +640,9 @@ function loadRegions(page) {
             if (select) {
                 // Clear existing options
                 select.innerHTML = '';
+
+                // Set the current value so it retains after refreshing
+                select.setAttribute('data-current-value', select.value);
                 
                 // Filter regions with valid English names
                 const validRegions = data.regions.filter(region => region.english_name && region.english_name.trim() !== '');
@@ -652,9 +658,8 @@ function loadRegions(page) {
                 // Sort the regions using our standard sorting function
                 sortSelectOptions(select);
                 
-                // Set current value back to the original value
-                const currentValue = select.getAttribute('data-current-value');
-                select.value = currentValue;
+                // Set value back to the saved current value
+                select.value = select.getAttribute('data-current-value');
             }
             return Promise.resolve();
         } else {
