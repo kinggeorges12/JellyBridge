@@ -51,7 +51,7 @@ public class JellyseerrSyncTask : IScheduledTask
     {
         var config = Plugin.Instance.Configuration;
         
-        if (!config.IsEnabled)
+        if (!(config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)]))
         {
             return Array.Empty<TaskTriggerInfo>();
         }

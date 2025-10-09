@@ -34,7 +34,7 @@ public class JellyseerrSyncService
         var config = Plugin.Instance.Configuration;
         var result = new SyncResult();
         
-        if (!config.IsEnabled)
+        if (!(config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)]))
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
             result.Success = false;

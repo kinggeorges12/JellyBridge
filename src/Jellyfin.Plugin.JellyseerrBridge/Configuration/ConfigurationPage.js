@@ -54,10 +54,6 @@ function updateLibraryPrefixState() {
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
     const libraryPrefixLabel = document.querySelector('label[for="LibraryPrefix"]');
     
-    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
-        return;
-    }
-    
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
     // Enable/disable the input
@@ -264,24 +260,6 @@ function initializeLibrarySettings(page) {
     page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries;
     page.querySelector('#LibraryPrefix').value = config.LibraryPrefix;
     
-    // Initialize library prefix state
-    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
-    const libraryPrefixLabel = page.querySelector('label[for="LibraryPrefix"]');
-    
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
-    
-    // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Add/remove disabled styling
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        libraryPrefixLabel.classList.remove('disabled');
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        libraryPrefixLabel.classList.add('disabled');
-    }
-    
     // Update library settings placeholders
     const libraryDirectoryField = page.querySelector('#LibraryDirectory');
     if (libraryDirectoryField && !libraryDirectoryField.value) {
@@ -292,6 +270,8 @@ function initializeLibrarySettings(page) {
     if (libraryPrefixField && !libraryPrefixField.value) {
         libraryPrefixField.placeholder = config.DefaultValues.LibraryPrefix;
     }
+    
+    updateLibraryPrefixState()
 }
 
 
@@ -586,6 +566,11 @@ function getActiveNetworkMap(page) {
     return mapping;
 }
 
+// Helper function to check if a value is different from default
+function nullIfDefault(value, defaultValue) {
+    return value !== defaultValue ? value : null;
+}
+
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
@@ -602,22 +587,23 @@ function savePluginConfiguration(view) {
         .then(response => response.json())
         .then(function (config) {
             // Update config with current form values
-            config.IsEnabled = form.querySelector('#IsEnabled').checked;
+            // Only include checkbox values if they differ from defaults
+            config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
             config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
             config.ApiKey = apiKey;
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
-            config.UserId = parseInt(form.querySelector('#UserId').value);
+            config.UserId = form.querySelector('#UserId').value;
             config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value);
-            config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
-            config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
+            config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+            config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
-            config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
+            config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
             config.Region = form.querySelector('#WatchRegion').value;
             config.NetworkMap = getActiveNetworkMap(view);
-            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value);
-            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value);
-            config.MaxDiscoverPages = parseInt(form.querySelector('#MaxDiscoverPages').value);
-            config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
+            config.RequestTimeout = form.querySelector('#RequestTimeout').value;
+            config.RetryAttempts = form.querySelector('#RetryAttempts').value;
+            config.MaxDiscoverPages = form.querySelector('#MaxDiscoverPages').value;
+            config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
             
             // Save the configuration using our custom endpoint
             return fetch('/JellyseerrBridge/UpdatePluginConfiguration', {
