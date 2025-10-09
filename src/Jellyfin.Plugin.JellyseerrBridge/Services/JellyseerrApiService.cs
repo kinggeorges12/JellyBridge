@@ -210,7 +210,7 @@ public class JellyseerrApiService
     {
         var allItems = new List<T>();
         var config = Plugin.Instance.Configuration;
-        var maxPages = config.MaxPagesPerNetwork > 0 ? config.MaxPagesPerNetwork : int.MaxValue;
+        var maxPages = config.MaxDiscoverPages > 0 ? config.MaxDiscoverPages : int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -522,7 +522,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrWatchProvider>> GetNetworksAsync(string? region = null)
     {
-        region ??= Plugin.Instance.Configuration.WatchProviderRegion;
+        region ??= Plugin.Instance.Configuration.Region;
         _logger.LogInformation("Making API call to get networks for region {Region}", region);
         var parameters = new Dictionary<string, string> 
         { 
@@ -580,7 +580,7 @@ public class JellyseerrApiService
         var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
-        foreach (var networkName in config.ActiveNetworks)
+        foreach (var networkName in networkDict.Keys)
         {
             if (networkDict.TryGetValue(networkName, out var networkId))
             {
@@ -639,7 +639,7 @@ public class JellyseerrApiService
         var networkDict = config.GetNetworkMapDictionary();
         
         // Loop through each active network
-        foreach (var networkName in config.ActiveNetworks)
+        foreach (var networkName in networkDict.Keys)
         {
             if (networkDict.TryGetValue(networkName, out var networkId))
             {

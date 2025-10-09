@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.128.0.0 - Refactored network management, removed unused endpoints, updated naming conventions from providers to networks",
+        "version": "0.128.0.0",
+        "timestamp": "2025-10-09T05:05:56.365Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.128.0.0/JellyseerrBridge-0.128.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "checksum": "E1EE3B632490789673AD3D5B7CC9A2EC",
+        "dependencies": []
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.127.0.0/JellyseerrBridge-0.127.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
         "changelog": "v0.127.0.0 - Fixed refresh networks button: moved event listener inside config loading scope where config variable is available, matching the working region button pattern. Resolves 'config is not defined' error.",

@@ -272,12 +272,12 @@
                         <div class="inputContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1;">
-                                    <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load regions from Jellyseerr">?</span></label>
+                                    <label class="inputLabel inputLabelUnfocused" for="WatchProviderRegion">Region <span class="helpIcon" title="Click 'Manual Sync' to load regions from Jellyseerr">?</span></label>
                                     <select id="WatchProviderRegion" is="emby-input" class="emby-input emby-select">
                                         <option value="US">United States of America (United States)</option>
                                     </select>
                                 </div>
-                                <button type="button" id="refreshProviders" is="emby-button" class="raised button emby-button" style="margin-top: 20px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
+                                <button type="button" id="refreshNetworks" is="emby-button" class="raised button emby-button" style="margin-top: 20px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
                                     ↻
                                 </button>
                             </div>
@@ -287,25 +287,25 @@
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Network Providers</label>
                             <div class="multiSelectContainer">
-                                <!-- Active Providers (Left) -->
+                                <!-- Active Networks (Left) -->
                                 <div class="selectBox">
                                     <div class="selectBoxHeader">
                                         <label class="inputLabel">Synced from Jellyseerr</label>
                                     </div>
                                     <div class="searchInputContainer">
-                                        <input type="text" id="activeSearch" placeholder="Search active networks..." is="emby-input" class="emby-input">
-                                        <button type="button" id="clearActiveSearch" class="clearSearchButton" title="Clear search">×</button>
+                                        <input type="text" id="activeNetworkSearch" placeholder="Search active networks..." is="emby-input" class="emby-input">
+                                        <button type="button" id="clearActiveNetworkSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
-                                    <select id="activeProviders" multiple is="emby-input" class="emby-input emby-select">
+                                    <select id="activeNetworks" multiple is="emby-input" class="emby-input emby-select">
                                         <!-- Active networks will be populated here -->
                                     </select>
                                 </div>
                                 
                                 <!-- Arrow Buttons (Center) -->
                                 <div class="arrowButtonsContainer">
-                                    <button type="button" id="refreshAvailableProviders" is="emby-button" class="raised button emby-button arrowButton" title="Refresh available networks">↻</button>
-                                    <button type="button" id="addSelected" is="emby-button" class="raised button emby-button arrowButton" title="Add selected networks">←</button>
-                                    <button type="button" id="removeSelected" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected networks">→</button>
+                                    <button type="button" id="refreshAvailableNetworks" is="emby-button" class="raised button emby-button arrowButton" title="Refresh available networks">↻</button>
+                                    <button type="button" id="addSelectedNetworks" is="emby-button" class="raised button emby-button arrowButton" title="Add selected networks">←</button>
+                                    <button type="button" id="removeSelectedNetworks" is="emby-button" class="raised button emby-button arrowButton" title="Remove selected networks">→</button>
                                 </div>
                                 
                                 <!-- Available Networks (Right) -->
@@ -314,10 +314,10 @@
                                         <label class="inputLabel">Available in Watch Provider Region <span class="helpIcon" title="Click 'Manual Sync' to load networks from Jellyseerr">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
-                                        <input type="text" id="availableSearch" placeholder="Search available networks..." is="emby-input" class="emby-input">
-                                        <button type="button" id="clearAvailableSearch" class="clearSearchButton" title="Clear search">×</button>
+                                        <input type="text" id="availableNetworkSearch" placeholder="Search available networks..." is="emby-input" class="emby-input">
+                                        <button type="button" id="clearAvailableNetworkSearch" class="clearSearchButton" title="Clear search">×</button>
                                     </div>
-                                    <select id="availableProviders" multiple is="emby-input" class="emby-input emby-select">
+                                    <select id="availableNetworks" multiple is="emby-input" class="emby-input emby-select">
                                         <!-- Available networks will be populated here -->
                                     </select>
                                 </div>
@@ -335,7 +335,7 @@
                     <br>
 
                     <details id="advancedSettings">
-                        <summary>Advanced Configuration</summary>
+                        <summary>Advanced</summary>
                         <br>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="RequestTimeout">Request Timeout (seconds)</label>
@@ -350,9 +350,9 @@
                         </div>
 
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="MaxPagesPerNetwork">Max Pages Per Network</label>
-                            <input id="MaxPagesPerNetwork" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="10" />
-                            <div class="fieldDescription">Maximum number of pages to fetch per network during sync. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
+                            <label class="inputLabel inputLabelUnfocused" for="MaxDiscoverPages">Max Discover Pages</label>
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="10" />
+                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
