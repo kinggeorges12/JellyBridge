@@ -2,133 +2,429 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
-// Helper function to filter out active networks
-function getAvailableNetworks(page, networks) {
-    const activeNetworks = Array.from(page.querySelector('#activeProviders').options).map(option => option.value);
-    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Active networks: [${activeNetworks.join(', ')}]`);
-    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Checking ${networks.length} networks`);
+export default function (view) {
+    if (!view) {
+        Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
+        return;
+    }
     
-    const filtered = networks.filter(network => {
-        const networkName = network.name || network;
-        const isActive = activeNetworks.includes(networkName);
-        if (isActive) {
-            Dashboard.alert(`🔍 DEBUG: Filtering out active network: ${networkName}`);
-        }
-        return !isActive;
+    view.addEventListener('viewshow', function () {
+        Dashboard.showLoadingMsg();
+        const page = this;
+        
+        // Use our custom endpoint to get the configuration
+        fetch('/JellyseerrBridge/GetPluginConfiguration')
+            .then(response => response.json())
+            .then(function (config) {
+                // Store configuration globally for other functions to use
+                window.configJellyseerrBridge = config;
+                
+                // Initialize general settings including test connection
+                initializeGeneralSettings(page);
+                
+                // Initialize sync settings including network interface and sync buttons
+                initializeSyncSettings(page);
+                
+                // Initialize advanced settings
+                initializeAdvancedSettings(page);
+                
+                Dashboard.hideLoadingMsg();
+            })
+            .catch(function (error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to load configuration: ' + error.message);
+            });
     });
     
-    Dashboard.alert(`🔍 DEBUG: getAvailableNetworks - Filtered to ${filtered.length} available networks`);
-    return filtered;
 }
 
-// Helper function to update placeholders with backend defaults
-function updatePlaceholdersFromBackend(page, config) {
-    // Update placeholders with backend default values
+// Updates the enabled/disabled state of the Library Prefix field based on the Create Separate Libraries checkbox
+function updateLibraryPrefixState() {
+    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
+    const libraryPrefixLabel = document.querySelector('label[for="LibraryPrefix"]');
+    
+    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
+        return;
+    }
+    
+    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    
+    // Enable/disable the input
+    libraryPrefixInput.disabled = !isEnabled;
+    
+    // Add/remove disabled styling
+    if (isEnabled) {
+        libraryPrefixInput.classList.remove('disabled');
+        libraryPrefixLabel.classList.remove('disabled');
+    } else {
+        libraryPrefixInput.classList.add('disabled');
+        libraryPrefixLabel.classList.add('disabled');
+    }
+}
+
+// Helper function to update available networks list
+function updateAvailableNetworks(page, newNetworkMap = null) {
+    const config = window.configJellyseerrBridge || {};
+    
+    const availableNetworksSelect = page.querySelector('#availableNetworks');
+    
+    // Get currently active network names
+    const activeNetworksSelect = page.querySelector('#activeNetworks');
+    const activeNetworks = Array.from(activeNetworksSelect.options).map(option => option.value);
+    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Active networks count: ${activeNetworks.length}, Active networks: [${activeNetworks.join(', ')}]`);
+    
+    // Create a Map to store unique networks (name -> id)
+    const networkMap = new Map();
+    
+    // Get default network map from global config
+    const defaultNetworkMap = config?.DefaultValues?.DefaultNetworkMap || [];
+    
+    // Convert default networks array to object for easier processing
+    const defaultNetworkObj = {};
+    defaultNetworkMap.forEach(network => {
+        defaultNetworkObj[network.Name] = network.Id;
+    });
+    
+    // Combine newNetworkMap and defaultNetworkMap, only adding networks that aren't active
+    const combinedNetworkMap = { ...defaultNetworkObj, ...newNetworkMap };
+    
+    Object.entries(combinedNetworkMap).forEach(([name, id]) => {
+        if (!activeNetworks.includes(name)) {
+            networkMap.set(name, id);
+        } else {
+            Dashboard.alert(`🔍 DEBUG: Excluding active network: ${name}`);
+        }
+    });
+    
+    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
+    
+    // Convert to array format
+    const availableNetworks = Array.from(networkMap.entries()).map(([name, id]) => ({ name, id }));
+    
+    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
+    
+    // Update the available networks select
+    populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
+
+    return availableNetworks;
+}
+
+// Function to initialize general settings including test connection
+function initializeGeneralSettings(page) {
+    const config = window.configJellyseerrBridge || {};
+    
+    // Store the current region value
+    const regionSelect = page.querySelector('#WatchProviderRegion');
+    regionSelect.setAttribute('data-current-value', config.Region);
+    
+    // Set general settings form values
+    page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
+    page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || '';
+    page.querySelector('#ApiKey').value = config.ApiKey || '';
+    page.querySelector('#UserId').value = config.UserId || '';
+    page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
+    page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
+    
+    const testButton = page.querySelector('#testConnection');
+    if (!testButton) {
+        Dashboard.alert('❌ Jellyseerr Bridge: Test connection button not found');
+        return;
+    }
+    
+    testButton.addEventListener('click', function () {
+        Dashboard.showLoadingMsg();
+        
+        const url = page.querySelector('#JellyseerrUrl').value;
+        const apiKey = page.querySelector('#ApiKey').value;
+        
+        const testData = {
+            JellyseerrUrl: url,
+            ApiKey: apiKey
+        };
+
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+            type: 'POST',
+            data: JSON.stringify(testData),
+            contentType: 'application/json',
+            dataType: 'json'
+        }).then(function (data) {
+            Dashboard.hideLoadingMsg();
+            
+            const debugInfo = 'CONNECTION RESPONSE DEBUG:<br>' +
+                'Response exists: ' + (data ? 'YES' : 'NO') + '<br>' +
+                'Response type: ' + typeof data + '<br>' +
+                'Response success: ' + (data?.success ? 'YES' : 'NO') + '<br>' +
+                'Response message: ' + (data?.message || 'UNDEFINED') + '<br>' +
+                'Response status: ' + (data?.status || 'UNDEFINED') + '<br>' +
+                'Full response: ' + JSON.stringify(data) + '<br>' +
+                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
+            
+            if (data && data.success) {
+                Dashboard.alert('✅ Connected to Jellyseerr!');
+                // Show confirmation dialog for saving settings
+                Dashboard.confirm({
+                        title: 'Connection Success!',
+                        text: 'Save connection settings now?',
+                        confirmText: 'Confirm',
+                        cancelText: 'Cancel',
+                        primary: "confirm"
+                    }, 'Title', (confirmed) => {
+                        if (confirmed) {
+                            // Save the current settings using the reusable function
+                            savePluginConfiguration(page).then(function (result) {
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                            }).catch(function (error) {
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                            });
+                        } else {
+                            Dashboard.alert('🚫 Exited without saving');
+                        }
+                    });
+            } else {
+                Dashboard.alert('❌ CONNECTION FAILED!<br>' + debugInfo);
+            }
+        }).catch(function (error) {
+            Dashboard.hideLoadingMsg();
+            const debugInfo = 'CONNECTION ERROR DEBUG:<br>' +
+                'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
+                'Error type: ' + typeof error + '<br>' +
+                'Error message: ' + (error?.message || 'UNDEFINED') + '<br>' +
+                'Error name: ' + (error?.name || 'UNDEFINED') + '<br>' +
+                'Error status: ' + (error?.status || 'UNDEFINED') + '<br>' +
+                'Full error: ' + JSON.stringify(error);
+            
+            Dashboard.alert('❌ CONNECTION ERROR!<br>' + debugInfo);
+        });
+    });
+    
+    // Add form submit event listener
+    const form = page.querySelector('#jellyseerrBridgeConfigurationForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            Dashboard.showLoadingMsg();
+            // Use the reusable function to save configuration
+            savePluginConfiguration(page).then(function (result) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.processPluginConfigurationUpdateResult(result);
+            }).catch(function (error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            });
+            e.preventDefault();
+            return false;
+        });
+    }
+    
+    // Update general settings placeholders
     const jellyseerrUrlField = page.querySelector('#JellyseerrUrl');
     if (jellyseerrUrlField && !jellyseerrUrlField.value) {
-        jellyseerrUrlField.placeholder = config.JellyseerrUrl || 'http://localhost:5055';
+        jellyseerrUrlField.placeholder = config.JellyseerrUrl || config.DefaultValues.JellyseerrUrl;
     }
     
     const userIdField = page.querySelector('#UserId');
     if (userIdField && !userIdField.value) {
-        userIdField.placeholder = (config.UserId || 1).toString();
+        userIdField.placeholder = (config.UserId || config.DefaultValues.UserId).toString();
     }
     
     const syncIntervalField = page.querySelector('#SyncIntervalHours');
     if (syncIntervalField && !syncIntervalField.value) {
-        syncIntervalField.placeholder = (config.SyncIntervalHours || 24).toString();
+        syncIntervalField.placeholder = (config.SyncIntervalHours || config.DefaultValues.SyncIntervalHours).toString();
+    }
+}
+
+// Function to initialize advanced settings
+function initializeAdvancedSettings(page) {
+    const config = window.configJellyseerrBridge || {};
+    
+    // Set advanced settings form values
+    page.querySelector('#RequestTimeout').value = config.RequestTimeout || '';
+    page.querySelector('#RetryAttempts').value = config.RetryAttempts || '';
+    page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
+        });
     }
     
+    // Set library settings form values
+    page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '';
+    page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
+    page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
+    page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || '';
+    
+    // Initialize library prefix state
+    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
+    const libraryPrefixLabel = page.querySelector('label[for="LibraryPrefix"]');
+    
+    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
+        return;
+    }
+    
+    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    
+    // Enable/disable the input
+    libraryPrefixInput.disabled = !isEnabled;
+    
+    // Add/remove disabled styling
+    if (isEnabled) {
+        libraryPrefixInput.classList.remove('disabled');
+        libraryPrefixLabel.classList.remove('disabled');
+    } else {
+        libraryPrefixInput.classList.add('disabled');
+        libraryPrefixLabel.classList.add('disabled');
+    }
+    
+    // Update library settings placeholders
     const libraryDirectoryField = page.querySelector('#LibraryDirectory');
     if (libraryDirectoryField && !libraryDirectoryField.value) {
-        libraryDirectoryField.placeholder = config.LibraryDirectory || '/data/Jellyseerr';
+        libraryDirectoryField.placeholder = config.LibraryDirectory || config.DefaultValues.LibraryDirectory;
     }
     
     const libraryPrefixField = page.querySelector('#LibraryPrefix');
     if (libraryPrefixField && !libraryPrefixField.value) {
-        libraryPrefixField.placeholder = config.LibraryPrefix || 'Streaming - ';
+        libraryPrefixField.placeholder = config.LibraryPrefix || config.DefaultValues.LibraryPrefix;
     }
     
+    // Update advanced settings placeholders
     const requestTimeoutField = page.querySelector('#RequestTimeout');
     if (requestTimeoutField && !requestTimeoutField.value) {
-        requestTimeoutField.placeholder = (config.RequestTimeout || 30).toString();
+        requestTimeoutField.placeholder = (config.RequestTimeout || config.DefaultValues.RequestTimeout).toString();
     }
     
     const retryAttemptsField = page.querySelector('#RetryAttempts');
     if (retryAttemptsField && !retryAttemptsField.value) {
-        retryAttemptsField.placeholder = (config.RetryAttempts || 3).toString();
+        retryAttemptsField.placeholder = (config.RetryAttempts || config.DefaultValues.RetryAttempts).toString();
     }
 }
 
-// Function to save plugin configuration
-function initializeMultiSelect(page, config) {
-    const activeProvidersSelect = page.querySelector('#activeProviders');
-    const availableProvidersSelect = page.querySelector('#availableProviders');
-    const activeSearch = page.querySelector('#activeSearch');
-    const availableSearch = page.querySelector('#availableSearch');
-    const addButton = page.querySelector('#addSelected');
-    const removeButton = page.querySelector('#removeSelected');
-    const clearActiveSearch = page.querySelector('#clearActiveSearch');
-    const clearAvailableSearch = page.querySelector('#clearAvailableSearch');
+
+// Function to initialize sync settings including network interface and sync buttons
+function initializeSyncSettings(page) {
+    const config = window.configJellyseerrBridge || {};
     
-    // Store all available providers globally
-    window.allAvailableProviders = [];
+    const activeNetworksSelect = page.querySelector('#activeNetworks');
+    const availableNetworksSelect = page.querySelector('#availableNetworks');
+    const activeNetworkSearch = page.querySelector('#activeNetworkSearch');
+    const availableNetworkSearch = page.querySelector('#availableNetworkSearch');
+    const addSelectedNetworksButton = page.querySelector('#addSelectedNetworks');
+    const removeSelectedNetworksButton = page.querySelector('#removeSelectedNetworks');
+    const clearActiveNetworkSearch = page.querySelector('#clearActiveNetworkSearch');
+    const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
-    // Load active providers from config
-    const activeNetworks = config.ActiveNetworks || [];
+    // Load active networks from saved configuration
     const networkMapping = config.NetworkMap || {};
-    populateActiveProvidersWithIds(activeProvidersSelect, activeNetworks, networkMapping);
+    const activeNetworks = Object.entries(networkMapping).map(([name, id]) => ({ name, id }));
+    populateSelectWithNetworks(activeNetworksSelect, activeNetworks);
     
-    // Don't load available providers on page load - only when Manual Sync is clicked
-    populateSelectWithNetworkNames(availableProvidersSelect, []);
+    // Update available networks with default networks that aren't already active
+    updateAvailableNetworks(page);
     
     // Search functionality
-    activeSearch.addEventListener('input', function() {
-        filterSelect(activeProvidersSelect, this.value);
-        updateClearButtonVisibility(clearActiveSearch, this.value);
+    activeNetworkSearch.addEventListener('input', function() {
+        filterSelect(activeNetworksSelect, this.value);
+        updateClearButtonVisibility(clearActiveNetworkSearch, this.value);
     });
     
-    availableSearch.addEventListener('input', function() {
-        filterSelect(availableProvidersSelect, this.value);
-        updateClearButtonVisibility(clearAvailableSearch, this.value);
+    availableNetworkSearch.addEventListener('input', function() {
+        filterSelect(availableNetworksSelect, this.value);
+        updateClearButtonVisibility(clearAvailableNetworkSearch, this.value);
     });
     
     // Clear button functionality
-    clearActiveSearch.addEventListener('click', function() {
-        activeSearch.value = '';
-        filterSelect(activeProvidersSelect, '');
-        updateClearButtonVisibility(clearActiveSearch, '');
-        activeSearch.focus();
+    clearActiveNetworkSearch.addEventListener('click', function() {
+        activeNetworkSearch.value = '';
+        filterSelect(activeNetworksSelect, '');
+        updateClearButtonVisibility(clearActiveNetworkSearch, '');
+        activeNetworkSearch.focus();
     });
     
-    clearAvailableSearch.addEventListener('click', function() {
-        availableSearch.value = '';
-        filterSelect(availableProvidersSelect, '');
-        updateClearButtonVisibility(clearAvailableSearch, '');
-        availableSearch.focus();
+    clearAvailableNetworkSearch.addEventListener('click', function() {
+        availableNetworkSearch.value = '';
+        filterSelect(availableNetworksSelect, '');
+        updateClearButtonVisibility(clearAvailableNetworkSearch, '');
+        availableNetworkSearch.focus();
     });
     
     // Initialize clear button visibility
-    updateClearButtonVisibility(clearActiveSearch, activeSearch.value);
-    updateClearButtonVisibility(clearAvailableSearch, availableSearch.value);
+    updateClearButtonVisibility(clearActiveNetworkSearch, activeNetworkSearch.value);
+    updateClearButtonVisibility(clearAvailableNetworkSearch, availableNetworkSearch.value);
     
     // Add/Remove functionality
-    addButton.addEventListener('click', function() {
-        moveProviders(availableProvidersSelect, activeProvidersSelect);
+    addSelectedNetworksButton.addEventListener('click', function() {
+        moveProviders(availableNetworksSelect, activeNetworksSelect);
     });
     
-    removeButton.addEventListener('click', function() {
-        moveProviders(activeProvidersSelect, availableProvidersSelect);
+    removeSelectedNetworksButton.addEventListener('click', function() {
+        moveProviders(activeNetworksSelect, availableNetworksSelect);
     });
     
     // Double-click to move items
-    availableProvidersSelect.addEventListener('dblclick', function() {
-        moveProviders(availableProvidersSelect, activeProvidersSelect);
+    availableNetworksSelect.addEventListener('dblclick', function() {
+        moveProviders(availableNetworksSelect, activeNetworksSelect);
     });
     
-    activeProvidersSelect.addEventListener('dblclick', function() {
-        moveProviders(activeProvidersSelect, availableProvidersSelect);
+    activeNetworksSelect.addEventListener('dblclick', function() {
+        moveProviders(activeNetworksSelect, availableNetworksSelect);
     });
+    
+    // Add refresh available networks button functionality
+    const refreshAvailableButton = page.querySelector('#refreshAvailableNetworks');
+    if (refreshAvailableButton) {
+        refreshAvailableButton.addEventListener('click', function() {
+            Dashboard.showLoadingMsg();
+            loadAvailableNetworks(page).then(function(allNetworks) {
+                // Convert allNetworks to a network map format
+                const newNetworkMap = {};
+                allNetworks.forEach(network => {
+                    newNetworkMap[network.name] = network.id;
+                });
+                
+                // Update available networks with the new network map
+                updateAvailableNetworks(page, newNetworkMap);
+                
+                Dashboard.hideLoadingMsg();
+                const activeCount = page.querySelector('#activeNetworks').options.length;
+                const availableCount = page.querySelector('#availableNetworks').options.length;
+                Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
+            });
+        });
+    }
+    
+    // Add manual sync button functionality
+    const syncButton = page.querySelector('#manualSync');
+    if (!syncButton) {
+        Dashboard.alert('❌ Jellyseerr Bridge: Manual sync button not found');
+        return;
+    }
+    
+    syncButton.addEventListener('click', function () {
+        performManualSync(page);
+    });
+
+    // Add refresh networks button functionality
+    const refreshButton = page.querySelector('#refreshNetworks');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            Dashboard.showLoadingMsg();
+            loadRegions(page).then(function() {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('✅ Regions refreshed successfully!');
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
+            });
+        });
+    }
 }
 
 function updateClearButtonVisibility(clearButton, searchValue) {
@@ -139,94 +435,65 @@ function updateClearButtonVisibility(clearButton, searchValue) {
     }
 }
 
-function loadAvailableNetworks(page, config) {
+function loadAvailableNetworks(page) {
     const region = page.querySelector('#WatchProviderRegion').value;
-    const networkMapping = config?.NetworkMap || {};
     
     Dashboard.alert(`🔍 DEBUG: Starting loadAvailableNetworks with region: "${region}"`);
     
     return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/WatchProviders', { region: region }),
+        url: ApiClient.getUrl('JellyseerrBridge/Networks', { region: region }),
         type: 'GET',
         dataType: 'json'
     }).then(function(response) {
         Dashboard.alert(`🔍 DEBUG: API Response received for networks. Success: ${response?.success}, Networks count: ${response?.networks?.length || 0}`);
         
         if (response && response.success && response.networks) {
-            const availableNetworks = response.networks
-                .filter(network => network && network.name)
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Create a map of available networks by name for quick lookup
-            const availableNetworkMap = new Map();
-            availableNetworks.forEach(network => {
-                availableNetworkMap.set(network.name, network);
+            // Convert networks to the format expected by updateAvailableNetworks
+            const newNetworkMap = {};
+            response.networks.forEach(network => {
+                if (network && network.name) {
+                    newNetworkMap[network.name] = network.id;
+                }
             });
             
-            // Add default networks that are not found in the region
-            const missingNetworks = Object.entries(networkMapping)
-                .filter(([networkName]) => !availableNetworkMap.has(networkName))
-                .map(([name, id]) => ({ name, id }));
-            
-            // Combine available networks with missing default networks
-            const allNetworks = [...availableNetworks, ...missingNetworks]
-                .sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Return the networks instead of just resolving
-            return Promise.resolve(allNetworks);
+            // Use updateAvailableNetworks to handle the rest
+            return Promise.resolve(updateAvailableNetworks(page, newNetworkMap));
         } else {
-            // Return default networks with actual IDs from NetworkMap
-            return Promise.resolve(Object.entries(networkMapping).map(([name, id]) => ({ name, id })));
+            // Use updateAvailableNetworks with empty map to show defaults
+            return Promise.resolve(updateAvailableNetworks(page));
         }
     }).catch(function(error) {
         Dashboard.alert(`❌ DEBUG: API call failed for networks. Error: ${error?.message || 'Unknown error'}`);
         
-        // Use default networks as fallback
-        // Return default networks with actual IDs from NetworkMap
-        return Promise.resolve(Object.entries(networkMapping).map(([name, id]) => ({ name, id })));
+        // Use updateAvailableNetworks with empty map to show defaults
+        return Promise.resolve(updateAvailableNetworks(page));
     });
 }
 
-function populateActiveProvidersWithIds(selectElement, networkNames, networkMapping) {
+function populateSelectWithNetworks(selectElement, networks) {
     selectElement.innerHTML = '';
     
-    networkNames.forEach(networkName => {
+    // Handle different input formats
+    const networkList = Array.isArray(networks) ? networks : [];
+    
+    networkList.forEach(network => {
         const option = document.createElement('option');
-        option.value = networkName;
-        const networkId = networkMapping[networkName];
-        option.textContent = networkId ? `${networkName} (${networkId})` : networkName;
-        if (networkId) {
-            option.dataset.providerId = networkId.toString();
+        
+        // Check if network has the expected format
+        if (network && network.name && network.id) {
+            // Network object with name and id
+            option.value = network.name;
+            option.textContent = `${network.name} (${network.id})`;
+            option.dataset.providerId = network.id.toString();
+            
+        selectElement.appendChild(option);
+        } else {
+            // Invalid network format
+            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { name: string, id: number }`);
         }
-        selectElement.appendChild(option);
-    });
-}
-
-function populateSelectWithProviders(selectElement, providers) {
-    Dashboard.alert(`🔍 DEBUG: populateSelectWithProviders called with ${providers.length} networks`);
-    
-    selectElement.innerHTML = '';
-    
-    providers.forEach(provider => {
-        const option = document.createElement('option');
-        option.value = provider.name; // Store just the name as value for compatibility
-        option.textContent = provider.id ? `${provider.name} (${provider.id})` : provider.name;
-        option.dataset.providerId = provider.id || ''; // Store ID separately
-        selectElement.appendChild(option);
     });
     
     Dashboard.alert(`🔍 DEBUG: Added ${selectElement.options.length} network options to select element`);
-}
-
-function populateSelectWithNetworkNames(selectElement, networkNames) {
-    selectElement.innerHTML = '';
-    
-    networkNames.forEach(networkName => {
-        const option = document.createElement('option');
-        option.value = networkName;
-        option.textContent = networkName;
-        selectElement.appendChild(option);
-    });
 }
 
 function filterSelect(selectElement, searchTerm) {
@@ -267,8 +534,8 @@ function moveProviders(fromSelect, toSelect) {
         option.remove();
     });
     
-    // Only sort the destination (available providers), maintain order in active providers
-    if (toSelect.id === 'availableProviders') {
+    // Only sort the destination (available networks), maintain order in active networks
+    if (toSelect.id === 'availableNetworks') {
         sortSelectOptions(toSelect);
     }
     
@@ -292,18 +559,12 @@ function sortSelectOptions(selectElement) {
     });
 }
 
-function getActiveNetworks(page) {
-    const activeProvidersSelect = page.querySelector('#activeProviders');
-    const networks = Array.from(activeProvidersSelect.options).map(option => option.value);
-    // Return unique networks only (in case of any duplicates)
-    return [...new Set(networks)];
-}
 
-function getNetworkNameToIdMapping(page) {
-    const activeProvidersSelect = page.querySelector('#activeProviders');
+function getActiveNetworkMap(page) {
+    const activeNetworksSelect = page.querySelector('#activeNetworks');
     const mapping = {};
     
-    Array.from(activeProvidersSelect.options).forEach(option => {
+    Array.from(activeNetworksSelect.options).forEach(option => {
         if (option.dataset.providerId) {
             mapping[option.value] = parseInt(option.dataset.providerId);
         }
@@ -317,7 +578,6 @@ function savePluginConfiguration(view) {
     
     // Validate required fields
     const apiKey = form.querySelector('#ApiKey').value.trim();
-    const jellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim() || 'http://localhost:5055';
     
     if (!apiKey) {
         Dashboard.alert('API Key is required. Please enter your Jellyseerr API key.');
@@ -330,7 +590,7 @@ function savePluginConfiguration(view) {
         .then(function (config) {
             // Update config with current form values
             config.IsEnabled = form.querySelector('#IsEnabled').checked;
-            config.JellyseerrUrl = jellyseerrUrl;
+            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
             config.ApiKey = apiKey;
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim() || '/data/Jellyseerr';
             config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
@@ -339,9 +599,8 @@ function savePluginConfiguration(view) {
             config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim() || 'Streaming - ';
             config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
-            config.WatchProviderRegion = form.querySelector('#WatchProviderRegion').value;
-            config.ActiveNetworks = getActiveNetworks(view);
-            config.NetworkMap = getNetworkNameToIdMapping(view);
+            config.Region = form.querySelector('#WatchProviderRegion').value;
+            config.NetworkMap = getActiveNetworkMap(view);
             config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
             config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
             config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
@@ -365,237 +624,11 @@ function savePluginConfiguration(view) {
         });
 }
 
-function updateLibraryPrefixState(page) {
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
-    const libraryPrefixLabel = page.querySelector('label[for="LibraryPrefix"]');
-    
-    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
-        return;
-    }
-    
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
-    
-    // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Add/remove disabled styling
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        libraryPrefixLabel.classList.remove('disabled');
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        libraryPrefixLabel.classList.add('disabled');
-    }
-}
 
-export default function (view) {
-    if (!view) {
-        Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
-        return;
-    }
-    
-    view.addEventListener('viewshow', function () {
-        Dashboard.showLoadingMsg();
-        const page = this;
-        
-        // Use our custom endpoint to get the configuration
-        fetch('/JellyseerrBridge/GetPluginConfiguration')
-            .then(response => response.json())
-            .then(function (config) {
-                page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
-                page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || '';
-                page.querySelector('#ApiKey').value = config.ApiKey || '';
-                page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '';
-                page.querySelector('#UserId').value = config.UserId || '';
-                page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
-                page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
-                page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
-                page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || '';
-                page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
-                page.querySelector('#RequestTimeout').value = config.RequestTimeout || '';
-                page.querySelector('#RetryAttempts').value = config.RetryAttempts || '';
-                page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
-                
-                // Store the current watch provider region value
-                const watchProviderSelect = page.querySelector('#WatchProviderRegion');
-                watchProviderSelect.setAttribute('data-current-value', config.WatchProviderRegion || 'US');
-                
-                // Store configuration globally for other functions to use
-                window.jellyseerrConfig = config;
-                
-                // Add refresh available networks button functionality
-                const refreshAvailableButton = page.querySelector('#refreshAvailableProviders');
-                if (refreshAvailableButton) {
-                    refreshAvailableButton.addEventListener('click', function() {
-                        Dashboard.showLoadingMsg();
-                        loadAvailableNetworks(page, config).then(function(allNetworks) {
-                            // Now refresh the available networks list with the loaded data
-                            const availableProvidersSelect = page.querySelector('#availableProviders');
-                            const availableNetworks = getAvailableNetworks(page, allNetworks);
-                            
-                            populateSelectWithProviders(availableProvidersSelect, availableNetworks);
-                            
-                            Dashboard.hideLoadingMsg();
-                            const activeCount = page.querySelector('#activeProviders').options.length;
-                            const availableCount = availableNetworks.length;
-                            Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
-                        }).catch(function(error) {
-                            Dashboard.hideLoadingMsg();
-                            Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
-                        });
-                    });
-                }
-                
-                // Update placeholders with backend defaults
-                updatePlaceholdersFromBackend(page, config);
-                
-                // Initialize the multi-select interface
-                initializeMultiSelect(page, config);
-                
-                // Initialize Library Prefix field state
-                updateLibraryPrefixState(page);
-                
-                Dashboard.hideLoadingMsg();
-            })
-            .catch(function (error) {
-                Dashboard.hideLoadingMsg();
-                Dashboard.alert('❌ Failed to load configuration: ' + error.message);
-            });
-    });
-    
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = view.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState(view);
-        });
-    }
-    
-    const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
-    if (!form) {
-        Dashboard.alert('❌ Jellyseerr Bridge: Configuration form not found');
-        return;
-    }
-    
-    form.addEventListener('submit', function (e) {
-        Dashboard.showLoadingMsg();
-        // Use the reusable function to save configuration
-        savePluginConfiguration(view).then(function (result) {
-            Dashboard.hideLoadingMsg();
-            Dashboard.processPluginConfigurationUpdateResult(result);
-        }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-        });
-        e.preventDefault();
-        return false;
-    });
 
-    const testButton = view.querySelector('#testConnection');
-    if (!testButton) {
-        Dashboard.alert('❌ Jellyseerr Bridge: Test connection button not found');
-        return;
-    }
-    
-    testButton.addEventListener('click', function () {
-        Dashboard.showLoadingMsg();
-        
-        const url = view.querySelector('#JellyseerrUrl').value;
-        const apiKey = view.querySelector('#ApiKey').value;
-        
-        const testData = {
-            JellyseerrUrl: url,
-            ApiKey: apiKey
-        };
-
-        ApiClient.ajax({
-            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            type: 'POST',
-            data: JSON.stringify(testData),
-            contentType: 'application/json',
-            dataType: 'json'
-        }).then(function (data) {
-            Dashboard.hideLoadingMsg();
-            
-            const debugInfo = 'CONNECTION RESPONSE DEBUG:<br>' +
-                'Response exists: ' + (data ? 'YES' : 'NO') + '<br>' +
-                'Response type: ' + typeof data + '<br>' +
-                'Response success: ' + (data?.success ? 'YES' : 'NO') + '<br>' +
-                'Response message: ' + (data?.message || 'UNDEFINED') + '<br>' +
-                'Response status: ' + (data?.status || 'UNDEFINED') + '<br>' +
-                'Full response: ' + JSON.stringify(data) + '<br>' +
-                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
-            
-            if (data && data.success) {
-                Dashboard.alert('✅ Connected to Jellyseerr!');
-                // Show confirmation dialog for saving settings
-                Dashboard.confirm({
-                        title: 'Connection Success!',
-                        text: 'Save connection settings now?',
-                        confirmText: 'Confirm',
-                        cancelText: 'Cancel',
-                        primary: "confirm"
-                    }, 'Title', (confirmed) => {
-                        if (confirmed) {
-                            // Save the current settings using the reusable function
-                            savePluginConfiguration(view).then(function (result) {
-                                Dashboard.hideLoadingMsg();
-                                Dashboard.processPluginConfigurationUpdateResult(result);
-                            }).catch(function (error) {
-                                Dashboard.hideLoadingMsg();
-                                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                            });
-                        } else {
-                            Dashboard.alert('🚫 Exited without saving');
-                        }
-                    });
-            } else {
-                Dashboard.alert('❌ CONNECTION FAILED!<br>' + debugInfo);
-            }
-        }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
-            const debugInfo = 'CONNECTION ERROR DEBUG:<br>' +
-                'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
-                'Error type: ' + typeof error + '<br>' +
-                'Error message: ' + (error?.message || 'UNDEFINED') + '<br>' +
-                'Error name: ' + (error?.name || 'UNDEFINED') + '<br>' +
-                'Error status: ' + (error?.status || 'UNDEFINED') + '<br>' +
-                'Full error: ' + JSON.stringify(error);
-            
-            Dashboard.alert('❌ CONNECTION ERROR!<br>' + debugInfo);
-        });
-    });
-
-    const syncButton = view.querySelector('#manualSync');
-    if (!syncButton) {
-        Dashboard.alert('❌ Jellyseerr Bridge: Manual sync button not found');
-        return;
-    }
-    
-    syncButton.addEventListener('click', function () {
-        performManualSync(view);
-    });
-
-    // Add refresh providers button functionality
-    const refreshButton = view.querySelector('#refreshProviders');
-    if (refreshButton) {
-        refreshButton.addEventListener('click', function() {
-            Dashboard.showLoadingMsg();
-            loadWatchProviderRegions(view).then(function() {
-                Dashboard.hideLoadingMsg();
-                Dashboard.alert('✅ Watch provider regions refreshed successfully!');
-            }).catch(function(error) {
-                Dashboard.hideLoadingMsg();
-                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
-            });
-        });
-    }
-}
-
-function loadWatchProviderRegions(page) {
+function loadRegions(page) {
     return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/WatchProviderRegions'),
+        url: ApiClient.getUrl('JellyseerrBridge/Regions'),
         type: 'GET',
         dataType: 'json'
     }).then(function (data) {

@@ -59,14 +59,13 @@ public class JellyseerrSyncService
             var pluginConfig = Plugin.Instance.Configuration;
             
             // Ensure we have active networks configured
-            pluginConfig.EnsureDefaultNetworks();
             pluginConfig.EnsureDefaultNetworkMappings();
             
             // Get networks to map network names to IDs (if not already cached)
             if (!pluginConfig.NetworkMap.Any())
             {
                 _logger.LogInformation("Network name-to-ID mapping not cached, fetching from API");
-                var networks = await _apiService.GetNetworksAsync(pluginConfig.WatchProviderRegion);
+                var networks = await _apiService.GetNetworksAsync(pluginConfig.Region);
                 pluginConfig.SetNetworkMapDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
                 _logger.LogInformation("Cached {Count} network mappings", pluginConfig.NetworkMap.Count);
             }
@@ -79,8 +78,9 @@ public class JellyseerrSyncService
             var allMovies = new List<JellyseerrMovie>();
             var allTvShows = new List<JellyseerrTvShow>();
             
+            var networkDict = pluginConfig.GetNetworkMapDictionary();
             _logger.LogInformation("Fetching movies and TV shows for {NetworkCount} active networks: {Networks}", 
-                pluginConfig.ActiveNetworks.Count, string.Join(", ", pluginConfig.ActiveNetworks));
+                networkDict.Count, string.Join(", ", networkDict.Keys));
             
             // Get movies for all active networks
             allMovies = await _apiService.GetAllMoviesAsync();
@@ -114,7 +114,7 @@ public class JellyseerrSyncService
             result.Details = $"Movies: {result.MoviesCreated} created, {result.MoviesUpdated} updated\n" +
                            $"TV Shows: {result.TvShowsCreated} created, {result.TvShowsUpdated} updated\n" +
                            $"Requests: {result.RequestsProcessed} processed\n" +
-                           $"Active Networks: {string.Join(", ", pluginConfig.ActiveNetworks)}";
+                           $"Active Networks: {string.Join(", ", networkDict.Keys)}";
 
             _logger.LogInformation("Jellyseerr sync completed successfully");
         }

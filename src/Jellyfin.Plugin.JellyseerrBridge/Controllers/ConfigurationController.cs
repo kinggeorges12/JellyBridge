@@ -22,13 +22,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
-        [HttpGet("GetConfiguration")]
-        public IActionResult GetConfiguration()
-        {
-            _logger.LogInformation("[JellyseerrBridge] Configuration page accessed - GetConfiguration endpoint called");
-            return Ok(new { message = "Configuration page loaded successfully" });
-        }
-
         [HttpGet("GetPluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {
@@ -37,9 +30,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             try
             {
                 var config = Plugin.Instance.Configuration;
-                
-                // Ensure default networks are loaded if ActiveNetworks is empty
-                config.EnsureDefaultNetworks();
                 
                 // Ensure default network mappings are loaded if NetworkMap is empty
                 config.EnsureDefaultNetworkMappings();
@@ -60,11 +50,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     EnableDebugLogging = config.EnableDebugLogging,
-                    WatchProviderRegion = config.WatchProviderRegion,
-                    ActiveNetworks = config.ActiveNetworks,
+                    Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
-                    DefaultNetworks = config.DefaultNetworks,
-                    JellyseerrDefaultNetworks = PluginConfiguration.JellyseerrDefaultNetworks
+                    DefaultValues = PluginConfiguration.DefaultValues
                 };
                 
                 return Ok(configForFrontend);
@@ -94,24 +82,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 SetValueOrDefault(configData, "LibraryPrefix", config, (string value) => config.LibraryPrefix = value);
                 SetValueOrDefault(configData, "RequestTimeout", config, (int value) => config.RequestTimeout = value);
                 SetValueOrDefault(configData, "RetryAttempts", config, (int value) => config.RetryAttempts = value);
-                SetValueOrDefault(configData, "MaxPagesPerNetwork", config, (int value) => config.MaxPagesPerNetwork = value);
+                SetValueOrDefault(configData, "MaxDiscoverPages", config, (int value) => config.MaxDiscoverPages = value);
                 SetValueOrDefault(configData, "IsEnabled", config, (bool value) => config.IsEnabled = value);
                 SetValueOrDefault(configData, "CreateSeparateLibraries", config, (bool value) => config.CreateSeparateLibraries = value);
                 SetValueOrDefault(configData, "ExcludeFromMainLibraries", config, (bool value) => config.ExcludeFromMainLibraries = value);
                 SetValueOrDefault(configData, "AutoSyncOnStartup", config, (bool value) => config.AutoSyncOnStartup = value);
                 SetValueOrDefault(configData, "EnableDebugLogging", config, (bool value) => config.EnableDebugLogging = value);
-                SetValueOrDefault(configData, "WatchProviderRegion", config, (string value) => config.WatchProviderRegion = value);
-                
-                // Handle ActiveNetworks array
-                if (configData.TryGetProperty("ActiveNetworks", out var activeNetworksElement))
-                {
-                    var activeNetworksList = new List<string>();
-                    foreach (var networkElement in activeNetworksElement.EnumerateArray())
-                    {
-                        activeNetworksList.Add(networkElement.GetString() ?? string.Empty);
-                    }
-                    config.ActiveNetworks = activeNetworksList;
-                }
+                SetValueOrDefault(configData, "Region", config, (string value) => config.Region = value);
                 
                 // Handle NetworkMap dictionary conversion
                 if (configData.TryGetProperty("NetworkMap", out var networkMapElement))
@@ -329,10 +306,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
-        [HttpGet("WatchProviderRegions")]
-        public async Task<IActionResult> GetWatchProviderRegions()
+        [HttpGet("Regions")]
+        public async Task<IActionResult> GetRegions()
         {
-            _logger.LogInformation("[JellyseerrBridge] Watch provider regions requested");
+            _logger.LogInformation("[JellyseerrBridge] Regions requested");
             
             try
             {
@@ -345,7 +322,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 
                 var regions = await apiService.GetWatchProviderRegionsAsync();
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch provider regions", regions?.Count ?? 0);
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", regions?.Count ?? 0);
                 
                 if (regions == null || regions.Count == 0)
                 {
@@ -372,51 +349,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
-        /// <summary>
-        /// Update the network name-to-ID mapping in the configuration.
-        /// </summary>
-        [HttpPost("UpdateNetworkMapping")]
-        public async Task<IActionResult> UpdateNetworkMapping()
+        [HttpGet("Networks")]
+        public async Task<IActionResult> GetNetworks([FromQuery] string? region = null)
         {
-            try
-            {
-                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
-                var config = Plugin.Instance.Configuration;
-                
-                _logger.LogInformation("Updating network name-to-ID mapping for region: {Region}", config.WatchProviderRegion);
-                
-                var networks = await apiService.GetNetworksAsync(config.WatchProviderRegion);
-                config.SetNetworkMapDictionary(networks.ToDictionary(n => n.Name, n => n.Id));
-                
-                _logger.LogInformation("Updated network mapping with {Count} networks", config.NetworkMap.Count);
-                
-                return Ok(new { success = true, count = config.NetworkMap.Count });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating network mapping");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
-        }
-
-        [HttpGet("WatchProviders")]
-        public async Task<IActionResult> GetWatchProviders([FromQuery] string region = "US")
-        {
-            _logger.LogInformation("[JellyseerrBridge] Watch providers requested for region: {Region}", region);
+            _logger.LogInformation("[JellyseerrBridge] Networks requested for region: {Region}", region);
             
             try
             {
                 var config = Plugin.Instance.Configuration;
                 var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
                 
-                var providers = await apiService.GetWatchProvidersAsync(region);
+                // Use provided region or default from config
+                var targetRegion = region ?? config.Region ?? "US";
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} watch providers for region {Region}", providers?.Count ?? 0, region);
+                var networks = await apiService.GetNetworksAsync(targetRegion);
+                
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", networks?.Count ?? 0, targetRegion);
                 
                 return Ok(new { 
                     success = true, 
-                    region = region,
-                    networks = providers 
+                    networks = networks 
                 });
             }
             catch (Exception ex)
@@ -445,11 +397,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (typeof(T) == typeof(string))
                 {
                     var stringValue = element.GetString();
-                    value = (T)(object)(string.IsNullOrWhiteSpace(stringValue) ? (string)PluginConfiguration.GetDefaultValue(propertyName) : stringValue);
+                    value = (T)(object)(string.IsNullOrWhiteSpace(stringValue) ? (string)PluginConfiguration.DefaultValues[propertyName] : stringValue);
                 }
                 else if (typeof(T) == typeof(int))
                 {
-                    value = (T)(object)(element.TryGetInt32(out int intValue) ? intValue : (int)PluginConfiguration.GetDefaultValue(propertyName));
+                    value = (T)(object)(element.TryGetInt32(out int intValue) ? intValue : (int)PluginConfiguration.DefaultValues[propertyName]);
                 }
                 else if (typeof(T) == typeof(bool))
                 {
@@ -457,7 +409,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 }
                 else
                 {
-                    value = (T)PluginConfiguration.GetDefaultValue(propertyName);
+                    value = (T)PluginConfiguration.DefaultValues[propertyName];
                 }
                 
                 setter(value);
