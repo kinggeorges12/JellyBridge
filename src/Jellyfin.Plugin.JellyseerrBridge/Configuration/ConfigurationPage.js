@@ -681,7 +681,7 @@ function loadRegions(page) {
             const select = page.querySelector('#selectWatchRegion');
             if (select) {
                 // Use the new populateRegion function
-                populateRegion(page, validRegions);
+                populateRegion(page, data.regions);
             }
             return Promise.resolve();
         } else {
