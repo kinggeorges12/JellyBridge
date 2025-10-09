@@ -390,7 +390,7 @@ public class JellyseerrApiService
     {
         var timeout = TimeSpan.FromSeconds(config.RequestTimeout);
         var retryAttempts = config.RetryAttempts;
-        var enableDebugLogging = config.EnableDebugLogging ?? false;
+        var enableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)];
         
         Exception? lastException = null;
         
