@@ -93,14 +93,14 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Handle NetworkMap dictionary conversion
                 if (configData.TryGetProperty("NetworkMap", out var networkMapElement))
                 {
-                    var networkDict = new Dictionary<string, int>();
+                    var networkDict = new Dictionary<int, string>();
                     
                     foreach (var property in networkMapElement.EnumerateObject())
                     {
-                        if (property.Value.ValueKind == JsonValueKind.Number && 
-                            property.Value.TryGetInt32(out int id))
+                        if (property.Value.ValueKind == JsonValueKind.String && 
+                            int.TryParse(property.Name, out int id))
                         {
-                            networkDict[property.Name] = id;
+                            networkDict[id] = property.Value.GetString() ?? string.Empty;
                         }
                     }
                     

@@ -80,31 +80,31 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
     const activeNetworksSelect = page.querySelector('#activeNetworks');
     const activeNetworks = Array.from(activeNetworksSelect.options).map(option => option.value);
     
-    // Create a Map to store unique networks (name -> id)
+    // Create a Map to store unique networks (id -> name)
     const networkMap = new Map();
     
     // Get default network map from global config
     const defaultNetworkMap = config?.DefaultValues?.DefaultNetworkMap || [];
     
-    // Convert default networks array to object for easier processing
+    // Convert default networks array to object for easier processing (ID as key, name as value)
     const defaultNetworkObj = {};
     defaultNetworkMap.forEach(network => {
-        defaultNetworkObj[network.Name] = network.Id;
+        defaultNetworkObj[network.Id] = network.Name;
     });
     
     // Combine newNetworkMap and defaultNetworkMap, only adding networks that aren't active
     const combinedNetworkMap = { ...defaultNetworkObj, ...newNetworkMap };
     
-    Object.entries(combinedNetworkMap).forEach(([name, id]) => {
+    Object.entries(combinedNetworkMap).forEach(([id, name]) => {
         if (!activeNetworks.includes(name)) {
-            networkMap.set(name, id);
+            networkMap.set(parseInt(id), name);
         }
     });
     
     Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
     
     // Convert to array format
-    const availableNetworks = Array.from(networkMap.entries()).map(([name, id]) => ({ name, id }));
+    const availableNetworks = Array.from(networkMap.entries()).map(([id, name]) => ({ id, name }));
     
     Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
     
@@ -224,20 +224,20 @@ function initializeGeneralSettings(page) {
         });
     }
     
-    // Update general settings placeholders
+    // Update general settings placeholders with default values only
     const jellyseerrUrlField = page.querySelector('#JellyseerrUrl');
     if (jellyseerrUrlField && !jellyseerrUrlField.value) {
-        jellyseerrUrlField.placeholder = config.JellyseerrUrl || config.DefaultValues.JellyseerrUrl;
+        jellyseerrUrlField.placeholder = config.DefaultValues.JellyseerrUrl;
     }
     
     const userIdField = page.querySelector('#UserId');
     if (userIdField && !userIdField.value) {
-        userIdField.placeholder = (config.UserId || config.DefaultValues.UserId).toString();
+        userIdField.placeholder = config.DefaultValues.UserId.toString();
     }
     
     const syncIntervalField = page.querySelector('#SyncIntervalHours');
     if (syncIntervalField && !syncIntervalField.value) {
-        syncIntervalField.placeholder = (config.SyncIntervalHours || config.DefaultValues.SyncIntervalHours).toString();
+        syncIntervalField.placeholder = config.DefaultValues.SyncIntervalHours.toString();
     }
 }
 
@@ -290,23 +290,23 @@ function initializeAdvancedSettings(page) {
     // Update library settings placeholders
     const libraryDirectoryField = page.querySelector('#LibraryDirectory');
     if (libraryDirectoryField && !libraryDirectoryField.value) {
-        libraryDirectoryField.placeholder = config.LibraryDirectory || config.DefaultValues.LibraryDirectory;
+        libraryDirectoryField.placeholder = config.DefaultValues.LibraryDirectory;
     }
     
     const libraryPrefixField = page.querySelector('#LibraryPrefix');
     if (libraryPrefixField && !libraryPrefixField.value) {
-        libraryPrefixField.placeholder = config.LibraryPrefix || config.DefaultValues.LibraryPrefix;
+        libraryPrefixField.placeholder = config.DefaultValues.LibraryPrefix;
     }
     
     // Update advanced settings placeholders
     const requestTimeoutField = page.querySelector('#RequestTimeout');
     if (requestTimeoutField && !requestTimeoutField.value) {
-        requestTimeoutField.placeholder = (config.RequestTimeout || config.DefaultValues.RequestTimeout).toString();
+        requestTimeoutField.placeholder = config.DefaultValues.RequestTimeout.toString();
     }
     
     const retryAttemptsField = page.querySelector('#RetryAttempts');
     if (retryAttemptsField && !retryAttemptsField.value) {
-        retryAttemptsField.placeholder = (config.RetryAttempts || config.DefaultValues.RetryAttempts).toString();
+        retryAttemptsField.placeholder = config.DefaultValues.RetryAttempts.toString();
     }
 }
 
@@ -326,7 +326,7 @@ function initializeSyncSettings(page) {
     
     // Load active networks from saved configuration
     const networkMapping = config.NetworkMap || {};
-    const activeNetworks = Object.entries(networkMapping).map(([name, id]) => ({ name, id }));
+    const activeNetworks = Object.entries(networkMapping).map(([id, name]) => ({ id: parseInt(id), name }));
     populateSelectWithNetworks(activeNetworksSelect, activeNetworks);
     
     // Update available networks with default networks that aren't already active
@@ -442,11 +442,11 @@ function loadAvailableNetworks(page) {
         Dashboard.alert(`🔍 DEBUG: API Response received for networks. Success: ${response?.success}, Networks count: ${response?.networks?.length || 0}`);
         
         if (response && response.success && response.networks) {
-            // Convert networks to the format expected by updateAvailableNetworks
+            // Convert networks to the format expected by updateAvailableNetworks (ID as key, name as value)
             const newNetworkMap = {};
             response.networks.forEach(network => {
-                if (network && network.name) {
-                    newNetworkMap[network.name] = network.id;
+                if (network && network.id && network.name) {
+                    newNetworkMap[network.id] = network.name;
                 }
             });
             
@@ -477,8 +477,8 @@ function populateSelectWithNetworks(selectElement, networks) {
         const option = document.createElement('option');
         
         // Check if network has the expected format
-        if (network && network.name && network.id !== undefined) {
-            // Network object with name and id
+        if (network && network.id !== undefined && network.name) {
+            // Network object with id and name
             option.value = network.name;
             option.textContent = `${network.name} (${network.id})`;
             option.dataset.networkId = network.id.toString();
@@ -486,7 +486,7 @@ function populateSelectWithNetworks(selectElement, networks) {
             selectElement.appendChild(option);
         } else {
             // Invalid network format
-            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { name: string, id: number }`);
+            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
         }
     });
     
@@ -563,7 +563,7 @@ function getActiveNetworkMap(page) {
     
     Array.from(activeNetworksSelect.options).forEach(option => {
         if (option.dataset.networkId) {
-            mapping[option.value] = parseInt(option.dataset.networkId);
+            mapping[parseInt(option.dataset.networkId)] = option.value;
         }
     });
     
