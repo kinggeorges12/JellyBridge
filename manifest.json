@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.147.0.0",
+        "timestamp": "2025-10-09T22:47:06.766Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.147.0.0/JellyseerrBridge-0.147.0.0-DLL.zip",
+        "checksum": "5B199D96FD95140E7C49EB09E5039449",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.147.0.0 - Fixed JSON deserialization error in JellyseerrApiService - added missing JsonPropertyName attributes to JellyseerrMediaInfo class properties, resolves deserialization failure when fetching TV shows from Jellyseerr API"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-09T22:43:16.086Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.146.0.0/JellyseerrBridge-0.146.0.0-DLL.zip",
