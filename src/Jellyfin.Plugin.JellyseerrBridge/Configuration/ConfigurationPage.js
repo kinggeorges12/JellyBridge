@@ -79,7 +79,6 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
     // Get currently active network names
     const activeNetworksSelect = page.querySelector('#activeNetworks');
     const activeNetworks = Array.from(activeNetworksSelect.options).map(option => option.value);
-    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Active networks count: ${activeNetworks.length}, Active networks: [${activeNetworks.join(', ')}]`);
     
     // Create a Map to store unique networks (name -> id)
     const networkMap = new Map();
@@ -99,17 +98,15 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
     Object.entries(combinedNetworkMap).forEach(([name, id]) => {
         if (!activeNetworks.includes(name)) {
             networkMap.set(name, id);
-        } else {
-            //Dashboard.alert(`🔍 DEBUG: Excluding active network: ${name}`);
         }
     });
     
-    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
+    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
     
     // Convert to array format
     const availableNetworks = Array.from(networkMap.entries()).map(([name, id]) => ({ name, id }));
     
-    //Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
+    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
     
     // Update the available networks select
     populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
@@ -131,6 +128,7 @@ function initializeGeneralSettings(page) {
     page.querySelector('#ApiKey').value = config.ApiKey || '';
     page.querySelector('#UserId').value = config.UserId || '';
     page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
+    page.querySelector('#WatchProviderRegion').value = config.Region || '';
     page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
     
     const testButton = page.querySelector('#testConnection');
@@ -250,6 +248,7 @@ function initializeAdvancedSettings(page) {
     // Set advanced settings form values
     page.querySelector('#RequestTimeout').value = config.RequestTimeout || '';
     page.querySelector('#RetryAttempts').value = config.RetryAttempts || '';
+    page.querySelector('#MaxDiscoverPages').value = config.MaxDiscoverPages || '';
     page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
     
     // Add event listener for Create Separate Libraries checkbox
@@ -386,20 +385,8 @@ function initializeSyncSettings(page) {
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
-            loadAvailableNetworks(page).then(function(allNetworks) {
-                // Convert allNetworks to a network map format
-                const newNetworkMap = {};
-                allNetworks.forEach(network => {
-                    newNetworkMap[network.name] = network.id;
-                });
-                
-                // Update available networks with the new network map
-                updateAvailableNetworks(page, newNetworkMap);
-                
-                Dashboard.hideLoadingMsg();
-                const activeCount = page.querySelector('#activeNetworks').options.length;
-                const availableCount = page.querySelector('#availableNetworks').options.length;
-                Dashboard.alert(`✅ Available networks refreshed successfully! Found ${allNetworks.length} total networks (${activeCount} active, ${availableCount} available).`);
+            loadAvailableNetworks(page).then(function(availableNetworks) {
+                Dashboard.alert(`✅ Available networks refreshed successfully! Loaded ${availableNetworks.length} new networks.`);
             }).catch(function(error) {
                 Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
@@ -458,13 +445,10 @@ function loadAvailableNetworks(page) {
             // Convert networks to the format expected by updateAvailableNetworks
             const newNetworkMap = {};
             response.networks.forEach(network => {
-                if (network && network.name) {
-                    newNetworkMap[network.name] = network.id;
+                if (network && network.Name) {
+                    newNetworkMap[network.Name] = network.Id;
                 }
             });
-            
-            // Debug: Show the full response structure
-            Dashboard.alert(`🔍 DEBUG: Full API response: ${JSON.stringify(response, null, 2)}`);
             
             // Debug: Show what the newNetworkMap contains
             Dashboard.alert(`🔍 DEBUG: newNetworkMap contains ${Object.keys(newNetworkMap).length} networks: ${JSON.stringify(newNetworkMap, null, 2)}`);
@@ -493,16 +477,16 @@ function populateSelectWithNetworks(selectElement, networks) {
         const option = document.createElement('option');
         
         // Check if network has the expected format
-        if (network && network.name && network.id) {
-            // Network object with name and id
-            option.value = network.name;
-            option.textContent = `${network.name} (${network.id})`;
-            option.dataset.providerId = network.id.toString();
+        if (network && network.Name && network.Id) {
+            // Network object with Name and Id
+            option.value = network.Name;
+            option.textContent = `${network.Name} (${network.Id})`;
+            option.dataset.providerId = network.Id.toString();
             
         selectElement.appendChild(option);
         } else {
             // Invalid network format
-            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { name: string, id: number }`);
+            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { Name: string, Id: number }`);
         }
     });
     
