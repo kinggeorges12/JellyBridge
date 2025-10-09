@@ -165,20 +165,23 @@ public class JellyseerrSyncService
                 result.Processed++;
                 
                 // Check if TV show already exists in Jellyfin
-                var tvShowGuid = GenerateJellyseerrGuid("tv", tvShow.Id);
-                var existingShow = _libraryManager.GetItemById(tvShowGuid);
-                
-                if (existingShow == null)
+                if (tvShow.Id.HasValue)
                 {
-                    // Create placeholder TV show
-                    await CreatePlaceholderTvShowAsync(tvShow);
-                    result.Created++;
-                }
-                else
-                {
-                    // Update existing TV show
-                    await UpdatePlaceholderTvShowAsync(existingShow as Series, tvShow);
-                    result.Updated++;
+                    var tvShowGuid = GenerateJellyseerrGuid("tv", tvShow.Id.Value);
+                    var existingShow = _libraryManager.GetItemById(tvShowGuid);
+                    
+                    if (existingShow == null)
+                    {
+                        // Create placeholder TV show
+                        await CreatePlaceholderTvShowAsync(tvShow);
+                        result.Created++;
+                    }
+                    else
+                    {
+                        // Update existing TV show
+                        await UpdatePlaceholderTvShowAsync(existingShow as Series, tvShow);
+                        result.Updated++;
+                    }
                 }
             }
             catch (Exception ex)
