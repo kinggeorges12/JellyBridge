@@ -119,7 +119,7 @@ function initializeGeneralSettings(page) {
     const config = window.configJellyseerrBridge || {};
     
     // Store the current region value
-    const regionSelect = page.querySelector('#WatchProviderRegion');
+    const regionSelect = page.querySelector('#WatchRegion');
     regionSelect.setAttribute('data-current-value', config.Region);
     
     // Set general settings form values
@@ -128,7 +128,7 @@ function initializeGeneralSettings(page) {
     page.querySelector('#ApiKey').value = config.ApiKey || '';
     page.querySelector('#UserId').value = config.UserId || '';
     page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
-    page.querySelector('#WatchProviderRegion').value = config.Region || '';
+    page.querySelector('#WatchRegion').value = config.Region || '';
     page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
     
     const testButton = page.querySelector('#testConnection');
@@ -364,20 +364,20 @@ function initializeSyncSettings(page) {
     
     // Add/Remove functionality
     addSelectedNetworksButton.addEventListener('click', function() {
-        moveProviders(availableNetworksSelect, activeNetworksSelect);
+        moveNetworks(availableNetworksSelect, activeNetworksSelect);
     });
     
     removeSelectedNetworksButton.addEventListener('click', function() {
-        moveProviders(activeNetworksSelect, availableNetworksSelect);
+        moveNetworks(activeNetworksSelect, availableNetworksSelect);
     });
     
     // Double-click to move items
     availableNetworksSelect.addEventListener('dblclick', function() {
-        moveProviders(availableNetworksSelect, activeNetworksSelect);
+        moveNetworks(availableNetworksSelect, activeNetworksSelect);
     });
     
     activeNetworksSelect.addEventListener('dblclick', function() {
-        moveProviders(activeNetworksSelect, availableNetworksSelect);
+        moveNetworks(activeNetworksSelect, availableNetworksSelect);
     });
     
     // Add refresh available networks button functionality
@@ -430,7 +430,7 @@ function updateClearButtonVisibility(clearButton, searchValue) {
 }
 
 function loadAvailableNetworks(page) {
-    const region = page.querySelector('#WatchProviderRegion').value;
+    const region = page.querySelector('#WatchRegion').value;
     
     Dashboard.alert(`🔍 DEBUG: Starting loadAvailableNetworks with region: "${region}"`);
     
@@ -445,8 +445,8 @@ function loadAvailableNetworks(page) {
             // Convert networks to the format expected by updateAvailableNetworks
             const newNetworkMap = {};
             response.networks.forEach(network => {
-                if (network && network.Name) {
-                    newNetworkMap[network.Name] = network.Id;
+                if (network && network.name) {
+                    newNetworkMap[network.name] = network.id;
                 }
             });
             
@@ -477,16 +477,16 @@ function populateSelectWithNetworks(selectElement, networks) {
         const option = document.createElement('option');
         
         // Check if network has the expected format
-        if (network && network.Name && network.Id) {
-            // Network object with Name and Id
-            option.value = network.Name;
-            option.textContent = `${network.Name} (${network.Id})`;
-            option.dataset.providerId = network.Id.toString();
+        if (network && network.name && network.id !== undefined) {
+            // Network object with name and id
+            option.value = network.name;
+            option.textContent = `${network.name} (${network.id})`;
+            option.dataset.networkId = network.id.toString();
             
-        selectElement.appendChild(option);
+            selectElement.appendChild(option);
         } else {
             // Invalid network format
-            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { Name: string, Id: number }`);
+            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { name: string, id: number }`);
         }
     });
     
@@ -502,7 +502,7 @@ function filterSelect(selectElement, searchTerm) {
     });
 }
 
-function moveProviders(fromSelect, toSelect) {
+function moveNetworks(fromSelect, toSelect) {
     const selectedOptions = Array.from(fromSelect.selectedOptions);
     const movedValues = [];
     
@@ -522,8 +522,8 @@ function moveProviders(fromSelect, toSelect) {
         const newOption = document.createElement('option');
         newOption.value = option.value;
         newOption.textContent = option.textContent;
-        if (option.dataset.providerId) {
-            newOption.dataset.providerId = option.dataset.providerId;
+        if (option.dataset.networkId) {
+            newOption.dataset.networkId = option.dataset.networkId;
         }
         toSelect.appendChild(newOption);
         
@@ -562,8 +562,8 @@ function getActiveNetworkMap(page) {
     const mapping = {};
     
     Array.from(activeNetworksSelect.options).forEach(option => {
-        if (option.dataset.providerId) {
-            mapping[option.value] = parseInt(option.dataset.providerId);
+        if (option.dataset.networkId) {
+            mapping[option.value] = parseInt(option.dataset.networkId);
         }
     });
     
@@ -596,7 +596,7 @@ function savePluginConfiguration(view) {
             config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim() || 'Streaming - ';
             config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
-            config.Region = form.querySelector('#WatchProviderRegion').value;
+            config.Region = form.querySelector('#WatchRegion').value;
             config.NetworkMap = getActiveNetworkMap(view);
             config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
             config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
@@ -631,7 +631,7 @@ function loadRegions(page) {
         dataType: 'json'
     }).then(function (data) {
         if (data && data.success && data.regions) {
-            const select = page.querySelector('#WatchProviderRegion');
+            const select = page.querySelector('#WatchRegion');
             if (select) {
                 // Clear existing options
                 select.innerHTML = '';

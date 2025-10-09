@@ -14,11 +14,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     {
         private readonly ILogger<ConfigurationController> _logger;
         private readonly JellyseerrSyncService _syncService;
+        private readonly JellyseerrBridgeService _bridgeService;
 
-        public ConfigurationController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService)
+        public ConfigurationController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrBridgeService bridgeService)
         {
             _logger = loggerFactory.CreateLogger<ConfigurationController>();
             _syncService = syncService;
+            _bridgeService = bridgeService;
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
@@ -30,9 +32,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             try
             {
                 var config = Plugin.Instance.Configuration;
-                
-                // Ensure default network mappings are loaded if NetworkMap is empty
-                config.EnsureDefaultNetworkMappings();
                 
                 // Convert the internal list format to dictionary format for JavaScript
                 var configForFrontend = new
@@ -318,9 +317,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     config.JellyseerrUrl, 
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
-                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
-                
-                var regions = await apiService.GetWatchProviderRegionsAsync();
+                var regions = await _bridgeService.GetWatchRegionsAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", regions?.Count ?? 0);
                 
@@ -341,10 +338,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch provider regions");
+                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch regions");
                 return Ok(new { 
                     success = false, 
-                    message = $"Failed to get watch provider regions: {ex.Message}" 
+                    message = $"Failed to get watch regions: {ex.Message}" 
                 });
             }
         }
@@ -357,12 +354,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             try
             {
                 var config = Plugin.Instance.Configuration;
-                var apiService = HttpContext.RequestServices.GetRequiredService<JellyseerrApiService>();
-                
                 // Use provided region or default from config
                 var targetRegion = region ?? config.Region ?? "US";
                 
-                var networks = await apiService.GetNetworksAsync(targetRegion);
+                var networks = await _bridgeService.GetWatchNetworksAsync(targetRegion);
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", networks?.Count ?? 0, targetRegion);
                 
@@ -373,10 +368,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch providers for region {Region}", region);
+                _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch networks for region {Region}", region);
                 return Ok(new { 
                     success = false, 
-                    message = $"Failed to get watch providers: {ex.Message}" 
+                    message = $"Failed to get networks: {ex.Message}" 
                 });
             }
         }
