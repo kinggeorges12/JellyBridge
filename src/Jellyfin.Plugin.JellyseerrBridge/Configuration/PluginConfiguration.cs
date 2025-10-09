@@ -93,7 +93,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the user ID for requests.
     /// </summary>
-    public int? UserId { get; set; }
+    public int? UserId { get; set; } = (int)DefaultValues[nameof(UserId)];
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.

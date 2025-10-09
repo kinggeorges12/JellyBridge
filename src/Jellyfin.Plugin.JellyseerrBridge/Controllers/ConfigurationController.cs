@@ -39,16 +39,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     JellyseerrUrl = config.JellyseerrUrl,
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
-                    UserId = config.UserId ?? (int)PluginConfiguration.DefaultValues[nameof(config.UserId)],
-                    IsEnabled = config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)],
-                    SyncIntervalHours = config.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(config.SyncIntervalHours)],
+                    UserId = config.UserId.HasValue ? config.UserId.Value : (int)PluginConfiguration.DefaultValues[nameof(config.UserId)],
+                    IsEnabled = config.IsEnabled.HasValue ? config.IsEnabled.Value : (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)],
+                    SyncIntervalHours = config.SyncIntervalHours.HasValue ? config.SyncIntervalHours.Value : (int)PluginConfiguration.DefaultValues[nameof(config.SyncIntervalHours)],
                     CreateSeparateLibraries = config.CreateSeparateLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.CreateSeparateLibraries)],
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.ExcludeFromMainLibraries)],
                     AutoSyncOnStartup = config.AutoSyncOnStartup ?? (bool)PluginConfiguration.DefaultValues[nameof(config.AutoSyncOnStartup)],
-                    RequestTimeout = config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)],
-                    RetryAttempts = config.RetryAttempts ?? (int)PluginConfiguration.DefaultValues[nameof(config.RetryAttempts)],
-                    MaxDiscoverPages = config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)],
+                    RequestTimeout = config.RequestTimeout.HasValue ? config.RequestTimeout.Value : (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)],
+                    RetryAttempts = config.RetryAttempts.HasValue ? config.RetryAttempts.Value : (int)PluginConfiguration.DefaultValues[nameof(config.RetryAttempts)],
+                    MaxDiscoverPages = config.MaxDiscoverPages.HasValue ? config.MaxDiscoverPages.Value : (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)],
                     EnableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)],
                     Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
@@ -400,7 +400,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             else if (typeof(T) == typeof(int?))
             {
-                setter((T)(object)element.GetInt32());
+                if (element.ValueKind == JsonValueKind.Number)
+                {
+                    setter((T)(object)element.GetInt32());
+                }
+                else if (element.ValueKind == JsonValueKind.String)
+                {
+                    var stringValue = element.GetString();
+                    if (int.TryParse(stringValue, out var intValue))
+                    {
+                        setter((T)(object)intValue);
+                    }
+                }
             }
             else if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
             {
@@ -408,7 +419,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             else
             {
-                //setter((T)PluginConfiguration.DefapultValues[propertyName]);
                 return;
             }
         }
