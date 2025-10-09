@@ -616,6 +616,7 @@ function savePluginConfiguration(view) {
             config.NetworkMap = getActiveNetworkMap(view);
             config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
             config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
+            config.MaxDiscoverPages = parseInt(form.querySelector('#MaxDiscoverPages').value) || 10;
             config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
             
             // Save the configuration using our custom endpoint
