@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-09T22:43:16.086Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.146.0.0/JellyseerrBridge-0.146.0.0-DLL.zip",
+        "version": "0.146.0.0",
+        "changelog": "v0.146.0.0 - Fixed configuration update to use fresh instance - UpdatePluginConfiguration now creates new PluginConfiguration instance instead of modifying existing one, ensuring only provided values are set and missing values are properly blanked",
+        "checksum": "FBD17E3473575EEA62841BB263F7FD28",
+        "dependencies": []
+      },
+      {
         "dependencies": [],
         "changelog": "v0.145.0.0 - Removed default value initializations from PluginConfiguration properties - configuration now starts clean without default values, only provided values are set, NetworkMap retains default streaming services list",
         "checksum": "BE075BDC23A07B0E120ECAFA2DCA72BB",
