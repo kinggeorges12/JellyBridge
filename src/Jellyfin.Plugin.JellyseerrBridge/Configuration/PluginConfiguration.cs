@@ -93,7 +93,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the user ID for requests.
     /// </summary>
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
@@ -103,7 +103,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the sync interval in hours.
     /// </summary>
-    public int SyncIntervalHours { get; set; }
+    public int? SyncIntervalHours { get; set; }
 
     /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.
@@ -129,17 +129,17 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
     /// This applies to both movies and TV shows discovery.
     /// </summary>
-    public int MaxDiscoverPages { get; set; }
+    public int? MaxDiscoverPages { get; set; }
 
     /// <summary>
     /// Gets or sets the request timeout in seconds.
     /// </summary>
-    public int RequestTimeout { get; set; }
+    public int? RequestTimeout { get; set; }
 
     /// <summary>
     /// Gets or sets the number of retry attempts.
     /// </summary>
-    public int RetryAttempts { get; set; }
+    public int? RetryAttempts { get; set; }
 
     /// <summary>
     /// Gets or sets whether to enable debug logging.

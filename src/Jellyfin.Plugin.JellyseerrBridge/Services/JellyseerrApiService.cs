@@ -210,7 +210,8 @@ public class JellyseerrApiService
     {
         var allItems = new List<T>();
         var config = Plugin.Instance.Configuration;
-        var maxPages = config.MaxDiscoverPages > 0 ? config.MaxDiscoverPages : int.MaxValue;
+        var maxPages = (config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)]) > 0 ? 
+                       config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)] : int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -388,8 +389,8 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(config.RequestTimeout);
-        var retryAttempts = config.RetryAttempts;
+        var timeout = TimeSpan.FromSeconds(config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)]);
+        var retryAttempts = config.RetryAttempts ?? (int)PluginConfiguration.DefaultValues[nameof(config.RetryAttempts)];
         var enableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)];
         
         Exception? lastException = null;
@@ -447,7 +448,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, config.RequestTimeout);
+                        attempt, retryAttempts, config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)]);
                 }
                 
                 if (attempt == retryAttempts)
@@ -810,7 +811,7 @@ public class JellyseerrTvShow
     public int Id { get; set; }
     
     [JsonPropertyName("firstAirDate")]
-    public string FirstAirDate { get; set; } = string.Empty;
+    public string? FirstAirDate { get; set; }
     
     [JsonPropertyName("genreIds")]
     public List<int> GenreIds { get; set; } = new();
@@ -825,13 +826,13 @@ public class JellyseerrTvShow
     public List<string> OriginCountry { get; set; } = new();
     
     [JsonPropertyName("originalLanguage")]
-    public string OriginalLanguage { get; set; } = string.Empty;
+    public string? OriginalLanguage { get; set; }
     
     [JsonPropertyName("originalName")]
-    public string OriginalName { get; set; } = string.Empty;
+    public string? OriginalName { get; set; }
     
     [JsonPropertyName("overview")]
-    public string Overview { get; set; } = string.Empty;
+    public string? Overview { get; set; }
     
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -843,10 +844,10 @@ public class JellyseerrTvShow
     public int VoteCount { get; set; }
     
     [JsonPropertyName("backdropPath")]
-    public string BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; }
     
     [JsonPropertyName("posterPath")]
-    public string PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; }
     
     [JsonPropertyName("mediaInfo")]
     public JellyseerrMediaInfo? MediaInfo { get; set; }
