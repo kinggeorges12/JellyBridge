@@ -408,7 +408,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             else
             {
-                setter((T)PluginConfiguration.DefaultValues[propertyName]);
+                //setter((T)PluginConfiguration.DefapultValues[propertyName]);
+                return;
             }
         }
 
