@@ -48,6 +48,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     AutoSyncOnStartup = config.AutoSyncOnStartup,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
+                    MaxDiscoverPages = config.MaxDiscoverPages,
                     EnableDebugLogging = config.EnableDebugLogging,
                     Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
