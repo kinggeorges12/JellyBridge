@@ -412,13 +412,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
-        private static bool IsEmptyValue(JsonElement element)
-        {
-            return element.ValueKind == JsonValueKind.Null ||
-                   element.ValueKind == JsonValueKind.Undefined ||
-                   (element.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(element.GetString()));
-        }
-
         private static bool IsEmptyValue<T>(JsonElement element)
         {
             if (element.ValueKind == JsonValueKind.Null ||

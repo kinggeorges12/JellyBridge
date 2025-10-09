@@ -597,6 +597,22 @@ function nullIfDefault(value, defaultValue) {
     return value !== defaultValue ? value : null;
 }
 
+// Helper function to safely parse integers with user feedback
+function safeParseInt(element) {
+    const value = element.value;
+    const label = element.closest('.inputContainer')?.querySelector('label')?.textContent || 
+                  element.closest('label')?.textContent || 
+                  element.getAttribute('label') || 
+                  element.id;
+    
+    const parsed = parseInt(value);
+    if (isNaN(parsed)) {
+        Dashboard.alert(`❌ Invalid number format for ${label}. Please enter a valid number.`);
+        throw new Error(`Invalid number format for ${label}`);
+    }
+    return parsed;
+}
+
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
@@ -618,17 +634,17 @@ function savePluginConfiguration(view) {
             config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
             config.ApiKey = apiKey;
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
-            config.UserId = form.querySelector('#UserId').value;
-            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value);
+            config.UserId = safeParseInt(form.querySelector('#UserId'));
+            config.SyncIntervalHours = safeParseInt(form.querySelector('#SyncIntervalHours'));
             config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
             config.Region = form.querySelector('#selectWatchRegion').value;
             config.NetworkMap = getActiveNetworkMap(view);
-            config.RequestTimeout = form.querySelector('#RequestTimeout').value;
-            config.RetryAttempts = form.querySelector('#RetryAttempts').value;
-            config.MaxDiscoverPages = form.querySelector('#MaxDiscoverPages').value;
+            config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
+            config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
+            config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
             
             // Save the configuration using our custom endpoint
