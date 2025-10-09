@@ -142,7 +142,8 @@ public class JellyseerrSyncService
                 result.Processed++;
                 
                 // Check if movie already exists in Jellyfin
-                var existingMovie = _libraryManager.GetItemById($"jellyseerr-movie-{movie.Id}");
+                var movieGuid = GenerateJellyseerrGuid("movie", movie.Id);
+                var existingMovie = _libraryManager.GetItemById(movieGuid);
                 
                 if (existingMovie == null)
                 {
@@ -180,7 +181,8 @@ public class JellyseerrSyncService
                 result.Processed++;
                 
                 // Check if TV show already exists in Jellyfin
-                var existingShow = _libraryManager.GetItemById($"jellyseerr-tv-{tvShow.Id}");
+                var tvShowGuid = GenerateJellyseerrGuid("tv", tvShow.Id);
+                var existingShow = _libraryManager.GetItemById(tvShowGuid);
                 
                 if (existingShow == null)
                 {
@@ -297,6 +299,23 @@ public class JellyseerrSyncService
         // Update request status in Jellyfin metadata
         // Implementation depends on Jellyfin's internal APIs
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Generates a consistent GUID for Jellyseerr items based on type and ID.
+    /// </summary>
+    private Guid GenerateJellyseerrGuid(string type, int id)
+    {
+        // Create a deterministic GUID based on the type and ID
+        var input = $"jellyseerr-{type}-{id}";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        var hash = System.Security.Cryptography.SHA256.HashData(bytes);
+        
+        // Use first 16 bytes of hash to create GUID
+        var guidBytes = new byte[16];
+        Array.Copy(hash, guidBytes, 16);
+        
+        return new Guid(guidBytes);
     }
 }
 

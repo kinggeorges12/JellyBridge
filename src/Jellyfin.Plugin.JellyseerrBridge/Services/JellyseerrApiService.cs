@@ -328,18 +328,43 @@ public class JellyseerrApiService
     {
         try
         {
-            // For paginated responses, we need to deserialize the full paginated response
-            var paginatedResponse = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            // Parse the paginated response to extract the results array
+            var jsonDocument = JsonDocument.Parse(content);
+            var root = jsonDocument.RootElement;
             
-            _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
-            return paginatedResponse ?? GetDefaultValue<T>();
+            // Check if this is a paginated response with a 'results' array
+            if (root.TryGetProperty("results", out var resultsElement) && resultsElement.ValueKind == JsonValueKind.Array)
+            {
+                // Deserialize the results array directly
+                var resultsJson = resultsElement.GetRawText();
+                var results = JsonSerializer.Deserialize<T>(resultsJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
+                return results ?? GetDefaultValue<T>();
+            }
+            else
+            {
+                // Fallback: try to deserialize the entire response as the expected type
+                var paginatedResponse = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                _logger.LogInformation("Successfully deserialized paginated response for {Operation} (fallback)", operationName);
+                return paginatedResponse ?? GetDefaultValue<T>();
+            }
         }
         catch (JsonException jsonEx)
         {
             _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deserializing {Operation} JSON", operationName);
             return GetDefaultValue<T>();
         }
     }

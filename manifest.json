@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-09T06:27:51.310Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.129.0.0/JellyseerrBridge-0.129.0.0-DLL.zip",
+        "checksum": "67C5E2A1E5B0A8E57AA050FE8608EA74",
+        "version": "0.129.0.0",
+        "changelog": "v0.129.0.0 - Fixed duplicate event listeners issue and added debug logging for network map",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "changelog": "v0.128.0.0 - Refactored network management, removed unused endpoints, updated naming conventions from providers to networks",
         "version": "0.128.0.0",
         "timestamp": "2025-10-09T05:05:56.365Z",
