@@ -40,16 +40,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
                     UserId = config.UserId,
-                    IsEnabled = config.IsEnabled,
+                    IsEnabled = config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)],
                     SyncIntervalHours = config.SyncIntervalHours,
-                    CreateSeparateLibraries = config.CreateSeparateLibraries,
+                    CreateSeparateLibraries = config.CreateSeparateLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.CreateSeparateLibraries)],
                     LibraryPrefix = config.LibraryPrefix,
-                    ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
-                    AutoSyncOnStartup = config.AutoSyncOnStartup,
+                    ExcludeFromMainLibraries = config.ExcludeFromMainLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.ExcludeFromMainLibraries)],
+                    AutoSyncOnStartup = config.AutoSyncOnStartup ?? (bool)PluginConfiguration.DefaultValues[nameof(config.AutoSyncOnStartup)],
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
-                    EnableDebugLogging = config.EnableDebugLogging,
+                    EnableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)],
                     Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
                     DefaultValues = PluginConfiguration.DefaultValues
@@ -74,24 +74,24 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var config = Plugin.Instance.Configuration;
                 
                 // Update configuration properties using simplified helper
-                SetValueOrDefault(configData, "JellyseerrUrl", config, (string value) => config.JellyseerrUrl = value);
-                SetValueOrDefault(configData, "ApiKey", config, (string value) => config.ApiKey = value);
-                SetValueOrDefault(configData, "LibraryDirectory", config, (string value) => config.LibraryDirectory = value);
-                SetValueOrDefault(configData, "UserId", config, (int value) => config.UserId = value);
-                SetValueOrDefault(configData, "SyncIntervalHours", config, (int value) => config.SyncIntervalHours = value);
-                SetValueOrDefault(configData, "LibraryPrefix", config, (string value) => config.LibraryPrefix = value);
-                SetValueOrDefault(configData, "RequestTimeout", config, (int value) => config.RequestTimeout = value);
-                SetValueOrDefault(configData, "RetryAttempts", config, (int value) => config.RetryAttempts = value);
-                SetValueOrDefault(configData, "MaxDiscoverPages", config, (int value) => config.MaxDiscoverPages = value);
-                SetValueOrDefault(configData, "IsEnabled", config, (bool value) => config.IsEnabled = value);
-                SetValueOrDefault(configData, "CreateSeparateLibraries", config, (bool value) => config.CreateSeparateLibraries = value);
-                SetValueOrDefault(configData, "ExcludeFromMainLibraries", config, (bool value) => config.ExcludeFromMainLibraries = value);
-                SetValueOrDefault(configData, "AutoSyncOnStartup", config, (bool value) => config.AutoSyncOnStartup = value);
-                SetValueOrDefault(configData, "EnableDebugLogging", config, (bool value) => config.EnableDebugLogging = value);
-                SetValueOrDefault(configData, "Region", config, (string value) => config.Region = value);
+                SetValueOrDefault(configData, nameof(config.JellyseerrUrl), config, (string value) => config.JellyseerrUrl = value);
+                SetValueOrDefault(configData, nameof(config.ApiKey), config, (string value) => config.ApiKey = value);
+                SetValueOrDefault(configData, nameof(config.LibraryDirectory), config, (string value) => config.LibraryDirectory = value);
+                SetValueOrDefault(configData, nameof(config.UserId), config, (int value) => config.UserId = value);
+                SetValueOrDefault(configData, nameof(config.SyncIntervalHours), config, (int value) => config.SyncIntervalHours = value);
+                SetValueOrDefault(configData, nameof(config.LibraryPrefix), config, (string value) => config.LibraryPrefix = value);
+                SetValueOrDefault(configData, nameof(config.RequestTimeout), config, (int value) => config.RequestTimeout = value);
+                SetValueOrDefault(configData, nameof(config.RetryAttempts), config, (int value) => config.RetryAttempts = value);
+                SetValueOrDefault(configData, nameof(config.MaxDiscoverPages), config, (int value) => config.MaxDiscoverPages = value);
+                SetValueOrDefault(configData, nameof(config.IsEnabled), config, (bool? value) => config.IsEnabled = value);
+                SetValueOrDefault(configData, nameof(config.CreateSeparateLibraries), config, (bool? value) => config.CreateSeparateLibraries = value);
+                SetValueOrDefault(configData, nameof(config.ExcludeFromMainLibraries), config, (bool? value) => config.ExcludeFromMainLibraries = value);
+                SetValueOrDefault(configData, nameof(config.AutoSyncOnStartup), config, (bool? value) => config.AutoSyncOnStartup = value);
+                SetValueOrDefault(configData, nameof(config.EnableDebugLogging), config, (bool? value) => config.EnableDebugLogging = value);
+                SetValueOrDefault(configData, nameof(config.Region), config, (string value) => config.Region = value);
                 
                 // Handle NetworkMap dictionary conversion
-                if (configData.TryGetProperty("NetworkMap", out var networkMapElement))
+                if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
                 {
                     var networkDict = new Dictionary<int, string>();
                     
@@ -405,7 +405,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     setter((T)(object)intValue);
                 }
             }
-            else if (typeof(T) == typeof(bool))
+            else if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
             {
                 setter((T)(object)element.GetBoolean());
             }

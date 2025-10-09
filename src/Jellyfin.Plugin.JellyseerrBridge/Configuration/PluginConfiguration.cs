@@ -98,7 +98,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
     /// </summary>
-    public bool IsEnabled { get; set; } = (bool)DefaultValues[nameof(IsEnabled)];
+    public bool? IsEnabled { get; set; }
 
     /// <summary>
     /// Gets or sets the sync interval in hours.
@@ -108,7 +108,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.
     /// </summary>
-    public bool CreateSeparateLibraries { get; set; } = (bool)DefaultValues[nameof(CreateSeparateLibraries)];
+    public bool? CreateSeparateLibraries { get; set; }
 
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
@@ -118,12 +118,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to exclude placeholder shows from main libraries.
     /// </summary>
-    public bool ExcludeFromMainLibraries { get; set; } = (bool)DefaultValues[nameof(ExcludeFromMainLibraries)];
+    public bool? ExcludeFromMainLibraries { get; set; }
 
     /// <summary>
     /// Gets or sets whether to auto-sync on startup.
     /// </summary>
-    public bool AutoSyncOnStartup { get; set; } = (bool)DefaultValues[nameof(AutoSyncOnStartup)];
+    public bool? AutoSyncOnStartup { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
@@ -144,7 +144,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to enable debug logging.
     /// </summary>
-    public bool EnableDebugLogging { get; set; } = (bool)DefaultValues[nameof(EnableDebugLogging)];
+    public bool? EnableDebugLogging { get; set; }
 
     /// <summary>
     /// Gets or sets the watch network region (ISO 3166-1 country code).
