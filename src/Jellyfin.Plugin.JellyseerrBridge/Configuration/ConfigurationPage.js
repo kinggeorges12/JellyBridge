@@ -118,31 +118,12 @@ function initializeGeneralSettings(page) {
     
     // Set general settings form values
     page.querySelector('#IsEnabled').checked = config.IsEnabled;
+    page.querySelector('#IsEnabled').labelElement = page.querySelector('label[for="IsEnabled"]');
     page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl;
     page.querySelector('#ApiKey').value = config.ApiKey;
     page.querySelector('#UserId').value = config.UserId;
     page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours;
     page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup;
-    
-    // Store the current region value or set to the default value
-    const regionSelect = page.querySelector('#WatchRegion');
-
-    // Check if the option already exists
-    const existingOption = Array.from(regionSelect.options).find(option => option.value === config.Region);
-    if (!existingOption) {
-        const option = document.createElement('option');
-        option.value = config.Region;
-        option.textContent = config.Region; // Use the value as the display text
-        regionSelect.appendChild(option);
-    }
-    // Set the current value
-    regionSelect.setAttribute('data-current-value', config.Region);
-    
-    // Sort the region options using our standard sorting function
-    sortSelectOptions(regionSelect);
-                
-    // Set current value back to the original value
-    select.value = select.getAttribute('data-current-value');
     
     const testButton = page.querySelector('#testConnection');
     if (!testButton) {
@@ -322,6 +303,9 @@ function initializeSyncSettings(page) {
     const clearActiveNetworkSearch = page.querySelector('#clearActiveNetworkSearch');
     const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
+    // Populate region settings
+    populateRegion(page, [{ iso_3166_1: config.Region }]);
+    
     // Load active networks from saved configuration
     const networkMapping = config.NetworkMap || {};
     const activeNetworks = Object.entries(networkMapping).map(([id, name]) => ({ id: parseInt(id), name }));
@@ -429,7 +413,7 @@ function updateClearButtonVisibility(clearButton, searchValue) {
 }
 
 function loadAvailableNetworks(page) {
-    const region = page.querySelector('#WatchRegion').value;
+    const region = page.querySelector('#selectWatchRegion').value;
     
     Dashboard.alert(`🔍 DEBUG: Starting loadAvailableNetworks with region: "${region}"`);
     
@@ -555,6 +539,45 @@ function sortSelectOptions(selectElement) {
     });
 }
 
+function populateRegion(page, regionValues) {
+    const regionSelect = page.querySelector('#selectWatchRegion');
+    
+    // Set the current value
+    const selectedValue = regionSelect.value;
+
+    // Create a Map to store unique regions (ISO code as key, region object as value)
+    const uniqueRegions = new Map();
+    
+    // First, add existing options to the map
+    Array.from(regionSelect.options).forEach(option => {
+        uniqueRegions.set(option.value, {
+            iso_3166_1: option.value,
+            textContent: option.textContent
+        });
+    });
+    
+    // Then, overlay new region values over the existing set (this will overwrite duplicates)
+    regionValues.forEach(region => {
+        uniqueRegions.set(region.iso_3166_1, region);
+    });
+    
+    // Clear existing options and rebuild from unique regions
+    regionSelect.innerHTML = '';
+    uniqueRegions.forEach(region => {
+        const option = document.createElement('option');
+        option.value = region.iso_3166_1;
+        // Use existing textContent if available, otherwise format from region object
+        option.textContent = region.textContent || (region.native_name ? `${region.native_name} (${region.iso_3166_1})` : region.iso_3166_1);
+        regionSelect.appendChild(option);
+    });
+    
+    // Sort the region options using our standard sorting function
+    sortSelectOptions(regionSelect);
+    
+    // Set current value back to the original value
+    regionSelect.value = selectedValue;
+}
+
 
 function getActiveNetworkMap(page) {
     const activeNetworksSelect = page.querySelector('#activeNetworks');
@@ -601,7 +624,7 @@ function savePluginConfiguration(view) {
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
-            config.Region = form.querySelector('#WatchRegion').value;
+            config.Region = form.querySelector('#selectWatchRegion').value;
             config.NetworkMap = getActiveNetworkMap(view);
             config.RequestTimeout = form.querySelector('#RequestTimeout').value;
             config.RetryAttempts = form.querySelector('#RetryAttempts').value;
@@ -636,30 +659,10 @@ function loadRegions(page) {
         dataType: 'json'
     }).then(function (data) {
         if (data && data.success && data.regions) {
-            const select = page.querySelector('#WatchRegion');
+            const select = page.querySelector('#selectWatchRegion');
             if (select) {
-                // Clear existing options
-                select.innerHTML = '';
-
-                // Set the current value so it retains after refreshing
-                select.setAttribute('data-current-value', select.value);
-                
-                // Filter regions with valid English names
-                const validRegions = data.regions.filter(region => region.english_name && region.english_name.trim() !== '');
-                
-                // Add options for each region
-                validRegions.forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region.iso_3166_1;
-                    option.textContent = `${region.english_name} (${region.native_name})`;
-                    select.appendChild(option);
-                });
-                
-                // Sort the regions using our standard sorting function
-                sortSelectOptions(select);
-                
-                // Set value back to the saved current value
-                select.value = select.getAttribute('data-current-value');
+                // Use the new populateRegion function
+                populateRegion(page, validRegions);
             }
             return Promise.resolve();
         } else {
