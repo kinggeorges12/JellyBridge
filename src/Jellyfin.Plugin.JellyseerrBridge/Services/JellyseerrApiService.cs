@@ -854,31 +854,82 @@ public class JellyseerrTvShow
 /// </summary>
 public class JellyseerrMediaInfo
 {
+    [JsonPropertyName("downloadStatus")]
     public List<object> DownloadStatus { get; set; } = new();
+    
+    [JsonPropertyName("downloadStatus4k")]
     public List<object> DownloadStatus4k { get; set; } = new();
+    
+    [JsonPropertyName("id")]
     public int Id { get; set; }
+    
+    [JsonPropertyName("mediaType")]
     public string MediaType { get; set; } = string.Empty;
+    
+    [JsonPropertyName("tmdbId")]
     public int TmdbId { get; set; }
+    
+    [JsonPropertyName("tvdbId")]
     public int? TvdbId { get; set; }
+    
+    [JsonPropertyName("imdbId")]
     public string? ImdbId { get; set; }
+    
+    [JsonPropertyName("status")]
     public int Status { get; set; }
+    
+    [JsonPropertyName("status4k")]
     public int Status4k { get; set; }
+    
+    [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
+    
+    [JsonPropertyName("updatedAt")]
     public DateTime UpdatedAt { get; set; }
+    
+    [JsonPropertyName("lastSeasonChange")]
     public DateTime LastSeasonChange { get; set; }
+    
+    [JsonPropertyName("mediaAddedAt")]
     public DateTime MediaAddedAt { get; set; }
+    
+    [JsonPropertyName("serviceId")]
     public int? ServiceId { get; set; }
+    
+    [JsonPropertyName("serviceId4k")]
     public int? ServiceId4k { get; set; }
+    
+    [JsonPropertyName("externalServiceId")]
     public int? ExternalServiceId { get; set; }
+    
+    [JsonPropertyName("externalServiceId4k")]
     public int? ExternalServiceId4k { get; set; }
+    
+    [JsonPropertyName("externalServiceSlug")]
     public string? ExternalServiceSlug { get; set; }
+    
+    [JsonPropertyName("externalServiceSlug4k")]
     public string? ExternalServiceSlug4k { get; set; }
+    
+    [JsonPropertyName("ratingKey")]
     public string? RatingKey { get; set; }
+    
+    [JsonPropertyName("ratingKey4k")]
     public string? RatingKey4k { get; set; }
+    
+    [JsonPropertyName("jellyfinMediaId")]
     public string? JellyfinMediaId { get; set; }
+    
+    [JsonPropertyName("jellyfinMediaId4k")]
     public string? JellyfinMediaId4k { get; set; }
+    
+    [JsonPropertyName("watchlists")]
     public List<object> Watchlists { get; set; } = new();
+    
+    [JsonPropertyName("mediaUrl")]
     public string? MediaUrl { get; set; }
+    
+    [JsonPropertyName("serviceUrl")]
     public string? ServiceUrl { get; set; }
 }
 
