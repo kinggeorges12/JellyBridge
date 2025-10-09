@@ -387,29 +387,39 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         /// <param name="setter">Action to set the property value.</param>
         private static void SetValueOrDefault<T>(JsonElement configData, string propertyName, object config, Action<T> setter)
         {
-            if (configData.TryGetProperty(propertyName, out var element))
+            if (!configData.TryGetProperty(propertyName, out var element))
+                return;
+
+            if (IsEmptyValue(element))
+                return;
+
+            if (typeof(T) == typeof(string))
             {
-                T value;
-                if (typeof(T) == typeof(string))
-                {
-                    var stringValue = element.GetString();
-                    value = (T)(object)(string.IsNullOrWhiteSpace(stringValue) ? (string)PluginConfiguration.DefaultValues[propertyName] : stringValue);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    value = (T)(object)(element.TryGetInt32(out int intValue) ? intValue : (int)PluginConfiguration.DefaultValues[propertyName]);
-                }
-                else if (typeof(T) == typeof(bool))
-                {
-                    value = (T)(object)element.GetBoolean();
-                }
-                else
-                {
-                    value = (T)PluginConfiguration.DefaultValues[propertyName];
-                }
-                
-                setter(value);
+                var stringValue = element.GetString()!;
+                setter((T)(object)stringValue);
             }
+            else if (typeof(T) == typeof(int))
+            {
+                if (element.TryGetInt32(out int intValue))
+                {
+                    setter((T)(object)intValue);
+                }
+            }
+            else if (typeof(T) == typeof(bool))
+            {
+                setter((T)(object)element.GetBoolean());
+            }
+            else
+            {
+                setter((T)PluginConfiguration.DefaultValues[propertyName]);
+            }
+        }
+
+        private static bool IsEmptyValue(JsonElement element)
+        {
+            return element.ValueKind == JsonValueKind.Null ||
+                   element.ValueKind == JsonValueKind.Undefined ||
+                   (element.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(element.GetString()));
         }
     }
 

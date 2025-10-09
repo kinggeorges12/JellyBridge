@@ -35,11 +35,11 @@ export default function (view) {
                 initializeAdvancedSettings(page);
                 
                 isInitialized = true;
-                Dashboard.hideLoadingMsg();
             })
             .catch(function (error) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
             });
     });
     
@@ -100,14 +100,10 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
             networkMap.set(parseInt(id), name);
         }
     });
-    
-    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Total networks to consider: ${Object.keys(combinedNetworkMap).length}, Available networks: ${networkMap.size}`);
-    
+        
     // Convert to array format
     const availableNetworks = Array.from(networkMap.entries()).map(([id, name]) => ({ id, name }));
-    
-    Dashboard.alert(`🔍 DEBUG: updateAvailableNetworks - Final available networks count: ${availableNetworks.length}`);
-    
+        
     // Update the available networks select
     populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
 
@@ -155,8 +151,6 @@ function initializeGeneralSettings(page) {
             contentType: 'application/json',
             dataType: 'json'
         }).then(function (data) {
-            Dashboard.hideLoadingMsg();
-            
             const debugInfo = 'CONNECTION RESPONSE DEBUG:<br>' +
                 'Response exists: ' + (data ? 'YES' : 'NO') + '<br>' +
                 'Response type: ' + typeof data + '<br>' +
@@ -193,7 +187,6 @@ function initializeGeneralSettings(page) {
                 Dashboard.alert('❌ CONNECTION FAILED!<br>' + debugInfo);
             }
         }).catch(function (error) {
-            Dashboard.hideLoadingMsg();
             const debugInfo = 'CONNECTION ERROR DEBUG:<br>' +
                 'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
                 'Error type: ' + typeof error + '<br>' +
@@ -203,6 +196,8 @@ function initializeGeneralSettings(page) {
                 'Full error: ' + JSON.stringify(error);
             
             Dashboard.alert('❌ CONNECTION ERROR!<br>' + debugInfo);
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
         });
     });
     
@@ -213,11 +208,11 @@ function initializeGeneralSettings(page) {
             Dashboard.showLoadingMsg();
             // Use the reusable function to save configuration
             savePluginConfiguration(page).then(function (result) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.processPluginConfigurationUpdateResult(result);
             }).catch(function (error) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
             });
             e.preventDefault();
             return false;
@@ -388,8 +383,9 @@ function initializeSyncSettings(page) {
             loadAvailableNetworks(page).then(function(availableNetworks) {
                 Dashboard.alert(`✅ Available networks refreshed successfully! Loaded ${availableNetworks.length} new networks.`);
             }).catch(function(error) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
             });
         });
     }
@@ -411,11 +407,11 @@ function initializeSyncSettings(page) {
         refreshButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('✅ Regions refreshed successfully!');
             }).catch(function(error) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
             });
         });
     }
@@ -449,10 +445,7 @@ function loadAvailableNetworks(page) {
                     newNetworkMap[network.id] = network.name;
                 }
             });
-            
-            // Debug: Show what the newNetworkMap contains
-            Dashboard.alert(`🔍 DEBUG: newNetworkMap contains ${Object.keys(newNetworkMap).length} networks: ${JSON.stringify(newNetworkMap, null, 2)}`);
-            
+                        
             // Use updateAvailableNetworks to handle the rest
             return Promise.resolve(updateAvailableNetworks(page, newNetworkMap));
         } else {
@@ -680,8 +673,6 @@ function performSync() {
         contentType: 'application/json',
         dataType: 'json'
     }).then(function(syncData) {
-        Dashboard.hideLoadingMsg();
-        
         if (syncData && syncData.success) {
             // Parse the sync results for better user feedback
             const message = syncData.message || 'Sync completed successfully';
@@ -717,8 +708,9 @@ function performSync() {
             throw new Error(syncData?.message || 'Sync failed');
         }
     }).catch(function(error) {
-        Dashboard.hideLoadingMsg();
         Dashboard.alert('❌ Manual sync failed: ' + (error?.message || 'Unknown error'));
+    }).finally(function() {
+        Dashboard.hideLoadingMsg();
     });
 }
 
@@ -737,13 +729,11 @@ function performManualSync(page) {
             Dashboard.showLoadingMsg();
             
             savePluginConfiguration(page).then(function(result) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.processPluginConfigurationUpdateResult(result);
-                
-                // Save completed, sync will happen after this block
             }).catch(function(error) {
-                Dashboard.hideLoadingMsg();
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
             });
         }
         
