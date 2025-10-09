@@ -28,6 +28,9 @@ export default function (view) {
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
                 
+                // Initialize library settings
+                initializeLibrarySettings(page);
+                
                 // Initialize sync settings including network interface and sync buttons
                 initializeSyncSettings(page);
                 
@@ -106,6 +109,9 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
         
     // Update the available networks select
     populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
+    
+    // Sort the available networks by name (value)
+    sortSelectOptions(availableNetworksSelect);
 
     return availableNetworks;
 }
@@ -114,18 +120,30 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
 function initializeGeneralSettings(page) {
     const config = window.configJellyseerrBridge || {};
     
-    // Store the current region value
+    // Set general settings form values
+    page.querySelector('#IsEnabled').checked = config.IsEnabled;
+    page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl;
+    page.querySelector('#ApiKey').value = config.ApiKey;
+    page.querySelector('#UserId').value = config.UserId;
+    page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours;
+    page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup;
+    
+    // Store the current region value or set to the default value
     const regionSelect = page.querySelector('#WatchRegion');
+
+    // Check if the option already exists
+    const existingOption = Array.from(regionSelect.options).find(option => option.value === config.Region);
+    if (!existingOption) {
+        const option = document.createElement('option');
+        option.value = config.Region;
+        option.textContent = config.Region; // Use the value as the display text
+        regionSelect.appendChild(option);
+    }
+    // Set the current value
     regionSelect.setAttribute('data-current-value', config.Region);
     
-    // Set general settings form values
-    page.querySelector('#IsEnabled').checked = config.IsEnabled || true;
-    page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl || '';
-    page.querySelector('#ApiKey').value = config.ApiKey || '';
-    page.querySelector('#UserId').value = config.UserId || '';
-    page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours || '';
-    page.querySelector('#WatchRegion').value = config.Region || '';
-    page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup || false;
+    // Sort the region options using our standard sorting function
+    sortSelectOptions(regionSelect);
     
     const testButton = page.querySelector('#testConnection');
     if (!testButton) {
@@ -236,37 +254,19 @@ function initializeGeneralSettings(page) {
     }
 }
 
-// Function to initialize advanced settings
-function initializeAdvancedSettings(page) {
+// Function to initialize library settings
+function initializeLibrarySettings(page) {
     const config = window.configJellyseerrBridge || {};
     
-    // Set advanced settings form values
-    page.querySelector('#RequestTimeout').value = config.RequestTimeout || '';
-    page.querySelector('#RetryAttempts').value = config.RetryAttempts || '';
-    page.querySelector('#MaxDiscoverPages').value = config.MaxDiscoverPages || '';
-    page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging || false;
-    
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
-        });
-    }
-    
     // Set library settings form values
-    page.querySelector('#LibraryDirectory').value = config.LibraryDirectory || '';
-    page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries !== false;
-    page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries || false;
-    page.querySelector('#LibraryPrefix').value = config.LibraryPrefix || '';
+    page.querySelector('#LibraryDirectory').value = config.LibraryDirectory;
+    page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries;
+    page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries;
+    page.querySelector('#LibraryPrefix').value = config.LibraryPrefix;
     
     // Initialize library prefix state
     const libraryPrefixInput = page.querySelector('#LibraryPrefix');
     const libraryPrefixLabel = page.querySelector('label[for="LibraryPrefix"]');
-    
-    if (!createSeparateLibrariesCheckbox || !libraryPrefixInput) {
-        return;
-    }
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
@@ -291,6 +291,26 @@ function initializeAdvancedSettings(page) {
     const libraryPrefixField = page.querySelector('#LibraryPrefix');
     if (libraryPrefixField && !libraryPrefixField.value) {
         libraryPrefixField.placeholder = config.DefaultValues.LibraryPrefix;
+    }
+}
+
+
+// Function to initialize advanced settings
+function initializeAdvancedSettings(page) {
+    const config = window.configJellyseerrBridge || {};
+    
+    // Set advanced settings form values
+    page.querySelector('#RequestTimeout').value = config.RequestTimeout;
+    page.querySelector('#RetryAttempts').value = config.RetryAttempts;
+    page.querySelector('#MaxDiscoverPages').value = config.MaxDiscoverPages;
+    page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging;
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
+        });
     }
     
     // Update advanced settings placeholders
@@ -540,7 +560,10 @@ function moveNetworks(fromSelect, toSelect) {
 
 function sortSelectOptions(selectElement) {
     const options = Array.from(selectElement.options);
-    options.sort((a, b) => (a.textContent || '').localeCompare(b.textContent || ''));
+    options.sort((a, b) => {
+        // Sort by the display values (textContent)
+        return (a.textContent || '') > (b.textContent || '') ? 1 : -1;
+    });
     
     // Clear and re-add sorted options
     selectElement.innerHTML = '';
@@ -582,18 +605,18 @@ function savePluginConfiguration(view) {
             config.IsEnabled = form.querySelector('#IsEnabled').checked;
             config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
             config.ApiKey = apiKey;
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim() || '/data/Jellyseerr';
-            config.UserId = parseInt(form.querySelector('#UserId').value) || 1;
-            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value) || 24;
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
+            config.UserId = parseInt(form.querySelector('#UserId').value);
+            config.SyncIntervalHours = parseInt(form.querySelector('#SyncIntervalHours').value);
             config.ExcludeFromMainLibraries = form.querySelector('#ExcludeFromMainLibraries').checked;
             config.CreateSeparateLibraries = form.querySelector('#CreateSeparateLibraries').checked;
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim() || 'Streaming - ';
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = form.querySelector('#AutoSyncOnStartup').checked;
             config.Region = form.querySelector('#WatchRegion').value;
             config.NetworkMap = getActiveNetworkMap(view);
-            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value) || 30;
-            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value) || 3;
-            config.MaxDiscoverPages = parseInt(form.querySelector('#MaxDiscoverPages').value) || 10;
+            config.RequestTimeout = parseInt(form.querySelector('#RequestTimeout').value);
+            config.RetryAttempts = parseInt(form.querySelector('#RetryAttempts').value);
+            config.MaxDiscoverPages = parseInt(form.querySelector('#MaxDiscoverPages').value);
             config.EnableDebugLogging = form.querySelector('#EnableDebugLogging').checked;
             
             // Save the configuration using our custom endpoint
@@ -629,27 +652,23 @@ function loadRegions(page) {
                 // Clear existing options
                 select.innerHTML = '';
                 
-                // Sort regions by English name (with null safety)
-                const sortedRegions = data.regions
-                    .filter(region => region.english_name && region.english_name.trim() !== '')
-                    .sort((a, b) => a.english_name.localeCompare(b.english_name));
+                // Filter regions with valid English names
+                const validRegions = data.regions.filter(region => region.english_name && region.english_name.trim() !== '');
                 
                 // Add options for each region
-                sortedRegions.forEach(region => {
+                validRegions.forEach(region => {
                     const option = document.createElement('option');
                     option.value = region.iso_3166_1;
                     option.textContent = `${region.english_name} (${region.native_name})`;
                     select.appendChild(option);
                 });
                 
-                // Ensure US is selected by default if no current value is set
-                const currentValue = select.getAttribute('data-current-value') || 'US';
-                select.value = currentValue;
+                // Sort the regions using our standard sorting function
+                sortSelectOptions(select);
                 
-                // If the current value doesn't exist in the list, default to US
-                if (!select.value || select.value === '') {
-                    select.value = 'US';
-                }
+                // Set current value back to the original value
+                const currentValue = select.getAttribute('data-current-value');
+                select.value = currentValue;
             }
             return Promise.resolve();
         } else {
