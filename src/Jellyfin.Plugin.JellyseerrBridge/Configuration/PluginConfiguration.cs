@@ -76,24 +76,24 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the Jellyseerr base URL.
     /// </summary>
     [Required]
-    public string JellyseerrUrl { get; set; } = (string)DefaultValues[nameof(JellyseerrUrl)];
+    public string JellyseerrUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the Jellyseerr API key.
     /// </summary>
     [Required]
-    public string ApiKey { get; set; } = (string)DefaultValues[nameof(ApiKey)];
+    public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the library directory.
     /// </summary>
     [Required]
-    public string LibraryDirectory { get; set; } = (string)DefaultValues[nameof(LibraryDirectory)];
+    public string LibraryDirectory { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the user ID for requests.
     /// </summary>
-    public int UserId { get; set; } = (int)DefaultValues[nameof(UserId)];
+    public int UserId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
@@ -103,7 +103,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the sync interval in hours.
     /// </summary>
-    public int SyncIntervalHours { get; set; } = (int)DefaultValues[nameof(SyncIntervalHours)];
+    public int SyncIntervalHours { get; set; }
 
     /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.
@@ -113,7 +113,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
-    public string LibraryPrefix { get; set; } = (string)DefaultValues[nameof(LibraryPrefix)];
+    public string LibraryPrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether to exclude placeholder shows from main libraries.
@@ -129,17 +129,17 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
     /// This applies to both movies and TV shows discovery.
     /// </summary>
-    public int MaxDiscoverPages { get; set; } = (int)DefaultValues[nameof(MaxDiscoverPages)];
+    public int MaxDiscoverPages { get; set; }
 
     /// <summary>
     /// Gets or sets the request timeout in seconds.
     /// </summary>
-    public int RequestTimeout { get; set; } = (int)DefaultValues[nameof(RequestTimeout)];
+    public int RequestTimeout { get; set; }
 
     /// <summary>
     /// Gets or sets the number of retry attempts.
     /// </summary>
-    public int RetryAttempts { get; set; } = (int)DefaultValues[nameof(RetryAttempts)];
+    public int RetryAttempts { get; set; }
 
     /// <summary>
     /// Gets or sets whether to enable debug logging.
@@ -149,7 +149,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the watch network region (ISO 3166-1 country code).
     /// </summary>
-    public string Region { get; set; } = (string)DefaultValues[nameof(Region)];
+    public string Region { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the mapping of network IDs to their names (populated after API communication).
