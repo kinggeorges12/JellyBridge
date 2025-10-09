@@ -600,6 +600,9 @@ function nullIfDefault(value, defaultValue) {
 // Helper function to safely parse integers with user feedback
 function safeParseInt(element) {
     const value = element.value;
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
     const label = element.closest('.inputContainer')?.querySelector('label')?.textContent || 
                   element.closest('label')?.textContent || 
                   element.getAttribute('label') || 
