@@ -71,7 +71,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var config = Plugin.Instance.Configuration;
+                var config = new PluginConfiguration();
                 
                 // Update configuration properties using simplified helper
                 SetValueOrDefault(configData, nameof(config.JellyseerrUrl), config, (string value) => config.JellyseerrUrl = value);
