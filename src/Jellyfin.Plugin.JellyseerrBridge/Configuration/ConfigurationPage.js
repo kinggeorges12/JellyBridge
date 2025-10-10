@@ -52,7 +52,6 @@ export default function (view) {
 function updateLibraryPrefixState() {
     const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixLabel = document.querySelector('label[for="LibraryPrefix"]');
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
@@ -62,10 +61,8 @@ function updateLibraryPrefixState() {
     // Add/remove disabled styling
     if (isEnabled) {
         libraryPrefixInput.classList.remove('disabled');
-        libraryPrefixLabel.classList.remove('disabled');
     } else {
         libraryPrefixInput.classList.add('disabled');
-        libraryPrefixLabel.classList.add('disabled');
     }
 }
 
