@@ -118,7 +118,6 @@ function initializeGeneralSettings(page) {
     
     // Set general settings form values
     page.querySelector('#IsEnabled').checked = config.IsEnabled;
-    page.querySelector('#IsEnabled').labelElement = page.querySelector('label[for="IsEnabled"]');
     page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl;
     page.querySelector('#ApiKey').value = config.ApiKey;
     page.querySelector('#UserId').value = config.UserId;
@@ -304,7 +303,7 @@ function initializeSyncSettings(page) {
     const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
     // Populate region settings
-    populateRegion(page, [{ iso_3166_1: config.Region }]);
+    populateRegion(page, [{ iso_3166_1: config.Region }], config.Region);
     
     // Load active networks from saved configuration
     const networkMapping = config.NetworkMap || {};
@@ -539,12 +538,9 @@ function sortSelectOptions(selectElement) {
     });
 }
 
-function populateRegion(page, regionValues) {
+function populateRegion(page, regionValues, initialValue = null) {
     const config = window.configJellyseerrBridge || {};
     const regionSelect = page.querySelector('#selectWatchRegion');
-    
-    // Get the current value from current selection or config if not initialized
-    const selectedValue = regionSelect.value || config.Region;
 
     // Create a Map to store unique regions (ISO code as key, region object as value)
     const uniqueRegions = new Map();
@@ -576,7 +572,7 @@ function populateRegion(page, regionValues) {
     sortSelectOptions(regionSelect);
     
     // Set current value back to the original value
-    regionSelect.value = selectedValue;
+    regionSelect.value = initialValue;
 }
 
 
@@ -617,6 +613,24 @@ function safeParseInt(element) {
     return parsed;
 }
 
+function safeParseDouble(element) {
+    const value = element.value;
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const label = element.closest('.inputContainer')?.querySelector('label')?.textContent || 
+                  element.closest('label')?.textContent || 
+                  element.getAttribute('label') || 
+                  element.id;
+    
+    const parsed = parseFloat(value);
+    if (isNaN(parsed)) {
+        Dashboard.alert(`❌ Invalid number format for ${label}. Please enter a valid number.`);
+        throw new Error(`Invalid number format for ${label}`);
+    }
+    return parsed;
+}
+
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
@@ -639,7 +653,7 @@ function savePluginConfiguration(view) {
             config.ApiKey = apiKey;
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
             config.UserId = safeParseInt(form.querySelector('#UserId'));
-            config.SyncIntervalHours = safeParseInt(form.querySelector('#SyncIntervalHours'));
+            config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
             config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
@@ -681,8 +695,8 @@ function loadRegions(page) {
         if (data && data.success && data.regions) {
             const select = page.querySelector('#selectWatchRegion');
             if (select) {
-                // Use the new populateRegion function
-                populateRegion(page, data.regions);
+                // When loading regions, set the current value to the selected value
+                populateRegion(page, data.regions, select.value);
             }
             return Promise.resolve();
         } else {
@@ -708,7 +722,7 @@ function performSync() {
     }).then(function(syncData) {
         if (syncData && syncData.success) {
             // Parse the sync results for better user feedback
-            const message = syncData.message || 'Sync completed successfully';
+            const message = syncData.message || 'Folder structure creation completed successfully';
             
             // Build detailed information if available
             let details = '';
@@ -735,13 +749,13 @@ function performSync() {
                 }
             }
             
-            Dashboard.alert('✅ Manual sync completed successfully!<br>' +
+            Dashboard.alert('✅ Folder structure creation completed successfully!<br>' +
                 `${message}${details}`);
         } else {
-            throw new Error(syncData?.message || 'Sync failed');
+            throw new Error(syncData?.message || 'Folder structure creation failed');
         }
     }).catch(function(error) {
-        Dashboard.alert('❌ Manual sync failed: ' + (error?.message || 'Unknown error'));
+        Dashboard.alert('❌ Folder structure creation failed: ' + (error?.message || 'Unknown error'));
     }).finally(function() {
         Dashboard.hideLoadingMsg();
     });
@@ -751,10 +765,10 @@ function performSync() {
 function performManualSync(page) {
     // Show confirmation dialog for saving settings before sync
     Dashboard.confirm({
-        title: 'Manual Sync',
-        text: 'Save current settings before starting sync?',
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting sync.',
         confirmText: 'Save & Sync',
-        cancelText: 'Sync',
+        cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
         if (confirmed) {

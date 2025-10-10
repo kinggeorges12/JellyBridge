@@ -93,7 +93,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the user ID for requests.
     /// </summary>
-    public int? UserId { get; set; } = (int)DefaultValues[nameof(UserId)];
+    public int? UserId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
@@ -103,7 +103,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the sync interval in hours.
     /// </summary>
-    public int? SyncIntervalHours { get; set; }
+    public double? SyncIntervalHours { get; set; }
 
     /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.

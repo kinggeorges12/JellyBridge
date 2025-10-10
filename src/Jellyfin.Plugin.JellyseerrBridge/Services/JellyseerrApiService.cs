@@ -141,6 +141,16 @@ public class JellyseerrApiService
     private readonly HttpClient _httpClient;
     private readonly ILogger<JellyseerrApiService> _logger;
 
+    /// <summary>
+    /// Get configuration value or default value for a property.
+    /// </summary>
+    private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+    {
+        config ??= Plugin.Instance.Configuration;
+        var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+        return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+    }
+
     public JellyseerrApiService(HttpClient httpClient, ILogger<JellyseerrApiService> logger)
     {
         _httpClient = httpClient;
@@ -210,8 +220,8 @@ public class JellyseerrApiService
     {
         var allItems = new List<T>();
         var config = Plugin.Instance.Configuration;
-        var maxPages = (config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)]) > 0 ? 
-                       config.MaxDiscoverPages ?? (int)PluginConfiguration.DefaultValues[nameof(config.MaxDiscoverPages)] : int.MaxValue;
+        var maxPages = GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) > 0 ? 
+                       GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) : int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -360,9 +370,9 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)]);
-        var retryAttempts = config.RetryAttempts ?? (int)PluginConfiguration.DefaultValues[nameof(config.RetryAttempts)];
-        var enableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)];
+        var timeout = TimeSpan.FromSeconds(GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
+        var retryAttempts = GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
+        var enableDebugLogging = GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging));
         
         Exception? lastException = null;
         
@@ -419,7 +429,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, config.RequestTimeout ?? (int)PluginConfiguration.DefaultValues[nameof(config.RequestTimeout)]);
+                        attempt, retryAttempts, GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
                 }
                 
                 if (attempt == retryAttempts)

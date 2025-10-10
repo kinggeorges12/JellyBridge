@@ -24,6 +24,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
+        /// <summary>
+        /// Get configuration value or default value for a property.
+        /// </summary>
+        private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+        {
+            config ??= Plugin.Instance.Configuration;
+            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+        }
+
         [HttpGet("GetPluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {
@@ -40,16 +50,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
                     UserId = config.UserId,
-                    IsEnabled = config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)],
+                    IsEnabled = GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config),
                     SyncIntervalHours = config.SyncIntervalHours,
-                    CreateSeparateLibraries = config.CreateSeparateLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.CreateSeparateLibraries)],
+                    CreateSeparateLibraries = GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries), config),
                     LibraryPrefix = config.LibraryPrefix,
-                    ExcludeFromMainLibraries = config.ExcludeFromMainLibraries ?? (bool)PluginConfiguration.DefaultValues[nameof(config.ExcludeFromMainLibraries)],
-                    AutoSyncOnStartup = config.AutoSyncOnStartup ?? (bool)PluginConfiguration.DefaultValues[nameof(config.AutoSyncOnStartup)],
+                    ExcludeFromMainLibraries = GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries), config),
+                    AutoSyncOnStartup = GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config),
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
-                    EnableDebugLogging = config.EnableDebugLogging ?? (bool)PluginConfiguration.DefaultValues[nameof(config.EnableDebugLogging)],
+                    EnableDebugLogging = GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config),
                     Region = config.Region,
                     NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
                     DefaultValues = PluginConfiguration.DefaultValues
@@ -74,21 +84,21 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var config = new PluginConfiguration();
                 
                 // Update configuration properties using simplified helper
-                SetValueOrDefault(configData, nameof(config.JellyseerrUrl), config, (string value) => config.JellyseerrUrl = value);
-                SetValueOrDefault(configData, nameof(config.ApiKey), config, (string value) => config.ApiKey = value);
-                SetValueOrDefault(configData, nameof(config.LibraryDirectory), config, (string value) => config.LibraryDirectory = value);
-                SetValueOrDefault(configData, nameof(config.UserId), config, (int value) => config.UserId = value);
-                SetValueOrDefault(configData, nameof(config.SyncIntervalHours), config, (int value) => config.SyncIntervalHours = value);
-                SetValueOrDefault(configData, nameof(config.LibraryPrefix), config, (string value) => config.LibraryPrefix = value);
-                SetValueOrDefault(configData, nameof(config.RequestTimeout), config, (int value) => config.RequestTimeout = value);
-                SetValueOrDefault(configData, nameof(config.RetryAttempts), config, (int value) => config.RetryAttempts = value);
-                SetValueOrDefault(configData, nameof(config.MaxDiscoverPages), config, (int value) => config.MaxDiscoverPages = value);
-                SetValueOrDefault(configData, nameof(config.IsEnabled), config, (bool? value) => config.IsEnabled = value);
-                SetValueOrDefault(configData, nameof(config.CreateSeparateLibraries), config, (bool? value) => config.CreateSeparateLibraries = value);
-                SetValueOrDefault(configData, nameof(config.ExcludeFromMainLibraries), config, (bool? value) => config.ExcludeFromMainLibraries = value);
-                SetValueOrDefault(configData, nameof(config.AutoSyncOnStartup), config, (bool? value) => config.AutoSyncOnStartup = value);
-                SetValueOrDefault(configData, nameof(config.EnableDebugLogging), config, (bool? value) => config.EnableDebugLogging = value);
-                SetValueOrDefault(configData, nameof(config.Region), config, (string value) => config.Region = value);
+                SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
+                SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
+                SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
+                SetValueOrDefault<int?>(configData, nameof(config.UserId), config);
+                SetValueOrDefault<double?>(configData, nameof(config.SyncIntervalHours), config);
+                SetValueOrDefault<string>(configData, nameof(config.LibraryPrefix), config);
+                SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
+                SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
+                SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
+                SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
+                SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
+                SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
+                SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
+                SetValueOrDefault<string>(configData, nameof(config.Region), config);
                 
                 // Handle NetworkMap dictionary conversion
                 if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
@@ -124,8 +134,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         public async Task<IActionResult> TestConnection([FromBody] TestConnectionRequest request)
         {
             _logger.LogInformation("[JellyseerrBridge] TestConnection endpoint called");
-            _logger.LogInformation("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}", 
-                request.JellyseerrUrl, !string.IsNullOrEmpty(request.ApiKey));
+            _logger.LogInformation("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
+                request.JellyseerrUrl, !string.IsNullOrEmpty(request.ApiKey), request.ApiKey?.Length ?? 0);
 
             try
             {
@@ -280,7 +290,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var result = await _syncService.SyncAsync();
+                var result = await _syncService.CreateFolderStructureAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
                 return Ok(new { 
@@ -384,8 +394,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         /// <param name="configData">The JSON data.</param>
         /// <param name="propertyName">The name of the property.</param>
         /// <param name="config">The configuration object.</param>
-        /// <param name="setter">Action to set the property value.</param>
-        private static void SetValueOrDefault<T>(JsonElement configData, string propertyName, object config, Action<T> setter)
+        private static void SetValueOrDefault<T>(JsonElement configData, string propertyName, object config)
         {
             if (!configData.TryGetProperty(propertyName, out var element))
                 return;
@@ -393,37 +402,70 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             if (IsEmptyValue<T>(element))
                 return;
 
+            var property = config.GetType().GetProperty(propertyName);
+            if (property == null || !property.CanWrite)
+                return;
+
+            object? value = null;
+
             if (typeof(T) == typeof(string))
             {
-                var stringValue = element.GetString()!;
-                setter((T)(object)stringValue);
+                value = element.GetString()!;
             }
             else if (typeof(T) == typeof(int?))
             {
                 if (element.ValueKind == JsonValueKind.Null)
                 {
-                    setter((T)(object)(int?)null!);
+                    value = (int?)null;
                 }
                 else if (element.ValueKind == JsonValueKind.Number)
                 {
-                    setter((T)(object)element.GetInt32());
+                    value = element.GetInt32();
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
                     var stringValue = element.GetString();
                     if (string.IsNullOrWhiteSpace(stringValue))
                     {
-                        setter((T)(object)(int?)null!);
+                        value = (int?)null;
                     }
                     else if (int.TryParse(stringValue, out var intValue))
                     {
-                        setter((T)(object)intValue);
+                        value = intValue;
+                    }
+                }
+            }
+            else if (typeof(T) == typeof(double?))
+            {
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    value = (double?)null;
+                }
+                else if (element.ValueKind == JsonValueKind.Number)
+                {
+                    value = element.GetDouble();
+                }
+                else if (element.ValueKind == JsonValueKind.String)
+                {
+                    var stringValue = element.GetString();
+                    if (string.IsNullOrWhiteSpace(stringValue))
+                    {
+                        value = (double?)null;
+                    }
+                    else if (double.TryParse(stringValue, out var doubleValue))
+                    {
+                        value = doubleValue;
                     }
                 }
             }
             else if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
             {
-                setter((T)(object)element.GetBoolean());
+                value = element.GetBoolean();
+            }
+
+            if (value != null)
+            {
+                property.SetValue(config, value);
             }
         }
 
@@ -432,8 +474,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             if (element.ValueKind == JsonValueKind.Undefined)
                 return true;
 
-            // For nullable integers, null is a valid value (means "use default")
-            if (element.ValueKind == JsonValueKind.Null && typeof(T) == typeof(int?))
+            // For nullable integers and doubles, null is a valid value (means "use default")
+            if (element.ValueKind == JsonValueKind.Null && (typeof(T) == typeof(int?) || typeof(T) == typeof(double?)))
                 return false;
 
             if (element.ValueKind == JsonValueKind.Null)
@@ -448,15 +490,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // For integer types, check if the string can be parsed as an integer
                 if (typeof(T) == typeof(int?) && !int.TryParse(stringValue, out _))
                     return true;
+                
+                // For double types, check if the string can be parsed as a double
+                if (typeof(T) == typeof(double?) && !double.TryParse(stringValue, out _))
+                    return true;
             }
 
             return false;
         }
-    }
 
-    public class TestConnectionRequest
-    {
-        public string JellyseerrUrl { get; set; } = string.Empty;
-        public string ApiKey { get; set; } = string.Empty;
     }
+}
+
+public class TestConnectionRequest
+{
+    public string JellyseerrUrl { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
 }

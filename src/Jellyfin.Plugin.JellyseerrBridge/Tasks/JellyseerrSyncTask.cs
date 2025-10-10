@@ -8,10 +8,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
 /// <summary>
 /// Scheduled task for syncing Jellyseerr data.
 /// </summary>
-public class JellyseerrSyncTask : IScheduledTask
-{
-    private readonly ILogger<JellyseerrSyncTask> _logger;
-    private readonly JellyseerrSyncService _syncService;
+    public class JellyseerrSyncTask : IScheduledTask
+    {
+        private readonly ILogger<JellyseerrSyncTask> _logger;
+        private readonly JellyseerrSyncService _syncService;
+
+        /// <summary>
+        /// Get configuration value or default value for a property.
+        /// </summary>
+        private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+        {
+            config ??= Plugin.Instance.Configuration;
+            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+        }
 
     public JellyseerrSyncTask(
         ILogger<JellyseerrSyncTask> logger,
@@ -51,7 +61,7 @@ public class JellyseerrSyncTask : IScheduledTask
     {
         var config = Plugin.Instance.Configuration;
         
-        if (!(config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)]))
+        if (!GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
         {
             return Array.Empty<TaskTriggerInfo>();
         }
@@ -61,7 +71,7 @@ public class JellyseerrSyncTask : IScheduledTask
             new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(config.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(config.SyncIntervalHours)]).Ticks
+                IntervalTicks = TimeSpan.FromHours(GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours))).Ticks
             }
         };
     }

@@ -4,6 +4,8 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
+using System.Text.Json;
+using System.IO;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -27,6 +29,81 @@ public class JellyseerrSyncService
     }
 
     /// <summary>
+    /// Create folder structure and JSON metadata files for manual sync.
+    /// </summary>
+    public async Task<SyncResult> CreateFolderStructureAsync()
+    {
+        var config = Plugin.Instance.Configuration;
+        var result = new SyncResult();
+        
+        if (!GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
+        {
+            _logger.LogInformation("Jellyseerr Bridge is disabled, skipping folder structure creation");
+            result.Success = false;
+            result.Message = "Jellyseerr Bridge is disabled";
+            return result;
+        }
+
+        try
+        {
+            _logger.LogInformation("Starting folder structure creation...");
+
+            // Test connection first
+            if (!await _apiService.TestConnectionAsync(config))
+            {
+                _logger.LogWarning("Failed to connect to Jellyseerr, skipping folder structure creation");
+                result.Success = false;
+                result.Message = "Failed to connect to Jellyseerr API";
+                return result;
+            }
+
+            // Get data from Jellyseerr
+            var allMovies = await _apiService.GetAllMoviesAsync();
+            var allTvShows = await _apiService.GetAllTvShowsAsync();
+
+            _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows from Jellyseerr",
+                allMovies.Count, allTvShows.Count);
+
+            // Create base directory
+            var baseDirectory = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+
+            if (!Directory.Exists(baseDirectory))
+            {
+                Directory.CreateDirectory(baseDirectory);
+                _logger.LogInformation("Created base directory: {BaseDirectory}", baseDirectory);
+            }
+
+            // Process movies
+            var movieResults = await CreateFoldersAsync(allMovies, 
+                "{title} ({year}) [imdbid-{imdbid}] [tmdbid-{tmdbid}]");
+            result.MoviesProcessed = movieResults.Processed;
+            result.MoviesCreated = movieResults.Created;
+
+            // Process TV shows
+            var tvResults = await CreateFoldersAsync(allTvShows, 
+                "{title} ({year}) [tvdbid-{tvdbid}] [tmdbid-{tmdbid}]");
+            result.TvShowsProcessed = tvResults.Processed;
+            result.TvShowsCreated = tvResults.Created;
+
+            result.Success = true;
+            result.Message = $"Folder structure creation completed successfully. Created {result.MoviesCreated} movie folders, {result.TvShowsCreated} TV show folders";
+            result.Details = $"Movies: {result.MoviesCreated} folders created\n" +
+                           $"TV Shows: {result.TvShowsCreated} folders created\n" +
+                           $"Base Directory: {baseDirectory}";
+
+            _logger.LogInformation("Folder structure creation completed successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during folder structure creation");
+            result.Success = false;
+            result.Message = $"Folder structure creation failed: {ex.Message}";
+        }
+        
+        return result;
+    }
+
+    /// <summary>
     /// Perform a full sync of Jellyseerr data.
     /// </summary>
     public async Task<SyncResult> SyncAsync()
@@ -34,7 +111,7 @@ public class JellyseerrSyncService
         var config = Plugin.Instance.Configuration;
         var result = new SyncResult();
         
-        if (!(config.IsEnabled ?? (bool)PluginConfiguration.DefaultValues[nameof(config.IsEnabled)]))
+        if (!GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
             result.Success = false;
@@ -305,6 +382,252 @@ public class JellyseerrSyncService
         
         return new Guid(guidBytes);
     }
+
+    /// <summary>
+    /// Get configuration value or default value for a property.
+    /// </summary>
+    private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+    {
+        config ??= Plugin.Instance.Configuration;
+        var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+        return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+    }
+
+    /// <summary>
+    /// Create folders and JSON metadata files for movies or TV shows.
+    /// </summary>
+    private async Task<ProcessResult> CreateFoldersAsync<T>(List<T> items, string format)
+    {
+        var config = Plugin.Instance.Configuration;
+        var result = new ProcessResult();
+        
+        // Get configuration values using centralized helper
+        var baseDirectory = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var libraryPrefix = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+        var createSeparateLibraries = GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
+        
+        foreach (var item in items)
+        {
+            try
+            {
+                result.Processed++;
+                
+                // Create folder name using the provided format string
+                var folderName = CreateFolderNameFromFormat(item, format);
+                if (string.IsNullOrEmpty(folderName))
+                {
+                    var itemName = GetItemName(item);
+                    _logger.LogWarning("Skipping item with missing required data: {ItemName}", itemName);
+                    continue;
+                }
+
+                // Determine directory path
+                var targetDirectory = createSeparateLibraries 
+                    ? Path.Combine(baseDirectory, libraryPrefix, folderName)
+                    : Path.Combine(baseDirectory, folderName);
+
+                // Create directory if it doesn't exist
+                if (!Directory.Exists(targetDirectory))
+                {
+                    Directory.CreateDirectory(targetDirectory);
+                    result.Created++;
+                    _logger.LogDebug("Created folder: {FolderName}", folderName);
+                }
+
+                // Create JSON metadata file
+                await CreateMetadataFileAsync(item, targetDirectory);
+            }
+            catch (Exception ex)
+            {
+                var itemName = GetItemName(item);
+                var itemId = GetItemId(item);
+                _logger.LogError(ex, "Error creating folder for {ItemName} (ID: {ItemId})", itemName, itemId);
+            }
+        }
+        
+        return result;
+    }
+
+    /// <summary>
+    /// Create folder name using format string with placeholders extracted from the item.
+    /// </summary>
+    private string CreateFolderNameFromFormat<T>(T item, string format)
+    {
+        var values = ExtractValuesFromItem(item);
+        
+        var folderName = format;
+        
+        // Replace placeholders with actual values
+        foreach (var kvp in values)
+        {
+            var placeholder = $"{{{kvp.Key}}}";
+            var value = kvp.Value ?? string.Empty;
+            
+            // Skip empty values for optional fields
+            if (string.IsNullOrEmpty(value) && kvp.Key != "title" && kvp.Key != "year")
+            {
+                // Remove the entire placeholder block for optional fields
+                folderName = System.Text.RegularExpressions.Regex.Replace(folderName, 
+                    $@"\s*\[{kvp.Key}-{{{kvp.Key}}}\]", "");
+            }
+            else
+            {
+                folderName = folderName.Replace(placeholder, value);
+            }
+        }
+        
+        // Clean up any remaining empty brackets or extra spaces
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*\[\s*\]", "");
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s+", " ").Trim();
+        
+        return SanitizeFileName(folderName);
+    }
+
+    /// <summary>
+    /// Extract values from movie or TV show item for format string replacement.
+    /// </summary>
+    private Dictionary<string, string?> ExtractValuesFromItem<T>(T item)
+    {
+        return item switch
+        {
+            JellyseerrMovie movie => new Dictionary<string, string?>
+            {
+                ["title"] = movie.Title,
+                ["year"] = ExtractYear(movie.ReleaseDate),
+                ["imdbid"] = movie.MediaInfo?.ImdbId,
+                ["tmdbid"] = movie.MediaInfo?.TmdbId?.ToString(),
+                ["tvdbid"] = null
+            },
+            JellyseerrTvShow tvShow => new Dictionary<string, string?>
+            {
+                ["title"] = tvShow.Name,
+                ["year"] = ExtractYear(tvShow.FirstAirDate),
+                ["imdbid"] = null,
+                ["tmdbid"] = tvShow.MediaInfo?.TmdbId?.ToString(),
+                ["tvdbid"] = tvShow.MediaInfo?.TvdbId?.ToString()
+            },
+            _ => new Dictionary<string, string?>()
+        };
+    }
+
+    /// <summary>
+    /// Extract year from date string.
+    /// </summary>
+    private string ExtractYear(string? dateString)
+    {
+        if (string.IsNullOrEmpty(dateString))
+            return string.Empty;
+
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            return date.Year.ToString();
+        }
+
+        // Try to extract year from YYYY-MM-DD format
+        if (dateString.Length >= 4 && int.TryParse(dateString.Substring(0, 4), out var year))
+        {
+            return year.ToString();
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Sanitize filename by removing invalid characters.
+    /// </summary>
+    private string SanitizeFileName(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+            return string.Empty;
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
+    }
+
+    /// <summary>
+    /// Get item name for logging purposes.
+    /// </summary>
+    private string GetItemName<T>(T item)
+    {
+        return item switch
+        {
+            JellyseerrMovie movie => movie.Title,
+            JellyseerrTvShow tvShow => tvShow.Name ?? "Unknown",
+            _ => "Unknown"
+        };
+    }
+
+    /// <summary>
+    /// Get item ID for logging purposes.
+    /// </summary>
+    private object GetItemId<T>(T item)
+    {
+        return item switch
+        {
+            JellyseerrMovie movie => movie.Id,
+            JellyseerrTvShow tvShow => tvShow.Id ?? 0,
+            _ => 0
+        };
+    }
+
+    /// <summary>
+    /// Create JSON metadata file for movies or TV shows.
+    /// </summary>
+    private async Task CreateMetadataFileAsync<T>(T item, string directoryPath)
+    {
+        object metadata = item switch
+        {
+            JellyseerrMovie movie => new
+            {
+                Type = "Movie",
+                Title = movie.Title,
+                OriginalTitle = movie.OriginalTitle,
+                Overview = movie.Overview,
+                ReleaseDate = movie.ReleaseDate,
+                Year = ExtractYear(movie.ReleaseDate),
+                GenreIds = movie.GenreIds,
+                OriginalLanguage = movie.OriginalLanguage,
+                Popularity = movie.Popularity,
+                VoteAverage = movie.VoteAverage,
+                VoteCount = movie.VoteCount,
+                BackdropPath = movie.BackdropPath,
+                PosterPath = movie.PosterPath,
+                Adult = movie.Adult,
+                Video = movie.Video,
+                MediaInfo = movie.MediaInfo,
+                JellyseerrId = movie.Id,
+                CreatedAt = DateTime.UtcNow
+            },
+            JellyseerrTvShow tvShow => new
+            {
+                Type = "TV Show",
+                Name = tvShow.Name,
+                OriginalName = tvShow.OriginalName,
+                Overview = tvShow.Overview,
+                FirstAirDate = tvShow.FirstAirDate,
+                Year = ExtractYear(tvShow.FirstAirDate),
+                GenreIds = tvShow.GenreIds,
+                OriginCountry = tvShow.OriginCountry,
+                OriginalLanguage = tvShow.OriginalLanguage,
+                Popularity = tvShow.Popularity,
+                VoteAverage = tvShow.VoteAverage,
+                VoteCount = tvShow.VoteCount,
+                BackdropPath = tvShow.BackdropPath,
+                PosterPath = tvShow.PosterPath,
+                MediaInfo = tvShow.MediaInfo,
+                JellyseerrId = tvShow.Id,
+                CreatedAt = DateTime.UtcNow
+            },
+            _ => throw new ArgumentException($"Unsupported item type: {typeof(T)}")
+        };
+
+        var json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+        var filePath = Path.Combine(directoryPath, "metadata.json");
+        
+        await File.WriteAllTextAsync(filePath, json);
+        var itemName = GetItemName(item);
+        _logger.LogDebug("Created metadata file for {ItemType}: {ItemName}", typeof(T).Name, itemName);
+    }
 }
 
 /// <summary>
@@ -333,3 +656,4 @@ public class ProcessResult
     public int Created { get; set; }
     public int Updated { get; set; }
 }
+
