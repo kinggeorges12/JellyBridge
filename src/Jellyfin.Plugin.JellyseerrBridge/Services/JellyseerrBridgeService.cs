@@ -73,7 +73,8 @@ public class JellyseerrBridgeService
     /// <returns>List of requests from Jellyseerr.</returns>
     public async Task<List<JellyseerrRequest>> GetRequestsAsync()
     {
-        return await _apiService.GetRequestsAsync();
+        var response = await _apiService.GetRequestsAsync();
+        return response?.Results ?? new List<JellyseerrRequest>();
     }
 
     /// <summary>

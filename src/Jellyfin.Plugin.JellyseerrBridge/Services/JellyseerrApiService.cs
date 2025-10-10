@@ -502,9 +502,9 @@ public class JellyseerrApiService
     /// <summary>
     /// Get all requests from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrRequest>> GetRequestsAsync()
+    public async Task<JellyseerrPaginatedResponse<JellyseerrRequest>> GetRequestsAsync()
     {
-        return await MakeTypedApiCallAsync<List<JellyseerrRequest>>(JellyseerrEndpoint.Requests, operationName: "requests");
+        return await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrRequest>>(JellyseerrEndpoint.Requests, operationName: "requests");
     }
 
     /// <summary>
@@ -658,11 +658,18 @@ public class JellyseerrRequest
 {
     public int Id { get; set; }
     public int Status { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public bool Is4k { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public bool Is4k { get; set; }
+    public int? ServerId { get; set; }
+    public int? ProfileId { get; set; }
+    public string? RootFolder { get; set; }
+    public int? LanguageProfileId { get; set; }
+    public List<string>? Tags { get; set; }
+    public bool IsAutoRequest { get; set; }
     public JellyseerrRequestMedia? Media { get; set; }
+    public List<JellyseerrRequestSeason>? Seasons { get; set; }
     public JellyseerrUser? ModifiedBy { get; set; }
     public JellyseerrUser? RequestedBy { get; set; }
     public int SeasonCount { get; set; }
@@ -670,10 +677,24 @@ public class JellyseerrRequest
 }
 
 /// <summary>
+/// Jellyseerr request season model.
+/// </summary>
+public class JellyseerrRequestSeason
+{
+    public int Id { get; set; }
+    public int SeasonNumber { get; set; }
+    public int Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
 /// Jellyseerr request media model.
 /// </summary>
 public class JellyseerrRequestMedia
 {
+    public List<object> DownloadStatus { get; set; } = new();
+    public List<object> DownloadStatus4k { get; set; } = new();
     public int Id { get; set; }
     public string MediaType { get; set; } = string.Empty;
     public int TmdbId { get; set; }
@@ -683,6 +704,7 @@ public class JellyseerrRequestMedia
     public int Status4k { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public DateTime? LastSeasonChange { get; set; }
     public DateTime? MediaAddedAt { get; set; }
     public int ServiceId { get; set; }
     public int? ServiceId4k { get; set; }

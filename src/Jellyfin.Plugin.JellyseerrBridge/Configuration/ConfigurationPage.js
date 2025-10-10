@@ -540,10 +540,11 @@ function sortSelectOptions(selectElement) {
 }
 
 function populateRegion(page, regionValues) {
+    const config = window.configJellyseerrBridge || {};
     const regionSelect = page.querySelector('#selectWatchRegion');
     
-    // Set the current value
-    const selectedValue = regionSelect.value;
+    // Get the current value from current selection or config if not initialized
+    const selectedValue = regionSelect.value || config.Region;
 
     // Create a Map to store unique regions (ISO code as key, region object as value)
     const uniqueRegions = new Map();
