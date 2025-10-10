@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-10T23:12:29.188Z",
+        "checksum": "6890DCA391AF85F6ECB98F848640DB3A",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.175.0.0/JellyseerrBridge-0.175.0.0-DLL.zip",
+        "version": "0.175.0.0",
+        "changelog": "v0.175.0.0 - Added additional debug logging to GetConfigOrDefault for better troubleshooting",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "version": "0.174.0.0",
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-10T23:09:41.507Z",
