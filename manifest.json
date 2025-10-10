@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.174.0.0",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-10T23:09:41.507Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.174.0.0/JellyseerrBridge-0.174.0.0-DLL.zip",
+        "dependencies": [],
+        "changelog": "v0.174.0.0 - Fixed NullReferenceException in GetConfigOrDefault by adding null safety to DefaultValues dictionary access",
+        "checksum": "7F6CBED1132A4E888EACB9BEE5B48C02"
+      },
+      {
         "version": "0.172.0.0",
         "timestamp": "2025-10-10T22:12:53.585Z",
         "targetAbi": "10.10.7.0",
