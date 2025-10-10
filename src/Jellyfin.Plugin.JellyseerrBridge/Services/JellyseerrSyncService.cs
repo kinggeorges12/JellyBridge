@@ -72,7 +72,8 @@ public class JellyseerrSyncService
             // Get TV shows for all active networks
             allTvShows = await _apiService.GetAllTvShowsAsync();
             
-            var requests = await _apiService.GetRequestsAsync();
+            var requestsResponse = await _apiService.GetRequestsAsync();
+            var requests = requestsResponse?.Results ?? new List<JellyseerrRequest>();
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows, {RequestCount} requests from Jellyseerr",
                 allMovies.Count, allTvShows.Count, requests.Count);
@@ -226,7 +227,7 @@ public class JellyseerrSyncService
     /// </summary>
     private Task CreatePlaceholderMovieAsync(JellyseerrMovie movie)
     {
-        _logger.LogInformation("Creating placeholder movie: {MovieTitle}", movie.Title);
+        _logger.LogDebug("Creating placeholder movie: {MovieTitle}", movie.Title);
         
         // This would create a placeholder movie item in Jellyfin
         // Implementation depends on Jellyfin's internal APIs

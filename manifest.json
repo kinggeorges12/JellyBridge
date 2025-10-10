@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "timestamp": "2025-10-10T16:28:44.356Z",
+        "checksum": "8335133E9B0DA71572739FDF35ACD41C",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.161.0.0/JellyseerrBridge-0.161.0.0-DLL.zip",
+        "version": "0.161.0.0",
+        "changelog": "v0.161.0.0 - Fixed region select initialization and removed null coalescing operators from integer fields - region select now properly preserves current selection when populating options, and integer fields display actual values instead of empty strings"
+      },
+      {
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.157.0.0/JellyseerrBridge-0.157.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
