@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "checksum": "F583F262146B4DD4E29A01ABCE402A6A",
+        "changelog": "v0.163.0.0 - Fixed frontend configuration population issues - backend now returns null values for unset properties, frontend handles defaults and placeholders. Removed duplicate manual sync button and unnecessary defensive checks. Improved null handling for checkboxes and text inputs with proper placeholder display.",
+        "version": "0.163.0.0",
+        "timestamp": "2025-10-10T18:29:04.720Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.163.0.0/JellyseerrBridge-0.163.0.0-DLL.zip",
+        "dependencies": []
+      },
+      {
         "checksum": "F63CC7E5C7C00440FCB60A2097D37732",
         "version": "0.162.0.0",
         "timestamp": "2025-10-10T18:09:06.747Z",
