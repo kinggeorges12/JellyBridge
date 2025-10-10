@@ -115,14 +115,31 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
 // Function to initialize general settings including test connection
 function initializeGeneralSettings(page) {
     const config = window.configJellyseerrBridge || {};
+    const defaults = config.DefaultValues || {};
     
-    // Set general settings form values
-    page.querySelector('#IsEnabled').checked = config.IsEnabled;
-    page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl;
-    page.querySelector('#ApiKey').value = config.ApiKey;
-    page.querySelector('#UserId').value = config.UserId;
-    page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours;
-    page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup;
+    // Set general settings form values with null handling
+    page.querySelector('#IsEnabled').checked = config.IsEnabled ?? defaults.IsEnabled;
+    page.querySelector('#JellyseerrUrl').value = config.JellyseerrUrl ?? '';
+    page.querySelector('#ApiKey').value = config.ApiKey ?? '';
+    page.querySelector('#UserId').value = config.UserId ?? '';
+    page.querySelector('#SyncIntervalHours').value = config.SyncIntervalHours ?? '';
+    page.querySelector('#AutoSyncOnStartup').checked = config.AutoSyncOnStartup ?? defaults.AutoSyncOnStartup;
+    
+    // Update general settings placeholders with default values only
+    const jellyseerrUrlField = page.querySelector('#JellyseerrUrl');
+    if (jellyseerrUrlField && !jellyseerrUrlField.value) {
+        jellyseerrUrlField.placeholder = config.DefaultValues.JellyseerrUrl;
+    }
+    
+    const userIdField = page.querySelector('#UserId');
+    if (userIdField && !userIdField.value) {
+        userIdField.placeholder = config.DefaultValues.UserId.toString();
+    }
+    
+    const syncIntervalField = page.querySelector('#SyncIntervalHours');
+    if (syncIntervalField && !syncIntervalField.value) {
+        syncIntervalField.placeholder = config.DefaultValues.SyncIntervalHours.toString();
+    }
     
     const testButton = page.querySelector('#testConnection');
     if (!testButton) {
@@ -215,58 +232,60 @@ function initializeGeneralSettings(page) {
             return false;
         });
     }
-    
-    // Update general settings placeholders with default values only
-    const jellyseerrUrlField = page.querySelector('#JellyseerrUrl');
-    if (jellyseerrUrlField && !jellyseerrUrlField.value) {
-        jellyseerrUrlField.placeholder = config.DefaultValues.JellyseerrUrl;
-    }
-    
-    const userIdField = page.querySelector('#UserId');
-    if (userIdField && !userIdField.value) {
-        userIdField.placeholder = config.DefaultValues.UserId.toString();
-    }
-    
-    const syncIntervalField = page.querySelector('#SyncIntervalHours');
-    if (syncIntervalField && !syncIntervalField.value) {
-        syncIntervalField.placeholder = config.DefaultValues.SyncIntervalHours.toString();
-    }
 }
 
 // Function to initialize library settings
 function initializeLibrarySettings(page) {
     const config = window.configJellyseerrBridge || {};
+    const defaults = config.DefaultValues || {};
     
-    // Set library settings form values
-    page.querySelector('#LibraryDirectory').value = config.LibraryDirectory;
-    page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries;
-    page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries;
-    page.querySelector('#LibraryPrefix').value = config.LibraryPrefix;
+    // Set library settings form values with null handling
+    page.querySelector('#LibraryDirectory').value = config.LibraryDirectory ?? '';
+    page.querySelector('#ExcludeFromMainLibraries').checked = config.ExcludeFromMainLibraries ?? defaults.ExcludeFromMainLibraries;
+    page.querySelector('#CreateSeparateLibraries').checked = config.CreateSeparateLibraries ?? defaults.CreateSeparateLibraries;
+    page.querySelector('#LibraryPrefix').value = config.LibraryPrefix ?? '';
     
     // Update library settings placeholders
     const libraryDirectoryField = page.querySelector('#LibraryDirectory');
     if (libraryDirectoryField && !libraryDirectoryField.value) {
-        libraryDirectoryField.placeholder = config.DefaultValues.LibraryDirectory;
+        libraryDirectoryField.placeholder = defaults.LibraryDirectory;
     }
     
     const libraryPrefixField = page.querySelector('#LibraryPrefix');
     if (libraryPrefixField && !libraryPrefixField.value) {
-        libraryPrefixField.placeholder = config.DefaultValues.LibraryPrefix;
+        libraryPrefixField.placeholder = defaults.LibraryPrefix;
     }
     
-    updateLibraryPrefixState()
+    updateLibraryPrefixState();
 }
 
 
 // Function to initialize advanced settings
 function initializeAdvancedSettings(page) {
     const config = window.configJellyseerrBridge || {};
+    const defaults = config.DefaultValues || {};
     
-    // Set advanced settings form values
-    page.querySelector('#RequestTimeout').value = config.RequestTimeout;
-    page.querySelector('#RetryAttempts').value = config.RetryAttempts;
-    page.querySelector('#MaxDiscoverPages').value = config.MaxDiscoverPages;
-    page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging;
+    // Set advanced settings form values with null handling
+    page.querySelector('#RequestTimeout').value = config.RequestTimeout ?? '';
+    page.querySelector('#RetryAttempts').value = config.RetryAttempts ?? '';
+    page.querySelector('#MaxDiscoverPages').value = config.MaxDiscoverPages ?? '';
+    page.querySelector('#EnableDebugLogging').checked = config.EnableDebugLogging ?? defaults.EnableDebugLogging;
+    
+    // Update advanced settings placeholders
+    const requestTimeoutField = page.querySelector('#RequestTimeout');
+    if (requestTimeoutField && !requestTimeoutField.value) {
+        requestTimeoutField.placeholder = defaults.RequestTimeout;
+    }
+    
+    const retryAttemptsField = page.querySelector('#RetryAttempts');
+    if (retryAttemptsField && !retryAttemptsField.value) {
+        retryAttemptsField.placeholder = defaults.RetryAttempts;
+    }
+    
+    const maxDiscoverPagesField = page.querySelector('#MaxDiscoverPages');
+    if (maxDiscoverPagesField && !maxDiscoverPagesField.value) {
+        maxDiscoverPagesField.placeholder = defaults.MaxDiscoverPages;
+    }
     
     // Add event listener for Create Separate Libraries checkbox
     const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
@@ -274,17 +293,6 @@ function initializeAdvancedSettings(page) {
         createSeparateLibrariesCheckbox.addEventListener('change', function() {
             updateLibraryPrefixState();
         });
-    }
-    
-    // Update advanced settings placeholders
-    const requestTimeoutField = page.querySelector('#RequestTimeout');
-    if (requestTimeoutField && !requestTimeoutField.value) {
-        requestTimeoutField.placeholder = config.DefaultValues.RequestTimeout.toString();
-    }
-    
-    const retryAttemptsField = page.querySelector('#RetryAttempts');
-    if (retryAttemptsField && !retryAttemptsField.value) {
-        retryAttemptsField.placeholder = config.DefaultValues.RetryAttempts.toString();
     }
 }
 
@@ -378,11 +386,6 @@ function initializeSyncSettings(page) {
     
     // Add manual sync button functionality
     const syncButton = page.querySelector('#manualSync');
-    if (!syncButton) {
-        Dashboard.alert('❌ Jellyseerr Bridge: Manual sync button not found');
-        return;
-    }
-    
     syncButton.addEventListener('click', function () {
         performManualSync(page);
     });

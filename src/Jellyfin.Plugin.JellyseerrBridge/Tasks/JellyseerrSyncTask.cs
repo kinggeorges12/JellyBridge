@@ -8,20 +8,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
 /// <summary>
 /// Scheduled task for syncing Jellyseerr data.
 /// </summary>
-    public class JellyseerrSyncTask : IScheduledTask
-    {
-        private readonly ILogger<JellyseerrSyncTask> _logger;
-        private readonly JellyseerrSyncService _syncService;
+public class JellyseerrSyncTask : IScheduledTask
+{
+    private readonly ILogger<JellyseerrSyncTask> _logger;
+    private readonly JellyseerrSyncService _syncService;
 
-        /// <summary>
-        /// Get configuration value or default value for a property.
-        /// </summary>
-        private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
-        {
-            config ??= Plugin.Instance.Configuration;
-            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
-        }
+    /// <summary>
+    /// Get configuration value or default value for a property.
+    /// </summary>
+    private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+    {
+        config ??= Plugin.Instance.Configuration;
+        var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+        return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+    }
 
     public JellyseerrSyncTask(
         ILogger<JellyseerrSyncTask> logger,
