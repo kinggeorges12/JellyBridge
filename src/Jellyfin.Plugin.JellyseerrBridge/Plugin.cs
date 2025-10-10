@@ -47,21 +47,23 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
         {
             config ??= GetConfiguration();
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault: property={PropertyName}, config null={ConfigNull}, Instance null={InstanceNull}", 
-                propertyName, config == null, Instance == null);
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault: property={PropertyName}, config={Config}", 
+                propertyName, config);
             var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-            
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 1");
             if (value != null)
             {
                 return value;
             }
             
             // Try to get default value from dictionary
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 2");
             if (PluginConfiguration.DefaultValues.TryGetValue(propertyName, out var defaultValue))
             {
                 return (T)defaultValue;
             }
             
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 3");
             // Return default value for the type if no default is found
             return default(T)!;
         }
