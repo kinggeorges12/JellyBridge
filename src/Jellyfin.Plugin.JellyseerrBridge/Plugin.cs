@@ -28,6 +28,29 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             _logger.LogInformation("[JellyseerrBridge] Plugin Name: {PluginName}", Name);
         }
 
+        /// <summary>
+        /// Gets the current plugin configuration, ensuring it's always initialized with defaults.
+        /// </summary>
+        public static PluginConfiguration GetConfiguration()
+        {
+            if (Instance?.Configuration == null)
+            {
+                // Create a default configuration if none exists
+                return new PluginConfiguration();
+            }
+            return Instance.Configuration;
+        }
+
+        /// <summary>
+        /// Gets a configuration value or its default value.
+        /// </summary>
+        public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+        {
+            config ??= GetConfiguration();
+            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+        }
+
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
         {
             _logger.LogInformation("[JellyseerrBridge] Configuration update requested");

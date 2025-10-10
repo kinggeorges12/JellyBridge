@@ -33,10 +33,10 @@ public class JellyseerrSyncService
     /// </summary>
     public async Task<SyncResult> CreateFolderStructureAsync()
     {
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.GetConfiguration();
         var result = new SyncResult();
         
-        if (!GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping folder structure creation");
             result.Success = false;
@@ -65,7 +65,7 @@ public class JellyseerrSyncService
                 allMovies.Count, allTvShows.Count);
 
             // Create base directory
-            var baseDirectory = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
             if (!Directory.Exists(baseDirectory))
             {
@@ -108,10 +108,10 @@ public class JellyseerrSyncService
     /// </summary>
     public async Task<SyncResult> SyncAsync()
     {
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.GetConfiguration();
         var result = new SyncResult();
         
-        if (!GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
             result.Success = false;
@@ -133,7 +133,7 @@ public class JellyseerrSyncService
             }
 
             // Get data from Jellyseerr
-            var pluginConfig = Plugin.Instance.Configuration;
+            var pluginConfig = Plugin.GetConfiguration();
             
             // Get movies and TV shows for each active network
             var allMovies = new List<JellyseerrMovie>();
@@ -383,28 +383,19 @@ public class JellyseerrSyncService
         return new Guid(guidBytes);
     }
 
-    /// <summary>
-    /// Get configuration value or default value for a property.
-    /// </summary>
-    private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
-    {
-        config ??= Plugin.Instance.Configuration;
-        var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-        return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
-    }
 
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
     private async Task<ProcessResult> CreateFoldersAsync<T>(List<T> items, string format)
     {
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
         
         // Get configuration values using centralized helper
-        var baseDirectory = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        var libraryPrefix = GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
-        var createSeparateLibraries = GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
+        var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var libraryPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
         
         foreach (var item in items)
         {

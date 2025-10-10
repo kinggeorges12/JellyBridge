@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "changelog": "v0.166.0.0 - Fixed NullReferenceException in GetConfigOrDefault - Centralized configuration access with Plugin.GetConfiguration() and Plugin.GetConfigOrDefault() methods - Removed duplicate GetConfigOrDefault methods from all services - Added null-safe configuration initialization to prevent crashes during plugin startup - Improved configuration access pattern for better reliability and maintainability",
+        "timestamp": "2025-10-10T19:20:14.292Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.166.0.0/JellyseerrBridge-0.166.0.0-DLL.zip",
+        "checksum": "02E6A107629E41A77538575426571BB9",
+        "version": "0.166.0.0"
+      },
+      {
         "dependencies": [],
         "version": "0.165.0.0",
         "changelog": "v0.165.0.0 - Removed is='emby-input' attributes from search input fields for cleaner HTML and better compatibility",
