@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.172.0.0",
+        "timestamp": "2025-10-10T22:12:53.585Z",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.172.0.0 - Improved error handling in GetConfigOrDefault with comprehensive logging and better null checks",
+        "checksum": "AEC76DABD16916EB5EFF55E3C0CD6E56",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.172.0.0/JellyseerrBridge-0.172.0.0-DLL.zip"
+      },
+      {
         "timestamp": "2025-10-10T21:41:46.403Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.170.0.0/JellyseerrBridge-0.170.0.0-DLL.zip",
         "changelog": "v0.170.0.0 - Fixed static method logger access issue and minor version bump",

@@ -44,7 +44,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RetryAttempts), 3 },
         { nameof(EnableDebugLogging), false },
         { nameof(Region), "US" },
-        { "DefaultNetworkMap", new List<NetworkEntry>
+        { nameof(NetworkMap), new List<NetworkEntry>
             {
                 new NetworkEntry { Name = "Netflix", Id = 213 },
                 new NetworkEntry { Name = "Disney+", Id = 2739 },
@@ -155,7 +155,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the mapping of network IDs to their names (populated after API communication).
     /// This is stored as a list of key-value pairs for XML serialization compatibility.
     /// </summary>
-    public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues["DefaultNetworkMap"]);
+    public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues[nameof(NetworkMap)]);
 
 
 
@@ -177,5 +177,22 @@ public class PluginConfiguration : BasePluginConfiguration
     public void SetNetworkMapDictionary(Dictionary<int, string> mapping)
     {
         NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Value, Id = kvp.Key }).ToList();
+    }
+
+    /// <summary>
+    /// Returns a JSON representation of the configuration with API key masked.
+    /// </summary>
+    public override string ToString()
+    {
+        var properties = GetType().GetProperties()
+            .ToDictionary(p => p.Name, p => p.GetValue(this));
+        
+        // Mask the API key
+        if (properties.ContainsKey(nameof(ApiKey)))
+        {
+            properties[nameof(ApiKey)] = string.IsNullOrEmpty(ApiKey) ? "[EMPTY]" : "[SET]";
+        }
+        
+        return System.Text.Json.JsonSerializer.Serialize(properties);
     }
 }

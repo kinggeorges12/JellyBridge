@@ -133,7 +133,7 @@ function updateAvailableNetworks(page, newNetworkMap = null) {
     const networkMap = new Map();
     
     // Get default network map from global config
-    const defaultNetworkMap = config?.DefaultValues?.DefaultNetworkMap || [];
+    const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
     
     // Convert default networks array to object for easier processing (ID as key, name as value)
     const defaultNetworkObj = {};
