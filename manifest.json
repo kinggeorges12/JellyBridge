@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.157.0.0/JellyseerrBridge-0.157.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.157.0.0 - Fixed integer configuration values not saving correctly - now properly handles null values for nullable integer properties, allowing blank fields to be saved as null and use default values when retrieved",
+        "checksum": "9E184108E02C2E5245D4AE6D17E8088C",
+        "timestamp": "2025-10-10T15:18:33.828Z",
+        "version": "0.157.0.0"
+      },
+      {
         "timestamp": "2025-10-09T23:11:09.417Z",
         "dependencies": [],
         "targetAbi": "10.10.7.0",

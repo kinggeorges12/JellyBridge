@@ -257,10 +257,7 @@ public class JellyseerrApiService
                 return default(T)!;
             }
             
-            var deserializedArray = JsonSerializer.Deserialize(content, arrayType, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var deserializedArray = JsonSerializer.Deserialize(content, arrayType);
             
             // Convert array to List<T>
             var listType = typeof(List<>).MakeGenericType(elementType);
@@ -307,10 +304,7 @@ public class JellyseerrApiService
     {
         try
         {
-            var item = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var item = JsonSerializer.Deserialize<T>(content);
             
             _logger.LogInformation("Retrieved {Operation} from Jellyseerr", operationName);
             return item ?? GetDefaultValue<T>();
@@ -330,10 +324,7 @@ public class JellyseerrApiService
         try
         {
             // Deserialize the entire paginated response as the expected type
-            var paginatedResponse = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var paginatedResponse = JsonSerializer.Deserialize<T>(content);
             
             _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
             return paginatedResponse ?? GetDefaultValue<T>();
@@ -797,10 +788,10 @@ public class JellyseerrTvShow
     public List<int> GenreIds { get; set; } = new();
     
     [JsonPropertyName("mediaType")]
-    public string MediaType { get; set; } = string.Empty;
+    public string? MediaType { get; set; }
     
     [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; }
     
     [JsonPropertyName("originCountry")]
     public List<string> OriginCountry { get; set; } = new();
@@ -815,10 +806,10 @@ public class JellyseerrTvShow
     public string? Overview { get; set; }
     
     [JsonPropertyName("popularity")]
-    public double Popularity { get; set; }
+    public double? Popularity { get; set; }
     
     [JsonPropertyName("voteAverage")]
-    public double VoteAverage { get; set; }
+    public double? VoteAverage { get; set; }
     
     [JsonPropertyName("voteCount")]
     public int? VoteCount { get; set; }

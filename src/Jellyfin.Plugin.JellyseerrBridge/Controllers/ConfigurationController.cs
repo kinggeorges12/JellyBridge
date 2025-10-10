@@ -400,14 +400,22 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             else if (typeof(T) == typeof(int?))
             {
-                if (element.ValueKind == JsonValueKind.Number)
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    setter((T)(object)(int?)null!);
+                }
+                else if (element.ValueKind == JsonValueKind.Number)
                 {
                     setter((T)(object)element.GetInt32());
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
                     var stringValue = element.GetString();
-                    if (int.TryParse(stringValue, out var intValue))
+                    if (string.IsNullOrWhiteSpace(stringValue))
+                    {
+                        setter((T)(object)(int?)null!);
+                    }
+                    else if (int.TryParse(stringValue, out var intValue))
                     {
                         setter((T)(object)intValue);
                     }
@@ -417,16 +425,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 setter((T)(object)element.GetBoolean());
             }
-            else
-            {
-                return;
-            }
         }
 
         private static bool IsEmptyValue<T>(JsonElement element)
         {
-            if (element.ValueKind == JsonValueKind.Null ||
-                element.ValueKind == JsonValueKind.Undefined)
+            if (element.ValueKind == JsonValueKind.Undefined)
+                return true;
+
+            // For nullable integers, null is a valid value (means "use default")
+            if (element.ValueKind == JsonValueKind.Null && typeof(T) == typeof(int?))
+                return false;
+
+            if (element.ValueKind == JsonValueKind.Null)
                 return true;
 
             if (element.ValueKind == JsonValueKind.String)
