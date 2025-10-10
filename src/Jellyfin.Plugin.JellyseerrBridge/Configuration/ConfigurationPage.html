@@ -339,19 +339,19 @@
                         <br>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="RequestTimeout">Request Timeout (seconds)</label>
-                            <input id="RequestTimeout" type="number" is="emby-input" min="5" max="300" class="emby-input" placeholder="30" />
+                            <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" class="emby-input" placeholder="30" />
                             <div class="fieldDescription">Timeout for API requests to Jellyseerr. Default is 30 seconds.</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="RetryAttempts">Retry Attempts</label>
-                            <input id="RetryAttempts" type="number" is="emby-input" min="0" max="10" class="emby-input" placeholder="3" />
+                            <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="3" />
                             <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="MaxDiscoverPages">Max Discover Pages</label>
-                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="10" />
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" class="emby-input" placeholder="10" />
                             <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
                         </div>
 

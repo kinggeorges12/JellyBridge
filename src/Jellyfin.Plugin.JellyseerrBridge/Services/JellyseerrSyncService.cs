@@ -186,7 +186,7 @@ public class JellyseerrSyncService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing TV show {ShowName} (ID: {ShowId})", tvShow.Name, tvShow.Id);
+                _logger.LogError(ex, "Error processing TV show {ShowName} (ID: {ShowId})", tvShow.Name ?? "Unknown", tvShow.Id);
             }
         }
         
@@ -253,7 +253,7 @@ public class JellyseerrSyncService
     /// </summary>
     private Task CreatePlaceholderTvShowAsync(JellyseerrTvShow tvShow)
     {
-        _logger.LogInformation("Creating placeholder TV show: {ShowName}", tvShow.Name);
+        _logger.LogInformation("Creating placeholder TV show: {ShowName}", tvShow.Name ?? "Unknown");
         
         // This would create a placeholder TV show item in Jellyfin
         // Implementation depends on Jellyfin's internal APIs
@@ -268,7 +268,7 @@ public class JellyseerrSyncService
     {
         if (existingShow == null) return Task.CompletedTask;
         
-        _logger.LogDebug("Updating placeholder TV show: {ShowName}", tvShow.Name);
+        _logger.LogDebug("Updating placeholder TV show: {ShowName}", tvShow.Name ?? "Unknown");
         
         // Update TV show metadata
         // Implementation depends on Jellyfin's internal APIs
