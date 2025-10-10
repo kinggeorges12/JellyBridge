@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.176.0.0/JellyseerrBridge-0.176.0.0-DLL.zip",
+        "timestamp": "2025-10-10T23:29:05.585Z",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.176.0.0 - Improved JavaScript configuration handling with async/await instead of nested promises",
+        "version": "0.176.0.0",
+        "dependencies": [],
+        "checksum": "F77EC9113F20067338C2BA97E0444E90"
+      },
+      {
         "timestamp": "2025-10-10T23:12:29.188Z",
         "checksum": "6890DCA391AF85F6ECB98F848640DB3A",
         "dependencies": [],

@@ -694,8 +694,8 @@ function savePluginConfiguration(view) {
                 body: JSON.stringify(config)
             });
         })
-        .then(response => response.json())
-        .then(function (result) {
+        .then(async response => {
+            const result = await response.json();
             if (result.success) {
                 return result;
             } else {
