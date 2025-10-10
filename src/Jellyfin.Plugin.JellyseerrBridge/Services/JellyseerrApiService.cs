@@ -211,8 +211,8 @@ public class JellyseerrApiService
     {
         var allItems = new List<T>();
         var config = Plugin.GetConfiguration();
-        var maxPages = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) > 0 ? 
-                       Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) : int.MaxValue;
+        var maxPages = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config) > 0 ? 
+                       Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config) : int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -361,9 +361,9 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
-        var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
-        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging));
+        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
+        var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts), config);
+        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
         Exception? lastException = null;
         
@@ -420,7 +420,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
+                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
                 }
                 
                 if (attempt == retryAttempts)
