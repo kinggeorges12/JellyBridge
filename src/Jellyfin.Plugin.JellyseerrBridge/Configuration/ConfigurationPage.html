@@ -185,8 +185,8 @@
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" placeholder="http://localhost:5055" />
-                        <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://localhost:5055)</div>
+                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL"/>
+                        <div class="fieldDescription">The base URL of your Jellyseerr instance (e.g., http://host.docker.internal:5055)</div>
                     </div>
 
                     <div class="inputContainer">
@@ -200,14 +200,20 @@
                         </button>
                     </div>
 
+                    <div>
+                        <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
+                            <span>Manual Sync</span>
+                        </button>
+                    </div>
+
                     <div class="inputContainer">
-                        <input is="emby-input" type="number" id="UserId" label="User ID" placeholder="1" />
+                        <input is="emby-input" type="number" id="UserId" label="User ID" min="1" />
                         <div class="fieldDescription">Jellyseerr user ID for requests</div>
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" placeholder="24" />
-                        <div class="fieldDescription">How often to sync with Jellyseerr (in hours)</div>
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0"/>
+                        <div class="fieldDescription">How often to sync with Jellyseerr (accepts partial hours, e.g., 1.5). Set to 0 to disable automatic syncing.</div>
                     </div>
 
                     <br>
@@ -216,7 +222,7 @@
                         <summary>Library Settings</summary>
                         <br>
                         <div class="inputContainer">
-                            <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" placeholder="/data/Jellyseerr" />
+                            <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
                             <div class="fieldDescription">Directory path for Jellyseerr library files</div>
                         </div>
 
@@ -246,7 +252,7 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="LibraryPrefix">Library Prefix</label>
-                            <input id="LibraryPrefix" type="text" is="emby-input" class="emby-input" placeholder="Streaming - " />
+                            <input id="LibraryPrefix" type="text" is="emby-input" class="emby-input" />
                             <div class="fieldDescription">Prefix for streaming service library names (e.g., "Streaming - ")</div>
                         </div>
                     </details>
@@ -274,7 +280,7 @@
                                 <div style="flex: 1;">
                                     <label class="inputLabel inputLabelUnfocused" for="selectWatchRegion">Region <span class="helpIcon" title="Click the refresh button to load all regions from Jellyseerr. Only unselected default networks from Jellyseerr's Network Slider are shown in the list.">?</span></label>
                                     <select id="selectWatchRegion" is="emby-input" class="emby-input emby-select">
-                                        <option value="US">United States of America (United States)</option>
+                                        <option value="US">United States (US)</option>
                                     </select>
                                 </div>
                                 <button type="button" id="refreshNetworks" is="emby-button" class="raised button emby-button" style="margin-top: 30px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
@@ -339,19 +345,19 @@
                         <br>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="RequestTimeout">Request Timeout (seconds)</label>
-                            <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" class="emby-input" placeholder="30" />
+                            <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" class="emby-input"/>
                             <div class="fieldDescription">Timeout for API requests to Jellyseerr. Default is 30 seconds.</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="RetryAttempts">Retry Attempts</label>
-                            <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" class="emby-input" placeholder="3" />
+                            <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" class="emby-input"/>
                             <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="MaxDiscoverPages">Max Discover Pages</label>
-                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" class="emby-input" placeholder="10" />
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" class="emby-input"/>
                             <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
                         </div>
 
