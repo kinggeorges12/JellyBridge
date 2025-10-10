@@ -24,15 +24,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
-        /// <summary>
-        /// Get configuration value or default value for a property.
-        /// </summary>
-        private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
-        {
-            config ??= Plugin.Instance.Configuration;
-            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
-        }
 
         [HttpGet("GetPluginConfiguration")]
         public IActionResult GetPluginConfiguration()
@@ -41,7 +32,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var config = Plugin.Instance.Configuration;
+                var config = Plugin.GetConfiguration();
                 
                 // Convert the internal list format to dictionary format for JavaScript
                 var configForFrontend = new
@@ -323,7 +314,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var config = Plugin.Instance.Configuration;
+                var config = Plugin.GetConfiguration();
                 _logger.LogInformation("[JellyseerrBridge] Config - JellyseerrUrl: {Url}, ApiKey: {ApiKey}", 
                     config.JellyseerrUrl, 
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
@@ -364,7 +355,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var config = Plugin.Instance.Configuration;
+                var config = Plugin.GetConfiguration();
                 // Use provided region or default from config
                 var targetRegion = region ?? config.Region ?? "US";
                 

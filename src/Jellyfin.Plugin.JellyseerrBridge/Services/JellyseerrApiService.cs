@@ -141,15 +141,6 @@ public class JellyseerrApiService
     private readonly HttpClient _httpClient;
     private readonly ILogger<JellyseerrApiService> _logger;
 
-    /// <summary>
-    /// Get configuration value or default value for a property.
-    /// </summary>
-    private T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
-    {
-        config ??= Plugin.Instance.Configuration;
-        var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-        return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
-    }
 
     public JellyseerrApiService(HttpClient httpClient, ILogger<JellyseerrApiService> logger)
     {
@@ -172,7 +163,7 @@ public class JellyseerrApiService
         try
         {
             // Use default plugin config if none provided
-            config ??= Plugin.Instance.Configuration;
+            config ??= Plugin.GetConfiguration();
             
             _logger.LogInformation("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
             var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters, templateValues: templateValues);
@@ -219,9 +210,9 @@ public class JellyseerrApiService
     private async Task<List<T>> FetchAllPagesAsync<T>(JellyseerrEndpoint endpoint, Dictionary<string, string> baseParameters, string operationName)
     {
         var allItems = new List<T>();
-        var config = Plugin.Instance.Configuration;
-        var maxPages = GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) > 0 ? 
-                       GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) : int.MaxValue;
+        var config = Plugin.GetConfiguration();
+        var maxPages = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) > 0 ? 
+                       Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages)) : int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -370,9 +361,9 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
-        var retryAttempts = GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
-        var enableDebugLogging = GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging));
+        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
+        var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
+        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging));
         
         Exception? lastException = null;
         
@@ -429,7 +420,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
+                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout)));
                 }
                 
                 if (attempt == retryAttempts)
@@ -522,7 +513,7 @@ public class JellyseerrApiService
     /// </summary>
     public async Task<List<JellyseerrWatchNetwork>> GetNetworksAsync(string? region = null)
     {
-        region ??= Plugin.Instance.Configuration.Region;
+        region ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region));
         _logger.LogInformation("Making API call to get networks for region {Region}", region);
         var parameters = new Dictionary<string, string> 
         { 
@@ -561,7 +552,7 @@ public class JellyseerrApiService
     public async Task<List<JellyseerrMovie>> GetAllMoviesAsync()
     {
         var allMovies = new List<JellyseerrMovie>();
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.GetConfiguration();
         
         // Get network ID-to-name mapping
         var networkDict = config.GetNetworkMapDictionary();
@@ -605,7 +596,7 @@ public class JellyseerrApiService
     public async Task<List<JellyseerrTvShow>> GetAllTvShowsAsync()
     {
         var allTvShows = new List<JellyseerrTvShow>();
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.GetConfiguration();
         
         // Get network ID-to-name mapping
         var networkDict = config.GetNetworkMapDictionary();
