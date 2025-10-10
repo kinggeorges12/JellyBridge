@@ -2,6 +2,55 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
+// Scroll to a specific element by ID with smooth scrolling
+function scrollToElement(elementId, offset = 20) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+        
+        // Add a temporary highlight effect
+        element.style.transition = 'box-shadow 0.3s ease';
+        element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
+        setTimeout(() => {
+            element.style.boxShadow = '';
+        }, 2000);
+    }
+}
+
+// Global validators object
+const validators = {
+    notNull: (value) => !!value,
+    url: (value) => /^https?:\/\/.+/.test(value),
+    number: (value) => !value || !isNaN(parseFloat(value))
+};
+
+// Central field validation function
+function validateField(fieldId, validator = null, errorMessage = null) {
+    const field = document.querySelector(`#${fieldId}`);
+    if (!field) {
+        console.warn(`Field with ID "${fieldId}" not found`);
+        return { isValid: false, error: `Field "${fieldId}" not found` };
+    }
+    
+    const value = field.value.trim();
+    
+    // Check validator function if provided
+    if (validator && !validator(value)) {
+        const message = errorMessage || `${fieldId} is invalid`;
+        Dashboard.alert(`❌ ${message}`);
+        scrollToElement(fieldId);
+        return { isValid: false, error: message };
+    }
+    
+    return { isValid: true, error: null };
+}
+
 export default function (view) {
     if (!view) {
         Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
@@ -37,10 +86,14 @@ export default function (view) {
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
                 
+                // Scroll to top of page after successful initialization
+                scrollToElement('jellyseerrBridgeConfigurationPage');
+                
                 isInitialized = true;
             })
             .catch(function (error) {
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
+                scrollToElement('jellyseerrBridgeConfigurationPage');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -126,7 +179,7 @@ function setInputField(page, propertyName, isCheckbox = false) {
         field.checked = configValue ?? defaultValue;
     } else {
         field.value = configValue ?? '';
-        if (!field.value && defaultValue !== undefined) {
+        if (defaultValue !== undefined) {
             field.placeholder = defaultValue.toString();
         }
     }
@@ -150,18 +203,12 @@ function initializeGeneralSettings(page) {
     
     testButton.addEventListener('click', function () {
         const url = page.querySelector('#JellyseerrUrl').value.trim();
-        const apiKey = page.querySelector('#ApiKey').value.trim();
         
-        // Validate required fields
-        if (!url) {
-            Dashboard.alert('❌ Jellyseerr URL is required for connection test');
-            return;
-        }
+        // Validate URL format if provided
+        if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
         
-        if (!apiKey) {
-            Dashboard.alert('❌ API Key is required for connection test');
-            return;
-        }
+        // Validate API Key
+        if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
         
         Dashboard.showLoadingMsg();
         
@@ -204,6 +251,7 @@ function initializeGeneralSettings(page) {
                             }).catch(function (error) {
                                 Dashboard.hideLoadingMsg();
                                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                                scrollToElement('jellyseerrBridgeConfigurationForm');
                             });
                         } else {
                             Dashboard.alert('🚫 Exited without saving');
@@ -237,6 +285,7 @@ function initializeGeneralSettings(page) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
             }).catch(function (error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyseerrBridgeConfigurationForm');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -357,6 +406,7 @@ function initializeSyncSettings(page) {
                 Dashboard.alert(`✅ Available networks refreshed successfully! Loaded ${availableNetworks.length} new networks.`);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
+                scrollToElement('syncSettings');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -378,6 +428,7 @@ function initializeSyncSettings(page) {
                 Dashboard.alert('✅ Regions refreshed successfully!');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
+                scrollToElement('syncSettings');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -582,17 +633,7 @@ function safeParseInt(element) {
     if (value === null || value === undefined || value === '') {
         return null;
     }
-    const label = element.closest('.inputContainer')?.querySelector('label')?.textContent || 
-                  element.closest('label')?.textContent || 
-                  element.getAttribute('label') || 
-                  element.id;
-    
-    const parsed = parseInt(value);
-    if (isNaN(parsed)) {
-        Dashboard.alert(`❌ Invalid number format for ${label}. Please enter a valid number.`);
-        throw new Error(`Invalid number format for ${label}`);
-    }
-    return parsed;
+    return parseInt(value);
 }
 
 function safeParseDouble(element) {
@@ -600,29 +641,25 @@ function safeParseDouble(element) {
     if (value === null || value === undefined || value === '') {
         return null;
     }
-    const label = element.closest('.inputContainer')?.querySelector('label')?.textContent || 
-                  element.closest('label')?.textContent || 
-                  element.getAttribute('label') || 
-                  element.id;
-    
-    const parsed = parseFloat(value);
-    if (isNaN(parsed)) {
-        Dashboard.alert(`❌ Invalid number format for ${label}. Please enter a valid number.`);
-        throw new Error(`Invalid number format for ${label}`);
-    }
-    return parsed;
+    return parseFloat(value);
 }
 
 function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
-    // Validate required fields
-    const apiKey = form.querySelector('#ApiKey').value.trim();
+    // Validate URL format if provided
+    const url = form.querySelector('#JellyseerrUrl').value.trim();
+    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
-    if (!apiKey) {
-        Dashboard.alert('API Key is required. Please enter your Jellyseerr API key.');
-        return Promise.reject('API Key is required');
-    }
+    // Validate API Key
+    if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
+    
+    // Validate number fields
+    if (!validateField('UserId', validators.number, 'Invalid User ID').isValid) return;
+    if (!validateField('SyncIntervalHours', validators.number, 'Invalid Sync Interval').isValid) return;
+    if (!validateField('RequestTimeout', validators.number, 'Invalid Request Timeout').isValid) return;
+    if (!validateField('RetryAttempts', validators.number, 'Invalid Retry Attempts').isValid) return;
+    if (!validateField('MaxDiscoverPages', validators.number, 'Invalid Max Discover Pages').isValid) return;
     
     // Use our custom endpoint to get the current configuration
     return fetch('/JellyseerrBridge/GetPluginConfiguration')
@@ -738,6 +775,7 @@ function performSync() {
         }
     }).catch(function(error) {
         Dashboard.alert('❌ Folder structure creation failed: ' + (error?.message || 'Unknown error'));
+        scrollToSection('sync');
     }).finally(function() {
         Dashboard.hideLoadingMsg();
     });
@@ -761,6 +799,7 @@ function performManualSync(page) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyseerrBridgeConfigurationForm');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });

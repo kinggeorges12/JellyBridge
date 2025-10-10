@@ -48,7 +48,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             config ??= GetConfiguration();
             var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
-            return value ?? (T)PluginConfiguration.DefaultValues[propertyName];
+            
+            if (value != null)
+            {
+                return value;
+            }
+            
+            // Try to get default value from dictionary
+            if (PluginConfiguration.DefaultValues.TryGetValue(propertyName, out var defaultValue))
+            {
+                return (T)defaultValue;
+            }
+            
+            // Return default value for the type if no default is found
+            return default(T)!;
         }
 
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
