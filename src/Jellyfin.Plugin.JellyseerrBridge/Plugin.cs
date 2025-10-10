@@ -33,12 +33,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// </summary>
         public static PluginConfiguration GetConfiguration()
         {
-            if (Instance?.Configuration == null)
-            {
-                // Create a default configuration if none exists
-                return new PluginConfiguration();
-            }
-            return Instance.Configuration;
+            return Instance.Configuration ?? new PluginConfiguration();
         }
 
         /// <summary>
@@ -49,7 +44,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             config ??= GetConfiguration();
             Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault: property={PropertyName}, config={Config}", 
                 propertyName, config);
-            var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
+            var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
+            var value = propertyInfo != null ? (T?)propertyInfo.GetValue(config) : default(T);
             Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 1");
             if (value != null)
             {
