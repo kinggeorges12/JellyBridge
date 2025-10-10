@@ -139,10 +139,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
             try
             {
-                if (string.IsNullOrEmpty(request.JellyseerrUrl))
+                if (string.IsNullOrEmpty(request.JellyseerrUrl) || string.IsNullOrEmpty(request.ApiKey))
                 {
-                    _logger.LogWarning("[JellyseerrBridge] TestConnection failed: Jellyseerr URL is required");
-                    return BadRequest(new { success = false, message = "Jellyseerr URL is required" });
+                    _logger.LogWarning("[JellyseerrBridge] TestConnection failed: Missing required fields");
+                    return BadRequest(new { success = false, message = "Jellyseerr URL and API Key are required" });
                 }
 
                 // Test basic connectivity
