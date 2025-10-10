@@ -203,6 +203,7 @@ function initializeGeneralSettings(page) {
     
     testButton.addEventListener('click', function () {
         const url = page.querySelector('#JellyseerrUrl').value.trim();
+        const apiKey = page.querySelector('#ApiKey').value.trim();
         
         // Validate URL format if provided
         if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
@@ -669,7 +670,7 @@ function savePluginConfiguration(view) {
             // Only include checkbox values if they differ from defaults
             config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
             config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
-            config.ApiKey = apiKey;
+            config.ApiKey = form.querySelector('#ApiKey').value.trim();
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
             config.UserId = safeParseInt(form.querySelector('#UserId'));
             config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));

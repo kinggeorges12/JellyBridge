@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "018012F9F4BED95681BE16425A40301A",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.169.0.0/JellyseerrBridge-0.169.0.0-DLL.zip",
+        "changelog": "v0.169.0.0 - Fixed remaining NullReferenceException in JellyseerrApiService - Updated MakeApiRequestAsync and FetchAllPagesAsync methods to properly pass config parameter to GetConfigOrDefault calls - Ensures consistent configuration access throughout the API service - Resolves API call failures for regions and networks",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-10T21:17:58.125Z",
+        "version": "0.169.0.0",
+        "dependencies": []
+      },
+      {
         "checksum": "967C96D4E1EF2A3344293695DB676D12",
         "changelog": "v0.168.0.0 - Fixed NullReferenceException in GetConfigOrDefault method - Added safe dictionary access using TryGetValue to prevent KeyNotFoundException - Improved error handling for missing configuration properties - Fixed placeholder values not showing for fields with values - Added comprehensive scroll-to functionality with validation and error handling - Centralized validation system with global validators object",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.168.0.0/JellyseerrBridge-0.168.0.0-DLL.zip",
