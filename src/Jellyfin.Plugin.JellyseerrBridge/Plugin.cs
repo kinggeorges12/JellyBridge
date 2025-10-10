@@ -47,6 +47,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
         {
             config ??= GetConfiguration();
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault: property={PropertyName}, config null={ConfigNull}, Instance null={InstanceNull}", 
+                propertyName, config == null, Instance == null);
             var value = (T?)typeof(PluginConfiguration).GetProperty(propertyName)?.GetValue(config);
             
             if (value != null)
