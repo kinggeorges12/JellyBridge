@@ -9,11 +9,20 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "version": "0.165.0.0",
+        "changelog": "v0.165.0.0 - Removed is='emby-input' attributes from search input fields for cleaner HTML and better compatibility",
+        "checksum": "25F031D3AC8C42F2918C1E8BE886F185",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-10T18:57:58.628Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.165.0.0/JellyseerrBridge-0.165.0.0-DLL.zip"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "checksum": "F583F262146B4DD4E29A01ABCE402A6A",
         "changelog": "v0.163.0.0 - Fixed frontend configuration population issues - backend now returns null values for unset properties, frontend handles defaults and placeholders. Removed duplicate manual sync button and unnecessary defensive checks. Improved null handling for checkboxes and text inputs with proper placeholder display.",
         "version": "0.163.0.0",
-        "timestamp": "2025-10-10T18:29:04.720Z",
+        "timestamp": "2025-10-10T18:29:04.72Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.163.0.0/JellyseerrBridge-0.163.0.0-DLL.zip",
         "dependencies": []
       },
