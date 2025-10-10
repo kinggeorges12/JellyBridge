@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-10T21:41:46.403Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.170.0.0/JellyseerrBridge-0.170.0.0-DLL.zip",
+        "changelog": "v0.170.0.0 - Fixed static method logger access issue and minor version bump",
+        "version": "0.170.0.0",
+        "checksum": "7A64C1DE9A275A2CEFD5FF602114C135",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "checksum": "018012F9F4BED95681BE16425A40301A",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.169.0.0/JellyseerrBridge-0.169.0.0-DLL.zip",
         "changelog": "v0.169.0.0 - Fixed remaining NullReferenceException in JellyseerrApiService - Updated MakeApiRequestAsync and FetchAllPagesAsync methods to properly pass config parameter to GetConfigOrDefault calls - Ensures consistent configuration access throughout the API service - Resolves API call failures for regions and networks",
