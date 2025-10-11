@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Models;
@@ -16,7 +16,7 @@ public class Media
     public int Id { get; set; } = 0;
 
     [JsonPropertyName("mediaType")]
-    public string? MediaType { get; set; } = null;
+    public MediaType MediaType { get; set; } = MediaType.MOVIE;
 
     [JsonPropertyName("tvdbId")]
     public int? TvdbId { get; set; } = null;
@@ -25,10 +25,10 @@ public class Media
     public string? ImdbId { get; set; } = null;
 
     [JsonPropertyName("status")]
-    public int Status { get; set; } = 0;
+    public MediaStatus Status { get; set; } = MediaStatus.UNKNOWN;
 
     [JsonPropertyName("status4k")]
-    public int Status4k { get; set; } = 0;
+    public MediaStatus Status4k { get; set; } = MediaStatus.UNKNOWN;
 
     [JsonPropertyName("requests")]
     public List<string> Requests { get; set; } = new();
