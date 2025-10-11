@@ -6,6 +6,30 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Models;
 /// Enums imported from TypeScript constants files
 /// </summary>
 
+public enum MediaRequestStatus
+{
+    PENDING = 1,
+    APPROVED = 2,
+    DECLINED = 3,
+    FAILED = 4,
+    COMPLETED = 5,
+}
+
+public static class MediaRequestStatusExtensions
+{
+    public static string ToStringValue(this MediaRequestStatus value)
+    {
+        return value.ToString().ToLowerInvariant();
+    }
+
+    public static MediaRequestStatus FromString(string value)
+    {
+        if (Enum.TryParse<MediaRequestStatus>(value, true, out var result))
+            return result;
+        return MediaRequestStatus.PENDING;
+    }
+}
+
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MediaType
 {
