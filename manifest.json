@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.178.0.0/JellyseerrBridge-0.178.0.0-DLL.zip",
+        "dependencies": [],
+        "timestamp": "2025-10-11T00:06:29.681Z",
+        "checksum": "815CB2A8377507AD894A55D10D20FFCB",
+        "changelog": "v0.178.0.0 - Fixed all GetConfigOrDefault calls to use nullable types for nullable properties to prevent reflection pattern matching failures",
+        "version": "0.178.0.0",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "changelog": "v0.177.0.0 - Fixed reflection usage in GetConfigOrDefault method to properly handle generic type constraints",
         "version": "0.177.0.0",
         "targetAbi": "10.10.7.0",

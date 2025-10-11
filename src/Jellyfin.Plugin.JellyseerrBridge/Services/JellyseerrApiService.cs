@@ -211,8 +211,7 @@ public class JellyseerrApiService
     {
         var allItems = new List<T>();
         var config = Plugin.GetConfiguration();
-        var maxPages = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config) > 0 ? 
-                       Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config) : int.MaxValue;
+        var maxPages = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config) ?? int.MaxValue;
 
         for (int page = 1; page <= maxPages; page++)
         {
@@ -361,9 +360,9 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
-        var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts), config);
-        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
+        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RequestTimeout), config) ?? 30);
+        var retryAttempts = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RetryAttempts), config) ?? 3;
+        var enableDebugLogging = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.EnableDebugLogging), config) ?? false;
         
         Exception? lastException = null;
         
@@ -420,7 +419,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
+                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RequestTimeout), config) ?? 30);
                 }
                 
                 if (attempt == retryAttempts)

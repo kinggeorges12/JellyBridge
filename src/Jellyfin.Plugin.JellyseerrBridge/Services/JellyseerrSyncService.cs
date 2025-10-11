@@ -36,7 +36,7 @@ public class JellyseerrSyncService
         var config = Plugin.GetConfiguration();
         var result = new SyncResult();
         
-        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
+        if (!Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.IsEnabled)) ?? false)
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping folder structure creation");
             result.Success = false;
@@ -111,7 +111,7 @@ public class JellyseerrSyncService
         var config = Plugin.GetConfiguration();
         var result = new SyncResult();
         
-        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled)))
+        if (!Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.IsEnabled)) ?? false)
         {
             _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
             result.Success = false;
@@ -395,7 +395,7 @@ public class JellyseerrSyncService
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         var libraryPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
-        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
+        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.CreateSeparateLibraries)) ?? false;
         
         foreach (var item in items)
         {
