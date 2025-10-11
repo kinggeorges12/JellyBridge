@@ -376,5 +376,5 @@ nuget.config
 # Codebase directory with reference materials
 codebase/
 
-# Scripts directory
-scripts/
+# GitHub token file (contains sensitive data)
+github-token.txt

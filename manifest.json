@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "AE7A37F0116E87199289332F5885091D",
+        "changelog": "v0.181.0.0 - Added TypeScript to C# model conversion, improved library scanning, enhanced configuration management, and refactored services for better maintainability",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.181.0.0/JellyseerrBridge-0.181.0.0-DLL.zip",
+        "version": "0.181.0.0",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-11T08:50:05.873Z"
+      },
+      {
         "version": "0.180.0.0",
         "timestamp": "2025-10-11T04:50:49.034Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.180.0.0/JellyseerrBridge-0.180.0.0-DLL.zip",
