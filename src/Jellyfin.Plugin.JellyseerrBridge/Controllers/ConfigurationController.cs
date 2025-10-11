@@ -14,16 +14,35 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     {
         private readonly ILogger<ConfigurationController> _logger;
         private readonly JellyseerrSyncService _syncService;
+        private readonly JellyseerrApiService _apiService;
         private readonly JellyseerrBridgeService _bridgeService;
 
-        public ConfigurationController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrBridgeService bridgeService)
+        public ConfigurationController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService)
         {
             _logger = loggerFactory.CreateLogger<ConfigurationController>();
             _syncService = syncService;
+            _apiService = apiService;
             _bridgeService = bridgeService;
             _logger.LogInformation("[JellyseerrBridge] ConfigurationController initialized");
         }
 
+
+        [HttpPost("TestLibraryScan")]
+        public async Task<IActionResult> TestLibraryScan()
+        {
+            _logger.LogInformation("[JellyseerrBridge] TestLibraryScan endpoint called");
+            
+            try
+            {
+                var result = await _bridgeService.TestLibraryScanAsync();
+                return Ok(new { success = true, result = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Error testing library scan");
+                return Ok(new { success = false, error = ex.Message });
+            }
+        }
 
         [HttpGet("GetPluginConfiguration")]
         public IActionResult GetPluginConfiguration()
@@ -281,7 +300,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var result = await _syncService.CreateFolderStructureAsync();
+                var result = await _syncService.CreateBridgeFoldersAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
                 return Ok(new { 
@@ -291,9 +310,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     moviesProcessed = result.MoviesProcessed,
                     moviesCreated = result.MoviesCreated,
                     moviesUpdated = result.MoviesUpdated,
-                    tvShowsProcessed = result.TvShowsProcessed,
-                    tvShowsCreated = result.TvShowsCreated,
-                    tvShowsUpdated = result.TvShowsUpdated,
+                    showsProcessed = result.ShowsProcessed,
+                    showsCreated = result.ShowsCreated,
+                    showsUpdated = result.ShowsUpdated,
                     requestsProcessed = result.RequestsProcessed
                 });
             }
@@ -319,7 +338,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     config.JellyseerrUrl, 
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
-                var regions = await _bridgeService.GetWatchRegionsAsync();
+                var regions = await _apiService.GetWatchRegionsAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", regions?.Count ?? 0);
                 
@@ -359,7 +378,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use provided region or default from config
                 var targetRegion = region ?? config.Region ?? "US";
                 
-                var networks = await _bridgeService.GetWatchNetworksAsync(targetRegion);
+                var networks = await _apiService.GetNetworksAsync(targetRegion);
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", networks?.Count ?? 0, targetRegion);
                 

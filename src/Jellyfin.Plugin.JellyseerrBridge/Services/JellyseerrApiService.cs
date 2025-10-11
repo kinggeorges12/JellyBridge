@@ -1,8 +1,13 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -14,7 +19,7 @@ public enum JellyseerrEndpoint
     Status,
     Requests,
     Movies,
-    TvShows,
+    Shows,
     User,
     WatchRegions,
     WatchNetworkMovies,
@@ -102,7 +107,7 @@ public static class JellyseerrUrlBuilder
             JellyseerrEndpoint.Status => JellyseerrResponseType.RawContent,
             JellyseerrEndpoint.Requests => JellyseerrResponseType.PaginatedList,
             JellyseerrEndpoint.Movies => JellyseerrResponseType.PaginatedList,
-            JellyseerrEndpoint.TvShows => JellyseerrResponseType.PaginatedList,
+            JellyseerrEndpoint.Shows => JellyseerrResponseType.PaginatedList,
             JellyseerrEndpoint.User => JellyseerrResponseType.JsonObject,
             JellyseerrEndpoint.WatchRegions => JellyseerrResponseType.JsonList,
             JellyseerrEndpoint.WatchNetworkMovies => JellyseerrResponseType.JsonList,
@@ -123,7 +128,7 @@ public static class JellyseerrUrlBuilder
             JellyseerrEndpoint.Status => "/api/v1/status",
             JellyseerrEndpoint.Requests => "/api/v1/request",
             JellyseerrEndpoint.Movies => "/api/v1/discover/movies",
-            JellyseerrEndpoint.TvShows => "/api/v1/discover/tv",
+            JellyseerrEndpoint.Shows => "/api/v1/discover/tv",
             JellyseerrEndpoint.User => "/api/v1/auth/me",
             JellyseerrEndpoint.WatchRegions => "/api/v1/watchproviders/regions",
             JellyseerrEndpoint.WatchNetworkMovies => "/api/v1/watchproviders/movies",
@@ -589,12 +594,13 @@ public class JellyseerrApiService
 
 
 
+
     /// <summary>
     /// Get all TV shows from Jellyseerr for all active networks (handles pagination automatically).
     /// </summary>
-    public async Task<List<JellyseerrTvShow>> GetAllTvShowsAsync()
+    public async Task<List<JellyseerrShow>> GetAllShowsAsync()
     {
-        var allTvShows = new List<JellyseerrTvShow>();
+        var allShows = new List<JellyseerrShow>();
         var config = Plugin.GetConfiguration();
         
         // Get network ID-to-name mapping
@@ -612,14 +618,14 @@ public class JellyseerrApiService
                     { "watchProviders", networkId.ToString() }
                 };
                 
-                var networkTvShows = await FetchAllPagesAsync<JellyseerrTvShow>(
-                    JellyseerrEndpoint.TvShows,
+                var networkShows = await FetchAllPagesAsync<JellyseerrShow>(
+                    JellyseerrEndpoint.Shows,
                     baseParameters,
-                    $"TV shows for {networkName}"
+                    $"Shows for {networkName}"
                 );
                 
-                allTvShows.AddRange(networkTvShows);
-                _logger.LogInformation("Retrieved {TvShowCount} TV shows for {NetworkName}", networkTvShows.Count, networkName);
+                allShows.AddRange(networkShows);
+                _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", networkShows.Count, networkName);
             }
             else
             {
@@ -627,7 +633,7 @@ public class JellyseerrApiService
             }
         }
         
-        return allTvShows;
+        return allShows;
     }
 
     /// <summary>
@@ -742,10 +748,26 @@ public class JellyseerrPaginatedResponse<T>
 }
 
 /// <summary>
+/// Base class for Jellyseerr objects with common properties.
+/// </summary>
+public abstract class JellyseerrItem
+{
+    /// <summary>
+    /// Gets the type of the Jellyseerr object.
+    /// </summary>
+    public abstract string Type { get; }
+}
+
+/// <summary>
 /// Jellyseerr movie model.
 /// </summary>
-public class JellyseerrMovie
+public class JellyseerrMovie : JellyseerrItem, IEquatable<JellyseerrMovie>, IEquatable<BaseItem>
 {
+    /// <summary>
+    /// Gets the type of this Jellyseerr object.
+    /// </summary>
+    public override string Type => "Movie";
+
     [JsonPropertyName("id")]
     public int Id { get; set; }
     
@@ -756,7 +778,7 @@ public class JellyseerrMovie
     public bool Adult { get; set; }
     
     [JsonPropertyName("genreIds")]
-    public List<int> GenreIds { get; set; } = new();
+    public virtual List<int> GenreIds => Genres?.Select(g => g.Id).ToList() ?? new List<int>();
     
     [JsonPropertyName("originalLanguage")]
     public string OriginalLanguage { get; set; } = string.Empty;
@@ -791,17 +813,222 @@ public class JellyseerrMovie
     [JsonPropertyName("posterPath")]
     public string PosterPath { get; set; } = string.Empty;
     
-    [JsonPropertyName("mediaInfo")]
-    public JellyseerrMediaInfo? MediaInfo { get; set; }
+    // Additional properties from movie details endpoint
+    [JsonPropertyName("imdbId")]
+    public string? ImdbId { get; set; }
+    
+    [JsonPropertyName("budget")]
+    public long? Budget { get; set; }
+    
+    [JsonPropertyName("homepage")]
+    public string? Homepage { get; set; }
+    
+    [JsonPropertyName("revenue")]
+    public long? Revenue { get; set; }
+    
+    [JsonPropertyName("runtime")]
+    public int? Runtime { get; set; }
+    
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+    
+    [JsonPropertyName("tagline")]
+    public string? Tagline { get; set; }
+    
+    [JsonPropertyName("externalIds")]
+    public JellyseerrExternalIds? ExternalIds { get; set; }
+    
+    [JsonPropertyName("genres")]
+    public List<JellyseerrGenre>? Genres { get; set; }
+
+    /// <summary>
+    /// Computed property that extracts the year from the release date.
+    /// </summary>
+    public string Year => ExtractYear(ReleaseDate);
+
+    /// <summary>
+    /// Extract year from date string.
+    /// </summary>
+    private static string ExtractYear(string? dateString)
+    {
+        if (string.IsNullOrEmpty(dateString))
+            return string.Empty;
+
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            return date.Year.ToString();
+        }
+
+        return string.Empty;
+    }
+
+
+
+    /// <summary>
+    /// Implements IEquatable for proper comparison.
+    /// </summary>
+    public bool Equals(JellyseerrMovie? other)
+    {
+        return other != null && Id == other.Id;
+    }
+
+
+
+    /// <summary>
+    /// Implements IEquatable for comparison with Jellyfin Movie objects.
+    /// </summary>
+    public bool Equals(BaseItem? other)
+    {
+        if (other is null) return false;
+        
+        // Only compare with Movie items
+        if (other is not Movie movie) return false;
+        
+        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
+        if (!string.IsNullOrEmpty(movie.GetProviderId("Tmdb")))
+        {
+            return Id.ToString() == movie.GetProviderId("Tmdb");
+        }
+        
+        return false;
+    }
+}
+
+
+
+/// <summary>
+/// External IDs for movies and TV shows.
+/// </summary>
+public class JellyseerrExternalIds
+{
+    [JsonPropertyName("facebookId")]
+    public string? FacebookId { get; set; }
+    
+    [JsonPropertyName("freebaseId")]
+    public string? FreebaseId { get; set; }
+    
+    [JsonPropertyName("freebaseMid")]
+    public string? FreebaseMid { get; set; }
+    
+    [JsonPropertyName("imdbId")]
+    public string? ImdbId { get; set; }
+    
+    [JsonPropertyName("instagramId")]
+    public string? InstagramId { get; set; }
+    
+    [JsonPropertyName("tvdbId")]
+    public int? TvdbId { get; set; }
+}
+
+/// <summary>
+/// Media information from Jellyseerr API responses.
+/// </summary>
+public class JellyseerrMediaInfo
+{
+    [JsonPropertyName("downloadStatus")]
+    public List<object> DownloadStatus { get; set; } = new();
+    
+    [JsonPropertyName("downloadStatus4k")]
+    public List<object> DownloadStatus4k { get; set; } = new();
+    
+    [JsonPropertyName("id")]
+    public int? Id { get; set; }
+    
+    [JsonPropertyName("mediaType")]
+    public string? MediaType { get; set; }
+    
+    [JsonPropertyName("tmdbId")]
+    public int? TmdbId { get; set; }
+    
+    [JsonPropertyName("tvdbId")]
+    public int? TvdbId { get; set; }
+    
+    [JsonPropertyName("imdbId")]
+    public string? ImdbId { get; set; }
+    
+    [JsonPropertyName("status")]
+    public int? Status { get; set; }
+    
+    [JsonPropertyName("status4k")]
+    public int? Status4k { get; set; }
+    
+    [JsonPropertyName("createdAt")]
+    public DateTime? CreatedAt { get; set; }
+    
+    [JsonPropertyName("updatedAt")]
+    public DateTime? UpdatedAt { get; set; }
+    
+    [JsonPropertyName("lastSeasonChange")]
+    public DateTime? LastSeasonChange { get; set; }
+    
+    [JsonPropertyName("mediaAddedAt")]
+    public DateTime? MediaAddedAt { get; set; }
+    
+    [JsonPropertyName("serviceId")]
+    public int? ServiceId { get; set; }
+    
+    [JsonPropertyName("serviceId4k")]
+    public int? ServiceId4k { get; set; }
+    
+    [JsonPropertyName("externalServiceId")]
+    public int? ExternalServiceId { get; set; }
+    
+    [JsonPropertyName("externalServiceId4k")]
+    public int? ExternalServiceId4k { get; set; }
+    
+    [JsonPropertyName("externalServiceSlug")]
+    public string? ExternalServiceSlug { get; set; }
+    
+    [JsonPropertyName("externalServiceSlug4k")]
+    public string? ExternalServiceSlug4k { get; set; }
+    
+    [JsonPropertyName("ratingKey")]
+    public string? RatingKey { get; set; }
+    
+    [JsonPropertyName("ratingKey4k")]
+    public string? RatingKey4k { get; set; }
+    
+    [JsonPropertyName("jellyfinMediaId")]
+    public string? JellyfinMediaId { get; set; }
+    
+    [JsonPropertyName("jellyfinMediaId4k")]
+    public string? JellyfinMediaId4k { get; set; }
+    
+    [JsonPropertyName("watchlists")]
+    public List<object> Watchlists { get; set; } = new();
+    
+    [JsonPropertyName("mediaUrl")]
+    public string? MediaUrl { get; set; }
+    
+    [JsonPropertyName("serviceUrl")]
+    public string? ServiceUrl { get; set; }
+}
+
+/// <summary>
+/// Genre information for Jellyseerr API responses.
+/// </summary>
+public class JellyseerrGenre
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
 }
 
 /// <summary>
 /// Jellyseerr TV show model.
 /// </summary>
-public class JellyseerrTvShow
+public class JellyseerrShow : JellyseerrItem, IEquatable<JellyseerrShow>, IEquatable<BaseItem>
 {
+    /// <summary>
+    /// Gets the type of this Jellyseerr object.
+    /// </summary>
+    public override string Type => "Show";
+
     [JsonPropertyName("id")]
     public int? Id { get; set; }
+    
     
     [JsonPropertyName("firstAirDate")]
     public string? FirstAirDate { get; set; }
@@ -842,92 +1069,69 @@ public class JellyseerrTvShow
     [JsonPropertyName("posterPath")]
     public string? PosterPath { get; set; }
     
+    [JsonPropertyName("externalIds")]
+    public JellyseerrExternalIds? ExternalIds { get; set; }
+    
     [JsonPropertyName("mediaInfo")]
     public JellyseerrMediaInfo? MediaInfo { get; set; }
-}
+    
+    /// <summary>
+    /// Computed property that extracts the year from the first air date.
+    /// </summary>
+    public string Year => ExtractYear(FirstAirDate);
 
-/// <summary>
-/// Jellyseerr media info model for additional metadata.
-/// </summary>
-public class JellyseerrMediaInfo
-{
-    [JsonPropertyName("downloadStatus")]
-    public List<object> DownloadStatus { get; set; } = new();
-    
-    [JsonPropertyName("downloadStatus4k")]
-    public List<object> DownloadStatus4k { get; set; } = new();
-    
-    [JsonPropertyName("id")]
-    public int? Id { get; set; }
-    
-    [JsonPropertyName("mediaType")]
-    public string MediaType { get; set; } = string.Empty;
-    
-    [JsonPropertyName("tmdbId")]
-    public int? TmdbId { get; set; }
-    
-    [JsonPropertyName("tvdbId")]
-    public int? TvdbId { get; set; }
-    
-    [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; }
-    
-    [JsonPropertyName("status")]
-    public int? Status { get; set; }
-    
-    [JsonPropertyName("status4k")]
-    public int? Status4k { get; set; }
-    
-    [JsonPropertyName("createdAt")]
-    public DateTime CreatedAt { get; set; }
-    
-    [JsonPropertyName("updatedAt")]
-    public DateTime UpdatedAt { get; set; }
-    
-    [JsonPropertyName("lastSeasonChange")]
-    public DateTime LastSeasonChange { get; set; }
-    
-    [JsonPropertyName("mediaAddedAt")]
-    public DateTime MediaAddedAt { get; set; }
-    
-    [JsonPropertyName("serviceId")]
-    public int? ServiceId { get; set; }
-    
-    [JsonPropertyName("serviceId4k")]
-    public int? ServiceId4k { get; set; }
-    
-    [JsonPropertyName("externalServiceId")]
-    public int? ExternalServiceId { get; set; }
-    
-    [JsonPropertyName("externalServiceId4k")]
-    public int? ExternalServiceId4k { get; set; }
-    
-    [JsonPropertyName("externalServiceSlug")]
-    public string? ExternalServiceSlug { get; set; }
-    
-    [JsonPropertyName("externalServiceSlug4k")]
-    public string? ExternalServiceSlug4k { get; set; }
-    
-    [JsonPropertyName("ratingKey")]
-    public string? RatingKey { get; set; }
-    
-    [JsonPropertyName("ratingKey4k")]
-    public string? RatingKey4k { get; set; }
-    
-    [JsonPropertyName("jellyfinMediaId")]
-    public string? JellyfinMediaId { get; set; }
-    
-    [JsonPropertyName("jellyfinMediaId4k")]
-    public string? JellyfinMediaId4k { get; set; }
-    
-    [JsonPropertyName("watchlists")]
-    public List<object> Watchlists { get; set; } = new();
-    
-    [JsonPropertyName("mediaUrl")]
-    public string? MediaUrl { get; set; }
-    
-    [JsonPropertyName("serviceUrl")]
-    public string? ServiceUrl { get; set; }
+    /// <summary>
+    /// Extract year from date string.
+    /// </summary>
+    private static string ExtractYear(string? dateString)
+    {
+        if (string.IsNullOrEmpty(dateString))
+            return string.Empty;
+
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            return date.Year.ToString();
+        }
+
+        return string.Empty;
+    }
+
+
+    /// <summary>
+    /// Implements IEquatable for proper comparison.
+    /// </summary>
+    public bool Equals(JellyseerrShow? other)
+    {
+        return other != null && Id == other.Id;
+    }
+
+
+
+    /// <summary>
+    /// Implements IEquatable for comparison with Jellyfin Series objects.
+    /// </summary>
+    public bool Equals(BaseItem? other)
+    {
+        if (other is null) return false;
+        
+        // Only compare with Series items
+        if (other is not Series series) return false;
+        
+        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
+        if (Id.HasValue && !string.IsNullOrEmpty(series.GetProviderId("Tmdb")))
+        {
+            return Id.Value.ToString() == series.GetProviderId("Tmdb");
+        }
+        
+        // Fallback to TVDB ID if TMDB ID is not available
+        var tvdbId = MediaInfo?.TvdbId;
+        if (tvdbId.HasValue && !string.IsNullOrEmpty(series.GetProviderId("Tvdb")))
+        {
+            return tvdbId.Value.ToString() == series.GetProviderId("Tvdb");
+        }
+        
+        return false;
+    }
 }
 
 /// <summary>
@@ -1012,3 +1216,4 @@ public class JellyseerrPageInfo
     public int Results { get; set; }
     public int Page { get; set; }
 }
+

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.180.0.0",
+        "timestamp": "2025-10-11T04:50:49.034Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.180.0.0/JellyseerrBridge-0.180.0.0-DLL.zip",
+        "checksum": "72BF15BB6303E06A855C55A2382C5061",
+        "changelog": "v0.180.0.0 - Added Test Library Scan button and functionality to compare Jellyfin library items against bridge folder metadata, implemented library exclusion filtering with GetExistingItemsAsync and FilterMoviesAsync/FilterShowsAsync methods, added bridge folder metadata reading and matching logic with FindMatches method",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "checksum": "B157A807EF911DCB3A398C27930955B4",
         "changelog": "v0.179.0.0 - Fixed GetConfigOrDefault to handle empty strings by falling back to default values, and improved error handling with specific exception types for directory creation failures",
         "targetAbi": "10.10.7.0",
