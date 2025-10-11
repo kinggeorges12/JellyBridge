@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "11CD978B10CB9CF89505B632CDFF4D21",
+        "version": "0.183.0.0",
+        "changelog": "v0.183.0.0 - Added GitHub Pages HTML redirect page for manifest.json with cache-busting functionality",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-11T16:13:34.263Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.183.0.0/JellyseerrBridge-0.183.0.0-DLL.zip",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-11T16:06:02.898Z",
         "dependencies": [],
