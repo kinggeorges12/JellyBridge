@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Models;
@@ -13,7 +13,7 @@ public class SearchResult
     public int Id { get; set; } = 0;
 
     [JsonPropertyName("mediaType")]
-    public string? MediaType { get; set; } = null;
+    public MediaType MediaType { get; set; } = MediaType.MOVIE;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; } = 0.0;

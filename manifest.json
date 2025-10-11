@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-11T16:06:02.898Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.182.0.0/JellyseerrBridge-0.182.0.0-DLL.zip",
+        "version": "0.182.0.0",
+        "changelog": "v0.182.0.0 - Updated model generation script with programmatic enum detection, improved JsonStringEnumConverter usage, and added extension methods for enum string conversion",
+        "checksum": "03F3520EE3CB0FC965706CC1898EF80F"
+      },
+      {
         "checksum": "AE7A37F0116E87199289332F5885091D",
         "changelog": "v0.181.0.0 - Added TypeScript to C# model conversion, improved library scanning, enhanced configuration management, and refactored services for better maintainability",
         "dependencies": [],

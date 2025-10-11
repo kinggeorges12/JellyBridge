@@ -63,7 +63,7 @@ $typeMappings = @{
     'string[]' = 'List<string>'
     'number[]' = 'List<int>'
     'boolean[]' = 'List<bool>'
-    'MediaType' = 'string'  # Union type: 'tv' | 'movie' | 'person' | 'collection'
+    'MediaType' = 'MediaType'  # Enum from constants/media.ts
 }
 
 # Function to convert TypeScript type to C# type
@@ -128,7 +128,8 @@ function Convert-Type {
     
     # Handle external type mappings
     switch ($tsType) {
-        'MediaStatus' { return 'int' }
+        'MediaStatus' { return 'MediaStatus' }
+        'MediaRequestStatus' { return 'MediaRequestStatus' }
         'Promise' { return 'string' }
         'Date' { return 'DateTime' }
         'MediaRequest' { return 'string' }
@@ -269,6 +270,26 @@ function Convert-InterfaceToClass {
             $csharpClass += " = 0;"
         } elseif ($csharpType -eq 'double') {
             $csharpClass += " = 0.0;"
+        } elseif ($csharpType -eq 'MediaType') {
+            $csharpClass += " = MediaType.MOVIE;"
+        } elseif ($csharpType -eq 'MediaStatus') {
+            $csharpClass += " = MediaStatus.UNKNOWN;"
+        } elseif ($csharpType -eq 'MediaRequestStatus') {
+            $csharpClass += " = MediaRequestStatus.PENDING;"
+        } elseif ($csharpType -eq 'IssueType') {
+            $csharpClass += " = IssueType.OTHER;"
+        } elseif ($csharpType -eq 'IssueStatus') {
+            $csharpClass += " = IssueStatus.OPEN;"
+        } elseif ($csharpType -eq 'MediaServerType') {
+            $csharpClass += " = MediaServerType.NOT_CONFIGURED;"
+        } elseif ($csharpType -eq 'ServerType') {
+            $csharpClass += " = ServerType.JELLYFIN;"
+        } elseif ($csharpType -eq 'UserType') {
+            $csharpClass += " = UserType.LOCAL;"
+        } elseif ($csharpType -eq 'ApiErrorCode') {
+            $csharpClass += " = ApiErrorCode.UNKNOWN;"
+        } elseif ($csharpType -eq 'DiscoverSliderType') {
+            $csharpClass += " = DiscoverSliderType.RECENTLY_ADDED;"
         }
         $csharpClass += "`n"
     }
@@ -359,6 +380,141 @@ function Convert-TypeScriptInterface {
     }
     
     return $interfaces
+}
+
+# Function to parse TypeScript enums from constants files
+function Convert-TypeScriptEnums {
+    param([string]$content)
+    
+    $enums = @()
+    
+    # Find enum definitions
+    $enumPattern = 'export\s+enum\s+(\w+)\s*\{([^}]+)\}'
+    $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    
+    foreach ($match in $enumMatches) {
+        $enumName = $match.Groups[1].Value
+        $enumBody = $match.Groups[2].Value.Trim()
+        
+        $members = @()
+        $lines = $enumBody -split "`n"
+        
+        foreach ($line in $lines) {
+            $line = $line.Trim()
+            if ($line -and -not $line.StartsWith('//')) {
+                # Handle different enum value formats
+                if ($line -match '^(\w+)\s*=\s*([^,]+),?$') {
+                    $memberName = $Matches[1]
+                    $memberValue = $Matches[2].Trim()
+                    
+                    # Remove quotes if present
+                    if ($memberValue -match "^'([^']+)'$") {
+                        $memberValue = $Matches[1]
+                    } elseif ($memberValue -match '^"([^"]+)"$') {
+                        $memberValue = $Matches[1]
+                    }
+                    
+                    $members += @{
+                        Name = $memberName
+                        Value = $memberValue
+                    }
+                } elseif ($line -match '^(\w+),?$') {
+                    # Auto-incrementing enum values
+                    $memberName = $Matches[1]
+                    $members += @{
+                        Name = $memberName
+                        Value = $null  # Will be auto-incremented
+                    }
+                }
+            }
+        }
+        
+        $enums += @{
+            Name = $enumName
+            Members = $members
+            SourceFile = $file.Name
+        }
+    }
+    
+    return $enums
+}
+
+# Function to convert TypeScript enums to C# enums
+function Convert-EnumToCSharp {
+    param(
+        [array]$enums,
+        [string]$namespace = "Jellyfin.Plugin.JellyseerrBridge.Models"
+    )
+    
+    $csharpEnums = "using System.Text.Json.Serialization;`n`n"
+    $csharpEnums += "namespace $namespace;`n`n"
+    $csharpEnums += "/// <summary>`n"
+    $csharpEnums += "/// Enums imported from TypeScript constants files`n"
+    $csharpEnums += "/// </summary>`n`n"
+    
+    foreach ($enum in $enums) {
+        $enumName = $enum.Name
+        $members = $enum.Members
+        
+        # Determine if this enum needs JsonStringEnumConverter
+        $hasStringValues = $false
+        
+        foreach ($member in $members) {
+            if ($null -ne $member.Value -and $member.Value -match '^[a-zA-Z]') {
+                $hasStringValues = $true
+                break
+            }
+        }
+        
+        if ($hasStringValues) {
+            $csharpEnums += "[JsonConverter(typeof(JsonStringEnumConverter))]`n"
+        }
+        
+        $csharpEnums += "public enum $enumName`n"
+        $csharpEnums += "{`n"
+        
+        $autoIncrementValue = 1
+        foreach ($member in $members) {
+            $memberName = $member.Name
+            $memberValue = $member.Value
+            
+            # Add JsonPropertyName attribute for string values
+            if ($null -ne $memberValue -and $memberValue -match '^[a-zA-Z]') {
+                $csharpEnums += "    [JsonPropertyName(`"$memberValue`")]`n"
+                $csharpEnums += "    $memberName = $autoIncrementValue,`n"
+            } elseif ($null -ne $memberValue) {
+                # Numeric value
+                $csharpEnums += "    $memberName = $memberValue,`n"
+            } else {
+                # Auto-increment
+                $csharpEnums += "    $memberName = $autoIncrementValue,`n"
+            }
+            
+            $autoIncrementValue++
+        }
+        
+        $csharpEnums += "}`n`n"
+        
+        # Add extension methods for string conversion
+        $csharpEnums += "public static class ${enumName}Extensions`n"
+        $csharpEnums += "{`n"
+        $csharpEnums += "    public static string ToStringValue(this $enumName value)`n"
+        $csharpEnums += "    {`n"
+        $csharpEnums += "        return value.ToString().ToLowerInvariant();`n"
+        $csharpEnums += "    }`n`n"
+        $csharpEnums += "    public static $enumName FromString(string value)`n"
+        $csharpEnums += "    {`n"
+        $csharpEnums += "        if (Enum.TryParse<$enumName>(value, true, out var result))`n"
+        $csharpEnums += "            return result;`n"
+        
+        # Find the first enum value as default
+        $firstMember = $members[0]
+        $csharpEnums += "        return $enumName.$($firstMember.Name);`n"
+        $csharpEnums += "    }`n"
+        $csharpEnums += "}`n`n"
+    }
+    
+    return $csharpEnums
 }
 
 # Function to convert Media entity to C# class
@@ -468,6 +624,136 @@ foreach ($file in $tsFiles) {
         Write-Host "    Generated: $($interface.Name).cs" -ForegroundColor Green
     }
 }
+
+# Function to extract enum references from model interfaces
+function Get-UsedEnums {
+    param([string]$inputDir)
+    
+    $usedEnums = @()
+    
+    # Get all TypeScript files in the models directory
+    $tsFiles = Get-ChildItem -Path $inputDir -Filter "*.ts" -Recurse
+    
+    foreach ($file in $tsFiles) {
+        $content = Get-Content -Path $file.FullName -Raw
+        
+        # Find all enum references in property types
+        # Look for patterns like: propertyName: EnumName
+        $enumPattern = ':\s*(\w+)(?:\s*\|\s*\w+)*;?$'
+        $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        
+        foreach ($match in $enumMatches) {
+            $enumName = $match.Groups[1].Value
+            
+            # Check if this looks like an enum (starts with capital letter and is not a basic type)
+            $basicTypes = @('string', 'number', 'boolean', 'Date', 'Promise', 'List', 'Array')
+            if ($enumName -match '^[A-Z]' -and $basicTypes -notcontains $enumName) {
+                if ($usedEnums -notcontains $enumName) {
+                    $usedEnums += $enumName
+                }
+            }
+        }
+    }
+    
+    # Also check the Media entity file for enum references
+    $mediaEntityFile = Join-Path (Split-Path $inputDir -Parent) "entity\Media.ts"
+    if (Test-Path $mediaEntityFile) {
+        $content = Get-Content -Path $mediaEntityFile -Raw
+        
+        # Find enum references in Media entity
+        $enumPattern = ':\s*(\w+)(?:\s*\|\s*\w+)*;?$'
+        $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        
+        foreach ($match in $enumMatches) {
+            $enumName = $match.Groups[1].Value
+            
+            # Check if this looks like an enum
+            $basicTypes = @('string', 'number', 'boolean', 'Date', 'Promise', 'List', 'Array')
+            if ($enumName -match '^[A-Z]' -and $basicTypes -notcontains $enumName) {
+                if ($usedEnums -notcontains $enumName) {
+                    $usedEnums += $enumName
+                }
+            }
+        }
+    }
+    
+    return $usedEnums
+}
+
+# Function to process constants files and generate enums
+function Convert-ConstantsFiles {
+    param([string]$outputDir, [string]$seerrRootDir, [string]$inputDir)
+    
+    Write-Host "Processing constants files for enums..." -ForegroundColor Cyan
+    
+    $constantsDir = Join-Path $seerrRootDir "server\constants"
+    if (-not (Test-Path $constantsDir)) {
+        Write-Host "  Constants directory not found at: $constantsDir" -ForegroundColor Red
+        return
+    }
+    
+    # Automatically detect which enums are used in the models
+    $usedEnums = Get-UsedEnums $inputDir
+    Write-Host "  Detected used enums: $($usedEnums -join ', ')" -ForegroundColor Yellow
+    
+    if ($usedEnums.Count -eq 0) {
+        Write-Host "  No enums found in model interfaces" -ForegroundColor Yellow
+        return
+    }
+    
+    $allEnums = @()
+    
+    # Process all TypeScript files in constants directory to find the enums we need
+    $constantsFiles = Get-ChildItem -Path $constantsDir -Filter "*.ts" -Recurse
+    
+    foreach ($file in $constantsFiles) {
+        $content = Get-Content -Path $file.FullName -Raw
+        $enums = Convert-TypeScriptEnums $content
+        
+        # Filter to only include enums that are actually used and add source file info
+        $filteredEnums = $enums | Where-Object { $usedEnums -contains $_.Name }
+        
+        if ($filteredEnums.Count -gt 0) {
+            # Add source file information to each enum
+            foreach ($enum in $filteredEnums) {
+                $enum.SourceFile = $file.Name
+            }
+            $allEnums += $filteredEnums
+            Write-Host "    Found $($filteredEnums.Count) used enums in $($file.Name): $($filteredEnums.Name -join ', ')" -ForegroundColor Green
+        }
+    }
+    
+    if ($allEnums.Count -gt 0) {
+        # Group enums by their source file
+        $enumsByFile = @{}
+        foreach ($enum in $allEnums) {
+            $sourceFile = $enum.SourceFile
+            if (-not $enumsByFile.ContainsKey($sourceFile)) {
+                $enumsByFile[$sourceFile] = @()
+            }
+            $enumsByFile[$sourceFile] += $enum
+        }
+        
+        # Generate separate C# enum files for each source file
+        foreach ($sourceFile in $enumsByFile.Keys) {
+            $fileEnums = $enumsByFile[$sourceFile]
+            $csharpEnums = Convert-EnumToCSharp $fileEnums
+            
+            # Create filename based on source file (e.g., media.ts -> MediaEnums.cs)
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($sourceFile)
+            $enumFileName = $baseName.Substring(0,1).ToUpper() + $baseName.Substring(1) + "Enums.cs"
+            $outputFile = Join-Path $outputDir $enumFileName
+            
+            Set-Content -Path $outputFile -Value $csharpEnums -Encoding UTF8
+            Write-Host "  Generated: $enumFileName with $($fileEnums.Count) enums from $sourceFile" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "  No used enums found in constants files" -ForegroundColor Yellow
+    }
+}
+
+# Convert constants files to generate enums
+Convert-ConstantsFiles $fullOutputDir $SeerrRootDir $fullInputDir
 
 # Convert Media entity separately
 Convert-MediaEntity $fullOutputDir $SeerrRootDir
