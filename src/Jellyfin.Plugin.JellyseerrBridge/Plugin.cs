@@ -49,7 +49,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 0.5: propertyInfo={PropertyInfo}, config type={ConfigType}", 
                 propertyInfo?.Name ?? "null", config?.GetType().Name ?? "null");
             T? value = propertyInfo?.GetValue(config) is T t ? t : default;
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 1");
+            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 1: value={Value}", value);
             if (value != null)
             {
                 return value;
