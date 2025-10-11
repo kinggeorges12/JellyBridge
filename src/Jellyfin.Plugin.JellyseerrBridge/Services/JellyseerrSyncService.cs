@@ -6,6 +6,8 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using System.Text.Json;
 using System.IO;
+using Jellyfin.Data.Enums;
+using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -17,21 +19,24 @@ public class JellyseerrSyncService
     private readonly ILogger<JellyseerrSyncService> _logger;
     private readonly JellyseerrApiService _apiService;
     private readonly ILibraryManager _libraryManager;
+    private readonly JellyseerrBridgeService _bridgeService;
 
     public JellyseerrSyncService(
         ILogger<JellyseerrSyncService> logger,
         JellyseerrApiService apiService,
-        ILibraryManager libraryManager)
+        ILibraryManager libraryManager,
+        JellyseerrBridgeService bridgeService)
     {
         _logger = logger;
         _apiService = apiService;
         _libraryManager = libraryManager;
+        _bridgeService = bridgeService;
     }
 
     /// <summary>
     /// Create folder structure and JSON metadata files for manual sync.
     /// </summary>
-    public async Task<SyncResult> CreateFolderStructureAsync()
+    public async Task<SyncResult> CreateBridgeFoldersAsync()
     {
         var config = Plugin.GetConfiguration();
         var result = new SyncResult();
@@ -59,10 +64,10 @@ public class JellyseerrSyncService
 
             // Get data from Jellyseerr
             var allMovies = await _apiService.GetAllMoviesAsync();
-            var allTvShows = await _apiService.GetAllTvShowsAsync();
+            var allShows = await _apiService.GetAllShowsAsync();
 
-            _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows from Jellyseerr",
-                allMovies.Count, allTvShows.Count);
+            _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
+                allMovies.Count, allShows.Count);
 
             // Create base directory
             var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -74,21 +79,19 @@ public class JellyseerrSyncService
             }
 
             // Process movies
-            var movieResults = await CreateFoldersAsync(allMovies, 
-                "{title} ({year}) [imdbid-{imdbid}] [tmdbid-{tmdbid}]");
+            var movieResults = await CreateFoldersAsync(allMovies, "{Title} ({ReleaseDate}) [tmdbid-{Id}]");
             result.MoviesProcessed = movieResults.Processed;
             result.MoviesCreated = movieResults.Created;
 
             // Process TV shows
-            var tvResults = await CreateFoldersAsync(allTvShows, 
-                "{title} ({year}) [tvdbid-{tvdbid}] [tmdbid-{tmdbid}]");
-            result.TvShowsProcessed = tvResults.Processed;
-            result.TvShowsCreated = tvResults.Created;
+            var showResults = await CreateFoldersAsync(allShows, "{Name} ({FirstAirDate}) [tvdbid-{MediaInfo.TvdbId}] [tmdbid-{Id}]");
+            result.ShowsProcessed = showResults.Processed;
+            result.ShowsCreated = showResults.Created;
 
             result.Success = true;
-            result.Message = $"Folder structure creation completed successfully. Created {result.MoviesCreated} movie folders, {result.TvShowsCreated} TV show folders";
+            result.Message = $"Folder structure creation completed successfully. Created {result.MoviesCreated} movie folders, {result.ShowsCreated} show folders";
             result.Details = $"Movies: {result.MoviesCreated} folders created\n" +
-                           $"TV Shows: {result.TvShowsCreated} folders created\n" +
+                           $"Shows: {result.ShowsCreated} folders created\n" +
                            $"Base Directory: {baseDirectory}";
 
             _logger.LogInformation("Folder structure creation completed successfully");
@@ -155,7 +158,7 @@ public class JellyseerrSyncService
             
             // Get movies and TV shows for each active network
             var allMovies = new List<JellyseerrMovie>();
-            var allTvShows = new List<JellyseerrTvShow>();
+            var allShows = new List<JellyseerrShow>();
             
             var networkDict = pluginConfig.GetNetworkMapDictionary();
             _logger.LogInformation("Fetching movies and TV shows for {NetworkCount} active networks: {Networks}", 
@@ -165,35 +168,21 @@ public class JellyseerrSyncService
             allMovies = await _apiService.GetAllMoviesAsync();
             
             // Get TV shows for all active networks
-            allTvShows = await _apiService.GetAllTvShowsAsync();
+            allShows = await _apiService.GetAllShowsAsync();
             
             var requestsResponse = await _apiService.GetRequestsAsync();
             var requests = requestsResponse?.Results ?? new List<JellyseerrRequest>();
 
-            _logger.LogInformation("Retrieved {MovieCount} movies, {TvCount} TV shows, {RequestCount} requests from Jellyseerr",
-                allMovies.Count, allTvShows.Count, requests.Count);
-
-            // Process movies
-            var movieResults = await ProcessMoviesAsync(allMovies);
-            result.MoviesProcessed = movieResults.Processed;
-            result.MoviesCreated = movieResults.Created;
-            result.MoviesUpdated = movieResults.Updated;
-
-            // Process TV shows
-            var tvResults = await ProcessTvShowsAsync(allTvShows);
-            result.TvShowsProcessed = tvResults.Processed;
-            result.TvShowsCreated = tvResults.Created;
-            result.TvShowsUpdated = tvResults.Updated;
+            _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows, {RequestCount} requests from Jellyseerr",
+                allMovies.Count, allShows.Count, requests.Count);
 
             // Process requests
             var requestResults = await ProcessRequestsAsync(requests);
             result.RequestsProcessed = requestResults.Processed;
 
             result.Success = true;
-            result.Message = $"Sync completed successfully. Processed {result.MoviesProcessed} movies, {result.TvShowsProcessed} TV shows, {result.RequestsProcessed} requests";
-            result.Details = $"Movies: {result.MoviesCreated} created, {result.MoviesUpdated} updated\n" +
-                           $"TV Shows: {result.TvShowsCreated} created, {result.TvShowsUpdated} updated\n" +
-                           $"Requests: {result.RequestsProcessed} processed\n" +
+            result.Message = $"Sync completed successfully. Processed {result.RequestsProcessed} requests";
+            result.Details = $"Requests: {result.RequestsProcessed} processed\n" +
                            $"Active Networks: {string.Join(", ", networkDict.Values)}";
 
             _logger.LogInformation("Jellyseerr sync completed successfully");
@@ -203,87 +192,6 @@ public class JellyseerrSyncService
             _logger.LogError(ex, "Error during Jellyseerr sync");
             result.Success = false;
             result.Message = $"Sync failed: {ex.Message}";
-        }
-        
-        return result;
-    }
-
-    /// <summary>
-    /// Process movies from Jellyseerr.
-    /// </summary>
-    private async Task<ProcessResult> ProcessMoviesAsync(List<JellyseerrMovie> movies)
-    {
-        var result = new ProcessResult();
-        
-        foreach (var movie in movies)
-        {
-            try
-            {
-                result.Processed++;
-                
-                // Check if movie already exists in Jellyfin
-                var movieGuid = GenerateJellyseerrGuid("movie", movie.Id);
-                var existingMovie = _libraryManager.GetItemById(movieGuid);
-                
-                if (existingMovie == null)
-                {
-                    // Create placeholder movie
-                    await CreatePlaceholderMovieAsync(movie);
-                    result.Created++;
-                }
-                else
-                {
-                    // Update existing movie
-                    await UpdatePlaceholderMovieAsync(existingMovie as Movie, movie);
-                    result.Updated++;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing movie {MovieTitle} (ID: {MovieId})", movie.Title, movie.Id);
-            }
-        }
-        
-        return result;
-    }
-
-    /// <summary>
-    /// Process TV shows from Jellyseerr.
-    /// </summary>
-    private async Task<ProcessResult> ProcessTvShowsAsync(List<JellyseerrTvShow> tvShows)
-    {
-        var result = new ProcessResult();
-        
-        foreach (var tvShow in tvShows)
-        {
-            try
-            {
-                result.Processed++;
-                
-                // Check if TV show already exists in Jellyfin
-                if (tvShow.Id.HasValue)
-                {
-                    var tvShowGuid = GenerateJellyseerrGuid("tv", tvShow.Id.Value);
-                    var existingShow = _libraryManager.GetItemById(tvShowGuid);
-                    
-                    if (existingShow == null)
-                    {
-                        // Create placeholder TV show
-                        await CreatePlaceholderTvShowAsync(tvShow);
-                        result.Created++;
-                    }
-                    else
-                    {
-                        // Update existing TV show
-                        await UpdatePlaceholderTvShowAsync(existingShow as Series, tvShow);
-                        result.Updated++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing TV show {ShowName} (ID: {ShowId})", tvShow.Name ?? "Unknown", tvShow.Id);
-            }
         }
         
         return result;
@@ -318,60 +226,6 @@ public class JellyseerrSyncService
     }
 
     /// <summary>
-    /// Create a placeholder movie in Jellyfin.
-    /// </summary>
-    private Task CreatePlaceholderMovieAsync(JellyseerrMovie movie)
-    {
-        _logger.LogDebug("Creating placeholder movie: {MovieTitle}", movie.Title);
-        
-        // This would create a placeholder movie item in Jellyfin
-        // Implementation depends on Jellyfin's internal APIs
-        // For now, just log the action
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Update an existing placeholder movie.
-    /// </summary>
-    private Task UpdatePlaceholderMovieAsync(Movie? existingMovie, JellyseerrMovie movie)
-    {
-        if (existingMovie == null) return Task.CompletedTask;
-        
-        _logger.LogDebug("Updating placeholder movie: {MovieTitle}", movie.Title);
-        
-        // Update movie metadata
-        // Implementation depends on Jellyfin's internal APIs
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Create a placeholder TV show in Jellyfin.
-    /// </summary>
-    private Task CreatePlaceholderTvShowAsync(JellyseerrTvShow tvShow)
-    {
-        _logger.LogInformation("Creating placeholder TV show: {ShowName}", tvShow.Name ?? "Unknown");
-        
-        // This would create a placeholder TV show item in Jellyfin
-        // Implementation depends on Jellyfin's internal APIs
-        // For now, just log the action
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Update an existing placeholder TV show.
-    /// </summary>
-    private Task UpdatePlaceholderTvShowAsync(Series? existingShow, JellyseerrTvShow tvShow)
-    {
-        if (existingShow == null) return Task.CompletedTask;
-        
-        _logger.LogDebug("Updating placeholder TV show: {ShowName}", tvShow.Name ?? "Unknown");
-        
-        // Update TV show metadata
-        // Implementation depends on Jellyfin's internal APIs
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
     /// Update request status in Jellyfin metadata.
     /// </summary>
     private Task UpdateRequestStatusAsync(JellyseerrRequest request)
@@ -384,28 +238,13 @@ public class JellyseerrSyncService
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Generates a consistent GUID for Jellyseerr items based on type and ID.
-    /// </summary>
-    private Guid GenerateJellyseerrGuid(string type, int id)
-    {
-        // Create a deterministic GUID based on the type and ID
-        var input = $"jellyseerr-{type}-{id}";
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hash = System.Security.Cryptography.SHA256.HashData(bytes);
-        
-        // Use first 16 bytes of hash to create GUID
-        var guidBytes = new byte[16];
-        Array.Copy(hash, guidBytes, 16);
-        
-        return new Guid(guidBytes);
-    }
+
 
 
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
-    private async Task<ProcessResult> CreateFoldersAsync<T>(List<T> items, string format)
+    private async Task<ProcessResult> CreateFoldersAsync<T>(List<T> items, string template) where T : JellyseerrItem
     {
         var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
@@ -421,12 +260,11 @@ public class JellyseerrSyncService
             {
                 result.Processed++;
                 
-                // Create folder name using the provided format string
-                var folderName = CreateFolderNameFromFormat(item, format);
+                // Create folder name using the template
+                var folderName = CreateFolderNameFromFormat(item, template);
                 if (string.IsNullOrEmpty(folderName))
                 {
-                    var itemName = GetItemName(item);
-                    _logger.LogWarning("Skipping item with missing required data: {ItemName}", itemName);
+                    _logger.LogWarning("Skipping item with missing required data: {Item}", item);
                     continue;
                 }
 
@@ -448,9 +286,8 @@ public class JellyseerrSyncService
             }
             catch (Exception ex)
             {
-                var itemName = GetItemName(item);
                 var itemId = GetItemId(item);
-                _logger.LogError(ex, "Error creating folder for {ItemName} (ID: {ItemId})", itemName, itemId);
+                _logger.LogError(ex, "Error creating folder for {Item} (ID: {ItemId})", item, itemId);
             }
         }
         
@@ -458,87 +295,62 @@ public class JellyseerrSyncService
     }
 
     /// <summary>
-    /// Create folder name using format string with placeholders extracted from the item.
+    /// Create folder name by filling template fields with item data using reflection.
+    /// Supports nested property access like {mediaInfo.tvdbId}.
     /// </summary>
-    private string CreateFolderNameFromFormat<T>(T item, string format)
+    private string CreateFolderNameFromFormat<T>(T item, string template) where T : JellyseerrItem
     {
-        var values = ExtractValuesFromItem(item);
+        var folderName = template;
         
-        var folderName = format;
+        // Find all fields in the template
+        var fieldPattern = @"\{([^}]+)\}";
+        var matches = System.Text.RegularExpressions.Regex.Matches(template, fieldPattern);
         
-        // Replace placeholders with actual values
-        foreach (var kvp in values)
+        foreach (System.Text.RegularExpressions.Match match in matches)
         {
-            var placeholder = $"{{{kvp.Key}}}";
-            var value = kvp.Value ?? string.Empty;
+            var field = match.Groups[0].Value; // Full field like "{title}"
+            var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
             
-            // Skip empty values for optional fields
-            if (string.IsNullOrEmpty(value) && kvp.Key != "title" && kvp.Key != "year")
-            {
-                // Remove the entire placeholder block for optional fields
-                folderName = System.Text.RegularExpressions.Regex.Replace(folderName, 
-                    $@"\s*\[{kvp.Key}-{{{kvp.Key}}}\]", "");
-            }
-            else
-            {
-                folderName = folderName.Replace(placeholder, value);
-            }
+            var value = GetPropertyValue(item, propertyPath);
+            folderName = folderName.Replace(field, value);
         }
         
-        // Clean up any remaining empty brackets or extra spaces
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*\[\s*\]", "");
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s+", " ").Trim();
+        // Remove empty field blocks like [tvdbid-], [tmdbid-], [imdbid-] and empty parentheses ()
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*(\[[^]]*-\]|\(\s*\))\s*", "");
         
         return SanitizeFileName(folderName);
     }
-
+    
     /// <summary>
-    /// Extract values from movie or TV show item for format string replacement.
+    /// Get property value using reflection, supporting nested property access.
     /// </summary>
-    private Dictionary<string, string?> ExtractValuesFromItem<T>(T item)
+    private string GetPropertyValue<T>(T item, string propertyPath) where T : JellyseerrItem
     {
-        return item switch
+        if (item == null || string.IsNullOrEmpty(propertyPath))
+            return "";
+        
+        var currentObject = (object)item;
+        var pathParts = propertyPath.Split('.');
+        
+        foreach (var part in pathParts)
         {
-            JellyseerrMovie movie => new Dictionary<string, string?>
-            {
-                ["title"] = movie.Title,
-                ["year"] = ExtractYear(movie.ReleaseDate),
-                ["imdbid"] = movie.MediaInfo?.ImdbId,
-                ["tmdbid"] = movie.MediaInfo?.TmdbId?.ToString(),
-                ["tvdbid"] = null
-            },
-            JellyseerrTvShow tvShow => new Dictionary<string, string?>
-            {
-                ["title"] = tvShow.Name,
-                ["year"] = ExtractYear(tvShow.FirstAirDate),
-                ["imdbid"] = null,
-                ["tmdbid"] = tvShow.MediaInfo?.TmdbId?.ToString(),
-                ["tvdbid"] = tvShow.MediaInfo?.TvdbId?.ToString()
-            },
-            _ => new Dictionary<string, string?>()
-        };
-    }
-
-    /// <summary>
-    /// Extract year from date string.
-    /// </summary>
-    private string ExtractYear(string? dateString)
-    {
-        if (string.IsNullOrEmpty(dateString))
-            return string.Empty;
-
-        if (DateTime.TryParse(dateString, out var date))
-        {
-            return date.Year.ToString();
+            if (currentObject == null)
+                return "";
+            
+            var type = currentObject.GetType();
+            var property = type.GetProperty(part);
+            
+            if (property == null)
+                return "";
+            
+            currentObject = property.GetValue(currentObject);
         }
-
-        // Try to extract year from YYYY-MM-DD format
-        if (dateString.Length >= 4 && int.TryParse(dateString.Substring(0, 4), out var year))
-        {
-            return year.ToString();
-        }
-
-        return string.Empty;
+        
+        if (currentObject == null)
+            return "";
+        
+        // Convert to string
+        return currentObject.ToString() ?? "";
     }
 
     /// <summary>
@@ -554,19 +366,6 @@ public class JellyseerrSyncService
     }
 
     /// <summary>
-    /// Get item name for logging purposes.
-    /// </summary>
-    private string GetItemName<T>(T item)
-    {
-        return item switch
-        {
-            JellyseerrMovie movie => movie.Title,
-            JellyseerrTvShow tvShow => tvShow.Name ?? "Unknown",
-            _ => "Unknown"
-        };
-    }
-
-    /// <summary>
     /// Get item ID for logging purposes.
     /// </summary>
     private object GetItemId<T>(T item)
@@ -574,7 +373,7 @@ public class JellyseerrSyncService
         return item switch
         {
             JellyseerrMovie movie => movie.Id,
-            JellyseerrTvShow tvShow => tvShow.Id ?? 0,
+            JellyseerrShow show => show.Id ?? 0,
             _ => 0
         };
     }
@@ -582,60 +381,14 @@ public class JellyseerrSyncService
     /// <summary>
     /// Create JSON metadata file for movies or TV shows.
     /// </summary>
-    private async Task CreateMetadataFileAsync<T>(T item, string directoryPath)
+    private async Task CreateMetadataFileAsync<T>(T item, string directoryPath) where T : JellyseerrItem
     {
-        object metadata = item switch
-        {
-            JellyseerrMovie movie => new
-            {
-                Type = "Movie",
-                Title = movie.Title,
-                OriginalTitle = movie.OriginalTitle,
-                Overview = movie.Overview,
-                ReleaseDate = movie.ReleaseDate,
-                Year = ExtractYear(movie.ReleaseDate),
-                GenreIds = movie.GenreIds,
-                OriginalLanguage = movie.OriginalLanguage,
-                Popularity = movie.Popularity,
-                VoteAverage = movie.VoteAverage,
-                VoteCount = movie.VoteCount,
-                BackdropPath = movie.BackdropPath,
-                PosterPath = movie.PosterPath,
-                Adult = movie.Adult,
-                Video = movie.Video,
-                MediaInfo = movie.MediaInfo,
-                JellyseerrId = movie.Id,
-                CreatedAt = DateTime.UtcNow
-            },
-            JellyseerrTvShow tvShow => new
-            {
-                Type = "TV Show",
-                Name = tvShow.Name,
-                OriginalName = tvShow.OriginalName,
-                Overview = tvShow.Overview,
-                FirstAirDate = tvShow.FirstAirDate,
-                Year = ExtractYear(tvShow.FirstAirDate),
-                GenreIds = tvShow.GenreIds,
-                OriginCountry = tvShow.OriginCountry,
-                OriginalLanguage = tvShow.OriginalLanguage,
-                Popularity = tvShow.Popularity,
-                VoteAverage = tvShow.VoteAverage,
-                VoteCount = tvShow.VoteCount,
-                BackdropPath = tvShow.BackdropPath,
-                PosterPath = tvShow.PosterPath,
-                MediaInfo = tvShow.MediaInfo,
-                JellyseerrId = tvShow.Id,
-                CreatedAt = DateTime.UtcNow
-            },
-            _ => throw new ArgumentException($"Unsupported item type: {typeof(T)}")
-        };
-
-        var json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+        // Serialize the item directly as its specific type to preserve all properties
+        var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
         var filePath = Path.Combine(directoryPath, "metadata.json");
         
         await File.WriteAllTextAsync(filePath, json);
-        var itemName = GetItemName(item);
-        _logger.LogDebug("Created metadata file for {ItemType}: {ItemName}", typeof(T).Name, itemName);
+        _logger.LogDebug("Created metadata file for {ItemType}: {Item}", item.Type, item);
     }
 }
 
@@ -650,9 +403,9 @@ public class SyncResult
     public int MoviesProcessed { get; set; }
     public int MoviesCreated { get; set; }
     public int MoviesUpdated { get; set; }
-    public int TvShowsProcessed { get; set; }
-    public int TvShowsCreated { get; set; }
-    public int TvShowsUpdated { get; set; }
+    public int ShowsProcessed { get; set; }
+    public int ShowsCreated { get; set; }
+    public int ShowsUpdated { get; set; }
     public int RequestsProcessed { get; set; }
 }
 

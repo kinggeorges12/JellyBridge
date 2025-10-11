@@ -748,7 +748,7 @@ function performSync() {
             let details = '';
             if (syncData.details) {
                 details = `<br><br>Details:<br>${syncData.details.replace(/\n/g, '<br>')}`;
-            } else if (syncData.moviesProcessed !== undefined || syncData.tvShowsProcessed !== undefined) {
+            } else if (syncData.moviesProcessed !== undefined || syncData.showsProcessed !== undefined) {
                 details = '<br><br>Summary:<br>';
                 if (syncData.moviesProcessed !== undefined) {
                     details += `Movies: ${syncData.moviesProcessed} processed`;
@@ -757,10 +757,10 @@ function performSync() {
                     }
                     details += '<br>';
                 }
-                if (syncData.tvShowsProcessed !== undefined) {
-                    details += `TV Shows: ${syncData.tvShowsProcessed} processed`;
-                    if (syncData.tvShowsCreated !== undefined && syncData.tvShowsUpdated !== undefined) {
-                        details += ` (${syncData.tvShowsCreated} created, ${syncData.tvShowsUpdated} updated)`;
+                if (syncData.showsProcessed !== undefined) {
+                    details += `Shows: ${syncData.showsProcessed} processed`;
+                    if (syncData.showsCreated !== undefined && syncData.showsUpdated !== undefined) {
+                        details += ` (${syncData.showsCreated} created, ${syncData.showsUpdated} updated)`;
                     }
                     details += '<br>';
                 }
@@ -809,6 +809,76 @@ function performManualSync(page) {
         // Always sync after the if statement
         performSync();
     });
+
+    // Test Library Scan button functionality
+    const testLibraryScanButton = page.querySelector('#testLibraryScan');
+    const testLibraryScanResult = page.querySelector('#testLibraryScanResult');
+    
+    if (testLibraryScanButton) {
+        testLibraryScanButton.addEventListener('click', async function() {
+            testLibraryScanButton.disabled = true;
+            testLibraryScanButton.querySelector('span').textContent = 'Testing...';
+            testLibraryScanResult.style.display = 'none';
+            
+            try {
+                const response = await fetch('/JellyseerrBridge/TestLibraryScan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const testResult = result.result;
+                    let resultText = `Library Scan Test Results:\n`;
+                    resultText += `Sync Directory: ${testResult.SyncDirectory}\n`;
+                    resultText += `ExcludeFromMainLibraries: ${testResult.ExcludeFromMainLibraries}\n`;
+                    
+                    if (testResult.Error) {
+                        resultText += `\n❌ Error: ${testResult.Error}`;
+                    } else if (testResult.Message) {
+                        resultText += `\nℹ️ ${testResult.Message}`;
+                    } else {
+                        resultText += `\n📊 Found ${testResult.MovieCount || 0} movies and ${testResult.TvShowCount || 0} TV shows in main libraries\n`;
+                        
+                        if (testResult.MovieIds && testResult.MovieIds.length > 0) {
+                            resultText += `\n🎬 Movie IDs (first 10):\n`;
+                            testResult.MovieIds.slice(0, 10).forEach(id => {
+                                resultText += `  - ${id}\n`;
+                            });
+                            if (testResult.MovieIds.length > 10) {
+                                resultText += `  ... and ${testResult.MovieIds.length - 10} more\n`;
+                            }
+                        }
+                        
+                        if (testResult.TvShowIds && testResult.TvShowIds.length > 0) {
+                            resultText += `\n📺 TV Show IDs (first 10):\n`;
+                            testResult.TvShowIds.slice(0, 10).forEach(id => {
+                                resultText += `  - ${id}\n`;
+                            });
+                            if (testResult.TvShowIds.length > 10) {
+                                resultText += `  ... and ${testResult.TvShowIds.length - 10} more\n`;
+                            }
+                        }
+                    }
+                    
+                    testLibraryScanResult.textContent = resultText;
+                    testLibraryScanResult.style.display = 'block';
+                } else {
+                    testLibraryScanResult.textContent = `❌ Test failed: ${result.error || 'Unknown error'}`;
+                    testLibraryScanResult.style.display = 'block';
+                }
+            } catch (error) {
+                testLibraryScanResult.textContent = `❌ Test failed: ${error.message}`;
+                testLibraryScanResult.style.display = 'block';
+            } finally {
+                testLibraryScanButton.disabled = false;
+                testLibraryScanButton.querySelector('span').textContent = 'Test Library Scan';
+            }
+        });
+    }
 }
 
 

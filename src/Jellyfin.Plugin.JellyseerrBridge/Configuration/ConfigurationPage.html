@@ -233,6 +233,14 @@
                             <div class="fieldDescription">When enabled, placeholder shows from streaming services will be excluded from your main Jellyfin libraries.</div>
                         </div>
 
+                        <div class="inputContainer">
+                            <button id="testLibraryScan" class="emby-button emby-button-primary" type="button">
+                                <span>Test Library Scan</span>
+                            </button>
+                            <div class="fieldDescription">Test the library scanning functionality to see what content would be excluded from main libraries.</div>
+                            <div id="testLibraryScanResult" class="testResult" style="display: none; margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
+                        </div>
+
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="CreateSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
