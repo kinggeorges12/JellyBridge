@@ -93,6 +93,24 @@ public class JellyseerrSyncService
 
             _logger.LogInformation("Folder structure creation completed successfully");
         }
+        catch (DirectoryNotFoundException ex)
+        {
+            _logger.LogError(ex, "Directory not found during folder structure creation");
+            result.Success = false;
+            result.Message = $"Directory not found: {ex.Message}";
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogError(ex, "Access denied during folder structure creation");
+            result.Success = false;
+            result.Message = $"Access denied: {ex.Message}";
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "I/O error during folder structure creation");
+            result.Success = false;
+            result.Message = $"I/O error: {ex.Message}";
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during folder structure creation");

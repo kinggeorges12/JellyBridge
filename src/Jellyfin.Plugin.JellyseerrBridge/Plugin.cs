@@ -42,27 +42,21 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
         {
             config ??= GetConfiguration();
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault: property={PropertyName}, config={Config}", 
-                propertyName, config);
             var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 0");
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 0.5: propertyInfo={PropertyInfo}, config type={ConfigType}", 
-                propertyInfo?.Name ?? "null", config?.GetType().Name ?? "null");
             T? value = propertyInfo?.GetValue(config) is T t ? t : default;
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 1: value={Value}", value);
-            if (value != null)
+            
+            // For string types, also check if the value is empty
+            if (value != null && !(value is string str && string.IsNullOrEmpty(str)))
             {
                 return value;
             }
-            
+
             // Try to get default value from dictionary
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 2");
-            if (PluginConfiguration.DefaultValues.TryGetValue(propertyName, out var defaultValue))
+            if (PluginConfiguration.DefaultValues?.TryGetValue(propertyName, out var defaultValue) == true)
             {
                 return (T)defaultValue;
             }
-            
-            Instance?._logger?.LogInformation("[JellyseerrBridge] GetConfigOrDefault 3");
+
             // Return default value for the type if no default is found
             return default(T)!;
         }
