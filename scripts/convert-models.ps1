@@ -411,8 +411,39 @@ function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new S
     if (interfaceNode.heritageClauses && interfaceNode.heritageClauses.length > 0) {
         const extendsClause = interfaceNode.heritageClauses.find(clause => clause.token === ts.SyntaxKind.ExtendsKeyword);
         if (extendsClause && extendsClause.types.length > 0) {
-            const baseType = extendsClause.types[0].expression.text;
-            inheritance = ' : ' + toPascalCase(baseType);
+            const extendsType = extendsClause.types[0];
+            
+            // Handle Omit<T, K> in inheritance
+            if (extendsType.expression.kind === ts.SyntaxKind.CallExpression || 
+                (extendsType.expression.kind === ts.SyntaxKind.Identifier && extendsType.typeArguments)) {
+                
+                const typeName = extendsType.expression.text || (extendsType.expression.expression && extendsType.expression.expression.text);
+                
+                if (typeName === 'Omit' && extendsType.typeArguments && extendsType.typeArguments.length >= 2) {
+                    // Extract the base type (first argument) and omitted properties (second argument)
+                    const baseType = convertTypeScriptTypeToCSharp(extendsType.typeArguments[0], sourceFile, missingTypes, '', interfaceName);
+                    const omittedProperties = extendsType.typeArguments[1];
+                    
+                    // Store omitted properties info for later use
+                    const originalText = extendsType.getText().replace(/\s+/g, ' ').trim();
+                    if (!global.omittedProperties) global.omittedProperties = {};
+                    global.omittedProperties[interfaceName] = {
+                        baseType: baseType,
+                        omittedProps: omittedProperties,
+                        originalText: originalText
+                    };
+                    
+                    inheritance = ' : ' + baseType;
+                } else {
+                    // Handle other utility types in inheritance
+                    const baseType = convertTypeScriptTypeToCSharp(extendsType, sourceFile, missingTypes, '', interfaceName);
+                    inheritance = ' : ' + baseType;
+                }
+            } else {
+                // Simple type name
+                const baseType = extendsType.expression.text;
+                inheritance = ' : ' + toPascalCase(baseType);
+            }
         }
     }
     
@@ -441,6 +472,28 @@ function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new S
             csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
         }
     });
+    
+    // Handle omitted properties from Omit<T, K> inheritance
+    if (global.omittedProperties && global.omittedProperties[interfaceName]) {
+        const omitInfo = global.omittedProperties[interfaceName];
+        
+        // Add comment explaining the Omit
+        csharpClass += '\n    // TypeScript: ' + omitInfo.originalText + '\n';
+        
+        // Extract omitted property names and make them nullable
+        if (omitInfo.omittedProps.kind === ts.SyntaxKind.LiteralType) {
+            const omittedPropName = omitInfo.omittedProps.literal.text;
+            csharpClass += '    public object? ' + toPascalCase(omittedPropName) + ' { get; set; } // Omitted from base type\n\n';
+        } else if (omitInfo.omittedProps.kind === ts.SyntaxKind.UnionType) {
+            // Handle union of omitted properties
+            omitInfo.omittedProps.types.forEach(typeNode => {
+                if (typeNode.kind === ts.SyntaxKind.LiteralType) {
+                    const omittedPropName = typeNode.literal.text;
+                    csharpClass += '    public object? ' + toPascalCase(omittedPropName) + ' { get; set; } // Omitted from base type\n\n';
+                }
+            });
+        }
+    }
     
     csharpClass += '}';
     return csharpClass;

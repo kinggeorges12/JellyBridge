@@ -71,7 +71,7 @@ foreach ($file in $files) {
     
     # Also scan file content for additional class definitions
     $content = Get-Content $file.FullName -Raw
-    $classDefs = [regex]::Matches($content, '(?:public|internal)\s+(?:class|enum)\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $classDefs = [regex]::Matches($content, '(?:public|internal)\s+(?:static\s+)?(?:class|enum)\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     foreach ($match in $classDefs) {
         $className = $match.Groups[1].Value
         $allClassNames[$className] = $true
@@ -79,7 +79,7 @@ foreach ($file in $files) {
 }
 
 $missingClasses = @()
-$basicTypes = @('string', 'int', 'double', 'bool', 'DateTime', 'DateTimeOffset', 'object', 'List', 'Array', 'Dictionary', 'Task', 'Action', 'Func', 'System', 'Text', 'Json', 'Serialization', 'Collections', 'Generic', 'ComponentModel', 'DataAnnotations', 'Schema', 'MediaRequestStatus', 'MediaType', 'MediaStatus', 'MediaServerType', 'ServerType', 'UserType', 'ApiErrorCode', 'DiscoverSliderType', 'IssueType', 'IssueStatus')
+$basicTypes = @('string', 'int', 'double', 'bool', 'DateTime', 'DateTimeOffset', 'object', 'List', 'Array', 'Dictionary', 'Task', 'Action', 'Func', 'System', 'Text', 'Json', 'Serialization', 'Collections', 'Generic', 'ComponentModel', 'DataAnnotations', 'Schema', 'MediaRequestStatus', 'MediaType', 'MediaStatus', 'MediaServerType', 'ServerType', 'UserType', 'ApiErrorCode', 'DiscoverSliderType', 'IssueType', 'IssueStatus', 'T', 'K', 'V', 'U', 'R', 'S')
 
 foreach ($file in $files) {
     $content = Get-Content $file.FullName -Raw
