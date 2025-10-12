@@ -171,6 +171,35 @@ if ($missingEnums.Count -gt 0) {
     Write-Host "All required enums are present" -ForegroundColor Green
 }
 
+# Check for duplicate class declarations across files
+Write-Host "`n=== CHECKING FOR DUPLICATE CLASS DECLARATIONS ===" -ForegroundColor Yellow
+$duplicateClasses = @()
+$classDeclarations = @{}
+
+foreach ($file in $files) {
+    $content = Get-Content $file.FullName -Raw
+    
+    # Find all class declarations (including static classes)
+    $classDefs = [regex]::Matches($content, '(?:public|internal)\s+(?:static\s+)?(?:class|enum)\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    
+    foreach ($match in $classDefs) {
+        $className = $match.Groups[1].Value
+        
+        if ($classDeclarations.ContainsKey($className)) {
+            $duplicateClasses += "$className (found in: $($classDeclarations[$className]), $($file.Name))"
+        } else {
+            $classDeclarations[$className] = $file.Name
+        }
+    }
+}
+
+if ($duplicateClasses.Count -gt 0) {
+    Write-Host "Duplicate class declarations found:" -ForegroundColor Red
+    $duplicateClasses | Sort-Object -Unique | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+} else {
+    Write-Host "No duplicate class declarations found" -ForegroundColor Green
+}
+
 # Check for duplicate properties within each class
 Write-Host "`n=== CHECKING FOR DUPLICATE PROPERTIES ===" -ForegroundColor Yellow
 $duplicateProperties = @()
@@ -248,7 +277,7 @@ if ($invalidProperties.Count -gt 0) {
 
 # Summary
 Write-Host "`n=== VALIDATION SUMMARY ===" -ForegroundColor Green
-$totalIssues = $emptyFiles.Count + $missingUsing.Count + $missingClasses.Count + $typeMismatches.Count + $missingEnums.Count + $duplicateProperties.Count + $invalidProperties.Count
+$totalIssues = $emptyFiles.Count + $missingUsing.Count + $missingClasses.Count + $typeMismatches.Count + $missingEnums.Count + $duplicateClasses.Count + $duplicateProperties.Count + $invalidProperties.Count
 
 if ($totalIssues -eq 0) {
     Write-Host "✅ All validations passed! No issues found." -ForegroundColor Green
@@ -259,6 +288,7 @@ if ($totalIssues -eq 0) {
     if ($missingClasses.Count -gt 0) { Write-Host "  - $($missingClasses.Count) missing class references" -ForegroundColor Red }
     if ($typeMismatches.Count -gt 0) { Write-Host "  - $($typeMismatches.Count) type mismatches" -ForegroundColor Red }
     if ($missingEnums.Count -gt 0) { Write-Host "  - $($missingEnums.Count) missing enums" -ForegroundColor Red }
+    if ($duplicateClasses.Count -gt 0) { Write-Host "  - $($duplicateClasses.Count) duplicate class declarations" -ForegroundColor Red }
     if ($duplicateProperties.Count -gt 0) { Write-Host "  - $($duplicateProperties.Count) duplicate properties" -ForegroundColor Red }
     if ($invalidProperties.Count -gt 0) { Write-Host "  - $($invalidProperties.Count) invalid property names" -ForegroundColor Red }
 }

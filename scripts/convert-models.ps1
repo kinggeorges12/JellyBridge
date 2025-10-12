@@ -23,6 +23,11 @@ $directoryPairs = @(
         type = "Api"
     },
     @{
+        input = "$SeerrRootDir/server/api/servarr"
+        output = "$OutputDir/Common"
+        type = "Servarr"
+    },
+    @{
         input = "$SeerrRootDir/server/constants"
         output = "$OutputDir/Common"
         type = "Enums"
@@ -112,11 +117,40 @@ function toPascalCase(str) {
     cleanStr = cleanStr.replace(/^_+|_+$/g, '');
     
     // Convert camelCase to PascalCase
-    // Split on underscores and capitalize each part
-    const parts = cleanStr.split('_');
-    const pascalParts = parts.map(part => {
+    // First split on underscores, then handle camelCase within each part
+    const underscoreParts = cleanStr.split('_');
+    const pascalParts = underscoreParts.map(part => {
         if (part.length === 0) return '';
-        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        
+        // Handle camelCase within this part
+        // Split camelCase by finding uppercase letters
+        const camelParts = [];
+        let currentPart = '';
+        
+        for (let i = 0; i < part.length; i++) {
+            const char = part[i];
+            if (i > 0 && char >= 'A' && char <= 'Z') {
+                // Found uppercase letter, start new part
+                if (currentPart.length > 0) {
+                    camelParts.push(currentPart);
+                    currentPart = char;
+                } else {
+                    currentPart += char;
+                }
+            } else {
+                currentPart += char;
+            }
+        }
+        
+        if (currentPart.length > 0) {
+            camelParts.push(currentPart);
+        }
+        
+        // Capitalize each camelCase part
+        return camelParts.map(camelPart => {
+            if (camelPart.length === 0) return '';
+            return camelPart.charAt(0).toUpperCase() + camelPart.slice(1).toLowerCase();
+        }).join('');
     });
     
     return pascalParts.join('');
@@ -177,6 +211,11 @@ function toJsonPropertyName(str) {
         
         // Global set to track converted file paths to avoid duplicates
         const convertedFilePaths = new Set();
+        
+        // Function to check if a class is already generated
+        function isClassGenerated(className) {
+            return transpiledTypes.has(className);
+        }
 
         // Function to extract all class names from a C# file
         function extractClassNamesFromFile(filePath) {
@@ -196,7 +235,7 @@ function toJsonPropertyName(str) {
 
         // Function to build complete list of transpiled types
         function buildTranspiledTypesList(outputDirs) {
-            transpiledTypes.clear();
+            // Don't clear transpiledTypes - it already contains enums generated during file processing
             
             for (const outputDir of outputDirs) {
                 if (!fs.existsSync(outputDir)) continue;
@@ -221,6 +260,16 @@ function toJsonPropertyName(str) {
         function typeAlreadyExists(typeName) {
             return transpiledTypes.has(typeName);
         }
+        
+        // Function to register an enum/static class globally to prevent duplicates
+        function registerGlobalEnum(enumName, enumContent) {
+            if (!globalEnumRegistry.has(enumName)) {
+                globalEnumRegistry.set(enumName, enumContent);
+                centralizedEnumsContent += enumContent + '\n\n';
+                console.log('Registered global enum: ' + enumName);
+            }
+        }
+        
 
 
         // Function to convert TypeScript file to C# using TypeScript compiler API
@@ -248,13 +297,69 @@ function toJsonPropertyName(str) {
                 let hasInterfaces = false;
                 let csharpCode = '';
                 
+                // Function to generate union type enums from interface properties
+                function generateUnionTypeEnums(interfaceNode, sourceFile) {
+                    const interfaceName = interfaceNode.name.text;
+                    
+                    interfaceNode.members.forEach(member => {
+                        if (member.kind === ts.SyntaxKind.PropertySignature) {
+                            const propertyName = member.name.text;
+                            const propertyType = member.type;
+                            
+                            // Check if this is a union type with string literals
+                            if (propertyType.kind === ts.SyntaxKind.UnionType) {
+                                const unionTypes = propertyType.types;
+                                const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+                                
+                                if (nonNullTypes.length >= 2 && 
+                                    nonNullTypes.every(t => t.kind === ts.SyntaxKind.LiteralType && t.literal.kind === ts.SyntaxKind.StringLiteral)) {
+                                    
+                                    // Create enum name based on property name only
+                                    // Special case: if property name is "Type", use ClassNameType to avoid C# reserved keyword conflict
+                                    const enumName = propertyName === 'type' ? toPascalCase(interfaceName) + 'Type' : toPascalCase(propertyName);
+                                    
+                                    // Generate enum locally if not already generated
+                                    if (!isClassGenerated(enumName)) {
+                                        // Get all string literal values
+                                        const enumValues = [];
+                                        for (let i = 0; i < nonNullTypes.length; i++) {
+                                            if (nonNullTypes[i].kind === ts.SyntaxKind.LiteralType && 
+                                                nonNullTypes[i].literal.kind === ts.SyntaxKind.StringLiteral) {
+                                                enumValues.push(nonNullTypes[i].literal.text);
+                                            }
+                                        }
+                                        
+                                        const enumClass = 'public static class ' + enumName + '\n{\n' +
+                                            enumValues.map(value => '    public const string ' + toPascalCase(value) + ' = "' + value + '";').join('\n') + '\n}';
+                                        
+                                        csharpCode += enumClass + '\n\n';
+                                        transpiledTypes.add(enumName);
+                                        console.log('Generated ' + enumName + ' locally');
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
                 function visit(node) {
                     if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                         hasInterfaces = true;
                         csharpCode += convertInterfaceToClass(node, sourceFile, missingTypes) + '\n\n';
+                        
+                        // Check for union type enums that need to be generated
+                        generateUnionTypeEnums(node, sourceFile);
                     } else if (node.kind === ts.SyntaxKind.EnumDeclaration) {
                         hasInterfaces = true;
-                        csharpCode += convertEnumToCSharp(node, sourceFile) + '\n\n';
+                        // Generate enum in this file if not already generated elsewhere
+                        const enumName = node.name.text;
+                        if (!isClassGenerated(enumName)) {
+                            csharpCode += convertEnumToCSharp(node, sourceFile) + '\n\n';
+                            transpiledTypes.add(enumName);
+                            console.log('Generated enum locally: ' + enumName);
+                        } else {
+                            console.log('Skipping enum declaration: ' + enumName + ' - already exists in another file');
+                        }
                     } else if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
                         hasInterfaces = true;
                         csharpCode += convertTypeAliasToClass(node, sourceFile, missingTypes) + '\n\n';
@@ -319,8 +424,44 @@ function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new S
             const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, interfaceName);
             const isOptional = member.questionToken ? '?' : '';
             
+            // Special debugging for AddSeriesOptions
+            if (interfaceName === 'AddSeriesOptions' && propName === 'seriesType') {
+                console.log('DEBUG: AddSeriesOptions.seriesType - member.type.kind:', ts.SyntaxKind[member.type.kind]);
+                console.log('DEBUG: AddSeriesOptions.seriesType - member.type:', member.type);
+            }
+            
             csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
             csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+        }
+    });
+    
+    csharpClass += '}';
+    return csharpClass;
+}
+
+// Function to create intersection class
+function createIntersectionClass(className, intersectionTypes, sourceFile, missingTypes = new Set()) {
+    let csharpClass = 'public class ' + className + '\n{\n';
+    
+    intersectionTypes.forEach(typeNode => {
+        if (typeNode.kind === ts.SyntaxKind.TypeLiteral) {
+            // Handle object literal types
+            if (typeNode.members) {
+                typeNode.members.forEach(member => {
+                    if (member.kind === ts.SyntaxKind.PropertySignature) {
+                        const propName = member.name.text;
+                        const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, className);
+                        const isOptional = member.questionToken ? '?' : '';
+                        
+                        csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                        csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+                    }
+                });
+            }
+        } else if (typeNode.kind === ts.SyntaxKind.TypeReference) {
+            // Handle type references - for now, we'll add a comment indicating the base type
+            const typeName = typeNode.typeName.text;
+            csharpClass += '    // Base type: ' + typeName + '\n';
         }
     });
     
@@ -334,13 +475,23 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
     const typeNode = typeAliasNode.type;
     
     // Check for naming conflicts with known enums/types
-    const conflictingTypes = ['MediaType', 'MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
+    const conflictingTypes = ['MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
     let finalTypeName = typeName;
     
     if (conflictingTypes.includes(typeName)) {
-        // Add suffix to avoid conflicts with enum types
-        finalTypeName = typeName + 'Type';
-        console.log('Renamed conflicting type alias: ' + typeName + ' -> ' + finalTypeName);
+        // Keep original name for conflicting types
+        finalTypeName = typeName;
+        console.log('Using original name for conflicting type alias: ' + typeName);
+    }
+    
+    // Handle generic utility types - convert to object for now
+    if (typeAliasNode.typeParameters && typeAliasNode.typeParameters.length > 0) {
+        console.log('Converting generic utility type to object: ' + typeName);
+        return '// Generic utility type: ' + typeName + '<' + typeAliasNode.typeParameters.map(p => p.name.text).join(', ') + '>\n' +
+               'public class ' + finalTypeName + '\n{\n' +
+               '    // This is a TypeScript utility type that needs manual conversion\n' +
+               '    public object Value { get; set; }\n' +
+               '}\n';
     }
     
     // Handle object type literals - create a proper C# class
@@ -363,6 +514,42 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
     }
     
     // Handle other type aliases (like union types, etc.)
+    if (typeNode.kind === ts.SyntaxKind.UnionType) {
+        // Handle union type aliases - create a static class with constants
+        const unionTypes = typeNode.types;
+        const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+        
+        if (nonNullTypes.length >= 2 && 
+            nonNullTypes.every(t => t.kind === ts.SyntaxKind.LiteralType && t.literal.kind === ts.SyntaxKind.StringLiteral)) {
+            
+            // Get all string literal values
+            const enumValues = [];
+            for (let i = 0; i < nonNullTypes.length; i++) {
+                if (nonNullTypes[i].kind === ts.SyntaxKind.LiteralType && 
+                    nonNullTypes[i].literal.kind === ts.SyntaxKind.StringLiteral) {
+                    enumValues.push(nonNullTypes[i].literal.text);
+                }
+            }
+            
+            // Generate enum locally if not already generated
+            if (!isClassGenerated(finalTypeName)) {
+                const enumClass = 'public static class ' + finalTypeName + '\n{\n' +
+                    enumValues.map(value => '    public const string ' + toPascalCase(value) + ' = "' + value + '";').join('\n') + '\n}';
+                transpiledTypes.add(finalTypeName);
+                // Also register the original name so TypeReference lookups work
+                if (finalTypeName !== typeName) {
+                    transpiledTypes.add(typeName);
+                }
+                console.log('Generated ' + finalTypeName + ' locally');
+                return enumClass;  // Return the static class directly
+            }
+            
+            // If already generated, return empty string (class already exists)
+            return '';
+        }
+    }
+    
+    
     const convertedType = convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes, '', finalTypeName);
     return 'public class ' + finalTypeName + '\n{\n    public ' + convertedType + ' Value { get; set; }\n}';
 }
@@ -460,9 +647,87 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             return 'bool';
         case ts.SyntaxKind.ArrayType:
             const elementType = convertTypeScriptTypeToCSharp(typeNode.elementType, sourceFile, missingTypes, propertyName, parentClassName);
+            // Check if this is a specific pattern we want to handle specially
+            if (elementType === 'object' && propertyName === 'results' && parentClassName === 'RequestResultsResponse') {
+                // Create a specific class for this case
+                const specificClassName = 'RequestResult';
+                const specificClass = 'public class ' + specificClassName + '\n{\n' +
+                    '    [JsonPropertyName("profileName")]\n' +
+                    '    public string? ProfileName { get; set; }\n\n' +
+                    '    [JsonPropertyName("canRemove")]\n' +
+                    '    public bool? CanRemove { get; set; }\n\n' +
+                    '    // Additional MediaRequest properties would go here\n' +
+                    '}\n';
+                
+                // Store the class definition to be written later
+                const fileKey = sourceFile.fileName;
+                if (!global.anonymousClasses) global.anonymousClasses = {};
+                if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
+                global.anonymousClasses[fileKey].push(specificClass);
+                
+                return 'List<' + specificClassName + '>';
+            }
+            // Check if this is QueueResponse records property
+            if (elementType === 'object' && propertyName === 'records' && parentClassName === 'QueueResponse') {
+                return 'List<QueueItem>';
+            }
+            // Check if this is PersonResult knownFor property
+            if (elementType === 'object' && propertyName === 'knownFor' && parentClassName === 'PersonResult') {
+                return 'List<SearchResult>';
+            }
             return 'List<' + elementType + '>';
+        case ts.SyntaxKind.IndexedAccessType:
+            // Handle indexed access types like SonarrSeries['seriesType']
+            const objectType = typeNode.objectType;
+            const indexType = typeNode.indexType;
+            
+            if (objectType && indexType && 
+                objectType.kind === ts.SyntaxKind.TypeReference && 
+                indexType.kind === ts.SyntaxKind.LiteralType && 
+                indexType.literal.kind === ts.SyntaxKind.StringLiteral) {
+                
+                const baseTypeName = objectType.typeName.text;
+                const propertyName = indexType.literal.text;
+                
+                console.log('DEBUG: Found indexed access type:', baseTypeName + '[\'' + propertyName + '\']');
+                console.log('DEBUG: baseTypeName:', baseTypeName, 'propertyName:', propertyName, 'parentClassName:', parentClassName);
+                
+                // For indexed access types, return just the property name as a type
+                // Special case: if property name is "type", use ClassNameType to avoid C# reserved keyword conflict
+                return propertyName === 'type' ? toPascalCase(parentClassName) + 'Type' : toPascalCase(propertyName);
+            }
+            return 'object';
         case ts.SyntaxKind.TypeReference:
             const typeName = typeNode.typeName.text;
+            
+            console.log('DEBUG: TypeReference - typeName:', typeName, 'propertyName:', propertyName, 'parentClassName:', parentClassName);
+            
+            // Special debugging for AddSeriesOptions
+            if (parentClassName === 'AddSeriesOptions') {
+                console.log('DEBUG: AddSeriesOptions property:', propertyName, 'typeName:', typeName, 'typeNode.kind:', ts.SyntaxKind[typeNode.kind]);
+            }
+            
+            // Handle indexed access types like SonarrSeries['seriesType']
+            if (typeNode.typeName.kind === ts.SyntaxKind.IndexedAccessType) {
+                const objectType = typeNode.typeName.objectType;
+                const indexType = typeNode.typeName.indexType;
+                
+                if (objectType && indexType && 
+                    objectType.kind === ts.SyntaxKind.TypeReference && 
+                    indexType.kind === ts.SyntaxKind.LiteralType && 
+                    indexType.literal.kind === ts.SyntaxKind.StringLiteral) {
+                    
+                    const baseTypeName = objectType.typeName.text;
+                    const propertyName = indexType.literal.text;
+                    
+                    console.log('DEBUG: Found indexed access type:', baseTypeName + '[\'' + propertyName + '\']');
+                    
+                    // For indexed access types, return the parent class + property name as a type
+                    // This will be handled by the union type logic if needed
+                    return toPascalCase(baseTypeName) + toPascalCase(propertyName);
+                }
+            }
+            
             // Handle special TypeScript types
             if (typeName === 'Date') {
                 return 'DateTimeOffset';
@@ -476,8 +741,40 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                     // Fallback for Record without type arguments
                     return 'Dictionary<string, object>';
                 }
-            } else if (typeName === 'Pick' || typeName === 'Partial' || typeName === 'Omit' || typeName === 'Exclude' || typeName === 'Extract') {
+            } else if (typeName === 'Pick' || typeName === 'Partial' || typeName === 'Omit' || typeName === 'Exclude' || typeName === 'Extract' || typeName === 'NonFunctionProperties' || typeName === 'NonFunctionPropertyNames') {
                 // Keep TypeScript utility type names in output for visibility
+                // For generic utility types, convert to the base type instead of object
+                if (typeNode.typeArguments && typeNode.typeArguments.length > 0) {
+                    const baseType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[0], sourceFile, missingTypes, propertyName, parentClassName);
+                    // For NonFunctionProperties, create a more specific type
+                    if (typeName === 'NonFunctionProperties' && baseType === 'object') {
+                        // Create a specific class for NonFunctionProperties<MediaRequest>
+                        const specificClassName = parentClassName + toPascalCase(propertyName) + 'Request';
+                        const specificClass = 'public class ' + specificClassName + '\n{\n' +
+                            '    [JsonPropertyName("profileName")]\n' +
+                            '    public string? ProfileName { get; set; }\n\n' +
+                            '    [JsonPropertyName("canRemove")]\n' +
+                            '    public bool? CanRemove { get; set; }\n\n' +
+                            '    // Additional MediaRequest properties would go here\n' +
+                            '}\n';
+                        
+                        // Store the class definition to be written later
+                        const fileKey = sourceFile.fileName;
+                        if (!global.anonymousClasses) global.anonymousClasses = {};
+                        if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
+                        global.anonymousClasses[fileKey].push(specificClass);
+                        
+                        return specificClassName;
+                    }
+                    return baseType; // Convert to the base type (e.g., NonFunctionProperties<MediaRequest> -> MediaRequest)
+                }
+                
+                // Check if this type has been renamed due to conflicts
+                const conflictingTypes = ['MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
+                if (conflictingTypes.includes(typeName)) {
+                    return toPascalCase(typeName);
+                }
+                
                 return typeName;
             } else if (isKnownType(typeName)) {
                 return toPascalCase(typeName);
@@ -487,10 +784,98 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 return toPascalCase(typeName);
             }
         case ts.SyntaxKind.UnionType:
-            // For union types, use the first non-null type or default to object
+            // For union types, try to find a common base type or use the first non-null type
             const unionTypes = typeNode.types;
-            const nonNullType = unionTypes.find(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+            const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+            console.log('DEBUG: UnionType - propertyName:', propertyName, 'parentClassName:', parentClassName, 'nonNullTypes.length:', nonNullTypes.length);
+            
+            if (nonNullTypes.length >= 2) {
+                const firstType = convertTypeScriptTypeToCSharp(nonNullTypes[0], sourceFile, missingTypes, propertyName, parentClassName);
+                const secondType = convertTypeScriptTypeToCSharp(nonNullTypes[1], sourceFile, missingTypes, propertyName, parentClassName);
+                
+                // Special case: if both types extend SearchResult, use SearchResult
+                if ((firstType === 'MovieResult' && secondType === 'TvResult') || 
+                    (firstType === 'TvResult' && secondType === 'MovieResult')) {
+                    return 'SearchResult';
+                }
+                
+                
+                // Special case: if this is a string literal union type, create an enum
+                if (nonNullTypes.length >= 2 && 
+                    nonNullTypes.every(t => t.kind === ts.SyntaxKind.LiteralType && t.literal.kind === ts.SyntaxKind.StringLiteral)) {
+                    
+                    // Create enum name based on property name only
+                    // Special case: if property name is "type", use ClassNameType to avoid C# reserved keyword conflict
+                    const enumName = propertyName === 'type' ? toPascalCase(parentClassName) + 'Type' : toPascalCase(propertyName);
+                    
+                    // Get all string literal values
+                    const enumValues = [];
+                    for (let i = 0; i < nonNullTypes.length; i++) {
+                        if (nonNullTypes[i].kind === ts.SyntaxKind.LiteralType && 
+                            nonNullTypes[i].literal.kind === ts.SyntaxKind.StringLiteral) {
+                            enumValues.push(nonNullTypes[i].literal.text);
+                        }
+                    }
+                    
+                    // Return the enum name - generation will happen in main processing loop
+                    return enumName;
+                }
+                
+                // If both types are the same, return that type
+                if (firstType === secondType) {
+                    return firstType;
+                }
+                
+                // Use the first non-primitive type
+                if (firstType !== 'object' && firstType !== 'string' && firstType !== 'int' && firstType !== 'bool') {
+                    return firstType;
+                } else if (secondType !== 'object' && secondType !== 'string' && secondType !== 'int' && secondType !== 'bool') {
+                    return secondType;
+                }
+            }
+            
+            const nonNullType = nonNullTypes[0];
             return nonNullType ? convertTypeScriptTypeToCSharp(nonNullType, sourceFile, missingTypes, propertyName, parentClassName) : 'object';
+        case ts.SyntaxKind.IntersectionType:
+            // For intersection types, create a more specific type name
+            console.log('DEBUG: Found intersection type with', typeNode.types.length, 'types');
+            const intersectionTypes = typeNode.types;
+            if (intersectionTypes.length === 2) {
+                const firstType = convertTypeScriptTypeToCSharp(intersectionTypes[0], sourceFile, missingTypes, propertyName, parentClassName);
+                const secondType = convertTypeScriptTypeToCSharp(intersectionTypes[1], sourceFile, missingTypes, propertyName, parentClassName);
+                
+                // If both types are the same, return that type
+                if (firstType === secondType) {
+                    return firstType;
+                }
+                
+                // If one of the types is a known interface, use that as the base
+                if (firstType !== 'object' && firstType !== 'string' && firstType !== 'int' && firstType !== 'bool') {
+                    return firstType; // Use the first non-primitive type
+                } else if (secondType !== 'object' && secondType !== 'string' && secondType !== 'int' && secondType !== 'bool') {
+                    return secondType; // Use the second non-primitive type
+                }
+                
+                // Special case: if one of the types is QueueItem, use QueueItem
+                if (firstType === 'QueueItem' || secondType === 'QueueItem') {
+                    return 'QueueItem';
+                }
+                
+                // Create a specific class name for the intersection
+                const intersectionClassName = parentClassName + toPascalCase(propertyName) + 'Intersection';
+                
+                // Generate the intersection class
+                const intersectionClass = createIntersectionClass(intersectionClassName, intersectionTypes, sourceFile, missingTypes);
+                
+                // Store the class definition to be written later
+                const fileKey = sourceFile.fileName;
+                if (!global.anonymousClasses) global.anonymousClasses = {};
+                if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
+                global.anonymousClasses[fileKey].push(intersectionClass);
+                
+                return intersectionClassName;
+            }
+            return 'object';
         case ts.SyntaxKind.LiteralType:
             if (typeNode.literal.kind === ts.SyntaxKind.StringLiteral) {
                 return 'string';
@@ -525,7 +910,7 @@ function isKnownType(typeName) {
         'Partial', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
         'MediaType', 'MediaStatus', 'MediaRequestStatus', 'MediaServerType', 
         'ServerType', 'UserType', 'ApiErrorCode', 'DiscoverSliderType', 
-        'IssueType', 'IssueStatus'
+        'IssueType', 'IssueStatus', 'MediaRequest'
     ];
     return knownTypes.includes(typeName);
 }
@@ -647,6 +1032,11 @@ directoryPairs.forEach(pair => {
     console.log(pair.type + ' Models: ' + pair.output);
 });
 console.log('Common Models: ' + path.join(path.dirname(directoryPairs[0].output), 'Common'));
+
+        // Log generated classes for debugging
+        console.log('\n=== Generated Classes Summary ===');
+        console.log('Total classes generated: ' + transpiledTypes.size);
+        console.log('Classes are generated locally in the files that first need them.');
 "@
 
     Write-Host "Generating TypeScript compiler script..." -ForegroundColor Cyan
