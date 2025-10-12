@@ -132,8 +132,9 @@ foreach ($file in $files) {
         $content = Get-Content $file.FullName -Raw
         foreach ($property in $knownMismatches[$fileName].Keys) {
             $expectedType = $knownMismatches[$fileName][$property]
-            if ($content -match "public\s+(\w+)\s+$property\s*\{") {
-                $actualType = $matches[1]
+            $typeMatch = [regex]::Match($content, "public\s+(\w+)\s+$property\s*\{")
+            if ($typeMatch.Success) {
+                $actualType = $typeMatch.Groups[1].Value
                 if ($actualType -ne $expectedType) {
                     $typeMismatches += "${fileName}.${property}: expected ${expectedType}, got ${actualType}"
                 }
@@ -212,7 +213,7 @@ foreach ($file in $files) {
     $braceCount = 0
     
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        $line = $lines[$i].Trim()
+        $line = if ($null -ne $lines[$i]) { $lines[$i].Trim() } else { "" }
         
         # Count braces to properly track class boundaries
         $openBraces = ($line -split '\{').Count - 1
@@ -220,8 +221,9 @@ foreach ($file in $files) {
         $braceCount += $openBraces - $closeBraces
         
         # Check for class declaration
-        if ($line -match '^public\s+class\s+(\w+)') {
-            $currentClass = $matches[1]
+        $classMatch = [regex]::Match($line, '^public\s+class\s+(\w+)')
+        if ($classMatch.Success) {
+            $currentClass = $classMatch.Groups[1].Value
             $inClass = $true
             $classProperties = @{}
             continue
@@ -236,13 +238,16 @@ foreach ($file in $files) {
         }
         
         # Check for property declaration (only if we're inside a class)
-        if ($inClass -and $currentClass -and $line -match 'public\s+[^}]+\s+(\w+)\s*\{') {
-            $propName = $matches[1]
-            
-            if ($classProperties.ContainsKey($propName)) {
-                $duplicateProperties += "${file.Name}: $currentClass.$propName"
-            } else {
-                $classProperties[$propName] = $true
+        if ($inClass -and $currentClass) {
+            $propertyMatch = [regex]::Match($line, 'public\s+[^}]+\s+(\w+)\s*\{')
+            if ($propertyMatch.Success) {
+                $propName = $propertyMatch.Groups[1].Value
+                
+                if ($classProperties.ContainsKey($propName)) {
+                    $duplicateProperties += "${file.Name}: $currentClass.$propName"
+                } else {
+                    $classProperties[$propName] = $true
+                }
             }
         }
     }
