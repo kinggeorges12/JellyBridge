@@ -24,9 +24,23 @@ $directoryPairs = @(
     }
 )
 
+# Define classes to block from conversion (classes that depend on missing base classes)
+$blockedClasses = @(
+    "ServarrBase",
+    "ExternalAPI",
+    "CacheResponse",
+    "CacheResponseImageCache",
+    "ImageCache"
+)
+
 Write-Host "`nDirectory Pairs:" -ForegroundColor Yellow
 foreach ($pair in $directoryPairs) {
     Write-Host "  $($pair.type): $($pair.input) -> $($pair.output)" -ForegroundColor Cyan
+}
+
+Write-Host "`nBlocked Classes:" -ForegroundColor Yellow
+foreach ($class in $blockedClasses) {
+    Write-Host "  $class" -ForegroundColor Red
 }
 
 # Check if Node.js is available
@@ -49,13 +63,20 @@ const ts = require('typescript');
 
 // Read directory pairs from stdin (passed from PowerShell)
 let directoryPairs = [];
+let blockedClasses = [];
 
 try {
     const input = fs.readFileSync(0, 'utf8').trim();
-    directoryPairs = JSON.parse(input);
+    const inputData = JSON.parse(input);
+    directoryPairs = inputData.directoryPairs || [];
+    blockedClasses = inputData.blockedClasses || [];
     console.log('Received directory pairs from PowerShell:');
     directoryPairs.forEach(pair => {
         console.log('  ' + pair.type + ': ' + pair.input + ' -> ' + pair.output);
+    });
+    console.log('Received blocked classes from PowerShell:');
+    blockedClasses.forEach(className => {
+        console.log('  ' + className);
     });
 } catch (error) {
     console.error('Error reading input from PowerShell:', error.message);
@@ -263,7 +284,7 @@ function toJsonPropertyName(str) {
 
 
         // Function to convert TypeScript file to C# using TypeScript compiler API
-        function convertFile(tsFilePath, outputDir, modelType, missingTypes = new Set()) {
+        function convertFile(tsFilePath, outputDir, modelType, missingTypes = new Set(), blockedClasses = []) {
             try {
                 // Check if this file has already been converted (regardless of output directory)
                 if (convertedFilePaths.has(tsFilePath)) {
@@ -338,6 +359,13 @@ function toJsonPropertyName(str) {
                 function collectInterfaces(node) {
                     if (node.kind === ts.SyntaxKind.InterfaceDeclaration || 
                         node.kind === ts.SyntaxKind.ClassDeclaration) {
+                        
+                        // Skip blocked classes
+                        if (blockedClasses.includes(node.name.text)) {
+                            console.log('Skipping blocked class: ' + node.name.text);
+                            return;
+                        }
+                        
                         interfaces.push(node);
                         
                         // Track inheritance relationships
@@ -999,6 +1027,9 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 }
                 
                 return typeName;
+            } else if (typeName === 'Error') {
+                // Map TypeScript's built-in Error class to C#'s Exception class
+                return 'Exception';
             } else if (isKnownType(typeName)) {
                 return toPascalCase(typeName);
             } else {
@@ -1175,7 +1206,7 @@ directoryPairs.forEach(pair => {
     totalFiles += files.length;
     
     for (const file of files) {
-        convertFile(file, pair.output, pair.type, missingTypes);
+        convertFile(file, pair.output, pair.type, missingTypes, blockedClasses);
         convertedFiles++;
     }
 });
@@ -1225,6 +1256,12 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
             continue;
         }
         
+        // Skip blocked classes
+        if (blockedClasses.includes(missingType)) {
+            console.log('Skipping blocked class: ' + missingType);
+            continue;
+        }
+        
         const sourceFile = findSourceFileForType(missingType, allSearchDirs);
         if (sourceFile) {
             // Determine output directory based on source file location
@@ -1246,7 +1283,7 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
             
             if (outputDir) {
                 console.log('Converting missing type ' + missingType + ' from ' + sourceFile);
-                convertFile(sourceFile, outputDir, 'Missing', missingTypes);
+                convertFile(sourceFile, outputDir, 'Missing', missingTypes, blockedClasses);
             }
         } else {
             console.log('Could not find source file for missing type: ' + missingType);
@@ -1719,6 +1756,12 @@ $typeDefinition
         if ($allSourceFiles.Count -gt 0) {
             
             foreach ($missingType in $missingTypes) {
+                # Skip blocked classes
+                if ($blockedClasses -contains $missingType) {
+                    Write-Host "Skipping blocked class: $missingType" -ForegroundColor Red
+                    continue
+                }
+                
                 # Find corresponding file in entity or api directories
                 $sourceFile = $allSourceFiles | Where-Object { $_.BaseName -eq $missingType }
                 if ($sourceFile) {
@@ -1733,8 +1776,14 @@ $typeDefinition
                         }
                     )
                     
+                    # Prepare input data for JavaScript converter
+                    $tempConverterInput = @{
+                        directoryPairs = $tempDirectoryPairs
+                        blockedClasses = $blockedClasses
+                    }
+                    
                     # Convert the specific file
-                    $tempJsonInput = $tempDirectoryPairs | ConvertTo-Json -Depth 3
+                    $tempJsonInput = $tempConverterInput | ConvertTo-Json -Depth 3
                     $tempResult = $tempJsonInput | node $converterScript 2>&1
                     
                     if ($LASTEXITCODE -eq 0) {
@@ -1771,7 +1820,12 @@ Write-Host "`nRunning TypeScript converter..." -ForegroundColor Yellow
 
 try {
     # Convert directory pairs to JSON and pass to TypeScript compiler converter
-    $jsonInput = $directoryPairs | ConvertTo-Json -Depth 3
+    # Prepare input data for JavaScript converter
+    $converterInput = @{
+        directoryPairs = $directoryPairs
+        blockedClasses = $blockedClasses
+    }
+    $jsonInput = $converterInput | ConvertTo-Json -Depth 3
     Write-Host "Passing directory pairs to TypeScript compiler converter..." -ForegroundColor Gray
     
     # Run the TypeScript compiler converter with JSON input
@@ -1803,6 +1857,101 @@ try {
 } catch {
     Write-Host "`nError running converter: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
+}
+
+Write-Host "`n=== Processing TypeScript Imports ===" -ForegroundColor Green
+
+# Process TypeScript imports and add corresponding C# using statements
+function Process-TypeScriptImports {
+    Write-Host "Processing TypeScript imports to add C# using statements..." -ForegroundColor Cyan
+    
+    # Get all TypeScript files that were converted
+    $tsFiles = @()
+    $tsFiles += Get-ChildItem -Path "$SeerrRootDir/server/interfaces/api" -Filter "*.ts" -Recurse
+    $tsFiles += Get-ChildItem -Path "$SeerrRootDir/server/models" -Filter "*.ts" -Recurse
+    
+    foreach ($tsFile in $tsFiles) {
+        $content = Get-Content $tsFile.FullName -Raw
+        $importMatches = [regex]::Matches($content, "import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['""]([^'""]+)['""]")
+        
+        if ($importMatches.Count -gt 0) {
+            Write-Host "Processing imports in: $($tsFile.Name)" -ForegroundColor Yellow
+            Write-Host "  Found $($importMatches.Count) import matches" -ForegroundColor Gray
+            
+            # Determine the corresponding C# file
+            $csharpFile = $null
+            Write-Host "  OutputDir: $OutputDir" -ForegroundColor Gray
+            if ($tsFile.FullName -like "*server\interfaces\api*" -or $tsFile.FullName -like "*server/interfaces/api*") {
+                $relativePath = $tsFile.Name -replace '\.ts$', '.cs'
+                $csharpFile = Join-Path $OutputDir "Api/$relativePath"
+                Write-Host "  Mapped to Api file: $csharpFile" -ForegroundColor Gray
+            } elseif ($tsFile.FullName -like "*server\models*" -or $tsFile.FullName -like "*server/models*") {
+                $relativePath = $tsFile.Name -replace '\.ts$', '.cs'
+                $csharpFile = Join-Path $OutputDir "Server/$relativePath"
+                Write-Host "  Mapped to Server file: $csharpFile" -ForegroundColor Gray
+            } else {
+                Write-Host "  No path match for: $($tsFile.FullName)" -ForegroundColor Gray
+            }
+            
+            if ($csharpFile -and (Test-Path $csharpFile)) {
+                Write-Host "  Found C# file: $csharpFile" -ForegroundColor Gray
+                $csharpContent = Get-Content $csharpFile -Raw
+                $needsUpdate = $false
+                
+                foreach ($match in $importMatches) {
+                    $importedTypes = $match.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() }
+                    $importPath = $match.Groups[2].Value
+                    
+                    # Map TypeScript import paths to C# namespaces
+                    $csharpNamespace = ""
+                    if ($importPath -like "@server/models/*") {
+                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server"
+                    } elseif ($importPath -like "@server/interfaces/api/*") {
+                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api"
+                    } elseif ($importPath -like "@server/entity/*") {
+                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
+                    }
+                    
+                    if ($csharpNamespace -and $csharpNamespace -ne "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel") {
+                        # Check if using statement already exists
+                        if ($csharpContent -notmatch "using\s+$([regex]::Escape($csharpNamespace));") {
+                            # Add using statement after existing using statements
+                            $usingStatement = "using $csharpNamespace;"
+                            $csharpContent = $csharpContent -replace "(using[^;]+;[\r\n]+)+", "`$&$usingStatement`n"
+                            $needsUpdate = $true
+                            Write-Host "  Added using: $usingStatement" -ForegroundColor Green
+                        }
+                    }
+                }
+                
+                if ($needsUpdate) {
+                    Set-Content -Path $csharpFile -Value $csharpContent
+                    Write-Host "  Updated: $csharpFile" -ForegroundColor Green
+                }
+            }
+        }
+    }
+}
+
+Process-TypeScriptImports
+
+# Apply Error to Exception mapping to all generated files
+Write-Host "`n=== Applying Error to Exception Mapping ===" -ForegroundColor Green
+$allCSharpFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+foreach ($file in $allCSharpFiles) {
+    $content = Get-Content $file.FullName -Raw
+    $originalContent = $content
+    
+    # Replace Error with Exception in class inheritance
+    $content = $content -replace ': Error\b', ': Exception'
+    
+    Write-Host "DEBUG: File $($file.Name) - Original length: $($originalContent.Length), New length: $($content.Length)" -ForegroundColor Gray
+    Write-Host "DEBUG: Content changed: $($content -ne $originalContent)" -ForegroundColor Gray
+    
+    if ($content -ne $originalContent) {
+        Set-Content -Path $file.FullName -Value $content
+        Write-Host "Applied Error->Exception mapping to: $($file.Name)" -ForegroundColor Cyan
+    }
 }
 
 Write-Host "`n=== Conversion Complete ===" -ForegroundColor Green
