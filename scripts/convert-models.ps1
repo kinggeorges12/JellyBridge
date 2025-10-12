@@ -431,6 +431,13 @@ function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new S
             }
             
             csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+            
+            // Add union type comment if available
+            const commentKey = interfaceName + '.' + propName;
+            if (global.unionTypeComments && global.unionTypeComments[commentKey]) {
+                csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
+            }
+            
             csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
         }
     });
@@ -454,6 +461,13 @@ function createIntersectionClass(className, intersectionTypes, sourceFile, missi
                         const isOptional = member.questionToken ? '?' : '';
                         
                         csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                        
+                        // Add union type comment if available
+                        const commentKey = className + '.' + propName;
+                        if (global.unionTypeComments && global.unionTypeComments[commentKey]) {
+                            csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
+                        }
+                        
                         csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
                     }
                 });
@@ -484,13 +498,12 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
         console.log('Using original name for conflicting type alias: ' + typeName);
     }
     
-    // Handle generic utility types - convert to object for now
+    // Handle generic utility types - preserve the utility type name with generics
     if (typeAliasNode.typeParameters && typeAliasNode.typeParameters.length > 0) {
-        console.log('Converting generic utility type to object: ' + typeName);
-        return '// Generic utility type: ' + typeName + '<' + typeAliasNode.typeParameters.map(p => p.name.text).join(', ') + '>\n' +
-               'public class ' + finalTypeName + '\n{\n' +
-               '    // This is a TypeScript utility type that needs manual conversion\n' +
-               '    public object Value { get; set; }\n' +
+        console.log('Preserving generic utility type: ' + typeName);
+        const typeParams = typeAliasNode.typeParameters.map(p => p.name.text).join(', ');
+        return 'public class ' + finalTypeName + '<' + typeParams + '>\n{\n' +
+               '    public T Value { get; set; }\n' +
                '}\n';
     }
     
@@ -505,6 +518,13 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
                 const isOptional = member.questionToken ? '?' : '';
                 
                 csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                
+                // Add union type comment if available
+                const commentKey = finalTypeName + '.' + propName;
+                if (global.unionTypeComments && global.unionTypeComments[commentKey]) {
+                    csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
+                }
+                
                 csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
             }
         });
@@ -625,6 +645,13 @@ function createAnonymousObjectClass(className, typeNode, sourceFile, missingType
                 const isOptional = member.questionToken ? '?' : '';
                 
                 csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                
+                // Add union type comment if available
+                const commentKey = className + '.' + propName;
+                if (global.unionTypeComments && global.unionTypeComments[commentKey]) {
+                    csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
+                }
+                
                 csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
             }
         });
@@ -647,6 +674,43 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             return 'bool';
         case ts.SyntaxKind.ArrayType:
             const elementType = convertTypeScriptTypeToCSharp(typeNode.elementType, sourceFile, missingTypes, propertyName, parentClassName);
+            
+            // Check if this is a union type array and add comment
+            if (elementType === 'object' && (typeNode.elementType.kind === ts.SyntaxKind.UnionType || typeNode.elementType.kind === ts.SyntaxKind.ParenthesizedType)) {
+                
+                // Handle ParenthesizedType by getting the inner type
+                let actualElementType = typeNode.elementType;
+                if (actualElementType.kind === ts.SyntaxKind.ParenthesizedType) {
+                    actualElementType = actualElementType.type;
+                }
+                
+                if (actualElementType.kind === ts.SyntaxKind.UnionType) {
+                    const unionTypes = actualElementType.types;
+                    const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+                    
+                    if (nonNullTypes.length >= 2) {
+                        const unionTypeNames = nonNullTypes.map(t => {
+                            if (t.kind === ts.SyntaxKind.TypeReference) {
+                                return t.typeName.text;
+                            }
+                            return 'unknown';
+                        }).filter(name => name !== 'unknown');
+                        
+                        if (unionTypeNames.length >= 2) {
+                            // Get the original TypeScript text for this union type array and clean it up
+                            let originalText = typeNode.getText();
+                            // Remove extra whitespace and normalize line breaks
+                            originalText = originalText.replace(/\s+/g, ' ').trim();
+                            const unionComment = '// Union type array: ' + originalText;
+                            // Store the comment to be added when generating the property
+                            if (!global.unionTypeComments) global.unionTypeComments = {};
+                            const commentKey = parentClassName + '.' + propertyName;
+                            global.unionTypeComments[commentKey] = unionComment;
+                        }
+                    }
+                }
+            }
+            
             // Check if this is a specific pattern we want to handle specially
             if (elementType === 'object' && propertyName === 'results' && parentClassName === 'RequestResultsResponse') {
                 // Create a specific class for this case
@@ -736,6 +800,18 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 if (typeNode.typeArguments && typeNode.typeArguments.length === 2) {
                     const keyType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[0], sourceFile, missingTypes, propertyName, parentClassName);
                     const valueType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[1], sourceFile, missingTypes, propertyName, parentClassName);
+                    
+                    // Add explanatory comment for Record<string, unknown> pattern
+                    if (keyType === 'string' && valueType === 'object') {
+                        const originalText = typeNode.getText().replace(/\s+/g, ' ').trim();
+                        const comment = '// TypeScript: ' + originalText;
+                        console.log('DEBUG: Adding Record comment for:', parentClassName + '.' + propertyName, '->', comment);
+                        // Store the comment to be added when generating the property
+                        if (!global.unionTypeComments) global.unionTypeComments = {};
+                        const commentKey = parentClassName + '.' + propertyName;
+                        global.unionTypeComments[commentKey] = comment;
+                    }
+                    
                     return 'Dictionary<' + keyType + ', ' + valueType + '>';
                 } else {
                     // Fallback for Record without type arguments
@@ -766,7 +842,17 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                         
                         return specificClassName;
                     }
-                    return baseType; // Convert to the base type (e.g., NonFunctionProperties<MediaRequest> -> MediaRequest)
+                    // Convert Partial<T> to T since we're sending complete objects
+                    if (typeName === 'Partial') {
+                        const originalText = typeNode.getText().replace(/\s+/g, ' ').trim();
+                        const comment = '// TypeScript: ' + originalText;
+                        // Store the comment to be added when generating the property
+                        if (!global.unionTypeComments) global.unionTypeComments = {};
+                        const commentKey = parentClassName + '.' + propertyName;
+                        global.unionTypeComments[commentKey] = comment;
+                        return baseType;
+                    }
+                    return typeName + '<' + baseType + '>'; // Preserve other utility type names (e.g., Pick<T, K>)
                 }
                 
                 // Check if this type has been renamed due to conflicts
@@ -835,7 +921,29 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             }
             
             const nonNullType = nonNullTypes[0];
-            return nonNullType ? convertTypeScriptTypeToCSharp(nonNullType, sourceFile, missingTypes, propertyName, parentClassName) : 'object';
+            const result = nonNullType ? convertTypeScriptTypeToCSharp(nonNullType, sourceFile, missingTypes, propertyName, parentClassName) : 'object';
+            
+            // If we're defaulting to object for a union type, add a comment
+            if (result === 'object' && nonNullTypes.length >= 2) {
+                const unionTypeNames = nonNullTypes.map(t => {
+                    if (t.kind === ts.SyntaxKind.TypeReference) {
+                        return t.typeName.text;
+                    }
+                    return 'unknown';
+                }).filter(name => name !== 'unknown');
+                
+                if (unionTypeNames.length >= 2) {
+                    // Get the original TypeScript text for this union type
+                    const originalText = typeNode.getText();
+                    const unionComment = '// Union type: ' + originalText;
+                    // Store the comment to be added when generating the property
+                    if (!global.unionTypeComments) global.unionTypeComments = {};
+                    const commentKey = parentClassName + '.' + propertyName;
+                    global.unionTypeComments[commentKey] = unionComment;
+                }
+            }
+            
+            return result;
         case ts.SyntaxKind.IntersectionType:
             // For intersection types, create a more specific type name
             console.log('DEBUG: Found intersection type with', typeNode.types.length, 'types');
