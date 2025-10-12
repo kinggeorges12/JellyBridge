@@ -21,16 +21,6 @@ $directoryPairs = @(
         input = "$SeerrRootDir/server/interfaces/api"
         output = "$OutputDir/Api"
         type = "Api"
-    },
-    @{
-        input = "$SeerrRootDir/server/api/servarr"
-        output = "$OutputDir/Common"
-        type = "Servarr"
-    },
-    @{
-        input = "$SeerrRootDir/server/constants"
-        output = "$OutputDir/Common"
-        type = "Enums"
     }
 )
 
@@ -297,7 +287,6 @@ function toJsonPropertyName(str) {
                 let hasInterfaces = false;
                 let csharpCode = '';
                 
-                // Function to generate union type enums from interface properties
                 function generateUnionTypeEnums(interfaceNode, sourceFile) {
                     const interfaceName = interfaceNode.name.text;
                     
@@ -329,8 +318,8 @@ function toJsonPropertyName(str) {
                                             }
                                         }
                                         
-                                        const enumClass = 'public static class ' + enumName + '\n{\n' +
-                                            enumValues.map(value => '    public const string ' + toPascalCase(value) + ' = "' + value + '";').join('\n') + '\n}';
+                                        const enumClass = 'public enum ' + enumName + '\n{\n' +
+                                            enumValues.map((value, index) => '    ' + toPascalCase(value) + (index === 0 ? ' = 0' : '')).join(',\n') + '\n}';
                                         
                                         csharpCode += enumClass + '\n\n';
                                         transpiledTypes.add(enumName);
@@ -342,14 +331,91 @@ function toJsonPropertyName(str) {
                     });
                 }
                 
-                function visit(node) {
-                    if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
-                        hasInterfaces = true;
-                        csharpCode += convertInterfaceToClass(node, sourceFile, missingTypes) + '\n\n';
+                // First pass: collect all interfaces and their inheritance relationships
+                const interfaces = [];
+                const inheritanceMap = new Map();
+                
+                function collectInterfaces(node) {
+                    if (node.kind === ts.SyntaxKind.InterfaceDeclaration || 
+                        node.kind === ts.SyntaxKind.ClassDeclaration) {
+                        interfaces.push(node);
                         
-                        // Check for union type enums that need to be generated
-                        generateUnionTypeEnums(node, sourceFile);
-                    } else if (node.kind === ts.SyntaxKind.EnumDeclaration) {
+                        // Track inheritance relationships
+                        if (node.heritageClauses && node.heritageClauses.length > 0) {
+                            const extendsClause = node.heritageClauses.find(clause => clause.token === ts.SyntaxKind.ExtendsKeyword);
+                            if (extendsClause && extendsClause.types.length > 0) {
+                                const baseType = extendsClause.types[0];
+                                let baseName = '';
+                                
+                                if (baseType.expression.kind === ts.SyntaxKind.Identifier) {
+                                    baseName = baseType.expression.text;
+                                } else if (baseType.expression.kind === ts.SyntaxKind.CallExpression) {
+                                    const typeName = baseType.expression.expression.text;
+                                    if (typeName === 'Omit' && baseType.typeArguments && baseType.typeArguments.length >= 1) {
+                                        baseName = baseType.typeArguments[0].expression.text;
+                                    }
+                                }
+                                
+                                if (baseName) {
+                                    if (!inheritanceMap.has(baseName)) {
+                                        inheritanceMap.set(baseName, []);
+                                    }
+                                    inheritanceMap.get(baseName).push(node.name.text);
+                                }
+                            }
+                        }
+                    }
+                    ts.forEachChild(node, collectInterfaces);
+                }
+                
+                collectInterfaces(sourceFile);
+                
+                // Second pass: process interfaces in dependency order (base classes first)
+                const processedInterfaces = new Set();
+                
+                function processInterface(interfaceNode) {
+                    if (processedInterfaces.has(interfaceNode.name.text)) {
+                        return;
+                    }
+                    
+                    // Check if this interface extends another interface in the same file
+                    if (interfaceNode.heritageClauses && interfaceNode.heritageClauses.length > 0) {
+                        const extendsClause = interfaceNode.heritageClauses.find(clause => clause.token === ts.SyntaxKind.ExtendsKeyword);
+                        if (extendsClause && extendsClause.types.length > 0) {
+                            const baseType = extendsClause.types[0];
+                            let baseName = '';
+                            
+                            if (baseType.expression.kind === ts.SyntaxKind.Identifier) {
+                                baseName = baseType.expression.text;
+                            } else if (baseType.expression.kind === ts.SyntaxKind.CallExpression) {
+                                const typeName = baseType.expression.expression.text;
+                                if (typeName === 'Omit' && baseType.typeArguments && baseType.typeArguments.length >= 1) {
+                                    baseName = baseType.typeArguments[0].expression.text;
+                                }
+                            }
+                            
+                            // Find and process the base interface first
+                            if (baseName) {
+                                const baseInterface = interfaces.find(i => i.name.text === baseName);
+                                if (baseInterface && !processedInterfaces.has(baseName)) {
+                                    processInterface(baseInterface);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Process this interface
+                    hasInterfaces = true;
+                    csharpCode += convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes) + '\n\n';
+                    generateUnionTypeEnums(interfaceNode, sourceFile);
+                    processedInterfaces.add(interfaceNode.name.text);
+                }
+                
+                // Process all interfaces in dependency order
+                interfaces.forEach(processInterface);
+                
+                function visit(node) {
+                    if (node.kind === ts.SyntaxKind.EnumDeclaration) {
                         hasInterfaces = true;
                         // Generate enum in this file if not already generated elsewhere
                         const enumName = node.name.text;
@@ -362,7 +428,15 @@ function toJsonPropertyName(str) {
                         }
                     } else if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
                         hasInterfaces = true;
-                        csharpCode += convertTypeAliasToClass(node, sourceFile, missingTypes) + '\n\n';
+                        const typeName = node.name.text;
+                        console.log('DEBUG: Processing type alias:', typeName);
+                        const converted = convertTypeAliasToClass(node, sourceFile, missingTypes);
+                        console.log('DEBUG: Converted result for', typeName, ':', converted ? 'SUCCESS' : 'EMPTY');
+                        if (converted) {
+                            csharpCode += converted + '\n\n';
+                            transpiledTypes.add(typeName);
+                            console.log('DEBUG: Added', typeName, 'to csharpCode and transpiledTypes');
+                        }
                     }
                     ts.forEachChild(node, visit);
                 }
@@ -378,11 +452,24 @@ function toJsonPropertyName(str) {
                 const fileName = path.basename(tsFilePath).replace('.ts', '.cs');
                 const outputPath = path.join(outputDir, fileName);
                 
-                // Add namespace and using statements
-                let fullCsharpCode = 'using System;\n' +
+                // Add namespace and using statements based on model type
+                let namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
+                let usingStatements = 'using System;\n' +
                                      'using System.Text.Json.Serialization;\n' +
-                                     'using System.Collections.Generic;\n\n' +
-                                     'namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n\n' +
+                                     'using System.Collections.Generic;\n';
+                
+                if (modelType === 'Server') {
+                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server';
+                    usingStatements += 'using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n';
+                } else if (modelType === 'Api') {
+                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api';
+                    usingStatements += 'using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n';
+                } else if (modelType === 'Entity') {
+                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
+                }
+                
+                let fullCsharpCode = usingStatements + '\n' +
+                                     'namespace ' + namespace + ';\n\n' +
                                      csharpCode;
                 
                 // Add anonymous classes if any were generated for this file
@@ -393,6 +480,9 @@ function toJsonPropertyName(str) {
                     global.anonymousClasses[fileKey] = [];
                 }
                 
+                console.log('DEBUG: Writing fullCsharpCode to file:', outputPath);
+                console.log('DEBUG: fullCsharpCode length:', fullCsharpCode.length);
+                console.log('DEBUG: fullCsharpCode preview:', fullCsharpCode.substring(0, 200) + '...');
                 fs.writeFileSync(outputPath, fullCsharpCode);
                 console.log('Generated: ' + outputPath);
                 
@@ -401,8 +491,8 @@ function toJsonPropertyName(str) {
             }
         }
 
-// Function to convert TypeScript interface to C# class
-function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new Set()) {
+// Function to convert TypeScript interface or class to C# class
+function convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes = new Set()) {
     const interfaceName = interfaceNode.name.text;
     const members = interfaceNode.members;
     
@@ -455,10 +545,10 @@ function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new S
             const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, interfaceName);
             const isOptional = member.questionToken ? '?' : '';
             
-            // Special debugging for AddSeriesOptions
-            if (interfaceName === 'AddSeriesOptions' && propName === 'seriesType') {
-                console.log('DEBUG: AddSeriesOptions.seriesType - member.type.kind:', ts.SyntaxKind[member.type.kind]);
-                console.log('DEBUG: AddSeriesOptions.seriesType - member.type:', member.type);
+            // Debug indexed access types
+            if (member.type.kind === ts.SyntaxKind.IndexedAccessType) {
+                console.log('DEBUG: Indexed access type detected for', interfaceName + '.' + propName, '- member.type.kind:', ts.SyntaxKind[member.type.kind]);
+                console.log('DEBUG: Indexed access type:', member.type);
             }
             
             csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
@@ -541,8 +631,8 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
     const typeName = typeAliasNode.name.text;
     const typeNode = typeAliasNode.type;
     
-    // Check for naming conflicts with known enums/types
-    const conflictingTypes = ['MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
+    // Check for naming conflicts with known enums/types - now programmatic
+    const conflictingTypes = []; // No hardcoded conflicts, let the script handle them dynamically
     let finalTypeName = typeName;
     
     if (conflictingTypes.includes(typeName)) {
@@ -604,21 +694,11 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
                 }
             }
             
-            // Generate enum locally if not already generated
-            if (!isClassGenerated(finalTypeName)) {
-                const enumClass = 'public static class ' + finalTypeName + '\n{\n' +
-                    enumValues.map(value => '    public const string ' + toPascalCase(value) + ' = "' + value + '";').join('\n') + '\n}';
-                transpiledTypes.add(finalTypeName);
-                // Also register the original name so TypeReference lookups work
-                if (finalTypeName !== typeName) {
-                    transpiledTypes.add(typeName);
-                }
-                console.log('Generated ' + finalTypeName + ' locally');
-                return enumClass;  // Return the static class directly
-            }
-            
-            // If already generated, return empty string (class already exists)
-            return '';
+            // Generate enum and return it (will be added to transpiled types when written to file)
+            const enumClass = 'public enum ' + finalTypeName + '\n{\n' +
+                enumValues.map(value => '    ' + toPascalCase(value)).join(',\n') + '\n}';
+            console.log('Generated ' + finalTypeName + ' locally');
+            return enumClass;  // Return the enum directly
         }
     }
     
@@ -638,20 +718,24 @@ function convertEnumToCSharp(enumNode, sourceFile) {
     );
     
     if (hasStringValues) {
-        // Convert string enum to C# static class with constants
-        let csharpClass = 'public static class ' + enumName + '\n{\n';
+        // Convert string enum to C# enum with numeric values
+        let csharpClass = 'public enum ' + enumName + '\n{\n';
         
-        members.forEach(member => {
+        members.forEach((member, index) => {
             const memberName = member.name.text;
             let memberValue = '';
             
             if (member.initializer && member.initializer.kind === ts.SyntaxKind.StringLiteral) {
-                memberValue = '"' + member.initializer.text + '"';
+                memberValue = ' = ' + index; // Use index for enum values
             } else {
-                memberValue = 'null'; // Fallback for missing string values
+                memberValue = index === 0 ? ' = 0' : ''; // First enum value starts at 0
             }
             
-            csharpClass += '    public const string ' + memberName + ' = ' + memberValue + ';\n';
+            csharpClass += '    ' + memberName + memberValue;
+            if (index < members.length - 1) {
+                csharpClass += ',';
+            }
+            csharpClass += '\n';
         });
         
         csharpClass += '}';
@@ -794,7 +878,7 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             }
             return 'List<' + elementType + '>';
         case ts.SyntaxKind.IndexedAccessType:
-            // Handle indexed access types like SonarrSeries['seriesType']
+            // Handle indexed access types
             const objectType = typeNode.objectType;
             const indexType = typeNode.indexType;
             
@@ -819,12 +903,12 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             
             console.log('DEBUG: TypeReference - typeName:', typeName, 'propertyName:', propertyName, 'parentClassName:', parentClassName);
             
-            // Special debugging for AddSeriesOptions
-            if (parentClassName === 'AddSeriesOptions') {
-                console.log('DEBUG: AddSeriesOptions property:', propertyName, 'typeName:', typeName, 'typeNode.kind:', ts.SyntaxKind[typeNode.kind]);
+            // Debug indexed access types
+            if (typeNode.kind === ts.SyntaxKind.IndexedAccessType) {
+                console.log('DEBUG: Indexed access type detected for', parentClassName + '.' + propertyName, 'typeName:', typeName, 'typeNode.kind:', ts.SyntaxKind[typeNode.kind]);
             }
             
-            // Handle indexed access types like SonarrSeries['seriesType']
+            // Handle indexed access types
             if (typeNode.typeName.kind === ts.SyntaxKind.IndexedAccessType) {
                 const objectType = typeNode.typeName.objectType;
                 const indexType = typeNode.typeName.indexType;
@@ -908,8 +992,8 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                     return typeName + '<' + baseType + '>'; // Preserve other utility type names (e.g., Pick<T, K>)
                 }
                 
-                // Check if this type has been renamed due to conflicts
-                const conflictingTypes = ['MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
+                // Check if this type has been renamed due to conflicts - now programmatic
+                const conflictingTypes = []; // No hardcoded conflicts, let the script handle them dynamically
                 if (conflictingTypes.includes(typeName)) {
                     return toPascalCase(typeName);
                 }
@@ -1066,14 +1150,11 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
 
 // Function to check if a type is known (built-in or already converted)
 function isKnownType(typeName) {
-    const knownTypes = [
+    const builtInTypes = [
         'string', 'number', 'boolean', 'Date', 'Array', 'Object',
-        'Partial', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
-        'MediaType', 'MediaStatus', 'MediaRequestStatus', 'MediaServerType', 
-        'ServerType', 'UserType', 'ApiErrorCode', 'DiscoverSliderType', 
-        'IssueType', 'IssueStatus', 'MediaRequest'
+        'Partial', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract'
     ];
-    return knownTypes.includes(typeName);
+    return builtInTypes.includes(typeName);
 }
 
 // Main conversion process
@@ -1231,6 +1312,449 @@ function Install-TypeScript {
     }
 }
 
+# Function to generate consistent enum format
+function Generate-EnumFromConstants {
+    param(
+        [string]$EnumName,
+        [string[]]$Constants
+    )
+    
+    # Generate consistent enum format
+    $enumDefinition = "public enum $EnumName`n{`n"
+    for ($i = 0; $i -lt $Constants.Count; $i++) {
+        $enumDefinition += "    $($Constants[$i])"
+        if ($i -lt $Constants.Count - 1) {
+            $enumDefinition += ","
+        }
+        $enumDefinition += "`n"
+    }
+    $enumDefinition += "}"
+    return $enumDefinition
+}
+
+# Function to convert static class to enum
+function Convert-StaticClassToEnum {
+    param(
+        [string]$TypeDefinition,
+        [string]$TypeName
+    )
+    
+    # Extract constants from static class
+    $constants = @()
+    $lines = $TypeDefinition -split "`n"
+    foreach ($line in $lines) {
+        $constantMatch = [regex]::Match($line, 'public const string (\w+) = "([^"]+)";')
+        if ($constantMatch.Success) {
+            $constants += $constantMatch.Groups[1].Value
+        }
+    }
+    
+    if ($constants.Count -gt 0) {
+        Write-Host "  Converting static class $TypeName to enum..." -ForegroundColor Cyan
+        $enumDefinition = Generate-EnumFromConstants -EnumName $TypeName -Constants $constants
+        Write-Host "  Generated enum with $($constants.Count) values: $($constants -join ', ')" -ForegroundColor Green
+        return $enumDefinition
+    }
+    
+    return $TypeDefinition
+}
+
+# Function to detect and convert missing entity types
+function Convert-MissingEntityTypes {
+    Write-Host "Analyzing generated C# files for missing type references..." -ForegroundColor Cyan
+    
+    # Get all generated C# files
+    $csharpFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+    
+    # Extract all type references from C# files
+    $missingTypes = @()
+    $allTypeReferences = @()
+    
+    foreach ($file in $csharpFiles) {
+        $content = Get-Content $file.FullName -Raw
+        # Find type references in property declarations - more specific pattern
+        $propertyMatches = [regex]::Matches($content, 'public\s+(\w+)\s+\w+\s*\{\s*get;\s*set;\s*\}', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($propertyMatch in $propertyMatches) {
+            $typeName = $propertyMatch.Groups[1].Value
+            # Filter out built-in types and generic types
+            if ($typeName -notin @('int', 'string', 'bool', 'DateTime', 'DateTimeOffset', 'double', 'float', 'decimal', 'object', 'List', 'Dictionary', 'Array', 'IEnumerable', 'Task', 'void', 'T', 'class') -and 
+                $typeName -notmatch '^[A-Z][a-zA-Z]*$' -eq $false) {
+                $allTypeReferences += $typeName
+            }
+        }
+        
+        # Also find type references in method return types
+        $methodMatches = [regex]::Matches($content, 'public\s+(\w+)\s+\w+\s*\(', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($methodMatch in $methodMatches) {
+            $typeName = $methodMatch.Groups[1].Value
+            if ($typeName -notin @('int', 'string', 'bool', 'DateTime', 'DateTimeOffset', 'double', 'float', 'decimal', 'object', 'List', 'Dictionary', 'Array', 'IEnumerable', 'Task', 'void', 'T', 'class') -and 
+                $typeName -notmatch '^[A-Z][a-zA-Z]*$' -eq $false) {
+                $allTypeReferences += $typeName
+            }
+        }
+    }
+    
+    # Get all defined types from generated files
+    $definedTypes = @()
+    foreach ($file in $csharpFiles) {
+        $content = Get-Content $file.FullName -Raw
+        $classMatches = [regex]::Matches($content, 'public\s+class\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($match in $classMatches) {
+            $definedTypes += $match.Groups[1].Value
+        }
+        $enumMatches = [regex]::Matches($content, 'public\s+enum\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($match in $enumMatches) {
+            $definedTypes += $match.Groups[1].Value
+        }
+    }
+    
+    # Find missing types and cross-namespace conflicts
+    $uniqueReferences = $allTypeReferences | Sort-Object | Get-Unique
+    foreach ($typeRef in $uniqueReferences) {
+        if ($typeRef -notin $definedTypes) {
+            $missingTypes += $typeRef
+        } else {
+            # Check if this type is defined in a different namespace than where it's referenced
+            $typeDefinedIn = @()
+            $typeReferencedIn = @()
+            
+            foreach ($file in $csharpFiles) {
+                $content = Get-Content $file.FullName -Raw
+                $fileNamespace = ""
+                $namespaceMatch = $content | Select-String -Pattern 'namespace\s+([^;]+)'
+                if ($namespaceMatch) {
+                    $fileNamespace = $namespaceMatch.Matches[0].Groups[1].Value.Trim()
+                }
+                
+                # Check if type is defined in this file
+                if ($content -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b") {
+                    $typeDefinedIn += $fileNamespace
+                }
+                
+                # Check if type is referenced in this file (property declarations)
+                if ($content -match "public\s+$typeRef\s+\w+\s*\{") {
+                    $typeReferencedIn += $fileNamespace
+                }
+                
+                # Also check for List<T> references
+                if ($content -match "List<$typeRef>") {
+                    $typeReferencedIn += $fileNamespace
+                }
+                
+                # Also check for Dictionary<K,V> references
+                if ($content -match "Dictionary<[^,]*,\s*$typeRef>") {
+                    $typeReferencedIn += $fileNamespace
+                }
+            }
+            
+            # If type is defined in Server/Api but referenced in Api/Server, move to Common
+            $serverNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server"
+            $apiNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api"
+            $commonNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
+            
+            if (($typeDefinedIn -contains $serverNamespace -and $typeReferencedIn -contains $apiNamespace) -or
+                ($typeDefinedIn -contains $apiNamespace -and $typeReferencedIn -contains $serverNamespace)) {
+                Write-Host "Cross-namespace conflict detected for type: $typeRef" -ForegroundColor Yellow
+                Write-Host "  Defined in: $($typeDefinedIn -join ', ')" -ForegroundColor Yellow
+                Write-Host "  Referenced in: $($typeReferencedIn -join ', ')" -ForegroundColor Yellow
+                Write-Host "  Moving to Common namespace..." -ForegroundColor Cyan
+                
+                # Find the file where this type is defined and move it to Common
+                foreach ($file in $csharpFiles) {
+                    $content = Get-Content $file.FullName -Raw
+                    if ($content -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b") {
+                        # Extract the type definition - need to handle multi-line definitions
+                        $typeDefinition = ""
+                        $lines = $content -split "`n"
+                        $inTypeDefinition = $false
+                        $braceCount = 0
+                        $typeLines = @()
+                        
+                        foreach ($line in $lines) {
+                            if ($line -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b") {
+                                $inTypeDefinition = $true
+                                $typeLines += $line
+                                # Count braces in this line
+                                $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                                $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                                continue
+                            }
+                            
+                            if ($inTypeDefinition) {
+                                $typeLines += $line
+                                $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                                $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                                
+                                if ($braceCount -eq 0) {
+                                    $inTypeDefinition = $false
+                                    break
+                                }
+                            }
+                        }
+                        
+                        if ($typeLines.Count -gt 0) {
+                            $typeDefinition = $typeLines -join "`n"
+                            
+                            # Check if this is already an enum - if so, keep it as-is
+                            if ($typeDefinition -match "public enum $typeRef") {
+                                Write-Host "  Type $typeRef is already an enum, keeping as-is" -ForegroundColor Green
+                            }
+                            # Check if this is a static class that should be converted to an enum
+                            elseif ($typeDefinition -match "public static class $typeRef") {
+                                $typeDefinition = Convert-StaticClassToEnum -TypeDefinition $typeDefinition -TypeName $typeRef
+                            }
+                        }
+                        
+                        if ($typeDefinition) {
+                            # Create Common file for this type
+                            $commonFile = Join-Path $OutputDir "Common\$typeRef.cs"
+                            $commonContent = @"
+using System;
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
+
+namespace $commonNamespace;
+
+$typeDefinition
+"@
+                            Set-Content -Path $commonFile -Value $commonContent
+                            Write-Host "  Created Common file: $commonFile" -ForegroundColor Green
+                            Write-Host "  DEBUG: typeDefinition = $typeDefinition" -ForegroundColor Magenta
+                            
+                            # Remove the type from the original file
+                            Write-Host "  DEBUG: Searching for type $typeRef in file $($file.Name)" -ForegroundColor Magenta
+                            if ($content -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b") {
+                                Write-Host "  DEBUG: Found type $typeRef in file, removing..." -ForegroundColor Magenta
+                                $newContent = $content -replace "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b[^}]*\}", ""
+                                Set-Content -Path $file.FullName -Value $newContent
+                                Write-Host "  Removed from original file: $($file.Name)" -ForegroundColor Green
+                            } else {
+                                Write-Host "  DEBUG: Type $typeRef NOT FOUND in file $($file.Name)" -ForegroundColor Red
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    # Handle cross-namespace type conflicts automatically
+    Write-Host "Detecting cross-namespace type conflicts..." -ForegroundColor Cyan
+    
+    # Get all C# files and analyze cross-namespace references
+    $allFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+    $crossNamespaceConflicts = @()
+    
+    foreach ($file in $allFiles) {
+        $content = Get-Content $file.FullName -Raw
+        $fileNamespace = ""
+        $namespaceMatch = $content | Select-String -Pattern 'namespace\s+([^;]+)'
+        if ($namespaceMatch) {
+            $fileNamespace = $namespaceMatch.Matches[0].Groups[1].Value.Trim()
+        }
+        
+        # Find type references in this file
+        $typeReferences = @()
+        $propertyMatches = [regex]::Matches($content, 'public\s+(\w+)\s+\w+\s*\{\s*get;\s*set;\s*\}', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($propertyMatch in $propertyMatches) {
+            $typeName = $propertyMatch.Groups[1].Value
+            if ($typeName -notin @('int', 'string', 'bool', 'DateTime', 'DateTimeOffset', 'double', 'float', 'decimal', 'object', 'List', 'Dictionary', 'Array', 'IEnumerable', 'Task', 'void', 'T', 'class')) {
+                $typeReferences += $typeName
+            }
+        }
+        
+        # Check if any of these types are defined in a different namespace
+        foreach ($typeRef in $typeReferences) {
+            $typeDefinedIn = @()
+            foreach ($otherFile in $allFiles) {
+                if ($otherFile.FullName -eq $file.FullName) { continue }
+                
+                $otherContent = Get-Content $otherFile.FullName -Raw
+                $otherNamespace = ""
+                $otherNamespaceMatch = $otherContent | Select-String -Pattern 'namespace\s+([^;]+)'
+                if ($otherNamespaceMatch) {
+                    $otherNamespace = $otherNamespaceMatch.Matches[0].Groups[1].Value.Trim()
+                }
+                
+                # Check if this type is defined in the other file
+                if ($otherContent -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b") {
+                    $typeDefinedIn += $otherNamespace
+                }
+            }
+            
+            # If type is defined in a different namespace, it's a cross-namespace conflict
+            if ($typeDefinedIn.Count -gt 0 -and $fileNamespace -ne $typeDefinedIn[0]) {
+                $conflict = @{
+                    TypeName = $typeRef
+                    ReferencedIn = $fileNamespace
+                    DefinedIn = $typeDefinedIn[0]
+                    ReferencedFile = $file.FullName
+                    DefinedFile = ($allFiles | Where-Object { (Get-Content $_.FullName -Raw) -match "public\s+(?:static\s+)?(?:class|enum)\s+$typeRef\b" })[0].FullName
+                }
+                $crossNamespaceConflicts += $conflict
+            }
+        }
+    }
+    
+    # Remove duplicates and process conflicts
+    $uniqueConflicts = $crossNamespaceConflicts | Sort-Object TypeName | Group-Object TypeName | ForEach-Object { $_.Group[0] }
+    
+    foreach ($conflict in $uniqueConflicts) {
+        # Check if the Common file already exists
+        $commonFile = Join-Path $OutputDir "Common\$($conflict.TypeName).cs"
+        if (Test-Path $commonFile) {
+            Write-Host "  Type $($conflict.TypeName) already exists in Common directory, skipping..." -ForegroundColor Green
+            continue
+        }
+        
+        Write-Host "Moving cross-namespace type: $($conflict.TypeName) from $($conflict.DefinedIn) to Common" -ForegroundColor Yellow
+        
+        # Extract the type definition from the defined file
+        $definedContent = Get-Content $conflict.DefinedFile -Raw
+        $typeDefinition = ""
+        $lines = $definedContent -split "`n"
+        $inTypeDefinition = $false
+        $braceCount = 0
+        $typeLines = @()
+        
+        foreach ($line in $lines) {
+            if ($line -match "public\s+(?:static\s+)?(?:class|enum)\s+$($conflict.TypeName)\b") {
+                $inTypeDefinition = $true
+                $typeLines += $line
+                $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                continue
+            }
+            
+            if ($inTypeDefinition) {
+                $typeLines += $line
+                $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                
+                if ($braceCount -eq 0) {
+                    $inTypeDefinition = $false
+                    break
+                }
+            }
+        }
+        
+        if ($typeLines.Count -gt 0) {
+            $typeDefinition = $typeLines -join "`n"
+            
+            # Check if this is a static class that should be converted to an enum
+            if ($typeDefinition -match "public static class $($conflict.TypeName)") {
+                $typeDefinition = Convert-StaticClassToEnum -TypeDefinition $typeDefinition -TypeName $($conflict.TypeName)
+            }
+            
+            # Create Common file for this type
+            $commonFile = Join-Path $OutputDir "Common\$($conflict.TypeName).cs"
+            $commonContent = @"
+using System;
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
+
+namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+
+$typeDefinition
+"@
+            Set-Content -Path $commonFile -Value $commonContent
+            Write-Host "  Created Common file: $commonFile" -ForegroundColor Green
+            
+            # Remove the type from the original file
+            $newLines = @()
+            $inTypeDefinition = $false
+            $braceCount = 0
+            
+            foreach ($line in $lines) {
+                if ($line -match "public\s+(?:static\s+)?(?:class|enum)\s+$($conflict.TypeName)\b") {
+                    $inTypeDefinition = $true
+                    $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                    $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                    continue
+                }
+                
+                if ($inTypeDefinition) {
+                    $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                    $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                    
+                    if ($braceCount -eq 0) {
+                        $inTypeDefinition = $false
+                        continue
+                    }
+                    continue
+                }
+                
+                $newLines += $line
+            }
+            
+            $newContent = $newLines -join "`n"
+            Set-Content -Path $conflict.DefinedFile -Value $newContent
+            Write-Host "  Removed from $($conflict.DefinedIn) file: $(Split-Path $conflict.DefinedFile -Leaf)" -ForegroundColor Green
+        }
+    }
+    
+    if ($missingTypes.Count -gt 0) {
+        Write-Host "Found $($missingTypes.Count) missing types: $($missingTypes -join ', ')" -ForegroundColor Yellow
+        
+        # Convert missing types from entity, api, and constants directories
+        $entityDir = Join-Path $SeerrRootDir "server/entity"
+        $apiDir = Join-Path $SeerrRootDir "server/api"
+        $constantsDir = Join-Path $SeerrRootDir "server/constants"
+        
+        $allSourceFiles = @()
+        if (Test-Path $entityDir) {
+            $entityFiles = Get-ChildItem -Path $entityDir -Filter "*.ts"
+            $allSourceFiles += $entityFiles
+        }
+        if (Test-Path $apiDir) {
+            $apiFiles = Get-ChildItem -Path $apiDir -Filter "*.ts"
+            $allSourceFiles += $apiFiles
+        }
+        if (Test-Path $constantsDir) {
+            $constantsFiles = Get-ChildItem -Path $constantsDir -Filter "*.ts"
+            $allSourceFiles += $constantsFiles
+        }
+        
+        if ($allSourceFiles.Count -gt 0) {
+            
+            foreach ($missingType in $missingTypes) {
+                # Find corresponding file in entity or api directories
+                $sourceFile = $allSourceFiles | Where-Object { $_.BaseName -eq $missingType }
+                if ($sourceFile) {
+                    Write-Host "Converting missing type: $($sourceFile.Name)" -ForegroundColor Cyan
+                    
+                    # Create a temporary directory pair for conversion
+                    $tempDirectoryPairs = @(
+                        @{
+                            input = $sourceFile.DirectoryName
+                            output = "$OutputDir/Common"
+                            type = "Entity"
+                        }
+                    )
+                    
+                    # Convert the specific file
+                    $tempJsonInput = $tempDirectoryPairs | ConvertTo-Json -Depth 3
+                    $tempResult = $tempJsonInput | node $converterScript 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "Successfully converted type: $($sourceFile.BaseName)" -ForegroundColor Green
+                    } else {
+                        Write-Host "Failed to convert type: $($sourceFile.BaseName)" -ForegroundColor Red
+                        Write-Host $tempResult -ForegroundColor Red
+                    }
+                } else {
+                    Write-Host "Source file not found for missing type: $missingType" -ForegroundColor Yellow
+                }
+            }
+        } else {
+            Write-Host "Entity directory not found: $entityDir" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "No missing types found!" -ForegroundColor Green
+    }
+}
+
 # Get the script directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -1257,6 +1781,10 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`nConversion completed successfully!" -ForegroundColor Green
         Write-Host $result -ForegroundColor Cyan
+        
+        # Detect and convert missing entity types
+        Write-Host "`nDetecting missing entity types..." -ForegroundColor Yellow
+        Convert-MissingEntityTypes
         
         # Run model validation using check-models script
         Write-Host "`nRunning model validation..." -ForegroundColor Yellow
