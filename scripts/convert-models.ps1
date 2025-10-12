@@ -1,762 +1,753 @@
-# TypeScript to C# Model Converter
-# Converts Jellyseerr TypeScript model files to C# classes
+# TypeScript to C# Model Converter with Flattened Structure
+# This script uses TypeScript Compiler API for interface-to-class conversions
 
 param(
     [string]$SeerrRootDir = "codebase/seerr-main",
-    [string]$InputDir = "server/models",
     [string]$OutputDir = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel"
 )
 
-Write-Host "Converting TypeScript models to C# classes..." -ForegroundColor Green
+Write-Host "=== TypeScript to C# Conversion with Flattened Structure ===" -ForegroundColor Green
 Write-Host "Seerr Root Directory: $SeerrRootDir" -ForegroundColor Cyan
-Write-Host "Input Directory: $InputDir" -ForegroundColor Cyan
 Write-Host "Output Directory: $OutputDir" -ForegroundColor Cyan
 
-# Build full paths
-$fullInputDir = Join-Path $SeerrRootDir $InputDir
-$fullOutputDir = $OutputDir
+# Define input/output directory pairs
+$directoryPairs = @(
+    @{
+        input = "$SeerrRootDir/server/models"
+        output = "$OutputDir/Server"
+        type = "Server"
+    },
+    @{
+        input = "$SeerrRootDir/server/interfaces/api"
+        output = "$OutputDir/Api"
+        type = "Api"
+    },
+    @{
+        input = "$SeerrRootDir/server/constants"
+        output = "$OutputDir/Common"
+        type = "Enums"
+    }
+)
 
-# Ensure output directory exists
-if (!(Test-Path $fullOutputDir)) {
-    New-Item -ItemType Directory -Path $fullOutputDir -Force
-    Write-Host "Created output directory: $fullOutputDir" -ForegroundColor Yellow
+Write-Host "`nDirectory Pairs:" -ForegroundColor Yellow
+foreach ($pair in $directoryPairs) {
+    Write-Host "  $($pair.type): $($pair.input) -> $($pair.output)" -ForegroundColor Cyan
 }
 
-# Store all parsed interfaces for dependency resolution
-$global:allInterfaces = @{}
-
-# Function to scan all TypeScript files and build interface map
-function Build-InterfaceMap {
-    param([string]$rootDir)
-    
-    Write-Host "Scanning TypeScript files for interfaces..." -ForegroundColor Yellow
-    
-    # Get all TypeScript files in the seerr directory
-    $tsFiles = Get-ChildItem -Path $rootDir -Filter "*.ts" -Recurse
-    
-    foreach ($file in $tsFiles) {
-        $content = Get-Content -Path $file.FullName -Raw
-        
-        # Skip files that are just exports or mappings
-        if ($content -match 'export\s+const\s+map' -and $content -notmatch 'interface\s+\w+') {
-            continue
-        }
-        
-        $interfaces = Convert-TypeScriptInterface $content
-        
-        foreach ($interface in $interfaces) {
-            $global:allInterfaces[$interface.Name] = $interface
-            Write-Host "  Found interface: $($interface.Name) in $($file.Name)" -ForegroundColor Gray
-        }
-    }
-    
-    Write-Host "Found $($global:allInterfaces.Count) interfaces total" -ForegroundColor Green
+# Check if Node.js is available
+try {
+    $nodeVersion = node --version 2>$null
+    Write-Host "Node.js version: $nodeVersion" -ForegroundColor Yellow
+} catch {
+    Write-Host "Node.js not found. Please install Node.js to use this converter." -ForegroundColor Red
+    exit 1
 }
 
-# Type mapping dictionary
-$typeMappings = @{
-    'string' = 'string'
-    'boolean' = 'bool'
-    'string | null' = 'string?'
-    'number | null' = 'int?'
-    'boolean | null' = 'bool?'
-    'string[]' = 'List<string>'
-    'number[]' = 'List<int>'
-    'boolean[]' = 'List<bool>'
-    'MediaType' = 'MediaType'  # Enum from constants/media.ts
+# Function to generate the TypeScript compiler JavaScript file
+function New-TypeScriptCompilerScript {
+    $scriptPath = Join-Path $scriptDir "convert-with-typescript-compiler.js"
+    
+    $jsContent = @"
+const fs = require('fs');
+const path = require('path');
+const ts = require('typescript');
+
+// Read directory pairs from stdin (passed from PowerShell)
+let directoryPairs = [];
+
+try {
+    const input = fs.readFileSync(0, 'utf8').trim();
+    directoryPairs = JSON.parse(input);
+    console.log('Received directory pairs from PowerShell:');
+    directoryPairs.forEach(pair => {
+        console.log('  ' + pair.type + ': ' + pair.input + ' -> ' + pair.output);
+    });
+} catch (error) {
+    console.error('Error reading input from PowerShell:', error.message);
+    process.exit(1);
 }
 
-# Function to convert TypeScript type to C# type
-function Convert-Type {
-    param([string]$tsType, [string]$propertyName = '')
+// Function to find TypeScript files recursively
+function findTypeScriptFiles(dir) {
+    const files = [];
     
-    # Handle string literals (e.g., 'person', 'movie')
-    if ($tsType -match "^'([^']+)'$") {
-        return 'string'
+    if (!fs.existsSync(dir)) {
+        return files;
     }
     
-    # Handle nullable types
-    if ($tsType -match '^(.+)\s*\|\s*null$') {
-        $baseType = $Matches[1].Trim()
-        $csharpType = Convert-Type $baseType $propertyName
-        if ($csharpType -notmatch '\?$') {
-            return $csharpType + '?'
-        }
-        return $csharpType
-    }
+    const items = fs.readdirSync(dir);
     
-    # Handle union types (convert to string for now)
-    if ($tsType -match '\|') {
-        return 'string'
-    }
-    
-    # Handle arrays
-    if ($tsType -match '^(.+)\[\]$') {
-        $elementType = $Matches[1].Trim()
-        $csharpElementType = Convert-Type $elementType $propertyName
-        return "List<$csharpElementType>"
-    }
-    
-    # Handle optional properties
-    if ($tsType -match '^(.+)\?$') {
-        $baseType = $Matches[1].Trim()
-        $csharpType = Convert-Type $baseType $propertyName
-        if ($csharpType -notmatch '\?$') {
-            return $csharpType + '?'
-        }
-        return $csharpType
-    }
-    
-    # Handle complex object types (simplify to string for now)
-    if ($tsType -match '^\s*\{.*\}\s*$') {
-        return 'string'
-    }
-    
-    # Handle generic types
-    if ($tsType -match '^(\w+)<.*>$') {
-        $baseType = $Matches[1]
-        switch ($baseType) {
-            'Promise' { return 'string' }
-            'List' { 
-                $elementType = $tsType -replace '^List<(.+)>$', '$1'
-                $csharpElementType = Convert-Type $elementType $propertyName
-                return "List<$csharpElementType>"
-            }
-            default { return 'string' }
+    for (const item of items) {
+        const fullPath = path.join(dir, item);
+        const stat = fs.statSync(fullPath);
+        
+        if (stat.isDirectory()) {
+            files.push(...findTypeScriptFiles(fullPath));
+        } else if (item.endsWith('.ts')) {
+            files.push(fullPath);
         }
     }
     
-    # Handle external type mappings
-    switch ($tsType) {
-        'MediaStatus' { return 'MediaStatus' }
-        'MediaRequestStatus' { return 'MediaRequestStatus' }
-        'Promise' { return 'string' }
-        'Date' { return 'DateTime' }
-        'MediaRequest' { return 'string' }
-        'Issue' { return 'string' }
-        'TmdbTvRatingResult' { return 'string' }
-        'TmdbMovieReleaseResult' { return 'string' }
-        default {
-            # Check direct mappings
-            if ($typeMappings.ContainsKey($tsType)) {
-                return $typeMappings[$tsType]
-            }
-            
-            # Special handling for number types based on property name
-            if ($tsType -eq 'number') {
-                # Properties that should be double (decimal numbers)
-                $doubleProperties = @('voteAverage', 'vote_average', 'popularity', 'rating', 'score', 'percentage', 'rate', 'ratio', 'average', 'mean')
-                $propertyLower = $propertyName.ToLower()
+    return files;
+}
+
+// Function to convert camelCase to PascalCase
+function toPascalCase(str) {
+    // Handle special characters that are invalid in C# property names
+    let cleanStr = str;
+    
+    // Remove quotes if present
+    cleanStr = cleanStr.replace(/^['"]|['"]$/g, '');
+    
+    // Replace forward slashes with underscores (for camelCase conversion)
+    cleanStr = cleanStr.replace(/\//g, '_');
+    
+    // Replace other invalid characters with underscores
+    cleanStr = cleanStr.replace(/[^a-zA-Z0-9_]/g, '_');
+    
+    // Remove multiple consecutive underscores
+    cleanStr = cleanStr.replace(/_+/g, '_');
+    
+    // Remove leading/trailing underscores
+    cleanStr = cleanStr.replace(/^_+|_+$/g, '');
+    
+    // Convert camelCase to PascalCase
+    // Split on underscores and capitalize each part
+    const parts = cleanStr.split('_');
+    const pascalParts = parts.map(part => {
+        if (part.length === 0) return '';
+        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    });
+    
+    return pascalParts.join('');
+}
+
+// Function to convert property names for JSON attributes (replace slashes with underscores)
+function toJsonPropertyName(str) {
+    let cleanStr = str;
+    
+    // Remove quotes if present
+    cleanStr = cleanStr.replace(/^['"]|['"]$/g, '');
+    
+    // Replace forward slashes with underscores
+    cleanStr = cleanStr.replace(/\//g, '_');
+    
+    return cleanStr;
+}
+
+        // Function to find source file for a missing class/type
+        function findSourceFileForType(typeName, searchDirs) {
+            for (const searchDir of searchDirs) {
+                if (!fs.existsSync(searchDir)) continue;
                 
-                foreach ($doubleProp in $doubleProperties) {
-                    if ($propertyLower -like "*$doubleProp*") {
-                        return 'double'
+                const files = findTypeScriptFiles(searchDir);
+                for (const file of files) {
+                    try {
+                        const sourceCode = fs.readFileSync(file, 'utf8');
+                        const sourceFile = ts.createSourceFile(file, sourceCode, ts.ScriptTarget.Latest, true);
+                        
+                        // Check if this file contains the type we're looking for
+                        let found = false;
+                        function visit(node) {
+                            if (node.kind === ts.SyntaxKind.InterfaceDeclaration || 
+                                node.kind === ts.SyntaxKind.TypeAliasDeclaration ||
+                                node.kind === ts.SyntaxKind.ClassDeclaration) {
+                                if (node.name && node.name.text === typeName) {
+                                    found = true;
+                                }
+                            }
+                            ts.forEachChild(node, visit);
+                        }
+                        visit(sourceFile);
+                        
+                        if (found) {
+                            return file;
+                        }
+                    } catch (error) {
+                        // Skip files that can't be parsed
+                        continue;
                     }
                 }
+            }
+            return null;
+        }
+
+        // Global set to track all transpiled types
+        const transpiledTypes = new Set();
+        
+        // Global set to track converted file paths to avoid duplicates
+        const convertedFilePaths = new Set();
+
+        // Function to extract all class names from a C# file
+        function extractClassNamesFromFile(filePath) {
+            try {
+                const content = fs.readFileSync(filePath, 'utf8');
+                const classPattern = /public\s+class\s+(\w+)/g;
+                let match;
+                const classNames = [];
+                while ((match = classPattern.exec(content)) !== null) {
+                    classNames.push(match[1]);
+                }
+                return classNames;
+            } catch (error) {
+                return [];
+            }
+        }
+
+        // Function to build complete list of transpiled types
+        function buildTranspiledTypesList(outputDirs) {
+            transpiledTypes.clear();
+            
+            for (const outputDir of outputDirs) {
+                if (!fs.existsSync(outputDir)) continue;
                 
-                # Default to int for other number properties
-                return 'int'
+                const files = fs.readdirSync(outputDir);
+                for (const file of files) {
+                    if (file.endsWith('.cs')) {
+                        const filePath = path.join(outputDir, file);
+                        const classNames = extractClassNamesFromFile(filePath);
+                        classNames.forEach(className => {
+                            transpiledTypes.add(className);
+                        });
+                    }
+                }
             }
             
-            # Check if it's a known interface from our scan (only add prefix to seerr-defined types)
-            if ($global:allInterfaces.ContainsKey($tsType)) {
-                return $tsType
+            console.log('Built transpiled types list: ' + transpiledTypes.size + ' types');
+            console.log('Transpiled types: ' + Array.from(transpiledTypes).sort().join(', '));
+        }
+
+        // Function to check if a type already exists in transpiled types list
+        function typeAlreadyExists(typeName) {
+            return transpiledTypes.has(typeName);
+        }
+
+
+        // Function to convert TypeScript file to C# using TypeScript compiler API
+        function convertFile(tsFilePath, outputDir, modelType, missingTypes = new Set()) {
+            try {
+                // Check if this file has already been converted (regardless of output directory)
+                if (convertedFilePaths.has(tsFilePath)) {
+                    console.log('File already converted, skipping: ' + tsFilePath);
+                    return;
+                }
+                
+                console.log('Converting ' + modelType + ': ' + tsFilePath);
+                
+                // Mark this file as converted
+                convertedFilePaths.add(tsFilePath);
+                
+                // Ensure output directory exists
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir, { recursive: true });
+                }
+                
+                const sourceCode = fs.readFileSync(tsFilePath, 'utf8');
+                const sourceFile = ts.createSourceFile(tsFilePath, sourceCode, ts.ScriptTarget.Latest, true);
+                
+                let hasInterfaces = false;
+                let csharpCode = '';
+                
+                function visit(node) {
+                    if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+                        hasInterfaces = true;
+                        csharpCode += convertInterfaceToClass(node, sourceFile, missingTypes) + '\n\n';
+                    } else if (node.kind === ts.SyntaxKind.EnumDeclaration) {
+                        hasInterfaces = true;
+                        csharpCode += convertEnumToCSharp(node, sourceFile) + '\n\n';
+                    } else if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
+                        hasInterfaces = true;
+                        csharpCode += convertTypeAliasToClass(node, sourceFile, missingTypes) + '\n\n';
+                    }
+                    ts.forEachChild(node, visit);
+                }
+                
+                visit(sourceFile);
+                
+                if (!hasInterfaces) {
+                    console.log('No interfaces found in ' + tsFilePath);
+                    return;
+                }
+                
+                // Generate output file path - just use the filename without subdirectories
+                const fileName = path.basename(tsFilePath).replace('.ts', '.cs');
+                const outputPath = path.join(outputDir, fileName);
+                
+                // Add namespace and using statements
+                let fullCsharpCode = 'using System;\n' +
+                                     'using System.Text.Json.Serialization;\n' +
+                                     'using System.Collections.Generic;\n\n' +
+                                     'namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n\n' +
+                                     csharpCode;
+                
+                // Add anonymous classes if any were generated for this file
+                const fileKey = sourceFile.fileName;
+                if (global.anonymousClasses && global.anonymousClasses[fileKey] && global.anonymousClasses[fileKey].length > 0) {
+                    fullCsharpCode += '\n\n' + global.anonymousClasses[fileKey].join('\n\n');
+                    // Clear the file's anonymous classes after using them
+                    global.anonymousClasses[fileKey] = [];
+                }
+                
+                fs.writeFileSync(outputPath, fullCsharpCode);
+                console.log('Generated: ' + outputPath);
+                
+            } catch (error) {
+                console.error('Error converting ' + tsFilePath + ':', error);
             }
-            
-            # For external types (TMDB, etc.), keep original name
-            if ($tsType -match '^Tmdb') {
-                return $tsType
-            }
-            
-            return $tsType
+        }
+
+// Function to convert TypeScript interface to C# class
+function convertInterfaceToClass(interfaceNode, sourceFile, missingTypes = new Set()) {
+    const interfaceName = interfaceNode.name.text;
+    const members = interfaceNode.members;
+    
+    // Check for inheritance
+    let inheritance = '';
+    if (interfaceNode.heritageClauses && interfaceNode.heritageClauses.length > 0) {
+        const extendsClause = interfaceNode.heritageClauses.find(clause => clause.token === ts.SyntaxKind.ExtendsKeyword);
+        if (extendsClause && extendsClause.types.length > 0) {
+            const baseType = extendsClause.types[0].expression.text;
+            inheritance = ' : ' + toPascalCase(baseType);
         }
     }
-}
-
-# Function to convert property name to C# naming convention
-function Convert-PropertyName {
-    param([string]$tsName)
     
-    # Convert camelCase to PascalCase
-    $csharpName = $tsName.Substring(0,1).ToUpper() + $tsName.Substring(1)
+    let csharpClass = 'public class ' + interfaceName + inheritance + '\n{\n';
     
-    # Handle special cases that need different naming
-    switch ($csharpName) {
-        'Iso_639_1' { return 'Iso6391' }
-        'Iso_3166_1' { return 'Iso31661' }
-        default { return $csharpName }
-    }
-}
-
-# Function to generate C# class from TypeScript interface
-function Convert-InterfaceToClass {
-    param(
-        [string]$interfaceName,
-        [array]$properties,
-        [string]$namespace = "Jellyfin.Plugin.JellyseerrBridge.Models",
-        [string]$extendsInterface = ""
-    )
-    
-    # Determine if we need additional using statements
-    $needsSystemCollections = $false
-    
-    foreach ($property in $properties) {
-        $csharpType = Convert-Type $property.Type $property.Name
-        if ($csharpType -match '^List<') {
-            $needsSystemCollections = $true
+    members.forEach(member => {
+        if (member.kind === ts.SyntaxKind.PropertySignature) {
+            const propName = member.name.text;
+            const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, interfaceName);
+            const isOptional = member.questionToken ? '?' : '';
+            
+            csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+            csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
         }
+    });
+    
+    csharpClass += '}';
+    return csharpClass;
+}
+
+// Function to convert TypeScript type alias to C# class
+function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new Set()) {
+    const typeName = typeAliasNode.name.text;
+    const typeNode = typeAliasNode.type;
+    
+    // Check for naming conflicts with known enums/types
+    const conflictingTypes = ['MediaType', 'MediaStatus', 'MediaRequestStatus', 'ServerType', 'MediaServerType', 'ApiErrorCode'];
+    let finalTypeName = typeName;
+    
+    if (conflictingTypes.includes(typeName)) {
+        // Add suffix to avoid conflicts with enum types
+        finalTypeName = typeName + 'Type';
+        console.log('Renamed conflicting type alias: ' + typeName + ' -> ' + finalTypeName);
     }
     
-    $csharpClass = "using System.Text.Json.Serialization;`n"
-    
-    if ($needsSystemCollections) {
-        $csharpClass += "using System.Collections.Generic;`n"
+    // Handle object type literals - create a proper C# class
+    if (typeNode.kind === ts.SyntaxKind.TypeLiteral) {
+        let csharpClass = 'public class ' + finalTypeName + '\n{\n';
+        
+        typeNode.members.forEach(member => {
+            if (member.kind === ts.SyntaxKind.PropertySignature) {
+                const propName = member.name.text;
+                const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, finalTypeName);
+                const isOptional = member.questionToken ? '?' : '';
+                
+                csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+            }
+        });
+        
+        csharpClass += '}';
+        return csharpClass;
     }
     
-    $csharpClass += "`nnamespace $namespace;`n`n"
-    $csharpClass += "/// <summary>`n"
-    $csharpClass += "/// Generated from TypeScript interface: $interfaceName`n"
-    $csharpClass += "/// </summary>`n"
+    // Handle other type aliases (like union types, etc.)
+    const convertedType = convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes, '', finalTypeName);
+    return 'public class ' + finalTypeName + '\n{\n    public ' + convertedType + ' Value { get; set; }\n}';
+}
+
+// Function to convert TypeScript enum to C# enum
+function convertEnumToCSharp(enumNode, sourceFile) {
+    const enumName = enumNode.name.text;
+    const members = enumNode.members;
     
-    # Handle inheritance
-    if ($extendsInterface) {
-        $csharpClass += "public class $interfaceName : $extendsInterface`n"
+    // Check if this is a string enum (has string literal initializers)
+    const hasStringValues = members.some(member => 
+        member.initializer && member.initializer.kind === ts.SyntaxKind.StringLiteral
+    );
+    
+    if (hasStringValues) {
+        // Convert string enum to C# static class with constants
+        let csharpClass = 'public static class ' + enumName + '\n{\n';
+        
+        members.forEach(member => {
+            const memberName = member.name.text;
+            let memberValue = '';
+            
+            if (member.initializer && member.initializer.kind === ts.SyntaxKind.StringLiteral) {
+                memberValue = '"' + member.initializer.text + '"';
+            } else {
+                memberValue = 'null'; // Fallback for missing string values
+            }
+            
+            csharpClass += '    public const string ' + memberName + ' = ' + memberValue + ';\n';
+        });
+        
+        csharpClass += '}';
+        return csharpClass;
     } else {
-        $csharpClass += "public class $interfaceName`n"
-    }
-    
-    $csharpClass += "{`n"
-
-    # If this class has a base class, filter out properties that exist in the base class
-    $filteredProperties = $properties
-    if ($extendsInterface) {
-        $baseClassProperties = @()
-        switch ($extendsInterface) {
-            "SearchResult" {
-                $baseClassProperties = @("MediaType", "MediaInfo")
+        // Convert numeric enum to C# enum
+        let csharpEnum = 'public enum ' + enumName + '\n{\n';
+        
+        members.forEach((member, index) => {
+            const memberName = member.name.text;
+            let memberValue = '';
+            
+            if (member.initializer) {
+                if (member.initializer.kind === ts.SyntaxKind.StringLiteral) {
+                    memberValue = ' = "' + member.initializer.text + '"';
+                } else if (member.initializer.kind === ts.SyntaxKind.NumericLiteral) {
+                    memberValue = ' = ' + member.initializer.text;
+                }
+            } else if (index === 0) {
+                memberValue = ' = 1'; // Start C# enums at 1 by default
             }
-        }
+            
+            csharpEnum += '    ' + memberName + memberValue;
+            if (index < members.length - 1) {
+                csharpEnum += ',';
+            }
+            csharpEnum += '\n';
+        });
         
-        $filteredProperties = $properties | Where-Object { $_.Name -notin $baseClassProperties }
+        csharpEnum += '}';
+        return csharpEnum;
     }
-
-    foreach ($property in $filteredProperties) {
-        $csharpType = Convert-Type $property.Type $property.Name
-        $csharpName = Convert-PropertyName $property.Name
-        $jsonPropertyName = $property.Name
-        
-        # Handle optional properties and make string properties nullable by default
-        if ($property.IsOptional -and $csharpType -notmatch '\?$') {
-            $csharpType = $csharpType + '?'
-        } elseif ($csharpType -eq 'string' -and -not $property.IsOptional) {
-            # Make string properties nullable by default to avoid CS8618 warnings
-            $csharpType = 'string?'
-        } elseif ($property.Name -eq 'ExternalIds') {
-            # Make ExternalIds nullable to avoid CS8618 warnings
-            $csharpType = $csharpType + '?'
-        }
-        
-        $csharpClass += "`n    [JsonPropertyName(`"$jsonPropertyName`")]`n"
-        $csharpClass += "    public $csharpType $csharpName { get; set; }"
-        
-        # Add default value for nullable types
-        if ($csharpType -match '\?$') {
-            $csharpClass += " = null;"
-        } elseif ($csharpType -match '^List<') {
-            $csharpClass += " = new();"
-        } elseif ($csharpType -eq 'bool') {
-            $csharpClass += " = false;"
-        } elseif ($csharpType -eq 'int') {
-            $csharpClass += " = 0;"
-        } elseif ($csharpType -eq 'double') {
-            $csharpClass += " = 0.0;"
-        } elseif ($csharpType -eq 'MediaType') {
-            $csharpClass += " = MediaType.MOVIE;"
-        } elseif ($csharpType -eq 'MediaStatus') {
-            $csharpClass += " = MediaStatus.UNKNOWN;"
-        } elseif ($csharpType -eq 'MediaRequestStatus') {
-            $csharpClass += " = MediaRequestStatus.PENDING;"
-        } elseif ($csharpType -eq 'IssueType') {
-            $csharpClass += " = IssueType.OTHER;"
-        } elseif ($csharpType -eq 'IssueStatus') {
-            $csharpClass += " = IssueStatus.OPEN;"
-        } elseif ($csharpType -eq 'MediaServerType') {
-            $csharpClass += " = MediaServerType.NOT_CONFIGURED;"
-        } elseif ($csharpType -eq 'ServerType') {
-            $csharpClass += " = ServerType.JELLYFIN;"
-        } elseif ($csharpType -eq 'UserType') {
-            $csharpClass += " = UserType.LOCAL;"
-        } elseif ($csharpType -eq 'ApiErrorCode') {
-            $csharpClass += " = ApiErrorCode.UNKNOWN;"
-        } elseif ($csharpType -eq 'DiscoverSliderType') {
-            $csharpClass += " = DiscoverSliderType.RECENTLY_ADDED;"
-        }
-        $csharpClass += "`n"
-    }
-    
-    $csharpClass += "`n}"
-    
-    return $csharpClass
 }
 
-# Function to parse TypeScript interface
-function Convert-TypeScriptInterface {
-    param([string]$content)
+// Function to create anonymous object class
+function createAnonymousObjectClass(className, typeNode, sourceFile, missingTypes) {
+    let csharpClass = 'public class ' + className + '\n{\n';
     
-    $interfaces = @()
-    
-    # Find interface definitions - improved to handle nested braces and extends
-    $interfacePattern = 'interface\s+(\w+)(?:\s+extends\s+(\w+))?\s*\{'
-    $matched = [regex]::Matches($content, $interfacePattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    
-    foreach ($match in $matched) {
-        $interfaceName = $match.Groups[1].Value
-        $extendsInterface = $match.Groups[2].Value
-        $startPos = $match.Index + $match.Length
-        
-        # Find the matching closing brace
-        $braceCount = 1
-        $pos = $startPos
-        while ($braceCount -gt 0 -and $pos -lt $content.Length) {
-            if ($content[$pos] -eq '{') {
-                $braceCount++
-            } elseif ($content[$pos] -eq '}') {
-                $braceCount--
+    if (typeNode.members) {
+        typeNode.members.forEach(member => {
+            if (member.kind === ts.SyntaxKind.PropertySignature) {
+                const propName = member.name.text;
+                const propType = convertTypeScriptTypeToCSharp(member.type, sourceFile, missingTypes, propName, className);
+                const isOptional = member.questionToken ? '?' : '';
+                
+                csharpClass += '    [JsonPropertyName("' + toJsonPropertyName(propName) + '")]\n';
+                csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
             }
-            $pos++
+        });
+    }
+    
+    csharpClass += '}';
+    return csharpClass;
+}
+
+// Function to convert TypeScript type to C# type
+function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new Set(), propertyName = '', parentClassName = '') {
+    if (!typeNode) return 'object';
+    
+    switch (typeNode.kind) {
+        case ts.SyntaxKind.StringKeyword:
+            return 'string';
+        case ts.SyntaxKind.NumberKeyword:
+            return 'int';
+        case ts.SyntaxKind.BooleanKeyword:
+            return 'bool';
+        case ts.SyntaxKind.ArrayType:
+            const elementType = convertTypeScriptTypeToCSharp(typeNode.elementType, sourceFile, missingTypes, propertyName, parentClassName);
+            return 'List<' + elementType + '>';
+        case ts.SyntaxKind.TypeReference:
+            const typeName = typeNode.typeName.text;
+            // Handle special TypeScript types
+            if (typeName === 'Date') {
+                return 'DateTimeOffset';
+            } else if (typeName === 'Record') {
+                // Handle Record<K, V> -> Dictionary<K, V>
+                if (typeNode.typeArguments && typeNode.typeArguments.length === 2) {
+                    const keyType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[0], sourceFile, missingTypes, propertyName, parentClassName);
+                    const valueType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[1], sourceFile, missingTypes, propertyName, parentClassName);
+                    return 'Dictionary<' + keyType + ', ' + valueType + '>';
+                } else {
+                    // Fallback for Record without type arguments
+                    return 'Dictionary<string, object>';
+                }
+            } else if (typeName === 'Pick' || typeName === 'Partial' || typeName === 'Omit' || typeName === 'Exclude' || typeName === 'Extract') {
+                // Keep TypeScript utility type names in output for visibility
+                return typeName;
+            } else if (isKnownType(typeName)) {
+                return toPascalCase(typeName);
+            } else {
+                // Add to missing types for later conversion
+                missingTypes.add(typeName);
+                return toPascalCase(typeName);
+            }
+        case ts.SyntaxKind.UnionType:
+            // For union types, use the first non-null type or default to object
+            const unionTypes = typeNode.types;
+            const nonNullType = unionTypes.find(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+            return nonNullType ? convertTypeScriptTypeToCSharp(nonNullType, sourceFile, missingTypes, propertyName, parentClassName) : 'object';
+        case ts.SyntaxKind.LiteralType:
+            if (typeNode.literal.kind === ts.SyntaxKind.StringLiteral) {
+                return 'string';
+            } else if (typeNode.literal.kind === ts.SyntaxKind.NumericLiteral) {
+                return 'int';
+            }
+            return 'object';
+        case ts.SyntaxKind.TypeLiteral:
+            // Generate specific class name for anonymous objects
+            if (propertyName && parentClassName) {
+                const specificClassName = parentClassName + toPascalCase(propertyName);
+                // Create the class definition for this anonymous object
+                const anonymousClass = createAnonymousObjectClass(specificClassName, typeNode, sourceFile, missingTypes);
+                // Store the class definition to be written later - use a unique key per file
+                const fileKey = sourceFile.fileName;
+                if (!global.anonymousClasses) global.anonymousClasses = {};
+                if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
+                global.anonymousClasses[fileKey].push(anonymousClass);
+                return specificClassName;
+            } else {
+                return 'AnonymousObject';
+            }
+        default:
+            return 'object';
+    }
+}
+
+// Function to check if a type is known (built-in or already converted)
+function isKnownType(typeName) {
+    const knownTypes = [
+        'string', 'number', 'boolean', 'Date', 'Array', 'Object',
+        'Partial', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
+        'MediaType', 'MediaStatus', 'MediaRequestStatus', 'MediaServerType', 
+        'ServerType', 'UserType', 'ApiErrorCode', 'DiscoverSliderType', 
+        'IssueType', 'IssueStatus'
+    ];
+    return knownTypes.includes(typeName);
+}
+
+// Main conversion process
+console.log('Starting TypeScript to C# conversion using TypeScript Compiler API...');
+
+let totalFiles = 0;
+let convertedFiles = 0;
+const missingTypes = new Set();
+
+// Process each directory pair
+directoryPairs.forEach(pair => {
+    console.log('\n=== Processing ' + pair.type + ' Models ===');
+    console.log('Input: ' + pair.input);
+    console.log('Output: ' + pair.output);
+    
+    const files = findTypeScriptFiles(pair.input);
+    console.log('Found ' + files.length + ' TypeScript files');
+    totalFiles += files.length;
+    
+    for (const file of files) {
+        convertFile(file, pair.output, pair.type, missingTypes);
+        convertedFiles++;
+    }
+});
+
+        // Collect all search directories for missing type lookup - expand to broader codebase
+        const allSearchDirs = [
+            ...directoryPairs.map(pair => pair.input),
+            'codebase/seerr-main/server/entity',
+            'codebase/seerr-main/server/api',
+            'codebase/seerr-main/server/lib',
+            'codebase/seerr-main/server/constants'
+        ];
+
+        // Collect all output directories to check for existing types
+        const allOutputDirs = [
+            ...directoryPairs.map(pair => pair.output),
+            path.join(path.dirname(directoryPairs[0].output), 'Common')
+        ];
+
+        // Build complete list of transpiled types after initial conversion
+        console.log('\n=== Building Transpiled Types List ===');
+        buildTranspiledTypesList(allOutputDirs);
+
+// Convert missing types using TypeScript compiler - run iteratively until no more missing types
+let iteration = 0;
+let maxIterations = 10; // Prevent infinite loops
+
+while (missingTypes.size > 0 && iteration < maxIterations) {
+    iteration++;
+    console.log('\n=== Converting Missing Types with TypeScript Compiler (Iteration ' + iteration + ') ===');
+    console.log('Found ' + missingTypes.size + ' missing types to convert');
+    
+    const currentMissingTypes = new Set(missingTypes); // Copy current missing types
+    missingTypes.clear(); // Clear the set for this iteration
+    
+    for (const missingType of currentMissingTypes) {
+        // Check if this type already exists in transpiled types list
+        if (typeAlreadyExists(missingType)) {
+            console.log('Type ' + missingType + ' already exists, skipping...');
+            continue;
         }
         
-        if ($braceCount -eq 0) {
-            $interfaceBody = $content.Substring($startPos, $pos - $startPos - 1)
-            # Remove the first line which contains "export interface Name {"
-            $lines = $interfaceBody -split "`n"
-            if ($lines.Count -gt 1) {
-                $interfaceBody = ($lines[1..($lines.Count-1)] -join "`n")
+        // Skip TypeScript utility types - they should be converted to object, not classes
+        if (missingType === 'Pick' || missingType === 'Record' || missingType === 'Partial' || 
+            missingType === 'Omit' || missingType === 'Exclude' || missingType === 'Extract') {
+            console.log('Skipping TypeScript utility type: ' + missingType);
+            continue;
+        }
+        
+        const sourceFile = findSourceFileForType(missingType, allSearchDirs);
+        if (sourceFile) {
+            // Determine output directory based on source file location
+            let outputDir = null;
+            for (const pair of directoryPairs) {
+                if (sourceFile.startsWith(pair.input)) {
+                    outputDir = pair.output;
+                    break;
+                }
+            }
+            
+            // If not found in original directories, use Common directory to avoid duplicates
+            if (!outputDir) {
+                // Create Common directory path based on the first directory pair's parent
+                const firstPair = directoryPairs[0];
+                const parentDir = path.dirname(firstPair.output);
+                outputDir = path.join(parentDir, 'Common');
+            }
+            
+            if (outputDir) {
+                console.log('Converting missing type ' + missingType + ' from ' + sourceFile);
+                convertFile(sourceFile, outputDir, 'Missing', missingTypes);
             }
         } else {
-            continue
-        }
-        
-        $properties = @()
-        
-        # Parse properties - handle multi-line object types
-        $lines = $interfaceBody -split "`n"
-        $i = 0
-        while ($i -lt $lines.Count) {
-            $line = $lines[$i].Trim()
-            if ($line -and $line -match '^(\w+)(\?)?\s*:\s*([^;]+);?$') {
-                $propName = $Matches[1]
-                $isOptional = $Matches.ContainsKey(2) -and $Matches[2] -eq '?'
-                $propType = $Matches[3].Trim()
-                
-                # Check if this is an inline object type (starts with {)
-                if ($propType -match '^\s*\{') {
-                    # Skip this property and all lines until we find the closing }
-                    $braceCount = 1
-                    $j = $i + 1
-                    while ($braceCount -gt 0 -and $j -lt $lines.Count) {
-                        $nextLine = $lines[$j].Trim()
-                        if ($nextLine -match '\{') { $braceCount++ }
-                        if ($nextLine -match '\}') { $braceCount-- }
-                        $j++
-                    }
-                    $i = $j - 1
-                } else {
-                    $properties += @{
-                        Name = $propName
-                        Type = $propType
-                        IsOptional = $isOptional
-                    }
-                }
-            }
-            $i++
-        }
-        
-        $interfaces += @{
-            Name = $interfaceName
-            Properties = $properties
-            Extends = $extendsInterface
+            console.log('Could not find source file for missing type: ' + missingType);
         }
     }
     
-    return $interfaces
+    // Rebuild transpiled types list after this iteration
+    console.log('Rebuilding transpiled types list after iteration ' + iteration + '...');
+    buildTranspiledTypesList(allOutputDirs);
+    
+    console.log('Iteration ' + iteration + ' complete. Remaining missing types: ' + missingTypes.size);
 }
 
-# Function to parse TypeScript enums from constants files
-function Convert-TypeScriptEnums {
-    param([string]$content)
-    
-    $enums = @()
-    
-    # Find enum definitions
-    $enumPattern = 'export\s+enum\s+(\w+)\s*\{([^}]+)\}'
-    $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    
-    foreach ($match in $enumMatches) {
-        $enumName = $match.Groups[1].Value
-        $enumBody = $match.Groups[2].Value.Trim()
-        
-        $members = @()
-        $lines = $enumBody -split "`n"
-        
-        foreach ($line in $lines) {
-            $line = $line.Trim()
-            if ($line -and -not $line.StartsWith('//')) {
-                # Handle different enum value formats
-                if ($line -match '^(\w+)\s*=\s*([^,]+),?$') {
-                    $memberName = $Matches[1]
-                    $memberValue = $Matches[2].Trim()
-                    
-                    # Remove quotes if present
-                    if ($memberValue -match "^'([^']+)'$") {
-                        $memberValue = $Matches[1]
-                    } elseif ($memberValue -match '^"([^"]+)"$') {
-                        $memberValue = $Matches[1]
-                    }
-                    
-                    $members += @{
-                        Name = $memberName
-                        Value = $memberValue
-                    }
-                } elseif ($line -match '^(\w+),?$') {
-                    # Auto-incrementing enum values
-                    $memberName = $Matches[1]
-                    $members += @{
-                        Name = $memberName
-                        Value = $null  # Will be auto-incremented
-                    }
-                }
-            }
-        }
-        
-        $enums += @{
-            Name = $enumName
-            Members = $members
-            SourceFile = $file.Name
-        }
-    }
-    
-    return $enums
+if (iteration >= maxIterations) {
+    console.log('Warning: Reached maximum iterations (' + maxIterations + '). Some types may still be missing.');
 }
 
-# Function to convert TypeScript enums to C# enums
-function Convert-EnumToCSharp {
-    param(
-        [array]$enums,
-        [string]$namespace = "Jellyfin.Plugin.JellyseerrBridge.Models"
-    )
-    
-    $csharpEnums = "using System.Text.Json.Serialization;`n`n"
-    $csharpEnums += "namespace $namespace;`n`n"
-    $csharpEnums += "/// <summary>`n"
-    $csharpEnums += "/// Enums imported from TypeScript constants files`n"
-    $csharpEnums += "/// </summary>`n`n"
-    
-    foreach ($enum in $enums) {
-        $enumName = $enum.Name
-        $members = $enum.Members
-        
-        # Determine if this enum needs JsonStringEnumConverter
-        $hasStringValues = $false
-        
-        foreach ($member in $members) {
-            if ($null -ne $member.Value -and $member.Value -match '^[a-zA-Z]') {
-                $hasStringValues = $true
-                break
-            }
-        }
-        
-        if ($hasStringValues) {
-            $csharpEnums += "[JsonConverter(typeof(JsonStringEnumConverter))]`n"
-        }
-        
-        $csharpEnums += "public enum $enumName`n"
-        $csharpEnums += "{`n"
-        
-        $autoIncrementValue = 1
-        foreach ($member in $members) {
-            $memberName = $member.Name
-            $memberValue = $member.Value
-            
-            # Add JsonPropertyName attribute for string values
-            if ($null -ne $memberValue -and $memberValue -match '^[a-zA-Z]') {
-                $csharpEnums += "    [JsonPropertyName(`"$memberValue`")]`n"
-                $csharpEnums += "    $memberName = $autoIncrementValue,`n"
-            } elseif ($null -ne $memberValue) {
-                # Numeric value
-                $csharpEnums += "    $memberName = $memberValue,`n"
-            } else {
-                # Auto-increment
-                $csharpEnums += "    $memberName = $autoIncrementValue,`n"
-            }
-            
-            $autoIncrementValue++
-        }
-        
-        $csharpEnums += "}`n`n"
-        
-        # Add extension methods for string conversion
-        $csharpEnums += "public static class ${enumName}Extensions`n"
-        $csharpEnums += "{`n"
-        $csharpEnums += "    public static string ToStringValue(this $enumName value)`n"
-        $csharpEnums += "    {`n"
-        $csharpEnums += "        return value.ToString().ToLowerInvariant();`n"
-        $csharpEnums += "    }`n`n"
-        $csharpEnums += "    public static $enumName FromString(string value)`n"
-        $csharpEnums += "    {`n"
-        $csharpEnums += "        if (Enum.TryParse<$enumName>(value, true, out var result))`n"
-        $csharpEnums += "            return result;`n"
-        
-        # Find the first enum value as default
-        $firstMember = $members[0]
-        $csharpEnums += "        return $enumName.$($firstMember.Name);`n"
-        $csharpEnums += "    }`n"
-        $csharpEnums += "}`n`n"
-    }
-    
-    return $csharpEnums
+console.log('\n=== Conversion Complete ===');
+console.log('Total files found: ' + totalFiles);
+console.log('Files converted: ' + convertedFiles);
+if (missingTypes.size > 0) {
+    console.log('Missing types processed: ' + missingTypes.size);
+}
+directoryPairs.forEach(pair => {
+    console.log(pair.type + ' Models: ' + pair.output);
+});
+console.log('Common Models: ' + path.join(path.dirname(directoryPairs[0].output), 'Common'));
+"@
+
+    Write-Host "Generating TypeScript compiler script..." -ForegroundColor Cyan
+    Set-Content -Path $scriptPath -Value $jsContent -Encoding UTF8
+    Write-Host "Generated: $scriptPath" -ForegroundColor Green
+    return $scriptPath
 }
 
-# Function to convert Media entity to C# class
-function Convert-MediaEntity {
-    param([string]$outputDir, [string]$seerrRootDir)
+# Function to ensure TypeScript is installed
+function Install-TypeScript {
+    Write-Host "Checking TypeScript installation..." -ForegroundColor Cyan
     
-    Write-Host "Converting Media entity..." -ForegroundColor Cyan
-    
-    $mediaFile = Join-Path $seerrRootDir "server\entity\Media.ts"
-    if (-not (Test-Path $mediaFile)) {
-        Write-Host "  Media.ts file not found at: $mediaFile" -ForegroundColor Red
-        return
-    }
-    
-    $content = Get-Content -Path $mediaFile -Raw
-    
-    # Parse Media entity properties
-    $properties = @()
-    
-    # Find all @Column decorated properties
-    $columnPattern = '@Column[^}]*?public\s+(\w+)(\?)?\s*:\s*([^;]+);'
-    $columnMatches = [regex]::Matches($content, $columnPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    
-    foreach ($match in $columnMatches) {
-        $propName = $match.Groups[1].Value
-        $isOptional = $match.Groups[2].Value -eq '?'
-        $propType = $match.Groups[3].Value.Trim()
-        
-        # Convert TypeScript type to C# type
-        $csharpType = Convert-Type $propType $propName
-        
-        # Handle optional properties
-        if ($isOptional -and $csharpType -notmatch '\?$') {
-            $csharpType = $csharpType + '?'
+    try {
+        $tsVersion = npx tsc --version 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "TypeScript version: $tsVersion" -ForegroundColor Green
+        } else {
+            throw "TypeScript not found"
         }
-        
-        $properties += @{
-            Name = $propName
-            Type = $csharpType
-            IsOptional = $isOptional
+    } catch {
+        Write-Host "TypeScript not found. Installing TypeScript..." -ForegroundColor Yellow
+        try {
+            # Install TypeScript version compatible with Node.js v12
+            npm install typescript@4.9.5
+            Write-Host "TypeScript installed successfully!" -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to install TypeScript: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Please install TypeScript manually: npm install typescript@4.9.5" -ForegroundColor Yellow
+            exit 1
         }
-    }
-    
-    # Also find public properties without @Column decorators (like serviceUrl, mediaUrl, etc.)
-    $publicPropPattern = 'public\s+(\w+)(\?)?\s*:\s*([^;=]+);'
-    $publicMatches = [regex]::Matches($content, $publicPropPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    
-    foreach ($match in $publicMatches) {
-        $propName = $match.Groups[1].Value
-        $isOptional = $match.Groups[2].Value -eq '?'
-        $propType = $match.Groups[3].Value.Trim()
-        
-        # Skip if already processed as @Column
-        if ($properties | Where-Object { $_.Name -eq $propName }) {
-            continue
-        }
-        
-        # Convert TypeScript type to C# type
-        $csharpType = Convert-Type $propType $propName
-        
-        # Handle optional properties
-        if ($isOptional -and $csharpType -notmatch '\?$') {
-            $csharpType = $csharpType + '?'
-        }
-        
-        $properties += @{
-            Name = $propName
-            Type = $csharpType
-            IsOptional = $isOptional
-        }
-    }
-    
-    # Generate C# class
-    $csharpClass = Convert-InterfaceToClass "Media" $properties "Jellyfin.Plugin.JellyseerrBridge.Models" ""
-    
-    $outputFile = Join-Path $outputDir "Media.cs"
-    Set-Content -Path $outputFile -Value $csharpClass -Encoding UTF8
-    Write-Host "  Generated: Media.cs with $($properties.Count) properties" -ForegroundColor Green
-}
-
-# Build interface map first to resolve dependencies
-Build-InterfaceMap $SeerrRootDir
-
-# Process each TypeScript file
-$tsFiles = Get-ChildItem -Path $fullInputDir -Filter "*.ts" -Recurse
-
-foreach ($file in $tsFiles) {
-    Write-Host "Processing: $($file.Name)" -ForegroundColor Yellow
-    
-    $content = Get-Content -Path $file.FullName -Raw
-    
-    # Skip files that are just exports or mappings
-    if ($content -match 'export\s+const\s+map' -and $content -notmatch 'interface\s+\w+') {
-        Write-Host "  Skipping mapping file: $($file.Name)" -ForegroundColor Gray
-        continue
-    }
-    
-    $interfaces = Convert-TypeScriptInterface $content
-    
-    foreach ($interface in $interfaces) {
-        Write-Host "  Converting interface: $($interface.Name)" -ForegroundColor Cyan
-        
-        $csharpClass = Convert-InterfaceToClass $interface.Name $interface.Properties "Jellyfin.Plugin.JellyseerrBridge.Models" $interface.Extends
-        $outputFile = Join-Path $fullOutputDir "$($interface.Name).cs"
-        
-        Set-Content -Path $outputFile -Value $csharpClass -Encoding UTF8
-        Write-Host "    Generated: $($interface.Name).cs" -ForegroundColor Green
     }
 }
 
-# Function to extract enum references from model interfaces
-function Get-UsedEnums {
-    param([string]$inputDir)
-    
-    $usedEnums = @()
-    
-    # Get all TypeScript files in the models directory
-    $tsFiles = Get-ChildItem -Path $inputDir -Filter "*.ts" -Recurse
-    
-    foreach ($file in $tsFiles) {
-        $content = Get-Content -Path $file.FullName -Raw
-        
-        # Find all enum references in property types
-        # Look for patterns like: propertyName: EnumName
-        $enumPattern = ':\s*(\w+)(?:\s*\|\s*\w+)*;?$'
-        $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
-        
-        foreach ($match in $enumMatches) {
-            $enumName = $match.Groups[1].Value
-            
-            # Check if this looks like an enum (starts with capital letter and is not a basic type)
-            $basicTypes = @('string', 'number', 'boolean', 'Date', 'Promise', 'List', 'Array')
-            if ($enumName -match '^[A-Z]' -and $basicTypes -notcontains $enumName) {
-                if ($usedEnums -notcontains $enumName) {
-                    $usedEnums += $enumName
-                }
-            }
-        }
-    }
-    
-    # Also check the Media entity file for enum references
-    $mediaEntityFile = Join-Path (Split-Path $inputDir -Parent) "entity\Media.ts"
-    if (Test-Path $mediaEntityFile) {
-        $content = Get-Content -Path $mediaEntityFile -Raw
-        
-        # Find enum references in Media entity
-        $enumPattern = ':\s*(\w+)(?:\s*\|\s*\w+)*;?$'
-        $enumMatches = [regex]::Matches($content, $enumPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
-        
-        foreach ($match in $enumMatches) {
-            $enumName = $match.Groups[1].Value
-            
-            # Check if this looks like an enum
-            $basicTypes = @('string', 'number', 'boolean', 'Date', 'Promise', 'List', 'Array')
-            if ($enumName -match '^[A-Z]' -and $basicTypes -notcontains $enumName) {
-                if ($usedEnums -notcontains $enumName) {
-                    $usedEnums += $enumName
-                }
-            }
-        }
-    }
-    
-    return $usedEnums
-}
+# Get the script directory
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Function to process constants files and generate enums
-function Convert-ConstantsFiles {
-    param([string]$outputDir, [string]$seerrRootDir, [string]$inputDir)
+# Ensure TypeScript is installed
+Install-TypeScript
+
+# Generate the TypeScript compiler JavaScript file
+$converterScript = New-TypeScriptCompilerScript
+
+# Use TypeScript Compiler API for conversion
+Write-Host "`nUsing TypeScript Compiler API for conversion..." -ForegroundColor Green
+
+Write-Host "`nRunning TypeScript converter..." -ForegroundColor Yellow
+
+try {
+    # Convert directory pairs to JSON and pass to TypeScript compiler converter
+    $jsonInput = $directoryPairs | ConvertTo-Json -Depth 3
+    Write-Host "Passing directory pairs to TypeScript compiler converter..." -ForegroundColor Gray
     
-    Write-Host "Processing constants files for enums..." -ForegroundColor Cyan
+    # Run the TypeScript compiler converter with JSON input
+    $result = $jsonInput | node $converterScript 2>&1
     
-    $constantsDir = Join-Path $seerrRootDir "server\constants"
-    if (-not (Test-Path $constantsDir)) {
-        Write-Host "  Constants directory not found at: $constantsDir" -ForegroundColor Red
-        return
-    }
     
-    # Automatically detect which enums are used in the models
-    $usedEnums = Get-UsedEnums $inputDir
-    Write-Host "  Detected used enums: $($usedEnums -join ', ')" -ForegroundColor Yellow
-    
-    if ($usedEnums.Count -eq 0) {
-        Write-Host "  No enums found in model interfaces" -ForegroundColor Yellow
-        return
-    }
-    
-    $allEnums = @()
-    
-    # Process all TypeScript files in constants directory to find the enums we need
-    $constantsFiles = Get-ChildItem -Path $constantsDir -Filter "*.ts" -Recurse
-    
-    foreach ($file in $constantsFiles) {
-        $content = Get-Content -Path $file.FullName -Raw
-        $enums = Convert-TypeScriptEnums $content
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "`nConversion completed successfully!" -ForegroundColor Green
+        Write-Host $result -ForegroundColor Cyan
         
-        # Filter to only include enums that are actually used and add source file info
-        $filteredEnums = $enums | Where-Object { $usedEnums -contains $_.Name }
-        
-        if ($filteredEnums.Count -gt 0) {
-            # Add source file information to each enum
-            foreach ($enum in $filteredEnums) {
-                $enum.SourceFile = $file.Name
-            }
-            $allEnums += $filteredEnums
-            Write-Host "    Found $($filteredEnums.Count) used enums in $($file.Name): $($filteredEnums.Name -join ', ')" -ForegroundColor Green
-        }
-    }
-    
-    if ($allEnums.Count -gt 0) {
-        # Group enums by their source file
-        $enumsByFile = @{}
-        foreach ($enum in $allEnums) {
-            $sourceFile = $enum.SourceFile
-            if (-not $enumsByFile.ContainsKey($sourceFile)) {
-                $enumsByFile[$sourceFile] = @()
-            }
-            $enumsByFile[$sourceFile] += $enum
+        # Run model validation using check-models script
+        Write-Host "`nRunning model validation..." -ForegroundColor Yellow
+        $checkScript = Join-Path $scriptDir "check-models.ps1"
+        if (Test-Path $checkScript) {
+            & $checkScript -ModelDir $OutputDir
+        } else {
+            Write-Host "check-models.ps1 not found, skipping validation" -ForegroundColor Yellow
         }
         
-        # Generate separate C# enum files for each source file
-        foreach ($sourceFile in $enumsByFile.Keys) {
-            $fileEnums = $enumsByFile[$sourceFile]
-            $csharpEnums = Convert-EnumToCSharp $fileEnums
-            
-            # Create filename based on source file (e.g., media.ts -> MediaEnums.cs)
-            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($sourceFile)
-            $enumFileName = $baseName.Substring(0,1).ToUpper() + $baseName.Substring(1) + "Enums.cs"
-            $outputFile = Join-Path $outputDir $enumFileName
-            
-            Set-Content -Path $outputFile -Value $csharpEnums -Encoding UTF8
-            Write-Host "  Generated: $enumFileName with $($fileEnums.Count) enums from $sourceFile" -ForegroundColor Green
-        }
     } else {
-        Write-Host "  No used enums found in constants files" -ForegroundColor Yellow
+        Write-Host "`nConversion failed with exit code: $LASTEXITCODE" -ForegroundColor Red
+        Write-Host $result -ForegroundColor Red
     }
+    
+} catch {
+    Write-Host "`nError running converter: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
 }
 
-# Convert constants files to generate enums
-Convert-ConstantsFiles $fullOutputDir $SeerrRootDir $fullInputDir
+Write-Host "`n=== Conversion Complete ===" -ForegroundColor Green
 
-# Convert Media entity separately
-Convert-MediaEntity $fullOutputDir $SeerrRootDir
-
-Write-Host "`nConversion completed!" -ForegroundColor Green
-Write-Host "Generated C# classes in: $fullOutputDir" -ForegroundColor Cyan
+# Clean up temporary files created during conversion
+Write-Host "`nCleaning up temporary files..." -ForegroundColor Yellow
+try {
+    if (Test-Path "package.json") {
+        Remove-Item "package.json" -Force
+        Write-Host "Removed package.json" -ForegroundColor Gray
+    }
+    if (Test-Path "package-lock.json") {
+        Remove-Item "package-lock.json" -Force
+        Write-Host "Removed package-lock.json" -ForegroundColor Gray
+    }
+    if (Test-Path "node_modules") {
+        Remove-Item "node_modules" -Recurse -Force
+        Write-Host "Removed node_modules directory" -ForegroundColor Gray
+    }
+    if (Test-Path "scripts\convert-with-typescript-compiler.js") {
+        Remove-Item "scripts\convert-with-typescript-compiler.js" -Force
+        Write-Host "Removed convert-with-typescript-compiler.js" -ForegroundColor Gray
+    }
+    Write-Host "Cleanup completed!" -ForegroundColor Green
+} catch {
+    Write-Host "Warning: Could not clean up some temporary files: $($_.Exception.Message)" -ForegroundColor Yellow
+}
