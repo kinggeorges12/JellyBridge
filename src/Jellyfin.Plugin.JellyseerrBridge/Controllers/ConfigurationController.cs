@@ -5,6 +5,10 @@ using System.Net.Http;
 using System.Text.Json;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
@@ -34,13 +38,35 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var result = await _bridgeService.TestLibraryScanAsync();
-                return Ok(new { success = true, result = result });
+                var bridgeItems = await _bridgeService.TestLibraryScanAsync();
+                var config = Plugin.GetConfiguration();
+                
+                // Get existing Jellyfin items for counts and IDs
+                var existingMovies = await _bridgeService.GetExistingItemsAsync<Movie>();
+                var existingShows = await _bridgeService.GetExistingItemsAsync<Series>();
+                
+                // Return bridge items with metadata for frontend
+                return Ok(new
+                {
+                    bridgeItems = bridgeItems,
+                    syncDirectory = config.LibraryDirectory,
+                    excludeFromMainLibraries = config.ExcludeFromMainLibraries ?? true,
+                    message = $"Library scan test completed. Found {bridgeItems.Count} bridge items, {existingMovies.Count} movies, {existingShows.Count} shows in main libraries",
+                    movieCount = existingMovies.Count,
+                    tvShowCount = existingShows.Count,
+                    movieIds = existingMovies.Select(m => m.Id.ToString()).ToList(),
+                    tvShowIds = existingShows.Select(s => s.Id.ToString()).ToList()
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Error testing library scan");
-                return Ok(new { success = false, error = ex.Message });
+                return StatusCode(500, new { 
+                    success = false, 
+                    error = ex.Message,
+                    details = $"Library scan failed: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -80,7 +106,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting plugin configuration");
-                return StatusCode(500, new { error = "Failed to get configuration" });
+                return StatusCode(500, new { 
+                    error = "Failed to get configuration",
+                    details = $"Configuration retrieval failed: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -136,7 +166,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating plugin configuration");
-                return StatusCode(500, new { error = "Failed to update configuration" });
+                return StatusCode(500, new { 
+                    error = "Failed to update configuration",
+                    details = $"Configuration update failed: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -155,140 +189,65 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     return BadRequest(new { success = false, message = "Jellyseerr URL and API Key are required" });
                 }
 
-                // Test basic connectivity
-                var statusUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/status";
-                _logger.LogInformation("[JellyseerrBridge] Testing status endpoint: {StatusUrl}", statusUrl);
-
-                using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(10); // Set timeout
-                
-                var statusResponse = await httpClient.GetAsync(statusUrl);
-                _logger.LogInformation("[JellyseerrBridge] Status endpoint response: {StatusCode}", statusResponse.StatusCode);
-                
-                if (!statusResponse.IsSuccessStatusCode)
+                // Create temporary config for testing
+                var testConfig = new PluginConfiguration
                 {
-                    _logger.LogWarning("[JellyseerrBridge] Status endpoint failed with status: {StatusCode}", statusResponse.StatusCode);
-                    return Ok(new { 
+                    JellyseerrUrl = request.JellyseerrUrl,
+                    ApiKey = request.ApiKey
+                };
+
+                _logger.LogInformation("[JellyseerrBridge] Testing connection using JellyseerrApiService");
+
+                // Test basic connectivity using JellyseerrApiService
+                var status = await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, testConfig);
+                var statusResponse = (SystemStatus)status;
+                
+            if (statusResponse == null)
+            {
+                _logger.LogWarning("[JellyseerrBridge] Basic connectivity test failed");
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Failed to connect to Jellyseerr",
+                    details = "Unable to retrieve system status from Jellyseerr API. Check URL and network connectivity.",
+                    errorCode = "CONNECTION_FAILED"
+                });
+            }
+
+                _logger.LogInformation("[JellyseerrBridge] Basic connectivity test successful");
+
+                // Test authentication using JellyseerrApiService
+                var userInfo = await _apiService.CallEndpointAsync(JellyseerrEndpoint.AuthMe, testConfig);
+                var typedUserInfo = (JellyseerrUser?)userInfo;
+                if (typedUserInfo == null)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] API key authentication failed");
+                    return Unauthorized(new { 
                         success = false, 
-                        message = $"Jellyseerr responded with status {statusResponse.StatusCode}" 
+                        message = "API key authentication failed",
+                        details = "The provided API key is invalid or does not have sufficient permissions. Verify the API key in Jellyseerr settings.",
+                        errorCode = "AUTH_FAILED"
                     });
                 }
 
-                _logger.LogInformation("[JellyseerrBridge] Status endpoint test successful");
+                _logger.LogInformation("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.Username);
 
-                // If API key is provided, test authentication
-                if (!string.IsNullOrEmpty(request.ApiKey))
-                {
-                    var authUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/auth/me";
-                    _logger.LogInformation("[JellyseerrBridge] Testing auth/me endpoint with API key");
-
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, authUrl);
-                    requestMessage.Headers.Add("X-Api-Key", request.ApiKey);
-
-                    var authResponse = await httpClient.SendAsync(requestMessage);
-                    _logger.LogInformation("[JellyseerrBridge] Auth/me endpoint response: {StatusCode}", authResponse.StatusCode);
-                    
-                    if (!authResponse.IsSuccessStatusCode)
-                    {
-                        _logger.LogWarning("[JellyseerrBridge] API key authentication failed with status: {StatusCode}", authResponse.StatusCode);
-                        return Ok(new { 
-                            success = false, 
-                            message = $"API key authentication failed with status {authResponse.StatusCode}" 
-                        });
-                    }
-
-                    // Parse the response to get user info
-                    var authResponseContent = await authResponse.Content.ReadAsStringAsync();
-                    _logger.LogInformation("[JellyseerrBridge] API key authentication successful. Response: {Response}", authResponseContent);
-
-                    // Test if we can get the list of users (tests API permissions)
-                    var usersUrl = $"{request.JellyseerrUrl.TrimEnd('/')}/api/v1/user";
-                    _logger.LogInformation("[JellyseerrBridge] Testing user list endpoint to verify API permissions");
-
-                    var usersRequestMessage = new HttpRequestMessage(HttpMethod.Get, usersUrl);
-                    usersRequestMessage.Headers.Add("X-Api-Key", request.ApiKey);
-
-                    var usersResponse = await httpClient.SendAsync(usersRequestMessage);
-                    _logger.LogInformation("[JellyseerrBridge] User list endpoint response: {StatusCode}", usersResponse.StatusCode);
-                    
-                    if (usersResponse.IsSuccessStatusCode)
-                    {
-                        var usersResponseContent = await usersResponse.Content.ReadAsStringAsync();
-                        
-                        try
-                        {
-                            // Parse the JSON response to count users
-                            var usersData = JsonSerializer.Deserialize<JsonElement>(usersResponseContent);
-                            int userCount = 0;
-                            
-                            _logger.LogDebug("[JellyseerrBridge] Parsing user list response. Root element type: {ElementType}", usersData.ValueKind);
-                            
-                            // Jellyseerr API returns: {"pageInfo": {"pages":1,"pageSize":10,"results":6,"page":1}, "results": [...]}
-                            if (usersData.TryGetProperty("results", out var resultsArray) && resultsArray.ValueKind == JsonValueKind.Array)
-                            {
-                                userCount = resultsArray.GetArrayLength();
-                                _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users in 'results' array", userCount);
-                            }
-                            // Fallback: if response is a direct array
-                            else if (usersData.ValueKind == JsonValueKind.Array)
-                            {
-                                userCount = usersData.GetArrayLength();
-                                _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users in direct array", userCount);
-                            }
-                            // Fallback: if response is a single user object
-                            else if (usersData.ValueKind == JsonValueKind.Object)
-                            {
-                                userCount = 1;
-                                _logger.LogDebug("[JellyseerrBridge] Found single user object");
-                            }
-                            
-                            _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", userCount);
-                        }
-                        catch (JsonException ex)
-                        {
-                            _logger.LogWarning("[JellyseerrBridge] Failed to parse user list response: {Error}", ex.Message);
-                            _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list (unable to parse count)");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("[JellyseerrBridge] User list endpoint failed with status: {StatusCode} - API key may have limited permissions", usersResponse.StatusCode);
-                    }
-                }
-                else
-                {
-                    _logger.LogInformation("[JellyseerrBridge] No API key provided, skipping authentication test");
-                }
+                // Test user list permissions using JellyseerrApiService
+                var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
+                var typedUsers = (List<JellyseerrUser>)users;
+                _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", typedUsers.Count);
 
                 _logger.LogInformation("[JellyseerrBridge] Connection test completed successfully");
-                return Ok(new { 
-                    success = true, 
-                    message = "Connection successful! Jellyseerr is reachable and API key is valid.",
-                    status = "ok"
-                });
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] HTTP error during connection test: {Message}", ex.Message);
-                return Ok(new { 
-                    success = false, 
-                    message = $"Connection failed: {ex.Message}" 
-                });
-            }
-            catch (TaskCanceledException ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] Timeout during connection test");
-                return Ok(new { 
-                    success = false, 
-                    message = "Connection timed out. Please check the URL and try again." 
-                });
+                return Ok(statusResponse);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Unexpected error during connection test: {Message}", ex.Message);
-                return Ok(new { 
+                _logger.LogError(ex, "[JellyseerrBridge] Connection test failed with exception");
+                return StatusCode(500, new { 
                     success = false, 
-                    message = $"Unexpected error: {ex.Message}" 
+                    message = $"Connection test failed: {ex.Message}",
+                    details = $"Connection test exception: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace,
+                    errorCode = "CONNECTION_EXCEPTION"
                 });
             }
         }
@@ -303,25 +262,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var result = await _syncService.CreateBridgeFoldersAsync();
                 
                 _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
-                return Ok(new { 
-                    success = result.Success, 
-                    message = result.Message,
-                    details = result.Details,
-                    moviesProcessed = result.MoviesProcessed,
-                    moviesCreated = result.MoviesCreated,
-                    moviesUpdated = result.MoviesUpdated,
-                    showsProcessed = result.ShowsProcessed,
-                    showsCreated = result.ShowsCreated,
-                    showsUpdated = result.ShowsUpdated,
-                    requestsProcessed = result.RequestsProcessed
-                });
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
-                return Ok(new { 
-                    success = false, 
-                    message = $"Sync failed: {ex.Message}" 
+                return StatusCode(500, new SyncResult
+                {
+                    Success = false,
+                    Message = $"Sync failed: {ex.Message}",
+                    Details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}",
+                    StackTrace = ex.StackTrace,
+                    ErrorCode = "SYNC_EXCEPTION"
                 });
             }
         }
@@ -338,31 +290,37 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     config.JellyseerrUrl, 
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
-                var regions = await _apiService.GetWatchRegionsAsync();
+                var regions = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersRegions, config);
+                var typedRegions = (List<JellyseerrWatchRegion>)regions ?? new List<JellyseerrWatchRegion>();
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", regions?.Count ?? 0);
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", typedRegions.Count);
                 
-                if (regions == null || regions.Count == 0)
+                if (typedRegions == null || typedRegions.Count == 0)
                 {
                     _logger.LogWarning("[JellyseerrBridge] No regions returned from API service");
-                    return Ok(new { 
+                    return NotFound(new { 
                         success = false, 
                         message = "No regions returned from Jellyseerr API",
-                        regions = new List<object>()
+                        details = "The Jellyseerr API returned an empty regions list. This may indicate a configuration issue or API version mismatch.",
+                        regions = new List<object>(),
+                        errorCode = "NO_REGIONS_FOUND"
                     });
                 }
                 
                 return Ok(new { 
                     success = true, 
-                    regions = regions 
+                    regions = typedRegions 
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch regions");
-                return Ok(new { 
+                return StatusCode(500, new { 
                     success = false, 
-                    message = $"Failed to get watch regions: {ex.Message}" 
+                    message = $"Failed to get watch regions: {ex.Message}",
+                    details = $"Regions retrieval exception: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace,
+                    errorCode = "REGIONS_EXCEPTION"
                 });
             }
         }
@@ -378,21 +336,38 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use provided region or default from config
                 var targetRegion = region ?? config.Region ?? "US";
                 
-                var networks = await _apiService.GetNetworksAsync(targetRegion);
+                // Get networks for both movies and TV, then combine and deduplicate
+                var movieNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
+                var tvNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", networks?.Count ?? 0, targetRegion);
+                // Combine and deduplicate networks
+                var allNetworks = new List<JellyseerrWatchNetwork>();
+                var seenIds = new HashSet<int>();
+                
+                foreach (var network in ((List<JellyseerrWatchNetwork>)movieNetworks).Concat((List<JellyseerrWatchNetwork>)tvNetworks))
+                {
+                    if (seenIds.Add(network.Id))
+                    {
+                        allNetworks.Add(network);
+                    }
+                }
+                
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", allNetworks.Count, targetRegion);
                 
                 return Ok(new { 
                     success = true, 
-                    networks = networks 
+                    networks = allNetworks 
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Failed to get watch networks for region {Region}", region);
-                return Ok(new { 
+                return StatusCode(500, new { 
                     success = false, 
-                    message = $"Failed to get networks: {ex.Message}" 
+                    message = $"Failed to get networks: {ex.Message}",
+                    details = $"Networks retrieval exception for region '{region}': {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace,
+                    errorCode = "NETWORKS_EXCEPTION"
                 });
             }
         }
