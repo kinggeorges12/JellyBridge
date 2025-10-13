@@ -6,34 +6,30 @@ param(
     [string]$OutputDir = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel"
 )
 
+# Load configuration variables
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ConfigPath = Join-Path $ScriptDir "convert-config.psd1"
+if (Test-Path $ConfigPath) {
+    $Config = Import-PowerShellDataFile $ConfigPath
+    $BridgeBaseDir = $Config.BridgeBaseDir
+    $SeerrRootDir = $Config.SeerrRootDir
+    $OutputDir = $Config.OutputDir
+    $DoublePropertyPattern = $Config.DoublePropertyPattern
+    $BlockedClasses = $Config.BlockedClasses
+    $DirectoryPairs = $Config.DirectoryPairs
+} else {
+    Write-Error "Configuration file not found: $ConfigPath"
+    exit 1
+}
+
+# Change to the base directory to ensure consistent working directory
+Push-Location $BridgeBaseDir
+
 Write-Host "=== TypeScript to C# Conversion with Flattened Structure ===" -ForegroundColor Green
 Write-Host "Seerr Root Directory: $SeerrRootDir" -ForegroundColor Cyan
 Write-Host "Output Directory: $OutputDir" -ForegroundColor Cyan
 
-# Define input/output directory pairs
-$directoryPairs = @(
-    @{
-        input = "$SeerrRootDir/server/models"
-        output = "$OutputDir/Server"
-        type = "Server"
-    },
-    @{
-        input = "$SeerrRootDir/server/interfaces/api"
-        output = "$OutputDir/Api"
-        type = "Api"
-    }
-)
-
-# Define classes to block from conversion (classes that depend on missing base classes)
-$blockedClasses = @(
-    "ServarrBase",
-    "ExternalAPI",
-    "CacheResponse",
-    "CacheResponseImageCache",
-    "ImageCache",
-    "DownloadTracker",
-    "Settings"
-)
+Write-Host "`nDirectory Pairs:" -ForegroundColor Yellow
 
 Write-Host "`nDirectory Pairs:" -ForegroundColor Yellow
 foreach ($pair in $directoryPairs) {
