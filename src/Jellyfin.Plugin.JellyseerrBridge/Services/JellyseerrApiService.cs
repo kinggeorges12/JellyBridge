@@ -575,13 +575,16 @@ public class JellyseerrApiService
             // Status endpoint returns a simple SystemStatus object, not paginated
             JellyseerrResponseType.StatusResponse => DeserializeSimpleResponse<SystemStatus>(content, operationName),
         
+            // User endpoints return simple JellyseerrUser objects, not paginated
+            JellyseerrResponseType.UserResponse => DeserializeSimpleResponse<JellyseerrUser>(content, operationName),
+        
             // Watch provider endpoints return simple arrays, not paginated
             JellyseerrResponseType.WatchProviderResponse => DeserializeWatchProviderResponse(content, operationName, endpoint),
 
             // All other responses are paginated
             _ => DeserializePaginatedResponse<object>(content, operationName)
         };
-}
+    }
 
 /// <summary>
     /// Deserializes watch provider responses (simple arrays).

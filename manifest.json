@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-13T22:55:21.437Z",
+        "checksum": "F2A8DBB77C0A84EAA2391ED2BBFB3989",
+        "dependencies": [],
+        "changelog": "v0.195.2.0 - Hotfix: Fixed AuthMe endpoint deserialization - now correctly returns JellyseerrUser object instead of trying to deserialize as paginated response",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.195.2.0/JellyseerrBridge-0.195.2.0-DLL.zip",
+        "version": "0.195.2.0"
+      },
+      {
         "dependencies": [],
         "targetAbi": "10.10.7.0",
         "version": "0.195.1.0",
