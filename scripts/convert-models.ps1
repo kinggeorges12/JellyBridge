@@ -1,11 +1,6 @@
 # TypeScript to C# Model Converter with Flattened Structure
 # This script uses TypeScript Compiler API for interface-to-class conversions
 
-param(
-    [string]$SeerrRootDir = "codebase/seerr-main",
-    [string]$OutputDir = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel"
-)
-
 # Load configuration variables
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ConfigPath = Join-Path $ScriptDir "convert-config.psd1"
@@ -1650,7 +1645,7 @@ function Install-TypeScript {
 }
 
 # Function to generate consistent enum format
-function Generate-EnumFromConstants {
+function New-EnumFromConstants {
     param(
         [string]$EnumName,
         [string[]]$Constants
@@ -1688,7 +1683,7 @@ function Convert-StaticClassToEnum {
     
     if ($constants.Count -gt 0) {
         Write-Host "  Converting static class $TypeName to enum..." -ForegroundColor Cyan
-        $enumDefinition = Generate-EnumFromConstants -EnumName $TypeName -Constants $constants
+        $enumDefinition = New-EnumFromConstants -EnumName $TypeName -Constants $constants
         Write-Host "  Generated enum with $($constants.Count) values: $($constants -join ', ')" -ForegroundColor Green
         return $enumDefinition
     }
@@ -1785,8 +1780,6 @@ function Convert-MissingEntityTypes {
             }
             
             # If type is defined in Server/Api but referenced in Api/Server, move to Common
-            $serverNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server"
-            $apiNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api"
             $commonNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
             
             # Only move types to Common if they are truly shared (defined in multiple namespaces)
@@ -2171,7 +2164,6 @@ $typeDefinition
                         $lines = $content -split "`n"
                         $inTypeDefinition = $false
                         $braceCount = 0
-                        $currentTypeName = ""
                         
                         foreach ($line in $lines) {
                             # Check if this line starts a new type definition
@@ -2182,7 +2174,6 @@ $typeDefinition
                                 if ($inTypeDefinition) {
                                     $tempContent += $line + "`n"
                                     $braceCount = ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count - ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
-                                    $currentTypeName = $typeName
                                     continue
                                 }
                                 
@@ -2190,7 +2181,6 @@ $typeDefinition
                                 $commonTypeFile = Join-Path $OutputDir "Common\$typeName.cs"
                                 if (-not (Test-Path $commonTypeFile)) {
                                     $inTypeDefinition = $true
-                                    $currentTypeName = $typeName
                                     $tempContent += $line + "`n"
                                     $braceCount = ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count - ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
                                     continue
@@ -2204,7 +2194,6 @@ $typeDefinition
                                 
                                 if ($braceCount -eq 0) {
                                     $inTypeDefinition = $false
-                                    $currentTypeName = ""
                                 }
                             }
                         }
@@ -2307,7 +2296,7 @@ try {
 Write-Host "`n=== Processing TypeScript Imports ===" -ForegroundColor Green
 
 # Process TypeScript imports and add corresponding C# using statements
-function Process-TypeScriptImports {
+function Invoke-TypeScriptImports {
     Write-Host "Processing TypeScript imports to add C# using statements..." -ForegroundColor Cyan
     
     # Get all TypeScript files that were converted
@@ -2344,7 +2333,6 @@ function Process-TypeScriptImports {
                 $needsUpdate = $false
                 
                 foreach ($match in $importMatches) {
-                    $importedTypes = $match.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() }
                     $importPath = $match.Groups[2].Value
                     
                     # Map TypeScript import paths to C# namespaces
@@ -2378,7 +2366,7 @@ function Process-TypeScriptImports {
     }
 }
 
-Process-TypeScriptImports
+Invoke-TypeScriptImports
 
 # Add automatic using statements for cross-namespace references
 Write-Host "`n=== Adding Cross-Namespace Using Statements ===" -ForegroundColor Green
@@ -2414,7 +2402,6 @@ function Add-CrossNamespaceUsingStatements {
         
         foreach ($match in $classReferences) {
             $propertyType = $match.Groups[1].Value.Trim()
-            $propertyName = $match.Groups[2].Value.Trim()
             
             # Extract the main type name from complex types like List<T>, Dictionary<K,V>, etc.
             $className = $propertyType
