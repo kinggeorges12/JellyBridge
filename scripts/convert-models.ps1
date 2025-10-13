@@ -30,7 +30,9 @@ $blockedClasses = @(
     "ExternalAPI",
     "CacheResponse",
     "CacheResponseImageCache",
-    "ImageCache"
+    "ImageCache",
+    "DownloadTracker",
+    "Settings"
 )
 
 Write-Host "`nDirectory Pairs:" -ForegroundColor Yellow
@@ -555,7 +557,7 @@ function toJsonPropertyName(str) {
                     }
                     
                     // Process this interface
-                    hasInterfaces = true;
+                        hasInterfaces = true;
                     
                     // Check if this is a TypeORM entity class
                     let isTypeORMEntity = false;
@@ -889,8 +891,56 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
             // Generate enum and return it (will be added to transpiled types when written to file)
             const enumClass = 'public enum ' + finalTypeName + '\n{\n' +
                 enumValues.map(value => '    ' + toPascalCase(value)).join(',\n') + '\n}';
-            console.log('Generated ' + finalTypeName + ' locally');
+                console.log('Generated ' + finalTypeName + ' locally');
             return enumClass;  // Return the enum directly
+        }
+        
+        // Handle complex union types (like Results = MovieResult | TvResult | PersonResult | CollectionResult)
+        if (nonNullTypes.length >= 2) {
+            // Add TypeScript definition comment
+            const tsDefinition = '// TypeScript: ' + finalTypeName + ' = ' + 
+                nonNullTypes.map(t => t.getText()).join(' | ');
+            
+            // Check for common base classes using TypeScript compiler API
+            const baseTypes = new Set();
+            for (const typeNode of nonNullTypes) {
+                if (typeNode.kind === ts.SyntaxKind.TypeReference) {
+                    // Get the type name from the TypeReference
+                    const typeName = typeNode.typeName.getText();
+                    
+                    // Look for interface declarations with this name in the source file
+                    const findInterface = (node) => {
+                        if (ts.isInterfaceDeclaration(node) && node.name.text === typeName) {
+                            if (node.heritageClauses) {
+                                for (const heritageClause of node.heritageClauses) {
+                                    for (const heritageType of heritageClause.types) {
+                                        if (heritageType.kind === ts.SyntaxKind.ExpressionWithTypeArguments) {
+                                            const baseTypeName = heritageType.expression.getText();
+                                            baseTypes.add(baseTypeName);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        ts.forEachChild(node, findInterface);
+                    };
+                    
+                    findInterface(sourceFile);
+                }
+            }
+            
+            // If all types share a common base class, use it
+            if (baseTypes.size === 1) {
+                const commonBase = Array.from(baseTypes)[0];
+                return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
+                       '    public ' + commonBase + ' Value { get; set; }\n' +
+                       '}\n';
+            }
+            
+            // For complex unions with no common base, use object
+            return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
+                   '    public object Value { get; set; }\n' +
+                   '}\n';
         }
     }
     
@@ -1040,34 +1090,6 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 }
             }
             
-            // Check if this is a specific pattern we want to handle specially
-            if (elementType === 'object' && propertyName === 'results' && parentClassName === 'RequestResultsResponse') {
-                // Create a specific class for this case
-                const specificClassName = 'RequestResult';
-                const specificClass = 'public class ' + specificClassName + '\n{\n' +
-                    '    [JsonPropertyName("profileName")]\n' +
-                    '    public string? ProfileName { get; set; }\n\n' +
-                    '    [JsonPropertyName("canRemove")]\n' +
-                    '    public bool? CanRemove { get; set; }\n\n' +
-                    '    // Additional MediaRequest properties would go here\n' +
-                    '}\n';
-                
-                // Store the class definition to be written later
-                const fileKey = sourceFile.fileName;
-                if (!global.anonymousClasses) global.anonymousClasses = {};
-                if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
-                global.anonymousClasses[fileKey].push(specificClass);
-                
-                return 'List<' + specificClassName + '>';
-            }
-            // Check if this is QueueResponse records property
-            if (elementType === 'object' && propertyName === 'records' && parentClassName === 'QueueResponse') {
-                return 'List<QueueItem>';
-            }
-            // Check if this is PersonResult knownFor property
-            if (elementType === 'object' && propertyName === 'knownFor' && parentClassName === 'PersonResult') {
-                return 'List<SearchResult>';
-            }
             return 'List<' + elementType + '>';
         case ts.SyntaxKind.IndexedAccessType:
             // Handle indexed access types
@@ -1151,26 +1173,6 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 // For generic utility types, convert to the base type instead of object
                 if (typeNode.typeArguments && typeNode.typeArguments.length > 0) {
                     const baseType = convertTypeScriptTypeToCSharp(typeNode.typeArguments[0], sourceFile, missingTypes, propertyName, parentClassName);
-                    // For NonFunctionProperties, create a more specific type
-                    if (typeName === 'NonFunctionProperties' && baseType === 'object') {
-                        // Create a specific class for NonFunctionProperties<MediaRequest>
-                        const specificClassName = parentClassName + toPascalCase(propertyName) + 'Request';
-                        const specificClass = 'public class ' + specificClassName + '\n{\n' +
-                            '    [JsonPropertyName("profileName")]\n' +
-                            '    public string? ProfileName { get; set; }\n\n' +
-                            '    [JsonPropertyName("canRemove")]\n' +
-                            '    public bool? CanRemove { get; set; }\n\n' +
-                            '    // Additional MediaRequest properties would go here\n' +
-                            '}\n';
-                        
-                        // Store the class definition to be written later
-                        const fileKey = sourceFile.fileName;
-                        if (!global.anonymousClasses) global.anonymousClasses = {};
-                        if (!global.anonymousClasses[fileKey]) global.anonymousClasses[fileKey] = [];
-                        global.anonymousClasses[fileKey].push(specificClass);
-                        
-                        return specificClassName;
-                    }
                     // Convert Partial<T> to T since we're sending complete objects
                     if (typeName === 'Partial') {
                         const originalText = typeNode.getText().replace(/\s+/g, ' ').trim();
@@ -1211,10 +1213,55 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 const firstType = convertTypeScriptTypeToCSharp(nonNullTypes[0], sourceFile, missingTypes, propertyName, parentClassName);
                 const secondType = convertTypeScriptTypeToCSharp(nonNullTypes[1], sourceFile, missingTypes, propertyName, parentClassName);
                 
-                // Special case: if both types extend SearchResult, use SearchResult
-                if ((firstType === 'MovieResult' && secondType === 'TvResult') || 
-                    (firstType === 'TvResult' && secondType === 'MovieResult')) {
-                    return 'SearchResult';
+                // Try to find a common base type for union types
+                if (nonNullTypes.length >= 2) {
+                    // Convert all types to C# types first
+                    const convertedTypes = nonNullTypes.map(t => 
+                        convertTypeScriptTypeToCSharp(t, sourceFile, missingTypes, propertyName, parentClassName)
+                    );
+                    
+                    // Check if all types are the same - if so, return that type
+                    const firstType = convertedTypes[0];
+                    if (convertedTypes.every(t => t === firstType)) {
+                        return firstType;
+                    }
+                    
+                    // Check for common base classes using TypeScript compiler API
+                    const baseTypes = new Set();
+                    for (const typeNode of nonNullTypes) {
+                        if (typeNode.kind === ts.SyntaxKind.TypeReference) {
+                            // Get the type name from the TypeReference
+                            const typeName = typeNode.typeName.getText();
+                            
+                            // Look for interface declarations with this name in the source file
+                            const findInterface = (node) => {
+                                if (ts.isInterfaceDeclaration(node) && node.name.text === typeName) {
+                                    if (node.heritageClauses) {
+                                        for (const heritageClause of node.heritageClauses) {
+                                            for (const heritageType of heritageClause.types) {
+                                                if (heritageType.kind === ts.SyntaxKind.ExpressionWithTypeArguments) {
+                                                    const baseTypeName = heritageType.expression.getText();
+                                                    baseTypes.add(baseTypeName);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                ts.forEachChild(node, findInterface);
+                            };
+                            
+                            findInterface(sourceFile);
+                        }
+                    }
+                    
+                    // If all types share a common base class, use it
+                    if (baseTypes.size === 1) {
+                        const commonBase = Array.from(baseTypes)[0];
+                        return commonBase;
+                    }
+                    
+                    // For complex unions with no common base, return object
+                    return 'object';
                 }
                 
                 
@@ -1296,9 +1343,9 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                     return secondType; // Use the second non-primitive type
                 }
                 
-                // Special case: if one of the types is QueueItem, use QueueItem
-                if (firstType === 'QueueItem' || secondType === 'QueueItem') {
-                    return 'QueueItem';
+                // Special case: if one of the types matches a common pattern, use it
+                if (firstType.endsWith('Item') || secondType.endsWith('Item')) {
+                    return firstType.endsWith('Item') ? firstType : secondType;
                 }
                 
                 // Create a specific class name for the intersection
@@ -1445,19 +1492,19 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
                     console.log('Entity file detected - using Server directory: ' + outputDir);
                 } else {
                     // Use original logic for non-entity files
-                    for (const pair of directoryPairs) {
-                        if (sourceFile.startsWith(pair.input)) {
-                            outputDir = pair.output;
-                            break;
-                        }
-                    }
-                    
-                    // If not found in original directories, use Common directory to avoid duplicates
-                    if (!outputDir) {
-                        // Create Common directory path based on the first directory pair's parent
-                        const firstPair = directoryPairs[0];
-                        const parentDir = path.dirname(firstPair.output);
-                        outputDir = path.join(parentDir, 'Common');
+            for (const pair of directoryPairs) {
+                if (sourceFile.startsWith(pair.input)) {
+                    outputDir = pair.output;
+                    break;
+                }
+            }
+            
+            // If not found in original directories, use Common directory to avoid duplicates
+            if (!outputDir) {
+                // Create Common directory path based on the first directory pair's parent
+                const firstPair = directoryPairs[0];
+                const parentDir = path.dirname(firstPair.output);
+                outputDir = path.join(parentDir, 'Common');
                     }
                 }
             } else {
@@ -1836,11 +1883,16 @@ $typeDefinition
     $uniqueConflicts = $crossNamespaceConflicts | Sort-Object TypeName | Group-Object TypeName | ForEach-Object { $_.Group[0] }
     
     foreach ($conflict in $uniqueConflicts) {
-        # Check if the Common file already exists
+        # Check if the Common file already exists and has content
         $commonFile = Join-Path $OutputDir "Common\$($conflict.TypeName).cs"
         if (Test-Path $commonFile) {
-            Write-Host "  Type $($conflict.TypeName) already exists in Common directory, skipping..." -ForegroundColor Green
-            continue
+            $existingContent = Get-Content $commonFile -Raw
+            if ($existingContent.Trim() -ne "") {
+                Write-Host "  Type $($conflict.TypeName) already exists in Common directory, skipping..." -ForegroundColor Green
+                continue
+            } else {
+                Write-Host "  Type $($conflict.TypeName) exists but is empty, will recreate..." -ForegroundColor Yellow
+            }
         }
         
         # Only move types that are defined in multiple namespaces (truly shared types)
@@ -1848,8 +1900,11 @@ $typeDefinition
         $allConflictsForType = $crossNamespaceConflicts | Where-Object { $_.TypeName -eq $conflict.TypeName }
         $definedNamespaces = $allConflictsForType | ForEach-Object { $_.DefinedIn } | Sort-Object | Get-Unique
         
+        
         if ($definedNamespaces.Count -le 1) {
-            Write-Host "Skipping cross-namespace move for $($conflict.TypeName) - defined in single namespace, not shared type" -ForegroundColor Green
+            # Type is defined in single namespace but referenced across namespaces
+            # Skip creating Common copy - let using statements handle cross-namespace access
+            Write-Host "Skipping Common copy for $($conflict.TypeName) - using statements will handle cross-namespace access" -ForegroundColor Yellow
             continue
         }
         
@@ -2181,14 +2236,6 @@ try {
         Write-Host "`nDetecting missing entity types..." -ForegroundColor Yellow
         Convert-MissingEntityTypes
         
-        # Run model validation using check-models script
-        Write-Host "`nRunning model validation..." -ForegroundColor Yellow
-        $checkScript = Join-Path $scriptDir "check-models.ps1"
-        if (Test-Path $checkScript) {
-            & $checkScript -ModelDir $OutputDir
-        } else {
-            Write-Host "check-models.ps1 not found, skipping validation" -ForegroundColor Yellow
-        }
         
     } else {
         Write-Host "`nConversion failed with exit code: $LASTEXITCODE" -ForegroundColor Red
@@ -2276,6 +2323,145 @@ function Process-TypeScriptImports {
 
 Process-TypeScriptImports
 
+# Add automatic using statements for cross-namespace references
+Write-Host "`n=== Adding Cross-Namespace Using Statements ===" -ForegroundColor Green
+function Add-CrossNamespaceUsingStatements {
+    Write-Host "Adding cross-namespace using statements..." -ForegroundColor Cyan
+    
+    $allCSharpFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+    
+    foreach ($file in $allCSharpFiles) {
+        $content = Get-Content $file.FullName -Raw
+        $originalContent = $content
+        
+        # Determine the namespace of this file
+        $fileNamespace = ""
+        if ($file.FullName -match "\\Server\\") {
+            $fileNamespace = "Server"
+        } elseif ($file.FullName -match "\\Api\\") {
+            $fileNamespace = "Api"
+        } else {
+            $fileNamespace = "Common"
+        }
+        
+        # Special case: if file is in Server directory but has base namespace, it's actually in Server namespace
+        if ($file.FullName -match "\\Server\\" -and $content -match "namespace Jellyfin\.Plugin\.JellyseerrBridge\.JellyseerrModel;") {
+            $fileNamespace = "Server"
+        }
+        
+        # Find all class references in the file by looking for type names in property declarations
+        # This regex finds property declarations and extracts the type name
+        $classReferences = [regex]::Matches($content, 'public\s+([^;]+)\s+(\w+)\s*\{\s*get;\s*set;\s*\}', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        
+        $neededUsings = @()
+        
+        foreach ($match in $classReferences) {
+            $propertyType = $match.Groups[1].Value.Trim()
+            $propertyName = $match.Groups[2].Value.Trim()
+            
+            # Extract the main type name from complex types like List<T>, Dictionary<K,V>, etc.
+            $className = $propertyType
+            
+            # Handle generic types like List<SomeType> -> SomeType
+            $listMatch = [regex]::Match($className, 'List<([^>]+)>')
+            if ($listMatch.Success) {
+                $className = $listMatch.Groups[1].Value.Trim()
+            } else {
+                $dictMatch = [regex]::Match($className, 'Dictionary<[^,]*,\s*([^>]+)>')
+                if ($dictMatch.Success) {
+                    $className = $dictMatch.Groups[1].Value.Trim()
+                } else {
+                    $enumMatch = [regex]::Match($className, 'IEnumerable<([^>]+)>')
+                    if ($enumMatch.Success) {
+                        $className = $enumMatch.Groups[1].Value.Trim()
+                    }
+                }
+            }
+            
+            # Skip built-in types
+            if ($className -in @('int', 'string', 'bool', 'DateTime', 'DateTimeOffset', 'double', 'float', 'decimal', 'object', 'List', 'Dictionary', 'Array', 'IEnumerable', 'Task', 'void', 'T', 'class')) {
+                continue
+            }
+            
+            # Determine which namespace this class is defined in by searching all files
+            $classNamespace = ""
+            $allFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+            $foundNamespaces = @()
+            
+            foreach ($searchFile in $allFiles) {
+                $searchContent = Get-Content $searchFile.FullName -Raw
+                if ($searchContent -match "public\s+(?:static\s+)?(?:class|enum)\s+$className\b") {
+                    # Determine namespace from file path
+                    if ($searchFile.FullName -like "*\Server\*") {
+                        $foundNamespaces += "Server"
+                    } elseif ($searchFile.FullName -like "*\Api\*") {
+                        $foundNamespaces += "Api"
+                    } elseif ($searchFile.FullName -like "*\Common\*") {
+                        $foundNamespaces += "Common"
+                    } else {
+                        $foundNamespaces += "Common"  # Default to Common for base namespace
+                    }
+                }
+            }
+            
+            # If class exists in multiple namespaces, prefer Common for cross-namespace access
+            if ($foundNamespaces.Count -gt 1) {
+                $classNamespace = "Common"
+            } elseif ($foundNamespaces.Count -eq 1) {
+                $classNamespace = $foundNamespaces[0]
+            }
+            
+            # If the class is in a different namespace than the current file, add using statement
+            if ($classNamespace -ne "" -and $classNamespace -ne $fileNamespace) {
+                if ($classNamespace -eq "Common") {
+                    # For Common namespace classes, use the base namespace
+                    $usingStatement = "using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;"
+                } else {
+                    $usingStatement = "using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.$classNamespace;"
+                }
+                if ($content -notmatch [regex]::Escape($usingStatement)) {
+                    $neededUsings += $usingStatement
+                }
+            }
+        }
+        
+        # Add unique using statements
+        $neededUsings = $neededUsings | Sort-Object -Unique
+        
+        if ($neededUsings.Count -gt 0) {
+            # Find the last using statement
+            $usingMatches = [regex]::Matches($content, 'using\s+[^;]+;')
+            if ($usingMatches.Count -gt 0) {
+                $lastUsingEnd = $usingMatches[$usingMatches.Count - 1].Index + $usingMatches[$usingMatches.Count - 1].Length
+                $beforeUsings = $content.Substring(0, $lastUsingEnd)
+                $afterUsings = $content.Substring($lastUsingEnd)
+                
+                # Add new using statements
+                $newUsings = ""
+                foreach ($using in $neededUsings) {
+                    $newUsings += "`n$using"
+                }
+                
+                $content = $beforeUsings + $newUsings + $afterUsings
+                
+                if ($content -ne $originalContent) {
+                    Set-Content -Path $file.FullName -Value $content -NoNewline
+                    Write-Host "Added using statements to: $($file.Name)" -ForegroundColor Green
+                    foreach ($using in $neededUsings) {
+                        Write-Host "  + $using" -ForegroundColor Yellow
+                    }
+                }
+            }
+        }
+    }
+}
+
+Add-CrossNamespaceUsingStatements
+
+# Note: CS0108 hiding warnings are best handled by the compiler
+# The compiler will tell us exactly which properties need the 'new' keyword
+# Attempting to programmatically detect inheritance hierarchies is error-prone
+
 # Apply Error to Exception mapping to all generated files
 Write-Host "`n=== Applying Error to Exception Mapping ===" -ForegroundColor Green
 $allCSharpFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
@@ -2294,8 +2480,6 @@ foreach ($file in $allCSharpFiles) {
         Write-Host "Applied Error->Exception mapping to: $($file.Name)" -ForegroundColor Cyan
     }
 }
-
-Write-Host "`n=== Conversion Complete ===" -ForegroundColor Green
 
 # Clean up temporary files created during conversion
 Write-Host "`nCleaning up temporary files..." -ForegroundColor Yellow
@@ -2319,4 +2503,15 @@ try {
     Write-Host "Cleanup completed!" -ForegroundColor Green
 } catch {
     Write-Host "Warning: Could not clean up some temporary files: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+Write-Host "`n=== Conversion Complete ===" -ForegroundColor Green
+
+# Run model validation using check-models script (moved to very end)
+Write-Host "`nRunning model validation..." -ForegroundColor Yellow
+$checkScript = Join-Path $scriptDir "check-models.ps1"
+if (Test-Path $checkScript) {
+    & $checkScript -ModelDir $OutputDir
+} else {
+    Write-Host "check-models.ps1 not found, skipping validation" -ForegroundColor Yellow
 }
