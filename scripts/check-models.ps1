@@ -62,19 +62,27 @@ if ($missingUsing.Count -gt 0) {
 
 # Check for missing class references
 Write-Host "`n=== CHECKING FOR MISSING CLASS REFERENCES ===" -ForegroundColor Yellow
-$allClassNames = @{}
 
-# Build map of all generated class names
+# Build map of all classes with their namespaces
+$allClasses = @{}
+$fileNamespaces = @{}
+
 foreach ($file in $files) {
-    $className = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-    $allClassNames[$className] = $true
-    
-    # Also scan file content for additional class definitions
     $content = Get-Content $file.FullName -Raw
+    
+    # Extract namespace from file
+    $namespaceMatch = [regex]::Match($content, 'namespace\s+([^;{]+)')
+    $namespace = if ($namespaceMatch.Success) { $namespaceMatch.Groups[1].Value.Trim() } else { "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel" }
+    $fileNamespaces[$file.FullName] = $namespace
+    
+    # Extract all class/enum definitions in this file
     $classDefs = [regex]::Matches($content, '(?:public|internal)\s+(?:static\s+)?(?:class|enum)\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     foreach ($match in $classDefs) {
         $className = $match.Groups[1].Value
-        $allClassNames[$className] = $true
+        if (-not $allClasses.ContainsKey($className)) {
+            $allClasses[$className] = @()
+        }
+        $allClasses[$className] += $namespace
     }
 }
 
@@ -83,6 +91,14 @@ $basicTypes = @('string', 'int', 'double', 'bool', 'DateTime', 'DateTimeOffset',
 
 foreach ($file in $files) {
     $content = Get-Content $file.FullName -Raw
+    $currentNamespace = $fileNamespaces[$file.FullName]
+    
+    # Extract using statements
+    $usingStatements = @()
+    $usingMatches = [regex]::Matches($content, 'using\s+([^;]+);')
+    foreach ($usingMatch in $usingMatches) {
+        $usingStatements += $usingMatch.Groups[1].Value.Trim()
+    }
     
     # Find class references in property types and method signatures
     $classRefs = [regex]::Matches($content, '(?:public|private|protected|internal)\s+(?:readonly\s+)?([A-Z][a-zA-Z0-9]*)\s+\w+', [System.Text.RegularExpressions.RegexOptions]::Singleline)
@@ -97,9 +113,28 @@ foreach ($file in $files) {
         $currentClassName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
         if ($className -eq $currentClassName) { continue }
         
-        # Check if the referenced class exists
-        if (-not $allClassNames.ContainsKey($className)) {
-            $missingClasses += ($file.Name + ': ' + $className)
+        # Check if the referenced class exists and is accessible
+        if ($allClasses.ContainsKey($className)) {
+            $classNamespaces = $allClasses[$className]
+            
+            # Check if class is in current namespace
+            $isInCurrentNamespace = $classNamespaces -contains $currentNamespace
+            
+            # Check if class is accessible via using statements
+            $isAccessibleViaUsing = $false
+            foreach ($classNamespace in $classNamespaces) {
+                if ($usingStatements -contains $classNamespace) {
+                    $isAccessibleViaUsing = $true
+                    break
+                }
+            }
+            
+            # If not accessible, it's missing
+            if (-not $isInCurrentNamespace -and -not $isAccessibleViaUsing) {
+                $missingClasses += ($file.Name + ': ' + $className + ' (available in: ' + ($classNamespaces -join ', ') + ')')
+            }
+        } else {
+            $missingClasses += ($file.Name + ': ' + $className + ' (not found anywhere)')
         }
     }
 }
@@ -179,17 +214,19 @@ $classDeclarations = @{}
 
 foreach ($file in $files) {
     $content = Get-Content $file.FullName -Raw
+    $currentNamespace = $fileNamespaces[$file.FullName]
     
     # Find all class declarations (including static classes)
     $classDefs = [regex]::Matches($content, '(?:public|internal)\s+(?:static\s+)?(?:class|enum)\s+(\w+)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     
     foreach ($match in $classDefs) {
         $className = $match.Groups[1].Value
+        $classKey = "${currentNamespace}.${className}"
         
-        if ($classDeclarations.ContainsKey($className)) {
-            $duplicateClasses += "$className (found in: $($classDeclarations[$className]), $($file.Name))"
+        if ($classDeclarations.ContainsKey($classKey)) {
+            $duplicateClasses += "$className (found in: $($classDeclarations[$classKey]), $($file.Name)) - same namespace: $currentNamespace"
         } else {
-            $classDeclarations[$className] = $file.Name
+            $classDeclarations[$classKey] = $file.Name
         }
     }
 }
