@@ -193,19 +193,22 @@ function generatePropertyDeclaration(propType, propName, isOptional = '') {
     } else if (propType === 'string') {
         // Strings - initialize with empty string
         return propertyDeclaration + ' = string.Empty;\n';
-    } else if (propType === 'object') {
-        // Objects - initialize with null!
-        return propertyDeclaration + ' = null!;\n';
-    } else if (isOptional === '?') {
-        // Nullable types - initialize with null!
-        return propertyDeclaration + ' = null!;\n';
-    } else if (propType.match(/^[A-Z][a-zA-Z0-9]*$/) && !isBasicType(propType)) {
-        // Custom classes (starts with capital letter, not a basic type) - initialize with new()
-        return propertyDeclaration + ' = new();\n';
-    } else {
-        // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
-        return propertyDeclaration + '\n';
-    }
+        } else if (propType === 'object') {
+            // Objects - initialize with null!
+            return propertyDeclaration + ' = null!;\n';
+        } else if (isOptional === '?') {
+            // Nullable types - initialize with null!
+            return propertyDeclaration + ' = null!;\n';
+        } else if (isBasicType(propType)) {
+            // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
+            return propertyDeclaration + '\n';
+        } else if (propType === 'T') {
+            // Generic type parameter - initialize with default(T)!
+            return propertyDeclaration + ' = default(T)!;\n';
+        } else {
+            // Everything else (custom classes, generics, collections, etc.) - initialize with new()
+            return propertyDeclaration + ' = new();\n';
+        }
 }
 
 // Helper function to check if a type is a basic C# type
@@ -867,7 +870,7 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
         console.log('Preserving generic utility type: ' + typeName);
         const typeParams = typeAliasNode.typeParameters.map(p => p.name.text).join(', ');
         return 'public class ' + finalTypeName + '<' + typeParams + '>\n{\n' +
-               '    public T Value { get; set; }\n' +
+               generatePropertyDeclaration('T', 'Value', '') +
                '}\n';
     }
     
@@ -960,20 +963,20 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
             if (baseTypes.size === 1) {
                 const commonBase = Array.from(baseTypes)[0];
                 return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
-                       '    public ' + commonBase + ' Value { get; set; }\n' +
+                       generatePropertyDeclaration(commonBase, 'Value', '') +
                        '}\n';
             }
             
             // For complex unions with no common base, use object
             return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
-                   '    public object Value { get; set; }\n' +
+                   generatePropertyDeclaration('object', 'Value', '') +
                    '}\n';
         }
     }
     
     
     const convertedType = convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes, '', finalTypeName);
-    return 'public class ' + finalTypeName + '\n{\n    public ' + convertedType + ' Value { get; set; }\n}';
+    return 'public class ' + finalTypeName + '\n{\n' + generatePropertyDeclaration(convertedType, 'Value', '') + '}';
 }
 
 // Function to convert TypeScript enum to C# enum
@@ -2524,6 +2527,119 @@ foreach ($file in $allCSharpFiles) {
     if ($content -ne $originalContent) {
         Set-Content -Path $file.FullName -Value $content
         Write-Host "Applied Error->Exception mapping to: $($file.Name)" -ForegroundColor Cyan
+    }
+}
+
+# Analyze inheritance relationships and add 'new' keyword to properties that actually hide inherited members
+Write-Host "`n=== Analyzing inheritance relationships and adding 'new' keyword ===" -ForegroundColor Green
+
+# First pass: Build inheritance map
+$inheritanceMap = @{}
+$classProperties = @{}
+
+Write-Host "Building inheritance map..." -ForegroundColor Cyan
+
+foreach ($file in $allCSharpFiles) {
+    $content = Get-Content -Path $file.FullName -Raw
+    
+    # Find all class declarations and their inheritance relationships
+    $classMatches = [regex]::Matches($content, 'public\s+class\s+(\w+)(?:\s*:\s*(\w+))?')
+    
+    foreach ($match in $classMatches) {
+        $className = $match.Groups[1].Value
+        $baseClassName = $match.Groups[2].Value
+        
+        if ($baseClassName) {
+            $inheritanceMap[$className] = $baseClassName
+            Write-Host "Found inheritance: $className : $baseClassName" -ForegroundColor Gray
+        }
+        
+        # Find all properties in this class
+        # Extract class content by finding the matching closing brace
+        $classStart = $match.Index
+        $braceCount = 0
+        $inClass = $false
+        $classEnd = $classStart
+        
+        for ($i = $classStart; $i -lt $content.Length; $i++) {
+            $char = $content[$i]
+            if ($char -eq '{') {
+                $braceCount++
+                $inClass = $true
+            }
+            elseif ($char -eq '}') {
+                $braceCount--
+                if ($inClass -and $braceCount -eq 0) {
+                    $classEnd = $i + 1
+                    break
+                }
+            }
+        }
+        
+        if ($classEnd -le $classStart) { $classEnd = $content.Length }
+        
+        $classContent = $content.Substring($classStart, $classEnd - $classStart)
+        $propertyMatches = [regex]::Matches($classContent, 'public\s+([A-Za-z0-9_<>,\s?]+)\s+(\w+)\s*\{\s*get;\s*set;')
+        
+        $properties = @{}
+        foreach ($propMatch in $propertyMatches) {
+            $propType = $propMatch.Groups[1].Value.Trim()
+            $propName = $propMatch.Groups[2].Value
+            $properties[$propName] = $propType
+        }
+        
+        $classProperties[$className] = $properties
+    }
+}
+
+# Second pass: Find properties that actually hide inherited members and add 'new' keyword
+foreach ($file in $allCSharpFiles) {
+    $content = Get-Content -Path $file.FullName -Raw
+    $modified = $false
+    
+    # Find all class declarations in this file
+    $classMatches = [regex]::Matches($content, 'public\s+class\s+(\w+)(?:\s*:\s*(\w+))?')
+    
+    foreach ($match in $classMatches) {
+        $className = $match.Groups[1].Value
+        $baseClassName = $match.Groups[2].Value
+        
+        if ($baseClassName -and $inheritanceMap.ContainsKey($className)) {
+            # This class inherits from another class
+            $currentClassProps = $classProperties[$className]
+            $baseClassProps = $classProperties[$baseClassName]
+            
+            if ($currentClassProps -and $baseClassProps) {
+                # Check for property hiding
+                foreach ($propName in $currentClassProps.Keys) {
+                    if ($baseClassProps.ContainsKey($propName)) {
+                        # Property exists in both classes - this is hiding!
+                        $propType = $currentClassProps[$propName]
+                        
+                        # Create pattern to match this specific property declaration
+                        # Handle both nullable and non-nullable types, and with/without initialization
+                        # Escape special regex characters in property name and type
+                        $escapedPropName = [regex]::Escape($propName)
+                        $escapedPropType = [regex]::Escape($propType)
+                        $pattern = "(public\s+)($escapedPropType)(\s+$escapedPropName\s*\{[^}]*\}[^;]*;)"
+                        
+                        if ($content -match $pattern) {
+                            $replacement = '$1new $2$3'
+                            $newContent = $content -replace $pattern, $replacement
+                            if ($newContent -ne $content) {
+                                $content = $newContent
+                                $modified = $true
+                                Write-Host "Added 'new' keyword to $className.$propName (hides $baseClassName.$propName) in: $($file.Name)" -ForegroundColor Gray
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if ($modified) {
+        Set-Content -Path $file.FullName -Value $content -NoNewline
     }
 }
 
