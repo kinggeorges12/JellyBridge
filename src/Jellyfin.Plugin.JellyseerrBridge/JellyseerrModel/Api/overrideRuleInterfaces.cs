@@ -9,5 +9,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 public class OverrideRuleResultsResponse
 {
     public List<OverrideRule> Value { get; set; } = new();
+
 }
 

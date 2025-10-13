@@ -20,7 +20,8 @@
         'CacheResponseImageCache',
         'ImageCache',
         'DownloadTracker',
-        'Settings'
+        'Settings',
+        'UserSettings'
     )
     
     # Define input/output directory pairs for conversion

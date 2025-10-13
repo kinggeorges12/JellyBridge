@@ -116,5 +116,6 @@ public class UserSettingsNotificationsResponse
 public class NotificationAgentTypes
 {
     public Dictionary<NotificationAgentKey, int> Value { get; set; } = new();
+
 }
 

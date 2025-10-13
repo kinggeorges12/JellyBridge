@@ -31,12 +31,14 @@ public class PaginatedResponse
 public class NonFunctionPropertyNames<T>
 {
     public T Value { get; set; } = default(T)!;
+
 }
 
 
 public class NonFunctionProperties<T>
 {
     public T Value { get; set; } = default(T)!;
+
 }
 
 

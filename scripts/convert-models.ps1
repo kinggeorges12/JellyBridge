@@ -188,28 +188,33 @@ function toJsonPropertyName(str) {
 function generatePropertyDeclaration(propType, propName, isOptional = '') {
     const propertyDeclaration = '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }';
     
+    // Check if the property type is blocked
+    if (blockedClasses.includes(propType)) {
+        return '    // public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; } // BLOCKED TYPE\n\n';
+    }
+    
     // Add initialization based on property type
     if (propType.startsWith('List<')) {
         // Collections - initialize with empty list
-        return propertyDeclaration + ' = new();\n';
+        return propertyDeclaration + ' = new();\n\n';
     } else if (propType === 'string') {
         // Strings - initialize with empty string
-        return propertyDeclaration + ' = string.Empty;\n';
+        return propertyDeclaration + ' = string.Empty;\n\n';
         } else if (propType === 'object') {
             // Objects - initialize with null!
-            return propertyDeclaration + ' = null!;\n';
+            return propertyDeclaration + ' = null!;\n\n';
         } else if (isOptional === '?') {
             // Nullable types - initialize with null!
-            return propertyDeclaration + ' = null!;\n';
+            return propertyDeclaration + ' = null!;\n\n';
         } else if (isBasicType(propType)) {
             // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
-            return propertyDeclaration + '\n';
+            return propertyDeclaration + '\n\n';
         } else if (propType === 'T') {
             // Generic type parameter - initialize with default(T)!
-            return propertyDeclaration + ' = default(T)!;\n';
+            return propertyDeclaration + ' = default(T)!;\n\n';
         } else {
             // Everything else (custom classes, generics, collections, etc.) - initialize with new()
-            return propertyDeclaration + ' = new();\n';
+            return propertyDeclaration + ' = new();\n\n';
         }
 }
 
@@ -428,7 +433,8 @@ function isBasicType(typeName) {
                         }
                         
                         // Add JSON property attribute
-                        csharpCode += '    [JsonPropertyName("' + propertyName + '")]\n';
+                        const commentPrefix = blockedClasses.includes(csharpType) ? '    // ' : '    ';
+                        csharpCode += commentPrefix + '[JsonPropertyName("' + propertyName + '")]\n';
                         
                         // Add property declaration
                         csharpCode += generatePropertyDeclaration(csharpType, propertyName);
@@ -796,7 +802,7 @@ function convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes 
                 csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
             }
             
-            csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
+            csharpClass += generatePropertyDeclaration(propType, propName, isOptional);
         }
     });
     
@@ -837,7 +843,7 @@ function createIntersectionClass(className, intersectionTypes, sourceFile, missi
                             csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                         }
                         
-                        csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
+                        csharpClass += generatePropertyDeclaration(propType, propName, isOptional);
                     }
                 });
             }
@@ -872,7 +878,7 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
         console.log('Preserving generic utility type: ' + typeName);
         const typeParams = typeAliasNode.typeParameters.map(p => p.name.text).join(', ');
         return 'public class ' + finalTypeName + '<' + typeParams + '>\n{\n' +
-               generatePropertyDeclaration('T', 'Value', '') +
+               generatePropertyDeclaration('T', 'Value') +
                '}\n';
     }
     
@@ -894,7 +900,7 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
                     csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                 }
                 
-                csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
+                csharpClass += generatePropertyDeclaration(propType, propName, isOptional);
             }
         });
         
@@ -965,20 +971,20 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
             if (baseTypes.size === 1) {
                 const commonBase = Array.from(baseTypes)[0];
                 return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
-                       generatePropertyDeclaration(commonBase, 'Value', '') +
+                       generatePropertyDeclaration(commonBase, 'Value') +
                        '}\n';
             }
             
             // For complex unions with no common base, use object
             return tsDefinition + '\npublic class ' + finalTypeName + '\n{\n' +
-                   generatePropertyDeclaration('object', 'Value', '') +
+                   generatePropertyDeclaration('object', 'Value') +
                    '}\n';
         }
     }
     
     
     const convertedType = convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes, '', finalTypeName);
-    return 'public class ' + finalTypeName + '\n{\n' + generatePropertyDeclaration(convertedType, 'Value', '') + '}';
+    return 'public class ' + finalTypeName + '\n{\n' + generatePropertyDeclaration(convertedType, 'Value') + '}';
 }
 
 // Function to convert TypeScript enum to C# enum
@@ -1063,7 +1069,7 @@ function createAnonymousObjectClass(className, typeNode, sourceFile, missingType
                     csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                 }
                 
-                csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
+                csharpClass += generatePropertyDeclaration(propType, propName, isOptional);
             }
         });
     }
