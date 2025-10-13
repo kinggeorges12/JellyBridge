@@ -1527,7 +1527,19 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
             
             if (outputDir) {
                 console.log('Converting missing type ' + missingType + ' from ' + sourceFile);
-                convertFile(sourceFile, outputDir, 'Missing', missingTypes, blockedClasses);
+                
+                // Determine modelType based on output directory using directory pairs
+                let modelType = 'Entity'; // Default to Common namespace
+                
+                // Find matching directory pair to determine the correct type
+                for (const pair of directoryPairs) {
+                    if (outputDir === pair.output || outputDir.startsWith(pair.output + '/') || outputDir.startsWith(pair.output + '\\')) {
+                        modelType = pair.type;
+                        break;
+                    }
+                }
+                
+                convertFile(sourceFile, outputDir, modelType, missingTypes, blockedClasses);
             }
         } else {
             console.log('Could not find source file for missing type: ' + missingType);
