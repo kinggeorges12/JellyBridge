@@ -284,6 +284,128 @@ function toJsonPropertyName(str) {
 
 
         // Function to convert TypeScript file to C# using TypeScript compiler API
+        function convertTypeORMEntityToCSharp(node) {
+            console.log('Converting TypeORM entity:', node.name.text);
+            
+            let csharpCode = '';
+            const className = node.name.text;
+            
+            // Add class declaration
+            csharpCode += 'public class ' + className + '\n{\n';
+            
+            // Process class members
+            if (node.members) {
+                for (const member of node.members) {
+                    if (member.kind === ts.SyntaxKind.PropertyDeclaration) {
+                        const propertyName = member.name.text;
+                        const isOptional = member.questionToken !== undefined;
+                        
+                        // Get TypeORM decorators
+                        const decorators = member.decorators || [];
+                        let isPrimaryKey = false;
+                        let isColumn = false;
+                        let columnType = 'string';
+                        
+                        for (const decorator of decorators) {
+                            if (decorator.expression && decorator.expression.expression) {
+                                const decoratorName = decorator.expression.expression.text;
+                                if (decoratorName === 'PrimaryGeneratedColumn') {
+                                    isPrimaryKey = true;
+                                    isColumn = true;
+                                } else if (decoratorName === 'Column') {
+                                    isColumn = true;
+                                    // Try to extract column type from decorator arguments
+                                    if (decorator.expression.arguments && decorator.expression.arguments.length > 0) {
+                                        const arg = decorator.expression.arguments[0];
+                                        if (arg.properties) {
+                                            for (const prop of arg.properties) {
+                                                if (prop.name.text === 'type' && prop.initializer) {
+                                                    columnType = prop.initializer.text.replace(/['"]/g, '');
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Convert TypeScript type to C# type
+                        let csharpType = 'string'; // default
+                        if (member.type) {
+                            if (member.type.kind === ts.SyntaxKind.TypeReference) {
+                                const typeName = member.type.typeName.text;
+                                // Handle Promise<T> types - convert to nullable T
+                                if (typeName === 'Promise' && member.type.typeArguments && member.type.typeArguments.length > 0) {
+                                    const innerType = member.type.typeArguments[0];
+                                    if (innerType.kind === ts.SyntaxKind.TypeReference) {
+                                        csharpType = convertTypeScriptTypeToCSharp(innerType, '', missingTypes, propertyName, className) + '?';
+                                    } else if (innerType.kind === ts.SyntaxKind.NumberKeyword) {
+                                        csharpType = 'int?';
+                                    } else if (innerType.kind === ts.SyntaxKind.StringKeyword) {
+                                        csharpType = 'string?';
+                                    } else if (innerType.kind === ts.SyntaxKind.BooleanKeyword) {
+                                        csharpType = 'bool?';
+                                    }
+                                } else {
+                                    csharpType = convertTypeScriptTypeToCSharp(member.type, '', missingTypes, propertyName, className);
+                                }
+                            } else if (member.type.kind === ts.SyntaxKind.NumberKeyword) {
+                                csharpType = 'int';
+                            } else if (member.type.kind === ts.SyntaxKind.StringKeyword) {
+                                csharpType = 'string';
+                            } else if (member.type.kind === ts.SyntaxKind.BooleanKeyword) {
+                                csharpType = 'bool';
+                            } else if (member.type.kind === ts.SyntaxKind.UnionType) {
+                                // Handle union types (usually for optional properties)
+                                const unionTypes = member.type.types;
+                                if (unionTypes.length === 2 && unionTypes.some(t => t.kind === ts.SyntaxKind.NullKeyword)) {
+                                    const nonNullType = unionTypes.find(t => t.kind !== ts.SyntaxKind.NullKeyword);
+                                    if (nonNullType.kind === ts.SyntaxKind.TypeReference) {
+                                        csharpType = convertTypeScriptTypeToCSharp(nonNullType, '', missingTypes, propertyName, className) + '?';
+                                    } else if (nonNullType.kind === ts.SyntaxKind.NumberKeyword) {
+                                        csharpType = 'int?';
+                                    } else if (nonNullType.kind === ts.SyntaxKind.StringKeyword) {
+                                        csharpType = 'string?';
+                                    } else if (nonNullType.kind === ts.SyntaxKind.BooleanKeyword) {
+                                        csharpType = 'bool?';
+                                    }
+                                }
+                            } else if (member.type.kind === ts.SyntaxKind.ArrayType) {
+                                const elementType = member.type.elementType;
+                                if (elementType.kind === ts.SyntaxKind.TypeReference) {
+                                    csharpType = 'List<' + convertTypeScriptTypeToCSharp(elementType, '', missingTypes, propertyName, className) + '>';
+                                } else if (elementType.kind === ts.SyntaxKind.NumberKeyword) {
+                                    csharpType = 'List<int>';
+                                } else if (elementType.kind === ts.SyntaxKind.StringKeyword) {
+                                    csharpType = 'List<string>';
+                                } else if (elementType.kind === ts.SyntaxKind.BooleanKeyword) {
+                                    csharpType = 'List<bool>';
+                                }
+                            }
+                        }
+                        
+                        // Add JSON property attribute
+                        csharpCode += '    [JsonPropertyName("' + propertyName + '")]\n';
+                        
+                        // Add property declaration
+                        const propertyDeclaration = '    public ' + csharpType + ' ' + toPascalCase(propertyName) + ' { get; set; }';
+                        
+                        // Add initialization for collections
+                        if (csharpType.startsWith('List<')) {
+                            csharpCode += propertyDeclaration + ' = new();\n';
+                        } else {
+                            csharpCode += propertyDeclaration + '\n';
+                        }
+                        
+                        csharpCode += '\n';
+                    }
+                }
+            }
+            
+            csharpCode += '}\n';
+            return csharpCode;
+        }
+
         function convertFile(tsFilePath, outputDir, modelType, missingTypes = new Set(), blockedClasses = []) {
             try {
                 // Check if this file has already been converted (regardless of output directory)
@@ -434,7 +556,56 @@ function toJsonPropertyName(str) {
                     
                     // Process this interface
                     hasInterfaces = true;
-                    csharpCode += convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes) + '\n\n';
+                    
+                    // Check if this is a TypeORM entity class
+                    let isTypeORMEntity = false;
+                    if (interfaceNode.kind === ts.SyntaxKind.ClassDeclaration) {
+                        console.log('DEBUG: Processing class:', interfaceNode.name.text);
+                        console.log('DEBUG: Class has decorators:', interfaceNode.decorators ? interfaceNode.decorators.length : 0);
+                        
+                        // Check for @Entity decorator using regex on source code
+                        const className = interfaceNode.name.text;
+                        const entityRegex = new RegExp('@Entity\\(\\s*\\)\\s*\\n\\s*@.*\\n\\s*export\\s+class\\s+' + className, 'g');
+                        if (entityRegex.test(sourceCode)) {
+                            isTypeORMEntity = true;
+                            console.log('DEBUG: Found @Entity decorator via regex!');
+                        } else {
+                            // Try simpler pattern without additional decorators
+                            const simpleEntityRegex = new RegExp('@Entity\\(\\s*\\)\\s*\\n\\s*export\\s+class\\s+' + className, 'g');
+                            if (simpleEntityRegex.test(sourceCode)) {
+                                isTypeORMEntity = true;
+                                console.log('DEBUG: Found @Entity decorator via simple regex!');
+                            } else {
+                                // Try even simpler pattern
+                                const basicEntityRegex = new RegExp('@Entity\\(\\s*\\)\\s*.*class\\s+' + className, 'g');
+                                if (basicEntityRegex.test(sourceCode)) {
+                                    isTypeORMEntity = true;
+                                    console.log('DEBUG: Found @Entity decorator via basic regex!');
+                                }
+                            }
+                        }
+                        
+                        // Also check TypeScript compiler decorators as fallback
+                        if (!isTypeORMEntity && interfaceNode.decorators) {
+                            for (const decorator of interfaceNode.decorators) {
+                                console.log('DEBUG: Decorator:', decorator.expression ? decorator.expression.expression.text : 'unknown');
+                                if (decorator.expression && decorator.expression.expression && 
+                                    decorator.expression.expression.text === 'Entity') {
+                                    isTypeORMEntity = true;
+                                    console.log('DEBUG: Found @Entity decorator via TypeScript compiler!');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (isTypeORMEntity) {
+                        console.log('Detected TypeORM entity:', interfaceNode.name.text);
+                        csharpCode += convertTypeORMEntityToCSharp(interfaceNode) + '\n\n';
+                    } else {
+                        csharpCode += convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes) + '\n\n';
+                    }
+                    
                     generateUnionTypeEnums(interfaceNode, sourceFile);
                     processedInterfaces.add(interfaceNode.name.text);
                 }
@@ -495,6 +666,10 @@ function toJsonPropertyName(str) {
                 } else if (modelType === 'Entity') {
                     namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
                 }
+                
+                // TODO: Add cross-namespace using statements based on referenced types
+                // const crossNamespaceUsingStatements = generateCrossNamespaceUsingStatements(csharpCode, namespace);
+                // usingStatements += crossNamespaceUsingStatements;
                 
                 let fullCsharpCode = usingStatements + '\n' +
                                      'namespace ' + namespace + ';\n\n' +
@@ -598,19 +773,8 @@ function convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes 
         // Add comment explaining the Omit
         csharpClass += '\n    // TypeScript: ' + omitInfo.originalText + '\n';
         
-        // Extract omitted property names and make them nullable
-        if (omitInfo.omittedProps.kind === ts.SyntaxKind.LiteralType) {
-            const omittedPropName = omitInfo.omittedProps.literal.text;
-            csharpClass += '    public object? ' + toPascalCase(omittedPropName) + ' { get; set; } // Omitted from base type\n\n';
-        } else if (omitInfo.omittedProps.kind === ts.SyntaxKind.UnionType) {
-            // Handle union of omitted properties
-            omitInfo.omittedProps.types.forEach(typeNode => {
-                if (typeNode.kind === ts.SyntaxKind.LiteralType) {
-                    const omittedPropName = typeNode.literal.text;
-                    csharpClass += '    public object? ' + toPascalCase(omittedPropName) + ' { get; set; } // Omitted from base type\n\n';
-                }
-            });
-        }
+        // Note: Properties are omitted (not added back) to avoid hiding warnings
+        // The base class properties are inherited, omitted properties are excluded
     }
     
     csharpClass += '}';
@@ -1266,19 +1430,52 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
         if (sourceFile) {
             // Determine output directory based on source file location
             let outputDir = null;
-            for (const pair of directoryPairs) {
-                if (sourceFile.startsWith(pair.input)) {
-                    outputDir = pair.output;
-                    break;
-                }
-            }
             
-            // If not found in original directories, use Common directory to avoid duplicates
-            if (!outputDir) {
-                // Create Common directory path based on the first directory pair's parent
-                const firstPair = directoryPairs[0];
-                const parentDir = path.dirname(firstPair.output);
-                outputDir = path.join(parentDir, 'Common');
+            // First, check if this is a call from PowerShell with tempDirectoryPairs
+            // If so, use the output directory from the tempDirectoryPairs
+            if (directoryPairs.length === 1 && directoryPairs[0].input && directoryPairs[0].output) {
+                // This is likely a call from PowerShell with tempDirectoryPairs
+                outputDir = directoryPairs[0].output;
+                console.log('Using output directory from tempDirectoryPairs: ' + outputDir);
+            } else if (directoryPairs.length === 2 && directoryPairs[0].type === 'Server' && directoryPairs[1].type === 'Api') {
+                // This is the main conversion process - check if source file is an entity file
+                if (sourceFile.includes('server/entity/') || sourceFile.includes('server\\entity\\')) {
+                    // Entity files should go to Server directory
+                    outputDir = directoryPairs[0].output; // Server directory
+                    console.log('Entity file detected - using Server directory: ' + outputDir);
+                } else {
+                    // Use original logic for non-entity files
+                    for (const pair of directoryPairs) {
+                        if (sourceFile.startsWith(pair.input)) {
+                            outputDir = pair.output;
+                            break;
+                        }
+                    }
+                    
+                    // If not found in original directories, use Common directory to avoid duplicates
+                    if (!outputDir) {
+                        // Create Common directory path based on the first directory pair's parent
+                        const firstPair = directoryPairs[0];
+                        const parentDir = path.dirname(firstPair.output);
+                        outputDir = path.join(parentDir, 'Common');
+                    }
+                }
+            } else {
+                // Original logic for main conversion process
+                for (const pair of directoryPairs) {
+                    if (sourceFile.startsWith(pair.input)) {
+                        outputDir = pair.output;
+                        break;
+                    }
+                }
+                
+                // If not found in original directories, use Common directory to avoid duplicates
+                if (!outputDir) {
+                    // Create Common directory path based on the first directory pair's parent
+                    const firstPair = directoryPairs[0];
+                    const parentDir = path.dirname(firstPair.output);
+                    outputDir = path.join(parentDir, 'Common');
+                }
             }
             
             if (outputDir) {
@@ -1489,8 +1686,9 @@ function Convert-MissingEntityTypes {
             $apiNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api"
             $commonNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
             
-            if (($typeDefinedIn -contains $serverNamespace -and $typeReferencedIn -contains $apiNamespace) -or
-                ($typeDefinedIn -contains $apiNamespace -and $typeReferencedIn -contains $serverNamespace)) {
+            # Only move types to Common if they are truly shared (defined in multiple namespaces)
+            # Don't move types that are just referenced across namespaces - use using statements instead
+            if ($typeDefinedIn.Count -gt 1) {
                 Write-Host "Cross-namespace conflict detected for type: $typeRef" -ForegroundColor Yellow
                 Write-Host "  Defined in: $($typeDefinedIn -join ', ')" -ForegroundColor Yellow
                 Write-Host "  Referenced in: $($typeReferencedIn -join ', ')" -ForegroundColor Yellow
@@ -1645,6 +1843,16 @@ $typeDefinition
             continue
         }
         
+        # Only move types that are defined in multiple namespaces (truly shared types)
+        # Don't move types that are just referenced across namespaces - use using statements instead
+        $allConflictsForType = $crossNamespaceConflicts | Where-Object { $_.TypeName -eq $conflict.TypeName }
+        $definedNamespaces = $allConflictsForType | ForEach-Object { $_.DefinedIn } | Sort-Object | Get-Unique
+        
+        if ($definedNamespaces.Count -le 1) {
+            Write-Host "Skipping cross-namespace move for $($conflict.TypeName) - defined in single namespace, not shared type" -ForegroundColor Green
+            continue
+        }
+        
         Write-Host "Moving cross-namespace type: $($conflict.TypeName) from $($conflict.DefinedIn) to Common" -ForegroundColor Yellow
         
         # Extract the type definition from the defined file
@@ -1764,15 +1972,148 @@ $typeDefinition
                 
                 # Find corresponding file in entity or api directories
                 $sourceFile = $allSourceFiles | Where-Object { $_.BaseName -eq $missingType }
+                
+                # If not found by exact name, search for files that contain the missing type
+                if (-not $sourceFile) {
+                    foreach ($file in $allSourceFiles) {
+                        $content = Get-Content $file.FullName -Raw
+                        if ($content -match "enum\s+$missingType\b" -or $content -match "class\s+$missingType\b" -or $content -match "interface\s+$missingType\b") {
+                            # Check if this file contains other types that already exist in Common
+                            $skipFile = $false
+                            $allTypesInFile = @()
+                            
+                            # Extract all enum/class/interface names from the file
+                            $enumMatches = [regex]::Matches($content, "enum\s+(\w+)\b")
+                            $classMatches = [regex]::Matches($content, "class\s+(\w+)\b")
+                            $interfaceMatches = [regex]::Matches($content, "interface\s+(\w+)\b")
+                            
+                            foreach ($match in $enumMatches) { $allTypesInFile += $match.Groups[1].Value }
+                            foreach ($match in $classMatches) { $allTypesInFile += $match.Groups[1].Value }
+                            foreach ($match in $interfaceMatches) { $allTypesInFile += $match.Groups[1].Value }
+                            
+                            # Check if any of these types already exist in Common or Server
+                            foreach ($typeInFile in $allTypesInFile) {
+                                $commonTypeFile = Join-Path $OutputDir "Common\$typeInFile.cs"
+                                $serverTypeFile = Join-Path $OutputDir "Server\$typeInFile.cs"
+                                if ((Test-Path $commonTypeFile) -or (Test-Path $serverTypeFile)) {
+                                    $existingLocation = if (Test-Path $commonTypeFile) { "Common" } else { "Server" }
+                                    Write-Host "Skipping file $($file.Name) - contains type $typeInFile that already exists in $existingLocation" -ForegroundColor Yellow
+                                    $skipFile = $true
+                                    break
+                                }
+                            }
+                            
+                            if (-not $skipFile) {
+                                $sourceFile = $file
+                                Write-Host "Found $missingType in file: $($file.Name)" -ForegroundColor Cyan
+                                break
+                            }
+                        }
+                    }
+                }
+                
                 if ($sourceFile) {
                     Write-Host "Converting missing type: $($sourceFile.Name)" -ForegroundColor Cyan
                     
+                    # Determine correct output directory based on source file location
+                    $targetOutputDir = Join-Path $OutputDir "Common"  # Default to Common
+                    if ($sourceFile.FullName -like "*server/entity*" -or $sourceFile.FullName -like "*server\entity*") {
+                        $targetOutputDir = Join-Path $OutputDir "Server"
+                        Write-Host "  Entity class detected - writing to Server namespace" -ForegroundColor Cyan
+                    }
+                    
+                    # Skip types that already exist in the target directory
+                    $targetFile = Join-Path $targetOutputDir "$missingType.cs"
+                    if (Test-Path $targetFile) {
+                        Write-Host "Skipping $missingType - already exists in $targetOutputDir directory" -ForegroundColor Green
+                        continue
+                    }
+                    
+                    # Check if we need to extract only specific types from the file
+                    $content = Get-Content $sourceFile.FullName -Raw
+                    $allTypesInFile = @()
+                    
+                    # Extract all enum/class/interface names from the file
+                    $enumMatches = [regex]::Matches($content, "enum\s+(\w+)\b")
+                    $classMatches = [regex]::Matches($content, "class\s+(\w+)\b")
+                    $interfaceMatches = [regex]::Matches($content, "interface\s+(\w+)\b")
+                    
+                    foreach ($match in $enumMatches) { $allTypesInFile += $match.Groups[1].Value }
+                    foreach ($match in $classMatches) { $allTypesInFile += $match.Groups[1].Value }
+                    foreach ($match in $interfaceMatches) { $allTypesInFile += $match.Groups[1].Value }
+                    
+                    # Check if any of these types already exist in Common
+                    $typesToSkip = @()
+                    foreach ($typeInFile in $allTypesInFile) {
+                        $commonTypeFile = Join-Path $OutputDir "Common\$typeInFile.cs"
+                        if (Test-Path $commonTypeFile) {
+                            $typesToSkip += $typeInFile
+                        }
+                    }
+                    
+                    if ($typesToSkip.Count -gt 0) {
+                        Write-Host "File contains types that already exist in Common: $($typesToSkip -join ', ')" -ForegroundColor Yellow
+                        Write-Host "Will extract all missing types from file" -ForegroundColor Cyan
+                        
+                        # Create a temporary file with all missing types from the file
+                        $tempContent = ""
+                        $lines = $content -split "`n"
+                        $inTypeDefinition = $false
+                        $braceCount = 0
+                        $currentTypeName = ""
+                        
+                        foreach ($line in $lines) {
+                            # Check if this line starts a new type definition
+                            if ($line -match "export\s+(?:enum|class|interface)\s+(\w+)\b") {
+                                $typeName = $matches[1]
+                                
+                                # If we were in a previous type definition, end it
+                                if ($inTypeDefinition) {
+                                    $tempContent += $line + "`n"
+                                    $braceCount = ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count - ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                                    $currentTypeName = $typeName
+                                    continue
+                                }
+                                
+                                # Check if this type is missing (not in Common)
+                                $commonTypeFile = Join-Path $OutputDir "Common\$typeName.cs"
+                                if (-not (Test-Path $commonTypeFile)) {
+                                    $inTypeDefinition = $true
+                                    $currentTypeName = $typeName
+                                    $tempContent += $line + "`n"
+                                    $braceCount = ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count - ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                                    continue
+                                }
+                            }
+                            
+                            if ($inTypeDefinition) {
+                                $tempContent += $line + "`n"
+                                $braceCount += ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count
+                                $braceCount -= ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
+                                
+                                if ($braceCount -eq 0) {
+                                    $inTypeDefinition = $false
+                                    $currentTypeName = ""
+                                }
+                            }
+                        }
+                        
+                        # Create temporary file with all missing types
+                        $tempFile = Join-Path $env:TEMP "temp_$missingType.ts"
+                        $tempContent | Out-File -FilePath $tempFile -Encoding UTF8
+                        
+                        # Use the temporary file for conversion
+                        $sourceFile = Get-Item $tempFile
+                    }
+                    
                     # Create a temporary directory pair for conversion
+                    # Determine the correct type based on target directory
+                    $dirType = if ($targetOutputDir -like "*\Server" -or $targetOutputDir -like "*/Server") { "Server" } else { "Entity" }
                     $tempDirectoryPairs = @(
                         @{
                             input = $sourceFile.DirectoryName
-                            output = "$OutputDir/Common"
-                            type = "Entity"
+                            output = $targetOutputDir
+                            type = $dirType
                         }
                     )
                     
