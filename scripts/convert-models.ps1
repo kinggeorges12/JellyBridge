@@ -182,6 +182,42 @@ function toJsonPropertyName(str) {
     return cleanStr;
 }
 
+// Helper function to generate property declarations with proper initialization
+function generatePropertyDeclaration(propType, propName, isOptional = '') {
+    const propertyDeclaration = '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }';
+    
+    // Add initialization based on property type
+    if (propType.startsWith('List<')) {
+        // Collections - initialize with empty list
+        return propertyDeclaration + ' = new();\n';
+    } else if (propType === 'string') {
+        // Strings - initialize with empty string
+        return propertyDeclaration + ' = string.Empty;\n';
+    } else if (propType === 'object') {
+        // Objects - initialize with null!
+        return propertyDeclaration + ' = null!;\n';
+    } else if (isOptional === '?') {
+        // Nullable types - initialize with null!
+        return propertyDeclaration + ' = null!;\n';
+    } else if (propType.match(/^[A-Z][a-zA-Z0-9]*$/) && !isBasicType(propType)) {
+        // Custom classes (starts with capital letter, not a basic type) - initialize with new()
+        return propertyDeclaration + ' = new();\n';
+    } else {
+        // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
+        return propertyDeclaration + '\n';
+    }
+}
+
+// Helper function to check if a type is a basic C# type
+function isBasicType(typeName) {
+    const basicTypes = [
+        'int', 'long', 'short', 'byte', 'uint', 'ulong', 'ushort', 'sbyte',
+        'float', 'double', 'decimal', 'bool', 'char', 'Guid', 'TimeSpan',
+        'DateTime', 'DateTimeOffset', 'DateOnly', 'TimeOnly', 'object', 'string'
+    ];
+    return basicTypes.includes(typeName);
+}
+
         // Function to find source file for a missing class/type
         function findSourceFileForType(typeName, searchDirs) {
             for (const searchDir of searchDirs) {
@@ -390,16 +426,7 @@ function toJsonPropertyName(str) {
                         csharpCode += '    [JsonPropertyName("' + propertyName + '")]\n';
                         
                         // Add property declaration
-                        const propertyDeclaration = '    public ' + csharpType + ' ' + toPascalCase(propertyName) + ' { get; set; }';
-                        
-                        // Add initialization for collections
-                        if (csharpType.startsWith('List<')) {
-                            csharpCode += propertyDeclaration + ' = new();\n';
-                        } else {
-                            csharpCode += propertyDeclaration + '\n';
-                        }
-                        
-                        csharpCode += '\n';
+                        csharpCode += generatePropertyDeclaration(csharpType, propertyName);
                     }
                 }
             }
@@ -764,7 +791,7 @@ function convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes 
                 csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
             }
             
-            csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+            csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
         }
     });
     
@@ -805,7 +832,7 @@ function createIntersectionClass(className, intersectionTypes, sourceFile, missi
                             csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                         }
                         
-                        csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+                        csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
                     }
                 });
             }
@@ -862,7 +889,7 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
                     csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                 }
                 
-                csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+                csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
             }
         });
         
@@ -1031,7 +1058,7 @@ function createAnonymousObjectClass(className, typeNode, sourceFile, missingType
                     csharpClass += '    ' + global.unionTypeComments[commentKey] + '\n';
                 }
                 
-                csharpClass += '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }\n\n';
+                csharpClass += generatePropertyDeclaration(propType, propName, isOptional) + '\n';
             }
         });
     }
@@ -1477,6 +1504,7 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
         if (sourceFile) {
             // Determine output directory based on source file location
             let outputDir = null;
+            let isEntityFile = false;
             
             // First, check if this is a call from PowerShell with tempDirectoryPairs
             // If so, use the output directory from the tempDirectoryPairs
@@ -1489,6 +1517,7 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
                 if (sourceFile.includes('server/entity/') || sourceFile.includes('server\\entity\\')) {
                     // Entity files should go to Server directory
                     outputDir = directoryPairs[0].output; // Server directory
+                    isEntityFile = true;
                     console.log('Entity file detected - using Server directory: ' + outputDir);
                 } else {
                     // Use original logic for non-entity files
@@ -1531,11 +1560,16 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
                 // Determine modelType based on output directory using directory pairs
                 let modelType = 'Entity'; // Default to Common namespace
                 
-                // Find matching directory pair to determine the correct type
-                for (const pair of directoryPairs) {
-                    if (outputDir === pair.output || outputDir.startsWith(pair.output + '/') || outputDir.startsWith(pair.output + '\\')) {
-                        modelType = pair.type;
-                        break;
+                // If this is an entity file, use Server type
+                if (isEntityFile) {
+                    modelType = 'Server';
+                } else {
+                    // Find matching directory pair to determine the correct type
+                    for (const pair of directoryPairs) {
+                        if (outputDir === pair.output || outputDir.startsWith(pair.output + '/') || outputDir.startsWith(pair.output + '\\')) {
+                            modelType = pair.type;
+                            break;
+                        }
                     }
                 }
                 
