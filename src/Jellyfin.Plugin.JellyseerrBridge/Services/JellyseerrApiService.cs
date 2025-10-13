@@ -2,8 +2,12 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Linq;
+using System.Collections;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -12,35 +16,95 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
 /// <summary>
-/// Enumeration of Jellyseerr API endpoints.
+/// Service for interacting with the Jellyseerr API.
 /// </summary>
-public enum JellyseerrEndpoint
+public class JellyseerrApiService
 {
-    Status,
-    Requests,
-    Movies,
-    Shows,
-    User,
-    WatchRegions,
-    WatchNetworkMovies,
-    WatchNetworkTv
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<JellyseerrApiService> _logger;
+
+    public JellyseerrApiService(HttpClient httpClient, ILogger<JellyseerrApiService> logger)
+    {
+        _httpClient = httpClient;
+        _logger = logger;
 }
 
 /// <summary>
-/// Response type enumeration for API calls.
+    /// Endpoint configuration registry.
 /// </summary>
-public enum JellyseerrResponseType
-{
-    JsonList,
-    JsonObject,
-    PaginatedList,
-    RawContent
-}
+    private static readonly Dictionary<JellyseerrEndpoint, JellyseerrEndpointConfig> _endpointConfigs = new()
+    {
+        // Status endpoint - use actual JellyseerrModel.SystemStatus
+        [JellyseerrEndpoint.Status] = new JellyseerrEndpointConfig(
+            "/api/v1/status",
+            typeof(SystemStatus),
+            description: "Get Jellyseerr status"
+        ),
+        
+        // Request endpoints - use paginated response with JellyseerrRequest bridge model
+        [JellyseerrEndpoint.Requests] = new JellyseerrEndpointConfig(
+            "/api/v1/request",
+            typeof(JellyseerrPaginatedResponse<JellyseerrRequest>),
+            isPaginated: true,
+            description: "Get all requests"
+        ),
+        [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
+            "/api/v1/user",
+            typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
+            isPaginated: true,
+            description: "Get user list"
+        ),
+        [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
+            "/api/v1/user/{id}/requests",
+            typeof(JellyseerrPaginatedResponse<JellyseerrRequest>),
+            isPaginated: true,
+            requiresTemplateValues: true,
+            description: "Get user requests"
+        ),
+        
+        // Discover endpoints - use paginated response with bridge models
+        [JellyseerrEndpoint.DiscoverMovies] = new JellyseerrEndpointConfig(
+            "/api/v1/discover/movies",
+            typeof(JellyseerrPaginatedResponse<JellyseerrMovie>),
+            isPaginated: true,
+            description: "Discover movies"
+        ),
+        [JellyseerrEndpoint.DiscoverTv] = new JellyseerrEndpointConfig(
+            "/api/v1/discover/tv",
+            typeof(JellyseerrPaginatedResponse<JellyseerrShow>),
+            isPaginated: true,
+            description: "Discover TV shows"
+        ),
+        
+        // Auth endpoints - use user response
+        [JellyseerrEndpoint.AuthMe] = new JellyseerrEndpointConfig(
+            "/api/v1/auth/me",
+            typeof(JellyseerrUser),
+            description: "Get current user"
+        ),
+        
+        // Watch provider endpoints - use watch provider response
+        [JellyseerrEndpoint.WatchProvidersRegions] = new JellyseerrEndpointConfig(
+            "/api/v1/watchproviders/regions",
+            typeof(List<JellyseerrWatchRegion>),
+            description: "Get watch provider regions"
+        ),
+        [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(
+            "/api/v1/watchproviders/movies",
+            typeof(List<JellyseerrWatchNetwork>),
+            description: "Get movie watch providers"
+        ),
+        [JellyseerrEndpoint.WatchProvidersTv] = new JellyseerrEndpointConfig(
+            "/api/v1/watchproviders/tv",
+            typeof(List<JellyseerrWatchNetwork>),
+            description: "Get TV watch providers"
+        ),
+    };
 
 /// <summary>
-/// URL builder for Jellyseerr API endpoints.
+    /// Private URL builder for Jellyseerr API endpoints.
 /// </summary>
-public static class JellyseerrUrlBuilder
+    private static class JellyseerrUrlBuilder
 {
     /// <summary>
     /// Builds a complete URL for a Jellyseerr API endpoint.
@@ -48,6 +112,7 @@ public static class JellyseerrUrlBuilder
     /// <param name="baseUrl">The base Jellyseerr URL</param>
     /// <param name="endpoint">The API endpoint</param>
     /// <param name="parameters">Optional query parameters</param>
+            /// <param name="templateValues">Optional template values for URL placeholders</param>
     /// <returns>Complete URL string</returns>
     public static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
     {
@@ -86,6 +151,7 @@ public static class JellyseerrUrlBuilder
     /// <param name="apiKey">The API key</param>
     /// <param name="method">HTTP method (defaults to GET)</param>
     /// <param name="parameters">Optional query parameters</param>
+        /// <param name="templateValues">Optional template values for URL placeholders</param>
     /// <returns>Configured HttpRequestMessage</returns>
     public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
     {
@@ -93,258 +159,128 @@ public static class JellyseerrUrlBuilder
         var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
         requestMessage.Headers.Add("X-Api-Key", apiKey);
         return requestMessage;
+        }
     }
     
     /// <summary>
-    /// Gets the expected response type for a given endpoint.
+    /// Gets the configuration for a given endpoint.
     /// </summary>
-    /// <param name="endpoint">The endpoint enum</param>
-    /// <returns>Response type</returns>
-    public static JellyseerrResponseType GetResponseType(JellyseerrEndpoint endpoint)
+    private static JellyseerrEndpointConfig GetConfig(JellyseerrEndpoint endpoint)
     {
-        return endpoint switch
-        {
-            JellyseerrEndpoint.Status => JellyseerrResponseType.RawContent,
-            JellyseerrEndpoint.Requests => JellyseerrResponseType.PaginatedList,
-            JellyseerrEndpoint.Movies => JellyseerrResponseType.PaginatedList,
-            JellyseerrEndpoint.Shows => JellyseerrResponseType.PaginatedList,
-            JellyseerrEndpoint.User => JellyseerrResponseType.JsonObject,
-            JellyseerrEndpoint.WatchRegions => JellyseerrResponseType.JsonList,
-            JellyseerrEndpoint.WatchNetworkMovies => JellyseerrResponseType.JsonList,
-            JellyseerrEndpoint.WatchNetworkTv => JellyseerrResponseType.JsonList,
-            _ => JellyseerrResponseType.RawContent
-        };
+        return _endpointConfigs.TryGetValue(endpoint, out var config) 
+            ? config 
+            : new JellyseerrEndpointConfig("/", typeof(object), description: "Unknown endpoint");
     }
     
     /// <summary>
     /// Gets the API path for a given endpoint.
     /// </summary>
-    /// <param name="endpoint">The endpoint enum</param>
-    /// <returns>API path string</returns>
     private static string GetEndpointPath(JellyseerrEndpoint endpoint)
     {
-        return endpoint switch
-        {
-            JellyseerrEndpoint.Status => "/api/v1/status",
-            JellyseerrEndpoint.Requests => "/api/v1/request",
-            JellyseerrEndpoint.Movies => "/api/v1/discover/movies",
-            JellyseerrEndpoint.Shows => "/api/v1/discover/tv",
-            JellyseerrEndpoint.User => "/api/v1/auth/me",
-            JellyseerrEndpoint.WatchRegions => "/api/v1/watchproviders/regions",
-            JellyseerrEndpoint.WatchNetworkMovies => "/api/v1/watchproviders/movies",
-            JellyseerrEndpoint.WatchNetworkTv => "/api/v1/watchproviders/tv",
-            _ => throw new ArgumentException($"Unknown endpoint: {endpoint}")
-        };
-    }
+        return GetConfig(endpoint).Path;
 }
 
 /// <summary>
-/// Service for interacting with the Jellyseerr API.
+    /// Gets the response type for a given endpoint.
 /// </summary>
-public class JellyseerrApiService
-{
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<JellyseerrApiService> _logger;
-
-
-    public JellyseerrApiService(HttpClient httpClient, ILogger<JellyseerrApiService> logger)
+    private static JellyseerrResponseType GetResponseType(JellyseerrEndpoint endpoint)
     {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
-    /// <summary>
-    /// Makes a typed API call to Jellyseerr with automatic response handling.
-    /// </summary>
-    /// <typeparam name="T">The expected return type</typeparam>
-    /// <param name="endpoint">The API endpoint</param>
-    /// <param name="config">Plugin configuration</param>
-    /// <param name="parameters">Optional query parameters</param>
-    /// <param name="templateValues">Optional template values for URL path placeholders</param>
-    /// <param name="operationName">Name for logging purposes</param>
-    /// <returns>Deserialized response or default value</returns>
-    public async Task<T> MakeTypedApiCallAsync<T>(JellyseerrEndpoint endpoint, PluginConfiguration? config = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null, string operationName = "data")
-    {
-        try
+        return endpoint switch
         {
-            // Use default plugin config if none provided
-            config ??= Plugin.GetConfiguration();
+            // Status endpoint
+            JellyseerrEndpoint.Status => JellyseerrResponseType.StatusResponse,
             
-            _logger.LogInformation("Making API call for {Operation} to endpoint: {Endpoint}", operationName, endpoint);
-            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters, templateValues: templateValues);
-            _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
+            // Request endpoints
+            JellyseerrEndpoint.Requests => JellyseerrResponseType.RequestResponse,
+            JellyseerrEndpoint.UserRequests => JellyseerrResponseType.RequestResponse,
             
-            var content = await MakeApiRequestAsync(requestMessage, config);
+            // User endpoints
+            JellyseerrEndpoint.UserList => JellyseerrResponseType.UserResponse,
+            JellyseerrEndpoint.AuthMe => JellyseerrResponseType.UserResponse,
             
-            if (content == null)
-            {
-                _logger.LogWarning("Null content received for {Operation}", operationName);
-                return GetDefaultValue<T>();
-            }
+            // Discover endpoints
+            JellyseerrEndpoint.DiscoverMovies => JellyseerrResponseType.DiscoverResponse,
+            JellyseerrEndpoint.DiscoverTv => JellyseerrResponseType.DiscoverResponse,
             
-            // Handle empty response
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                _logger.LogInformation("Empty response received for {Operation}", operationName);
-                return GetDefaultValue<T>();
-            }
+            // Watch provider endpoints
+            JellyseerrEndpoint.WatchProvidersRegions => JellyseerrResponseType.WatchProviderResponse,
+            JellyseerrEndpoint.WatchProvidersMovies => JellyseerrResponseType.WatchProviderResponse,
+            JellyseerrEndpoint.WatchProvidersTv => JellyseerrResponseType.WatchProviderResponse,
             
-            _logger.LogDebug("Received content for {Operation}, length: {Length}", operationName, content.Length);
-            
-            var responseType = JellyseerrUrlBuilder.GetResponseType(endpoint);
-            
-            return responseType switch
-            {
-                JellyseerrResponseType.JsonList => DeserializeJsonList<T>(content, operationName),
-                JellyseerrResponseType.JsonObject => DeserializeJsonObject<T>(content, operationName),
-                JellyseerrResponseType.PaginatedList => DeserializePaginatedList<T>(content, operationName),
-                JellyseerrResponseType.RawContent => GetDefaultValue<T>(),
-                _ => GetDefaultValue<T>()
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get {Operation} from Jellyseerr", operationName);
-            return GetDefaultValue<T>();
-        }
+            _ => throw new ArgumentException($"Unknown endpoint: {endpoint}")
+        };
     }
     
     /// <summary>
-    /// Generic pagination helper that fetches all pages for any endpoint.
+    /// Gets the HTTP method for a given endpoint.
     /// </summary>
-    private async Task<List<T>> FetchAllPagesAsync<T>(JellyseerrEndpoint endpoint, Dictionary<string, string> baseParameters, string operationName)
+    private static HttpMethod GetHttpMethod(JellyseerrEndpoint endpoint)
     {
-        var allItems = new List<T>();
-        var config = Plugin.GetConfiguration();
-        var maxPages = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config) ?? int.MaxValue;
+        return GetConfig(endpoint).Method;
+    }
+    
+    /// <summary>
+    /// Gets the request model type for a given endpoint.
+    /// </summary>
+    private static Type? GetRequestModel(JellyseerrEndpoint endpoint)
+    {
+        return GetConfig(endpoint).RequestModel;
+    }
+    
+    /// <summary>
+    /// Validates that a request model matches the expected type for an endpoint.
+    /// </summary>
+    private static bool ValidateRequestType<TRequest>(JellyseerrEndpoint endpoint)
+    {
+        var expectedType = GetRequestModel(endpoint);
+        return expectedType == null || typeof(TRequest).IsAssignableFrom(expectedType);
+    }
+    
+    /// <summary>
+    /// Validates that a response model matches the expected type for an endpoint.
+    /// </summary>
+    private static bool ValidateResponseType<TResponse>(JellyseerrEndpoint endpoint)
+    {
+        var expectedType = GetConfig(endpoint).ResponseModel;
+        return typeof(TResponse).IsAssignableFrom(expectedType);
+    }
 
-        for (int page = 1; page <= maxPages; page++)
+
+    
+    /// <summary>
+    /// Extracts items from a response based on the endpoint configuration.
+    /// Now handles unified JellyseerrPaginatedResponse structure for all endpoints.
+    /// </summary>
+    private List<object> ExtractItemsFromResponse(object response, JellyseerrEndpointConfig endpointConfig)
+    {
+        var items = new List<object>();
+        
+        // Use reflection to extract items from the response
+        var responseType = response.GetType();
+        
+        // Check for paginated response pattern (Results property)
+        var resultsProperty = responseType.GetProperty("Results");
+        if (resultsProperty != null)
         {
-            _logger.LogInformation("Fetching {Operation} page {Page}", operationName, page);
-            
-            var parameters = new Dictionary<string, string>(baseParameters)
+            var results = resultsProperty.GetValue(response);
+            if (results is IEnumerable<object> enumerable)
             {
-                { "page", page.ToString() }
-            };
-            
-            var paginatedResponse = await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<T>>(endpoint, parameters: parameters, operationName: operationName);
-            var items = paginatedResponse?.Results ?? new List<T>();
-            
-            if (items.Count == 0)
-                break;
-                
-            allItems.AddRange(items);
+                items.AddRange(enumerable);
+            }
         }
         
-        _logger.LogInformation("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, Math.Min(maxPages, allItems.Count > 0 ? maxPages : 0));
-        return allItems;
-    }
-    
-    /// <summary>
-    /// Deserializes JSON list response.
-    /// </summary>
-    private T DeserializeJsonList<T>(string content, string operationName)
-    {
-        _logger.LogInformation("Attempting to deserialize {Operation} JSON. Content length: {Length}", operationName, content?.Length ?? 0);
-        _logger.LogDebug("JSON Content preview (first 200 chars): {Preview}", content?.Length > 200 ? content.Substring(0, 200) + "..." : content);
+        // If no Results property, check if the response itself is a list
+        if (items.Count == 0 && response is IEnumerable<object> directEnumerable)
+        {
+            items.AddRange(directEnumerable);
+        }
         
-        try
-        {
-            // Get the element type from List<T>
-            var elementType = typeof(T).GetGenericArguments()[0];
-            
-            // Deserialize as array of the element type
-            var arrayType = elementType.MakeArrayType();
-            
-            if (string.IsNullOrEmpty(content))
-            {
-                _logger.LogWarning("Empty or null content provided for {Operation}", operationName);
-                return default(T)!;
-            }
-            
-            var deserializedArray = JsonSerializer.Deserialize(content, arrayType);
-            
-            // Convert array to List<T>
-            var listType = typeof(List<>).MakeGenericType(elementType);
-            var list = Activator.CreateInstance(listType);
-            var addMethod = listType.GetMethod("Add");
-            
-            if (deserializedArray is Array array)
-            {
-                foreach (var item in array)
-                {
-                    addMethod?.Invoke(list, new[] { item });
-                }
-            }
-            
-            _logger.LogInformation("Successfully deserialized {Count} {Operation} items", ((System.Collections.ICollection)list!).Count, operationName);
-            
-            if (((System.Collections.ICollection)list!).Count > 0)
-            {
-                var firstItem = ((System.Collections.IList)list)[0];
-                _logger.LogDebug("First item type: {Type}, First item: {FirstItem}", elementType.Name, firstItem);
-            }
-            
-            return (T)list!;
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogError(jsonEx, "JSON deserialization failed for {Operation}. Error: {Error}", operationName, jsonEx.Message);
-            _logger.LogError("JSON Path: {Path}, Line: {Line}, Position: {Position}", jsonEx.Path, jsonEx.LineNumber, jsonEx.BytePositionInLine);
-            _logger.LogError("Full JSON content: {Content}", content);
-            return GetDefaultValue<T>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during {Operation} deserialization: {Error}", operationName, ex.Message);
-            _logger.LogError("Full JSON content: {Content}", content);
-            return GetDefaultValue<T>();
-        }
+        return items;
     }
     
-    /// <summary>
-    /// Deserializes JSON object response.
-    /// </summary>
-    private T DeserializeJsonObject<T>(string content, string operationName)
-    {
-        try
-        {
-            var item = JsonSerializer.Deserialize<T>(content);
-            
-            _logger.LogInformation("Retrieved {Operation} from Jellyseerr", operationName);
-            return item ?? GetDefaultValue<T>();
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
-            return GetDefaultValue<T>();
-        }
-    }
     
-    /// <summary>
-    /// Deserializes paginated list response.
-    /// </summary>
-    private T DeserializePaginatedList<T>(string content, string operationName)
-    {
-        try
-        {
-            // Deserialize the entire paginated response as the expected type
-            var paginatedResponse = JsonSerializer.Deserialize<T>(content);
-            
-            _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
-            return paginatedResponse ?? GetDefaultValue<T>();
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} JSON. Content: {Content}", operationName, content);
-            return GetDefaultValue<T>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deserializing {Operation} JSON", operationName);
-            return GetDefaultValue<T>();
-        }
-    }
+    
+    
     
     /// <summary>
     /// Gets the default value for type T.
@@ -479,741 +415,245 @@ public class JellyseerrApiService
         throw lastException ?? new InvalidOperationException("All retry attempts failed");
     }
 
+    #region Generic Factory Method - Handles All Endpoints
+
     /// <summary>
-    /// Test connection to Jellyseerr API.
+    /// Generic factory method that handles all endpoints uniformly.
+    /// Takes endpoint type and optional config, then handles everything internally including endpoint-specific logic.
+    /// Returns the correct type directly based on the endpoint - no casting needed by calling functions.
     /// </summary>
-    public async Task<bool> TestConnectionAsync(PluginConfiguration config)
+    /// <param name="endpoint">The endpoint to call</param>
+    /// <param name="config">Optional plugin configuration (uses default if not provided)</param>
+    /// <returns>The response in the correct type for the endpoint</returns>
+    public async Task<object> CallEndpointAsync(
+        JellyseerrEndpoint endpoint, 
+        PluginConfiguration? config = null)
     {
         try
         {
-            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, JellyseerrEndpoint.Status, config.ApiKey);
+            // Use default plugin config if none provided
+            config ??= Plugin.GetConfiguration();
+            
+            // Get endpoint configuration
+            var endpointConfig = GetConfig(endpoint);
+            var operationName = endpoint.ToString();
+            
+            _logger.LogInformation("Making API call to endpoint: {Endpoint}", endpoint);
+            
+            // Handle endpoint-specific logic
+            var (requestModel, parameters) = HandleEndpointSpecificLogic(endpoint, config);
+            
+            // Extract template values from request model
+            var templateValues = requestModel?.GetTemplateValues();
+            
+            // Build the request URL
+            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters, templateValues: templateValues);
+            _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
+            
+            // Make the API request
             var content = await MakeApiRequestAsync(requestMessage, config);
             
             if (content == null)
             {
-                return false;
+                _logger.LogWarning("No content received for {Operation}", operationName);
+                return GetDefaultValueForEndpoint(endpoint);
             }
-
-            _logger.LogInformation("Successfully connected to Jellyseerr API");
-            return true;
+            
+            // Determine response type and deserialize
+            var responseType = GetResponseType(endpoint);
+            var response = DeserializeResponseByType(content, responseType, operationName);
+            
+            // Handle pagination if needed
+            if (endpointConfig.IsPaginated && response != null)
+            {
+                var maxPages = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config) ?? int.MaxValue;
+                
+                // Get the item type from the paginated response model
+                var responseModelType = endpointConfig.ResponseModel;
+                var itemType = responseModelType.GetGenericArguments()[0]; // Get T from JellyseerrPaginatedResponse<T>
+                var listType = typeof(List<>).MakeGenericType(itemType);
+                var allItems = (IList)Activator.CreateInstance(listType)!;
+                
+                // Use do-while loop to fetch all pages starting from page 1
+                int page = 1;
+                do
+                {
+                    _logger.LogInformation("Fetching {Operation} page {Page}", operationName, page);
+                    
+                    // Add page parameter to request model
+                    var pageRequestModel = AddPageToRequestModel(requestModel, page);
+                    var pageParameters = ConvertRequestModelToParameters(pageRequestModel);
+                    
+                    var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
+                    var pageContent = await MakeApiRequestAsync(pageRequestMessage, config);
+                    
+                    if (pageContent == null) break;
+                    
+                    var pageResponse = DeserializeResponseByType(pageContent, responseType, operationName);
+                    if (pageResponse == null) break;
+                    
+                    var pageItems = ExtractItemsFromResponse(pageResponse, endpointConfig);
+                    if (pageItems.Count == 0) break;
+                    
+                    // Add items to the typed list
+                    foreach (var item in pageItems)
+                    {
+                        allItems.Add(item);
+                    }
+                    page++;
+                } while (page <= maxPages);
+                
+                _logger.LogInformation("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, page - 1);
+                
+                // Return the typed list directly
+                return allItems;
+            }
+            
+            return response ?? GetDefaultValueForEndpoint(endpoint);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to connect to Jellyseerr API");
-            return false;
+            _logger.LogError(ex, "Failed to get {Operation} from Jellyseerr", endpoint);
+            return GetDefaultValueForEndpoint(endpoint);
         }
     }
 
-    /// <summary>
-    /// Get all requests from Jellyseerr.
-    /// </summary>
-    public async Task<JellyseerrPaginatedResponse<JellyseerrRequest>> GetRequestsAsync()
-    {
-        return await MakeTypedApiCallAsync<JellyseerrPaginatedResponse<JellyseerrRequest>>(JellyseerrEndpoint.Requests, operationName: "requests");
-    }
+    #endregion
+
+    #region Factory Helper Methods
 
     /// <summary>
-    /// Get watch networks from Jellyseerr for a specific region.
+    /// Handles endpoint-specific logic including request model creation and parameters.
+    /// Template values are extracted from the request model itself.
     /// </summary>
-    public async Task<List<JellyseerrWatchNetwork>> GetNetworksAsync(string? region = null)
+    private (IJellyseerrRequest? requestModel, Dictionary<string, string>? parameters) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
     {
-        region ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region));
-        _logger.LogInformation("Making API call to get networks for region {Region}", region);
-        var parameters = new Dictionary<string, string> 
-        { 
-            { "watchRegion", region }
+        return endpoint switch
+        {
+            // Discover endpoints - no request model needed for GET requests
+            JellyseerrEndpoint.DiscoverMovies => (null, null),
+            JellyseerrEndpoint.DiscoverTv => (null, null),
+            
+            // Watch providers endpoints - use region parameter
+            JellyseerrEndpoint.WatchProvidersMovies => (
+                null,
+                new Dictionary<string, string> { ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) ?? "US" }
+            ),
+            JellyseerrEndpoint.WatchProvidersTv => (
+                null,
+                new Dictionary<string, string> { ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) ?? "US" }
+            ),
+            
+            // User requests endpoint - create request model with user ID
+            JellyseerrEndpoint.UserRequests => (
+                null,
+                new Dictionary<string, string> { ["id"] = (config.UserId ?? 1).ToString() }
+            ),
+            
+            // All other endpoints don't need request models or parameters
+            _ => (null, null)
         };
-        
-        // Get both movie and TV networks and combine them
-        var movieTask = MakeTypedApiCallAsync<List<JellyseerrWatchNetwork>>(JellyseerrEndpoint.WatchNetworkMovies, parameters: parameters, operationName: "movie watch networks");
-        var tvTask = MakeTypedApiCallAsync<List<JellyseerrWatchNetwork>>(JellyseerrEndpoint.WatchNetworkTv, parameters: parameters, operationName: "TV watch networks");
-        
-        await Task.WhenAll(movieTask, tvTask);
-        var movieNetworks = await movieTask;
-        var tvNetworks = await tvTask;
-        
-        // Combine and deduplicate networks
-        var allNetworks = new List<JellyseerrWatchNetwork>();
-        var seenIds = new HashSet<int>();
-        
-        foreach (var network in movieNetworks.Concat(tvNetworks))
-        {
-            if (seenIds.Add(network.Id))
-            {
-                allNetworks.Add(network);
-            }
-        }
-        
-        _logger.LogInformation("Retrieved {Count} unique networks for region {Region}", allNetworks.Count, region);
-        return allNetworks;
     }
 
 
+/// <summary>
+    /// Converts request model to parameters dictionary.
+/// </summary>
+    private Dictionary<string, string>? ConvertRequestModelToParameters(IJellyseerrRequest? requestModel)
+    {
+        // No request models currently supported for parameter conversion
+        return null;
+}
+
+/// <summary>
+    /// Deserializes response based on response type.
+/// </summary>
+    private object? DeserializeResponseByType(string content, JellyseerrResponseType responseType, string operationName)
+    {
+        // All responses should be handled uniformly using paginated response
+        return DeserializePaginatedResponse<object>(content, operationName);
+    }
 
     /// <summary>
-    /// Get all movies from Jellyseerr for all active networks (handles pagination automatically).
+    /// Deserializes all responses uniformly using paginated response.
     /// </summary>
-    public async Task<List<JellyseerrMovie>> GetAllMoviesAsync()
+    private T DeserializePaginatedResponse<T>(string content, string operationName)
     {
-        var allMovies = new List<JellyseerrMovie>();
-        var config = Plugin.GetConfiguration();
-        
-        // Get network ID-to-name mapping
-        var networkDict = config.GetNetworkMapDictionary();
-        
-        // Loop through each active network
-        foreach (var networkId in networkDict.Keys)
+        try
         {
-            if (networkDict.TryGetValue(networkId, out var networkName))
-            {
-                _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                
-                var baseParameters = new Dictionary<string, string>
+            // All responses should be deserialized as paginated responses
+            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse<T>>(content);
+            
+            _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
+            return paginatedResponse != null ? (T)(object)paginatedResponse : GetDefaultValue<T>();
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} paginated response JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deserializing {Operation} paginated response JSON", operationName);
+            return GetDefaultValue<T>();
+        }
+}
+
+/// <summary>
+    /// Gets default value for endpoint based on expected response type.
+/// </summary>
+    private object GetDefaultValueForEndpoint(JellyseerrEndpoint endpoint)
+    {
+        var endpointConfig = GetConfig(endpoint);
+        var responseModelType = endpointConfig.ResponseModel;
+        
+        if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            return Activator.CreateInstance(responseModelType) ?? new List<object>();
+        }
+        
+        return Activator.CreateInstance(responseModelType) ?? new object();
+}
+
+/// <summary>
+    /// Converts items to expected type for endpoint.
+/// </summary>
+    private object ConvertToExpectedTypeForEndpoint(JellyseerrEndpoint endpoint, List<object> allItems)
+    {
+        var endpointConfig = GetConfig(endpoint);
+        var responseModelType = endpointConfig.ResponseModel;
+
+        if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
+    {
+            var itemType = responseModelType.GetGenericArguments()[0];
+            var listType = typeof(List<>).MakeGenericType(itemType);
+            var result = Activator.CreateInstance(listType);
+
+            foreach (var item in allItems)
+        {
+                if (item.GetType() == itemType || item.GetType().IsSubclassOf(itemType))
                 {
-                    { "watchProviders", networkId.ToString() }
-                };
-                
-                var networkMovies = await FetchAllPagesAsync<JellyseerrMovie>(
-                    JellyseerrEndpoint.Movies,
-                    baseParameters,
-                    $"movies for {networkName}"
-                );
-                
-                allMovies.AddRange(networkMovies);
-                _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", networkMovies.Count, networkName);
-            }
-            else
-            {
-                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-            }
-        }
-        
-        return allMovies;
-    }
-
-
-
-
-
-    /// <summary>
-    /// Get all TV shows from Jellyseerr for all active networks (handles pagination automatically).
-    /// </summary>
-    public async Task<List<JellyseerrShow>> GetAllShowsAsync()
-    {
-        var allShows = new List<JellyseerrShow>();
-        var config = Plugin.GetConfiguration();
-        
-        // Get network ID-to-name mapping
-        var networkDict = config.GetNetworkMapDictionary();
-        
-        // Loop through each active network
-        foreach (var networkId in networkDict.Keys)
-        {
-            if (networkDict.TryGetValue(networkId, out var networkName))
-            {
-                _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                
-                var baseParameters = new Dictionary<string, string>
-                {
-                    { "watchProviders", networkId.ToString() }
-                };
-                
-                var networkShows = await FetchAllPagesAsync<JellyseerrShow>(
-                    JellyseerrEndpoint.Shows,
-                    baseParameters,
-                    $"Shows for {networkName}"
-                );
-                
-                allShows.AddRange(networkShows);
-                _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", networkShows.Count, networkName);
-            }
-            else
-            {
-                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-            }
-        }
-        
-        return allShows;
-    }
-
-    /// <summary>
-    /// Get user information.
-    /// </summary>
-    public async Task<JellyseerrUser?> GetUserAsync(PluginConfiguration config)
-    {
-        return await MakeTypedApiCallAsync<JellyseerrUser?>(JellyseerrEndpoint.User, config, operationName: "user info");
-    }
-
-    /// <summary>
-    /// Get watch network regions from Jellyseerr.
-    /// </summary>
-    public async Task<List<JellyseerrWatchRegion>> GetWatchRegionsAsync()
-    {
-        var regions = await MakeTypedApiCallAsync<List<JellyseerrWatchRegion>>(JellyseerrEndpoint.WatchRegions, operationName: "watch regions");
-        
-        return regions ?? new List<JellyseerrWatchRegion>();
-    }
-
-
-}
-
-/// <summary>
-/// Jellyseerr request model.
-/// </summary>
-public class JellyseerrRequest
-{
-    public int Id { get; set; }
-    public int Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public bool Is4k { get; set; }
-    public int? ServerId { get; set; }
-    public int? ProfileId { get; set; }
-    public string? RootFolder { get; set; }
-    public int? LanguageProfileId { get; set; }
-    public List<string>? Tags { get; set; }
-    public bool IsAutoRequest { get; set; }
-    public JellyseerrRequestMedia? Media { get; set; }
-    public List<JellyseerrRequestSeason>? Seasons { get; set; }
-    public JellyseerrUser? ModifiedBy { get; set; }
-    public JellyseerrUser? RequestedBy { get; set; }
-    public int SeasonCount { get; set; }
-    public bool CanRemove { get; set; }
-}
-
-/// <summary>
-/// Jellyseerr request season model.
-/// </summary>
-public class JellyseerrRequestSeason
-{
-    public int Id { get; set; }
-    public int SeasonNumber { get; set; }
-    public int Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-/// <summary>
-/// Jellyseerr request media model.
-/// </summary>
-public class JellyseerrRequestMedia
-{
-    public List<object> DownloadStatus { get; set; } = new();
-    public List<object> DownloadStatus4k { get; set; } = new();
-    public int Id { get; set; }
-    public string MediaType { get; set; } = string.Empty;
-    public int TmdbId { get; set; }
-    public int? TvdbId { get; set; }
-    public string? ImdbId { get; set; }
-    public int Status { get; set; }
-    public int Status4k { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public DateTime? LastSeasonChange { get; set; }
-    public DateTime? MediaAddedAt { get; set; }
-    public int ServiceId { get; set; }
-    public int? ServiceId4k { get; set; }
-    public int ExternalServiceId { get; set; }
-    public int? ExternalServiceId4k { get; set; }
-    public string ExternalServiceSlug { get; set; } = string.Empty;
-    public string? ExternalServiceSlug4k { get; set; }
-    public string? RatingKey { get; set; }
-    public string? RatingKey4k { get; set; }
-    public string? JellyfinMediaId { get; set; }
-    public string? JellyfinMediaId4k { get; set; }
-    public string? MediaUrl { get; set; }
-    public string? ServiceUrl { get; set; }
-}
-
-/// <summary>
-/// Paginated response wrapper for Jellyseerr API responses.
-/// </summary>
-public class JellyseerrPaginatedResponse<T>
-{
-    [JsonPropertyName("page")]
-    public int Page { get; set; }
-    
-    [JsonPropertyName("totalPages")]
-    public int TotalPages { get; set; }
-    
-    [JsonPropertyName("totalResults")]
-    public int TotalResults { get; set; }
-    
-    [JsonPropertyName("keywords")]
-    public List<object> Keywords { get; set; } = new();
-    
-    [JsonPropertyName("results")]
-    public List<T> Results { get; set; } = new();
-}
-
-/// <summary>
-/// Base class for Jellyseerr objects with common properties.
-/// </summary>
-public abstract class JellyseerrItem
-{
-    /// <summary>
-    /// Gets the type of the Jellyseerr object.
-    /// </summary>
-    public abstract string Type { get; }
-}
-
-/// <summary>
-/// Jellyseerr movie model.
-/// </summary>
-public class JellyseerrMovie : JellyseerrItem, IEquatable<JellyseerrMovie>, IEquatable<BaseItem>
-{
-    /// <summary>
-    /// Gets the type of this Jellyseerr object.
-    /// </summary>
-    public override string Type => "Movie";
-
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-    
-    [JsonPropertyName("mediaType")]
-    public string MediaType { get; set; } = string.Empty;
-    
-    [JsonPropertyName("adult")]
-    public bool Adult { get; set; }
-    
-    [JsonPropertyName("genreIds")]
-    public virtual List<int> GenreIds => Genres?.Select(g => g.Id).ToList() ?? new List<int>();
-    
-    [JsonPropertyName("originalLanguage")]
-    public string OriginalLanguage { get; set; } = string.Empty;
-    
-    [JsonPropertyName("originalTitle")]
-    public string OriginalTitle { get; set; } = string.Empty;
-    
-    [JsonPropertyName("overview")]
-    public string Overview { get; set; } = string.Empty;
-    
-    [JsonPropertyName("popularity")]
-    public double Popularity { get; set; }
-    
-    [JsonPropertyName("releaseDate")]
-    public string ReleaseDate { get; set; } = string.Empty;
-    
-    [JsonPropertyName("title")]
-    public string Title { get; set; } = string.Empty;
-    
-    [JsonPropertyName("video")]
-    public bool Video { get; set; }
-    
-    [JsonPropertyName("voteAverage")]
-    public double VoteAverage { get; set; }
-    
-    [JsonPropertyName("voteCount")]
-    public int VoteCount { get; set; }
-    
-    [JsonPropertyName("backdropPath")]
-    public string BackdropPath { get; set; } = string.Empty;
-    
-    [JsonPropertyName("posterPath")]
-    public string PosterPath { get; set; } = string.Empty;
-    
-    // Additional properties from movie details endpoint
-    [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; }
-    
-    [JsonPropertyName("budget")]
-    public long? Budget { get; set; }
-    
-    [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; }
-    
-    [JsonPropertyName("revenue")]
-    public long? Revenue { get; set; }
-    
-    [JsonPropertyName("runtime")]
-    public int? Runtime { get; set; }
-    
-    [JsonPropertyName("status")]
-    public string? Status { get; set; }
-    
-    [JsonPropertyName("tagline")]
-    public string? Tagline { get; set; }
-    
-    [JsonPropertyName("externalIds")]
-    public JellyseerrExternalIds? ExternalIds { get; set; }
-    
-    [JsonPropertyName("genres")]
-    public List<JellyseerrGenre>? Genres { get; set; }
-
-    /// <summary>
-    /// Computed property that extracts the year from the release date.
-    /// </summary>
-    public string Year => ExtractYear(ReleaseDate);
-
-    /// <summary>
-    /// Extract year from date string.
-    /// </summary>
-    private static string ExtractYear(string? dateString)
-    {
-        if (string.IsNullOrEmpty(dateString))
-            return string.Empty;
-
-        if (DateTime.TryParse(dateString, out var date))
-        {
-            return date.Year.ToString();
+                    listType.GetMethod("Add")?.Invoke(result, new[] { item });
+                }
         }
 
-        return string.Empty;
+            return result ?? new List<object>();
     }
 
-
+        return allItems.Count > 0 ? allItems[0] : GetDefaultValueForEndpoint(endpoint);
+    }
 
     /// <summary>
-    /// Implements IEquatable for proper comparison.
+    /// Adds page parameter to request model for paginated requests.
     /// </summary>
-    public bool Equals(JellyseerrMovie? other)
+    private IJellyseerrRequest? AddPageToRequestModel(IJellyseerrRequest? requestModel, int page)
     {
-        return other != null && Id == other.Id;
+        // No request models currently support pagination
+        return requestModel;
     }
 
-
-
     /// <summary>
-    /// Implements IEquatable for comparison with Jellyfin Movie objects.
+    /// Converts search parameters to query parameters dictionary.
     /// </summary>
-    public bool Equals(BaseItem? other)
-    {
-        if (other is null) return false;
-        
-        // Only compare with Movie items
-        if (other is not Movie movie) return false;
-        
-        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (!string.IsNullOrEmpty(movie.GetProviderId("Tmdb")))
-        {
-            return Id.ToString() == movie.GetProviderId("Tmdb");
-        }
-        
-        return false;
-    }
+    #endregion
 }
-
-
-
-/// <summary>
-/// External IDs for movies and TV shows.
-/// </summary>
-public class JellyseerrExternalIds
-{
-    [JsonPropertyName("facebookId")]
-    public string? FacebookId { get; set; }
-    
-    [JsonPropertyName("freebaseId")]
-    public string? FreebaseId { get; set; }
-    
-    [JsonPropertyName("freebaseMid")]
-    public string? FreebaseMid { get; set; }
-    
-    [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; }
-    
-    [JsonPropertyName("instagramId")]
-    public string? InstagramId { get; set; }
-    
-    [JsonPropertyName("tvdbId")]
-    public int? TvdbId { get; set; }
-}
-
-/// <summary>
-/// Media information from Jellyseerr API responses.
-/// </summary>
-public class JellyseerrMediaInfo
-{
-    [JsonPropertyName("downloadStatus")]
-    public List<object> DownloadStatus { get; set; } = new();
-    
-    [JsonPropertyName("downloadStatus4k")]
-    public List<object> DownloadStatus4k { get; set; } = new();
-    
-    [JsonPropertyName("id")]
-    public int? Id { get; set; }
-    
-    [JsonPropertyName("mediaType")]
-    public string? MediaType { get; set; }
-    
-    [JsonPropertyName("tmdbId")]
-    public int? TmdbId { get; set; }
-    
-    [JsonPropertyName("tvdbId")]
-    public int? TvdbId { get; set; }
-    
-    [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; }
-    
-    [JsonPropertyName("status")]
-    public int? Status { get; set; }
-    
-    [JsonPropertyName("status4k")]
-    public int? Status4k { get; set; }
-    
-    [JsonPropertyName("createdAt")]
-    public DateTime? CreatedAt { get; set; }
-    
-    [JsonPropertyName("updatedAt")]
-    public DateTime? UpdatedAt { get; set; }
-    
-    [JsonPropertyName("lastSeasonChange")]
-    public DateTime? LastSeasonChange { get; set; }
-    
-    [JsonPropertyName("mediaAddedAt")]
-    public DateTime? MediaAddedAt { get; set; }
-    
-    [JsonPropertyName("serviceId")]
-    public int? ServiceId { get; set; }
-    
-    [JsonPropertyName("serviceId4k")]
-    public int? ServiceId4k { get; set; }
-    
-    [JsonPropertyName("externalServiceId")]
-    public int? ExternalServiceId { get; set; }
-    
-    [JsonPropertyName("externalServiceId4k")]
-    public int? ExternalServiceId4k { get; set; }
-    
-    [JsonPropertyName("externalServiceSlug")]
-    public string? ExternalServiceSlug { get; set; }
-    
-    [JsonPropertyName("externalServiceSlug4k")]
-    public string? ExternalServiceSlug4k { get; set; }
-    
-    [JsonPropertyName("ratingKey")]
-    public string? RatingKey { get; set; }
-    
-    [JsonPropertyName("ratingKey4k")]
-    public string? RatingKey4k { get; set; }
-    
-    [JsonPropertyName("jellyfinMediaId")]
-    public string? JellyfinMediaId { get; set; }
-    
-    [JsonPropertyName("jellyfinMediaId4k")]
-    public string? JellyfinMediaId4k { get; set; }
-    
-    [JsonPropertyName("watchlists")]
-    public List<object> Watchlists { get; set; } = new();
-    
-    [JsonPropertyName("mediaUrl")]
-    public string? MediaUrl { get; set; }
-    
-    [JsonPropertyName("serviceUrl")]
-    public string? ServiceUrl { get; set; }
-}
-
-/// <summary>
-/// Genre information for Jellyseerr API responses.
-/// </summary>
-public class JellyseerrGenre
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-    
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Jellyseerr TV show model.
-/// </summary>
-public class JellyseerrShow : JellyseerrItem, IEquatable<JellyseerrShow>, IEquatable<BaseItem>
-{
-    /// <summary>
-    /// Gets the type of this Jellyseerr object.
-    /// </summary>
-    public override string Type => "Show";
-
-    [JsonPropertyName("id")]
-    public int? Id { get; set; }
-    
-    
-    [JsonPropertyName("firstAirDate")]
-    public string? FirstAirDate { get; set; }
-    
-    [JsonPropertyName("genreIds")]
-    public List<int> GenreIds { get; set; } = new();
-    
-    [JsonPropertyName("mediaType")]
-    public string? MediaType { get; set; }
-    
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-    
-    [JsonPropertyName("originCountry")]
-    public List<string> OriginCountry { get; set; } = new();
-    
-    [JsonPropertyName("originalLanguage")]
-    public string? OriginalLanguage { get; set; }
-    
-    [JsonPropertyName("originalName")]
-    public string? OriginalName { get; set; }
-    
-    [JsonPropertyName("overview")]
-    public string? Overview { get; set; }
-    
-    [JsonPropertyName("popularity")]
-    public double? Popularity { get; set; }
-    
-    [JsonPropertyName("voteAverage")]
-    public double? VoteAverage { get; set; }
-    
-    [JsonPropertyName("voteCount")]
-    public int? VoteCount { get; set; }
-    
-    [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; }
-    
-    [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; }
-    
-    [JsonPropertyName("externalIds")]
-    public JellyseerrExternalIds? ExternalIds { get; set; }
-    
-    [JsonPropertyName("mediaInfo")]
-    public JellyseerrMediaInfo? MediaInfo { get; set; }
-    
-    /// <summary>
-    /// Computed property that extracts the year from the first air date.
-    /// </summary>
-    public string Year => ExtractYear(FirstAirDate);
-
-    /// <summary>
-    /// Extract year from date string.
-    /// </summary>
-    private static string ExtractYear(string? dateString)
-    {
-        if (string.IsNullOrEmpty(dateString))
-            return string.Empty;
-
-        if (DateTime.TryParse(dateString, out var date))
-        {
-            return date.Year.ToString();
-        }
-
-        return string.Empty;
-    }
-
-
-    /// <summary>
-    /// Implements IEquatable for proper comparison.
-    /// </summary>
-    public bool Equals(JellyseerrShow? other)
-    {
-        return other != null && Id == other.Id;
-    }
-
-
-
-    /// <summary>
-    /// Implements IEquatable for comparison with Jellyfin Series objects.
-    /// </summary>
-    public bool Equals(BaseItem? other)
-    {
-        if (other is null) return false;
-        
-        // Only compare with Series items
-        if (other is not Series series) return false;
-        
-        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (Id.HasValue && !string.IsNullOrEmpty(series.GetProviderId("Tmdb")))
-        {
-            return Id.Value.ToString() == series.GetProviderId("Tmdb");
-        }
-        
-        // Fallback to TVDB ID if TMDB ID is not available
-        var tvdbId = MediaInfo?.TvdbId;
-        if (tvdbId.HasValue && !string.IsNullOrEmpty(series.GetProviderId("Tvdb")))
-        {
-            return tvdbId.Value.ToString() == series.GetProviderId("Tvdb");
-        }
-        
-        return false;
-    }
-}
-
-/// <summary>
-/// Jellyseerr season model.
-/// </summary>
-public class JellyseerrSeason
-{
-    public int Id { get; set; }
-    public int SeasonNumber { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Overview { get; set; } = string.Empty;
-    public DateTime? AirDate { get; set; }
-    public string PosterPath { get; set; } = string.Empty;
-    public int EpisodeCount { get; set; }
-    public bool Available { get; set; }
-}
-
-/// <summary>
-/// Jellyseerr user model.
-/// </summary>
-public class JellyseerrUser
-{
-    public int Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public int UserType { get; set; }
-    public int Permissions { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-/// <summary>
-/// Jellyseerr watch network region model.
-/// </summary>
-public class JellyseerrWatchRegion
-{
-    [JsonPropertyName("iso_3166_1")]
-    public string Iso31661 { get; set; } = string.Empty;
-    
-    [JsonPropertyName("english_name")]
-    public string EnglishName { get; set; } = string.Empty;
-    
-    [JsonPropertyName("native_name")]
-    public string NativeName { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Jellyseerr watch network model.
-/// </summary>
-public class JellyseerrWatchNetwork
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-    
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-    
-    [JsonPropertyName("logo_path")]
-    public string LogoPath { get; set; } = string.Empty;
-    
-    [JsonPropertyName("display_priority")]
-    public int DisplayPriority { get; set; }
-}
-
-/// <summary>
-/// Jellyseerr paginated response model.
-/// </summary>
-public class JellyseerrPaginatedResponse
-{
-    public JellyseerrPageInfo PageInfo { get; set; } = new();
-    public List<JellyseerrRequest> Results { get; set; } = new();
-}
-
-/// <summary>
-/// Jellyseerr page info model.
-/// </summary>
-public class JellyseerrPageInfo
-{
-    public int Pages { get; set; }
-    public int PageSize { get; set; }
-    public int Results { get; set; }
-    public int Page { get; set; }
-}
-

@@ -830,44 +830,35 @@ function performManualSync(page) {
                 
                 const result = await response.json();
                 
-                if (result.success) {
-                    const testResult = result.result;
+                if (response.ok) {
                     let resultText = `Library Scan Test Results:\n`;
-                    resultText += `Sync Directory: ${testResult.SyncDirectory}\n`;
-                    resultText += `ExcludeFromMainLibraries: ${testResult.ExcludeFromMainLibraries}\n`;
+                    resultText += `Sync Directory: ${result.syncDirectory || 'Not configured'}\n`;
+                    resultText += `ExcludeFromMainLibraries: ${result.excludeFromMainLibraries}\n`;
                     
-                    if (testResult.Error) {
-                        resultText += `\n❌ Error: ${testResult.Error}`;
-                    } else if (testResult.Message) {
-                        resultText += `\nℹ️ ${testResult.Message}`;
+                    if (result.message) {
+                        resultText += `\nℹ️ ${result.message}`;
+                    }
+                    
+                    if (result.movieCount !== undefined) {
+                        resultText += `\nMovies in main libraries: ${result.movieCount}`;
+                    }
+                    if (result.tvShowCount !== undefined) {
+                        resultText += `\nTV Shows in main libraries: ${result.tvShowCount}`;
+                    }
+                    
+                    if (result.bridgeItems && result.bridgeItems.length > 0) {
+                        resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
+                        result.bridgeItems.forEach((item, index) => {
+                            resultText += `\n${index + 1}. ${item.name || item.title || 'Unknown'} (${item.type || 'Unknown'})`;
+                        });
                     } else {
-                        resultText += `\n📊 Found ${testResult.MovieCount || 0} movies and ${testResult.TvShowCount || 0} TV shows in main libraries\n`;
-                        
-                        if (testResult.MovieIds && testResult.MovieIds.length > 0) {
-                            resultText += `\n🎬 Movie IDs (first 10):\n`;
-                            testResult.MovieIds.slice(0, 10).forEach(id => {
-                                resultText += `  - ${id}\n`;
-                            });
-                            if (testResult.MovieIds.length > 10) {
-                                resultText += `  ... and ${testResult.MovieIds.length - 10} more\n`;
-                            }
-                        }
-                        
-                        if (testResult.TvShowIds && testResult.TvShowIds.length > 0) {
-                            resultText += `\n📺 TV Show IDs (first 10):\n`;
-                            testResult.TvShowIds.slice(0, 10).forEach(id => {
-                                resultText += `  - ${id}\n`;
-                            });
-                            if (testResult.TvShowIds.length > 10) {
-                                resultText += `  ... and ${testResult.TvShowIds.length - 10} more\n`;
-                            }
-                        }
+                        resultText += `\n\nNo bridge items found.`;
                     }
                     
                     testLibraryScanResult.textContent = resultText;
                     testLibraryScanResult.style.display = 'block';
                 } else {
-                    testLibraryScanResult.textContent = `❌ Test failed: ${result.error || 'Unknown error'}`;
+                    testLibraryScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
                     testLibraryScanResult.style.display = 'block';
                 }
             } catch (error) {
