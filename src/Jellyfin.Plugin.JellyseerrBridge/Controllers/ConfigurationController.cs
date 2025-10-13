@@ -482,8 +482,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
 
             return false;
-        }
-
+    }
     }
 }
 

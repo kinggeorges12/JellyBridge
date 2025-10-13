@@ -461,7 +461,7 @@ public class JellyseerrApiService
             
             // Determine response type and deserialize
             var responseType = GetResponseType(endpoint);
-            var response = DeserializeResponseByType(content, responseType, operationName);
+            var response = DeserializeResponseByType(content, responseType, operationName, endpoint);
             
             // Handle pagination if needed
             if (endpointConfig.IsPaginated && response != null)
@@ -489,7 +489,7 @@ public class JellyseerrApiService
                     
                     if (pageContent == null) break;
                     
-                    var pageResponse = DeserializeResponseByType(pageContent, responseType, operationName);
+                    var pageResponse = DeserializeResponseByType(pageContent, responseType, operationName, endpoint);
                     if (pageResponse == null) break;
                     
                     var pageItems = ExtractItemsFromResponse(pageResponse, endpointConfig);
@@ -556,22 +556,95 @@ public class JellyseerrApiService
     }
 
 
-/// <summary>
+    /// <summary>
     /// Converts request model to parameters dictionary.
-/// </summary>
+    /// </summary>
     private Dictionary<string, string>? ConvertRequestModelToParameters(IJellyseerrRequest? requestModel)
     {
         // No request models currently supported for parameter conversion
         return null;
+    }
+
+    /// <summary>
+    /// Deserializes response based on response type.
+    /// </summary>
+    private object? DeserializeResponseByType(string content, JellyseerrResponseType responseType, string operationName, JellyseerrEndpoint endpoint)
+    {
+        return responseType switch
+        {
+            // Status endpoint returns a simple SystemStatus object, not paginated
+            JellyseerrResponseType.StatusResponse => DeserializeSimpleResponse<SystemStatus>(content, operationName),
+        
+            // Watch provider endpoints return simple arrays, not paginated
+            JellyseerrResponseType.WatchProviderResponse => DeserializeWatchProviderResponse(content, operationName, endpoint),
+
+            // All other responses are paginated
+            _ => DeserializePaginatedResponse<object>(content, operationName)
+        };
 }
 
 /// <summary>
-    /// Deserializes response based on response type.
+    /// Deserializes watch provider responses (simple arrays).
 /// </summary>
-    private object? DeserializeResponseByType(string content, JellyseerrResponseType responseType, string operationName)
+    private object DeserializeWatchProviderResponse(string content, string operationName, JellyseerrEndpoint endpoint)
     {
-        // All responses should be handled uniformly using paginated response
-        return DeserializePaginatedResponse<object>(content, operationName);
+        try
+        {
+            return endpoint switch
+            {
+                // Regions endpoint returns List<JellyseerrWatchRegion>
+                JellyseerrEndpoint.WatchProvidersRegions => DeserializeSimpleResponse<List<JellyseerrWatchRegion>>(content, operationName),
+                
+                // Movies and TV endpoints return List<JellyseerrWatchNetwork>
+                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => DeserializeSimpleResponse<List<JellyseerrWatchNetwork>>(content, operationName),
+                
+                // Fallback to List<object> for unknown watch provider endpoints
+                _ => DeserializeSimpleResponse<List<object>>(content, operationName)
+            };
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} watch provider response JSON. Content: {Content}", operationName, content);
+            return endpoint switch
+            {
+                JellyseerrEndpoint.WatchProvidersRegions => new List<JellyseerrWatchRegion>(),
+                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => new List<JellyseerrWatchNetwork>(),
+                _ => new List<object>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deserializing {Operation} watch provider response JSON", operationName);
+            return endpoint switch
+            {
+                JellyseerrEndpoint.WatchProvidersRegions => new List<JellyseerrWatchRegion>(),
+                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => new List<JellyseerrWatchNetwork>(),
+                _ => new List<object>()
+            };
+        }
+    }
+
+    /// <summary>
+    /// Deserializes simple (non-paginated) responses.
+    /// </summary>
+    private T DeserializeSimpleResponse<T>(string content, string operationName)
+    {
+        try
+        {
+            var response = JsonSerializer.Deserialize<T>(content);
+            _logger.LogInformation("Successfully deserialized simple response for {Operation}", operationName);
+            return response != null ? response : GetDefaultValue<T>();
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} simple response JSON. Content: {Content}", operationName, content);
+            return GetDefaultValue<T>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deserializing {Operation} simple response JSON", operationName);
+            return GetDefaultValue<T>();
+        }
     }
 
     /// <summary>

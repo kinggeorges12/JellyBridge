@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "version": "0.195.1.0",
+        "timestamp": "2025-10-13T22:37:40.164Z",
+        "changelog": "v0.195.1.0 - Hotfix: Fixed deserialization for all non-paginated endpoints - status endpoint now correctly returns SystemStatus object, watch regions endpoint returns List<JellyseerrWatchRegion>, watch networks endpoints return List<JellyseerrWatchNetwork>, all properly handling simple JSON arrays instead of trying to deserialize them as paginated responses",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.195.1.0/JellyseerrBridge-0.195.1.0-DLL.zip",
+        "checksum": "3F18ECCE677AFF3070C4495E52B69B94"
+      },
+      {
         "version": "0.195.0.0",
         "targetAbi": "10.10.7.0",
         "changelog": "v0.195.0.0 - Major refactoring: Unified API factory pattern, removed unused bridge models, improved error handling with detailed messages, fixed Test Library Scan button functionality",
