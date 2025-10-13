@@ -14,7 +14,7 @@ if (Test-Path $ConfigPath) {
     $BridgeBaseDir = $Config.BridgeBaseDir
     $SeerrRootDir = $Config.SeerrRootDir
     $OutputDir = $Config.OutputDir
-    $DoublePropertyPattern = $Config.DoublePropertyPattern
+    $NumberToDoublePattern = $Config.NumberToDoublePattern
     $BlockedClasses = $Config.BlockedClasses
     $DirectoryPairs = $Config.DirectoryPairs
 } else {
@@ -62,12 +62,23 @@ const ts = require('typescript');
 // Read directory pairs from stdin (passed from PowerShell)
 let directoryPairs = [];
 let blockedClasses = [];
+let numberToDoublePattern = '';
 
 try {
     const input = fs.readFileSync(0, 'utf8').trim();
     const inputData = JSON.parse(input);
     directoryPairs = inputData.directoryPairs || [];
     blockedClasses = inputData.blockedClasses || [];
+    numberToDoublePattern = inputData.numberToDoublePattern || '';
+    
+    // Set up the double property function using the PowerShell config
+    if (numberToDoublePattern) {
+        const regex = new RegExp(numberToDoublePattern, 'i');
+        global.shouldBeDoubleFunction = function(propertyName) {
+            if (!propertyName) return false;
+            return regex.test(propertyName);
+        };
+    }
     console.log('Received directory pairs from PowerShell:');
     directoryPairs.forEach(pair => {
         console.log('  ' + pair.type + ': ' + pair.input + ' -> ' + pair.output);
@@ -2265,6 +2276,7 @@ try {
     $converterInput = @{
         directoryPairs = $directoryPairs
         blockedClasses = $blockedClasses
+        numberToDoublePattern = $NumberToDoublePattern
     }
     $jsonInput = $converterInput | ConvertTo-Json -Depth 3
     Write-Host "Passing directory pairs to TypeScript compiler converter..." -ForegroundColor Gray
@@ -2529,6 +2541,21 @@ foreach ($file in $allCSharpFiles) {
 # Analyze inheritance relationships and add 'new' keyword to properties that actually hide inherited members
 Write-Host "`n=== Analyzing inheritance relationships and adding 'new' keyword ===" -ForegroundColor Green
 
+# First, remove any existing 'new' keywords to start clean
+Write-Host "Removing existing 'new' keywords..." -ForegroundColor Cyan
+foreach ($file in $allCSharpFiles) {
+    $content = Get-Content -Path $file.FullName -Raw
+    $originalContent = $content
+    
+    # Remove existing 'new' keywords from property declarations
+    $content = $content -replace '\s+public\s+new\s+', ' public '
+    
+    if ($content -ne $originalContent) {
+        Set-Content -Path $file.FullName -Value $content -NoNewline
+        Write-Host "Removed existing 'new' keywords from: $($file.Name)" -ForegroundColor Gray
+    }
+}
+
 # First pass: Build inheritance map
 $inheritanceMap = @{}
 $classProperties = @{}
@@ -2600,30 +2627,39 @@ foreach ($file in $allCSharpFiles) {
         $className = $match.Groups[1].Value
         $baseClassName = $match.Groups[2].Value
         
-        if ($baseClassName -and $inheritanceMap.ContainsKey($className)) {
+        if ($baseClassName -and $classProperties.ContainsKey($className) -and $classProperties.ContainsKey($baseClassName)) {
             # This class inherits from another class
             $currentClassProps = $classProperties[$className]
             $baseClassProps = $classProperties[$baseClassName]
             
-            if ($currentClassProps -and $baseClassProps) {
-                # Check for property hiding
-                foreach ($propName in $currentClassProps.Keys) {
-                    if ($baseClassProps.ContainsKey($propName)) {
-                        # Property exists in both classes - this is hiding!
-                        $propType = $currentClassProps[$propName]
+            # Check for property hiding
+            foreach ($propName in $currentClassProps.Keys) {
+                if ($baseClassProps.ContainsKey($propName)) {
+                    # Property exists in both classes - this is hiding!
+                    $propType = $currentClassProps[$propName]
+                    
+                    # Create pattern to match this specific property declaration WITHIN the current class only
+                    # Extract the current class content first to ensure we only modify the right class
+                    $escapedClassName = [regex]::Escape($className)
+                    $escapedPropName = [regex]::Escape($propName)
+                    $escapedPropType = [regex]::Escape($propType)
+                    
+                    # Find the class block for the current class
+                    $classPattern = "(?s)(public\s+class\s+$escapedClassName\b[^{]*\{)(.*?)(\npublic\s+(?:class|enum)\s|\z)"
+                    if ($content -match $classPattern) {
+                        $classPrefix = $Matches[1]
+                        $classBody = $Matches[2]
+                        $classSuffix = $Matches[3]
                         
-                        # Create pattern to match this specific property declaration
-                        # Handle both nullable and non-nullable types, and with/without initialization
-                        # Escape special regex characters in property name and type
-                        $escapedPropName = [regex]::Escape($propName)
-                        $escapedPropType = [regex]::Escape($propType)
-                        $pattern = "(public\s+)($escapedPropType)(\s+$escapedPropName\s*\{[^}]*\}[^;]*;)"
-                        
-                        if ($content -match $pattern) {
-                            $replacement = '$1new $2$3'
-                            $newContent = $content -replace $pattern, $replacement
-                            if ($newContent -ne $content) {
-                                $content = $newContent
+                        # Now find and modify the property within the class body
+                        $propPattern = "(public\s+)($escapedPropType)(\s+$escapedPropName\s*\{[^}]*\}[^;]*;)"
+                        if ($classBody -match $propPattern) {
+                            $newClassBody = $classBody -replace $propPattern, '$1new $2$3'
+                            if ($newClassBody -ne $classBody) {
+                                # Replace the entire class block with the modified version
+                                $newClassBlock = $classPrefix + $newClassBody + $classSuffix
+                                $oldClassBlock = $classPrefix + $classBody + $classSuffix
+                                $content = $content.Replace($oldClassBlock, $newClassBlock)
                                 $modified = $true
                                 Write-Host "Added 'new' keyword to $className.$propName (hides $baseClassName.$propName) in: $($file.Name)" -ForegroundColor Gray
                             }

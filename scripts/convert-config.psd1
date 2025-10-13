@@ -10,7 +10,7 @@
     OutputDir = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel"
     
     # Regex pattern to identify properties that should be double instead of int
-    DoublePropertyPattern = '.*(?:average|rating|score|percent|ratio|rate|popularity|runtime|duration|weight|price|cost|amount|value|percentage|probability|frequency).*'
+    NumberToDoublePattern = '.*(?:average|rating|score|percent|ratio|rate|popularity|runtime|duration|weight|price|cost|amount|value|percentage|probability|frequency).*'
     
     # Define blocked classes that should not be converted
     BlockedClasses = @(
