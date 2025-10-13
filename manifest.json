@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.190.0.0/JellyseerrBridge-0.190.0.0-DLL.zip",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "checksum": "B5A9986FC446A472EEC91BB261420F74",
+        "version": "0.190.0.0",
+        "timestamp": "2025-10-13T08:25:43.332Z",
+        "changelog": "v0.190.0.0 - MAJOR RELEASE: Fully functional Jellyseerr model integration with precise NumberToDoublePattern. This release includes complete TypeScript to C# model conversion with accurate type mapping, verified through comprehensive API testing. The NumberToDoublePattern now correctly identifies only properties that return decimal values (popularity, voteAverage, percent) ensuring proper C# type generation."
+      },
+      {
         "checksum": "11CD978B10CB9CF89505B632CDFF4D21",
         "version": "0.183.0.0",
         "changelog": "v0.183.0.0 - Added GitHub Pages HTML redirect page for manifest.json with cache-busting functionality",

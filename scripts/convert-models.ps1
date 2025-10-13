@@ -1080,6 +1080,10 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
         case ts.SyntaxKind.StringKeyword:
             return 'string';
         case ts.SyntaxKind.NumberKeyword:
+            // Check if this property should be double instead of int
+            if (typeof global.shouldBeDoubleFunction === 'function' && global.shouldBeDoubleFunction(propertyName)) {
+                return 'double';
+            }
             return 'int';
         case ts.SyntaxKind.BooleanKeyword:
             return 'bool';
