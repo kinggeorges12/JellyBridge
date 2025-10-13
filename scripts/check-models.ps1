@@ -63,6 +63,15 @@ if ($missingUsing.Count -gt 0) {
 # Check for missing class references
 Write-Host "`n=== CHECKING FOR MISSING CLASS REFERENCES ===" -ForegroundColor Yellow
 
+# Load blocked classes from config
+$blockedClasses = @()
+$configFile = "scripts\convert-config.psd1"
+if (Test-Path $configFile) {
+    $config = Import-PowerShellDataFile $configFile
+    $blockedClasses = $config.BlockedClasses
+    Write-Host "Loaded $($blockedClasses.Count) blocked classes from config" -ForegroundColor Cyan
+}
+
 # Build map of all classes with their namespaces
 $allClasses = @{}
 $fileNamespaces = @{}
@@ -134,6 +143,11 @@ foreach ($file in $files) {
                 $missingClasses += ($file.Name + ': ' + $className + ' (available in: ' + ($classNamespaces -join ', ') + ')')
             }
         } else {
+            # Check if this is a blocked class - if so, don't report it as missing
+            if ($blockedClasses -contains $className) {
+                Write-Host "  Skipping blocked class: $className" -ForegroundColor DarkYellow
+                continue
+            }
             $missingClasses += ($file.Name + ': ' + $className + ' (not found anywhere)')
         }
     }

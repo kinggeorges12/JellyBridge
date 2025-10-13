@@ -155,6 +155,7 @@ public enum MediaType
 public class Results
 {
     public SearchResult Value { get; set; } = new();
+
 }
 
 

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-13T23:36:12.279Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.195.3.0/JellyseerrBridge-0.195.3.0-DLL.zip",
+        "version": "0.195.3.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.195.3.0 - Improved model generation with blocked class handling and JellyseerrUser inheritance",
+        "checksum": "AB2D5E51103B873ABEBA1E80CE0618B1"
+      },
+      {
         "timestamp": "2025-10-13T22:55:21.437Z",
         "checksum": "F2A8DBB77C0A84EAA2391ED2BBFB3989",
         "dependencies": [],
