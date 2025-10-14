@@ -8,7 +8,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 public class Video
 {
     [JsonPropertyName("url")]
-    public string? Url { get; set; } = string.Empty;
+    public string? Url { get; set; } = null!;
 
     [JsonPropertyName("site")]
     public string Site { get; set; } = string.Empty;
@@ -44,13 +44,13 @@ public class MovieDetails
     public int Id { get; set; }
 
     [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("budget")]
     public int Budget { get; set; }
@@ -59,7 +59,7 @@ public class MovieDetails
     public List<Genre> Genres { get; set; } = new();
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
     [JsonPropertyName("originalLanguage")]
     public string OriginalLanguage { get; set; } = string.Empty;
@@ -68,7 +68,7 @@ public class MovieDetails
     public string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
-    public string? Overview { get; set; } = string.Empty;
+    public string? Overview { get; set; } = null!;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -77,7 +77,7 @@ public class MovieDetails
     public List<Video>? RelatedVideos { get; set; } = new();
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("productionCompanies")]
     public List<ProductionCompany> ProductionCompanies { get; set; } = new();
@@ -104,7 +104,7 @@ public class MovieDetails
     public string Status { get; set; } = string.Empty;
 
     [JsonPropertyName("tagline")]
-    public string? Tagline { get; set; } = string.Empty;
+    public string? Tagline { get; set; } = null!;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
@@ -131,7 +131,7 @@ public class MovieDetails
     public ExternalIds ExternalIds { get; set; } = new();
 
     [JsonPropertyName("mediaUrl")]
-    public string? MediaUrl { get; set; } = string.Empty;
+    public string? MediaUrl { get; set; } = null!;
 
     [JsonPropertyName("watchProviders")]
     public List<WatchProviders>? WatchProviders { get; set; } = new();
@@ -185,9 +185,9 @@ public class MovieDetailsCollection
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
 }

@@ -9,12 +9,46 @@ if (Test-Path $ConfigPath) {
     $BridgeBaseDir = $Config.BridgeBaseDir
     $SeerrRootDir = $Config.SeerrRootDir
     $OutputDir = $Config.OutputDir
+    $BaseNamespace = $Config.BaseNamespace
     $NumberToDoublePattern = $Config.NumberToDoublePattern
     $BlockedClasses = $Config.BlockedClasses
     $DirectoryPairs = $Config.DirectoryPairs
 } else {
     Write-Error "Configuration file not found: $ConfigPath"
     exit 1
+}
+
+# Centralized namespace management functions
+function Get-NamespaceForModelType {
+    param([string]$modelType)
+    
+    if ($modelType -ne "Common") {
+        return "$BaseNamespace.$modelType"
+    } else {
+        return $BaseNamespace
+    }
+}
+
+function Get-UsingStatementForModelType {
+    param([string]$modelType)
+    
+    if ($modelType -ne "Common") {
+        return "using $BaseNamespace;`n"
+    } else {
+        return ""
+    }
+}
+
+function Test-TypeExistsInAnyDirectory {
+    param([string]$typeName)
+    
+    foreach ($pair in $DirectoryPairs) {
+        $typeFile = Join-Path $pair.output "$typeName.cs"
+        if (Test-Path $typeFile) {
+            return $true
+        }
+    }
+    return $false
 }
 
 # Change to the base directory to ensure consistent working directory
@@ -58,6 +92,7 @@ const ts = require('typescript');
 let directoryPairs = [];
 let blockedClasses = [];
 let numberToDoublePattern = '';
+let baseNamespace = '';
 
 try {
     const input = fs.readFileSync(0, 'utf8').trim();
@@ -65,6 +100,7 @@ try {
     directoryPairs = inputData.directoryPairs || [];
     blockedClasses = inputData.blockedClasses || [];
     numberToDoublePattern = inputData.numberToDoublePattern || '';
+    baseNamespace = inputData.baseNamespace || 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
     
     // Set up the double property function using the PowerShell config
     if (numberToDoublePattern) {
@@ -185,12 +221,17 @@ function toJsonPropertyName(str) {
 }
 
 // Helper function to generate property declarations with proper initialization
-function generatePropertyDeclaration(propType, propName, isOptional = '') {
-    const propertyDeclaration = '    public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; }';
+function generatePropertyDeclaration(propType, propName, isOptional = false) {
+    // Handle optional properties by making them nullable
+    // Support both boolean and string values for backward compatibility
+    const shouldBeNullable = (isOptional === true || isOptional === '?' || isOptional === 'true');
+    // Only add '?' if the type doesn't already end with '?'
+    const nullableType = (shouldBeNullable && !propType.endsWith('?')) ? propType + '?' : propType;
+    const propertyDeclaration = '    public ' + nullableType + ' ' + toPascalCase(propName) + ' { get; set; }';
     
     // Check if the property type is blocked
     if (blockedClasses.includes(propType)) {
-        return '    // public ' + propType + isOptional + ' ' + toPascalCase(propName) + ' { get; set; } // BLOCKED TYPE\n\n';
+        return '    // public ' + nullableType + ' ' + toPascalCase(propName) + ' { get; set; } // BLOCKED TYPE\n\n';
     }
     
     // Add initialization based on property type
@@ -198,24 +239,29 @@ function generatePropertyDeclaration(propType, propName, isOptional = '') {
         // Collections - initialize with empty list
         return propertyDeclaration + ' = new();\n\n';
     } else if (propType === 'string') {
-        // Strings - initialize with empty string
-        return propertyDeclaration + ' = string.Empty;\n\n';
-        } else if (propType === 'object') {
-            // Objects - initialize with null!
+        if (shouldBeNullable) {
+            // Optional strings - initialize with null!
             return propertyDeclaration + ' = null!;\n\n';
-        } else if (isOptional === '?') {
-            // Nullable types - initialize with null!
-            return propertyDeclaration + ' = null!;\n\n';
-        } else if (isBasicType(propType)) {
-            // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
-            return propertyDeclaration + '\n\n';
-        } else if (propType === 'T') {
-            // Generic type parameter - initialize with default(T)!
-            return propertyDeclaration + ' = default(T)!;\n\n';
         } else {
-            // Everything else (custom classes, generics, collections, etc.) - initialize with new()
-            return propertyDeclaration + ' = new();\n\n';
+            // Required strings - initialize with empty string
+            return propertyDeclaration + ' = string.Empty;\n\n';
         }
+    } else if (propType === 'object') {
+        // Objects - initialize with null!
+        return propertyDeclaration + ' = null!;\n\n';
+    } else if (shouldBeNullable || propType.endsWith('?')) {
+        // Nullable types - initialize with null!
+        return propertyDeclaration + ' = null!;\n\n';
+    } else if (isBasicType(propType)) {
+        // Basic value types (int, bool, DateTime, DateTimeOffset, etc.) - no initialization needed
+        return propertyDeclaration + '\n\n';
+    } else if (propType === 'T') {
+        // Generic type parameter - initialize with default(T)!
+        return propertyDeclaration + ' = default(T)!;\n\n';
+    } else {
+        // Everything else (custom classes, generics, collections, etc.) - initialize with new()
+        return propertyDeclaration + ' = new();\n\n';
+    }
 }
 
 // Helper function to check if a type is a basic C# type
@@ -272,8 +318,15 @@ function isBasicType(typeName) {
         const convertedFilePaths = new Set();
         
         // Function to check if a class is already generated
-        function isClassGenerated(className) {
-            return transpiledTypes.has(className);
+        function isClassGenerated(className, namespace) {
+            // Track types by their full namespace to allow same class names in different namespaces
+            const fullName = namespace ? namespace + '.' + className : className;
+            return transpiledTypes.has(fullName);
+        }
+        
+        function addTranspiledType(className, namespace) {
+            const fullName = namespace ? namespace + '.' + className : className;
+            transpiledTypes.add(fullName);
         }
 
         // Function to extract all class names from a C# file
@@ -332,46 +385,96 @@ function isBasicType(typeName) {
 
 
         // Function to convert TypeScript file to C# using TypeScript compiler API
-        function convertTypeORMEntityToCSharp(node) {
+        function convertTypeORMEntityToCSharp(node, sourceCode) {
             console.log('Converting TypeORM entity:', node.name.text);
             
             let csharpCode = '';
             const className = node.name.text;
             
             // Add class declaration
-            csharpCode += 'public class ' + className + '\n{\n';
+            csharpCode += '\n\npublic class ' + className + '\n{\n';
             
             // Process class members
             if (node.members) {
                 for (const member of node.members) {
                     if (member.kind === ts.SyntaxKind.PropertyDeclaration) {
                         const propertyName = member.name.text;
-                        const isOptional = member.questionToken !== undefined;
+                        let isOptional = member.questionToken !== undefined;
                         
-                        // Get TypeORM decorators
-                        const decorators = member.decorators || [];
+                        // Also check if the property declaration indicates it's optional (e.g., "serviceUrl?: string")
+                        // The ? is part of the property declaration syntax, not the type
+                        const fullPropertyText = member.getText();
+                        if (fullPropertyText.includes('?:') || fullPropertyText.includes('? :')) {
+                            isOptional = true;
+                        }
+                        
+                        // Get TypeORM decorators from source code using regex (TypeScript compiler doesn't parse decorators correctly)
                         let isPrimaryKey = false;
                         let isColumn = false;
-                        let columnType = 'string';
+                        let columnType = '';
                         
-                        for (const decorator of decorators) {
-                            if (decorator.expression && decorator.expression.expression) {
-                                const decoratorName = decorator.expression.expression.text;
-                                if (decoratorName === 'PrimaryGeneratedColumn') {
-                                    isPrimaryKey = true;
-                                    isColumn = true;
-                                } else if (decoratorName === 'Column') {
-                                    isColumn = true;
-                                    // Try to extract column type from decorator arguments
-                                    if (decorator.expression.arguments && decorator.expression.arguments.length > 0) {
-                                        const arg = decorator.expression.arguments[0];
-                                        if (arg.properties) {
-                                            for (const prop of arg.properties) {
-                                                if (prop.name.text === 'type' && prop.initializer) {
-                                                    columnType = prop.initializer.text.replace(/['"]/g, '');
-                                                }
-                                            }
-                                        }
+                        // Find the property declaration in the source code (decorator can be on previous line)
+                        // Look specifically for @Column or @PrimaryGeneratedColumn decorators
+                        // Handle optional properties with ?: syntax and allow more flexible whitespace
+                        let propertyMatch = null;
+                        
+                        // First try to find @DbAwareColumn decorators (multi-line)
+                        // Use a regex that stops at the next @ decorator to avoid matching across properties
+                        const dbAwareRegex = new RegExp('@DbAwareColumn\\([^@]*?\\)\\s*\\n?\\s*public\\s+' + propertyName + '\\s*[?:=]', 'g');
+                        propertyMatch = dbAwareRegex.exec(sourceCode);
+                        
+                        // If not found, try @Column and @PrimaryGeneratedColumn (single-line)
+                        if (!propertyMatch) {
+                            const columnRegex = new RegExp('@(Column|PrimaryGeneratedColumn)\\([^)]*\\)\\s*\\n?\\s*public\\s+' + propertyName + '\\s*[?:=]', 'g');
+                            propertyMatch = columnRegex.exec(sourceCode);
+                        }
+                        
+                        if (propertyMatch) {
+                            console.log('DEBUG: Found property match for:', propertyName, 'decorator:', propertyMatch[1]);
+                        } else {
+                            console.log('DEBUG: No property match found for:', propertyName);
+                        }
+                        
+                        if (propertyMatch) {
+                            const decoratorName = propertyMatch[0].includes('@DbAwareColumn') ? 'DbAwareColumn' : propertyMatch[1];
+                            if (decoratorName === 'PrimaryGeneratedColumn') {
+                                isPrimaryKey = true;
+                                isColumn = true;
+                                columnType = 'integer'; // Primary keys are typically integers
+                            } else if (decoratorName === 'Column') {
+                                isColumn = true;
+                                
+                                // Extract column type from the decorator arguments in the matched text
+                                const matchedText = propertyMatch[0];
+                                console.log('DEBUG: Matched text for', propertyName, ':', matchedText);
+                                const columnRegex = /@Column\(\s*\{[^}]*type:\s*['"]([^'"]+)['"][^}]*\}/;
+                                const columnMatch = columnRegex.exec(matchedText);
+                                if (columnMatch) {
+                                    columnType = columnMatch[1];
+                                    console.log('DEBUG: Found column type:', columnType, 'for property:', propertyName);
+                                } else {
+                                    console.log('DEBUG: No column type match for property:', propertyName);
+                                    // Check if this is a nullable property by looking for nullable: true in the decorator
+                                    if (matchedText.includes('nullable: true')) {
+                                        // This will be handled by the nullable logic below
+                                    }
+                                }
+                            } else if (decoratorName === 'DbAwareColumn') {
+                                isColumn = true;
+                                
+                                // Extract column type from the decorator arguments in the matched text
+                                const matchedText = propertyMatch[0];
+                                console.log('DEBUG: Matched text for', propertyName, ':', matchedText);
+                                const columnRegex = /@DbAwareColumn\(\s*\{[^}]*type:\s*['"]([^'"]+)['"][^}]*\}/;
+                                const columnMatch = columnRegex.exec(matchedText);
+                                if (columnMatch) {
+                                    columnType = columnMatch[1];
+                                    console.log('DEBUG: Found column type:', columnType, 'for property:', propertyName);
+                                } else {
+                                    console.log('DEBUG: No column type match for property:', propertyName);
+                                    // Check if this is a nullable property by looking for nullable: true in the decorator
+                                    if (matchedText.includes('nullable: true')) {
+                                        // This will be handled by the nullable logic below
                                     }
                                 }
                             }
@@ -399,11 +502,17 @@ function isBasicType(typeName) {
                                 }
                             } else if (member.type.kind === ts.SyntaxKind.NumberKeyword) {
                                 csharpType = 'int';
+                                // If the property is optional (has ?), make it nullable
+                                if (isOptional) {
+                                    csharpType = 'int?';
+                                }
                             } else if (member.type.kind === ts.SyntaxKind.StringKeyword) {
                                 csharpType = 'string';
                             } else if (member.type.kind === ts.SyntaxKind.BooleanKeyword) {
                                 csharpType = 'bool';
-                            } else if (member.type.kind === ts.SyntaxKind.UnionType) {
+                            }
+                            
+                            if (member.type.kind === ts.SyntaxKind.UnionType) {
                                 // Handle union types (usually for optional properties)
                                 const unionTypes = member.type.types;
                                 if (unionTypes.length === 2 && unionTypes.some(t => t.kind === ts.SyntaxKind.NullKeyword)) {
@@ -432,12 +541,65 @@ function isBasicType(typeName) {
                             }
                         }
                         
+                        // Override csharpType based on columnType from @Column decorator only for basic types
+                        // Don't override if we already have a specific TypeScript type (like MediaType enum)
+                        if (isColumn && columnType && member.type && (
+                            member.type.kind === ts.SyntaxKind.StringKeyword ||
+                            member.type.kind === ts.SyntaxKind.NumberKeyword ||
+                            member.type.kind === ts.SyntaxKind.BooleanKeyword
+                        )) {
+                            switch (columnType) {
+                                case 'integer':
+                                case 'int':
+                                    csharpType = 'int';
+                                    break;
+                                case 'varchar':
+                                case 'text':
+                                case 'string':
+                                    csharpType = 'string';
+                                    break;
+                                case 'boolean':
+                                case 'bool':
+                                    csharpType = 'bool';
+                                    break;
+                                case 'double':
+                                case 'float':
+                                case 'decimal':
+                                    csharpType = 'double';
+                                    break;
+                                case 'datetime':
+                                case 'timestamp':
+                                    csharpType = 'DateTimeOffset';
+                                    break;
+                                case 'date':
+                                    csharpType = 'DateTimeOffset';
+                                    break;
+                            }
+                        }
+                        
+                        // Check if this is a nullable property by looking for nullable: true in the decorator
+                        // This applies to all @Column properties, regardless of whether they have explicit type
+                        if (isColumn && propertyMatch && propertyMatch[0].includes('nullable: true')) {
+                            // Make the type nullable if it's not already
+                            if (!csharpType.endsWith('?')) {
+                                csharpType = csharpType + '?';
+                            }
+                        }
+                        
+                        // Handle case where member.type is undefined but we have a column type
+                        if (!member.type && isColumn && columnType) {
+                            console.log('DEBUG: No TypeScript type but have column type:', columnType, 'for property:', propertyName, 'csharpType:', csharpType);
+                        }
+                        
                         // Add JSON property attribute
                         const commentPrefix = blockedClasses.includes(csharpType) ? '    // ' : '    ';
                         csharpCode += commentPrefix + '[JsonPropertyName("' + propertyName + '")]\n';
                         
                         // Add property declaration
-                        csharpCode += generatePropertyDeclaration(csharpType, propertyName);
+                        if (propertyName === 'permissions') {
+                            console.log('DEBUG: Final csharpType for permissions:', csharpType);
+                        }
+                        csharpCode += generatePropertyDeclaration(csharpType, propertyName, isOptional ? '?' : '');
                     }
                 }
             }
@@ -470,7 +632,17 @@ function isBasicType(typeName) {
                 let hasInterfaces = false;
                 let csharpCode = '';
                 
-                function generateUnionTypeEnums(interfaceNode, sourceFile) {
+                // Determine namespace based on modelType using centralized function
+                let namespace = baseNamespace;
+                if (modelType === 'Server') {
+                    namespace = baseNamespace + '.Server';
+                } else if (modelType === 'Api') {
+                    namespace = baseNamespace + '.Api';
+                } else if (modelType === 'Common') {
+                    namespace = baseNamespace;
+                }
+                
+                function generateUnionTypeEnums(interfaceNode, sourceFile, namespace) {
                     const interfaceName = interfaceNode.name.text;
                     
                     interfaceNode.members.forEach(member => {
@@ -491,7 +663,7 @@ function isBasicType(typeName) {
                                     const enumName = propertyName === 'type' ? toPascalCase(interfaceName) + 'Type' : toPascalCase(propertyName);
                                     
                                     // Generate enum locally if not already generated
-                                    if (!isClassGenerated(enumName)) {
+                                    if (!isClassGenerated(enumName, namespace)) {
                                         // Get all string literal values
                                         const enumValues = [];
                                         for (let i = 0; i < nonNullTypes.length; i++) {
@@ -505,7 +677,7 @@ function isBasicType(typeName) {
                                             enumValues.map((value, index) => '    ' + toPascalCase(value) + (index === 0 ? ' = 0' : '')).join(',\n') + '\n}';
                                         
                                         csharpCode += enumClass + '\n\n';
-                                        transpiledTypes.add(enumName);
+                                        addTranspiledType(enumName, namespace);
                                         console.log('Generated ' + enumName + ' locally');
                                     }
                                 }
@@ -641,12 +813,12 @@ function isBasicType(typeName) {
                     
                     if (isTypeORMEntity) {
                         console.log('Detected TypeORM entity:', interfaceNode.name.text);
-                        csharpCode += convertTypeORMEntityToCSharp(interfaceNode) + '\n\n';
+                        csharpCode += convertTypeORMEntityToCSharp(interfaceNode, sourceFile.text) + '\n\n';
                     } else {
                         csharpCode += convertInterfaceOrClassToClass(interfaceNode, sourceFile, missingTypes) + '\n\n';
                     }
                     
-                    generateUnionTypeEnums(interfaceNode, sourceFile);
+                    generateUnionTypeEnums(interfaceNode, sourceFile, namespace);
                     processedInterfaces.add(interfaceNode.name.text);
                 }
                 
@@ -658,9 +830,9 @@ function isBasicType(typeName) {
                         hasInterfaces = true;
                         // Generate enum in this file if not already generated elsewhere
                         const enumName = node.name.text;
-                        if (!isClassGenerated(enumName)) {
+                        if (!isClassGenerated(enumName, namespace)) {
                             csharpCode += convertEnumToCSharp(node, sourceFile) + '\n\n';
-                            transpiledTypes.add(enumName);
+                            addTranspiledType(enumName, namespace);
                             console.log('Generated enum locally: ' + enumName);
                         } else {
                             console.log('Skipping enum declaration: ' + enumName + ' - already exists in another file');
@@ -673,7 +845,7 @@ function isBasicType(typeName) {
                         console.log('DEBUG: Converted result for', typeName, ':', converted ? 'SUCCESS' : 'EMPTY');
                         if (converted) {
                             csharpCode += converted + '\n\n';
-                            transpiledTypes.add(typeName);
+                            addTranspiledType(typeName, namespace);
                             console.log('DEBUG: Added', typeName, 'to csharpCode and transpiledTypes');
                         }
                     }
@@ -692,19 +864,17 @@ function isBasicType(typeName) {
                 const outputPath = path.join(outputDir, fileName);
                 
                 // Add namespace and using statements based on model type
-                let namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
                 let usingStatements = 'using System;\n' +
                                      'using System.Text.Json.Serialization;\n' +
                                      'using System.Collections.Generic;\n';
                 
+                // Add using statements based on model type using centralized logic
                 if (modelType === 'Server') {
-                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server';
-                    usingStatements += 'using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n';
+                    usingStatements += 'using ' + baseNamespace + ';\n';
                 } else if (modelType === 'Api') {
-                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api';
-                    usingStatements += 'using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;\n';
-                } else if (modelType === 'Entity') {
-                    namespace = 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
+                    usingStatements += 'using ' + baseNamespace + ';\n';
+                } else if (modelType === 'Common') {
+                    usingStatements += 'using ' + baseNamespace + '.Server;\n';
                 }
                 
                 // TODO: Add cross-namespace using statements based on referenced types
@@ -726,7 +896,32 @@ function isBasicType(typeName) {
                 console.log('DEBUG: Writing fullCsharpCode to file:', outputPath);
                 console.log('DEBUG: fullCsharpCode length:', fullCsharpCode.length);
                 console.log('DEBUG: fullCsharpCode preview:', fullCsharpCode.substring(0, 200) + '...');
-                fs.writeFileSync(outputPath, fullCsharpCode);
+                
+                // Check if file already exists and preserve enums
+                if (fs.existsSync(outputPath)) {
+                    console.log('DEBUG: File exists, preserving existing enums');
+                    const existingContent = fs.readFileSync(outputPath, 'utf8');
+                    // Extract enums from existing content
+                    const enumMatches = existingContent.match(/public enum \w+[\s\S]*?(?=\n\n|\npublic (?:class|enum)|\n$)/g);
+                    let preservedEnums = '';
+                    if (enumMatches) {
+                        preservedEnums = '\n\n' + enumMatches.join('\n\n') + '\n\n';
+                        console.log('DEBUG: Preserved ' + enumMatches.length + ' enums');
+                    }
+                    // Write new content with preserved enums after namespace
+                    const namespaceMatch = fullCsharpCode.match(/namespace\s+[\w.]+;\s*\n\n/);
+                    if (namespaceMatch) {
+                        const beforeNamespace = fullCsharpCode.substring(0, namespaceMatch.index + namespaceMatch[0].length);
+                        const afterNamespace = fullCsharpCode.substring(namespaceMatch.index + namespaceMatch[0].length);
+                        // Ensure proper spacing between preserved enums and class declarations
+                        const finalContent = beforeNamespace + preservedEnums + afterNamespace;
+                        fs.writeFileSync(outputPath, finalContent);
+                    } else {
+                        fs.writeFileSync(outputPath, fullCsharpCode);
+                    }
+                } else {
+                    fs.writeFileSync(outputPath, fullCsharpCode);
+                }
                 console.log('Generated: ' + outputPath);
                 
             } catch (error) {
@@ -1573,7 +1768,7 @@ while (missingTypes.size > 0 && iteration < maxIterations) {
                 console.log('Converting missing type ' + missingType + ' from ' + sourceFile);
                 
                 // Determine modelType based on output directory using directory pairs
-                let modelType = 'Entity'; // Default to Common namespace
+                let modelType = 'Common'; // Default to Common namespace
                 
                 // If this is an entity file, use Server type
                 if (isEntityFile) {
@@ -1790,11 +1985,13 @@ function Convert-MissingEntityTypes {
             }
             
             # If type is defined in Server/Api but referenced in Api/Server, move to Common
-            $commonNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
+            $commonNamespace = Get-NamespaceForModelType "Common"
             
+            # Disable conflict resolution - let namespace-aware approach handle it
             # Only move types to Common if they are truly shared (defined in multiple namespaces)
             # Don't move types that are just referenced across namespaces - use using statements instead
-            if ($typeDefinedIn.Count -gt 1) {
+            # Don't move types that are already in Common namespace
+            if ($false) {
                 Write-Host "Cross-namespace conflict detected for type: $typeRef" -ForegroundColor Yellow
                 Write-Host "  Defined in: $($typeDefinedIn -join ', ')" -ForegroundColor Yellow
                 Write-Host "  Referenced in: $($typeReferencedIn -join ', ')" -ForegroundColor Yellow
@@ -2013,7 +2210,7 @@ using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
-namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+namespace $BaseNamespace;
 
 $typeDefinition
 "@
@@ -2105,13 +2302,10 @@ $typeDefinition
                             foreach ($match in $classMatches) { $allTypesInFile += $match.Groups[1].Value }
                             foreach ($match in $interfaceMatches) { $allTypesInFile += $match.Groups[1].Value }
                             
-                            # Check if any of these types already exist in Common or Server
+                            # Check if any of these types already exist in any directory
                             foreach ($typeInFile in $allTypesInFile) {
-                                $commonTypeFile = Join-Path $OutputDir "Common\$typeInFile.cs"
-                                $serverTypeFile = Join-Path $OutputDir "Server\$typeInFile.cs"
-                                if ((Test-Path $commonTypeFile) -or (Test-Path $serverTypeFile)) {
-                                    $existingLocation = if (Test-Path $commonTypeFile) { "Common" } else { "Server" }
-                                    Write-Host "Skipping file $($file.Name) - contains type $typeInFile that already exists in $existingLocation" -ForegroundColor Yellow
+                                if (Test-TypeExistsInAnyDirectory $typeInFile) {
+                                    Write-Host "Skipping file $($file.Name) - contains type $typeInFile that already exists" -ForegroundColor Yellow
                                     $skipFile = $true
                                     break
                                 }
@@ -2156,11 +2350,10 @@ $typeDefinition
                     foreach ($match in $classMatches) { $allTypesInFile += $match.Groups[1].Value }
                     foreach ($match in $interfaceMatches) { $allTypesInFile += $match.Groups[1].Value }
                     
-                    # Check if any of these types already exist in Common
+                    # Check if any of these types already exist in any directory
                     $typesToSkip = @()
                     foreach ($typeInFile in $allTypesInFile) {
-                        $commonTypeFile = Join-Path $OutputDir "Common\$typeInFile.cs"
-                        if (Test-Path $commonTypeFile) {
+                        if (Test-TypeExistsInAnyDirectory $typeInFile) {
                             $typesToSkip += $typeInFile
                         }
                     }
@@ -2187,9 +2380,8 @@ $typeDefinition
                                     continue
                                 }
                                 
-                                # Check if this type is missing (not in Common)
-                                $commonTypeFile = Join-Path $OutputDir "Common\$typeName.cs"
-                                if (-not (Test-Path $commonTypeFile)) {
+                                # Check if this type is missing (not in any directory)
+                                if (-not (Test-TypeExistsInAnyDirectory $typeName)) {
                                     $inTypeDefinition = $true
                                     $tempContent += $line + "`n"
                                     $braceCount = ($line.ToCharArray() | Where-Object { $_ -eq '{' }).Count - ($line.ToCharArray() | Where-Object { $_ -eq '}' }).Count
@@ -2218,7 +2410,14 @@ $typeDefinition
                     
                     # Create a temporary directory pair for conversion
                     # Determine the correct type based on target directory
-                    $dirType = if ($targetOutputDir -like "*\Server" -or $targetOutputDir -like "*/Server") { "Server" } else { "Entity" }
+                    # Find the correct type by matching the output directory with DirectoryPairs
+                    $dirType = "Common"  # Default fallback
+                    foreach ($pair in $DirectoryPairs) {
+                        if ($targetOutputDir -eq $pair.output) {
+                            $dirType = $pair.type
+                            break
+                        }
+                    }
                     $tempDirectoryPairs = @(
                         @{
                             input = $sourceFile.DirectoryName
@@ -2276,6 +2475,7 @@ try {
         directoryPairs = $directoryPairs
         blockedClasses = $blockedClasses
         numberToDoublePattern = $NumberToDoublePattern
+        baseNamespace = $BaseNamespace
     }
     $jsonInput = $converterInput | ConvertTo-Json -Depth 3
     Write-Host "Passing directory pairs to TypeScript compiler converter..." -ForegroundColor Gray
@@ -2345,17 +2545,19 @@ function Invoke-TypeScriptImports {
                 foreach ($match in $importMatches) {
                     $importPath = $match.Groups[2].Value
                     
-                    # Map TypeScript import paths to C# namespaces
+                    # Map TypeScript import paths to C# namespaces programmatically using DirectoryPairs
                     $csharpNamespace = ""
-                    if ($importPath -like "@server/models/*") {
-                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server"
-                    } elseif ($importPath -like "@server/interfaces/api/*") {
-                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api"
-                    } elseif ($importPath -like "@server/entity/*") {
-                        $csharpNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
+                    foreach ($pair in $DirectoryPairs) {
+                        # Convert input path to import pattern (e.g., "codebase/seerr-main/server/models" -> "@server/models/*")
+                        $importPattern = $pair.input -replace "^$SeerrRootDir/", '@' -replace '/', '/' -replace '$', '/*'
+                        if ($importPath -like $importPattern) {
+                            $csharpNamespace = Get-NamespaceForModelType $pair.type
+                            break
+                        }
                     }
                     
-                    if ($csharpNamespace -and $csharpNamespace -ne "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel") {
+                    $baseNamespace = $BaseNamespace
+                    if ($csharpNamespace -and $csharpNamespace -ne $baseNamespace) {
                         # Check if using statement already exists
                         if ($csharpContent -notmatch "using\s+$([regex]::Escape($csharpNamespace));") {
                             # Add using statement after existing using statements
@@ -2399,9 +2601,11 @@ function Add-CrossNamespaceUsingStatements {
             $fileNamespace = "Common"
         }
         
-        # Special case: if file is in Server directory but has base namespace, it's actually in Server namespace
-        if ($file.FullName -match "\\Server\\" -and $content -match "namespace Jellyfin\.Plugin\.JellyseerrBridge\.JellyseerrModel;") {
+        # Special case: if file is in Server/Api directory but has base namespace, it's actually in Server/Api namespace
+        if ($file.FullName -match "\\Server\\" -and $content -match "namespace $([regex]::Escape($BaseNamespace));") {
             $fileNamespace = "Server"
+        } elseif ($file.FullName -match "\\Api\\" -and $content -match "namespace $([regex]::Escape($BaseNamespace));") {
+            $fileNamespace = "Api"
         }
         
         # Find all class references in the file by looking for type names in property declarations
@@ -2437,10 +2641,10 @@ function Add-CrossNamespaceUsingStatements {
                 continue
             }
             
-            # Determine which namespace this class is defined in by searching all files
-            $classNamespace = ""
-            $allFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
-            $foundNamespaces = @()
+    # Determine which namespace this class is defined in by searching all files
+    $classNamespace = ""
+    $allFiles = Get-ChildItem -Path $OutputDir -Recurse -Filter "*.cs"
+    $foundNamespaces = @()
             
             foreach ($searchFile in $allFiles) {
                 $searchContent = Get-Content $searchFile.FullName -Raw
@@ -2467,12 +2671,7 @@ function Add-CrossNamespaceUsingStatements {
             
             # If the class is in a different namespace than the current file, add using statement
             if ($classNamespace -ne "" -and $classNamespace -ne $fileNamespace) {
-                if ($classNamespace -eq "Common") {
-                    # For Common namespace classes, use the base namespace
-                    $usingStatement = "using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;"
-                } else {
-                    $usingStatement = "using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.$classNamespace;"
-                }
+                $usingStatement = "using $(Get-NamespaceForModelType $classNamespace);"
                 if ($content -notmatch [regex]::Escape($usingStatement)) {
                     $neededUsings += $usingStatement
                 }

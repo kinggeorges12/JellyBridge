@@ -8,25 +8,25 @@ namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 public class UserSettingsGeneralResponse
 {
     [JsonPropertyName("username")]
-    public string? Username { get; set; } = string.Empty;
+    public string? Username { get; set; } = null!;
 
     [JsonPropertyName("email")]
-    public string? Email { get; set; } = string.Empty;
+    public string? Email { get; set; } = null!;
 
     [JsonPropertyName("discordId")]
-    public string? DiscordId { get; set; } = string.Empty;
+    public string? DiscordId { get; set; } = null!;
 
     [JsonPropertyName("locale")]
-    public string? Locale { get; set; } = string.Empty;
+    public string? Locale { get; set; } = null!;
 
     [JsonPropertyName("discoverRegion")]
-    public string? DiscoverRegion { get; set; } = string.Empty;
+    public string? DiscoverRegion { get; set; } = null!;
 
     [JsonPropertyName("streamingRegion")]
-    public string? StreamingRegion { get; set; } = string.Empty;
+    public string? StreamingRegion { get; set; } = null!;
 
     [JsonPropertyName("originalLanguage")]
-    public string? OriginalLanguage { get; set; } = string.Empty;
+    public string? OriginalLanguage { get; set; } = null!;
 
     [JsonPropertyName("movieQuotaLimit")]
     public int? MovieQuotaLimit { get; set; } = null!;
@@ -66,7 +66,7 @@ public class UserSettingsNotificationsResponse
     public bool? EmailEnabled { get; set; } = null!;
 
     [JsonPropertyName("pgpKey")]
-    public string? PgpKey { get; set; } = string.Empty;
+    public string? PgpKey { get; set; } = null!;
 
     [JsonPropertyName("discordEnabled")]
     public bool? DiscordEnabled { get; set; } = null!;
@@ -75,31 +75,31 @@ public class UserSettingsNotificationsResponse
     public int? DiscordEnabledTypes { get; set; } = null!;
 
     [JsonPropertyName("discordId")]
-    public string? DiscordId { get; set; } = string.Empty;
+    public string? DiscordId { get; set; } = null!;
 
     [JsonPropertyName("pushbulletAccessToken")]
-    public string? PushbulletAccessToken { get; set; } = string.Empty;
+    public string? PushbulletAccessToken { get; set; } = null!;
 
     [JsonPropertyName("pushoverApplicationToken")]
-    public string? PushoverApplicationToken { get; set; } = string.Empty;
+    public string? PushoverApplicationToken { get; set; } = null!;
 
     [JsonPropertyName("pushoverUserKey")]
-    public string? PushoverUserKey { get; set; } = string.Empty;
+    public string? PushoverUserKey { get; set; } = null!;
 
     [JsonPropertyName("pushoverSound")]
-    public string? PushoverSound { get; set; } = string.Empty;
+    public string? PushoverSound { get; set; } = null!;
 
     [JsonPropertyName("telegramEnabled")]
     public bool? TelegramEnabled { get; set; } = null!;
 
     [JsonPropertyName("telegramBotUsername")]
-    public string? TelegramBotUsername { get; set; } = string.Empty;
+    public string? TelegramBotUsername { get; set; } = null!;
 
     [JsonPropertyName("telegramChatId")]
-    public string? TelegramChatId { get; set; } = string.Empty;
+    public string? TelegramChatId { get; set; } = null!;
 
     [JsonPropertyName("telegramMessageThreadId")]
-    public string? TelegramMessageThreadId { get; set; } = string.Empty;
+    public string? TelegramMessageThreadId { get; set; } = null!;
 
     [JsonPropertyName("telegramSendSilently")]
     public bool? TelegramSendSilently { get; set; } = null!;

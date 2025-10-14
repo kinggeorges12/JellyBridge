@@ -32,7 +32,7 @@ public class Episode
     public int ShowId { get; set; }
 
     [JsonPropertyName("stillPath")]
-    public string? StillPath { get; set; } = string.Empty;
+    public string? StillPath { get; set; } = null!;
 
     [JsonPropertyName("voteAverage")]
     public double VoteAverage { get; set; }
@@ -60,7 +60,7 @@ public class Season
     public string Overview { get; set; } = string.Empty;
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("seasonNumber")]
     public int SeasonNumber { get; set; }
@@ -98,10 +98,10 @@ public class TvDetails
     public int Id { get; set; }
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("contentRatings")]
     public TmdbTvRatingResult ContentRatings { get; set; } = new();
@@ -113,7 +113,7 @@ public class TvDetails
     public List<int> EpisodeRunTime { get; set; } = new();
 
     [JsonPropertyName("firstAirDate")]
-    public string? FirstAirDate { get; set; } = string.Empty;
+    public string? FirstAirDate { get; set; } = null!;
 
     [JsonPropertyName("genres")]
     public List<Genre> Genres { get; set; } = new();
@@ -182,7 +182,7 @@ public class TvDetails
     public string Status { get; set; } = string.Empty;
 
     [JsonPropertyName("tagline")]
-    public string? Tagline { get; set; } = string.Empty;
+    public string? Tagline { get; set; } = null!;
 
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
@@ -227,7 +227,7 @@ public class TvDetailsCreatedBy
     public int Gender { get; set; }
 
     [JsonPropertyName("profilePath")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
 }
 

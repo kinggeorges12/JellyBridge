@@ -291,7 +291,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
                 var regions = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersRegions, config);
-                var typedRegions = (List<JellyseerrWatchRegion>)regions ?? new List<JellyseerrWatchRegion>();
+                var typedRegions = (List<TmdbWatchProviderRegion>)regions ?? new List<TmdbWatchProviderRegion>();
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", typedRegions.Count);
                 
@@ -341,10 +341,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var tvNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
                 // Combine and deduplicate networks
-                var allNetworks = new List<JellyseerrWatchNetwork>();
+                var allNetworks = new List<JellyseerrNetwork>();
                 var seenIds = new HashSet<int>();
                 
-                foreach (var network in ((List<JellyseerrWatchNetwork>)movieNetworks).Concat((List<JellyseerrWatchNetwork>)tvNetworks))
+                foreach (var network in ((List<JellyseerrNetwork>)movieNetworks).Concat((List<JellyseerrNetwork>)tvNetworks))
                 {
                     if (seenIds.Add(network.Id))
                     {

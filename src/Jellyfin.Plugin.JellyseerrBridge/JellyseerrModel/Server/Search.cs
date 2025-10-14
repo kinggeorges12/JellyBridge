@@ -17,10 +17,10 @@ public class SearchResult
     public double Popularity { get; set; }
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("voteCount")]
     public int VoteCount { get; set; }
@@ -104,10 +104,10 @@ public class CollectionResult
     public bool Adult { get; set; }
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
@@ -129,7 +129,7 @@ public class PersonResult
     public double Popularity { get; set; }
 
     [JsonPropertyName("profilePath")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }

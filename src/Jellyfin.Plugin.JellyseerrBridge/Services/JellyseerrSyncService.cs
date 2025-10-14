@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using MediaBrowser.Controller.Library;
@@ -10,7 +11,6 @@ using System.Text.Json;
 using System.IO;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Model.Entities;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -247,7 +247,7 @@ public partial class JellyseerrSyncService
             }
             
             var requests = await _apiService.CallEndpointAsync(JellyseerrEndpoint.Requests, config);
-            var typedRequests = (List<JellyseerrRequest>)requests;
+            var typedRequests = (List<MediaRequest>)requests;
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows, {RequestCount} requests from Jellyseerr",
                 allMovies.Count, allShows.Count, typedRequests.Count);
@@ -276,7 +276,7 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Process requests from Jellyseerr.
     /// </summary>
-    private async Task<ProcessResult> ProcessRequestsAsync(List<JellyseerrRequest> requests)
+    private async Task<ProcessResult> ProcessRequestsAsync(List<MediaRequest> requests)
     {
         var result = new ProcessResult();
         
@@ -287,7 +287,7 @@ public partial class JellyseerrSyncService
                 result.Processed++;
                 
                 _logger.LogDebug("Processing request {RequestId} for {MediaType} (ID: {MediaId})",
-                    request.Id, request.MediaTypeString, request.Media?.Id ?? 0);
+                    request.Id, request.Type.ToString(), request.Media?.Id ?? 0);
 
                 // Update request status in Jellyfin metadata
                 await UpdateRequestStatusAsync(request);
@@ -304,10 +304,10 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Update request status in Jellyfin metadata.
     /// </summary>
-    private Task UpdateRequestStatusAsync(JellyseerrRequest request)
+    private Task UpdateRequestStatusAsync(MediaRequest request)
     {
         _logger.LogDebug("Updating request status for {MediaType} (ID: {MediaId}): {Status}", 
-            request.MediaTypeString, request.Media?.Id ?? 0, request.Status);
+            request.Type.ToString(), request.Media?.Id ?? 0, request.Status);
         
         // Update request status in Jellyfin metadata
         // Implementation depends on Jellyfin's internal APIs
@@ -320,7 +320,8 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
-    private async Task<ProcessResult> CreateFoldersAsync<T>(List<T> items, string template) where T : IJellyseerrItem
+    private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items, string template) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
@@ -373,7 +374,8 @@ public partial class JellyseerrSyncService
     /// Create folder name by filling template fields with item data using reflection.
     /// Supports nested property access like {mediaInfo.tvdbId}.
     /// </summary>
-    private string CreateFolderNameFromFormat<T>(T item, string template) where T : IJellyseerrItem
+    private string CreateFolderNameFromFormat<TJellyseerr>(TJellyseerr item, string template) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var folderName = template;
         
@@ -399,7 +401,8 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Get property value using reflection, supporting nested property access.
     /// </summary>
-    private string GetPropertyValue<T>(T item, string propertyPath) where T : IJellyseerrItem
+    private string GetPropertyValue<TJellyseerr>(TJellyseerr item, string propertyPath) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         if (item == null || string.IsNullOrEmpty(propertyPath))
             return "";
@@ -443,14 +446,15 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Create JSON metadata file for movies or TV shows.
     /// </summary>
-    private async Task CreateMetadataFileAsync<T>(T item, string directoryPath) where T : IJellyseerrItem
+    private async Task CreateMetadataFileAsync<TJellyseerr>(TJellyseerr item, string directoryPath) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         // Serialize the item directly as its specific type to preserve all properties
         var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
         var filePath = Path.Combine(directoryPath, "metadata.json");
         
         await File.WriteAllTextAsync(filePath, json);
-        _logger.LogDebug("Created metadata file for {ItemType}: {Item}", item.Type, item);
+        _logger.LogDebug("Created metadata file for {ItemType}: {Item}", typeof(TJellyseerr).Name, item);
     }
 }
 

@@ -1,9 +1,9 @@
 using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 
-namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
+namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
 public class RequestPermissionError : Exception
 {
@@ -25,6 +25,8 @@ public class BlacklistedMediaError : Exception
 {
 }
 
+
+
 public class MediaRequest
 {
     [JsonPropertyName("id")]
@@ -40,7 +42,7 @@ public class MediaRequest
     public User RequestedBy { get; set; } = new();
 
     [JsonPropertyName("modifiedBy")]
-    public User ModifiedBy { get; set; } = new();
+    public User? ModifiedBy { get; set; } = null!;
 
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; }
@@ -61,19 +63,19 @@ public class MediaRequest
     public bool Is4k { get; set; }
 
     [JsonPropertyName("serverId")]
-    public int ServerId { get; set; }
+    public int? ServerId { get; set; } = null!;
 
     [JsonPropertyName("profileId")]
-    public int ProfileId { get; set; }
+    public int? ProfileId { get; set; } = null!;
 
     [JsonPropertyName("rootFolder")]
-    public string RootFolder { get; set; } = string.Empty;
+    public string? RootFolder { get; set; } = null!;
 
     [JsonPropertyName("languageProfileId")]
-    public int LanguageProfileId { get; set; }
+    public int? LanguageProfileId { get; set; } = null!;
 
     [JsonPropertyName("tags")]
-    public List<int> Tags { get; set; } = new();
+    public List<int>? Tags { get; set; } = new();
 
     [JsonPropertyName("isAutoRequest")]
     public bool IsAutoRequest { get; set; }

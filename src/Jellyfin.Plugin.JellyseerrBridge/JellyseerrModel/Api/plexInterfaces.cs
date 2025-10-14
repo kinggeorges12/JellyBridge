@@ -39,7 +39,7 @@ public class PlexConnection
     public int? Status { get; set; } = null!;
 
     [JsonPropertyName("message")]
-    public string? Message { get; set; } = string.Empty;
+    public string? Message { get; set; } = null!;
 
 }
 
@@ -79,10 +79,10 @@ public class PlexDevice
     public bool Owned { get; set; }
 
     [JsonPropertyName("accessToken")]
-    public string? AccessToken { get; set; } = string.Empty;
+    public string? AccessToken { get; set; } = null!;
 
     [JsonPropertyName("publicAddress")]
-    public string? PublicAddress { get; set; } = string.Empty;
+    public string? PublicAddress { get; set; } = null!;
 
     [JsonPropertyName("httpsRequired")]
     public bool? HttpsRequired { get; set; } = null!;
@@ -106,13 +106,13 @@ public class PlexDevice
     public bool? Presence { get; set; } = null!;
 
     [JsonPropertyName("ownerID")]
-    public string? OwnerID { get; set; } = string.Empty;
+    public string? OwnerID { get; set; } = null!;
 
     [JsonPropertyName("home")]
     public bool? Home { get; set; } = null!;
 
     [JsonPropertyName("sourceTitle")]
-    public string? SourceTitle { get; set; } = string.Empty;
+    public string? SourceTitle { get; set; } = null!;
 
     [JsonPropertyName("connection")]
     public List<PlexConnection> Connection { get; set; } = new();

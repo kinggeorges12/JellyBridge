@@ -8,14 +8,15 @@
     # Default parameters for the conversion script
     SeerrRootDir = "codebase/seerr-main"
     OutputDir = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel"
+    BaseNamespace = "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel"
     
     # Regex pattern to identify properties that should be double instead of int
     NumberToDoublePattern = '(?:.*average$|^popularity$|^percent$)'
     
     # Define blocked classes that should not be converted
     BlockedClasses = @(
-        'ServarrBase',
         'ExternalAPI',
+        'ServarrBase',
         'CacheResponse',
         'CacheResponseImageCache',
         'ImageCache',
@@ -35,6 +36,16 @@
             input = "codebase/seerr-main/server/interfaces/api"
             output = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel/Api"
             type = "Api"
+        },
+        @{
+            input = "codebase/seerr-main/server/constants"
+            output = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel/Common"
+            type = "Common"
+        },
+        @{
+            input = "codebase/seerr-main/server/entity"
+            output = "src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel/Common"
+            type = "Common"
         }
     )
 }

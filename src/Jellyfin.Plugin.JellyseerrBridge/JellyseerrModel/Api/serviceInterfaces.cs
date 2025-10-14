@@ -32,7 +32,7 @@ public class ServiceCommonServer
     public int? ActiveAnimeProfileId { get; set; } = null!;
 
     [JsonPropertyName("activeAnimeDirectory")]
-    public string? ActiveAnimeDirectory { get; set; } = string.Empty;
+    public string? ActiveAnimeDirectory { get; set; } = null!;
 
     [JsonPropertyName("activeAnimeLanguageProfileId")]
     public int? ActiveAnimeLanguageProfileId { get; set; } = null!;

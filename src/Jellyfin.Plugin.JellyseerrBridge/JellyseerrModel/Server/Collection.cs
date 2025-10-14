@@ -14,13 +14,13 @@ public class Collection
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
-    public string? Overview { get; set; } = string.Empty;
+    public string? Overview { get; set; } = null!;
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("parts")]
     public List<MovieResult> Parts { get; set; } = new();

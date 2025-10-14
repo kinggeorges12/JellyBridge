@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
@@ -21,20 +21,8 @@ public class JellyseerrUser : User
 {
     // Override properties that have different types in the API response
     
-    [JsonPropertyName("userType")]
-    public new int UserType { get; set; }
-    
     [JsonPropertyName("permissions")]
     public new int Permissions { get; set; }
-    
-    [JsonPropertyName("movieQuotaLimit")]
-    public new int? MovieQuotaLimit { get; set; }
-    
-    [JsonPropertyName("tvQuotaLimit")]
-    public new int? TvQuotaLimit { get; set; }
-    
-    [JsonPropertyName("tvQuotaDays")]
-    public new int? TvQuotaDays { get; set; }
     
     [JsonPropertyName("createdAt")]
     public new string? CreatedAt { get; set; }
