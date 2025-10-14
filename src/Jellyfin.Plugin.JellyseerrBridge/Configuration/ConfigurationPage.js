@@ -225,42 +225,30 @@ function initializeGeneralSettings(page) {
             contentType: 'application/json',
             dataType: 'json'
         }).then(function (data) {
-            const debugInfo = 'CONNECTION RESPONSE DEBUG:<br>' +
-                'Response exists: ' + (data ? 'YES' : 'NO') + '<br>' +
-                'Response type: ' + typeof data + '<br>' +
-                'Response success: ' + (data?.success ? 'YES' : 'NO') + '<br>' +
-                'Response message: ' + (data?.message || 'UNDEFINED') + '<br>' +
-                'Response status: ' + (data?.status || 'UNDEFINED') + '<br>' +
-                'Full response: ' + JSON.stringify(data) + '<br>' +
-                'Response keys: ' + (data ? Object.keys(data).join(', ') : 'NONE');
-            
-            if (data && data.success) {
-                Dashboard.alert('✅ Connected to Jellyseerr!');
-                // Show confirmation dialog for saving settings
-                Dashboard.confirm({
-                        title: 'Connection Success!',
-                        text: 'Save connection settings now?',
-                        confirmText: 'Confirm',
-                        cancelText: 'Cancel',
-                        primary: "confirm"
-                    }, 'Title', (confirmed) => {
-                        if (confirmed) {
-                            // Save the current settings using the reusable function
-                            savePluginConfiguration(page).then(function (result) {
-                                Dashboard.hideLoadingMsg();
-                                Dashboard.processPluginConfigurationUpdateResult(result);
-                            }).catch(function (error) {
-                                Dashboard.hideLoadingMsg();
-                                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                                scrollToElement('jellyseerrBridgeConfigurationForm');
-                            });
-                        } else {
-                            Dashboard.alert('🚫 Exited without saving');
-                        }
-                    });
-            } else {
-                Dashboard.alert('❌ CONNECTION FAILED!<br>' + debugInfo);
-            }
+            // HTTP 200 response means connection test was successful
+            Dashboard.alert('✅ Connected to Jellyseerr!');
+            // Show confirmation dialog for saving settings
+            Dashboard.confirm({
+                    title: 'Connection Success!',
+                    text: 'Save connection settings now?',
+                    confirmText: 'Confirm',
+                    cancelText: 'Cancel',
+                    primary: "confirm"
+                }, 'Title', (confirmed) => {
+                    if (confirmed) {
+                        // Save the current settings using the reusable function
+                        savePluginConfiguration(page).then(function (result) {
+                            Dashboard.hideLoadingMsg();
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        }).catch(function (error) {
+                            Dashboard.hideLoadingMsg();
+                            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                            scrollToElement('jellyseerrBridgeConfigurationForm');
+                        });
+                    } else {
+                        Dashboard.alert('🚫 Exited without saving');
+                    }
+                });
         }).catch(function (error) {
             const debugInfo = 'CONNECTION ERROR DEBUG:<br>' +
                 'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +

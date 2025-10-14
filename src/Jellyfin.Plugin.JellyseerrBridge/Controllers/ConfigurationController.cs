@@ -229,7 +229,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     });
                 }
 
-                _logger.LogInformation("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.Username);
+                _logger.LogInformation("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown");
 
                 // Test user list permissions using JellyseerrApiService
                 var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
