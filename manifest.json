@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2025-10-14T11:14:08.867Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.196.3.0/JellyseerrBridge-0.196.3.0-DLL.zip",
+        "checksum": "E246C07FC67DFDCE7AF3E42BDE83D27F",
+        "targetAbi": "10.10.7.0",
+        "version": "0.196.3.0",
+        "changelog": "v0.196.3.0 - Fixed UserList pagination logic"
+      },
+      {
         "timestamp": "2025-10-14T11:00:26.692Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.196.2.0/JellyseerrBridge-0.196.2.0-DLL.zip",
         "version": "0.196.2.0",

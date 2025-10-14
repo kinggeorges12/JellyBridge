@@ -23,9 +23,11 @@ public class JellyseerrUser : User
     [JsonPropertyName("permissions")]
     public new int Permissions { get; set; }
     
+    // API returns string dates, but base User class expects DateTimeOffset
     [JsonPropertyName("createdAt")]
     public new string? CreatedAt { get; set; }
     
+    // API returns string dates, but base User class expects DateTimeOffset
     [JsonPropertyName("updatedAt")]
     public new string? UpdatedAt { get; set; }
     

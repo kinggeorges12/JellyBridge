@@ -217,10 +217,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test authentication using JellyseerrApiService
                 var userInfo = await _apiService.CallEndpointAsync(JellyseerrEndpoint.AuthMe, testConfig);
+                _logger.LogInformation("[JellyseerrBridge] AuthMe response type: {Type}, Value: {Value}", userInfo?.GetType().Name ?? "null", userInfo?.ToString() ?? "null");
+                
                 var typedUserInfo = (JellyseerrUser?)userInfo;
                 if (typedUserInfo == null)
                 {
-                    _logger.LogWarning("[JellyseerrBridge] API key authentication failed");
+                    _logger.LogWarning("[JellyseerrBridge] API key authentication failed - userInfo is null");
                     return Unauthorized(new { 
                         success = false, 
                         message = "API key authentication failed",
@@ -233,7 +235,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test user list permissions using JellyseerrApiService
                 var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
-                var typedUsers = (List<JellyseerrUser>)users;
+                _logger.LogInformation("[JellyseerrBridge] UserList response type: {Type}, Count: {Count}", users?.GetType().Name ?? "null", users is IList<object> list ? list.Count : "unknown");
+                
+                var typedUsers = (List<JellyseerrUser>)users!;
                 _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", typedUsers.Count);
 
                 _logger.LogInformation("[JellyseerrBridge] Connection test completed successfully");
