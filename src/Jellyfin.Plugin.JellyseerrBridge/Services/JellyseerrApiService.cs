@@ -21,10 +21,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 public class JellyseerrApiService
 {
     /// <summary>
-    /// Maximum safe integer value for JavaScript/TypeScript (Number.MAX_SAFE_INTEGER).
-    /// This is 2^53 - 1 = 9007199254740991
+    /// Maximum safe integer value that works for both JavaScript/TypeScript and C# int.
+    /// Uses the minimum between Number.MAX_SAFE_INTEGER (2^53 - 1) and int.MaxValue (2^31 - 1).
+    /// This is int.MaxValue = 2,147,483,647
     /// </summary>
-    public const long MAX_SAFE_INTEGER = 9007199254740991;
+    public const int MAX_SAFE_INTEGER = int.MaxValue;
     
     /// <summary>
     /// Maximum integer value for pagination (int.MaxValue).

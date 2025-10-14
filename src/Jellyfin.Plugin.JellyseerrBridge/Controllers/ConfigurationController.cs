@@ -394,10 +394,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", allNetworks.Count, targetRegion);
                 
-                return Ok(new { 
-                    success = true, 
-                    networks = allNetworks 
-                });
+                return Ok(allNetworks);
             }
             catch (Exception ex)
             {

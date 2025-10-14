@@ -443,12 +443,12 @@ function loadAvailableNetworks(page) {
         type: 'GET',
         dataType: 'json'
     }).then(function(response) {
-        Dashboard.alert(`🔍 DEBUG: API Response received for networks. Success: ${response?.success}, Networks count: ${response?.networks?.length || 0}`);
+        Dashboard.alert(`🔍 DEBUG: API Response received for networks. Networks count: ${response?.length || 0}`);
         
-        if (response && response.success && response.networks) {
+        if (response && Array.isArray(response)) {
             // Convert networks to the format expected by updateAvailableNetworks (ID as key, name as value)
             const newNetworkMap = {};
-            response.networks.forEach(network => {
+            response.forEach(network => {
                 if (network && network.id && network.name) {
                     newNetworkMap[network.id] = network.name;
                 }
