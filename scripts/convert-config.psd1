@@ -48,4 +48,8 @@
             type = "Common"
         }
     )
+    
+    # Global JSON property naming convention
+    # true = use camelCase (e.g., "mediaType"), false = use snake_case (e.g., "media_type")
+    JsonCamelCase = $true
 }

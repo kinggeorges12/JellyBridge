@@ -238,11 +238,18 @@ public class JellyseerrBridgeService
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
+                        _logger.LogDebug("[JellyseerrBridge] Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        
                         var item = JsonSerializer.Deserialize<T>(json);
                         
                         if (item != null)
                         {
+                            _logger.LogDebug("[JellyseerrBridge] Successfully deserialized item: {Item}", item.ToString());
                             metadata.Add(item);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("[JellyseerrBridge] Failed to deserialize item from {MetadataFile}", metadataFile);
                         }
                     }
                     catch (Exception ex)
@@ -275,12 +282,9 @@ public class JellyseerrBridgeService
         {
             _logger.LogInformation("Testing Jellyfin library scan functionality against bridge folder metadata...");
             
-            if (!excludeFromMainLibraries)
-            {
-                _logger.LogInformation("ExcludeFromMainLibraries is disabled - no library scan performed");
-                return new List<IJellyseerrMedia>();
-            }
-
+            // For test purposes, always scan for bridge items regardless of ExcludeFromMainLibraries setting
+            // This allows users to see what bridge items exist even when the setting is disabled
+            
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
                 _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);

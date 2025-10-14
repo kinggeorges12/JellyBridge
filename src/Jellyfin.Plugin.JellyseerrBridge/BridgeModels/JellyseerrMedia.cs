@@ -24,9 +24,19 @@ public interface IJellyseerrMedia
     string Year { get; }
 
     /// <summary>
-    /// The media type derived from the implementing class name.
+    /// The media type from the API response (inherited from base classes).
     /// </summary>
-    string MediaType => GetMediaTypeFromClassName(this);
+    string MediaType { get; }
+
+    /// <summary>
+    /// The extra external ID (IMDB for movies, TVDB for shows).
+    /// </summary>
+    string? ExtraId { get; }
+
+    /// <summary>
+    /// The display name for the extra external ID (e.g., "imdbid", "tvdbid").
+    /// </summary>
+    string ExtraIdName { get; }
 
     /// <summary>
     /// Extract year from date string.
@@ -40,14 +50,5 @@ public interface IJellyseerrMedia
             return date.Year.ToString();
             
         return string.Empty;
-    }
-
-    /// <summary>
-    /// Get media type from the implementing class name.
-    /// </summary>
-    private static string GetMediaTypeFromClassName(IJellyseerrMedia instance)
-    {
-        var className = instance.GetType().Name.ToLowerInvariant();
-        return className.Replace("jellyseerr", "").ToLowerInvariant();
     }
 }

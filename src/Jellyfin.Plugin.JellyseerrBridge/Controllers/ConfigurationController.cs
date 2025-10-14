@@ -38,34 +38,57 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
+                // Add timeout to prevent hanging
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                
+                _logger.LogInformation("[JellyseerrBridge] Starting bridge items scan...");
                 var bridgeItems = await _bridgeService.TestLibraryScanAsync();
+                
+                _logger.LogInformation("[JellyseerrBridge] Getting plugin configuration...");
                 var config = Plugin.GetConfiguration();
                 
-                // Get existing Jellyfin items for counts and IDs
+                _logger.LogInformation("[JellyseerrBridge] Getting existing movies...");
                 var existingMovies = await _bridgeService.GetExistingItemsAsync<Movie>();
+                
+                _logger.LogInformation("[JellyseerrBridge] Getting existing shows...");
                 var existingShows = await _bridgeService.GetExistingItemsAsync<Series>();
                 
-                // Return bridge items with metadata for frontend
+                _logger.LogInformation("[JellyseerrBridge] Preparing response...");
+                
+                // Always return a response
                 return Ok(new
                 {
-                    bridgeItems = bridgeItems,
-                    syncDirectory = config.LibraryDirectory,
-                    excludeFromMainLibraries = config.ExcludeFromMainLibraries ?? true,
-                    message = $"Library scan test completed. Found {bridgeItems.Count} bridge items, {existingMovies.Count} movies, {existingShows.Count} shows in main libraries",
-                    movieCount = existingMovies.Count,
-                    tvShowCount = existingShows.Count,
-                    movieIds = existingMovies.Select(m => m.Id.ToString()).ToList(),
-                    tvShowIds = existingShows.Select(s => s.Id.ToString()).ToList()
+                    bridgeItems = bridgeItems ?? new List<IJellyseerrMedia>(),
+                    syncDirectory = config?.LibraryDirectory ?? "Not configured",
+                    excludeFromMainLibraries = config?.ExcludeFromMainLibraries ?? true,
+                    message = $"Library scan test completed. Found {bridgeItems?.Count ?? 0} bridge items, {existingMovies?.Count ?? 0} movies, {existingShows?.Count ?? 0} shows in main libraries",
+                    movieCount = existingMovies?.Count ?? 0,
+                    tvShowCount = existingShows?.Count ?? 0,
+                    movieIds = existingMovies?.Select(m => m.Id.ToString()).ToList() ?? new List<string>(),
+                    tvShowIds = existingShows?.Select(s => s.Id.ToString()).ToList() ?? new List<string>()
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("[JellyseerrBridge] TestLibraryScan timed out after 2 minutes");
+                return StatusCode(408, new { 
+                    error = "Request timeout",
+                    details = "Library scan took too long and was cancelled. This might indicate a very large library or slow storage.",
+                    bridgeItems = new List<IJellyseerrMedia>(),
+                    movieCount = 0,
+                    tvShowCount = 0
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Error testing library scan");
                 return StatusCode(500, new { 
-                    success = false, 
                     error = ex.Message,
                     details = $"Library scan failed: {ex.GetType().Name} - {ex.Message}",
-                    stackTrace = ex.StackTrace
+                    stackTrace = ex.StackTrace,
+                    bridgeItems = new List<IJellyseerrMedia>(),
+                    movieCount = 0,
+                    tvShowCount = 0
                 });
             }
         }

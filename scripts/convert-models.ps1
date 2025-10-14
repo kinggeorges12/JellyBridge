@@ -13,6 +13,7 @@ if (Test-Path $ConfigPath) {
     $NumberToDoublePattern = $Config.NumberToDoublePattern
     $BlockedClasses = $Config.BlockedClasses
     $DirectoryPairs = $Config.DirectoryPairs
+    $JsonCamelCase = $Config.JsonCamelCase
 } else {
     Write-Error "Configuration file not found: $ConfigPath"
     exit 1
@@ -93,6 +94,7 @@ let directoryPairs = [];
 let blockedClasses = [];
 let numberToDoublePattern = '';
 let baseNamespace = '';
+let jsonCamelCase = false;
 
 try {
     const input = fs.readFileSync(0, 'utf8').trim();
@@ -101,6 +103,7 @@ try {
     blockedClasses = inputData.blockedClasses || [];
     numberToDoublePattern = inputData.numberToDoublePattern || '';
     baseNamespace = inputData.baseNamespace || 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
+    jsonCamelCase = inputData.jsonCamelCase !== undefined ? inputData.jsonCamelCase : true;
     
     // Set up the double property function using the PowerShell config
     if (numberToDoublePattern) {
@@ -207,15 +210,23 @@ function toPascalCase(str) {
     return pascalParts.join('');
 }
 
-// Function to convert property names for JSON attributes (replace slashes with underscores)
+// Function to convert property names for JSON attributes using global case conversion
 function toJsonPropertyName(str) {
     let cleanStr = str;
     
     // Remove quotes if present
     cleanStr = cleanStr.replace(/^['"]|['"]$/g, '');
     
-    // Replace forward slashes with underscores
-    cleanStr = cleanStr.replace(/\//g, '_');
+    // Apply case conversion based on global setting
+    if (jsonCamelCase) {
+        // Convert snake_case to camelCase
+        cleanStr = cleanStr.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+    } else {
+        // Convert camelCase to snake_case
+        cleanStr = cleanStr.replace(/([A-Z])/g, '_$1').toLowerCase();
+        // Remove leading underscore if present
+        cleanStr = cleanStr.replace(/^_/, '');
+    }
     
     return cleanStr;
 }
@@ -2430,6 +2441,7 @@ $typeDefinition
                     $tempConverterInput = @{
                         directoryPairs = $tempDirectoryPairs
                         blockedClasses = $blockedClasses
+                        jsonCamelCase = $JsonCamelCase
                     }
                     
                     # Convert the specific file
@@ -2476,6 +2488,7 @@ try {
         blockedClasses = $blockedClasses
         numberToDoublePattern = $NumberToDoublePattern
         baseNamespace = $BaseNamespace
+        jsonCamelCase = $JsonCamelCase
     }
     $jsonInput = $converterInput | ConvertTo-Json -Depth 3
     Write-Host "Passing directory pairs to TypeScript compiler converter..." -ForegroundColor Gray

@@ -311,6 +311,66 @@ function initializeAdvancedSettings(page) {
             updateLibraryPrefixState();
         });
     }
+    
+    // Test Library Scan button functionality
+    const testLibraryScanButton = page.querySelector('#testLibraryScan');
+    const testLibraryScanResult = page.querySelector('#testLibraryScanResult');
+    
+    if (testLibraryScanButton) {
+        testLibraryScanButton.addEventListener('click', async function() {
+            // Show immediate feedback that button was clicked
+            testLibraryScanResult.textContent = '🔄 Testing library scan...';
+            testLibraryScanResult.style.display = 'block';
+            
+            testLibraryScanButton.disabled = true;
+            testLibraryScanButton.querySelector('span').textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/JellyseerrBridge/TestLibraryScan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let resultText = `Library Scan Test Results:\n`;
+                    resultText += `Sync Directory: ${result.syncDirectory || 'Not configured'}\n`;
+                    resultText += `ExcludeFromMainLibraries: ${result.excludeFromMainLibraries}\n\n`;
+                    resultText += `ℹ️ ${result.message}\n`;
+                    
+                    if (result.movieCount > 0 || result.tvShowCount > 0) {
+                        resultText += `Movies in main libraries: ${result.movieCount}\n`;
+                        resultText += `TV Shows in main libraries: ${result.tvShowCount}`;
+                    }
+                    
+                    if (result.bridgeItems && result.bridgeItems.length > 0) {
+                        resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
+                        result.bridgeItems.forEach((item, index) => {
+                            const yearText = item.year ? ` (${item.year})` : '';
+                            resultText += `\n${index + 1}. ${item.name}${yearText} [${item.mediaType}]`;
+                        });
+                    } else {
+                        resultText += `\n\nNo bridge items found.`;
+                    }
+                    
+                    testLibraryScanResult.textContent = resultText;
+                    testLibraryScanResult.style.display = 'block';
+                } else {
+                    testLibraryScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
+                    testLibraryScanResult.style.display = 'block';
+                }
+            } catch (error) {
+                testLibraryScanResult.textContent = `❌ Test failed: ${error.message}`;
+                testLibraryScanResult.style.display = 'block';
+            } finally {
+                testLibraryScanButton.disabled = false;
+                testLibraryScanButton.querySelector('span').textContent = 'Test Library Scan';
+            }
+        });
+    }
 }
 
 
@@ -774,68 +834,6 @@ function performManualSync(page) {
         // Always sync after the if statement
         performSync();
     });
-
-    // Test Library Scan button functionality
-    const testLibraryScanButton = page.querySelector('#testLibraryScan');
-    const testLibraryScanResult = page.querySelector('#testLibraryScanResult');
-    
-    if (testLibraryScanButton) {
-        testLibraryScanButton.addEventListener('click', async function() {
-            testLibraryScanButton.disabled = true;
-            testLibraryScanButton.querySelector('span').textContent = 'Testing...';
-            testLibraryScanResult.style.display = 'none';
-            
-            try {
-                const response = await fetch('/JellyseerrBridge/TestLibraryScan', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    let resultText = `Library Scan Test Results:\n`;
-                    resultText += `Sync Directory: ${result.syncDirectory || 'Not configured'}\n`;
-                    resultText += `ExcludeFromMainLibraries: ${result.excludeFromMainLibraries}\n`;
-                    
-                    if (result.message) {
-                        resultText += `\nℹ️ ${result.message}`;
-                    }
-                    
-                    if (result.movieCount !== undefined) {
-                        resultText += `\nMovies in main libraries: ${result.movieCount}`;
-                    }
-                    if (result.tvShowCount !== undefined) {
-                        resultText += `\nTV Shows in main libraries: ${result.tvShowCount}`;
-                    }
-                    
-                    if (result.bridgeItems && result.bridgeItems.length > 0) {
-                        resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
-                        result.bridgeItems.forEach((item, index) => {
-                            const yearText = item.year ? ` (${item.year})` : '';
-                            resultText += `\n${index + 1}. ${item.name}${yearText} [${item.mediaType}]`;
-                        });
-                    } else {
-                        resultText += `\n\nNo bridge items found.`;
-                    }
-                    
-                    testLibraryScanResult.textContent = resultText;
-                    testLibraryScanResult.style.display = 'block';
-                } else {
-                    testLibraryScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
-                    testLibraryScanResult.style.display = 'block';
-                }
-            } catch (error) {
-                testLibraryScanResult.textContent = `❌ Test failed: ${error.message}`;
-                testLibraryScanResult.style.display = 'block';
-            } finally {
-                testLibraryScanButton.disabled = false;
-                testLibraryScanButton.querySelector('span').textContent = 'Test Library Scan';
-            }
-        });
-    }
 }
 
 

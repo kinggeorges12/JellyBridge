@@ -35,6 +35,16 @@ public class JellyseerrMovie
     public string Year => IJellyseerrMedia.ExtractYear(ReleaseDate);
 
     /// <summary>
+    /// The extra external ID (IMDB for movies).
+    /// </summary>
+    public string? ExtraId => null; // IMDB ID not available in current model
+
+    /// <summary>
+    /// The display name for the extra external ID (imdbid for movies).
+    /// </summary>
+    public string ExtraIdName => "imdbid";
+
+    /// <summary>
     /// Equality comparison with another JellyseerrMovie.
     /// </summary>
     public bool Equals(JellyseerrMovie? other)
