@@ -10,8 +10,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 public class JellyseerrNetwork : TmdbWatchProviderDetails
 {
     [JsonPropertyName("id")]
-    public int Id => base.ProviderId;
+    public int Id 
+    { 
+        get => ProviderId; 
+        set => ProviderId = value; 
+    }
 
     [JsonPropertyName("name")]
-    public string Name => base.ProviderName;
+    public string Name 
+    { 
+        get => ProviderName; 
+        set => ProviderName = value; 
+    }
 }

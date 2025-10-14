@@ -35,6 +35,16 @@ public class JellyseerrShow
     public string Year => IJellyseerrMedia.ExtractYear(FirstAirDate);
 
     /// <summary>
+    /// The extra external ID (TVDB for shows).
+    /// </summary>
+    public string? ExtraId => null; // TVDB ID not available in current model
+
+    /// <summary>
+    /// The display name for the extra external ID (tvdbid for shows).
+    /// </summary>
+    public string ExtraIdName => "tvdbid";
+
+    /// <summary>
     /// Equality comparison with another JellyseerrShow.
     /// </summary>
     public bool Equals(JellyseerrShow? other)

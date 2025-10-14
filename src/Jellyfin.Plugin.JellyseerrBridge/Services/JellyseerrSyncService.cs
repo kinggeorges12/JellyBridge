@@ -124,10 +124,10 @@ public partial class JellyseerrSyncService
             }
 
             // Process movies
-            var movieResults = await CreateFoldersAsync(allMovies, "{Title} ({ReleaseDate}) [tmdbid-{Id}]");
+            var movieResults = await CreateFoldersAsync(allMovies, "{Name} ({Year}) [tmdbid-{Id}]");
 
             // Process TV shows
-            var showResults = await CreateFoldersAsync(allShows, "{Name} ({FirstAirDate}) [tvdbid-{MediaInfo.TvdbId}] [tmdbid-{Id}]");
+            var showResults = await CreateFoldersAsync(allShows, "{Name} ({Year}) [tmdbid-{Id}]");
 
             result.Success = true;
             result.MoviesResult = movieResults;
