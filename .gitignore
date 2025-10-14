@@ -353,6 +353,10 @@ FodyWeavers.xsd
 !.vscode/extensions.json
 *.code-workspace
 
+# Ignore all dot folders (IDE and tool specific)
+.*/
+!.git/
+
 # Local History for Visual Studio Code
 .history/
 

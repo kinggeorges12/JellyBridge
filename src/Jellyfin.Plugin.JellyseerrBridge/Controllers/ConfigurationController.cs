@@ -235,12 +235,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test user list permissions using JellyseerrApiService
                 var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
-                _logger.LogInformation("[JellyseerrBridge] UserList response type: {Type}, Count: {Count}", users?.GetType().Name ?? "null", users is IList<object> list ? list.Count : "unknown");
+                _logger.LogInformation("[JellyseerrBridge] UserList response type: {Type}", users?.GetType().Name ?? "null");
                 
-                // Convert the List<object> to List<JellyseerrUser> by casting each item
+                // Handle the response - it could be JellyseerrPaginatedResponse<JellyseerrUser> or List<JellyseerrUser>
                 var typedUsers = new List<JellyseerrUser>();
-                if (users is IList<object> userList)
+                if (users is JellyseerrPaginatedResponse<JellyseerrUser> paginatedResponse)
                 {
+                    typedUsers = paginatedResponse.Results;
+                    _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list from paginated response. Found {UserCount} users", typedUsers.Count);
+                }
+                else if (users is IList<object> userList)
+                {
+                    // Convert the List<object> to List<JellyseerrUser> by casting each item
                     foreach (var user in userList)
                     {
                         if (user is JellyseerrUser jellyseerrUser)
@@ -248,8 +254,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             typedUsers.Add(jellyseerrUser);
                         }
                     }
+                    _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list from object list. Found {UserCount} users", typedUsers.Count);
                 }
-                _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", typedUsers.Count);
+                else
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Unexpected UserList response type: {Type}", users?.GetType().Name ?? "null");
+                }
 
                 _logger.LogInformation("[JellyseerrBridge] Connection test completed successfully");
                 return Ok(statusResponse);
