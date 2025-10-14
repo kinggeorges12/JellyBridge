@@ -237,7 +237,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
                 _logger.LogInformation("[JellyseerrBridge] UserList response type: {Type}, Count: {Count}", users?.GetType().Name ?? "null", users is IList<object> list ? list.Count : "unknown");
                 
-                var typedUsers = (List<JellyseerrUser>)users!;
+                // Convert the List<object> to List<JellyseerrUser> by casting each item
+                var typedUsers = new List<JellyseerrUser>();
+                if (users is IList<object> userList)
+                {
+                    foreach (var user in userList)
+                    {
+                        if (user is JellyseerrUser jellyseerrUser)
+                        {
+                            typedUsers.Add(jellyseerrUser);
+                        }
+                    }
+                }
                 _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list. Found {UserCount} users", typedUsers.Count);
 
                 _logger.LogInformation("[JellyseerrBridge] Connection test completed successfully");
