@@ -168,8 +168,7 @@ public class JellyseerrApiService
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
-            isPaginated: true,
-            maxPages: 0,
+            isPaginated: false,
             description: "Get user list"
         ),
         [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
@@ -527,17 +526,31 @@ public class JellyseerrApiService
                     
                     // Extract the Results property directly from the paginated response
                     var resultsProperty = pageResponse.GetType().GetProperty("Results");
+                    _logger.LogInformation("Results property found: {HasResults}", resultsProperty != null);
+                    
                     if (resultsProperty != null)
                     {
                         var results = resultsProperty.GetValue(pageResponse);
+                        _logger.LogInformation("Results value type: {ResultsType}, IsNull: {IsNull}", results?.GetType().Name ?? "null", results == null);
+                        
                         if (results is System.Collections.IEnumerable resultsEnumerable)
                         {
+                            var itemCount = 0;
                             foreach (var item in resultsEnumerable)
                             {
                                 allItems.Add(item);
+                                itemCount++;
                             }
-                            _logger.LogInformation("Added {Count} items from page {Page}", resultsEnumerable.Cast<object>().Count(), page);
+                            _logger.LogInformation("Added {Count} items from page {Page}", itemCount, page);
                         }
+                        else
+                        {
+                            _logger.LogWarning("Results is not enumerable. Type: {Type}", results?.GetType().Name ?? "null");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No Results property found on response type: {ResponseType}", pageResponse.GetType().Name);
                     }
                     
                     page++;
