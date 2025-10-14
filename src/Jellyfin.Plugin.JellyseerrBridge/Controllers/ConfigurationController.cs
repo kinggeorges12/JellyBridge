@@ -286,19 +286,29 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 var result = await _syncService.CreateBridgeFoldersAsync();
                 
-                _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
-                return Ok(result);
+                if (result.Success)
+                {
+                    _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
+                    return Ok(new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Manual sync failed: {Message}", result.Message);
+                    return StatusCode(500, new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
-                return StatusCode(500, new SyncResult
-                {
-                    Success = false,
-                    Message = $"Sync failed: {ex.Message}",
-                    Details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}",
-                    StackTrace = ex.StackTrace,
-                    ErrorCode = "SYNC_EXCEPTION"
+                return StatusCode(500, new { 
+                    message = $"Sync failed: {ex.Message}", 
+                    details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
                 });
             }
         }
