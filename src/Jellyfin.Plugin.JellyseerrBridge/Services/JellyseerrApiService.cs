@@ -20,6 +20,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public class JellyseerrApiService
 {
+    /// <summary>
+    /// Maximum safe integer value for JavaScript/TypeScript (Number.MAX_SAFE_INTEGER).
+    /// This is 2^53 - 1 = 9007199254740991
+    /// </summary>
+    public const long MAX_SAFE_INTEGER = 9007199254740991;
+    
+    /// <summary>
+    /// Maximum integer value for pagination (int.MaxValue).
+    /// </summary>
+    public const int MAX_PAGES = int.MaxValue;
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<JellyseerrApiService> _logger;
@@ -486,7 +496,7 @@ public class JellyseerrApiService
                 _logger.LogInformation("Initial maxPages value: {MaxPages}", maxPages);
                 if (maxPages == 0)
                 {
-                    maxPages = int.MaxValue;
+                    maxPages = MAX_PAGES;
                     _logger.LogInformation("Converted maxPages from 0 to {MaxPages}", maxPages);
                 }
                 
@@ -633,6 +643,15 @@ public class JellyseerrApiService
                 { 
                     ["id"] = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.UserId), config).ToString() 
                 }
+            ),
+            
+            // UserList endpoint - use take parameter to get all users
+            JellyseerrEndpoint.UserList => (
+                new Dictionary<string, string> 
+                { 
+                    ["take"] = MAX_SAFE_INTEGER.ToString()
+                },
+                null
             ),
             
             // All other endpoints don't need parameters
