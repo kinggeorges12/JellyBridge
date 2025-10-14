@@ -104,6 +104,11 @@ public class JellyseerrApiService
         public bool IsPaginated { get; set; }
         
         /// <summary>
+        /// The maximum number of pages to fetch for paginated endpoints.
+        /// </summary>
+        public int? MaxPages { get; set; }
+        
+        /// <summary>
         /// Whether this endpoint requires template values (e.g., user ID in path).
         /// </summary>
         public bool RequiresTemplateValues { get; set; }
@@ -127,6 +132,7 @@ public class JellyseerrApiService
             Type responseModel, 
             HttpMethod? method = null,
             bool isPaginated = false, 
+            int? maxPages = null,
             bool requiresTemplateValues = false, 
             string description = "")
         {
@@ -134,6 +140,7 @@ public class JellyseerrApiService
             ResponseModel = responseModel;
             Method = method ?? HttpMethod.Get;
             IsPaginated = isPaginated;
+            MaxPages = maxPages;
             RequiresTemplateValues = requiresTemplateValues;
             Description = description;
         }
@@ -161,7 +168,8 @@ public class JellyseerrApiService
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
-            isPaginated: false,
+            isPaginated: true,
+            maxPages: 0,
             description: "Get user list"
         ),
         [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
@@ -517,10 +525,15 @@ public class JellyseerrApiService
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
             
             // Handle response based on pagination
+            _logger.LogDebug("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
             if (endpointConfig.IsPaginated)
             {
                 // Paginated endpoints - fetch all pages starting from page 1
-                var maxPages = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config) ?? int.MaxValue;
+                var maxPages = endpointConfig.MaxPages ?? Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config);
+                if (maxPages == 0)
+                {
+                    maxPages = int.MaxValue;
+                }
                 
                 // Get the item type from the paginated response model
                 var responseModelType = endpointConfig.ResponseModel;
