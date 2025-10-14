@@ -7,38 +7,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// <summary>
 /// Bridge model for paginated response that matches the Jellyseerr API structure.
 /// 
-/// STRUCTURE MISMATCH EXPLANATION:
-/// The generated PaginatedResponse uses nested PageInfo structure:
-///   - PaginatedResponse.pageInfo.pages
-///   - PaginatedResponse.pageInfo.page  
-///   - PaginatedResponse.pageInfo.results
-///   - PaginatedResponse.pageInfo.pageSize
+/// ACTUAL API STRUCTURE (from server/routes/user/index.ts):
+///   - pageInfo.pages: total number of pages
+///   - pageInfo.pageSize: items per page  
+///   - pageInfo.results: total number of results
+///   - pageInfo.page: current page number
+///   - results: array of actual items
 /// 
-/// But the actual API endpoints return a flat structure from TMDB data:
-///   - From: server/routes/discover.ts, movie.ts, tv.ts, search.ts
-///   - Example: return res.status(200).json({
-///       page: data.page,                    // ← Direct from TMDB
-///       totalPages: data.total_pages,       // ← TMDB snake_case → camelCase
-///       totalResults: data.total_results,  // ← TMDB snake_case → camelCase
-///       keywords: keywordData,              // ← Additional field
-///       results: data.results.map(...)      // ← Transformed TMDB results
-///     });
-/// 
-/// The TMDB interfaces (TmdbPaginatedResponse) have the correct structure:
-///   - From: server/api/themoviedb/interfaces.ts
-///   - interface TmdbPaginatedResponse { page, total_results, total_pages }
-///   - But these weren't converted to C# models
+/// This model correctly maps the nested structure returned by Jellyseerr API.
 /// </summary>
 public class JellyseerrPaginatedResponse<T>
 {
-    // Use the generated PageInfo for the nested structure
+    // The actual API structure uses nested pageInfo
     [JsonPropertyName("pageInfo")]
     public PageInfo PageInfo { get; set; } = new();
     
-    // Additional fields that the API actually returns
+    // Additional fields that some endpoints return
     [JsonPropertyName("keywords")]
     public List<TmdbKeyword> Keywords { get; set; } = new();
     
+    // The actual results array
     [JsonPropertyName("results")]
     public List<T> Results { get; set; } = new();
     

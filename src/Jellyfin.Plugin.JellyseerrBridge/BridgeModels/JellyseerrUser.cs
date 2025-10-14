@@ -14,8 +14,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// 
 /// LOCATION: server/routes/user/index.ts - user.filter() method
 /// 
-/// This bridge model inherits from the generated User model and overrides
-/// specific properties to match the actual API response structure.
+/// This bridge model inherits from the generated User model and handles type mismatches.
 /// </summary>
 public class JellyseerrUser : User
 {

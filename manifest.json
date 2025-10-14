@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-14T11:00:26.692Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.196.2.0/JellyseerrBridge-0.196.2.0-DLL.zip",
+        "version": "0.196.2.0",
+        "changelog": "v0.196.2.0 - Fixed AuthMe deserialization issues and TestConnection response handling - AuthMe now returns proper user object, UserList pagination fixed, frontend treats HTTP 200 as success",
+        "targetAbi": "10.10.7.0",
+        "checksum": "DFDBB6F04D742BF2044DD0DCF835553F",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.10.7.0",
         "changelog": "v0.196.0.0 - Refactored to use generic inheritance pattern with TmdbMediaResult base class and IJellyseerrMedia interface",
         "version": "0.196.0.0",
