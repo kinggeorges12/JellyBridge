@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
@@ -16,10 +17,10 @@ public class TmdbMediaResult
     public double Popularity { get; set; }
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("vote_count")]
     public int VoteCount { get; set; }
@@ -97,10 +98,10 @@ public class TmdbCollectionResult
     public bool Adult { get; set; }
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
@@ -122,7 +123,7 @@ public class TmdbPersonResult
     public double Popularity { get; set; }
 
     [JsonPropertyName("profile_path")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
@@ -218,7 +219,7 @@ public class TmdbCreditCast
     public int Order { get; set; }
 
     [JsonPropertyName("profile_path")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
 }
 
@@ -244,7 +245,7 @@ public class TmdbCreditCrew
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("profile_path")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("job")]
     public string Job { get; set; } = string.Empty;
@@ -257,28 +258,28 @@ public class TmdbCreditCrew
 public class TmdbExternalIds
 {
     [JsonPropertyName("imdb_id")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("freebase_mid")]
-    public string? FreebaseMid { get; set; } = string.Empty;
+    public string? FreebaseMid { get; set; } = null!;
 
     [JsonPropertyName("freebase_id")]
-    public string? FreebaseId { get; set; } = string.Empty;
+    public string? FreebaseId { get; set; } = null!;
 
     [JsonPropertyName("tvdb_id")]
     public int? TvdbId { get; set; } = null!;
 
     [JsonPropertyName("tvrage_id")]
-    public string? TvrageId { get; set; } = string.Empty;
+    public string? TvrageId { get; set; } = null!;
 
     [JsonPropertyName("facebook_id")]
-    public string? FacebookId { get; set; } = string.Empty;
+    public string? FacebookId { get; set; } = null!;
 
     [JsonPropertyName("instagram_id")]
-    public string? InstagramId { get; set; } = string.Empty;
+    public string? InstagramId { get; set; } = null!;
 
     [JsonPropertyName("twitter_id")]
-    public string? TwitterId { get; set; } = string.Empty;
+    public string? TwitterId { get; set; } = null!;
 
 }
 
@@ -288,7 +289,7 @@ public class TmdbProductionCompany
     public int Id { get; set; }
 
     [JsonPropertyName("logo_path")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
@@ -297,13 +298,13 @@ public class TmdbProductionCompany
     public string OriginCountry { get; set; } = string.Empty;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
     [JsonPropertyName("headquarters")]
-    public string? Headquarters { get; set; } = string.Empty;
+    public string? Headquarters { get; set; } = null!;
 
     [JsonPropertyName("description")]
-    public string? Description { get; set; } = string.Empty;
+    public string? Description { get; set; } = null!;
 
 }
 
@@ -313,16 +314,16 @@ public class TmdbMovieDetails
     public int Id { get; set; }
 
     [JsonPropertyName("imdb_id")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("budget")]
     public int Budget { get; set; }
@@ -331,7 +332,7 @@ public class TmdbMovieDetails
     public List<TmdbMovieDetailsGenres> Genres { get; set; } = new();
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
     [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
@@ -340,7 +341,7 @@ public class TmdbMovieDetails
     public string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
-    public string? Overview { get; set; } = string.Empty;
+    public string? Overview { get; set; } = null!;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -370,7 +371,7 @@ public class TmdbMovieDetails
     public string Status { get; set; } = string.Empty;
 
     [JsonPropertyName("tagline")]
-    public string? Tagline { get; set; } = string.Empty;
+    public string? Tagline { get; set; } = null!;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
@@ -492,7 +493,7 @@ public class TmdbTvSeasonResult
     public string Overview { get; set; } = string.Empty;
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("season_number")]
     public int SeasonNumber { get; set; }
@@ -505,7 +506,7 @@ public class TmdbTvDetails
     public int Id { get; set; }
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("content_ratings")]
     public TmdbTvRatingResult ContentRatings { get; set; } = new();
@@ -568,7 +569,7 @@ public class TmdbTvDetails
     public double Popularity { get; set; }
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("production_companies")]
     public List<TmdbTvDetailsProductionCompanies> ProductionCompanies { get; set; } = new();
@@ -586,7 +587,7 @@ public class TmdbTvDetails
     public string Status { get; set; } = string.Empty;
 
     [JsonPropertyName("tagline")]
-    public string? Tagline { get; set; } = string.Empty;
+    public string? Tagline { get; set; } = null!;
 
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
@@ -695,19 +696,19 @@ public class TmdbPersonDetails
     public double Popularity { get; set; }
 
     [JsonPropertyName("place_of_birth")]
-    public string? PlaceOfBirth { get; set; } = string.Empty;
+    public string? PlaceOfBirth { get; set; } = null!;
 
     [JsonPropertyName("profile_path")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
     [JsonPropertyName("imdb_id")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
 }
 
@@ -738,7 +739,7 @@ public class TmdbPersonCredit
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("media_type")]
-    public string? MediaType { get; set; } = string.Empty;
+    public string? MediaType { get; set; } = null!;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -747,7 +748,7 @@ public class TmdbPersonCredit
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("first_air_date")]
     public string FirstAirDate { get; set; } = string.Empty;
@@ -759,7 +760,7 @@ public class TmdbPersonCredit
     public List<int>? GenreIds { get; set; } = new();
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("original_title")]
     public string OriginalTitle { get; set; } = string.Empty;
@@ -829,13 +830,13 @@ public class TmdbCollection
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
-    public string? Overview { get; set; } = string.Empty;
+    public string? Overview { get; set; } = null!;
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("parts")]
     public List<TmdbMovieResult> Parts { get; set; } = new();
@@ -891,23 +892,23 @@ public class TmdbNetwork
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("headquarters")]
-    public string? Headquarters { get; set; } = string.Empty;
+    public string? Headquarters { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
     [JsonPropertyName("logo_path")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("origin_country")]
-    public string? OriginCountry { get; set; } = string.Empty;
+    public string? OriginCountry { get; set; } = null!;
 
 }
 
 public class TmdbWatchProviders
 {
     [JsonPropertyName("link")]
-    public string? Link { get; set; } = string.Empty;
+    public string? Link { get; set; } = null!;
 
     [JsonPropertyName("buy")]
     public List<TmdbWatchProviderDetails>? Buy { get; set; } = new();
@@ -923,7 +924,7 @@ public class TmdbWatchProviderDetails
     public int? DisplayPriority { get; set; } = null!;
 
     [JsonPropertyName("logo_path")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("provider_id")]
     public int ProviderId { get; set; }
@@ -946,7 +947,7 @@ public class TmdbCompany
     public int Id { get; set; }
 
     [JsonPropertyName("logo_path")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
@@ -1047,10 +1048,10 @@ public class TmdbMovieDetailsBelongsToCollection
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("poster_path")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("backdrop_path")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
 }
 
@@ -1090,7 +1091,7 @@ public class TmdbTvDetailsCreatedBy
     public int Gender { get; set; }
 
     [JsonPropertyName("profile_path")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
 }
 
@@ -1110,7 +1111,7 @@ public class TmdbTvDetailsProductionCompanies
     public int Id { get; set; }
 
     [JsonPropertyName("logo_path")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
@@ -1184,10 +1185,10 @@ public class TmdbReleaseReleaseDates
     public string Certification { get; set; } = string.Empty;
 
     [JsonPropertyName("iso_639_1")]
-    public string? Iso6391 { get; set; } = string.Empty;
+    public string? Iso6391 { get; set; } = null!;
 
     [JsonPropertyName("note")]
-    public string? Note { get; set; } = string.Empty;
+    public string? Note { get; set; } = null!;
 
     [JsonPropertyName("release_date")]
     public string ReleaseDate { get; set; } = string.Empty;

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.196.0.0 - Refactored to use generic inheritance pattern with TmdbMediaResult base class and IJellyseerrMedia interface",
+        "version": "0.196.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.196.0.0/JellyseerrBridge-0.196.0.0-DLL.zip",
+        "timestamp": "2025-10-14T10:44:18.043Z",
+        "dependencies": [],
+        "checksum": "F0347B3287A038BEF0F028F822407549"
+      },
+      {
         "timestamp": "2025-10-13T23:36:12.279Z",
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.195.3.0/JellyseerrBridge-0.195.3.0-DLL.zip",

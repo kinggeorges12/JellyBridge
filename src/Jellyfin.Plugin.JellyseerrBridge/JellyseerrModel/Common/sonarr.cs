@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
@@ -129,7 +130,7 @@ public class SonarrSeries
     public string FirstAired { get; set; } = string.Empty;
 
     [JsonPropertyName("lastInfoSync")]
-    public string? LastInfoSync { get; set; } = string.Empty;
+    public string? LastInfoSync { get; set; } = null!;
 
     [JsonPropertyName("seriesType")]
     public string SeriesType { get; set; } = string.Empty;
@@ -165,7 +166,7 @@ public class SonarrSeries
     public int? Id { get; set; } = null!;
 
     [JsonPropertyName("rootFolderPath")]
-    public string? RootFolderPath { get; set; } = string.Empty;
+    public string? RootFolderPath { get; set; } = null!;
 
     [JsonPropertyName("addOptions")]
     public SonarrSeriesAddOptions? AddOptions { get; set; } = null!;
@@ -231,7 +232,7 @@ public class SonarrAPI : object
 public class SonarrSeasonStatistics
 {
     [JsonPropertyName("previousAiring")]
-    public string? PreviousAiring { get; set; } = string.Empty;
+    public string? PreviousAiring { get; set; } = null!;
 
     [JsonPropertyName("episodeFileCount")]
     public int EpisodeFileCount { get; set; }

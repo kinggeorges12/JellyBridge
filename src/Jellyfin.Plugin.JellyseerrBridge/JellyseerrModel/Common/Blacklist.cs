@@ -1,9 +1,11 @@
 using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 
-namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
+namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+
+
 
 public class Blacklist
 {
@@ -14,19 +16,19 @@ public class Blacklist
     public MediaType MediaType { get; set; } = new();
 
     [JsonPropertyName("title")]
-    public string Title { get; set; } = string.Empty;
+    public string? Title { get; set; } = null!;
 
     [JsonPropertyName("tmdbId")]
     public int TmdbId { get; set; }
 
     [JsonPropertyName("user")]
-    public User User { get; set; } = new();
+    public User? User { get; set; } = null!;
 
     [JsonPropertyName("media")]
     public Media Media { get; set; } = new();
 
     [JsonPropertyName("blacklistedTags")]
-    public string BlacklistedTags { get; set; } = string.Empty;
+    public string? BlacklistedTags { get; set; } = null!;
 
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; }

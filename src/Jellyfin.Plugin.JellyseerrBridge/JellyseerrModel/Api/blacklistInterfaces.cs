@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 
 public class BlacklistItem
@@ -16,7 +15,7 @@ public class BlacklistItem
     public string MediaType { get; set; } = string.Empty;
 
     [JsonPropertyName("title")]
-    public string? Title { get; set; } = string.Empty;
+    public string? Title { get; set; } = null!;
 
     [JsonPropertyName("createdAt")]
     public DateTimeOffset? CreatedAt { get; set; } = null!;
@@ -25,8 +24,14 @@ public class BlacklistItem
     public User? User { get; set; } = null!;
 
     [JsonPropertyName("blacklistedTags")]
-    public string? BlacklistedTags { get; set; } = string.Empty;
+    public string? BlacklistedTags { get; set; } = null!;
 
+}
+
+public enum MediaType
+{
+    Movie = 0,
+    Tv
 }
 
 public class BlacklistResultsResponse : PaginatedResponse

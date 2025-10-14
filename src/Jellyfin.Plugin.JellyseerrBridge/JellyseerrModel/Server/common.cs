@@ -12,7 +12,7 @@ public class ProductionCompany
     public int Id { get; set; }
 
     [JsonPropertyName("logoPath")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("originCountry")]
     public string OriginCountry { get; set; } = string.Empty;
@@ -21,13 +21,13 @@ public class ProductionCompany
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("description")]
-    public string? Description { get; set; } = string.Empty;
+    public string? Description { get; set; } = null!;
 
     [JsonPropertyName("headquarters")]
-    public string? Headquarters { get; set; } = string.Empty;
+    public string? Headquarters { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
 }
 
@@ -37,19 +37,19 @@ public class TvNetwork
     public int Id { get; set; }
 
     [JsonPropertyName("logoPath")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("originCountry")]
-    public string? OriginCountry { get; set; } = string.Empty;
+    public string? OriginCountry { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("headquarters")]
-    public string? Headquarters { get; set; } = string.Empty;
+    public string? Headquarters { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
 }
 
@@ -97,7 +97,7 @@ public class Cast
     public int Order { get; set; }
 
     [JsonPropertyName("profilePath")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
 }
 
@@ -122,35 +122,35 @@ public class Crew
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("profilePath")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
 }
 
 public class ExternalIds
 {
     [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("freebaseMid")]
-    public string? FreebaseMid { get; set; } = string.Empty;
+    public string? FreebaseMid { get; set; } = null!;
 
     [JsonPropertyName("freebaseId")]
-    public string? FreebaseId { get; set; } = string.Empty;
+    public string? FreebaseId { get; set; } = null!;
 
     [JsonPropertyName("tvdbId")]
     public int? TvdbId { get; set; } = null!;
 
     [JsonPropertyName("tvrageId")]
-    public string? TvrageId { get; set; } = string.Empty;
+    public string? TvrageId { get; set; } = null!;
 
     [JsonPropertyName("facebookId")]
-    public string? FacebookId { get; set; } = string.Empty;
+    public string? FacebookId { get; set; } = null!;
 
     [JsonPropertyName("instagramId")]
-    public string? InstagramId { get; set; } = string.Empty;
+    public string? InstagramId { get; set; } = null!;
 
     [JsonPropertyName("twitterId")]
-    public string? TwitterId { get; set; } = string.Empty;
+    public string? TwitterId { get; set; } = null!;
 
 }
 
@@ -160,7 +160,7 @@ public class WatchProviders
     public string Iso31661 { get; set; } = string.Empty;
 
     [JsonPropertyName("link")]
-    public string? Link { get; set; } = string.Empty;
+    public string? Link { get; set; } = null!;
 
     [JsonPropertyName("buy")]
     public List<WatchProviderDetails>? Buy { get; set; } = new();
@@ -176,7 +176,7 @@ public class WatchProviderDetails
     public int? DisplayPriority { get; set; } = null!;
 
     [JsonPropertyName("logoPath")]
-    public string? LogoPath { get; set; } = string.Empty;
+    public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("id")]
     public int Id { get; set; }

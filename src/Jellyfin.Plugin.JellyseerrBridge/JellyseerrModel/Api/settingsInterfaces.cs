@@ -24,7 +24,7 @@ public class SettingsAboutResponse
     public int TotalMediaItems { get; set; }
 
     [JsonPropertyName("tz")]
-    public string? Tz { get; set; } = string.Empty;
+    public string? Tz { get; set; } = null!;
 
     [JsonPropertyName("appDataPath")]
     public string AppDataPath { get; set; } = string.Empty;
@@ -34,16 +34,16 @@ public class SettingsAboutResponse
 public class PublicSettingsResponse
 {
     [JsonPropertyName("jellyfinHost")]
-    public string? JellyfinHost { get; set; } = string.Empty;
+    public string? JellyfinHost { get; set; } = null!;
 
     [JsonPropertyName("jellyfinExternalHost")]
-    public string? JellyfinExternalHost { get; set; } = string.Empty;
+    public string? JellyfinExternalHost { get; set; } = null!;
 
     [JsonPropertyName("jellyfinServerName")]
-    public string? JellyfinServerName { get; set; } = string.Empty;
+    public string? JellyfinServerName { get; set; } = null!;
 
     [JsonPropertyName("jellyfinForgotPasswordUrl")]
-    public string? JellyfinForgotPasswordUrl { get; set; } = string.Empty;
+    public string? JellyfinForgotPasswordUrl { get; set; } = null!;
 
     [JsonPropertyName("initialized")]
     public bool Initialized { get; set; }
@@ -154,7 +154,7 @@ public class LogMessage
     public string Level { get; set; } = string.Empty;
 
     [JsonPropertyName("label")]
-    public string? Label { get; set; } = string.Empty;
+    public string? Label { get; set; } = null!;
 
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;

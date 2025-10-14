@@ -36,10 +36,10 @@ public class MediaRequestBody
     public int? ProfileId { get; set; } = null!;
 
     [JsonPropertyName("profileName")]
-    public string? ProfileName { get; set; } = string.Empty;
+    public string? ProfileName { get; set; } = null!;
 
     [JsonPropertyName("rootFolder")]
-    public string? RootFolder { get; set; } = string.Empty;
+    public string? RootFolder { get; set; } = null!;
 
     [JsonPropertyName("languageProfileId")]
     public int? LanguageProfileId { get; set; } = null!;

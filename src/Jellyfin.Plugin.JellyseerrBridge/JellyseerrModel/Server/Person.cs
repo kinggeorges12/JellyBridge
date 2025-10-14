@@ -35,19 +35,19 @@ public class PersonDetails
     public double Popularity { get; set; }
 
     [JsonPropertyName("placeOfBirth")]
-    public string? PlaceOfBirth { get; set; } = string.Empty;
+    public string? PlaceOfBirth { get; set; } = null!;
 
     [JsonPropertyName("profilePath")]
-    public string? ProfilePath { get; set; } = string.Empty;
+    public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
     [JsonPropertyName("imdbId")]
-    public string? ImdbId { get; set; } = string.Empty;
+    public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
-    public string? Homepage { get; set; } = string.Empty;
+    public string? Homepage { get; set; } = null!;
 
 }
 
@@ -78,7 +78,7 @@ public class PersonCredit
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("mediaType")]
-    public string? MediaType { get; set; } = string.Empty;
+    public string? MediaType { get; set; } = null!;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -87,7 +87,7 @@ public class PersonCredit
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("backdropPath")]
-    public string? BackdropPath { get; set; } = string.Empty;
+    public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("firstAirDate")]
     public string FirstAirDate { get; set; } = string.Empty;
@@ -99,7 +99,7 @@ public class PersonCredit
     public List<int>? GenreIds { get; set; } = new();
 
     [JsonPropertyName("posterPath")]
-    public string? PosterPath { get; set; } = string.Empty;
+    public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("originalTitle")]
     public string OriginalTitle { get; set; } = string.Empty;

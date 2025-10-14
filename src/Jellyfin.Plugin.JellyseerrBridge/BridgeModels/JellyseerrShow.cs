@@ -9,92 +9,30 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Bridge model for Jellyseerr TV show that matches the actual discover tv API response.
+/// Jellyseerr TV Show that wraps TmdbTvResult with Jellyseerr-specific functionality.
 /// 
-/// SOURCE: This bridges the gap between TMDB TV show data and Jellyseerr-specific fields.
-/// 
-/// ACTUAL API RESPONSE: The discover/tv endpoint returns TMDB TV show data enhanced with
-/// Jellyseerr-specific fields like media info, availability status, etc.
-/// 
-/// LOCATION: server/routes/discover.ts - /tv endpoint
-///           server/models/Search.ts - mapTvResult() function
-/// 
-/// The response structure includes:
-/// - TMDB TV show fields (id, name, overview, etc.)
+/// This class provides:
+/// - All TMDB TV properties through inheritance
 /// - Jellyseerr media info (download status, service IDs, etc.)
-/// - Additional fields like mediaInfo, availability, etc.
+/// - Equality comparison with Jellyfin Series items
 /// 
-/// This bridge model provides the complete structure returned by the discover tv API.
+/// This bridge model provides the complete structure returned by the discover TV API.
 /// </summary>
-public class JellyseerrShow : TmdbTvResult, IJellyseerrItem, IEquatable<JellyseerrShow>, IEquatable<BaseItem>
+public class JellyseerrShow 
+    : TmdbTvResult, 
+      IJellyseerrMedia,
+      IEquatable<JellyseerrShow>, 
+      IEquatable<Series>
 {
     /// <summary>
-    /// Gets the type of this Jellyseerr object.
+    /// The display name of the TV show (Name from TMDB).
     /// </summary>
-    public string Type => "Show";
-
-    // IJellyseerrItem interface implementations
-    string? IJellyseerrItem.Name => Name;
-    int IJellyseerrItem.Id => Id; // Id is now int from TmdbTvResult
-    string? IJellyseerrItem.ImdbId => ExternalIds?.ImdbId;
-    int? IJellyseerrItem.TvdbId => MediaInfo?.TvdbId;
-    string? IJellyseerrItem.ReleaseDate => FirstAirDate; // Map FirstAirDate to ReleaseDate
-    
-    // Jellyseerr-specific fields
-    [JsonPropertyName("mediaInfo")]
-    public JellyseerrMediaInfo? MediaInfo { get; set; }
-    
-    [JsonPropertyName("availability")]
-    public string? Availability { get; set; }
-    
-    [JsonPropertyName("in4k")]
-    public bool In4k { get; set; }
-    
-    [JsonPropertyName("requestStatus")]
-    public string? RequestStatus { get; set; }
-    
-    [JsonPropertyName("requestStatus4k")]
-    public string? RequestStatus4k { get; set; }
-    
-    [JsonPropertyName("canRequest")]
-    public bool CanRequest { get; set; }
-    
-    [JsonPropertyName("canRequest4k")]
-    public bool CanRequest4k { get; set; }
-    
-    [JsonPropertyName("externalIds")]
-    public ExternalIds? ExternalIds { get; set; }
-    
-    [JsonPropertyName("genres")]
-    public List<JellyseerrModel.Server.Genre>? Genres { get; set; }
-    
-    [JsonPropertyName("watchlists")]
-    public List<WatchlistItem> Watchlists { get; set; } = new();
-    
-    [JsonPropertyName("mediaUrl")]
-    public string? MediaUrl { get; set; }
-    
-    [JsonPropertyName("serviceUrl")]
-    public string? ServiceUrl { get; set; }
+    public new string Name => base.Name;
 
     /// <summary>
     /// Computed property that extracts the year from the first air date.
     /// </summary>
-    public string Year => ExtractYear(FirstAirDate);
-
-    /// <summary>
-    /// Extract year from date string.
-    /// </summary>
-    private static string ExtractYear(string? dateString)
-    {
-        if (string.IsNullOrEmpty(dateString))
-            return string.Empty;
-            
-        if (DateTime.TryParse(dateString, out var date))
-            return date.Year.ToString();
-            
-        return string.Empty;
-    }
+    public string Year => IJellyseerrMedia.ExtractYear(FirstAirDate);
 
     /// <summary>
     /// Equality comparison with another JellyseerrShow.
@@ -103,6 +41,22 @@ public class JellyseerrShow : TmdbTvResult, IJellyseerrItem, IEquatable<Jellysee
     {
         if (other is null) return false;
         return Id == other.Id;
+    }
+
+    /// <summary>
+    /// Equality comparison with a Jellyfin Series item.
+    /// </summary>
+    public bool Equals(Series? other)
+    {
+        if (other is null) return false;
+        
+        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
+        if (!string.IsNullOrEmpty(other.GetProviderId("Tmdb")))
+        {
+            return Id.ToString() == other.GetProviderId("Tmdb");
+        }
+        
+        return false;
     }
 
     /// <summary>
@@ -115,22 +69,6 @@ public class JellyseerrShow : TmdbTvResult, IJellyseerrItem, IEquatable<Jellysee
         // Only compare with Series items
         if (other is not Series series) return false;
         
-        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (!string.IsNullOrEmpty(((BaseItem)series).GetProviderId("Tmdb")))
-        {
-            return Id.ToString() == ((BaseItem)series).GetProviderId("Tmdb");
-        }
-        
-        return false;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as JellyseerrShow);
-    }
-
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
+        return Equals(series);
     }
 }

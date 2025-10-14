@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
@@ -38,7 +39,7 @@ public class Region
     public string EnglishName { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
-    public string? Name { get; set; } = string.Empty;
+    public string? Name { get; set; } = null!;
 
 }
 
@@ -61,7 +62,7 @@ public class PlexSettings
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("machineId")]
-    public string? MachineId { get; set; } = string.Empty;
+    public string? MachineId { get; set; } = null!;
 
     [JsonPropertyName("ip")]
     public string Ip { get; set; } = string.Empty;
@@ -76,7 +77,7 @@ public class PlexSettings
     public List<Library> Libraries { get; set; } = new();
 
     [JsonPropertyName("webAppUrl")]
-    public string? WebAppUrl { get; set; } = string.Empty;
+    public string? WebAppUrl { get; set; } = null!;
 
 }
 
@@ -95,13 +96,13 @@ public class JellyfinSettings
     public bool? UseSsl { get; set; } = null!;
 
     [JsonPropertyName("urlBase")]
-    public string? UrlBase { get; set; } = string.Empty;
+    public string? UrlBase { get; set; } = null!;
 
     [JsonPropertyName("externalHostname")]
-    public string? ExternalHostname { get; set; } = string.Empty;
+    public string? ExternalHostname { get; set; } = null!;
 
     [JsonPropertyName("jellyfinForgotPasswordUrl")]
-    public string? JellyfinForgotPasswordUrl { get; set; } = string.Empty;
+    public string? JellyfinForgotPasswordUrl { get; set; } = null!;
 
     [JsonPropertyName("libraries")]
     public List<Library> Libraries { get; set; } = new();
@@ -117,7 +118,7 @@ public class JellyfinSettings
 public class TautulliSettings
 {
     [JsonPropertyName("hostname")]
-    public string? Hostname { get; set; } = string.Empty;
+    public string? Hostname { get; set; } = null!;
 
     [JsonPropertyName("port")]
     public int? Port { get; set; } = null!;
@@ -126,13 +127,13 @@ public class TautulliSettings
     public bool? UseSsl { get; set; } = null!;
 
     [JsonPropertyName("urlBase")]
-    public string? UrlBase { get; set; } = string.Empty;
+    public string? UrlBase { get; set; } = null!;
 
     [JsonPropertyName("apiKey")]
-    public string? ApiKey { get; set; } = string.Empty;
+    public string? ApiKey { get; set; } = null!;
 
     [JsonPropertyName("externalUrl")]
-    public string? ExternalUrl { get; set; } = string.Empty;
+    public string? ExternalUrl { get; set; } = null!;
 
 }
 
@@ -157,7 +158,7 @@ public class DVRSettings
     public bool UseSsl { get; set; }
 
     [JsonPropertyName("baseUrl")]
-    public string? BaseUrl { get; set; } = string.Empty;
+    public string? BaseUrl { get; set; } = null!;
 
     [JsonPropertyName("activeProfileId")]
     public int ActiveProfileId { get; set; }
@@ -178,7 +179,7 @@ public class DVRSettings
     public bool IsDefault { get; set; }
 
     [JsonPropertyName("externalUrl")]
-    public string? ExternalUrl { get; set; } = string.Empty;
+    public string? ExternalUrl { get; set; } = null!;
 
     [JsonPropertyName("syncEnabled")]
     public bool SyncEnabled { get; set; }
@@ -213,10 +214,10 @@ public class SonarrSettings : DVRSettings
     public int? ActiveAnimeProfileId { get; set; } = null!;
 
     [JsonPropertyName("activeAnimeProfileName")]
-    public string? ActiveAnimeProfileName { get; set; } = string.Empty;
+    public string? ActiveAnimeProfileName { get; set; } = null!;
 
     [JsonPropertyName("activeAnimeDirectory")]
-    public string? ActiveAnimeDirectory { get; set; } = string.Empty;
+    public string? ActiveAnimeDirectory { get; set; } = null!;
 
     [JsonPropertyName("activeAnimeLanguageProfileId")]
     public int? ActiveAnimeLanguageProfileId { get; set; } = null!;
@@ -413,13 +414,13 @@ public class FullPublicSettings : PublicSettings
     public int MediaServerType { get; set; }
 
     [JsonPropertyName("jellyfinExternalHost")]
-    public string? JellyfinExternalHost { get; set; } = string.Empty;
+    public string? JellyfinExternalHost { get; set; } = null!;
 
     [JsonPropertyName("jellyfinForgotPasswordUrl")]
-    public string? JellyfinForgotPasswordUrl { get; set; } = string.Empty;
+    public string? JellyfinForgotPasswordUrl { get; set; } = null!;
 
     [JsonPropertyName("jellyfinServerName")]
-    public string? JellyfinServerName { get; set; } = string.Empty;
+    public string? JellyfinServerName { get; set; } = null!;
 
     [JsonPropertyName("partialRequestsEnabled")]
     public bool PartialRequestsEnabled { get; set; }
@@ -667,16 +668,16 @@ public class MainSettingsDefaultQuotas
 public class NotificationAgentDiscordOptions
 {
     [JsonPropertyName("botUsername")]
-    public string? BotUsername { get; set; } = string.Empty;
+    public string? BotUsername { get; set; } = null!;
 
     [JsonPropertyName("botAvatarUrl")]
-    public string? BotAvatarUrl { get; set; } = string.Empty;
+    public string? BotAvatarUrl { get; set; } = null!;
 
     [JsonPropertyName("webhookUrl")]
     public string WebhookUrl { get; set; } = string.Empty;
 
     [JsonPropertyName("webhookRoleId")]
-    public string? WebhookRoleId { get; set; } = string.Empty;
+    public string? WebhookRoleId { get; set; } = null!;
 
     [JsonPropertyName("enableMentions")]
     public bool EnableMentions { get; set; }
@@ -714,10 +715,10 @@ public class NotificationAgentEmailOptions
     public bool RequireTls { get; set; }
 
     [JsonPropertyName("authUser")]
-    public string? AuthUser { get; set; } = string.Empty;
+    public string? AuthUser { get; set; } = null!;
 
     [JsonPropertyName("authPass")]
-    public string? AuthPass { get; set; } = string.Empty;
+    public string? AuthPass { get; set; } = null!;
 
     [JsonPropertyName("allowSelfSigned")]
     public bool AllowSelfSigned { get; set; }
@@ -726,17 +727,17 @@ public class NotificationAgentEmailOptions
     public string SenderName { get; set; } = string.Empty;
 
     [JsonPropertyName("pgpPrivateKey")]
-    public string? PgpPrivateKey { get; set; } = string.Empty;
+    public string? PgpPrivateKey { get; set; } = null!;
 
     [JsonPropertyName("pgpPassword")]
-    public string? PgpPassword { get; set; } = string.Empty;
+    public string? PgpPassword { get; set; } = null!;
 
 }
 
 public class NotificationAgentTelegramOptions
 {
     [JsonPropertyName("botUsername")]
-    public string? BotUsername { get; set; } = string.Empty;
+    public string? BotUsername { get; set; } = null!;
 
     [JsonPropertyName("botAPI")]
     public string BotAPI { get; set; } = string.Empty;
@@ -758,7 +759,7 @@ public class NotificationAgentPushbulletOptions
     public string AccessToken { get; set; } = string.Empty;
 
     [JsonPropertyName("channelTag")]
-    public string? ChannelTag { get; set; } = string.Empty;
+    public string? ChannelTag { get; set; } = null!;
 
 }
 
@@ -784,7 +785,7 @@ public class NotificationAgentWebhookOptions
     public string JsonPayload { get; set; } = string.Empty;
 
     [JsonPropertyName("authHeader")]
-    public string? AuthHeader { get; set; } = string.Empty;
+    public string? AuthHeader { get; set; } = null!;
 
 }
 
@@ -813,15 +814,15 @@ public class NotificationAgentNtfyOptions
     public bool? AuthMethodUsernamePassword { get; set; } = null!;
 
     [JsonPropertyName("username")]
-    public string? Username { get; set; } = string.Empty;
+    public string? Username { get; set; } = null!;
 
     [JsonPropertyName("password")]
-    public string? Password { get; set; } = string.Empty;
+    public string? Password { get; set; } = null!;
 
     [JsonPropertyName("authMethodToken")]
     public bool? AuthMethodToken { get; set; } = null!;
 
     [JsonPropertyName("token")]
-    public string? Token { get; set; } = string.Empty;
+    public string? Token { get; set; } = null!;
 
 }

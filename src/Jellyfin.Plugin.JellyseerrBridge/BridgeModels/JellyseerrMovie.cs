@@ -9,95 +9,30 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Bridge model for Jellyseerr movie that inherits from TmdbMovieResult and adds Jellyseerr-specific fields.
+/// Jellyseerr Movie that wraps TmdbMovieResult with Jellyseerr-specific functionality.
 /// 
-/// SOURCE: This inherits from JellyseerrModel.TmdbMovieResult and adds Jellyseerr-specific fields
-/// like media info, availability status, etc.
-/// 
-/// ACTUAL API RESPONSE: The discover/movies endpoint returns TMDB movie data enhanced with
-/// Jellyseerr-specific fields like media info, availability status, etc.
-/// 
-/// LOCATION: server/routes/discover.ts - /movies endpoint
-///           server/models/Search.ts - mapMovieResult() function
-/// 
-/// This bridge model inherits all TMDB movie properties and adds:
+/// This class provides:
+/// - All TMDB movie properties through inheritance
 /// - Jellyseerr media info (download status, service IDs, etc.)
-/// - Additional fields like mediaInfo, availability, etc.
-/// 
-/// The response structure includes:
-/// - TMDB movie fields (inherited from TmdbMovieResult)
-/// - Jellyseerr media info (download status, service IDs, etc.)
-/// - Additional fields like mediaInfo, availability, etc.
+/// - Equality comparison with Jellyfin Movie items
 /// 
 /// This bridge model provides the complete structure returned by the discover movies API.
 /// </summary>
-public class JellyseerrMovie : TmdbMovieResult, IJellyseerrItem, IEquatable<JellyseerrMovie>, IEquatable<BaseItem>
+public class JellyseerrMovie 
+    : TmdbMovieResult, 
+      IJellyseerrMedia,
+      IEquatable<JellyseerrMovie>, 
+      IEquatable<Movie>
 {
     /// <summary>
-    /// Gets the type of this Jellyseerr object.
+    /// The display name of the movie (Title from TMDB).
     /// </summary>
-    public string Type => "Movie";
-
-    // IJellyseerrItem interface implementations
-    string? IJellyseerrItem.Name => Title;
-    string? IJellyseerrItem.ImdbId => ExternalIds?.ImdbId;
-    int? IJellyseerrItem.TvdbId => MediaInfo?.TvdbId;
-    
-    // Jellyseerr-specific fields
-    [JsonPropertyName("mediaInfo")]
-    public JellyseerrMediaInfo? MediaInfo { get; set; }
-    
-    [JsonPropertyName("availability")]
-    public string? Availability { get; set; }
-    
-    [JsonPropertyName("in4k")]
-    public bool In4k { get; set; }
-    
-    [JsonPropertyName("requestStatus")]
-    public string? RequestStatus { get; set; }
-    
-    [JsonPropertyName("requestStatus4k")]
-    public string? RequestStatus4k { get; set; }
-    
-    [JsonPropertyName("canRequest")]
-    public bool CanRequest { get; set; }
-    
-    [JsonPropertyName("canRequest4k")]
-    public bool CanRequest4k { get; set; }
-    
-    [JsonPropertyName("externalIds")]
-    public ExternalIds? ExternalIds { get; set; }
-    
-    [JsonPropertyName("genres")]
-    public List<JellyseerrModel.Server.Genre>? Genres { get; set; }
-    
-    [JsonPropertyName("watchlists")]
-    public List<WatchlistItem> Watchlists { get; set; } = new();
-    
-    [JsonPropertyName("mediaUrl")]
-    public string? MediaUrl { get; set; }
-    
-    [JsonPropertyName("serviceUrl")]
-    public string? ServiceUrl { get; set; }
+    public string Name => Title;
 
     /// <summary>
     /// Computed property that extracts the year from the release date.
     /// </summary>
-    public string Year => ExtractYear(ReleaseDate);
-
-    /// <summary>
-    /// Extract year from date string.
-    /// </summary>
-    private static string ExtractYear(string? dateString)
-    {
-        if (string.IsNullOrEmpty(dateString))
-            return string.Empty;
-            
-        if (DateTime.TryParse(dateString, out var date))
-            return date.Year.ToString();
-            
-        return string.Empty;
-    }
+    public string Year => IJellyseerrMedia.ExtractYear(ReleaseDate);
 
     /// <summary>
     /// Equality comparison with another JellyseerrMovie.
@@ -106,6 +41,22 @@ public class JellyseerrMovie : TmdbMovieResult, IJellyseerrItem, IEquatable<Jell
     {
         if (other is null) return false;
         return Id == other.Id;
+    }
+
+    /// <summary>
+    /// Equality comparison with a Jellyfin Movie item.
+    /// </summary>
+    public bool Equals(Movie? other)
+    {
+        if (other is null) return false;
+        
+        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
+        if (!string.IsNullOrEmpty(other.GetProviderId("Tmdb")))
+        {
+            return Id.ToString() == other.GetProviderId("Tmdb");
+        }
+        
+        return false;
     }
 
     /// <summary>
@@ -118,22 +69,6 @@ public class JellyseerrMovie : TmdbMovieResult, IJellyseerrItem, IEquatable<Jell
         // Only compare with Movie items
         if (other is not Movie movie) return false;
         
-        // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (!string.IsNullOrEmpty(((BaseItem)movie).GetProviderId("Tmdb")))
-        {
-            return Id.ToString() == ((BaseItem)movie).GetProviderId("Tmdb");
-        }
-        
-        return false;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as JellyseerrMovie);
-    }
-
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
+        return Equals(movie);
     }
 }

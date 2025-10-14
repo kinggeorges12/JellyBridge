@@ -20,6 +20,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public class JellyseerrApiService
 {
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<JellyseerrApiService> _logger;
 
@@ -27,11 +28,120 @@ public class JellyseerrApiService
     {
         _httpClient = httpClient;
         _logger = logger;
-}
+    }
 
-/// <summary>
+    /// <summary>
+    /// Response type enumeration for API calls.
+    /// Maps to specific JellyseerrModel classes and bridge models.
+    /// 
+    /// This enum defines how different API responses should be deserialized,
+    /// ensuring type safety and proper handling of different response structures.
+    /// </summary>
+    private enum JellyseerrResponseType
+    {
+        // Bridge model specific types that map to JellyseerrModel classes
+        /// <summary>
+        /// Uses JellyseerrPaginatedResponse&lt;T&gt; bridge model for discover endpoints.
+        /// </summary>
+        DiscoverResponse,
+        
+        /// <summary>
+        /// Uses JellyseerrUser bridge model (maps to JellyseerrModel.Server.User).
+        /// </summary>
+        UserResponse,
+        
+        /// <summary>
+        /// Uses JellyseerrPaginatedResponse&lt;MediaRequest&gt; bridge model (maps to JellyseerrModel.MediaRequest).
+        /// </summary>
+        RequestResponse,
+        
+        /// <summary>
+        /// Uses TmdbWatchProviderDetails/TmdbWatchProviderRegion models (maps to JellyseerrModel.TmdbWatchProviderDetails/TmdbWatchProviderRegion).
+        /// </summary>
+        WatchProviderResponse,
+        
+        /// <summary>
+        /// Uses SystemStatus from JellyseerrModel for status endpoint.
+        /// </summary>
+        StatusResponse
+    }
+
+    /// <summary>
+    /// Configuration class for Jellyseerr API endpoints that defines endpoint metadata.
+    /// 
+    /// This class centralizes endpoint configuration including:
+    /// - API path and HTTP method
+    /// - Expected request model type (for POST/PUT requests)
+    /// - Expected response model type
+    /// - Pagination status
+    /// - Template value requirements
+    /// - Description for documentation
+    /// 
+    /// Used by JellyseerrEndpointRegistry to provide a data-driven approach
+    /// to API endpoint management instead of hardcoded switch statements.
+    /// </summary>
+    private class JellyseerrEndpointConfig
+    {
+        /// <summary>
+        /// The API endpoint path (e.g., "/api/v1/status").
+        /// </summary>
+        public string Path { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// The HTTP method for this endpoint (GET, POST, PUT, DELETE).
+        /// </summary>
+        public HttpMethod Method { get; set; } = HttpMethod.Get;
+        
+        
+        /// <summary>
+        /// The expected response model type for this endpoint.
+        /// </summary>
+        public Type ResponseModel { get; set; } = typeof(object);
+        
+        /// <summary>
+        /// Whether this endpoint returns paginated results.
+        /// </summary>
+        public bool IsPaginated { get; set; }
+        
+        /// <summary>
+        /// Whether this endpoint requires template values (e.g., user ID in path).
+        /// </summary>
+        public bool RequiresTemplateValues { get; set; }
+        
+        /// <summary>
+        /// Human-readable description of this endpoint.
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Initializes a new instance of JellyseerrEndpointConfig.
+        /// </summary>
+        /// <param name="path">The API endpoint path</param>
+        /// <param name="responseModel">The expected response model type</param>
+        /// <param name="method">The HTTP method (defaults to GET)</param>
+        /// <param name="isPaginated">Whether this endpoint returns paginated results</param>
+        /// <param name="requiresTemplateValues">Whether this endpoint requires template values</param>
+        /// <param name="description">Human-readable description</param>
+        public JellyseerrEndpointConfig(
+            string path, 
+            Type responseModel, 
+            HttpMethod? method = null,
+            bool isPaginated = false, 
+            bool requiresTemplateValues = false, 
+            string description = "")
+        {
+            Path = path;
+            ResponseModel = responseModel;
+            Method = method ?? HttpMethod.Get;
+            IsPaginated = isPaginated;
+            RequiresTemplateValues = requiresTemplateValues;
+            Description = description;
+        }
+    }
+
+    /// <summary>
     /// Endpoint configuration registry.
-/// </summary>
+    /// </summary>
     private static readonly Dictionary<JellyseerrEndpoint, JellyseerrEndpointConfig> _endpointConfigs = new()
     {
         // Status endpoint - use actual JellyseerrModel.SystemStatus
@@ -41,10 +151,10 @@ public class JellyseerrApiService
             description: "Get Jellyseerr status"
         ),
         
-        // Request endpoints - use paginated response with JellyseerrRequest bridge model
+        // Request endpoints - use paginated response with MediaRequest base model
         [JellyseerrEndpoint.Requests] = new JellyseerrEndpointConfig(
             "/api/v1/request",
-            typeof(JellyseerrPaginatedResponse<JellyseerrRequest>),
+            typeof(JellyseerrPaginatedResponse<MediaRequest>),
             isPaginated: true,
             description: "Get all requests"
         ),
@@ -56,7 +166,7 @@ public class JellyseerrApiService
         ),
         [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
             "/api/v1/user/{id}/requests",
-            typeof(JellyseerrPaginatedResponse<JellyseerrRequest>),
+            typeof(JellyseerrPaginatedResponse<MediaRequest>),
             isPaginated: true,
             requiresTemplateValues: true,
             description: "Get user requests"
@@ -86,19 +196,19 @@ public class JellyseerrApiService
         // Watch provider endpoints - use watch provider response
         [JellyseerrEndpoint.WatchProvidersRegions] = new JellyseerrEndpointConfig(
             "/api/v1/watchproviders/regions",
-            typeof(List<JellyseerrWatchRegion>),
+            typeof(List<TmdbWatchProviderRegion>),
             description: "Get watch provider regions"
         ),
-        [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(
-            "/api/v1/watchproviders/movies",
-            typeof(List<JellyseerrWatchNetwork>),
-            description: "Get movie watch providers"
-        ),
-        [JellyseerrEndpoint.WatchProvidersTv] = new JellyseerrEndpointConfig(
-            "/api/v1/watchproviders/tv",
-            typeof(List<JellyseerrWatchNetwork>),
-            description: "Get TV watch providers"
-        ),
+            [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(
+                "/api/v1/watchproviders/movies",
+                typeof(List<JellyseerrNetwork>),
+                description: "Get movie watch providers"
+            ),
+            [JellyseerrEndpoint.WatchProvidersTv] = new JellyseerrEndpointConfig(
+                "/api/v1/watchproviders/tv",
+                typeof(List<JellyseerrNetwork>),
+                description: "Get TV watch providers"
+            ),
     };
 
 /// <summary>
@@ -112,12 +222,12 @@ public class JellyseerrApiService
     /// <param name="baseUrl">The base Jellyseerr URL</param>
     /// <param name="endpoint">The API endpoint</param>
     /// <param name="parameters">Optional query parameters</param>
-            /// <param name="templateValues">Optional template values for URL placeholders</param>
+    /// <param name="templateValues">Optional template values for URL placeholders</param>
     /// <returns>Complete URL string</returns>
-    public static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
+    private static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
     {
         var cleanBaseUrl = baseUrl.TrimEnd('/');
-        var endpointPath = GetEndpointPath(endpoint);
+        var endpointPath = GetEndpoint(endpoint).Path;
         
         // Replace template placeholders in the endpoint path
         if (templateValues != null)
@@ -165,7 +275,7 @@ public class JellyseerrApiService
     /// <summary>
     /// Gets the configuration for a given endpoint.
     /// </summary>
-    private static JellyseerrEndpointConfig GetConfig(JellyseerrEndpoint endpoint)
+    private static JellyseerrEndpointConfig GetEndpoint(JellyseerrEndpoint endpoint)
     {
         return _endpointConfigs.TryGetValue(endpoint, out var config) 
             ? config 
@@ -173,75 +283,20 @@ public class JellyseerrApiService
     }
     
     /// <summary>
-    /// Gets the API path for a given endpoint.
-    /// </summary>
-    private static string GetEndpointPath(JellyseerrEndpoint endpoint)
-    {
-        return GetConfig(endpoint).Path;
-}
-
-/// <summary>
-    /// Gets the response type for a given endpoint.
-/// </summary>
-    private static JellyseerrResponseType GetResponseType(JellyseerrEndpoint endpoint)
-    {
-        return endpoint switch
-        {
-            // Status endpoint
-            JellyseerrEndpoint.Status => JellyseerrResponseType.StatusResponse,
-            
-            // Request endpoints
-            JellyseerrEndpoint.Requests => JellyseerrResponseType.RequestResponse,
-            JellyseerrEndpoint.UserRequests => JellyseerrResponseType.RequestResponse,
-            
-            // User endpoints
-            JellyseerrEndpoint.UserList => JellyseerrResponseType.UserResponse,
-            JellyseerrEndpoint.AuthMe => JellyseerrResponseType.UserResponse,
-            
-            // Discover endpoints
-            JellyseerrEndpoint.DiscoverMovies => JellyseerrResponseType.DiscoverResponse,
-            JellyseerrEndpoint.DiscoverTv => JellyseerrResponseType.DiscoverResponse,
-            
-            // Watch provider endpoints
-            JellyseerrEndpoint.WatchProvidersRegions => JellyseerrResponseType.WatchProviderResponse,
-            JellyseerrEndpoint.WatchProvidersMovies => JellyseerrResponseType.WatchProviderResponse,
-            JellyseerrEndpoint.WatchProvidersTv => JellyseerrResponseType.WatchProviderResponse,
-            
-            _ => throw new ArgumentException($"Unknown endpoint: {endpoint}")
-        };
-    }
-    
-    /// <summary>
     /// Gets the HTTP method for a given endpoint.
     /// </summary>
     private static HttpMethod GetHttpMethod(JellyseerrEndpoint endpoint)
     {
-        return GetConfig(endpoint).Method;
+        return GetEndpoint(endpoint).Method;
     }
     
-    /// <summary>
-    /// Gets the request model type for a given endpoint.
-    /// </summary>
-    private static Type? GetRequestModel(JellyseerrEndpoint endpoint)
-    {
-        return GetConfig(endpoint).RequestModel;
-    }
-    
-    /// <summary>
-    /// Validates that a request model matches the expected type for an endpoint.
-    /// </summary>
-    private static bool ValidateRequestType<TRequest>(JellyseerrEndpoint endpoint)
-    {
-        var expectedType = GetRequestModel(endpoint);
-        return expectedType == null || typeof(TRequest).IsAssignableFrom(expectedType);
-    }
     
     /// <summary>
     /// Validates that a response model matches the expected type for an endpoint.
     /// </summary>
     private static bool ValidateResponseType<TResponse>(JellyseerrEndpoint endpoint)
     {
-        var expectedType = GetConfig(endpoint).ResponseModel;
+        var expectedType = GetEndpoint(endpoint).ResponseModel;
         return typeof(TResponse).IsAssignableFrom(expectedType);
     }
 
@@ -306,6 +361,7 @@ public class JellyseerrApiService
         var enableDebugLogging = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.EnableDebugLogging), config) ?? false;
         
         Exception? lastException = null;
+        string? content = null;
         
         for (int attempt = 1; attempt <= retryAttempts; attempt++)
         {
@@ -345,7 +401,7 @@ public class JellyseerrApiService
                 }
                 
                 // Read the response content
-                var content = await response.Content.ReadAsStringAsync();
+                content = await response.Content.ReadAsStringAsync();
                 
                 if (enableDebugLogging)
                 {
@@ -429,43 +485,25 @@ public class JellyseerrApiService
         JellyseerrEndpoint endpoint, 
         PluginConfiguration? config = null)
     {
+        string? content = null;
+        var operationName = endpoint.ToString();
         try
         {
             // Use default plugin config if none provided
             config ??= Plugin.GetConfiguration();
             
             // Get endpoint configuration
-            var endpointConfig = GetConfig(endpoint);
-            var operationName = endpoint.ToString();
+            var endpointConfig = GetEndpoint(endpoint);
             
             _logger.LogInformation("Making API call to endpoint: {Endpoint}", endpoint);
             
             // Handle endpoint-specific logic
-            var (requestModel, parameters) = HandleEndpointSpecificLogic(endpoint, config);
+            var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
             
-            // Extract template values from request model
-            var templateValues = requestModel?.GetTemplateValues();
-            
-            // Build the request URL
-            var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: parameters, templateValues: templateValues);
-            _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
-            
-            // Make the API request
-            var content = await MakeApiRequestAsync(requestMessage, config);
-            
-            if (content == null)
+            // Handle response based on pagination
+            if (endpointConfig.IsPaginated)
             {
-                _logger.LogWarning("No content received for {Operation}", operationName);
-                return GetDefaultValueForEndpoint(endpoint);
-            }
-            
-            // Determine response type and deserialize
-            var responseType = GetResponseType(endpoint);
-            var response = DeserializeResponseByType(content, responseType, operationName, endpoint);
-            
-            // Handle pagination if needed
-            if (endpointConfig.IsPaginated && response != null)
-            {
+                // Paginated endpoints - fetch all pages starting from page 1
                 var maxPages = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config) ?? int.MaxValue;
                 
                 // Get the item type from the paginated response model
@@ -480,16 +518,19 @@ public class JellyseerrApiService
                 {
                     _logger.LogInformation("Fetching {Operation} page {Page}", operationName, page);
                     
-                    // Add page parameter to request model
-                    var pageRequestModel = AddPageToRequestModel(requestModel, page);
-                    var pageParameters = ConvertRequestModelToParameters(pageRequestModel);
+                    // Add page parameter to query parameters
+                    var pageParameters = queryParameters != null 
+                        ? new Dictionary<string, string>(queryParameters) { ["page"] = page.ToString() }
+                        : new Dictionary<string, string> { ["page"] = page.ToString() };
                     
                     var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
-                    var pageContent = await MakeApiRequestAsync(pageRequestMessage, config);
+                    content = await MakeApiRequestAsync(pageRequestMessage, config);
                     
-                    if (pageContent == null) break;
+                    if (content == null) break;
                     
-                    var pageResponse = DeserializeResponseByType(pageContent, responseType, operationName, endpoint);
+                    // Deserialize paginated response using the response type from endpoint config
+                    var responseType = endpointConfig.ResponseModel;
+                    var pageResponse = JsonSerializer.Deserialize(content, responseType);
                     if (pageResponse == null) break;
                     
                     var pageItems = ExtractItemsFromResponse(pageResponse, endpointConfig);
@@ -508,8 +549,32 @@ public class JellyseerrApiService
                 // Return the typed list directly
                 return allItems;
             }
-            
-            return response ?? GetDefaultValueForEndpoint(endpoint);
+            else
+            {
+                // Non-paginated endpoints - single request
+                var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: queryParameters, templateValues: templateValues);
+                _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
+                
+                // Make the API request
+                content = await MakeApiRequestAsync(requestMessage, config);
+                
+                if (content == null)
+                {
+                    _logger.LogWarning("No content received for {Operation}", operationName);
+                    return GetDefaultValueForEndpoint(endpoint);
+                }
+                
+                // Deserialize using the response type from endpoint config
+                var responseType = endpointConfig.ResponseModel;
+                var response = JsonSerializer.Deserialize(content, responseType);
+                _logger.LogInformation("Successfully deserialized response for {Operation}", operationName);
+                return response ?? GetDefaultValueForEndpoint(endpoint);
+            }
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} response JSON. Content: {Content}", operationName, content);
+            return GetDefaultValueForEndpoint(endpoint);
         }
         catch (Exception ex)
         {
@@ -523,164 +588,56 @@ public class JellyseerrApiService
     #region Factory Helper Methods
 
     /// <summary>
-    /// Handles endpoint-specific logic including request model creation and parameters.
-    /// Template values are extracted from the request model itself.
+    /// Handles endpoint-specific logic including query parameters and template values.
     /// </summary>
-    private (IJellyseerrRequest? requestModel, Dictionary<string, string>? parameters) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
+    private (Dictionary<string, string>? queryParameters, Dictionary<string, string>? templateValues) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
     {
         return endpoint switch
         {
-            // Discover endpoints - no request model needed for GET requests
+            // Discover endpoints - no parameters needed for GET requests
             JellyseerrEndpoint.DiscoverMovies => (null, null),
             JellyseerrEndpoint.DiscoverTv => (null, null),
             
-            // Watch providers endpoints - use region parameter
+            // Watch providers endpoints - use region as query parameter
             JellyseerrEndpoint.WatchProvidersMovies => (
-                null,
-                new Dictionary<string, string> { ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) ?? "US" }
+                new Dictionary<string, string> 
+                { 
+                    ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) 
+                },
+                null
             ),
             JellyseerrEndpoint.WatchProvidersTv => (
-                null,
-                new Dictionary<string, string> { ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) ?? "US" }
+                new Dictionary<string, string> 
+                { 
+                    ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) 
+                },
+                null
             ),
             
-            // User requests endpoint - create request model with user ID
+            // User requests endpoint - use user ID as template value for URL path
             JellyseerrEndpoint.UserRequests => (
                 null,
-                new Dictionary<string, string> { ["id"] = (config.UserId ?? 1).ToString() }
+                new Dictionary<string, string> 
+                { 
+                    ["id"] = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.UserId), config).ToString() 
+                }
             ),
             
-            // All other endpoints don't need request models or parameters
+            // All other endpoints don't need parameters
             _ => (null, null)
         };
     }
 
 
-    /// <summary>
-    /// Converts request model to parameters dictionary.
-    /// </summary>
-    private Dictionary<string, string>? ConvertRequestModelToParameters(IJellyseerrRequest? requestModel)
-    {
-        // No request models currently supported for parameter conversion
-        return null;
-    }
 
-    /// <summary>
-    /// Deserializes response based on response type.
-    /// </summary>
-    private object? DeserializeResponseByType(string content, JellyseerrResponseType responseType, string operationName, JellyseerrEndpoint endpoint)
-    {
-        return responseType switch
-        {
-            // Status endpoint returns a simple SystemStatus object, not paginated
-            JellyseerrResponseType.StatusResponse => DeserializeSimpleResponse<SystemStatus>(content, operationName),
-        
-            // User endpoints return simple JellyseerrUser objects, not paginated
-            JellyseerrResponseType.UserResponse => DeserializeSimpleResponse<JellyseerrUser>(content, operationName),
 
-            // Watch provider endpoints return simple arrays, not paginated
-            JellyseerrResponseType.WatchProviderResponse => DeserializeWatchProviderResponse(content, operationName, endpoint),
-
-            // All other responses are paginated
-            _ => DeserializePaginatedResponse<object>(content, operationName)
-        };
-}
-
-/// <summary>
-    /// Deserializes watch provider responses (simple arrays).
-/// </summary>
-    private object DeserializeWatchProviderResponse(string content, string operationName, JellyseerrEndpoint endpoint)
-    {
-        try
-        {
-            return endpoint switch
-            {
-                // Regions endpoint returns List<JellyseerrWatchRegion>
-                JellyseerrEndpoint.WatchProvidersRegions => DeserializeSimpleResponse<List<JellyseerrWatchRegion>>(content, operationName),
-                
-                // Movies and TV endpoints return List<JellyseerrWatchNetwork>
-                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => DeserializeSimpleResponse<List<JellyseerrWatchNetwork>>(content, operationName),
-                
-                // Fallback to List<object> for unknown watch provider endpoints
-                _ => DeserializeSimpleResponse<List<object>>(content, operationName)
-            };
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} watch provider response JSON. Content: {Content}", operationName, content);
-            return endpoint switch
-            {
-                JellyseerrEndpoint.WatchProvidersRegions => new List<JellyseerrWatchRegion>(),
-                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => new List<JellyseerrWatchNetwork>(),
-                _ => new List<object>()
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deserializing {Operation} watch provider response JSON", operationName);
-            return endpoint switch
-            {
-                JellyseerrEndpoint.WatchProvidersRegions => new List<JellyseerrWatchRegion>(),
-                JellyseerrEndpoint.WatchProvidersMovies or JellyseerrEndpoint.WatchProvidersTv => new List<JellyseerrWatchNetwork>(),
-                _ => new List<object>()
-            };
-        }
-    }
-
-    /// <summary>
-    /// Deserializes simple (non-paginated) responses.
-    /// </summary>
-    private T DeserializeSimpleResponse<T>(string content, string operationName)
-    {
-        try
-        {
-            var response = JsonSerializer.Deserialize<T>(content);
-            _logger.LogInformation("Successfully deserialized simple response for {Operation}", operationName);
-            return response != null ? response : GetDefaultValue<T>();
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} simple response JSON. Content: {Content}", operationName, content);
-            return GetDefaultValue<T>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deserializing {Operation} simple response JSON", operationName);
-            return GetDefaultValue<T>();
-        }
-    }
-
-    /// <summary>
-    /// Deserializes all responses uniformly using paginated response.
-    /// </summary>
-    private T DeserializePaginatedResponse<T>(string content, string operationName)
-    {
-        try
-        {
-            // All responses should be deserialized as paginated responses
-            var paginatedResponse = JsonSerializer.Deserialize<JellyseerrPaginatedResponse<T>>(content);
-            
-            _logger.LogInformation("Successfully deserialized paginated response for {Operation}", operationName);
-            return paginatedResponse != null ? (T)(object)paginatedResponse : GetDefaultValue<T>();
-        }
-        catch (JsonException jsonEx)
-        {
-            _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} paginated response JSON. Content: {Content}", operationName, content);
-            return GetDefaultValue<T>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deserializing {Operation} paginated response JSON", operationName);
-            return GetDefaultValue<T>();
-        }
-}
 
 /// <summary>
     /// Gets default value for endpoint based on expected response type.
 /// </summary>
     private object GetDefaultValueForEndpoint(JellyseerrEndpoint endpoint)
     {
-        var endpointConfig = GetConfig(endpoint);
+        var endpointConfig = GetEndpoint(endpoint);
         var responseModelType = endpointConfig.ResponseModel;
         
         if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
@@ -696,7 +653,7 @@ public class JellyseerrApiService
 /// </summary>
     private object ConvertToExpectedTypeForEndpoint(JellyseerrEndpoint endpoint, List<object> allItems)
     {
-        var endpointConfig = GetConfig(endpoint);
+        var endpointConfig = GetEndpoint(endpoint);
         var responseModelType = endpointConfig.ResponseModel;
 
         if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
@@ -719,14 +676,6 @@ public class JellyseerrApiService
         return allItems.Count > 0 ? allItems[0] : GetDefaultValueForEndpoint(endpoint);
     }
 
-    /// <summary>
-    /// Adds page parameter to request model for paginated requests.
-    /// </summary>
-    private IJellyseerrRequest? AddPageToRequestModel(IJellyseerrRequest? requestModel, int page)
-    {
-        // No request models currently support pagination
-        return requestModel;
-    }
 
     /// <summary>
     /// Converts search parameters to query parameters dictionary.

@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
@@ -73,8 +74,8 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Filter items to exclude those that already exist in main libraries.
     /// </summary>
-    public async Task<List<TItem>> FilterItemsAsync<TItem, TExisting>(List<TItem> items, string itemTypeName) 
-        where TItem : IJellyseerrItem
+    public async Task<List<TJellyseerr>> FilterItemsAsync<TJellyseerr, TExisting>(List<TJellyseerr> items, string itemTypeName) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
         where TExisting : BaseItem
     {
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
@@ -88,7 +89,7 @@ public class JellyseerrBridgeService
         var existingItems = await GetExistingItemsAsync<TExisting>();
         _logger.LogInformation("[JellyseerrBridge] Found {ExistingItemCount} existing {ItemType} in main libraries", existingItems.Count, itemTypeName);
 
-        var filteredItems = new List<TItem>();
+        var filteredItems = new List<TJellyseerr>();
         int skippedCount = 0;
 
         foreach (var item in items)
@@ -116,7 +117,7 @@ public class JellyseerrBridgeService
         List<TJellyfin> existingItems, 
         List<TJellyseerr> bridgeMetadata) 
         where TJellyfin : BaseItem 
-        where TJellyseerr : IJellyseerrItem
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var matches = new List<TJellyseerr>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -149,7 +150,8 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Find the bridge folder path for a given item.
     /// </summary>
-    public async Task<string?> FindBridgeFolderPathAsync(string baseDirectory, IJellyseerrItem item)
+    public async Task<string?> FindBridgeFolderPathAsync<TJellyseerr>(string baseDirectory, TJellyseerr item) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
         {
@@ -169,7 +171,7 @@ public class JellyseerrBridgeService
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        var metadata = JsonSerializer.Deserialize<IJellyseerrItem>(json);
+                        var metadata = JsonSerializer.Deserialize<TJellyseerr>(json);
                         
                         if (metadata != null && item.Equals(metadata))
                         {
@@ -213,7 +215,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Read bridge folder metadata for a specific type.
     /// </summary>
-    public async Task<List<T>> ReadBridgeFolderMetadataAsync<T>() where T : IJellyseerrItem
+    public async Task<List<T>> ReadBridgeFolderMetadataAsync<T>() where T : class
     {
         var metadata = new List<T>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -264,7 +266,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
     /// </summary>
-    public async Task<List<IJellyseerrItem>> TestLibraryScanAsync()
+    public async Task<List<TmdbMediaResult>> TestLibraryScanAsync()
     {
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
@@ -276,13 +278,13 @@ public class JellyseerrBridgeService
             if (!excludeFromMainLibraries)
             {
                 _logger.LogInformation("ExcludeFromMainLibraries is disabled - no library scan performed");
-                return new List<IJellyseerrItem>();
+                return new List<TmdbMediaResult>();
             }
 
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
                 _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return new List<IJellyseerrItem>();
+                return new List<TmdbMediaResult>();
             }
 
             // Get existing Jellyfin items
@@ -298,9 +300,9 @@ public class JellyseerrBridgeService
             var showMatches = await FindMatches(existingShows, bridgeShowMetadata);
 
             // Combine all bridge metadata into a single list
-            var allBridgeItems = new List<IJellyseerrItem>();
-            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<IJellyseerrItem>());
-            allBridgeItems.AddRange(bridgeShowMetadata.Cast<IJellyseerrItem>());
+            var allBridgeItems = new List<TmdbMediaResult>();
+            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<TmdbMediaResult>());
+            allBridgeItems.AddRange(bridgeShowMetadata.Cast<TmdbMediaResult>());
 
             _logger.LogInformation("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
                 bridgeMovieMetadata.Count, bridgeShowMetadata.Count, movieMatches.Count + showMatches.Count);
@@ -310,7 +312,7 @@ public class JellyseerrBridgeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during library scan test");
-            return new List<IJellyseerrItem>();
+            return new List<TmdbMediaResult>();
         }
     }
 }
