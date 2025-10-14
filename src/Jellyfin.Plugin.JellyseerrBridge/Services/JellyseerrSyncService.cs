@@ -81,7 +81,8 @@ public partial class JellyseerrSyncService
                     _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                     
                     var networkMovies = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, config);
-                    var movies = (List<JellyseerrMovie>)networkMovies;
+                    var moviesResponse = (JellyseerrPaginatedResponse<JellyseerrMovie>)networkMovies;
+                    var movies = moviesResponse.Results;
                     
                     allMovies.AddRange(movies);
                     _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", movies.Count, networkName);
@@ -100,7 +101,8 @@ public partial class JellyseerrSyncService
                     _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                     
                     var networkShows = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, config);
-                    var shows = (List<JellyseerrShow>)networkShows;
+                    var showsResponse = (JellyseerrPaginatedResponse<JellyseerrShow>)networkShows;
+                    var shows = showsResponse.Results;
                     
                     allShows.AddRange(shows);
                     _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", shows.Count, networkName);
@@ -124,10 +126,10 @@ public partial class JellyseerrSyncService
             }
 
             // Process movies
-            var movieResults = await CreateFoldersAsync(allMovies, "{Name} ({Year}) [tmdbid-{Id}]");
+            var movieResults = await CreateFoldersAsync(allMovies, "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]");
 
             // Process TV shows
-            var showResults = await CreateFoldersAsync(allShows, "{Name} ({Year}) [tmdbid-{Id}]");
+            var showResults = await CreateFoldersAsync(allShows, "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]");
 
             result.Success = true;
             result.MoviesResult = movieResults;
@@ -211,11 +213,12 @@ public partial class JellyseerrSyncService
 
 
 
+
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
     private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items, string template) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
@@ -271,12 +274,13 @@ public partial class JellyseerrSyncService
         return result;
     }
 
+    
     /// <summary>
     /// Create folder name by filling template fields with item data using reflection.
     /// Supports nested property access like {mediaInfo.tvdbId}.
     /// </summary>
     private string CreateFolderNameFromFormat<TJellyseerr>(TJellyseerr item, string template) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var folderName = template;
         
@@ -289,7 +293,7 @@ public partial class JellyseerrSyncService
             var field = match.Groups[0].Value; // Full field like "{title}"
             var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
             
-            var value = GetPropertyValue(item, propertyPath);
+            var value = GetPropertyValue((IJellyseerrMedia)item, propertyPath);
             folderName = folderName.Replace(field, value);
         }
         
@@ -298,12 +302,11 @@ public partial class JellyseerrSyncService
         
         return SanitizeFileName(folderName);
     }
-    
+
     /// <summary>
-    /// Get property value using reflection, supporting nested property access.
+    /// Get property value using reflection.
     /// </summary>
-    private string GetPropertyValue<TJellyseerr>(TJellyseerr item, string propertyPath) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+    private string GetPropertyValue(IJellyseerrMedia item, string propertyPath)
     {
         if (item == null || string.IsNullOrEmpty(propertyPath))
             return "";
@@ -348,7 +351,7 @@ public partial class JellyseerrSyncService
     /// Create JSON metadata file for movies or TV shows.
     /// </summary>
     private async Task CreateMetadataFileAsync<TJellyseerr>(TJellyseerr item, string directoryPath) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         // Serialize the item directly as its specific type to preserve all properties
         var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });

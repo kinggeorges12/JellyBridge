@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
@@ -75,7 +76,7 @@ public class JellyseerrBridgeService
     /// Filter items to exclude those that already exist in main libraries.
     /// </summary>
     public async Task<List<TJellyseerr>> FilterItemsAsync<TJellyseerr, TExisting>(List<TJellyseerr> items, string itemTypeName) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
         where TExisting : BaseItem
     {
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
@@ -117,7 +118,7 @@ public class JellyseerrBridgeService
         List<TJellyfin> existingItems, 
         List<TJellyseerr> bridgeMetadata) 
         where TJellyfin : BaseItem 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var matches = new List<TJellyseerr>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -151,7 +152,7 @@ public class JellyseerrBridgeService
     /// Find the bridge folder path for a given item.
     /// </summary>
     public async Task<string?> FindBridgeFolderPathAsync<TJellyseerr>(string baseDirectory, TJellyseerr item) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
         {

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "checksum": "F63189E96FEF10C6E019C548DE21C9F6",
+        "timestamp": "2025-10-14T23:03:07.474Z",
+        "changelog": "v0.203.0.0 - Improved folder naming with dynamic external ID handling - Added IJellyseerrMedia interface with Id, Name, Year, ExtraId, ExtraIdName, and MediaType properties - Updated JellyseerrMovie and JellyseerrShow to inherit from MovieResult and TvResult respectively for proper mediaInfo access - Simplified templating system to automatically handle conditional external ID sections - Enhanced folder creation to include TMDB ID and external IDs (IMDB/TVDB) when available - Streamlined GetPropertyValue method to use reflection directly without unnecessary switch statements",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.203.0.0/JellyseerrBridge-0.203.0.0-DLL.zip",
+        "version": "0.203.0.0",
+        "dependencies": []
+      },
+      {
         "dependencies": [],
         "version": "0.202.0.0",
         "targetAbi": "10.10.7.0",

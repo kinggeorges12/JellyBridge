@@ -14,6 +14,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 public interface IJellyseerrMedia
 {
     /// <summary>
+    /// The TMDB ID of the media item.
+    /// </summary>
+    int Id { get; }
+
+    /// <summary>
     /// The display name of the media item.
     /// </summary>
     string Name { get; }

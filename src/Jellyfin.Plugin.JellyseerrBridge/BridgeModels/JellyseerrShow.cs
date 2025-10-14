@@ -9,17 +9,17 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Jellyseerr TV Show that wraps TmdbTvResult with Jellyseerr-specific functionality.
+/// Jellyseerr TV Show that wraps TvResult with Jellyseerr-specific functionality.
 /// 
 /// This class provides:
-/// - All TMDB TV properties through inheritance
-/// - Jellyseerr media info (download status, service IDs, etc.)
+/// - All TMDB TV properties through inheritance from TvResult
+/// - Jellyseerr media info (download status, service IDs, etc.) via MediaInfo
 /// - Equality comparison with Jellyfin Series items
 /// 
 /// This bridge model provides the complete structure returned by the discover TV API.
 /// </summary>
 public class JellyseerrShow 
-    : TmdbTvResult, 
+    : TvResult, 
       IJellyseerrMedia,
       IEquatable<JellyseerrShow>, 
       IEquatable<Series>
@@ -37,7 +37,7 @@ public class JellyseerrShow
     /// <summary>
     /// The extra external ID (TVDB for shows).
     /// </summary>
-    public string? ExtraId => null; // TVDB ID not available in current model
+    public string? ExtraId => MediaInfo?.TvdbId?.ToString();
 
     /// <summary>
     /// The display name for the extra external ID (tvdbid for shows).
