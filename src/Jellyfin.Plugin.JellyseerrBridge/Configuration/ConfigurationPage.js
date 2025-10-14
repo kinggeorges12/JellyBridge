@@ -728,40 +728,17 @@ function performSync() {
         contentType: 'application/json',
         dataType: 'json'
     }).then(function(syncData) {
-        if (syncData && syncData.success) {
-            // Parse the sync results for better user feedback
-            const message = syncData.message || 'Folder structure creation completed successfully';
-            
-            // Build detailed information if available
-            let details = '';
-            if (syncData.details) {
-                details = `<br><br>Details:<br>${syncData.details.replace(/\n/g, '<br>')}`;
-            } else if (syncData.moviesProcessed !== undefined || syncData.showsProcessed !== undefined) {
-                details = '<br><br>Summary:<br>';
-                if (syncData.moviesProcessed !== undefined) {
-                    details += `Movies: ${syncData.moviesProcessed} processed`;
-                    if (syncData.moviesCreated !== undefined && syncData.moviesUpdated !== undefined) {
-                        details += ` (${syncData.moviesCreated} created, ${syncData.moviesUpdated} updated)`;
-                    }
-                    details += '<br>';
-                }
-                if (syncData.showsProcessed !== undefined) {
-                    details += `Shows: ${syncData.showsProcessed} processed`;
-                    if (syncData.showsCreated !== undefined && syncData.showsUpdated !== undefined) {
-                        details += ` (${syncData.showsCreated} created, ${syncData.showsUpdated} updated)`;
-                    }
-                    details += '<br>';
-                }
-                if (syncData.requestsProcessed !== undefined) {
-                    details += `Requests: ${syncData.requestsProcessed} processed<br>`;
-                }
-            }
-            
-            Dashboard.alert('✅ Folder structure creation completed successfully!<br>' +
-                `${message}${details}`);
-        } else {
-            throw new Error(syncData?.message || 'Folder structure creation failed');
+        // Parse the sync results for better user feedback
+        const message = syncData.message || 'Folder structure creation completed successfully';
+        
+        // Build detailed information if available
+        let details = '';
+        if (syncData.details) {
+            details = `<br><br>Details:<br>${syncData.details.replace(/\n/g, '<br>')}`;
         }
+        
+        Dashboard.alert('✅ Folder structure creation completed successfully!<br>' +
+            `${message}${details}`);
     }).catch(function(error) {
         Dashboard.alert('❌ Folder structure creation failed: ' + (error?.message || 'Unknown error'));
         scrollToSection('sync');
@@ -837,7 +814,8 @@ function performManualSync(page) {
                     if (result.bridgeItems && result.bridgeItems.length > 0) {
                         resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
                         result.bridgeItems.forEach((item, index) => {
-                            resultText += `\n${index + 1}. ${item.name || item.title || 'Unknown'} (${item.type || 'Unknown'})`;
+                            const yearText = item.year ? ` (${item.year})` : '';
+                            resultText += `\n${index + 1}. ${item.name}${yearText} [${item.mediaType}]`;
                         });
                     } else {
                         resultText += `\n\nNo bridge items found.`;

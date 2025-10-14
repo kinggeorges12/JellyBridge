@@ -19,6 +19,16 @@ public interface IJellyseerrMedia
     string Name { get; }
 
     /// <summary>
+    /// The year of the media item.
+    /// </summary>
+    string Year { get; }
+
+    /// <summary>
+    /// The media type derived from the implementing class name.
+    /// </summary>
+    string MediaType => GetMediaTypeFromClassName(this);
+
+    /// <summary>
     /// Extract year from date string.
     /// </summary>
     static string ExtractYear(string? dateString)
@@ -30,5 +40,14 @@ public interface IJellyseerrMedia
             return date.Year.ToString();
             
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Get media type from the implementing class name.
+    /// </summary>
+    private static string GetMediaTypeFromClassName(IJellyseerrMedia instance)
+    {
+        var className = instance.GetType().Name.ToLowerInvariant();
+        return className.Replace("jellyseerr", "").ToLowerInvariant();
     }
 }

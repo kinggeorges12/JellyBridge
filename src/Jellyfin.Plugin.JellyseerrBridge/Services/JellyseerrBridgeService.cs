@@ -266,7 +266,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
     /// </summary>
-    public async Task<List<TmdbMediaResult>> TestLibraryScanAsync()
+    public async Task<List<IJellyseerrMedia>> TestLibraryScanAsync()
     {
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
@@ -278,13 +278,13 @@ public class JellyseerrBridgeService
             if (!excludeFromMainLibraries)
             {
                 _logger.LogInformation("ExcludeFromMainLibraries is disabled - no library scan performed");
-                return new List<TmdbMediaResult>();
+                return new List<IJellyseerrMedia>();
             }
 
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
                 _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return new List<TmdbMediaResult>();
+                return new List<IJellyseerrMedia>();
             }
 
             // Get existing Jellyfin items
@@ -300,9 +300,9 @@ public class JellyseerrBridgeService
             var showMatches = await FindMatches(existingShows, bridgeShowMetadata);
 
             // Combine all bridge metadata into a single list
-            var allBridgeItems = new List<TmdbMediaResult>();
-            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<TmdbMediaResult>());
-            allBridgeItems.AddRange(bridgeShowMetadata.Cast<TmdbMediaResult>());
+            var allBridgeItems = new List<IJellyseerrMedia>();
+            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<IJellyseerrMedia>());
+            allBridgeItems.AddRange(bridgeShowMetadata.Cast<IJellyseerrMedia>());
 
             _logger.LogInformation("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
                 bridgeMovieMetadata.Count, bridgeShowMetadata.Count, movieMatches.Count + showMatches.Count);
@@ -312,7 +312,7 @@ public class JellyseerrBridgeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during library scan test");
-            return new List<TmdbMediaResult>();
+            return new List<IJellyseerrMedia>();
         }
     }
 }

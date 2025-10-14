@@ -35,7 +35,7 @@ public class JellyseerrSyncTask : IScheduledTask
             
             progress.Report(0);
             
-            await _syncService.SyncAsync();
+            await _syncService.CreateBridgeFoldersAsync();
             
             progress.Report(100);
             

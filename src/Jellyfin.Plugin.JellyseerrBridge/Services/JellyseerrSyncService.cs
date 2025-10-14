@@ -9,6 +9,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using System.Text.Json;
 using System.IO;
+using System.Linq;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Model.Entities;
 
@@ -124,19 +125,15 @@ public partial class JellyseerrSyncService
 
             // Process movies
             var movieResults = await CreateFoldersAsync(allMovies, "{Title} ({ReleaseDate}) [tmdbid-{Id}]");
-            result.MoviesProcessed = movieResults.Processed;
-            result.MoviesCreated = movieResults.Created;
 
             // Process TV shows
             var showResults = await CreateFoldersAsync(allShows, "{Name} ({FirstAirDate}) [tvdbid-{MediaInfo.TvdbId}] [tmdbid-{Id}]");
-            result.ShowsProcessed = showResults.Processed;
-            result.ShowsCreated = showResults.Created;
 
             result.Success = true;
-            result.Message = $"Folder structure creation completed successfully. Created {result.MoviesCreated} movie folders, {result.ShowsCreated} show folders";
-            result.Details = $"Movies: {result.MoviesCreated} folders created\n" +
-                           $"Shows: {result.ShowsCreated} folders created\n" +
-                           $"Base Directory: {baseDirectory}";
+            result.MoviesResult = movieResults;
+            result.ShowsResult = showResults;
+            result.Message = "Folder structure creation completed successfully";
+            result.Details = result.ToString();
 
             _logger.LogInformation("Folder structure creation completed successfully");
         }
@@ -163,115 +160,12 @@ public partial class JellyseerrSyncService
             _logger.LogError(ex, "Error during folder structure creation");
             result.Success = false;
             result.Message = $"Folder structure creation failed: {ex.Message}";
+            result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
         }
         
         return result;
     }
 
-    /// <summary>
-    /// Perform a full sync of Jellyseerr data.
-    /// </summary>
-    public async Task<SyncResult> SyncAsync()
-    {
-        var config = Plugin.GetConfiguration();
-        var result = new SyncResult();
-        
-        if (!Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.IsEnabled)) ?? false)
-        {
-            _logger.LogInformation("Jellyseerr Bridge is disabled, skipping sync");
-            result.Success = false;
-            result.Message = "Jellyseerr Bridge is disabled";
-            return result;
-        }
-
-        try
-        {
-            _logger.LogInformation("Starting Jellyseerr sync...");
-
-            // Test connection first
-            if (!await TestConnectionAsync(config))
-            {
-                _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync");
-                result.Success = false;
-                result.Message = "Failed to connect to Jellyseerr API";
-                return result;
-            }
-
-            // Get data from Jellyseerr
-            var pluginConfig = Plugin.GetConfiguration();
-            
-            // Get movies and TV shows for each active network
-            var allMovies = new List<JellyseerrMovie>();
-            var allShows = new List<JellyseerrShow>();
-            
-            var networkDict = pluginConfig.GetNetworkMapDictionary();
-            _logger.LogInformation("Fetching movies and TV shows for {NetworkCount} active networks: {Networks}", 
-                networkDict.Count, string.Join(", ", networkDict.Values));
-            
-            // Loop through each active network for movies
-            foreach (var networkId in networkDict.Keys)
-            {
-                if (networkDict.TryGetValue(networkId, out var networkName))
-                {
-                    _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                    
-                    var networkMovies = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, pluginConfig);
-                    var movies = (List<JellyseerrMovie>)networkMovies;
-                    
-                    allMovies.AddRange(movies);
-                    _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", movies.Count, networkName);
-                }
-                else
-                {
-                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-                }
-            }
-            
-            // Loop through each active network for TV shows
-            foreach (var networkId in networkDict.Keys)
-            {
-                if (networkDict.TryGetValue(networkId, out var networkName))
-                {
-                    _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                    
-                    var networkShows = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, pluginConfig);
-                    var shows = (List<JellyseerrShow>)networkShows;
-                    
-                    allShows.AddRange(shows);
-                    _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", shows.Count, networkName);
-                }
-                else
-                {
-                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-                }
-            }
-            
-            var requests = await _apiService.CallEndpointAsync(JellyseerrEndpoint.Requests, config);
-            var typedRequests = (List<MediaRequest>)requests;
-
-            _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows, {RequestCount} requests from Jellyseerr",
-                allMovies.Count, allShows.Count, typedRequests.Count);
-
-            // Process requests
-            var requestResults = await ProcessRequestsAsync(typedRequests);
-            result.RequestsProcessed = requestResults.Processed;
-
-            result.Success = true;
-            result.Message = $"Sync completed successfully. Processed {result.RequestsProcessed} requests";
-            result.Details = $"Requests: {result.RequestsProcessed} processed\n" +
-                           $"Active Networks: {string.Join(", ", networkDict.Values)}";
-
-            _logger.LogInformation("Jellyseerr sync completed successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during Jellyseerr sync");
-            result.Success = false;
-            result.Message = $"Sync failed: {ex.Message}";
-        }
-        
-        return result;
-    }
 
     /// <summary>
     /// Process requests from Jellyseerr.
@@ -355,7 +249,14 @@ public partial class JellyseerrSyncService
                 {
                     Directory.CreateDirectory(targetDirectory);
                     result.Created++;
+                    result.ItemsAdded.Add(item);
                     _logger.LogDebug("Created folder: {FolderName}", folderName);
+                }
+                else
+                {
+                    result.Updated++;
+                    result.ItemsUpdated.Add(item);
+                    _logger.LogDebug("Folder already exists: {FolderName}", folderName);
                 }
 
                 // Create JSON metadata file
@@ -466,15 +367,27 @@ public class SyncResult
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
-    public string? StackTrace { get; set; }
-    public string? ErrorCode { get; set; }
-    public int MoviesProcessed { get; set; }
-    public int MoviesCreated { get; set; }
-    public int MoviesUpdated { get; set; }
-    public int ShowsProcessed { get; set; }
-    public int ShowsCreated { get; set; }
-    public int ShowsUpdated { get; set; }
-    public int RequestsProcessed { get; set; }
+    public ProcessResult MoviesResult { get; set; } = new();
+    public ProcessResult ShowsResult { get; set; } = new();
+
+    public override string ToString()
+    {
+        var details = new List<string>();
+        
+        if (MoviesResult.Processed > 0)
+        {
+            details.Add($"Movies ({MoviesResult.Processed} processed):");
+            details.Add($"  {MoviesResult.ToString()}");
+        }
+        
+        if (ShowsResult.Processed > 0)
+        {
+            details.Add($"Shows ({ShowsResult.Processed} processed):");
+            details.Add($"  {ShowsResult.ToString()}");
+        }
+        
+        return string.Join("\n", details);
+    }
 }
 
 /// <summary>
@@ -485,7 +398,29 @@ public class ProcessResult
     public int Processed { get; set; }
     public int Created { get; set; }
     public int Updated { get; set; }
+    public List<IJellyseerrMedia> ItemsAdded { get; set; } = new();
+    public List<IJellyseerrMedia> ItemsUpdated { get; set; } = new();
+
+    public override string ToString()
+    {
+        var details = new List<string>();
+        
+        if (ItemsAdded.Count > 0)
+        {
+            var addedNames = ItemsAdded.Select(item => $"{item.Name} ({item.Year}) [{item.MediaType}]").ToList();
+            details.Add($"Added: {string.Join(", ", addedNames)}");
+        }
+        
+        if (ItemsUpdated.Count > 0)
+        {
+            var updatedNames = ItemsUpdated.Select(item => $"{item.Name} ({item.Year}) [{item.MediaType}]").ToList();
+            details.Add($"Updated: {string.Join(", ", updatedNames)}");
+        }
+        
+        return string.Join("\n", details);
+    }
 }
+
 
 /// <summary>
 /// Helper methods for business logic that was moved from JellyseerrApiService.
