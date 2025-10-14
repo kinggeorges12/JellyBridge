@@ -9,17 +9,17 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Jellyseerr Movie that wraps TmdbMovieResult with Jellyseerr-specific functionality.
+/// Jellyseerr Movie that wraps MovieResult with Jellyseerr-specific functionality.
 /// 
 /// This class provides:
-/// - All TMDB movie properties through inheritance
-/// - Jellyseerr media info (download status, service IDs, etc.)
+/// - All TMDB movie properties through inheritance from MovieResult
+/// - Jellyseerr media info (download status, service IDs, etc.) via MediaInfo
 /// - Equality comparison with Jellyfin Movie items
 /// 
 /// This bridge model provides the complete structure returned by the discover movies API.
 /// </summary>
 public class JellyseerrMovie 
-    : TmdbMovieResult, 
+    : MovieResult, 
       IJellyseerrMedia,
       IEquatable<JellyseerrMovie>, 
       IEquatable<Movie>
@@ -37,7 +37,7 @@ public class JellyseerrMovie
     /// <summary>
     /// The extra external ID (IMDB for movies).
     /// </summary>
-    public string? ExtraId => null; // IMDB ID not available in current model
+    public string? ExtraId => MediaInfo?.ImdbId;
 
     /// <summary>
     /// The display name for the extra external ID (imdbid for movies).
