@@ -310,52 +310,6 @@ public class JellyseerrApiService
 
 
     
-    /// <summary>
-    /// Extracts items from a response based on the endpoint configuration.
-    /// Now handles unified JellyseerrPaginatedResponse structure for all endpoints.
-    /// </summary>
-    private List<object> ExtractItemsFromResponse(object response, JellyseerrEndpointConfig endpointConfig)
-    {
-        var items = new List<object>();
-        
-        // Use reflection to extract items from the response
-        var responseType = response.GetType();
-        _logger.LogDebug("Extracting items from response type: {ResponseType}", responseType.Name);
-        
-        // Check for paginated response pattern (Results property)
-        var resultsProperty = responseType.GetProperty("Results");
-        if (resultsProperty != null)
-        {
-            var results = resultsProperty.GetValue(response);
-            _logger.LogDebug("Found Results property, value type: {ResultsType}", results?.GetType().Name ?? "null");
-            
-            if (results is IEnumerable<object> enumerable)
-            {
-                var enumerableList = enumerable.ToList();
-                _logger.LogDebug("Results is enumerable with {Count} items", enumerableList.Count);
-                items.AddRange(enumerableList);
-            }
-            else if (results != null)
-            {
-                _logger.LogWarning("Results property exists but is not enumerable. Type: {Type}", results.GetType().Name);
-            }
-        }
-        else
-        {
-            _logger.LogDebug("No Results property found on response type: {ResponseType}", responseType.Name);
-        }
-        
-        // If no Results property, check if the response itself is a list
-        if (items.Count == 0 && response is IEnumerable<object> directEnumerable)
-        {
-            var directList = directEnumerable.ToList();
-            _logger.LogDebug("Response is directly enumerable with {Count} items", directList.Count);
-            items.AddRange(directList);
-        }
-        
-        _logger.LogDebug("Extracted {Count} items from response", items.Count);
-        return items;
-    }
     
     
     
@@ -525,14 +479,16 @@ public class JellyseerrApiService
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
             
             // Handle response based on pagination
-            _logger.LogDebug("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
+            _logger.LogInformation("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
             if (endpointConfig.IsPaginated)
             {
                 // Paginated endpoints - fetch all pages starting from page 1
                 var maxPages = endpointConfig.MaxPages ?? Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config);
+                _logger.LogInformation("Initial maxPages value: {MaxPages}", maxPages);
                 if (maxPages == 0)
                 {
                     maxPages = int.MaxValue;
+                    _logger.LogInformation("Converted maxPages from 0 to {MaxPages}", maxPages);
                 }
                 
                 // Get the item type from the paginated response model
@@ -559,7 +515,7 @@ public class JellyseerrApiService
                     
                     // Deserialize paginated response using the response type from endpoint config
                     var responseType = endpointConfig.ResponseModel;
-                    _logger.LogDebug("Deserializing {Operation} response as type: {ResponseType}", operationName, responseType.Name);
+                    _logger.LogInformation("Deserializing {Operation} response as type: {ResponseType}", operationName, responseType.Name);
                     var pageResponse = JsonSerializer.Deserialize(content, responseType);
                     if (pageResponse == null) 
                     {
@@ -567,19 +523,23 @@ public class JellyseerrApiService
                         break;
                     }
                     
-                    _logger.LogDebug("Successfully deserialized {Operation} response, type: {ResponseType}", operationName, pageResponse.GetType().Name);
-                    var pageItems = ExtractItemsFromResponse(pageResponse, endpointConfig);
-                    if (pageItems.Count == 0) 
+                    _logger.LogInformation("Successfully deserialized {Operation} response, type: {ResponseType}", operationName, pageResponse.GetType().Name);
+                    
+                    // Extract the Results property directly from the paginated response
+                    var resultsProperty = pageResponse.GetType().GetProperty("Results");
+                    if (resultsProperty != null)
                     {
-                        _logger.LogDebug("No items found in {Operation} page {Page}, stopping pagination", operationName, page);
-                        break;
+                        var results = resultsProperty.GetValue(pageResponse);
+                        if (results is System.Collections.IEnumerable resultsEnumerable)
+                        {
+                            foreach (var item in resultsEnumerable)
+                            {
+                                allItems.Add(item);
+                            }
+                            _logger.LogInformation("Added {Count} items from page {Page}", resultsEnumerable.Cast<object>().Count(), page);
+                        }
                     }
                     
-                    // Add items to the typed list
-                    foreach (var item in pageItems)
-                    {
-                        allItems.Add(item);
-                    }
                     page++;
                 } while (page <= maxPages);
                 
