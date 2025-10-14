@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "15D214B536980095EC81699530CF9FB2",
+        "timestamp": "2025-10-14T19:55:51.679Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.199.0.0/JellyseerrBridge-0.199.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.199.0.0",
+        "changelog": "v0.199.0.0 - Fixed WatchProviders API deserialization, nullable reference warnings, and optimized network combination logic with AddRange",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "version": "0.198.0.0",
         "timestamp": "2025-10-14T19:11:31.843Z",
         "checksum": "5E5A27B29253F95C036395A94FB898AA",

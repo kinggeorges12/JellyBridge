@@ -365,11 +365,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var movieNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
                 var tvNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
+                _logger.LogInformation("[JellyseerrBridge] MovieNetworks response type: {Type}, Count: {Count}", 
+                    movieNetworks?.GetType().Name ?? "null", 
+                    movieNetworks is List<JellyseerrNetwork> movieList ? movieList.Count : "unknown");
+                
+                _logger.LogInformation("[JellyseerrBridge] TvNetworks response type: {Type}, Count: {Count}", 
+                    tvNetworks?.GetType().Name ?? "null", 
+                    tvNetworks is List<JellyseerrNetwork> tvList ? tvList.Count : "unknown");
+                
                 // Combine and deduplicate networks
                 var allNetworks = new List<JellyseerrNetwork>();
                 var seenIds = new HashSet<int>();
                 
-                foreach (var network in ((List<JellyseerrNetwork>)movieNetworks).Concat((List<JellyseerrNetwork>)tvNetworks))
+                var movieNetworksList = (List<JellyseerrNetwork>?)movieNetworks ?? new List<JellyseerrNetwork>();
+                var tvNetworksList = (List<JellyseerrNetwork>?)tvNetworks ?? new List<JellyseerrNetwork>();
+                
+                var combinedNetworks = new List<JellyseerrNetwork>();
+                combinedNetworks.AddRange(movieNetworksList);
+                combinedNetworks.AddRange(tvNetworksList);
+                
+                foreach (var network in combinedNetworks)
                 {
                     if (seenIds.Add(network.Id))
                     {

@@ -2890,6 +2890,10 @@ try {
         Remove-Item "scripts\convert-with-typescript-compiler.js" -Force
         Write-Host "Removed convert-with-typescript-compiler.js" -ForegroundColor Gray
     }
+    if (Test-Path "$env:TEMP") {
+        Remove-Item "$env:TEMP" -Recurse -Force
+        Write-Host "Removed temp directory" -ForegroundColor Gray
+    }
     Write-Host "Cleanup completed!" -ForegroundColor Green
 } catch {
     Write-Host "Warning: Could not clean up some temporary files: $($_.Exception.Message)" -ForegroundColor Yellow

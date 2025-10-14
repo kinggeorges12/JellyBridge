@@ -17,7 +17,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 # Set base directory (project root) - fully resolved path
-$BaseDir = (Resolve-Path "$PSScriptRoot\..").Path
+$BaseDir = Split-Path $PSScriptRoot -Parent
 
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
@@ -59,7 +59,10 @@ Write-Host "[~] Updated version to $Version in project file" -ForegroundColor Gr
 
 # Step 2: Build the project
 Write-Host "Step 2: Building the project..." -ForegroundColor Yellow
-$null = dotnet build src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj --configuration Release --warnaserror
+Write-Host "Running: dotnet build src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj --configuration Release --warnaserror" -ForegroundColor Cyan
+$buildOutput = dotnet build src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj --configuration Release --warnaserror 2>&1
+Write-Host "Build output: $buildOutput" -ForegroundColor Yellow
+Write-Host "Exit code: $LASTEXITCODE" -ForegroundColor Yellow
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Build failed!"
     exit 1
