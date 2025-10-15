@@ -48,28 +48,20 @@ public class JellyseerrBridgeService
                 _logger.LogInformation("[JellyseerrBridge] Processing library: {LibraryName} (Type: {LibraryType})", 
                     library.Name, library.CollectionType);
 
-                // Skip libraries that are actually the Jellyseerr sync directory
-                // Check if any items in this library are located in the sync directory
-                var sampleQuery = new InternalItemsQuery
-                {
-                    Recursive = true,
-                    Limit = 10 // Check a few items to see if library contains sync directory items
-                };
+                // Skip libraries that contain the Jellyseerr sync directory
+                // Check if any of the library's monitored locations are in the sync directory
+                var hasSyncDirectoryLocation = library.Locations?.Any(location => 
+                    JellyseerrFolderUtils.IsPathInSyncDirectory(location)) == true;
                 
-                var sampleItems = _libraryManager.GetItemsResult(sampleQuery).Items;
-                var hasItemsInSyncDirectory = sampleItems.Any(item => 
-                    JellyseerrFolderUtils.IsPathInSyncDirectory(item.Path));
-                
-                if (hasItemsInSyncDirectory)
+                if (hasSyncDirectoryLocation)
                 {
-                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - contains items in Jellyseerr sync directory", 
+                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - monitors Jellyseerr sync directory", 
                         library.Name);
                     continue;
                 }
                 
                 // Only scan libraries that are compatible with the target item type
-                var libraryCollectionType = library.CollectionType?.ToString();
-                if (!JellyfinTypeMapping.IsLibraryTypeCompatible<T>(libraryCollectionType))
+                if (!JellyfinTypeMapping.IsLibraryTypeCompatible<T>(library.CollectionType))
                 {
                     _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - type {LibraryType} not compatible with {ItemType}", 
                         library.Name, library.CollectionType, typeof(T).Name);
@@ -85,21 +77,10 @@ public class JellyseerrBridgeService
 
                 var libraryItems = _libraryManager.GetItemsResult(query).Items.Cast<T>().ToList();
                 
-                // Filter out items that are located in the sync directory
-                var filteredItems = libraryItems.Where(item => 
-                    !JellyseerrFolderUtils.IsPathInSyncDirectory(item.Path)).ToList();
-                
-                items.AddRange(filteredItems);
-                
-                var excludedCount = libraryItems.Count - filteredItems.Count;
-                if (excludedCount > 0)
-                {
-                    _logger.LogInformation("[JellyseerrBridge] Excluded {ExcludedCount} {ItemType} from library {LibraryName} (located in sync directory)", 
-                        excludedCount, typeof(T).Name, library.Name);
-                }
+                items.AddRange(libraryItems);
                 
                 _logger.LogInformation("[JellyseerrBridge] Found {ItemCount} {ItemType} in library {LibraryName}", 
-                    filteredItems.Count, typeof(T).Name, library.Name);
+                    libraryItems.Count, typeof(T).Name, library.Name);
             }
 
             _logger.LogInformation("[JellyseerrBridge] Total {ItemType} found across all libraries: {TotalCount}", 
@@ -177,8 +158,10 @@ public class JellyseerrBridgeService
                 // Log detailed comparison info for debugging
                 var jellyfinType = existingItem.GetType().Name;
                 var tmdbId = existingItem.GetProviderId("Tmdb");
-                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} (Type: {JellyfinType}, TMDB: {TmdbId}) - Match: {IsMatch}", 
-                    bm, existingItem, jellyfinType, tmdbId ?? "null", isMatch);
+                var tvdbId = existingItem.GetProviderId("Tvdb");
+                var imdbId = existingItem.GetProviderId("Imdb");
+                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} (Type: {JellyfinType}, TMDB: {TmdbId}, TVDB: {TvdbId}, IMDB: {ImdbId}) - Match: {IsMatch}", 
+                    bm, existingItem, jellyfinType, tmdbId ?? "null", tvdbId ?? "null", imdbId ?? "null", isMatch);
                 
                 return isMatch;
             });
@@ -364,28 +347,24 @@ public class JellyseerrBridgeService
 }
 
 /// <summary>
-/// Maps between Jellyfin item types, collection type strings, and BaseItemKind enums.
+/// Maps between Jellyfin item types, collection type enums, and BaseItemKind enums.
 /// </summary>
 public class JellyfinTypeMapping
 {
-    // Collection type string constants
-    public const string MoviesCollectionType = "movies";
-    public const string TvShowsCollectionType = "tvshows";
-
     // BaseItemKind constants
     public static readonly BaseItemKind MovieKind = BaseItemKind.Movie;
     public static readonly BaseItemKind SeriesKind = BaseItemKind.Series;
 
-    public static bool IsLibraryTypeCompatible<T>(string? libraryCollectionType) where T : BaseItem
+    public static bool IsLibraryTypeCompatible<T>(CollectionTypeOptions? libraryCollectionType) where T : BaseItem
     {
-        if (string.IsNullOrEmpty(libraryCollectionType))
+        if (!libraryCollectionType.HasValue)
             return false;
 
-        // Check if the collection type string actually contains the relevant keywords
+        // Check if the collection type is compatible with the target item type
         return typeof(T) switch
         {
-            Type t when t == typeof(Movie) => libraryCollectionType.Contains(MoviesCollectionType, StringComparison.OrdinalIgnoreCase),
-            Type t when t == typeof(Series) => libraryCollectionType.Contains(TvShowsCollectionType, StringComparison.OrdinalIgnoreCase),
+            Type t when t == typeof(Movie) => libraryCollectionType.Value == CollectionTypeOptions.movies || libraryCollectionType.Value == CollectionTypeOptions.mixed,
+            Type t when t == typeof(Series) => libraryCollectionType.Value == CollectionTypeOptions.tvshows || libraryCollectionType.Value == CollectionTypeOptions.mixed,
             _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
         };
     }
