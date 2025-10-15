@@ -69,7 +69,7 @@ public class JellyseerrMovie
     /// <summary>
     /// The media name for folder creation (Title from TMDB).
     /// </summary>
-    [JsonPropertyName("mediaName")]
+    [JsonIgnore]
     public string MediaName 
     { 
         get => Title;

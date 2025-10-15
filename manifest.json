@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.225.0.0 - v0.225.0.0 - Enhanced JSON serialization with generic T converter support - Updated JellyseerrJsonSerializer to use generic DefaultOptions<T>() method with JellyseerrPropertiesConverter, improved JSON output with proper null value handling, added T-specific converter filtering for underscore properties",
+        "version": "0.225.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.225.0.0/JellyseerrBridge-0.225.0.0-DLL.zip",
+        "dependencies": [],
+        "checksum": "1A6B61F9A3FF25F61329ACA459EF5600",
+        "timestamp": "2025-10-15T21:14:51.029Z"
+      },
+      {
         "checksum": "E9F00E8F56C26916B00F6A383B097988",
         "version": "0.224.0.0",
         "changelog": "v0.224.0.0 - Implement custom JellyseerrJsonSerializer with optimized JSON handling - Added JellyseerrStringConverter to skip null/empty/whitespace strings during serialization, created JellyseerrJsonSerializer static class with consistent API for serialize/deserialize operations, optimized JSON operations to use custom serializer for Jellyseerr objects and default serializer for Jellyfin objects",

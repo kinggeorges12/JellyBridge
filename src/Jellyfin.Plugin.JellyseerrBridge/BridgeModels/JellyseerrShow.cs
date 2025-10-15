@@ -72,7 +72,7 @@ public class JellyseerrShow
     /// <summary>
     /// The media name for folder creation (Name from TMDB).
     /// </summary>
-    [JsonPropertyName("mediaName")]
+    [JsonIgnore]
     public string MediaName 
     { 
         get => Name;
