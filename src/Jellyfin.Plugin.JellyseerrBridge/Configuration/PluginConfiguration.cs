@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MediaBrowser.Model.Plugins;
+using Jellyfin.Plugin.JellyseerrBridge.Serialization;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
 
@@ -193,6 +194,6 @@ public class PluginConfiguration : BasePluginConfiguration
             properties[nameof(ApiKey)] = string.IsNullOrEmpty(ApiKey) ? "[EMPTY]" : "[SET]";
         }
         
-        return System.Text.Json.JsonSerializer.Serialize(properties);
+        return JellyseerrJsonSerializer.Serialize(properties);
     }
 }

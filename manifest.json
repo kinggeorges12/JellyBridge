@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "E9F00E8F56C26916B00F6A383B097988",
+        "version": "0.224.0.0",
+        "changelog": "v0.224.0.0 - Implement custom JellyseerrJsonSerializer with optimized JSON handling - Added JellyseerrStringConverter to skip null/empty/whitespace strings during serialization, created JellyseerrJsonSerializer static class with consistent API for serialize/deserialize operations, optimized JSON operations to use custom serializer for Jellyseerr objects and default serializer for Jellyfin objects",
+        "dependencies": [],
+        "timestamp": "2025-10-15T20:35:14.026Z",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.224.0.0/JellyseerrBridge-0.224.0.0-DLL.zip"
+      },
+      {
         "dependencies": [],
         "changelog": "v0.223.0.0 - Enhanced bridge item comparison with fallback ID matching - Fixed JavaScript to use mediaName property, corrected Jellyfin provider ID names (Tmdb/Imdb/Tvdb), added fallback comparison using TVDB/IMDB IDs for better matching, and simplified debug logging to show complete objects",
         "timestamp": "2025-10-15T20:05:13.823Z",

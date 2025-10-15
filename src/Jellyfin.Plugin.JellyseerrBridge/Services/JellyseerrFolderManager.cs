@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using Jellyfin.Plugin.JellyseerrBridge.Serialization;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -249,14 +250,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                         var json = await File.ReadAllTextAsync(metadataFile);
                         _logger.LogDebug("[JellyseerrFolderManager] Reading {Type} metadata from {MetadataFile}: {Json}", typeFolder, metadataFile, json);
                         
-                        var jsonOptions = new JsonSerializerOptions 
-                        { 
-                            WriteIndented = true,
-                            PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
-                            PropertyNameCaseInsensitive = true,
-                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault // ignores empty base properties
-                        };
-                        var item = JsonSerializer.Deserialize<TJellyseerr>(json, jsonOptions);
+                        var item = JellyseerrJsonSerializer.Deserialize<TJellyseerr>(json);
                         if (item != null)
                         {
                             _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized {Type} - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
@@ -304,16 +298,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                 _logger.LogDebug("[JellyseerrFolderManager] Created {Type} directory: {TargetDirectory}", typeFolder, targetDirectory);
             }
 
-            // Serialize and write metadata file
-            var jsonOptions = new JsonSerializerOptions 
-            { 
-                WriteIndented = true,
-                PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault // ignores empty base properties
-            };
-            
-            var json = JsonSerializer.Serialize(item, jsonOptions);
+            var json = JellyseerrJsonSerializer.Serialize(item);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             
             await File.WriteAllTextAsync(metadataFile, json);
