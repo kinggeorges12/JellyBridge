@@ -606,6 +606,141 @@ public class JellyseerrApiService
         }
     }
 
+    /// <summary>
+    /// Test connection method that throws exceptions instead of returning default values.
+    /// Used specifically for connection testing where we want to know about failures.
+    /// </summary>
+    /// <param name="endpoint">The endpoint to test</param>
+    /// <param name="config">Plugin configuration</param>
+    /// <returns>The response in the correct type for the endpoint</returns>
+    /// <exception cref="HttpRequestException">When HTTP request fails</exception>
+    /// <exception cref="TimeoutException">When request times out</exception>
+    /// <exception cref="JsonException">When JSON deserialization fails</exception>
+    public async Task<object> TestConnectionAsync(
+        JellyseerrEndpoint endpoint, 
+        PluginConfiguration config)
+    {
+        string? content = null;
+        var operationName = endpoint.ToString();
+        
+        // Use the same retry logic as CallEndpointAsync but throw exceptions instead of returning defaults
+        var retryAttempts = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RetryAttempts), config) ?? 3;
+        var enableDebugLogging = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.EnableDebugLogging), config) ?? false;
+        Exception? lastException = null;
+        
+        for (int attempt = 1; attempt <= retryAttempts; attempt++)
+        {
+            try
+            {
+                // Get endpoint configuration
+                var endpointConfig = GetEndpoint(endpoint);
+                
+                _logger.LogInformation("Testing connection to endpoint: {Endpoint}", endpoint);
+                
+                // Handle endpoint-specific logic
+                var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
+                
+                // Make the HTTP request
+                var request = JellyseerrUrlBuilder.CreateRequest(
+                    config.JellyseerrUrl, 
+                    endpoint, 
+                    config.ApiKey, 
+                    HttpMethod.Get, 
+                    queryParameters, 
+                    templateValues
+                );
+                
+                var response = await _httpClient.SendAsync(request);
+                content = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        errorMessage += $" - {content}";
+                    }
+                    throw new HttpRequestException(errorMessage);
+                }
+                
+                // Deserialize using the response type from endpoint config
+                var responseType = endpointConfig.ResponseModel;
+                var result = JsonSerializer.Deserialize(content, responseType);
+                
+                if (result == null)
+                {
+                    throw new InvalidOperationException($"Deserialization returned null for {operationName}");
+                }
+                
+                _logger.LogInformation("Successfully tested connection to {Operation}", operationName);
+                return result;
+            }
+            catch (TaskCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} timed out", 
+                        attempt, retryAttempts);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts timed out", retryAttempts);
+                    throw new TimeoutException($"Connection test timed out after {retryAttempts} attempts", ex);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} failed: {Error}", 
+                        attempt, retryAttempts, ex.Message);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts failed", retryAttempts);
+                    throw;
+                }
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogError(jsonEx, "Failed to deserialize {Operation} response JSON. Content: {Content}", operationName, content);
+                throw new JsonException($"Failed to deserialize {operationName} response: {jsonEx.Message}", jsonEx);
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                if (enableDebugLogging)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} failed with unexpected error: {Error}", 
+                        attempt, retryAttempts, ex.Message);
+                }
+                
+                if (attempt == retryAttempts)
+                {
+                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts failed with unexpected error", retryAttempts);
+                    throw;
+                }
+            }
+            
+            // Wait before retry (exponential backoff)
+            if (attempt < retryAttempts)
+            {
+                var delay = TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, attempt - 1))); // 1s, 2s, 4s, etc. up to 60 seconds
+                if (enableDebugLogging)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
+                }
+                await Task.Delay(delay);
+            }
+        }
+        
+        throw lastException ?? new InvalidOperationException("All connection test attempts failed");
+    }
+
     #endregion
 
     #region Factory Helper Methods

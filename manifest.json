@@ -9,9 +9,18 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.206.0.0 - Fixed Test Connection button to properly return HTTP error status codes (400/401/500) instead of always returning 200, created TestConnectionAsync method that throws exceptions for connection failures, and updated frontend to handle different error types appropriately",
+        "checksum": "1C114D3A3A35DD18D2D2DE3FEED4A530",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.206.0.0/JellyseerrBridge-0.206.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.206.0.0",
+        "timestamp": "2025-10-15T01:34:44.408Z"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "dependencies": [],
-        "timestamp": "2025-10-15T01:02:45.550Z",
+        "timestamp": "2025-10-15T01:02:45.55Z",
         "changelog": "v0.205.0.0 - Improved JsonPropertyNaming configuration to preserve original case from TypeScript source, implemented clean inheritance for bridge models, and fixed region dropdown display issues",
         "checksum": "B131ECB6F25170F7A47501D25C753330",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.205.0.0/JellyseerrBridge-0.205.0.0-DLL.zip",
