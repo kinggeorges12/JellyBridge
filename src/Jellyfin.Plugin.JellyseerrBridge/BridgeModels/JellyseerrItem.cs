@@ -36,7 +36,7 @@ public interface IJellyseerrItem
     /// <summary>
     /// Jellyseerr-specific media information (download status, service IDs, etc.).
     /// </summary>
-    JellyseerrMedia? MediaInfo { get; set; }
+    JellyseerrMediaTest? MediaInfo { get; set; }
 
     /// <summary>
     /// The extra external ID (IMDB for movies, TVDB for shows).
