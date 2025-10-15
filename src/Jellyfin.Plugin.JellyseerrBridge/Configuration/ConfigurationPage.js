@@ -371,8 +371,9 @@ function initializeAdvancedSettings(page) {
                     if (result.bridgeItems && result.bridgeItems.length > 0) {
                         resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
                         result.bridgeItems.forEach((item, index) => {
-                            const yearText = item.year ? ` (${item.year})` : '';
-                            resultText += `\n${index + 1}. ${item.mediaName || 'undefined'}${yearText} [${item.mediaType}]`;
+                            const yearText = item._year ? ` (${item._year})` : '';
+                            const name = item._mediaName || 'undefined';
+                            resultText += `\n${index + 1}. ${name}${yearText} [${item.mediaType}]`;
                         });
                     } else {
                         resultText += `\n\nNo bridge items found.`;

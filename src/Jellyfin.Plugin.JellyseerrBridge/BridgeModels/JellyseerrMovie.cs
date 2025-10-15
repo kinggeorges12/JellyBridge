@@ -69,7 +69,7 @@ public class JellyseerrMovie
     /// <summary>
     /// The media name for folder creation (Title from TMDB).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("_mediaName")]
     public string MediaName 
     { 
         get => Title;
@@ -79,7 +79,7 @@ public class JellyseerrMovie
     /// <summary>
     /// Computed property that extracts the year from the release date.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("_year")]
     public string Year 
     { 
         get 
