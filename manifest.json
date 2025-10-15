@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-15T03:59:31.696Z",
+        "checksum": "1FEA749CD2A0F4CBA8A1E4CD43C5F047",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.209.0.0/JellyseerrBridge-0.209.0.0-DLL.zip",
+        "changelog": "v0.209.0.0 - Fixed MediaInfo JSON parsing issues and improved sync service error handling. Updated JellyseerrMedia bridge class to properly handle numeric service IDs from API. Enhanced sync service to detect and report API failures instead of silently succeeding with no data.",
+        "version": "0.209.0.0"
+      },
+      {
         "changelog": "v0.208.0.0 - Updated JellyseerrMedia bridge class to correctly handle API response types and nullability. Regenerated models from TypeScript definitions. Improved JSON property handling for MediaInfo objects.",
         "timestamp": "2025-10-15T02:59:22.725Z",
         "checksum": "02AC72FBF21148CFB091F92D682D94EF",
