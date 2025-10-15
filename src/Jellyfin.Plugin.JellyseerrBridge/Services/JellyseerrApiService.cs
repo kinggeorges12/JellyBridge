@@ -214,7 +214,7 @@ public class JellyseerrApiService
         // Watch provider endpoints - use watch provider response
         [JellyseerrEndpoint.WatchProvidersRegions] = new JellyseerrEndpointConfig(
             "/api/v1/watchproviders/regions",
-            typeof(List<TmdbWatchProviderRegion>),
+            typeof(List<JellyseerrWatchProviderRegion>),
             description: "Get watch provider regions"
         ),
             [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(

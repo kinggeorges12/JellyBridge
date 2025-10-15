@@ -50,6 +50,8 @@
     )
     
     # Global JSON property naming convention
-    # true = use camelCase (e.g., "mediaType"), false = use snake_case (e.g., "media_type")
-    JsonCamelCase = $true
+    # "camelcase" = convert all to camelCase (e.g., "mediaType")
+    # "snake_case" = convert all to snake_case (e.g., "media_type") 
+    # null/empty = preserve original case from TypeScript source
+    JsonPropertyNaming = $null
 }
