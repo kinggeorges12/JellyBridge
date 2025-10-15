@@ -19,7 +19,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// </summary>
 public class JellyseerrShow 
     : TmdbTvResult, 
-      IJellyseerrMedia,
+      IJellyseerrItem,
       IEquatable<JellyseerrShow>, 
       IEquatable<Series>
 {
@@ -27,7 +27,7 @@ public class JellyseerrShow
     /// Jellyseerr-specific media information (download status, service IDs, etc.)
     /// </summary>
     [JsonPropertyName("mediaInfo")]
-    public Media? MediaInfo { get; set; }
+    public JellyseerrMedia? MediaInfo { get; set; }
 
     /// <summary>
     /// Override the base class MediaType to use camelCase JSON property name
@@ -47,7 +47,7 @@ public class JellyseerrShow
     /// <summary>
     /// Computed property that extracts the year from the first air date.
     /// </summary>
-    public string Year => IJellyseerrMedia.ExtractYear(FirstAirDate);
+    public string Year => IJellyseerrItem.ExtractYear(FirstAirDate);
 
     /// <summary>
     /// The extra external ID (TVDB for shows).

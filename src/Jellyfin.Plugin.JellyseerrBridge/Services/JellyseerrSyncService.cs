@@ -256,7 +256,7 @@ public partial class JellyseerrSyncService
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
     private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items, string template) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
     {
         var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
@@ -318,7 +318,7 @@ public partial class JellyseerrSyncService
     /// Supports nested property access like {mediaInfo.tvdbId}.
     /// </summary>
     private string CreateFolderNameFromFormat<TJellyseerr>(TJellyseerr item, string template) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
     {
         var folderName = template;
         
@@ -331,7 +331,7 @@ public partial class JellyseerrSyncService
             var field = match.Groups[0].Value; // Full field like "{title}"
             var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
             
-            var value = GetPropertyValue((IJellyseerrMedia)item, propertyPath);
+            var value = GetPropertyValue((IJellyseerrItem)item, propertyPath);
             folderName = folderName.Replace(field, value);
         }
         
@@ -344,7 +344,7 @@ public partial class JellyseerrSyncService
     /// <summary>
     /// Get property value using reflection.
     /// </summary>
-    private string GetPropertyValue(IJellyseerrMedia item, string propertyPath)
+    private string GetPropertyValue(IJellyseerrItem item, string propertyPath)
     {
         if (item == null || string.IsNullOrEmpty(propertyPath))
             return "";
@@ -389,7 +389,7 @@ public partial class JellyseerrSyncService
     /// Create JSON metadata file for movies or TV shows.
     /// </summary>
     private async Task CreateMetadataFileAsync<TJellyseerr>(TJellyseerr item, string directoryPath) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
     {
         // Serialize the item directly as its specific type to preserve all properties
         var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
@@ -439,8 +439,8 @@ public class ProcessResult
     public int Processed { get; set; }
     public int Created { get; set; }
     public int Updated { get; set; }
-    public List<IJellyseerrMedia> ItemsAdded { get; set; } = new();
-    public List<IJellyseerrMedia> ItemsUpdated { get; set; } = new();
+    public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
+    public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
 
     public override string ToString()
     {

@@ -58,7 +58,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Always return a response
                 return Ok(new
                 {
-                    bridgeItems = bridgeItems ?? new List<IJellyseerrMedia>(),
+                    bridgeItems = bridgeItems ?? new List<IJellyseerrItem>(),
                     syncDirectory = config?.LibraryDirectory ?? "Not configured",
                     excludeFromMainLibraries = config?.ExcludeFromMainLibraries ?? true,
                     message = $"Library scan test completed. Found {bridgeItems?.Count ?? 0} bridge items, {existingMovies?.Count ?? 0} movies, {existingShows?.Count ?? 0} shows in main libraries",
@@ -74,7 +74,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 return StatusCode(408, new { 
                     error = "Request timeout",
                     details = "Library scan took too long and was cancelled. This might indicate a very large library or slow storage.",
-                    bridgeItems = new List<IJellyseerrMedia>(),
+                    bridgeItems = new List<IJellyseerrItem>(),
                     movieCount = 0,
                     tvShowCount = 0
                 });
@@ -86,7 +86,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     error = ex.Message,
                     details = $"Library scan failed: {ex.GetType().Name} - {ex.Message}",
                     stackTrace = ex.StackTrace,
-                    bridgeItems = new List<IJellyseerrMedia>(),
+                    bridgeItems = new List<IJellyseerrItem>(),
                     movieCount = 0,
                     tvShowCount = 0
                 });
