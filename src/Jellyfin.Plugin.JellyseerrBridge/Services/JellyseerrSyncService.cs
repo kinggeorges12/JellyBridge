@@ -372,7 +372,11 @@ public partial class JellyseerrSyncService
         }
         
         // Remove empty field blocks like [tvdbid-], [tmdbid-], [imdbid-] and empty parentheses ()
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*(\[[^]]*-\]|\(\s*\))\s*", "");
+        // Be more careful with spacing - don't remove spaces between title and ID when year is missing
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*(\[[^]]*-\])\s*", " "); // Remove empty ID brackets but keep space
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\(\s*\)", ""); // Remove empty parentheses
+        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s+", " "); // Normalize multiple spaces to single space
+        folderName = folderName.Trim(); // Remove leading/trailing spaces
         
         return SanitizeFileName(folderName);
     }

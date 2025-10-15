@@ -134,11 +134,23 @@ public class JellyseerrBridgeService
 
         foreach (var existingItem in existingItems)
         {
+            _logger.LogDebug("[JellyseerrBridge] Checking existing item: {ItemName} (Id: {ItemId})", 
+                existingItem.Name, existingItem.Id);
+            
             // Use the built-in IEquatable<TJellyfin> implementation
-            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => bm.Equals(existingItem));
+            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => 
+            {
+                var isMatch = bm.Equals(existingItem);
+                _logger.LogDebug("[JellyseerrBridge] Comparing bridge item '{BridgeName}' (Id: {BridgeId}) with existing item '{ExistingName}' (Id: {ExistingId}) - Match: {IsMatch}", 
+                    bm.Name, bm.Id, existingItem.Name, existingItem.Id, isMatch);
+                return isMatch;
+            });
 
             if (bridgeMatch != null)
             {
+                _logger.LogInformation("[JellyseerrBridge] Found match: '{BridgeName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
+                    bridgeMatch.Name, bridgeMatch.Id, existingItem.Name, existingItem.Id);
+                
                 // Find the bridge folder directory for this item
                 var bridgeFolderPath = await FindBridgeFolderPathAsync(syncDirectory, bridgeMatch);
                 
@@ -254,7 +266,28 @@ public class JellyseerrBridgeService
                         
                         if (item != null)
                         {
-                            _logger.LogDebug("[JellyseerrBridge] Successfully deserialized item: {Item}", item.ToString());
+                            // Enhanced debugging for Jellyseerr items
+                            if (item is IJellyseerrItem jellyseerrItem)
+                            {
+                                _logger.LogInformation("[JellyseerrBridge] Deserialized Jellyseerr item - Name: '{Name}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                    jellyseerrItem.Name, jellyseerrItem.Id, jellyseerrItem.MediaType, jellyseerrItem.Year);
+                                
+                                // Log additional properties for debugging
+                                if (item is JellyseerrMovie movie)
+                                {
+                                    _logger.LogInformation("[JellyseerrBridge] Movie details - Title: '{Title}', ReleaseDate: '{ReleaseDate}', ExtraId: '{ExtraId}'", 
+                                        movie.Title, movie.ReleaseDate, movie.ExtraId);
+                                }
+                                else if (item is JellyseerrShow show)
+                                {
+                                    _logger.LogInformation("[JellyseerrBridge] Show details - Name: '{Name}', FirstAirDate: '{FirstAirDate}', ExtraId: '{ExtraId}'", 
+                                        show.Name, show.FirstAirDate, show.ExtraId);
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogDebug("[JellyseerrBridge] Successfully deserialized item: {Item}", item.ToString());
+                            }
                             metadata.Add(item);
                         }
                         else
