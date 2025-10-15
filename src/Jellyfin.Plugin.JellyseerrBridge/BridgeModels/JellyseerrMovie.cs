@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using MediaBrowser.Controller.Entities;
@@ -9,21 +8,37 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Jellyseerr Movie that wraps MovieResult with Jellyseerr-specific functionality.
+/// Jellyseerr Movie that wraps TmdbMovieResult with Jellyseerr-specific functionality.
 /// 
 /// This class provides:
-/// - All TMDB movie properties through inheritance from MovieResult
+/// - All TMDB movie properties through inheritance from TmdbMovieResult
 /// - Jellyseerr media info (download status, service IDs, etc.) via MediaInfo
 /// - Equality comparison with Jellyfin Movie items
 /// 
 /// This bridge model provides the complete structure returned by the discover movies API.
 /// </summary>
 public class JellyseerrMovie 
-    : MovieResult, 
+    : TmdbMovieResult, 
       IJellyseerrMedia,
       IEquatable<JellyseerrMovie>, 
       IEquatable<Movie>
 {
+    /// <summary>
+    /// Jellyseerr-specific media information (download status, service IDs, etc.)
+    /// </summary>
+    [JsonPropertyName("mediaInfo")]
+    public Media? MediaInfo { get; set; }
+
+    /// <summary>
+    /// Override the base class MediaType to use camelCase JSON property name
+    /// </summary>
+    [JsonPropertyName("mediaType")]
+    public new string MediaType 
+    { 
+        get => base.MediaType; 
+        set => base.MediaType = value; 
+    }
+
     /// <summary>
     /// The display name of the movie (Title from TMDB).
     /// </summary>

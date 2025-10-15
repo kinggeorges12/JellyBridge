@@ -256,7 +256,7 @@ public partial class JellyseerrSyncService
     /// Create folders and JSON metadata files for movies or TV shows.
     /// </summary>
     private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items, string template) 
-        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
@@ -318,7 +318,7 @@ public partial class JellyseerrSyncService
     /// Supports nested property access like {mediaInfo.tvdbId}.
     /// </summary>
     private string CreateFolderNameFromFormat<TJellyseerr>(TJellyseerr item, string template) 
-        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         var folderName = template;
         
@@ -389,7 +389,7 @@ public partial class JellyseerrSyncService
     /// Create JSON metadata file for movies or TV shows.
     /// </summary>
     private async Task CreateMetadataFileAsync<TJellyseerr>(TJellyseerr item, string directoryPath) 
-        where TJellyseerr : SearchResult, IJellyseerrMedia, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrMedia, IEquatable<TJellyseerr>
     {
         // Serialize the item directly as its specific type to preserve all properties
         var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });

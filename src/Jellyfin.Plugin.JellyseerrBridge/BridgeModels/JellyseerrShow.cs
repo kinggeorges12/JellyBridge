@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using MediaBrowser.Controller.Entities;
@@ -9,21 +8,37 @@ using MediaBrowser.Model.Entities;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Jellyseerr TV Show that wraps TvResult with Jellyseerr-specific functionality.
+/// Jellyseerr TV Show that wraps TmdbTvResult with Jellyseerr-specific functionality.
 /// 
 /// This class provides:
-/// - All TMDB TV properties through inheritance from TvResult
+/// - All TMDB TV properties through inheritance from TmdbTvResult
 /// - Jellyseerr media info (download status, service IDs, etc.) via MediaInfo
 /// - Equality comparison with Jellyfin Series items
 /// 
 /// This bridge model provides the complete structure returned by the discover TV API.
 /// </summary>
 public class JellyseerrShow 
-    : TvResult, 
+    : TmdbTvResult, 
       IJellyseerrMedia,
       IEquatable<JellyseerrShow>, 
       IEquatable<Series>
 {
+    /// <summary>
+    /// Jellyseerr-specific media information (download status, service IDs, etc.)
+    /// </summary>
+    [JsonPropertyName("mediaInfo")]
+    public Media? MediaInfo { get; set; }
+
+    /// <summary>
+    /// Override the base class MediaType to use camelCase JSON property name
+    /// </summary>
+    [JsonPropertyName("mediaType")]
+    public new string MediaType 
+    { 
+        get => base.MediaType; 
+        set => base.MediaType = value; 
+    }
+
     /// <summary>
     /// The display name of the TV show (Name from TMDB).
     /// </summary>
