@@ -39,40 +39,45 @@ public class JellyseerrShow
     /// Override JSON property names to match camelCase format from discover API
     /// </summary>
     [JsonPropertyName("mediaType")]
-    public new string MediaType => base.MediaType;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public new JellyseerrModel.MediaType MediaType { get; set; }
 
     [JsonPropertyName("firstAirDate")]
     public new string FirstAirDate { get; set; } = string.Empty;
 
     [JsonPropertyName("genreIds")]
-    public new List<int> GenreIds => base.GenreIds;
+    public new List<int> GenreIds { get; set; } = new();
 
     [JsonPropertyName("originCountry")]
-    public new List<string> OriginCountry => base.OriginCountry;
+    public new List<string> OriginCountry { get; set; } = new();
 
     [JsonPropertyName("originalLanguage")]
-    public new string OriginalLanguage => base.OriginalLanguage;
+    public new string OriginalLanguage { get; set; } = string.Empty;
 
     [JsonPropertyName("originalName")]
-    public new string OriginalName => base.OriginalName;
+    public new string OriginalName { get; set; } = string.Empty;
 
     [JsonPropertyName("voteAverage")]
-    public new double VoteAverage => base.VoteAverage;
+    public new double VoteAverage { get; set; }
 
     [JsonPropertyName("voteCount")]
-    public new int VoteCount => base.VoteCount;
+    public new int VoteCount { get; set; }
 
     [JsonPropertyName("backdropPath")]
-    public new string? BackdropPath => base.BackdropPath;
+    public new string? BackdropPath { get; set; }
 
     [JsonPropertyName("posterPath")]
-    public new string? PosterPath => base.PosterPath;
+    public new string? PosterPath { get; set; }
 
     /// <summary>
     /// The media name for folder creation (Name from TMDB).
     /// </summary>
-    [JsonIgnore]
-    public string MediaName => base.Name;
+    [JsonPropertyName("mediaName")]
+    public string MediaName 
+    { 
+        get => Name;
+        set => Name = value;
+    }
 
     /// <summary>
     /// Computed property that extracts the year from the first air date.

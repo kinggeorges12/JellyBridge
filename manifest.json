@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.222.0.0 - Fix bridge model metadata deserialization - implement IJellyseerrItem interface properly with MediaName getter/setter, fix MediaType property conflicts, and ensure proper JSON serialization for metadata.json files",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.222.0.0/JellyseerrBridge-0.222.0.0-DLL.zip",
+        "timestamp": "2025-10-15T19:33:24.047Z",
+        "targetAbi": "10.10.7.0",
+        "checksum": "34680E8338284EE3D86E126E858FC27A",
+        "version": "0.222.0.0"
+      },
+      {
         "timestamp": "2025-10-15T19:05:59.209Z",
         "dependencies": [],
         "checksum": "8C591D386450E16107AFE3854B39592C",

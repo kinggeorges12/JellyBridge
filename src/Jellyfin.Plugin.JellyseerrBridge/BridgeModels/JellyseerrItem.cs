@@ -21,17 +21,21 @@ public interface IJellyseerrItem
     /// <summary>
     /// The media name for folder creation (separate from Name to avoid conflicts).
     /// </summary>
-    string MediaName { get; }
+    [JsonIgnore]
+    string MediaName { get; set; }
 
     /// <summary>
     /// The year of the media item.
     /// </summary>
+    [JsonIgnore]
     string Year { get; }
 
     /// <summary>
     /// The media type from the API response (inherited from base classes).
     /// </summary>
-    string MediaType { get; }
+    [JsonPropertyName("mediaType")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    JellyseerrModel.MediaType MediaType { get; }
 
     /// <summary>
     /// Jellyseerr-specific media information (download status, service IDs, etc.).
