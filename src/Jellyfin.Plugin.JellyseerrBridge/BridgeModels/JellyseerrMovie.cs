@@ -19,7 +19,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// </summary>
 public class JellyseerrMovie 
     : TmdbMovieResult, 
-      IJellyseerrMedia,
+      IJellyseerrItem,
       IEquatable<JellyseerrMovie>, 
       IEquatable<Movie>
 {
@@ -27,7 +27,7 @@ public class JellyseerrMovie
     /// Jellyseerr-specific media information (download status, service IDs, etc.)
     /// </summary>
     [JsonPropertyName("mediaInfo")]
-    public Media? MediaInfo { get; set; }
+    public JellyseerrMedia? MediaInfo { get; set; }
 
     /// <summary>
     /// Override the base class MediaType to use camelCase JSON property name
@@ -47,7 +47,7 @@ public class JellyseerrMovie
     /// <summary>
     /// Computed property that extracts the year from the release date.
     /// </summary>
-    public string Year => IJellyseerrMedia.ExtractYear(ReleaseDate);
+    public string Year => IJellyseerrItem.ExtractYear(ReleaseDate);
 
     /// <summary>
     /// The extra external ID (IMDB for movies).
