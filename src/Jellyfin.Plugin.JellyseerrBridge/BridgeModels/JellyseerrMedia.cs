@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using CommonMediaType = Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.MediaType;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
@@ -11,6 +12,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 public class JellyseerrMedia : Media
 {
     // Properties that need type changes from base class
+
+    /// <summary>
+    /// Media type as enum - explicitly use Common MediaType to avoid conflicts
+    /// </summary>
+    [JsonPropertyName("mediaType")]
+    public new CommonMediaType MediaType { get; set; }
 
     /// <summary>
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])
