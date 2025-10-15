@@ -193,16 +193,27 @@ public partial class JellyseerrSyncService
             // Create base directory
             var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Starting folder structure creation - Base Directory: {BaseDirectory}", baseDirectory);
+
             if (!Directory.Exists(baseDirectory))
             {
                 Directory.CreateDirectory(baseDirectory);
-                _logger.LogInformation("Created base directory: {BaseDirectory}", baseDirectory);
+                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Created base directory: {BaseDirectory}", baseDirectory);
+            }
+            else
+            {
+                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Base directory already exists: {BaseDirectory}", baseDirectory);
             }
 
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Processing {MovieCount} movies and {ShowCount} shows", 
+                allMovies.Count, allShows.Count);
+
             // Process movies
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
             var movieResults = await CreateFoldersAsync(allMovies);
 
             // Process TV shows
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
             var showResults = await CreateFoldersAsync(allShows);
 
             result.Success = true;
@@ -211,7 +222,8 @@ public partial class JellyseerrSyncService
             result.Message = "Folder structure creation completed successfully";
             result.Details = result.ToString();
 
-            _logger.LogInformation("Folder structure creation completed successfully");
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
+                movieResults.Created, movieResults.Updated, showResults.Created, showResults.Updated);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -299,6 +311,9 @@ public partial class JellyseerrSyncService
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
+        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+            typeof(TJellyseerr).Name, baseDirectory, items.Count);
+        
         // Create folder manager for this type
         var folderManager = new JellyseerrFolderManager<TJellyseerr>(_logger, baseDirectory);
         
@@ -308,9 +323,16 @@ public partial class JellyseerrSyncService
             {
                 result.Processed++;
                 
-                // Check if folder already exists
+                _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - Name: '{Name}', Id: {Id}, Year: '{Year}'", 
+                    result.Processed, items.Count, item.Name, item.Id, item.Year);
+                
+                // Generate folder name and get directory path
+                var folderName = folderManager.CreateFolderName(item);
                 var itemDirectory = folderManager.GetItemDirectory(item);
                 var folderExists = Directory.Exists(itemDirectory);
+
+                _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Folder details - Name: '{FolderName}', Directory: '{ItemDirectory}', Exists: {FolderExists}", 
+                    folderName, itemDirectory, folderExists);
 
                 // Write metadata using folder manager
                 var success = await folderManager.WriteMetadataAsync(item);
@@ -321,25 +343,32 @@ public partial class JellyseerrSyncService
                     {
                         result.Updated++;
                         result.ItemsUpdated.Add(item);
-                        _logger.LogDebug("Updated {Type} folder: {FolderName}", typeof(TJellyseerr).Name, folderManager.CreateFolderName(item));
+                        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}' -> '{ItemDirectory}'", 
+                            typeof(TJellyseerr).Name, folderName, itemDirectory);
                     }
                     else
                     {
                         result.Created++;
                         result.ItemsAdded.Add(item);
-                        _logger.LogDebug("Created {Type} folder: {FolderName}", typeof(TJellyseerr).Name, folderManager.CreateFolderName(item));
+                        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}' -> '{ItemDirectory}'", 
+                            typeof(TJellyseerr).Name, folderName, itemDirectory);
                     }
                 }
                 else
                 {
-                    _logger.LogError("Failed to create folder for {Item}", item);
+                    _logger.LogError("[JellyseerrSyncService] CreateFoldersAsync: ❌ FAILED to create folder for {Item} - Name: '{Name}', Id: {Id}", 
+                        item, item.Name, item.Id);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating folder for {Item}", item);
+                _logger.LogError(ex, "[JellyseerrSyncService] CreateFoldersAsync: ❌ ERROR creating folder for {Item} - Name: '{Name}', Id: {Id}", 
+                    item, item.Name, item.Id);
             }
         }
+        
+        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
+            typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
         
         return result;
     }

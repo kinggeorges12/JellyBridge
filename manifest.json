@@ -9,12 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "changelog": "v0.219.0.0 - Enhanced folder management system with comprehensive debugging, improved JSON serialization, and better library filtering. Added JellyseerrFolderManager for type-specific folder operations, fixed nullable attribute handling in bridge models, and implemented path-based library detection using IsPathInSyncDirectory function.",
+        "targetAbi": "10.10.7.0",
+        "checksum": "3CE3AA4DC33621629BFF9CB94FFE2E78",
+        "timestamp": "2025-10-15T17:51:58.185Z",
+        "version": "0.219.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.219.0.0/JellyseerrBridge-0.219.0.0-DLL.zip"
+      },
+      {
         "checksum": "7329A7207DA663EABC547DFAC8515EBC",
         "targetAbi": "10.10.7.0",
         "version": "0.218.0.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.218.0.0/JellyseerrBridge-0.218.0.0-DLL.zip",
         "dependencies": [],
-        "timestamp": "2025-10-15T17:16:30.850Z",
+        "timestamp": "2025-10-15T17:16:30.85Z",
         "changelog": "v0.218.0.0 - Enhanced folder management system with centralized JellyseerrFolderManager, static templates, and improved type-safe folder operations"
       },
       {

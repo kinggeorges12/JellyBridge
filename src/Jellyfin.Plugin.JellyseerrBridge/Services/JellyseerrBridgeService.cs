@@ -47,6 +47,25 @@ public class JellyseerrBridgeService
                 _logger.LogInformation("[JellyseerrBridge] Processing library: {LibraryName} (Type: {LibraryType})", 
                     library.Name, library.CollectionType);
 
+                // Skip libraries that are actually the Jellyseerr sync directory
+                // Check if any items in this library are located in the sync directory
+                var sampleQuery = new InternalItemsQuery
+                {
+                    Recursive = true,
+                    Limit = 10 // Check a few items to see if library contains sync directory items
+                };
+                
+                var sampleItems = _libraryManager.GetItemsResult(sampleQuery).Items;
+                var hasItemsInSyncDirectory = sampleItems.Any(item => 
+                    JellyseerrFolderUtils.IsPathInSyncDirectory(item.Path));
+                
+                if (hasItemsInSyncDirectory)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - contains items in Jellyseerr sync directory", 
+                        library.Name);
+                    continue;
+                }
+                
                 // Only scan libraries that are compatible with the target item type
                 var libraryCollectionType = library.CollectionType?.ToString();
                 if (!JellyfinTypeMapping.IsLibraryTypeCompatible<T>(libraryCollectionType))
@@ -64,10 +83,22 @@ public class JellyseerrBridgeService
                 };
 
                 var libraryItems = _libraryManager.GetItemsResult(query).Items.Cast<T>().ToList();
-                items.AddRange(libraryItems);
+                
+                // Filter out items that are located in the sync directory
+                var filteredItems = libraryItems.Where(item => 
+                    !JellyseerrFolderUtils.IsPathInSyncDirectory(item.Path)).ToList();
+                
+                items.AddRange(filteredItems);
+                
+                var excludedCount = libraryItems.Count - filteredItems.Count;
+                if (excludedCount > 0)
+                {
+                    _logger.LogInformation("[JellyseerrBridge] Excluded {ExcludedCount} {ItemType} from library {LibraryName} (located in sync directory)", 
+                        excludedCount, typeof(T).Name, library.Name);
+                }
                 
                 _logger.LogInformation("[JellyseerrBridge] Found {ItemCount} {ItemType} in library {LibraryName}", 
-                    libraryItems.Count, typeof(T).Name, library.Name);
+                    filteredItems.Count, typeof(T).Name, library.Name);
             }
 
             _logger.LogInformation("[JellyseerrBridge] Total {ItemType} found across all libraries: {TotalCount}", 
