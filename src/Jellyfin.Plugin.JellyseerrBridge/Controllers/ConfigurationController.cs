@@ -222,24 +222,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 _logger.LogInformation("[JellyseerrBridge] Testing connection using JellyseerrApiService");
 
                 // Test basic connectivity using JellyseerrApiService
-                var status = await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, testConfig);
+                var status = await _apiService.TestConnectionAsync(JellyseerrEndpoint.Status, testConfig);
                 var statusResponse = (SystemStatus)status;
                 
-            if (statusResponse == null)
-            {
-                _logger.LogWarning("[JellyseerrBridge] Basic connectivity test failed");
-                return BadRequest(new { 
-                    success = false, 
-                    message = "Failed to connect to Jellyseerr",
-                    details = "Unable to retrieve system status from Jellyseerr API. Check URL and network connectivity.",
-                    errorCode = "CONNECTION_FAILED"
-                });
-            }
-
                 _logger.LogInformation("[JellyseerrBridge] Basic connectivity test successful");
 
                 // Test authentication using JellyseerrApiService
-                var userInfo = await _apiService.CallEndpointAsync(JellyseerrEndpoint.AuthMe, testConfig);
+                var userInfo = await _apiService.TestConnectionAsync(JellyseerrEndpoint.AuthMe, testConfig);
                 _logger.LogInformation("[JellyseerrBridge] AuthMe response type: {Type}, Value: {Value}", userInfo?.GetType().Name ?? "null", userInfo?.ToString() ?? "null");
                 
                 var typedUserInfo = (JellyseerrUser?)userInfo;
@@ -253,11 +242,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         errorCode = "AUTH_FAILED"
                     });
                 }
-
+                
                 _logger.LogInformation("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown");
 
                 // Test user list permissions using JellyseerrApiService
-                var users = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
+                var users = await _apiService.TestConnectionAsync(JellyseerrEndpoint.UserList, testConfig);
                 _logger.LogInformation("[JellyseerrBridge] UserList response type: {Type}", users?.GetType().Name ?? "null");
                 
                 // Handle the response - it could be JellyseerrPaginatedResponse<JellyseerrUser> or List<JellyseerrUser>

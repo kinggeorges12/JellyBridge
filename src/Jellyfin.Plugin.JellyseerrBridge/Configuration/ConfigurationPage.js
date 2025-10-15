@@ -250,15 +250,37 @@ function initializeGeneralSettings(page) {
                     }
                 });
         }).catch(function (error) {
-            const debugInfo = 'CONNECTION ERROR DEBUG:<br>' +
-                'Error exists: ' + (error ? 'YES' : 'NO') + '<br>' +
-                'Error type: ' + typeof error + '<br>' +
-                'Error message: ' + (error?.message || 'UNDEFINED') + '<br>' +
-                'Error name: ' + (error?.name || 'UNDEFINED') + '<br>' +
-                'Error status: ' + (error?.status || 'UNDEFINED') + '<br>' +
-                'Full error: ' + JSON.stringify(error);
+            // Handle different types of errors
+            let errorMessage = '❌ Connection test failed';
             
-            Dashboard.alert('❌ CONNECTION ERROR!<br>' + debugInfo);
+            if (error && error.responseJSON) {
+                // Server returned structured error response
+                const errorData = error.responseJSON;
+                errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
+                if (errorData.details) {
+                    errorMessage += `<br><br>Details: ${errorData.details}`;
+                }
+            } else if (error && error.status) {
+                // HTTP status code error
+                switch (error.status) {
+                    case 400:
+                        errorMessage = '❌ Bad Request: Invalid URL or API Key format';
+                        break;
+                    case 401:
+                        errorMessage = '❌ Unauthorized: Invalid API Key';
+                        break;
+                    case 500:
+                        errorMessage = '❌ Server Error: Connection test failed';
+                        break;
+                    default:
+                        errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
+                }
+            } else {
+                // Generic error
+                errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
+            }
+            
+            Dashboard.alert(errorMessage);
         }).finally(function() {
             Dashboard.hideLoadingMsg();
         });
