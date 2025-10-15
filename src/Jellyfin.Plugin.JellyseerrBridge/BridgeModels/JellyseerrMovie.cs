@@ -24,6 +24,12 @@ public class JellyseerrMovie
       IEquatable<Movie>
 {
     /// <summary>
+    /// The library type for movies.
+    /// </summary>
+    [JsonIgnore]
+    public static string LibraryType => "Movies";
+
+    /// <summary>
     /// Jellyseerr-specific media information (download status, service IDs, etc.)
     /// </summary>
     [JsonPropertyName("mediaInfo")]

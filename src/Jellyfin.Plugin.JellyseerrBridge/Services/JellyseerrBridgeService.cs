@@ -235,82 +235,43 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
-    /// Read bridge folder metadata for a specific type.
+    /// Read bridge folder metadata and return both movies and shows.
     /// </summary>
-    public async Task<List<T>> ReadBridgeFolderMetadataAsync<T>() where T : class
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadBridgeFolderMetadataAsync()
     {
-        var metadata = new List<T>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
         if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
         {
             _logger.LogWarning("[JellyseerrBridge] Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-            return metadata;
+            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
         }
 
         try
         {
-            var directories = Directory.GetDirectories(syncDirectory, "*", SearchOption.AllDirectories);
-            
-            foreach (var directory in directories)
-            {
-                var metadataFile = Path.Combine(directory, "metadata.json");
-                if (File.Exists(metadataFile))
-                {
-                    try
-                    {
-                        var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogDebug("[JellyseerrBridge] Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
-                        
-                        var item = JsonSerializer.Deserialize<T>(json);
-                        
-                        if (item != null)
-                        {
-                            // Enhanced debugging for Jellyseerr items
-                            if (item is IJellyseerrItem jellyseerrItem)
-                            {
-                                _logger.LogInformation("[JellyseerrBridge] Deserialized Jellyseerr item - Name: '{Name}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                                    jellyseerrItem.Name, jellyseerrItem.Id, jellyseerrItem.MediaType, jellyseerrItem.Year);
-                                
-                                // Log additional properties for debugging
-                                if (item is JellyseerrMovie movie)
-                                {
-                                    _logger.LogInformation("[JellyseerrBridge] Movie details - Title: '{Title}', ReleaseDate: '{ReleaseDate}', ExtraId: '{ExtraId}'", 
-                                        movie.Title, movie.ReleaseDate, movie.ExtraId);
-                                }
-                                else if (item is JellyseerrShow show)
-                                {
-                                    _logger.LogInformation("[JellyseerrBridge] Show details - Name: '{Name}', FirstAirDate: '{FirstAirDate}', ExtraId: '{ExtraId}'", 
-                                        show.Name, show.FirstAirDate, show.ExtraId);
-                                }
-                            }
-                            else
-                            {
-                                _logger.LogDebug("[JellyseerrBridge] Successfully deserialized item: {Item}", item.ToString());
-                            }
-                            metadata.Add(item);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("[JellyseerrBridge] Failed to deserialize item from {MetadataFile}", metadataFile);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "[JellyseerrBridge] Error reading metadata file: {MetadataFile}", metadataFile);
-                    }
-                }
-            }
+            // Use the new folder managers for type-specific reading
+            var movieManager = new JellyseerrFolderManager<JellyseerrMovie>(_logger, syncDirectory);
+            var showManager = new JellyseerrFolderManager<JellyseerrShow>(_logger, syncDirectory);
 
-            _logger.LogInformation("[JellyseerrBridge] Read {Count} {ItemType} metadata files from bridge folders", 
-                metadata.Count, typeof(T).Name);
+            // Read both types in parallel
+            var movieTask = movieManager.ReadMetadataAsync();
+            var showTask = showManager.ReadMetadataAsync();
+
+            await Task.WhenAll(movieTask, showTask);
+
+            var movies = await movieTask;
+            var shows = await showTask;
+
+            _logger.LogInformation("[JellyseerrBridge] Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
+                movies.Count, shows.Count);
+
+            return (movies, shows);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[JellyseerrBridge] Error reading bridge folder metadata for {ItemType}", typeof(T).Name);
+            _logger.LogError(ex, "[JellyseerrBridge] Error reading bridge folder metadata");
+            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
         }
-
-        return metadata;
     }
 
     /// <summary>
@@ -339,8 +300,7 @@ public class JellyseerrBridgeService
             var existingShows = await GetExistingItemsAsync<Series>();
 
             // Read bridge folder metadata
-            var bridgeMovieMetadata = await ReadBridgeFolderMetadataAsync<JellyseerrMovie>();
-            var bridgeShowMetadata = await ReadBridgeFolderMetadataAsync<JellyseerrShow>();
+            var (bridgeMovieMetadata, bridgeShowMetadata) = await ReadBridgeFolderMetadataAsync();
 
             // Compare and find matches
             var movieMatches = await FindMatches(existingMovies, bridgeMovieMetadata);
