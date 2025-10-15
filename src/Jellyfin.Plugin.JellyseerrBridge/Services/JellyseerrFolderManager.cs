@@ -1,9 +1,62 @@
 using System.Text.Json;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
+using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
+
+/// <summary>
+/// Static utility class for folder management operations.
+/// </summary>
+public static class JellyseerrFolderUtils
+{
+    /// <summary>
+    /// Static base directory path from settings.
+    /// </summary>
+    private static string? _staticBaseDirectory;
+
+    /// <summary>
+    /// Get the base directory from settings or return a default.
+    /// </summary>
+    /// <returns>The configured base directory path</returns>
+    public static string GetBaseDirectory()
+    {
+        if (_staticBaseDirectory == null)
+        {
+            _staticBaseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        }
+        return _staticBaseDirectory;
+    }
+
+
+    /// <summary>
+    /// Check if a given path is within the sync directory base path.
+    /// </summary>
+    /// <param name="pathToCheck">The path to check</param>
+    /// <param name="syncDirectory">The sync directory base path (optional, uses static base directory if null)</param>
+    /// <returns>True if the path is within the sync directory</returns>
+    public static bool IsPathInSyncDirectory(string? pathToCheck, string? syncDirectory = null)
+    {
+        if (string.IsNullOrEmpty(pathToCheck))
+            return false;
+
+        var directoryToCheck = syncDirectory ?? GetBaseDirectory();
+
+        try
+        {
+            var normalizedPath = Path.GetFullPath(pathToCheck);
+            var normalizedSyncPath = Path.GetFullPath(directoryToCheck);
+            
+            return normalizedPath.StartsWith(normalizedSyncPath, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            // If path normalization fails, fall back to string comparison
+            return pathToCheck.StartsWith(directoryToCheck, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
 
 /// <summary>
 /// Generic folder manager for reading and writing Jellyseerr metadata files.
@@ -53,6 +106,8 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     public string CreateFolderName(TJellyseerr item)
     {
         var folderName = FolderTemplate;
+        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Starting with template '{Template}' for item type '{ItemType}'", 
+            FolderTemplate, typeof(TJellyseerr).Name);
         
         // Find all fields in the template
         var fieldPattern = @"\{([^}]+)\}";
@@ -63,8 +118,14 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             var field = match.Groups[0].Value; // Full field like "{title}"
             var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
             
+            _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Processing field '{Field}' -> property '{PropertyPath}'", 
+                field, propertyPath);
+            
             var value = GetPropertyValue(item, propertyPath);
             folderName = folderName.Replace(field, value);
+            
+            _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Replaced '{Field}' with '{Value}', result: '{FolderName}'", 
+                field, value, folderName);
         }
         
         // Remove empty field blocks like [tvdbid-], [tmdbid-], [imdbid-] and empty parentheses ()
@@ -74,7 +135,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         folderName = Regex.Replace(folderName, @"\s+", " "); // Normalize multiple spaces to single space
         folderName = folderName.Trim(); // Remove leading/trailing spaces
         
-        return SanitizeFileName(folderName);
+        var finalResult = SanitizeFileName(folderName);
+        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Final result: '{FinalResult}'", finalResult);
+        return finalResult;
     }
 
     /// <summary>
@@ -83,7 +146,10 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     private string GetPropertyValue(IJellyseerrItem item, string propertyPath)
     {
         if (item == null || string.IsNullOrEmpty(propertyPath))
+        {
+            _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: item is null or propertyPath is empty");
             return "";
+        }
         
         var currentObject = (object)item;
         var pathParts = propertyPath.Split('.');
@@ -91,22 +157,42 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         foreach (var part in pathParts)
         {
             if (currentObject == null)
+            {
+                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: currentObject is null for part '{Part}'", part);
                 return "";
+            }
             
             var type = currentObject.GetType();
             var property = type.GetProperty(part);
             
             if (property == null)
+            {
+                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Property '{Part}' not found on type '{Type}'", part, type.Name);
                 return "";
+            }
             
-            currentObject = property.GetValue(currentObject);
+            try
+            {
+                currentObject = property.GetValue(currentObject);
+                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: '{Part}' = '{Value}'", part, currentObject);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[JellyseerrFolderManager] GetPropertyValue: Error getting property '{Part}'", part);
+                return "";
+            }
         }
         
         if (currentObject == null)
+        {
+            _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Final value is null for '{PropertyPath}'", propertyPath);
             return "";
+        }
         
         // Convert to string
-        return currentObject.ToString() ?? "";
+        var result = currentObject.ToString() ?? "";
+        _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Final result for '{PropertyPath}' = '{Result}'", propertyPath, result);
+        return result;
     }
 
     /// <summary>
@@ -148,9 +234,14 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogDebug("[JellyseerrFolderManager] Reading {Type} metadata from {MetadataFile}", typeFolder, metadataFile);
+                        _logger.LogDebug("[JellyseerrFolderManager] Reading {Type} metadata from {MetadataFile}: {Json}", typeFolder, metadataFile, json);
                         
-                        var item = JsonSerializer.Deserialize<TJellyseerr>(json);
+                        var jsonOptions = new JsonSerializerOptions 
+                        { 
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            PropertyNameCaseInsensitive = true
+                        };
+                        var item = JsonSerializer.Deserialize<TJellyseerr>(json, jsonOptions);
                         if (item != null)
                         {
                             _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized {Type} - Name: '{Name}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
@@ -199,7 +290,13 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             }
 
             // Serialize and write metadata file
-            var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
+            var jsonOptions = new JsonSerializerOptions 
+            { 
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
+            };
+            var json = JsonSerializer.Serialize(item, jsonOptions);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             
             await File.WriteAllTextAsync(metadataFile, json);
