@@ -323,8 +323,8 @@ public partial class JellyseerrSyncService
             {
                 result.Processed++;
                 
-                _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - Name: '{Name}', Id: {Id}, Year: '{Year}'", 
-                    result.Processed, items.Count, item.Name, item.Id, item.Year);
+                    _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
+                        result.Processed, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
                 var folderName = folderManager.CreateFolderName(item);
@@ -356,14 +356,14 @@ public partial class JellyseerrSyncService
                 }
                 else
                 {
-                    _logger.LogError("[JellyseerrSyncService] CreateFoldersAsync: ❌ FAILED to create folder for {Item} - Name: '{Name}', Id: {Id}", 
-                        item, item.Name, item.Id);
+                        _logger.LogError("[JellyseerrSyncService] CreateFoldersAsync: ❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                            item, item.MediaName, item.Id);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrSyncService] CreateFoldersAsync: ❌ ERROR creating folder for {Item} - Name: '{Name}', Id: {Id}", 
-                    item, item.Name, item.Id);
+                _logger.LogError(ex, "[JellyseerrSyncService] CreateFoldersAsync: ❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                    item, item.MediaName, item.Id);
             }
         }
         
@@ -422,13 +422,13 @@ public class ProcessResult
         
         if (ItemsAdded.Count > 0)
         {
-            var addedNames = ItemsAdded.Select(item => $"{item.Name} ({item.Year}) [{item.MediaType}]").ToList();
+            var addedNames = ItemsAdded.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
             details.Add($"Added: {string.Join(", ", addedNames)}");
         }
         
         if (ItemsUpdated.Count > 0)
         {
-            var updatedNames = ItemsUpdated.Select(item => $"{item.Name} ({item.Year}) [{item.MediaType}]").ToList();
+            var updatedNames = ItemsUpdated.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
             details.Add($"Updated: {string.Join(", ", updatedNames)}");
         }
         

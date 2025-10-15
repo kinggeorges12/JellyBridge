@@ -72,18 +72,36 @@ public class JellyseerrMovie
     public string Name => Title;
 
     /// <summary>
+    /// The media name for folder creation (Title from TMDB).
+    /// </summary>
+    [JsonIgnore]
+    public string MediaName => Title;
+
+    /// <summary>
     /// Computed property that extracts the year from the release date.
     /// </summary>
-    public string Year => IJellyseerrItem.ExtractYear(ReleaseDate);
+    [JsonIgnore]
+    public string Year 
+    { 
+        get 
+        {
+            var year = IJellyseerrItem.ExtractYear(ReleaseDate);
+            // Add debugging to see what's happening
+            System.Diagnostics.Debug.WriteLine($"[JellyseerrMovie] Year property - ReleaseDate: '{ReleaseDate}', Extracted Year: '{year}'");
+            return year;
+        }
+    }
 
     /// <summary>
     /// The extra external ID (IMDB for movies).
     /// </summary>
+    [JsonIgnore]
     public string? ExtraId => MediaInfo?.ImdbId;
 
     /// <summary>
     /// The display name for the extra external ID (imdbid for movies).
     /// </summary>
+    [JsonIgnore]
     public string ExtraIdName => "imdbid";
 
     /// <summary>

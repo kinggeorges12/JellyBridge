@@ -137,7 +137,7 @@ public class JellyseerrBridgeService
         {
             if (existingItems.Any(existing => item.Equals(existing)))
             {
-                _logger.LogInformation("[JellyseerrBridge] Skipping {ItemType} {ItemName} - already exists in main libraries", itemTypeName, item.Name);
+                _logger.LogInformation("[JellyseerrBridge] Skipping {ItemType} {ItemMediaName} - already exists in main libraries", itemTypeName, item.MediaName);
                 skippedCount++;
                 continue;
             }
@@ -172,15 +172,15 @@ public class JellyseerrBridgeService
             var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => 
             {
                 var isMatch = bm.Equals(existingItem);
-                _logger.LogDebug("[JellyseerrBridge] Comparing bridge item '{BridgeName}' (Id: {BridgeId}) with existing item '{ExistingName}' (Id: {ExistingId}) - Match: {IsMatch}", 
-                    bm.Name, bm.Id, existingItem.Name, existingItem.Id, isMatch);
+                _logger.LogDebug("[JellyseerrBridge] Comparing bridge item '{BridgeMediaName}' (Id: {BridgeId}) with existing item '{ExistingName}' (Id: {ExistingId}) - Match: {IsMatch}", 
+                    bm.MediaName, bm.Id, existingItem.Name, existingItem.Id, isMatch);
                 return isMatch;
             });
 
             if (bridgeMatch != null)
             {
-                _logger.LogInformation("[JellyseerrBridge] Found match: '{BridgeName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
-                    bridgeMatch.Name, bridgeMatch.Id, existingItem.Name, existingItem.Id);
+                _logger.LogInformation("[JellyseerrBridge] Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
+                    bridgeMatch.MediaName, bridgeMatch.Id, existingItem.Name, existingItem.Id);
                 
                 // Find the bridge folder directory for this item
                 var bridgeFolderPath = await FindBridgeFolderPathAsync(syncDirectory, bridgeMatch);
@@ -240,7 +240,7 @@ public class JellyseerrBridgeService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[JellyseerrBridge] Error finding bridge folder path for item: {ItemName}", item.Name);
+            _logger.LogError(ex, "[JellyseerrBridge] Error finding bridge folder path for item: {ItemMediaName}", item.MediaName);
         }
 
         return null;
