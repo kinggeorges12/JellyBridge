@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.213.0.0/JellyseerrBridge-0.213.0.0-DLL.zip",
+        "changelog": "v0.213.0.0 - Created dedicated JellyseerrMediaType enum to resolve MediaType conflicts - fixed JSON deserialization issues with mediaInfo.mediaType by using dedicated enum instead of conflicting MediaType enums",
+        "version": "0.213.0.0",
+        "timestamp": "2025-10-15T06:05:54.546Z",
+        "checksum": "5DCDF7FA8F96DA77480DB06A8C6F4B93",
+        "targetAbi": "10.10.7.0",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.10.7.0",
         "changelog": "v0.212.0.0 - Fixed MediaType enum conflicts in JellyseerrMedia - explicitly use Common MediaType enum to resolve JSON deserialization issues with mediaInfo.mediaType",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.212.0.0/JellyseerrBridge-0.212.0.0-DLL.zip",
