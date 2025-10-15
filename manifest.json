@@ -9,7 +9,16 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "timestamp": "2025-10-15T05:12:42.650Z",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.212.0.0 - Fixed MediaType enum conflicts in JellyseerrMedia - explicitly use Common MediaType enum to resolve JSON deserialization issues with mediaInfo.mediaType",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.212.0.0/JellyseerrBridge-0.212.0.0-DLL.zip",
+        "timestamp": "2025-10-15T05:45:25.476Z",
+        "dependencies": [],
+        "version": "0.212.0.0",
+        "checksum": "6872535C0726C4E27C96725FD4B2D087"
+      },
+      {
+        "timestamp": "2025-10-15T05:12:42.65Z",
         "targetAbi": "10.10.7.0",
         "version": "0.211.0.0",
         "changelog": "v0.211.0.0 - Cleaned up NuGet data and simplified sync service casting - removed all .nupkg files and obj directory, simplified List<T> casting in sync service, made returnModel parameter optional in JellyseerrEndpointConfig",
