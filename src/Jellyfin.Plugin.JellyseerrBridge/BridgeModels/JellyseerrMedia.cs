@@ -27,11 +27,8 @@ public class JellyseerrMedia : Media
     /// <summary>
     /// Media type as enum - use dedicated JellyseerrMediaType to avoid conflicts
     /// </summary>
-    [JsonIgnore]
-    public new MediaType MediaType { get; set; }
-    
     [JsonPropertyName("mediaType")]
-    public JellyseerrMediaType JellyseerrMediaType { get; set; }
+    public new string MediaType { get; set; } = string.Empty;
 
     /// <summary>
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])

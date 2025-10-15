@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-15T07:02:56.466Z",
+        "version": "0.216.0.0",
+        "checksum": "56192DFC9ACA7F3181A3B5B714F01E55",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.216.0.0/JellyseerrBridge-0.216.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.216.0.0 - Fixed MediaType property to use string instead of enum - resolved nullable property initialization error and improved JSON deserialization compatibility"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.215.0.0/JellyseerrBridge-0.215.0.0-DLL.zip",
         "version": "0.215.0.0",
         "timestamp": "2025-10-15T06:56:57.654Z",
