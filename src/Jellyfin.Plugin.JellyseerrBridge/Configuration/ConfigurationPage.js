@@ -372,7 +372,7 @@ function initializeAdvancedSettings(page) {
                         resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
                         result.bridgeItems.forEach((item, index) => {
                             const yearText = item.year ? ` (${item.year})` : '';
-                            resultText += `\n${index + 1}. ${item.name}${yearText} [${item.mediaType}]`;
+                            resultText += `\n${index + 1}. ${item.mediaName || 'undefined'}${yearText} [${item.mediaType}]`;
                         });
                     } else {
                         resultText += `\n\nNo bridge items found.`;

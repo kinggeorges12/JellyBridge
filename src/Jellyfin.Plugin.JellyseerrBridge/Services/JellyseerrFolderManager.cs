@@ -253,7 +253,8 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                         { 
                             WriteIndented = true,
                             PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
-                            PropertyNameCaseInsensitive = true
+                            PropertyNameCaseInsensitive = true,
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault // ignores empty base properties
                         };
                         var item = JsonSerializer.Deserialize<TJellyseerr>(json, jsonOptions);
                         if (item != null)
@@ -308,7 +309,8 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             { 
                 WriteIndented = true,
                 PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault // ignores empty base properties
             };
             
             var json = JsonSerializer.Serialize(item, jsonOptions);

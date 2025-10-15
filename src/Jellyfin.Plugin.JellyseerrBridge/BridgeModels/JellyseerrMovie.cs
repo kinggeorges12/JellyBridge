@@ -117,9 +117,17 @@ public class JellyseerrMovie
         if (other is null) return false;
         
         // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (!string.IsNullOrEmpty(other.GetProviderId("Tmdb")))
+        var tmdbId = other.GetProviderId("Tmdb");
+        if (!string.IsNullOrEmpty(tmdbId) && Id.ToString() == tmdbId)
         {
-            return Id.ToString() == other.GetProviderId("Tmdb");
+            return true;
+        }
+        
+        // Fallback: Use IMDB ID for comparison if TMDB ID doesn't match
+        var imdbId = other.GetProviderId("Imdb");
+        if (!string.IsNullOrEmpty(imdbId) && !string.IsNullOrEmpty(ExtraId) && imdbId == ExtraId)
+        {
+            return true;
         }
         
         return false;

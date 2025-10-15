@@ -120,9 +120,17 @@ public class JellyseerrShow
         if (other is null) return false;
         
         // Use TMDB ID for comparison (Id from Jellyseerr discover endpoint is TMDB ID)
-        if (!string.IsNullOrEmpty(other.GetProviderId("Tmdb")))
+        var tmdbId = other.GetProviderId("Tmdb");
+        if (!string.IsNullOrEmpty(tmdbId) && Id.ToString() == tmdbId)
         {
-            return Id.ToString() == other.GetProviderId("Tmdb");
+            return true;
+        }
+        
+        // Fallback: Use TVDB ID for comparison if TMDB ID doesn't match
+        var tvdbId = other.GetProviderId("Tvdb");
+        if (!string.IsNullOrEmpty(tvdbId) && !string.IsNullOrEmpty(ExtraId) && tvdbId == ExtraId)
+        {
+            return true;
         }
         
         return false;

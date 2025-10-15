@@ -172,8 +172,11 @@ public class JellyseerrBridgeService
             var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => 
             {
                 var isMatch = bm.Equals(existingItem);
-                _logger.LogDebug("[JellyseerrBridge] Comparing bridge item '{BridgeMediaName}' (Id: {BridgeId}) with existing item '{ExistingName}' (Id: {ExistingId}) - Match: {IsMatch}", 
-                    bm.MediaName, bm.Id, existingItem.Name, existingItem.Id, isMatch);
+                
+                // Log detailed comparison info for debugging
+                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} - Match: {IsMatch}", 
+                    bm, existingItem, isMatch);
+                
                 return isMatch;
             });
 
@@ -254,7 +257,9 @@ public class JellyseerrBridgeService
         try
         {
             var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
-            var itemJson = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
+            var itemJson = JsonSerializer.Serialize(item, new JsonSerializerOptions {
+                WriteIndented = true
+            });
 
             await File.WriteAllTextAsync(ignoreFilePath, itemJson);
             _logger.LogInformation("[JellyseerrBridge] Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
