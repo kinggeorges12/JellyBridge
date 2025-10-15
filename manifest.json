@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "927BCC386E32F9E6B4B3FF2E0254BAFD",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.207.0.0/JellyseerrBridge-0.207.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-15T02:15:05.038Z",
+        "dependencies": [],
+        "changelog": "v0.207.0.0 - Updated bridge models to inherit from TmdbMediaResult base classes and fixed MediaType JSON property mapping to use camelCase. Added MediaInfo property to IJellyseerrMedia interface. Updated all service classes to use new inheritance hierarchy. Fixed compilation errors related to generic constraints.",
+        "version": "0.207.0.0"
+      },
+      {
         "changelog": "v0.206.0.0 - Fixed Test Connection button to properly return HTTP error status codes (400/401/500) instead of always returning 200, created TestConnectionAsync method that throws exceptions for connection failures, and updated frontend to handle different error types appropriately",
         "checksum": "1C114D3A3A35DD18D2D2DE3FEED4A530",
         "targetAbi": "10.10.7.0",
