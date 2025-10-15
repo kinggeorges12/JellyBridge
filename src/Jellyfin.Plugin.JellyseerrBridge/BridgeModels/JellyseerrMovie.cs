@@ -30,18 +30,39 @@ public class JellyseerrMovie
     public JellyseerrMedia? MediaInfo { get; set; }
 
     /// <summary>
-    /// Override the base class MediaType to use camelCase JSON property name
+    /// Override JSON property names to match camelCase format from discover API
     /// </summary>
     [JsonPropertyName("mediaType")]
-    public new string MediaType 
-    { 
-        get => base.MediaType; 
-        set => base.MediaType = value; 
-    }
+    public new string MediaType => base.MediaType;
+
+    [JsonPropertyName("releaseDate")]
+    public new string ReleaseDate => base.ReleaseDate;
+
+    [JsonPropertyName("genreIds")]
+    public new List<int> GenreIds => base.GenreIds;
+
+    [JsonPropertyName("originalLanguage")]
+    public new string OriginalLanguage => base.OriginalLanguage;
+
+    [JsonPropertyName("originalTitle")]
+    public new string OriginalTitle => base.OriginalTitle;
+
+    [JsonPropertyName("voteAverage")]
+    public new double VoteAverage => base.VoteAverage;
+
+    [JsonPropertyName("voteCount")]
+    public new int VoteCount => base.VoteCount;
+
+    [JsonPropertyName("backdropPath")]
+    public new string? BackdropPath => base.BackdropPath;
+
+    [JsonPropertyName("posterPath")]
+    public new string? PosterPath => base.PosterPath;
 
     /// <summary>
     /// The display name of the movie (Title from TMDB).
     /// </summary>
+    [JsonPropertyName("name")]
     public string Name => Title;
 
     /// <summary>
