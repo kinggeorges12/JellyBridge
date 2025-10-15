@@ -42,6 +42,16 @@ public class JellyseerrApiService
     }
 
     /// <summary>
+    /// Gets the type for a given endpoint.
+    /// </summary>
+    /// <param name="endpoint">The endpoint to get the type for</param>
+    /// <returns>The type for the endpoint</returns>
+    public Type GetReturnTypeForEndpoint(JellyseerrEndpoint endpoint)
+    {
+        return GetEndpoint(endpoint).ReturnModel;
+    }
+
+    /// <summary>
     /// Response type enumeration for API calls.
     /// Maps to specific JellyseerrModel classes and bridge models.
     /// 
@@ -103,11 +113,15 @@ public class JellyseerrApiService
         /// </summary>
         public HttpMethod Method { get; set; } = HttpMethod.Get;
         
-        
         /// <summary>
         /// The expected response model type for this endpoint.
         /// </summary>
         public Type ResponseModel { get; set; } = typeof(object);
+        
+        /// <summary>
+        /// The expected response model type for this endpoint.
+        /// </summary>
+        public Type ReturnModel { get; set; } = typeof(object);
         
         /// <summary>
         /// Whether this endpoint returns paginated results.
@@ -134,21 +148,24 @@ public class JellyseerrApiService
         /// </summary>
         /// <param name="path">The API endpoint path</param>
         /// <param name="responseModel">The expected response model type</param>
+        /// <param name="returnModel">The expected return model type from the CallEndpointAsync method</param>
         /// <param name="method">The HTTP method (defaults to GET)</param>
         /// <param name="isPaginated">Whether this endpoint returns paginated results</param>
         /// <param name="requiresTemplateValues">Whether this endpoint requires template values</param>
         /// <param name="description">Human-readable description</param>
         public JellyseerrEndpointConfig(
-            string path, 
-            Type responseModel, 
+            string path,
+            Type responseModel,
+            Type? returnModel = null,
             HttpMethod? method = null,
-            bool isPaginated = false, 
+            bool isPaginated = false,
             int? maxPages = null,
-            bool requiresTemplateValues = false, 
+            bool requiresTemplateValues = false,
             string description = "")
         {
             Path = path;
             ResponseModel = responseModel;
+            ReturnModel = returnModel ?? responseModel;
             Method = method ?? HttpMethod.Get;
             IsPaginated = isPaginated;
             MaxPages = maxPages;
@@ -173,18 +190,21 @@ public class JellyseerrApiService
         [JellyseerrEndpoint.Requests] = new JellyseerrEndpointConfig(
             "/api/v1/request",
             typeof(JellyseerrPaginatedResponse<MediaRequest>),
+            returnModel: typeof(List<MediaRequest>),
             isPaginated: true,
             description: "Get all requests"
         ),
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
+            returnModel: typeof(List<JellyseerrUser>),
             isPaginated: false,
             description: "Get user list"
         ),
         [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
             "/api/v1/user/{id}/requests",
             typeof(JellyseerrPaginatedResponse<MediaRequest>),
+            returnModel: typeof(List<MediaRequest>),
             isPaginated: true,
             requiresTemplateValues: true,
             description: "Get user requests"
@@ -194,12 +214,14 @@ public class JellyseerrApiService
         [JellyseerrEndpoint.DiscoverMovies] = new JellyseerrEndpointConfig(
             "/api/v1/discover/movies",
             typeof(JellyseerrPaginatedResponse<JellyseerrMovie>),
+            returnModel: typeof(List<JellyseerrMovie>),
             isPaginated: true,
             description: "Discover movies"
         ),
         [JellyseerrEndpoint.DiscoverTv] = new JellyseerrEndpointConfig(
             "/api/v1/discover/tv",
             typeof(JellyseerrPaginatedResponse<JellyseerrShow>),
+            returnModel: typeof(List<JellyseerrShow>),
             isPaginated: true,
             description: "Discover TV shows"
         ),
@@ -229,67 +251,67 @@ public class JellyseerrApiService
             ),
     };
 
-/// <summary>
-    /// Private URL builder for Jellyseerr API endpoints.
-/// </summary>
-    private static class JellyseerrUrlBuilder
-{
     /// <summary>
-    /// Builds a complete URL for a Jellyseerr API endpoint.
+    /// Private URL builder for Jellyseerr API endpoints.
     /// </summary>
-    /// <param name="baseUrl">The base Jellyseerr URL</param>
-    /// <param name="endpoint">The API endpoint</param>
-    /// <param name="parameters">Optional query parameters</param>
-    /// <param name="templateValues">Optional template values for URL placeholders</param>
-    /// <returns>Complete URL string</returns>
-    private static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
+    private static class JellyseerrUrlBuilder
     {
-        var cleanBaseUrl = baseUrl.TrimEnd('/');
-        var endpointPath = GetEndpoint(endpoint).Path;
-        
-        // Replace template placeholders in the endpoint path
-        if (templateValues != null)
+        /// <summary>
+        /// Builds a complete URL for a Jellyseerr API endpoint.
+        /// </summary>
+        /// <param name="baseUrl">The base Jellyseerr URL</param>
+        /// <param name="endpoint">The API endpoint</param>
+        /// <param name="parameters">Optional query parameters</param>
+        /// <param name="templateValues">Optional template values for URL placeholders</param>
+        /// <returns>Complete URL string</returns>
+        private static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
         {
-            foreach (var kvp in templateValues)
+            var cleanBaseUrl = baseUrl.TrimEnd('/');
+            var endpointPath = GetEndpoint(endpoint).Path;
+            
+            // Replace template placeholders in the endpoint path
+            if (templateValues != null)
             {
-                var placeholder = $"{{{kvp.Key}}}";
-                if (endpointPath.Contains(placeholder))
+                foreach (var kvp in templateValues)
                 {
-                    endpointPath = endpointPath.Replace(placeholder, kvp.Value);
+                    var placeholder = $"{{{kvp.Key}}}";
+                    if (endpointPath.Contains(placeholder))
+                    {
+                        endpointPath = endpointPath.Replace(placeholder, kvp.Value);
+                    }
                 }
             }
+            
+            var url = $"{cleanBaseUrl}{endpointPath}";
+            
+            if (parameters != null && parameters.Count > 0)
+            {
+                var queryString = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                url = $"{url}?{queryString}";
+            }
+            
+            return url;
         }
-        
-        var url = $"{cleanBaseUrl}{endpointPath}";
-        
-        if (parameters != null && parameters.Count > 0)
-        {
-            var queryString = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-            url = $"{url}?{queryString}";
-        }
-        
-        return url;
-    }
     
-    /// <summary>
-    /// Creates an HTTP request message for a Jellyseerr API endpoint.
-    /// </summary>
-    /// <param name="baseUrl">The base Jellyseerr URL</param>
-    /// <param name="endpoint">The API endpoint</param>
-    /// <param name="apiKey">The API key</param>
-    /// <param name="method">HTTP method (defaults to GET)</param>
-    /// <param name="parameters">Optional query parameters</param>
+        /// <summary>
+        /// Creates an HTTP request message for a Jellyseerr API endpoint.
+        /// </summary>
+        /// <param name="baseUrl">The base Jellyseerr URL</param>
+        /// <param name="endpoint">The API endpoint</param>
+        /// <param name="apiKey">The API key</param>
+        /// <param name="method">HTTP method (defaults to GET)</param>
+        /// <param name="parameters">Optional query parameters</param>
         /// <param name="templateValues">Optional template values for URL placeholders</param>
-    /// <returns>Configured HttpRequestMessage</returns>
-    public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
-    {
-        var url = BuildUrl(baseUrl, endpoint, parameters, templateValues);
-        var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
-        requestMessage.Headers.Add("X-Api-Key", apiKey);
-        return requestMessage;
+        /// <returns>Configured HttpRequestMessage</returns>
+        public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
+        {
+            var url = BuildUrl(baseUrl, endpoint, parameters, templateValues);
+            var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
+            requestMessage.Headers.Add("X-Api-Key", apiKey);
+            return requestMessage;
         }
     }
-    
+        
     /// <summary>
     /// Gets the configuration for a given endpoint.
     /// </summary>
@@ -319,12 +341,12 @@ public class JellyseerrApiService
     }
 
 
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     /// <summary>
     /// Gets the default value for type T.
     /// </summary>
@@ -337,7 +359,7 @@ public class JellyseerrApiService
         
         return default(T)!;
     }
-    
+
     /// <summary>
     /// Makes an HTTP request to the Jellyseerr API with retry logic, timeout, and debug logging.
     /// Returns the response content as a string, or null if the request failed.
@@ -570,7 +592,7 @@ public class JellyseerrApiService
                 _logger.LogInformation("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, page - 1);
                 
                 // Return the typed list directly
-                return allItems;
+                return allItems ?? GetDefaultReturnValueForEndpoint(endpoint);
             }
             else
             {
@@ -584,25 +606,25 @@ public class JellyseerrApiService
                 if (content == null)
                 {
                     _logger.LogWarning("No content received for {Operation}", operationName);
-                    return GetDefaultValueForEndpoint(endpoint);
+                    return GetDefaultReturnValueForEndpoint(endpoint);
                 }
                 
                 // Deserialize using the response type from endpoint config
                 var responseType = endpointConfig.ResponseModel;
                 var response = JsonSerializer.Deserialize(content, responseType);
                 _logger.LogInformation("Successfully deserialized response for {Operation}", operationName);
-                return response ?? GetDefaultValueForEndpoint(endpoint);
+                return response ?? GetDefaultReturnValueForEndpoint(endpoint);
             }
         }
         catch (JsonException jsonEx)
         {
             _logger.LogWarning(jsonEx, "Failed to deserialize {Operation} response JSON. Content: {Content}", operationName, content);
-            return GetDefaultValueForEndpoint(endpoint);
+            return GetDefaultReturnValueForEndpoint(endpoint);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get {Operation} from Jellyseerr", endpoint);
-            return GetDefaultValueForEndpoint(endpoint);
+            return GetDefaultReturnValueForEndpoint(endpoint);
         }
     }
 
@@ -795,57 +817,21 @@ public class JellyseerrApiService
         };
     }
 
-
-
-
-
-/// <summary>
-    /// Gets default value for endpoint based on expected response type.
-/// </summary>
-    private object GetDefaultValueForEndpoint(JellyseerrEndpoint endpoint)
-    {
-        var endpointConfig = GetEndpoint(endpoint);
-        var responseModelType = endpointConfig.ResponseModel;
-        
-        if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
-        {
-            return Activator.CreateInstance(responseModelType) ?? new List<object>();
-        }
-        
-        return Activator.CreateInstance(responseModelType) ?? new object();
-}
-
-/// <summary>
-    /// Converts items to expected type for endpoint.
-/// </summary>
-    private object ConvertToExpectedTypeForEndpoint(JellyseerrEndpoint endpoint, List<object> allItems)
-    {
-        var endpointConfig = GetEndpoint(endpoint);
-        var responseModelType = endpointConfig.ResponseModel;
-
-        if (responseModelType.IsGenericType && responseModelType.GetGenericTypeDefinition() == typeof(List<>))
-    {
-            var itemType = responseModelType.GetGenericArguments()[0];
-            var listType = typeof(List<>).MakeGenericType(itemType);
-            var result = Activator.CreateInstance(listType);
-
-            foreach (var item in allItems)
-        {
-                if (item.GetType() == itemType || item.GetType().IsSubclassOf(itemType))
-                {
-                    listType.GetMethod("Add")?.Invoke(result, new[] { item });
-                }
-        }
-
-            return result ?? new List<object>();
-    }
-
-        return allItems.Count > 0 ? allItems[0] : GetDefaultValueForEndpoint(endpoint);
-    }
-
-
     /// <summary>
-    /// Converts search parameters to query parameters dictionary.
+    /// Gets default value for endpoint based on expected response type.
     /// </summary>
+    private object GetDefaultReturnValueForEndpoint(JellyseerrEndpoint endpoint)
+    {
+        var endpointConfig = GetEndpoint(endpoint);
+        var returnModelType = endpointConfig.ReturnModel;
+        
+        if (returnModelType.IsGenericType && returnModelType.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            return Activator.CreateInstance(returnModelType) ?? new List<object>();
+        }
+        
+        return Activator.CreateInstance(returnModelType) ?? new object();
+    }
+
     #endregion
 }

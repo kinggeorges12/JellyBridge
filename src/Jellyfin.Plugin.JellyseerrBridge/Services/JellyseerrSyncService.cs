@@ -126,8 +126,7 @@ public partial class JellyseerrSyncService
                         throw new InvalidOperationException($"Failed to retrieve movies for network {networkName} - API returned null");
                     }
                     
-                    var moviesResponse = (JellyseerrPaginatedResponse<JellyseerrMovie>)networkMovies;
-                    var movies = moviesResponse?.Results ?? new List<JellyseerrMovie>();
+                    var movies = (List<JellyseerrMovie>)networkMovies;
                     
                     if (movies.Count == 0)
                     {
@@ -158,8 +157,7 @@ public partial class JellyseerrSyncService
                         throw new InvalidOperationException($"Failed to retrieve TV shows for network {networkName} - API returned null");
                     }
                     
-                    var showsResponse = (JellyseerrPaginatedResponse<JellyseerrShow>)networkShows;
-                    var shows = showsResponse?.Results ?? new List<JellyseerrShow>();
+                    var shows = (List<JellyseerrShow>)networkShows;
                     
                     if (shows.Count == 0)
                     {
