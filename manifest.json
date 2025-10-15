@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.227.0.0",
+        "changelog": "v0.227.0.0 - v0.227.0.0 - Library compatibility and performance improvements - Fixed library type compatibility to use CollectionTypeOptions enum instead of string comparison for accurate movie/show library matching, optimized library scanning by checking library locations instead of querying individual items to exclude sync directory libraries, removed redundant item-level filtering since library-level filtering already handles sync directory exclusion, improved efficiency by eliminating unnecessary path checks and iterations",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-15T23:39:44.563Z",
+        "checksum": "07AB4EAD70DA4BEDC4D80B415DFE7EF0",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.227.0.0/JellyseerrBridge-0.227.0.0-DLL.zip"
+      },
+      {
         "changelog": "v0.226.0.0 - v0.226.0.0 - Enhanced folder naming and debugging improvements - Implemented dynamic ToString() method in IJellyseerrItem interface for flexible folder naming with tmdbid and extraid sections, refactored JellyseerrFolderManager to use simplified ToString() approach, added enhanced debugging with Jellyfin type and TMDB provider ID logging for better match troubleshooting, added error handling for blank folder names",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.226.0.0/JellyseerrBridge-0.226.0.0-DLL.zip",
         "dependencies": [],

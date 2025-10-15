@@ -148,4 +148,12 @@ public class JellyseerrShow
         
         return Equals(series);
     }
+
+    /// <summary>
+    /// Returns the formatted string representation for automatic string conversion.
+    /// </summary>
+    public override string ToString()
+    {
+        return ((IJellyseerrItem)this).ToString() ?? string.Empty;
+    }
 }
