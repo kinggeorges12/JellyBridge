@@ -27,8 +27,11 @@ public class JellyseerrMedia : Media
     /// <summary>
     /// Media type as enum - use dedicated JellyseerrMediaType to avoid conflicts
     /// </summary>
+    [JsonIgnore]
+    public new MediaType MediaType { get; set; }
+    
     [JsonPropertyName("mediaType")]
-    public new JellyseerrMediaType MediaType { get; set; }
+    public JellyseerrMediaType JellyseerrMediaType { get; set; }
 
     /// <summary>
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])
@@ -41,6 +44,8 @@ public class JellyseerrMedia : Media
     /// Download status for 4K as array (TypeScript: downloadStatus4k?: DownloadingItem[] = [])
     /// Override: Remove nullable from base class
     /// </summary>
+    [JsonPropertyName("downloadStatus4k")]
+    public new List<DownloadingItem> DownloadStatus4k { get; set; } = new();
 
     /// <summary>
     /// Watchlists as array (TypeScript: watchlists: null | Watchlist[])
@@ -95,19 +100,19 @@ public class JellyseerrMedia : Media
     /// Requests - Not used in Jellyseerr API responses
     /// </summary>
     [JsonIgnore]
-    public new List<MediaRequest> Requests { get; set; } = new();
+    public new List<MediaRequest>? Requests { get; set; } = new();
 
     /// <summary>
     /// Seasons - Not used in Jellyseerr API responses
     /// </summary>
     [JsonIgnore]
-    public new List<Season> Seasons { get; set; } = new();
+    public new List<Season>? Seasons { get; set; } = new();
 
     /// <summary>
     /// Issues - Not used in Jellyseerr API responses
     /// </summary>
     [JsonIgnore]
-    public new List<Issue> Issues { get; set; } = new();
+    public new List<Issue>? Issues { get; set; } = new();
 
     /// <summary>
     /// Blacklist - Not used in Jellyseerr API responses
