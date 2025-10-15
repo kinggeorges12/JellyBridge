@@ -9,7 +9,16 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
-        "timestamp": "2025-10-15T04:16:35.040Z",
+        "timestamp": "2025-10-15T05:12:42.650Z",
+        "targetAbi": "10.10.7.0",
+        "version": "0.211.0.0",
+        "changelog": "v0.211.0.0 - Cleaned up NuGet data and simplified sync service casting - removed all .nupkg files and obj directory, simplified List<T> casting in sync service, made returnModel parameter optional in JellyseerrEndpointConfig",
+        "dependencies": [],
+        "checksum": "6EE82A955C818C38083AF92AF1F1F86D",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.211.0.0/JellyseerrBridge-0.211.0.0-DLL.zip"
+      },
+      {
+        "timestamp": "2025-10-15T04:16:35.04Z",
         "dependencies": [],
         "targetAbi": "10.10.7.0",
         "changelog": "v0.210.0.0 - Fixed convert script to stop adding unnecessary Server using statements to Common model files. Created JellyseerrMediaTest class for simplified MediaInfo handling. Improved model generation architecture with proper separation of concerns between Common and Server models.",

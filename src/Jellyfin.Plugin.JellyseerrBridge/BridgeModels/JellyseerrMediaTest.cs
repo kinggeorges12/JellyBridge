@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
@@ -12,7 +13,7 @@ public class JellyseerrMediaTest
     public int Id { get; set; }
 
     [JsonPropertyName("mediaType")]
-    public string MediaType { get; set; } = string.Empty;
+    public MediaType MediaType { get; set; }
 
     [JsonPropertyName("tmdbId")]
     public int TmdbId { get; set; }
