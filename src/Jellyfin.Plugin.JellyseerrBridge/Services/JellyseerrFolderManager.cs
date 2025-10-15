@@ -1,8 +1,10 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -72,9 +74,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     /// </summary>
     private static readonly string FolderTemplate = typeof(TJellyseerr).Name switch
     {
-        nameof(JellyseerrMovie) => "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
-        nameof(JellyseerrShow) => "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
-        _ => "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]"
+        nameof(JellyseerrMovie) => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
+        nameof(JellyseerrShow) => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
+        _ => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]"
     };
 
     public JellyseerrFolderManager(ILogger logger, string baseDirectory)
@@ -108,6 +110,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         var folderName = FolderTemplate;
         _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Starting with template '{Template}' for item type '{ItemType}'", 
             FolderTemplate, typeof(TJellyseerr).Name);
+        
+        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Item details - MediaName: '{MediaName}', Year: '{Year}', Id: {Id}, ExtraId: '{ExtraId}', ExtraIdName: '{ExtraIdName}'", 
+            item.MediaName, item.Year, item.Id, item.ExtraId, item.ExtraIdName);
         
         // Find all fields in the template
         var fieldPattern = @"\{([^}]+)\}";
@@ -151,6 +156,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             return "";
         }
         
+        _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Starting to get property '{PropertyPath}' from item type '{ItemType}'", 
+            propertyPath, item.GetType().Name);
+        
         var currentObject = (object)item;
         var pathParts = propertyPath.Split('.');
         
@@ -168,13 +176,18 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             if (property == null)
             {
                 _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Property '{Part}' not found on type '{Type}'", part, type.Name);
+                // List all available properties for debugging
+                var availableProperties = type.GetProperties().Select(p => p.Name).ToArray();
+                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Available properties on '{Type}': [{AvailableProperties}]", 
+                    type.Name, string.Join(", ", availableProperties));
                 return "";
             }
             
             try
             {
                 currentObject = property.GetValue(currentObject);
-                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: '{Part}' = '{Value}'", part, currentObject);
+                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: '{Part}' = '{Value}' (Type: {ValueType})", 
+                    part, currentObject, currentObject?.GetType().Name ?? "null");
             }
             catch (Exception ex)
             {
@@ -238,14 +251,13 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                         
                         var jsonOptions = new JsonSerializerOptions 
                         { 
-                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                            PropertyNameCaseInsensitive = true
+                            WriteIndented = true
                         };
                         var item = JsonSerializer.Deserialize<TJellyseerr>(json, jsonOptions);
                         if (item != null)
                         {
-                            _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized {Type} - Name: '{Name}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                                typeFolder, item.Name, item.Id, item.MediaType, item.Year);
+                            _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized {Type} - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                typeFolder, item.MediaName, item.Id, item.MediaType, item.Year);
                             items.Add(item);
                         }
                         else
@@ -292,10 +304,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             // Serialize and write metadata file
             var jsonOptions = new JsonSerializerOptions 
             { 
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
+                WriteIndented = true
             };
+            
             var json = JsonSerializer.Serialize(item, jsonOptions);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             
@@ -306,7 +317,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[JellyseerrFolderManager] Error writing {Type} metadata for {ItemName}", GetLibraryType(), item.Name);
+            _logger.LogError(ex, "[JellyseerrFolderManager] Error writing {Type} metadata for {ItemMediaName}", GetLibraryType(), item.MediaName);
             return false;
         }
     }

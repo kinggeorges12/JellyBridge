@@ -4,18 +4,6 @@ using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Dedicated MediaType enum for Jellyseerr API responses to avoid conflicts with other MediaType enums
-/// </summary>
-public enum JellyseerrMediaType
-{
-    [JsonPropertyName("movie")]
-    Movie = 0,
-    
-    [JsonPropertyName("tv")]
-    Tv = 1
-}
-
-/// <summary>
 /// Bridge model for Jellyseerr Media objects that customizes the generated Media model
 /// to match the actual API response structure from the TypeScript Media entity.
 /// Only overrides properties where the type or JSON property name changes.
@@ -25,10 +13,11 @@ public class JellyseerrMedia : Media
     // Properties that need type changes from base class
 
     /// <summary>
-    /// Media type as enum - use dedicated JellyseerrMediaType to avoid conflicts
+    /// Media type as enum - override to use JsonStringEnumConverter
     /// </summary>
     [JsonPropertyName("mediaType")]
-    public new string MediaType { get; set; } = string.Empty;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public new MediaType MediaType { get; set; } = new();
 
     /// <summary>
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])

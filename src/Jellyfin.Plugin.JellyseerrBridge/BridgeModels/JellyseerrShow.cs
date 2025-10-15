@@ -69,24 +69,36 @@ public class JellyseerrShow
     public new string? PosterPath => base.PosterPath;
 
     /// <summary>
-    /// The display name of the TV show (Name from TMDB).
+    /// The media name for folder creation (Name from TMDB).
     /// </summary>
-    [JsonPropertyName("name")]
-    public new string Name => base.Name;
+    [JsonIgnore]
+    public string MediaName => base.Name;
 
     /// <summary>
     /// Computed property that extracts the year from the first air date.
     /// </summary>
-    public string Year => IJellyseerrItem.ExtractYear(FirstAirDate);
+    [JsonIgnore]
+    public string Year 
+    { 
+        get 
+        {
+            var year = IJellyseerrItem.ExtractYear(FirstAirDate);
+            // Add debugging to see what's happening
+            System.Diagnostics.Debug.WriteLine($"[JellyseerrShow] Year property - FirstAirDate: '{FirstAirDate}', Extracted Year: '{year}'");
+            return year;
+        }
+    }
 
     /// <summary>
     /// The extra external ID (TVDB for shows).
     /// </summary>
+    [JsonIgnore]
     public string? ExtraId => MediaInfo?.TvdbId?.ToString();
 
     /// <summary>
     /// The display name for the extra external ID (tvdbid for shows).
     /// </summary>
+    [JsonIgnore]
     public string ExtraIdName => "tvdbid";
 
     /// <summary>

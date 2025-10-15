@@ -19,9 +19,9 @@ public interface IJellyseerrItem
     int Id { get; }
 
     /// <summary>
-    /// The display name of the media item.
+    /// The media name for folder creation (separate from Name to avoid conflicts).
     /// </summary>
-    string Name { get; }
+    string MediaName { get; }
 
     /// <summary>
     /// The year of the media item.
