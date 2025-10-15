@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "04BB1328477DF98866FC4832B8F57D32",
+        "changelog": "v0.228.0.0 - v0.228.0.0 - Fixed stack overflow in ToString() method - Removed problematic ToString() method from IJellyseerrItem interface to prevent circular references that caused stack overflow during logging, moved folder naming logic directly into JellyseerrFolderManager.CreateFolderName() method for safer string building, eliminated infinite recursion issues when Serilog serializes bridge items for logging",
+        "timestamp": "2025-10-15T23:55:24.215Z",
+        "dependencies": [],
+        "version": "0.228.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.228.0.0/JellyseerrBridge-0.228.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "version": "0.227.0.0",
         "changelog": "v0.227.0.0 - v0.227.0.0 - Library compatibility and performance improvements - Fixed library type compatibility to use CollectionTypeOptions enum instead of string comparison for accurate movie/show library matching, optimized library scanning by checking library locations instead of querying individual items to exclude sync directory libraries, removed redundant item-level filtering since library-level filtering already handles sync directory exclusion, improved efficiency by eliminating unnecessary path checks and iterations",
         "targetAbi": "10.10.7.0",
