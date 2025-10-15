@@ -35,29 +35,41 @@ public class JellyseerrMedia : Media
     /// Service ID as nullable number (TypeScript: serviceId?: number | null)
     /// Override: Change from string? to int?
     /// </summary>
+    [JsonIgnore]
+    public new string? ServiceId { get; set; }
+
     [JsonPropertyName("serviceId")]
-    public new int? ServiceId { get; set; }
+    public int? ServiceIdInt { get; set; }
 
     /// <summary>
     /// Service ID for 4K as nullable number (TypeScript: serviceId4k?: number | null)
-    /// Override: Change from string? to int?
+    /// Override: Change from string? to int? and ignore base class property
     /// </summary>
+    [JsonIgnore]
+    public new string? ServiceId4k { get; set; }
+
     [JsonPropertyName("serviceId4k")]
-    public new int? ServiceId4k { get; set; }
+    public int? ServiceId4kInt { get; set; }
 
     /// <summary>
     /// External service ID as nullable number (TypeScript: externalServiceId?: number | null)
-    /// Override: Change from string? to int?
+    /// Override: Change from string? to int? and ignore base class property
     /// </summary>
+    [JsonIgnore]
+    public new string? ExternalServiceId { get; set; }
+
     [JsonPropertyName("externalServiceId")]
-    public new int? ExternalServiceId { get; set; }
+    public int? ExternalServiceIdInt { get; set; }
 
     /// <summary>
     /// External service ID for 4K as nullable number (TypeScript: externalServiceId4k?: number | null)
-    /// Override: Change from string? to int?
+    /// Override: Change from string? to int? and ignore base class property
     /// </summary>
+    [JsonIgnore]
+    public new string? ExternalServiceId4k { get; set; }
+
     [JsonPropertyName("externalServiceId4k")]
-    public new int? ExternalServiceId4k { get; set; }
+    public int? ExternalServiceId4kInt { get; set; }
 
     // Properties that are not used in Jellyseerr API responses - exclude from JSON
 
@@ -125,4 +137,7 @@ public class JellyseerrMedia : Media
     // CreatedAt, UpdatedAt, LastSeasonChange, MediaAddedAt, ExternalServiceSlug, 
     // ExternalServiceSlug4k, RatingKey, RatingKey4k, JellyfinMediaId, JellyfinMediaId4k, 
     // MediaUrl, ServiceUrl) inherit from base class with correct types and JSON names
+    // Note: ServiceId, ServiceId4k, ExternalServiceId, ExternalServiceId4k are overridden 
+    // as ServiceIdInt, ServiceId4kInt, ExternalServiceIdInt, ExternalServiceId4kInt 
+    // to handle numeric JSON values instead of string values from base class
 }

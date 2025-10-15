@@ -119,8 +119,20 @@ public partial class JellyseerrSyncService
                     _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                     
                     var networkMovies = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, config);
+                    
+                    if (networkMovies == null)
+                    {
+                        _logger.LogError("API call returned null for movies endpoint for network: {NetworkName}", networkName);
+                        throw new InvalidOperationException($"Failed to retrieve movies for network {networkName} - API returned null");
+                    }
+                    
                     var moviesResponse = (JellyseerrPaginatedResponse<JellyseerrMovie>)networkMovies;
-                    var movies = moviesResponse.Results;
+                    var movies = moviesResponse?.Results ?? new List<JellyseerrMovie>();
+                    
+                    if (movies.Count == 0)
+                    {
+                        _logger.LogWarning("No movies returned for network: {NetworkName}", networkName);
+                    }
                     
                     allMovies.AddRange(movies);
                     _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", movies.Count, networkName);
@@ -139,8 +151,20 @@ public partial class JellyseerrSyncService
                     _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
                     
                     var networkShows = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, config);
+                    
+                    if (networkShows == null)
+                    {
+                        _logger.LogError("API call returned null for TV shows endpoint for network: {NetworkName}", networkName);
+                        throw new InvalidOperationException($"Failed to retrieve TV shows for network {networkName} - API returned null");
+                    }
+                    
                     var showsResponse = (JellyseerrPaginatedResponse<JellyseerrShow>)networkShows;
-                    var shows = showsResponse.Results;
+                    var shows = showsResponse?.Results ?? new List<JellyseerrShow>();
+                    
+                    if (shows.Count == 0)
+                    {
+                        _logger.LogWarning("No TV shows returned for network: {NetworkName}", networkName);
+                    }
                     
                     allShows.AddRange(shows);
                     _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", shows.Count, networkName);
@@ -153,6 +177,20 @@ public partial class JellyseerrSyncService
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
                 allMovies.Count, allShows.Count);
+
+            // Check if we actually got any data from the API calls
+            if (allMovies.Count == 0 && allShows.Count == 0)
+            {
+                _logger.LogError("No data retrieved from Jellyseerr API - all API calls returned empty results");
+                result.Success = false;
+                result.Message = "No data retrieved from Jellyseerr API. Check API connection and configuration.";
+                result.Details = "All API calls returned empty results. This may indicate:\n" +
+                               "- API connection issues\n" +
+                               "- Invalid API key\n" +
+                               "- JSON parsing errors (check logs for JsonException warnings)\n" +
+                               "- Empty discover results for configured networks";
+                return result;
+            }
 
             // Create base directory
             var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
