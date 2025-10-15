@@ -175,8 +175,10 @@ public class JellyseerrBridgeService
                 var isMatch = bm.Equals(existingItem);
                 
                 // Log detailed comparison info for debugging
-                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} - Match: {IsMatch}", 
-                    bm, existingItem, isMatch);
+                var jellyfinType = existingItem.GetType().Name;
+                var tmdbId = existingItem.GetProviderId("Tmdb");
+                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} (Type: {JellyfinType}, TMDB: {TmdbId}) - Match: {IsMatch}", 
+                    bm, existingItem, jellyfinType, tmdbId ?? "null", isMatch);
                 
                 return isMatch;
             });

@@ -21,13 +21,13 @@ public interface IJellyseerrItem
     /// <summary>
     /// The media name for folder creation (separate from Name to avoid conflicts).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("_mediaName")]
     string MediaName { get; set; }
 
     /// <summary>
     /// The year of the media item.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("_year")]
     string Year { get; }
 
     /// <summary>
@@ -64,5 +64,34 @@ public interface IJellyseerrItem
             return date.Year.ToString();
             
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Returns a formatted string representation suitable for folder naming.
+    /// Format: "MediaName (Year) [tmdbid-ID] [extraidname-ExtraId]" with dynamic sections based on available values.
+    /// </summary>
+    string? ToString()
+    {
+        var parts = new List<string>();
+        
+        // Always include MediaName
+        parts.Add(MediaName);
+        
+        // Add year if available
+        if (!string.IsNullOrEmpty(Year))
+        {
+            parts.Add($"({Year})");
+        }
+        
+        // Always include TMDB ID
+        parts.Add($"[tmdbid-{Id}]");
+        
+        // Add extra ID if available
+        if (!string.IsNullOrEmpty(ExtraId))
+        {
+            parts.Add($"[{ExtraIdName}-{ExtraId}]");
+        }
+        
+        return string.Join(" ", parts);
     }
 }

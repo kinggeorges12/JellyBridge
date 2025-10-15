@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.226.0.0 - v0.226.0.0 - Enhanced folder naming and debugging improvements - Implemented dynamic ToString() method in IJellyseerrItem interface for flexible folder naming with tmdbid and extraid sections, refactored JellyseerrFolderManager to use simplified ToString() approach, added enhanced debugging with Jellyfin type and TMDB provider ID logging for better match troubleshooting, added error handling for blank folder names",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.226.0.0/JellyseerrBridge-0.226.0.0-DLL.zip",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-15T22:33:01.687Z",
+        "checksum": "742D832404A204B782D3D76FC40FB292",
+        "version": "0.226.0.0"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "changelog": "v0.225.0.0 - v0.225.0.0 - Enhanced JSON serialization with generic T converter support - Updated JellyseerrJsonSerializer to use generic DefaultOptions<T>() method with JellyseerrPropertiesConverter, improved JSON output with proper null value handling, added T-specific converter filtering for underscore properties",
         "version": "0.225.0.0",

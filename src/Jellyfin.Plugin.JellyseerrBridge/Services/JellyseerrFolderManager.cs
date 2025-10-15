@@ -70,16 +70,6 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     private readonly ILogger _logger;
     private readonly string _baseDirectory;
 
-    /// <summary>
-    /// Static folder name template based on the type.
-    /// </summary>
-    private static readonly string FolderTemplate = typeof(TJellyseerr).Name switch
-    {
-        nameof(JellyseerrMovie) => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
-        nameof(JellyseerrShow) => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]",
-        _ => "{MediaName} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]"
-    };
-
     public JellyseerrFolderManager(ILogger logger, string baseDirectory)
     {
         _logger = logger;
@@ -104,109 +94,26 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     }
 
     /// <summary>
-    /// Create folder name using the static template for this type.
+    /// Create folder name using the ToString() method from IJellyseerrItem.
     /// </summary>
     public string CreateFolderName(TJellyseerr item)
     {
-        var folderName = FolderTemplate;
-        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Starting with template '{Template}' for item type '{ItemType}'", 
-            FolderTemplate, typeof(TJellyseerr).Name);
+        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Using ToString() for item type '{ItemType}'", 
+            typeof(TJellyseerr).Name);
         
-        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Item details - MediaName: '{MediaName}', Year: '{Year}', Id: {Id}, ExtraId: '{ExtraId}', ExtraIdName: '{ExtraIdName}'", 
-            item.MediaName, item.Year, item.Id, item.ExtraId, item.ExtraIdName);
+        _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Item details - MediaName: '{MediaName}', Year: '{Year}', Id: {Id}", 
+            item.MediaName, item.Year, item.Id);
         
-        // Find all fields in the template
-        var fieldPattern = @"\{([^}]+)\}";
-        var matches = Regex.Matches(FolderTemplate, fieldPattern);
+        var folderName = item.ToString();
         
-        foreach (Match match in matches)
+        if (string.IsNullOrWhiteSpace(folderName))
         {
-            var field = match.Groups[0].Value; // Full field like "{title}"
-            var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
-            
-            _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Processing field '{Field}' -> property '{PropertyPath}'", 
-                field, propertyPath);
-            
-            var value = GetPropertyValue(item, propertyPath);
-            folderName = folderName.Replace(field, value);
-            
-            _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Replaced '{Field}' with '{Value}', result: '{FolderName}'", 
-                field, value, folderName);
+            throw new InvalidOperationException($"Cannot create folder name for {typeof(TJellyseerr).Name}: ToString() returned null or empty value");
         }
-        
-        // Remove empty field blocks like [tvdbid-], [tmdbid-], [imdbid-] and empty parentheses ()
-        // Be more careful with spacing - don't remove spaces between title and ID when year is missing
-        folderName = Regex.Replace(folderName, @"\s*(\[[^]]*-\])\s*", " "); // Remove empty ID brackets but keep space
-        folderName = Regex.Replace(folderName, @"\(\s*\)", ""); // Remove empty parentheses
-        folderName = Regex.Replace(folderName, @"\s+", " "); // Normalize multiple spaces to single space
-        folderName = folderName.Trim(); // Remove leading/trailing spaces
         
         var finalResult = SanitizeFileName(folderName);
         _logger.LogDebug("[JellyseerrFolderManager] CreateFolderName: Final result: '{FinalResult}'", finalResult);
         return finalResult;
-    }
-
-    /// <summary>
-    /// Get property value using reflection.
-    /// </summary>
-    private string GetPropertyValue(IJellyseerrItem item, string propertyPath)
-    {
-        if (item == null || string.IsNullOrEmpty(propertyPath))
-        {
-            _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: item is null or propertyPath is empty");
-            return "";
-        }
-        
-        _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Starting to get property '{PropertyPath}' from item type '{ItemType}'", 
-            propertyPath, item.GetType().Name);
-        
-        var currentObject = (object)item;
-        var pathParts = propertyPath.Split('.');
-        
-        foreach (var part in pathParts)
-        {
-            if (currentObject == null)
-            {
-                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: currentObject is null for part '{Part}'", part);
-                return "";
-            }
-            
-            var type = currentObject.GetType();
-            var property = type.GetProperty(part);
-            
-            if (property == null)
-            {
-                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Property '{Part}' not found on type '{Type}'", part, type.Name);
-                // List all available properties for debugging
-                var availableProperties = type.GetProperties().Select(p => p.Name).ToArray();
-                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Available properties on '{Type}': [{AvailableProperties}]", 
-                    type.Name, string.Join(", ", availableProperties));
-                return "";
-            }
-            
-            try
-            {
-                currentObject = property.GetValue(currentObject);
-                _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: '{Part}' = '{Value}' (Type: {ValueType})", 
-                    part, currentObject, currentObject?.GetType().Name ?? "null");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[JellyseerrFolderManager] GetPropertyValue: Error getting property '{Part}'", part);
-                return "";
-            }
-        }
-        
-        if (currentObject == null)
-        {
-            _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Final value is null for '{PropertyPath}'", propertyPath);
-            return "";
-        }
-        
-        // Convert to string
-        var result = currentObject.ToString() ?? "";
-        _logger.LogDebug("[JellyseerrFolderManager] GetPropertyValue: Final result for '{PropertyPath}' = '{Result}'", propertyPath, result);
-        return result;
     }
 
     /// <summary>
