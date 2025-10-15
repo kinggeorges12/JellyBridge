@@ -27,7 +27,7 @@ public class JellyseerrMovie
     /// Jellyseerr-specific media information (download status, service IDs, etc.)
     /// </summary>
     [JsonPropertyName("mediaInfo")]
-    public JellyseerrMedia? MediaInfo { get; set; }
+    public JellyseerrMediaTest? MediaInfo { get; set; }
 
     /// <summary>
     /// Override the base class MediaType to use camelCase JSON property name
