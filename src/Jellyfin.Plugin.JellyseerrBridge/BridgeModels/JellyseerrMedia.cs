@@ -17,7 +17,7 @@ public class JellyseerrMedia : Media
     /// </summary>
     [JsonPropertyName("mediaType")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public new MediaType MediaType { get; set; } = new();
+    public new MediaType MediaType { get; set; }
 
     /// <summary>
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])

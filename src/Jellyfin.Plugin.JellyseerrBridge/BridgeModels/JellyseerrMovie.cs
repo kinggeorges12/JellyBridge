@@ -39,43 +39,42 @@ public class JellyseerrMovie
     /// Override JSON property names to match camelCase format from discover API
     /// </summary>
     [JsonPropertyName("mediaType")]
-    public new string MediaType => base.MediaType;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public new JellyseerrModel.MediaType MediaType { get; set; }
 
     [JsonPropertyName("releaseDate")]
     public new string ReleaseDate { get; set; } = string.Empty;
 
     [JsonPropertyName("genreIds")]
-    public new List<int> GenreIds => base.GenreIds;
+    public new List<int> GenreIds { get; set; } = new();
 
     [JsonPropertyName("originalLanguage")]
-    public new string OriginalLanguage => base.OriginalLanguage;
+    public new string OriginalLanguage { get; set; } = string.Empty;
 
     [JsonPropertyName("originalTitle")]
-    public new string OriginalTitle => base.OriginalTitle;
+    public new string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("voteAverage")]
-    public new double VoteAverage => base.VoteAverage;
+    public new double VoteAverage { get; set; }
 
     [JsonPropertyName("voteCount")]
-    public new int VoteCount => base.VoteCount;
+    public new int VoteCount { get; set; }
 
     [JsonPropertyName("backdropPath")]
-    public new string? BackdropPath => base.BackdropPath;
+    public new string? BackdropPath { get; set; }
 
     [JsonPropertyName("posterPath")]
-    public new string? PosterPath => base.PosterPath;
-
-    /// <summary>
-    /// The display name of the movie (Title from TMDB).
-    /// </summary>
-    [JsonPropertyName("name")]
-    public string Name => Title;
+    public new string? PosterPath { get; set; }
 
     /// <summary>
     /// The media name for folder creation (Title from TMDB).
     /// </summary>
-    [JsonIgnore]
-    public string MediaName => Title;
+    [JsonPropertyName("mediaName")]
+    public string MediaName 
+    { 
+        get => Title;
+        set => Title = value;
+    }
 
     /// <summary>
     /// Computed property that extracts the year from the release date.
