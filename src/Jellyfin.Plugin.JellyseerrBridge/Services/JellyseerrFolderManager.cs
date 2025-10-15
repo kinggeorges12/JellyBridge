@@ -251,7 +251,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                         
                         var jsonOptions = new JsonSerializerOptions 
                         { 
-                            WriteIndented = true
+                            WriteIndented = true,
+                            PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
+                            PropertyNameCaseInsensitive = true
                         };
                         var item = JsonSerializer.Deserialize<TJellyseerr>(json, jsonOptions);
                         if (item != null)
@@ -304,7 +306,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             // Serialize and write metadata file
             var jsonOptions = new JsonSerializerOptions 
             { 
-                WriteIndented = true
+                WriteIndented = true,
+                PropertyNamingPolicy = null, // Use JsonPropertyName attributes instead of naming policy
+                PropertyNameCaseInsensitive = true
             };
             
             var json = JsonSerializer.Serialize(item, jsonOptions);

@@ -42,7 +42,7 @@ public class JellyseerrShow
     public new string MediaType => base.MediaType;
 
     [JsonPropertyName("firstAirDate")]
-    public new string FirstAirDate => base.FirstAirDate;
+    public new string FirstAirDate { get; set; } = string.Empty;
 
     [JsonPropertyName("genreIds")]
     public new List<int> GenreIds => base.GenreIds;
@@ -82,10 +82,7 @@ public class JellyseerrShow
     { 
         get 
         {
-            var year = IJellyseerrItem.ExtractYear(FirstAirDate);
-            // Add debugging to see what's happening
-            System.Diagnostics.Debug.WriteLine($"[JellyseerrShow] Year property - FirstAirDate: '{FirstAirDate}', Extracted Year: '{year}'");
-            return year;
+            return IJellyseerrItem.ExtractYear(FirstAirDate);
         }
     }
 
