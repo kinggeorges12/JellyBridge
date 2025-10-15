@@ -2,6 +2,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
+using Jellyfin.Plugin.JellyseerrBridge.Serialization;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
@@ -227,7 +228,7 @@ public class JellyseerrBridgeService
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        var metadata = JsonSerializer.Deserialize<TJellyseerr>(json);
+                        var metadata = JellyseerrJsonSerializer.Deserialize<TJellyseerr>(json);
                         
                         if (metadata != null && item.Equals(metadata))
                         {
