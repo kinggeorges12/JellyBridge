@@ -37,7 +37,7 @@ public class Region
     [JsonPropertyName("iso_3166_1")]
     public string Iso31661 { get; set; } = string.Empty;
 
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -50,7 +50,7 @@ public class Language
     [JsonPropertyName("iso_639_1")]
     public string Iso6391 { get; set; } = string.Empty;
 
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]

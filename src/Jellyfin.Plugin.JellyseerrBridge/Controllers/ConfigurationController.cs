@@ -349,7 +349,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
                 var regions = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersRegions, config);
-                var typedRegions = (List<TmdbWatchProviderRegion>)regions ?? new List<TmdbWatchProviderRegion>();
+                var typedRegions = (List<JellyseerrWatchProviderRegion>)regions ?? new List<JellyseerrWatchProviderRegion>();
                 
                 _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} regions", typedRegions.Count);
                 

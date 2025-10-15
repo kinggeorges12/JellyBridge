@@ -10,47 +10,47 @@ public class TmdbMediaResult
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public string MediaType { get; set; } = string.Empty;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
-    [JsonPropertyName("voteCount")]
+    [JsonPropertyName("vote_count")]
     public int VoteCount { get; set; }
 
-    [JsonPropertyName("voteAverage")]
+    [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 
-    [JsonPropertyName("genreIds")]
+    [JsonPropertyName("genre_ids")]
     public List<int> GenreIds { get; set; } = new();
 
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalLanguage")]
+    [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
 
 }
 
 public class TmdbMovieResult : TmdbMediaResult
 {
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public new string MediaType { get; set; } = string.Empty;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalTitle")]
+    [JsonPropertyName("original_title")]
     public string OriginalTitle { get; set; } = string.Empty;
 
-    [JsonPropertyName("releaseDate")]
+    [JsonPropertyName("release_date")]
     public string ReleaseDate { get; set; } = string.Empty;
 
     [JsonPropertyName("adult")]
@@ -63,19 +63,19 @@ public class TmdbMovieResult : TmdbMediaResult
 
 public class TmdbTvResult : TmdbMediaResult
 {
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public new string MediaType { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalName")]
+    [JsonPropertyName("original_name")]
     public string OriginalName { get; set; } = string.Empty;
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public List<string> OriginCountry { get; set; } = new();
 
-    [JsonPropertyName("firstAirDate")]
+    [JsonPropertyName("first_air_date")]
     public string FirstAirDate { get; set; } = string.Empty;
 
 }
@@ -85,28 +85,28 @@ public class TmdbCollectionResult
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public string MediaType { get; set; } = string.Empty;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalTitle")]
+    [JsonPropertyName("original_title")]
     public string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalLanguage")]
+    [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
 
 }
@@ -122,16 +122,16 @@ public class TmdbPersonResult
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("profilePath")]
+    [JsonPropertyName("profile_path")]
     public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public string MediaType { get; set; } = string.Empty;
 
-    [JsonPropertyName("knownFor")]
+    [JsonPropertyName("known_for")]
     // Union type array: (TmdbMovieResult | TmdbTvResult)[]
     public List<object> KnownFor { get; set; } = new();
 
@@ -142,10 +142,10 @@ public class TmdbPaginatedResponse
     [JsonPropertyName("page")]
     public int Page { get; set; }
 
-    [JsonPropertyName("totalResults")]
+    [JsonPropertyName("total_results")]
     public int TotalResults { get; set; }
 
-    [JsonPropertyName("totalPages")]
+    [JsonPropertyName("total_pages")]
     public int TotalPages { get; set; }
 
 }
@@ -184,26 +184,26 @@ public class TmdbUpcomingMoviesResponse : TmdbPaginatedResponse
 
 public class TmdbExternalIdResponse
 {
-    [JsonPropertyName("movieResults")]
+    [JsonPropertyName("movie_results")]
     public List<TmdbMovieResult> MovieResults { get; set; } = new();
 
-    [JsonPropertyName("tvResults")]
+    [JsonPropertyName("tv_results")]
     public List<TmdbTvResult> TvResults { get; set; } = new();
 
-    [JsonPropertyName("personResults")]
+    [JsonPropertyName("person_results")]
     public List<TmdbPersonResult> PersonResults { get; set; } = new();
 
 }
 
 public class TmdbCreditCast
 {
-    [JsonPropertyName("castId")]
+    [JsonPropertyName("cast_id")]
     public int CastId { get; set; }
 
     [JsonPropertyName("character")]
     public string Character { get; set; } = string.Empty;
 
-    [JsonPropertyName("creditId")]
+    [JsonPropertyName("credit_id")]
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("gender")]
@@ -218,7 +218,7 @@ public class TmdbCreditCast
     [JsonPropertyName("order")]
     public int Order { get; set; }
 
-    [JsonPropertyName("profilePath")]
+    [JsonPropertyName("profile_path")]
     public string? ProfilePath { get; set; } = null!;
 
 }
@@ -232,7 +232,7 @@ public class TmdbAggregateCreditCast : TmdbCreditCast
 
 public class TmdbCreditCrew
 {
-    [JsonPropertyName("creditId")]
+    [JsonPropertyName("credit_id")]
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("gender")]
@@ -244,7 +244,7 @@ public class TmdbCreditCrew
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("profilePath")]
+    [JsonPropertyName("profile_path")]
     public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("job")]
@@ -257,28 +257,28 @@ public class TmdbCreditCrew
 
 public class TmdbExternalIds
 {
-    [JsonPropertyName("imdbId")]
+    [JsonPropertyName("imdb_id")]
     public string? ImdbId { get; set; } = null!;
 
-    [JsonPropertyName("freebaseMid")]
+    [JsonPropertyName("freebase_mid")]
     public string? FreebaseMid { get; set; } = null!;
 
-    [JsonPropertyName("freebaseId")]
+    [JsonPropertyName("freebase_id")]
     public string? FreebaseId { get; set; } = null!;
 
-    [JsonPropertyName("tvdbId")]
+    [JsonPropertyName("tvdb_id")]
     public int? TvdbId { get; set; } = null!;
 
-    [JsonPropertyName("tvrageId")]
+    [JsonPropertyName("tvrage_id")]
     public string? TvrageId { get; set; } = null!;
 
-    [JsonPropertyName("facebookId")]
+    [JsonPropertyName("facebook_id")]
     public string? FacebookId { get; set; } = null!;
 
-    [JsonPropertyName("instagramId")]
+    [JsonPropertyName("instagram_id")]
     public string? InstagramId { get; set; } = null!;
 
-    [JsonPropertyName("twitterId")]
+    [JsonPropertyName("twitter_id")]
     public string? TwitterId { get; set; } = null!;
 
 }
@@ -288,13 +288,13 @@ public class TmdbProductionCompany
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("logoPath")]
+    [JsonPropertyName("logo_path")]
     public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public string OriginCountry { get; set; } = string.Empty;
 
     [JsonPropertyName("homepage")]
@@ -313,16 +313,16 @@ public class TmdbMovieDetails
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("imdbId")]
+    [JsonPropertyName("imdb_id")]
     public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
     [JsonPropertyName("budget")]
@@ -334,10 +334,10 @@ public class TmdbMovieDetails
     [JsonPropertyName("homepage")]
     public string? Homepage { get; set; } = null!;
 
-    [JsonPropertyName("originalLanguage")]
+    [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalTitle")]
+    [JsonPropertyName("original_title")]
     public string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
@@ -346,16 +346,16 @@ public class TmdbMovieDetails
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("productionCompanies")]
+    [JsonPropertyName("production_companies")]
     public List<TmdbProductionCompany> ProductionCompanies { get; set; } = new();
 
-    [JsonPropertyName("productionCountries")]
+    [JsonPropertyName("production_countries")]
     public List<TmdbMovieDetailsProductionCountries> ProductionCountries { get; set; } = new();
 
-    [JsonPropertyName("releaseDate")]
+    [JsonPropertyName("release_date")]
     public string ReleaseDate { get; set; } = string.Empty;
 
-    [JsonPropertyName("releaseDates")]
+    [JsonPropertyName("release_dates")]
     public TmdbMovieReleaseResult ReleaseDates { get; set; } = new();
 
     [JsonPropertyName("revenue")]
@@ -364,7 +364,7 @@ public class TmdbMovieDetails
     [JsonPropertyName("runtime")]
     public int? Runtime { get; set; } = null!;
 
-    [JsonPropertyName("spokenLanguages")]
+    [JsonPropertyName("spoken_languages")]
     public List<TmdbMovieDetailsSpokenLanguages> SpokenLanguages { get; set; } = new();
 
     [JsonPropertyName("status")]
@@ -379,19 +379,19 @@ public class TmdbMovieDetails
     [JsonPropertyName("video")]
     public bool Video { get; set; }
 
-    [JsonPropertyName("voteAverage")]
+    [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 
-    [JsonPropertyName("voteCount")]
+    [JsonPropertyName("vote_count")]
     public int VoteCount { get; set; }
 
     [JsonPropertyName("credits")]
     public TmdbMovieDetailsCredits Credits { get; set; } = new();
 
-    [JsonPropertyName("belongsToCollection")]
+    [JsonPropertyName("belongs_to_collection")]
     public TmdbMovieDetailsBelongsToCollection? BelongsToCollection { get; set; } = null!;
 
-    [JsonPropertyName("externalIds")]
+    [JsonPropertyName("external_ids")]
     public TmdbExternalIds ExternalIds { get; set; } = new();
 
     [JsonPropertyName("videos")]
@@ -450,10 +450,10 @@ public class TmdbTvEpisodeResult
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("airDate")]
+    [JsonPropertyName("air_date")]
     public object AirDate { get; set; } = null!;
 
-    [JsonPropertyName("episodeNumber")]
+    [JsonPropertyName("episode_number")]
     public int EpisodeNumber { get; set; }
 
     [JsonPropertyName("name")]
@@ -462,22 +462,22 @@ public class TmdbTvEpisodeResult
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
 
-    [JsonPropertyName("productionCode")]
+    [JsonPropertyName("production_code")]
     public string ProductionCode { get; set; } = string.Empty;
 
-    [JsonPropertyName("seasonNumber")]
+    [JsonPropertyName("season_number")]
     public int SeasonNumber { get; set; }
 
-    [JsonPropertyName("showId")]
+    [JsonPropertyName("show_id")]
     public int ShowId { get; set; }
 
-    [JsonPropertyName("stillPath")]
+    [JsonPropertyName("still_path")]
     public string StillPath { get; set; } = string.Empty;
 
-    [JsonPropertyName("voteAverage")]
+    [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 
-    [JsonPropertyName("voteCuont")]
+    [JsonPropertyName("vote_cuont")]
     public int VoteCuont { get; set; }
 
 }
@@ -487,10 +487,10 @@ public class TmdbTvSeasonResult
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("airDate")]
+    [JsonPropertyName("air_date")]
     public string AirDate { get; set; } = string.Empty;
 
-    [JsonPropertyName("episodeCount")]
+    [JsonPropertyName("episode_count")]
     public int EpisodeCount { get; set; }
 
     [JsonPropertyName("name")]
@@ -499,10 +499,10 @@ public class TmdbTvSeasonResult
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("seasonNumber")]
+    [JsonPropertyName("season_number")]
     public int SeasonNumber { get; set; }
 
 }
@@ -512,19 +512,19 @@ public class TmdbTvDetails
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
-    [JsonPropertyName("contentRatings")]
+    [JsonPropertyName("content_ratings")]
     public TmdbTvRatingResult ContentRatings { get; set; } = new();
 
-    [JsonPropertyName("createdBy")]
+    [JsonPropertyName("created_by")]
     public List<TmdbTvDetailsCreatedBy> CreatedBy { get; set; } = new();
 
-    [JsonPropertyName("episodeRunTime")]
+    [JsonPropertyName("episode_run_time")]
     public List<int> EpisodeRunTime { get; set; } = new();
 
-    [JsonPropertyName("firstAirDate")]
+    [JsonPropertyName("first_air_date")]
     public string FirstAirDate { get; set; } = string.Empty;
 
     [JsonPropertyName("genres")]
@@ -533,40 +533,40 @@ public class TmdbTvDetails
     [JsonPropertyName("homepage")]
     public string Homepage { get; set; } = string.Empty;
 
-    [JsonPropertyName("inProduction")]
+    [JsonPropertyName("in_production")]
     public bool InProduction { get; set; }
 
     [JsonPropertyName("languages")]
     public List<string> Languages { get; set; } = new();
 
-    [JsonPropertyName("lastAirDate")]
+    [JsonPropertyName("last_air_date")]
     public string LastAirDate { get; set; } = string.Empty;
 
-    [JsonPropertyName("lastEpisodeToAir")]
+    [JsonPropertyName("last_episode_to_air")]
     public TmdbTvEpisodeResult? LastEpisodeToAir { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("nextEpisodeToAir")]
+    [JsonPropertyName("next_episode_to_air")]
     public TmdbTvEpisodeResult? NextEpisodeToAir { get; set; } = null!;
 
     [JsonPropertyName("networks")]
     public List<TmdbNetwork> Networks { get; set; } = new();
 
-    [JsonPropertyName("numberOfEpisodes")]
+    [JsonPropertyName("number_of_episodes")]
     public int NumberOfEpisodes { get; set; }
 
-    [JsonPropertyName("numberOfSeasons")]
+    [JsonPropertyName("number_of_seasons")]
     public int NumberOfSeasons { get; set; }
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public List<string> OriginCountry { get; set; } = new();
 
-    [JsonPropertyName("originalLanguage")]
+    [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
 
-    [JsonPropertyName("originalName")]
+    [JsonPropertyName("original_name")]
     public string OriginalName { get; set; } = string.Empty;
 
     [JsonPropertyName("overview")]
@@ -575,16 +575,16 @@ public class TmdbTvDetails
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("productionCompanies")]
+    [JsonPropertyName("production_companies")]
     public List<TmdbTvDetailsProductionCompanies> ProductionCompanies { get; set; } = new();
 
-    [JsonPropertyName("productionCountries")]
+    [JsonPropertyName("production_countries")]
     public List<TmdbTvDetailsProductionCountries> ProductionCountries { get; set; } = new();
 
-    [JsonPropertyName("spokenLanguages")]
+    [JsonPropertyName("spoken_languages")]
     public List<TmdbTvDetailsSpokenLanguages> SpokenLanguages { get; set; } = new();
 
     [JsonPropertyName("seasons")]
@@ -599,19 +599,19 @@ public class TmdbTvDetails
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
 
-    [JsonPropertyName("voteAverage")]
+    [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 
-    [JsonPropertyName("voteCount")]
+    [JsonPropertyName("vote_count")]
     public int VoteCount { get; set; }
 
-    [JsonPropertyName("aggregateCredits")]
+    [JsonPropertyName("aggregate_credits")]
     public TmdbTvDetailsAggregateCredits AggregateCredits { get; set; } = new();
 
     [JsonPropertyName("credits")]
     public TmdbTvDetailsCredits Credits { get; set; } = new();
 
-    [JsonPropertyName("externalIds")]
+    [JsonPropertyName("external_ids")]
     public TmdbExternalIds ExternalIds { get; set; } = new();
 
     [JsonPropertyName("keywords")]
@@ -658,7 +658,7 @@ public class TmdbMovieReleaseResult
 
 public class TmdbRelease : TmdbRating
 {
-    [JsonPropertyName("releaseDates")]
+    [JsonPropertyName("release_dates")]
     public List<TmdbReleaseReleaseDates> ReleaseDates { get; set; } = new();
 
 }
@@ -687,10 +687,10 @@ public class TmdbPersonDetails
     [JsonPropertyName("deathday")]
     public string Deathday { get; set; } = string.Empty;
 
-    [JsonPropertyName("knownForDepartment")]
+    [JsonPropertyName("known_for_department")]
     public string KnownForDepartment { get; set; } = string.Empty;
 
-    [JsonPropertyName("alsoKnownAs")]
+    [JsonPropertyName("also_known_as")]
     public List<string>? AlsoKnownAs { get; set; } = new();
 
     [JsonPropertyName("gender")]
@@ -702,16 +702,16 @@ public class TmdbPersonDetails
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("placeOfBirth")]
+    [JsonPropertyName("place_of_birth")]
     public string? PlaceOfBirth { get; set; } = null!;
 
-    [JsonPropertyName("profilePath")]
+    [JsonPropertyName("profile_path")]
     public string? ProfilePath { get; set; } = null!;
 
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
-    [JsonPropertyName("imdbId")]
+    [JsonPropertyName("imdb_id")]
     public string? ImdbId { get; set; } = null!;
 
     [JsonPropertyName("homepage")]
@@ -724,52 +724,52 @@ public class TmdbPersonCredit
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("originalLanguage")]
+    [JsonPropertyName("original_language")]
     public string OriginalLanguage { get; set; } = string.Empty;
 
-    [JsonPropertyName("episodeCount")]
+    [JsonPropertyName("episode_count")]
     public int EpisodeCount { get; set; }
 
     [JsonPropertyName("overview")]
     public string Overview { get; set; } = string.Empty;
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public List<string> OriginCountry { get; set; } = new();
 
-    [JsonPropertyName("originalName")]
+    [JsonPropertyName("original_name")]
     public string OriginalName { get; set; } = string.Empty;
 
-    [JsonPropertyName("voteCount")]
+    [JsonPropertyName("vote_count")]
     public int VoteCount { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("mediaType")]
+    [JsonPropertyName("media_type")]
     public string? MediaType { get; set; } = null!;
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
 
-    [JsonPropertyName("creditId")]
+    [JsonPropertyName("credit_id")]
     public string CreditId { get; set; } = string.Empty;
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
-    [JsonPropertyName("firstAirDate")]
+    [JsonPropertyName("first_air_date")]
     public string FirstAirDate { get; set; } = string.Empty;
 
-    [JsonPropertyName("voteAverage")]
+    [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 
-    [JsonPropertyName("genreIds")]
+    [JsonPropertyName("genre_ids")]
     public List<int>? GenreIds { get; set; } = new();
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("originalTitle")]
+    [JsonPropertyName("original_title")]
     public string OriginalTitle { get; set; } = string.Empty;
 
     [JsonPropertyName("video")]
@@ -781,7 +781,7 @@ public class TmdbPersonCredit
     [JsonPropertyName("adult")]
     public bool Adult { get; set; }
 
-    [JsonPropertyName("releaseDate")]
+    [JsonPropertyName("release_date")]
     public string ReleaseDate { get; set; } = string.Empty;
 
 }
@@ -821,7 +821,7 @@ public class TmdbSeasonWithEpisodes : TmdbTvSeasonResult
     [JsonPropertyName("episodes")]
     public List<TmdbTvEpisodeResult> Episodes { get; set; } = new();
 
-    [JsonPropertyName("externalIds")]
+    [JsonPropertyName("external_ids")]
     public TmdbExternalIds ExternalIds { get; set; } = new();
 
 
@@ -839,10 +839,10 @@ public class TmdbCollection
     [JsonPropertyName("overview")]
     public string? Overview { get; set; } = null!;
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
     [JsonPropertyName("parts")]
@@ -855,7 +855,7 @@ public class TmdbRegion
     [JsonPropertyName("iso_3166_1")]
     public string Iso31661 { get; set; } = string.Empty;
 
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
 }
@@ -865,7 +865,7 @@ public class TmdbLanguage
     [JsonPropertyName("iso_639_1")]
     public string Iso6391 { get; set; } = string.Empty;
 
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -904,10 +904,10 @@ public class TmdbNetwork
     [JsonPropertyName("homepage")]
     public string? Homepage { get; set; } = null!;
 
-    [JsonPropertyName("logoPath")]
+    [JsonPropertyName("logo_path")]
     public string? LogoPath { get; set; } = null!;
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public string? OriginCountry { get; set; } = null!;
 
 }
@@ -927,16 +927,16 @@ public class TmdbWatchProviders
 
 public class TmdbWatchProviderDetails
 {
-    [JsonPropertyName("displayPriority")]
+    [JsonPropertyName("display_priority")]
     public int? DisplayPriority { get; set; } = null!;
 
-    [JsonPropertyName("logoPath")]
+    [JsonPropertyName("logo_path")]
     public string? LogoPath { get; set; } = null!;
 
-    [JsonPropertyName("providerId")]
+    [JsonPropertyName("provider_id")]
     public int ProviderId { get; set; }
 
-    [JsonPropertyName("providerName")]
+    [JsonPropertyName("provider_name")]
     public string ProviderName { get; set; } = string.Empty;
 
 }
@@ -953,7 +953,7 @@ public class TmdbCompany
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("logoPath")]
+    [JsonPropertyName("logo_path")]
     public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
@@ -973,10 +973,10 @@ public class TmdbWatchProviderRegion
     [JsonPropertyName("iso_3166_1")]
     public string Iso31661 { get; set; } = string.Empty;
 
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
-    [JsonPropertyName("nativeName")]
+    [JsonPropertyName("native_name")]
     public string NativeName { get; set; } = string.Empty;
 
 }
@@ -995,13 +995,13 @@ public class TmdbUpcomingMoviesResponseDates
 
 public class TmdbAggregateCreditCastRoles
 {
-    [JsonPropertyName("creditId")]
+    [JsonPropertyName("credit_id")]
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("character")]
     public string Character { get; set; } = string.Empty;
 
-    [JsonPropertyName("episodeCount")]
+    [JsonPropertyName("episode_count")]
     public int EpisodeCount { get; set; }
 
 }
@@ -1054,10 +1054,10 @@ public class TmdbMovieDetailsBelongsToCollection
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("posterPath")]
+    [JsonPropertyName("poster_path")]
     public string? PosterPath { get; set; } = null!;
 
-    [JsonPropertyName("backdropPath")]
+    [JsonPropertyName("backdrop_path")]
     public string? BackdropPath { get; set; } = null!;
 
 }
@@ -1088,7 +1088,7 @@ public class TmdbTvDetailsCreatedBy
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("creditId")]
+    [JsonPropertyName("credit_id")]
     public string CreditId { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -1097,7 +1097,7 @@ public class TmdbTvDetailsCreatedBy
     [JsonPropertyName("gender")]
     public int Gender { get; set; }
 
-    [JsonPropertyName("profilePath")]
+    [JsonPropertyName("profile_path")]
     public string? ProfilePath { get; set; } = null!;
 
 }
@@ -1117,13 +1117,13 @@ public class TmdbTvDetailsProductionCompanies
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("logoPath")]
+    [JsonPropertyName("logo_path")]
     public string? LogoPath { get; set; } = null!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    [JsonPropertyName("originCountry")]
+    [JsonPropertyName("origin_country")]
     public string OriginCountry { get; set; } = string.Empty;
 
 }
@@ -1140,7 +1140,7 @@ public class TmdbTvDetailsProductionCountries
 
 public class TmdbTvDetailsSpokenLanguages
 {
-    [JsonPropertyName("englishName")]
+    [JsonPropertyName("english_name")]
     public string EnglishName { get; set; } = string.Empty;
 
     [JsonPropertyName("iso_639_1")]
@@ -1197,7 +1197,7 @@ public class TmdbReleaseReleaseDates
     [JsonPropertyName("note")]
     public string? Note { get; set; } = null!;
 
-    [JsonPropertyName("releaseDate")]
+    [JsonPropertyName("release_date")]
     public string ReleaseDate { get; set; } = string.Empty;
 
     [JsonPropertyName("type")]
