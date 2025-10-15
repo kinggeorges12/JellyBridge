@@ -30,7 +30,9 @@ public class BlacklistItem
 
 public enum MediaType
 {
+    [JsonPropertyName("movie")]
     Movie = 0,
+    [JsonPropertyName("tv")]
     Tv
 }
 

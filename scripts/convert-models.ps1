@@ -685,7 +685,11 @@ function isBasicType(typeName) {
                                         }
                                         
                                         const enumClass = 'public enum ' + enumName + '\n{\n' +
-                                            enumValues.map((value, index) => '    ' + toPascalCase(value) + (index === 0 ? ' = 0' : '')).join(',\n') + '\n}';
+                                            enumValues.map((value, index) => {
+                                                const enumMember = '    ' + toPascalCase(value) + (index === 0 ? ' = 0' : '');
+                                                const jsonPropertyName = '    [JsonPropertyName("' + value + '")]\n';
+                                                return jsonPropertyName + enumMember;
+                                            }).join(',\n') + '\n}';
                                         
                                         csharpCode += enumClass + '\n\n';
                                         addTranspiledType(enumName, namespace);
@@ -1134,7 +1138,11 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
             
             // Generate enum and return it (will be added to transpiled types when written to file)
             const enumClass = 'public enum ' + finalTypeName + '\n{\n' +
-                enumValues.map(value => '    ' + toPascalCase(value)).join(',\n') + '\n}';
+                enumValues.map((value, index) => {
+                    const enumMember = '    ' + toPascalCase(value) + (index === 0 ? ' = 0' : '');
+                    const jsonPropertyName = '    [JsonPropertyName("' + value + '")]\n';
+                    return jsonPropertyName + enumMember;
+                }).join(',\n') + '\n}';
                 console.log('Generated ' + finalTypeName + ' locally');
             return enumClass;  // Return the enum directly
         }
@@ -1203,8 +1211,16 @@ function convertEnumToCSharp(enumNode, sourceFile) {
         member.initializer && member.initializer.kind === ts.SyntaxKind.StringLiteral
     );
     
+    // Check if enum has explicit values (not just ascending integers)
+    const hasExplicitValues = members.some(member => 
+        member.initializer && (
+            member.initializer.kind === ts.SyntaxKind.StringLiteral ||
+            member.initializer.kind === ts.SyntaxKind.NumericLiteral
+        )
+    );
+    
     if (hasStringValues) {
-        // Convert string enum to C# enum with numeric values
+        // Convert string enum to C# enum with numeric values and JsonPropertyName attributes
         let csharpClass = 'public enum ' + enumName + '\n{\n';
         
         members.forEach((member, index) => {
@@ -1213,6 +1229,8 @@ function convertEnumToCSharp(enumNode, sourceFile) {
             
             if (member.initializer && member.initializer.kind === ts.SyntaxKind.StringLiteral) {
                 memberValue = ' = ' + index; // Use index for enum values
+                // Add JsonPropertyName attribute for string enums
+                csharpClass += '    [JsonPropertyName("' + member.initializer.text + '")]\n';
             } else {
                 memberValue = index === 0 ? ' = 0' : ''; // First enum value starts at 0
             }
@@ -1237,6 +1255,8 @@ function convertEnumToCSharp(enumNode, sourceFile) {
             if (member.initializer) {
                 if (member.initializer.kind === ts.SyntaxKind.StringLiteral) {
                     memberValue = ' = "' + member.initializer.text + '"';
+                    // Add JsonPropertyName attribute for string values
+                    csharpEnum += '    [JsonPropertyName("' + member.initializer.text + '")]\n';
                 } else if (member.initializer.kind === ts.SyntaxKind.NumericLiteral) {
                     memberValue = ' = ' + member.initializer.text;
                 }

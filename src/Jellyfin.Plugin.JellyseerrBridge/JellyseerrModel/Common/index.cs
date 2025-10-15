@@ -26,7 +26,9 @@ public class Library
 
 public enum LibraryType
 {
+    [JsonPropertyName("show")]
     Show = 0,
+    [JsonPropertyName("movie")]
     Movie
 }
 
@@ -235,15 +237,21 @@ public class SonarrSettings : DVRSettings
 
 public enum SeriesType
 {
+    [JsonPropertyName("standard")]
     Standard = 0,
+    [JsonPropertyName("daily")]
     Daily,
+    [JsonPropertyName("anime")]
     Anime
 }
 
 public enum AnimeSeriesType
 {
+    [JsonPropertyName("standard")]
     Standard = 0,
+    [JsonPropertyName("daily")]
     Daily,
+    [JsonPropertyName("anime")]
     Anime
 }
 
@@ -624,32 +632,55 @@ public class AllSettings
 
 public enum NotificationAgentKey
 {
+    [JsonPropertyName("discord")]
     DISCORD = 0,
+    [JsonPropertyName("email")]
     EMAIL = 1,
+    [JsonPropertyName("gotify")]
     GOTIFY = 2,
+    [JsonPropertyName("ntfy")]
     NTFY = 3,
+    [JsonPropertyName("pushbullet")]
     PUSHBULLET = 4,
+    [JsonPropertyName("pushover")]
     PUSHOVER = 5,
+    [JsonPropertyName("slack")]
     SLACK = 6,
+    [JsonPropertyName("telegram")]
     TELEGRAM = 7,
+    [JsonPropertyName("webhook")]
     WEBHOOK = 8,
+    [JsonPropertyName("webpush")]
     WEBPUSH = 9
 }
 
 public enum JobId
 {
-    PlexRecentlyAddedScan,
+    [JsonPropertyName("plex-recently-added-scan")]
+    PlexRecentlyAddedScan = 0,
+    [JsonPropertyName("plex-full-scan")]
     PlexFullScan,
+    [JsonPropertyName("plex-watchlist-sync")]
     PlexWatchlistSync,
+    [JsonPropertyName("plex-refresh-token")]
     PlexRefreshToken,
+    [JsonPropertyName("radarr-scan")]
     RadarrScan,
+    [JsonPropertyName("sonarr-scan")]
     SonarrScan,
+    [JsonPropertyName("download-sync")]
     DownloadSync,
+    [JsonPropertyName("download-sync-reset")]
     DownloadSyncReset,
+    [JsonPropertyName("jellyfin-recently-added-scan")]
     JellyfinRecentlyAddedScan,
+    [JsonPropertyName("jellyfin-full-scan")]
     JellyfinFullScan,
+    [JsonPropertyName("image-cache-cleanup")]
     ImageCacheCleanup,
+    [JsonPropertyName("availability-sync")]
     AvailabilitySync,
+    [JsonPropertyName("process-blacklisted-tags")]
     ProcessBlacklistedTags
 }
 

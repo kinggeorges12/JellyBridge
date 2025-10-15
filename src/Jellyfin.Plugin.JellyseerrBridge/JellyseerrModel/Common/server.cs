@@ -15,7 +15,9 @@ public enum MediaServerType
 
 public enum ServerType
 {
+    [JsonPropertyName("Jellyfin")]
     JELLYFIN = 0,
+    [JsonPropertyName("Emby")]
     EMBY = 1
 }
 

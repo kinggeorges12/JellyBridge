@@ -20,7 +20,9 @@ public enum MediaRequestStatus
 
 public enum MediaType
 {
+    [JsonPropertyName("movie")]
     MOVIE = 0,
+    [JsonPropertyName("tv")]
     TV = 1
 }
 

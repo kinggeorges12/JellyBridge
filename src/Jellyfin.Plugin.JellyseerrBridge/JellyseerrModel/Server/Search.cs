@@ -145,9 +145,13 @@ public class PersonResult
 
 public enum MediaType
 {
-    Tv,
+    [JsonPropertyName("tv")]
+    Tv = 0,
+    [JsonPropertyName("movie")]
     Movie,
+    [JsonPropertyName("person")]
     Person,
+    [JsonPropertyName("collection")]
     Collection
 }
 
