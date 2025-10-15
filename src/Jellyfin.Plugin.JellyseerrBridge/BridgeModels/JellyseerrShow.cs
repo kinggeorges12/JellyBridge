@@ -24,6 +24,12 @@ public class JellyseerrShow
       IEquatable<Series>
 {
     /// <summary>
+    /// The library type for shows.
+    /// </summary>
+    [JsonIgnore]
+    public static string LibraryType => "Shows";
+
+    /// <summary>
     /// Jellyseerr-specific media information (download status, service IDs, etc.)
     /// </summary>
     [JsonPropertyName("mediaInfo")]

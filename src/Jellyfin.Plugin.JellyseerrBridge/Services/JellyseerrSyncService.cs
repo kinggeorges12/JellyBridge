@@ -200,10 +200,10 @@ public partial class JellyseerrSyncService
             }
 
             // Process movies
-            var movieResults = await CreateFoldersAsync(allMovies, "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]");
+            var movieResults = await CreateFoldersAsync(allMovies);
 
             // Process TV shows
-            var showResults = await CreateFoldersAsync(allShows, "{Name} ({Year}) [tmdbid-{Id}] [{ExtraIdName}-{ExtraId}]");
+            var showResults = await CreateFoldersAsync(allShows);
 
             result.Success = true;
             result.MoviesResult = movieResults;
@@ -289,18 +289,18 @@ public partial class JellyseerrSyncService
 
 
     /// <summary>
-    /// Create folders and JSON metadata files for movies or TV shows.
+    /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items, string template) 
+    private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
     {
-        var config = Plugin.GetConfiguration();
         var result = new ProcessResult();
         
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        var libraryPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
-        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.CreateSeparateLibraries)) ?? false;
+        
+        // Create folder manager for this type
+        var folderManager = new JellyseerrFolderManager<TJellyseerr>(_logger, baseDirectory);
         
         foreach (var item in items)
         {
@@ -308,36 +308,32 @@ public partial class JellyseerrSyncService
             {
                 result.Processed++;
                 
-                // Create folder name using the template
-                var folderName = CreateFolderNameFromFormat(item, template);
-                if (string.IsNullOrEmpty(folderName))
-                {
-                    _logger.LogWarning("Skipping item with missing required data: {Item}", item);
-                    continue;
-                }
+                // Check if folder already exists
+                var itemDirectory = folderManager.GetItemDirectory(item);
+                var folderExists = Directory.Exists(itemDirectory);
 
-                // Determine directory path
-                var targetDirectory = createSeparateLibraries 
-                    ? Path.Combine(baseDirectory, libraryPrefix, folderName)
-                    : Path.Combine(baseDirectory, folderName);
-
-                // Create directory if it doesn't exist
-                if (!Directory.Exists(targetDirectory))
+                // Write metadata using folder manager
+                var success = await folderManager.WriteMetadataAsync(item);
+                
+                if (success)
                 {
-                    Directory.CreateDirectory(targetDirectory);
-                    result.Created++;
-                    result.ItemsAdded.Add(item);
-                    _logger.LogDebug("Created folder: {FolderName}", folderName);
+                    if (folderExists)
+                    {
+                        result.Updated++;
+                        result.ItemsUpdated.Add(item);
+                        _logger.LogDebug("Updated {Type} folder: {FolderName}", typeof(TJellyseerr).Name, folderManager.CreateFolderName(item));
+                    }
+                    else
+                    {
+                        result.Created++;
+                        result.ItemsAdded.Add(item);
+                        _logger.LogDebug("Created {Type} folder: {FolderName}", typeof(TJellyseerr).Name, folderManager.CreateFolderName(item));
+                    }
                 }
                 else
                 {
-                    result.Updated++;
-                    result.ItemsUpdated.Add(item);
-                    _logger.LogDebug("Folder already exists: {FolderName}", folderName);
+                    _logger.LogError("Failed to create folder for {Item}", item);
                 }
-
-                // Create JSON metadata file
-                await CreateMetadataFileAsync(item, targetDirectory);
             }
             catch (Exception ex)
             {
@@ -346,97 +342,6 @@ public partial class JellyseerrSyncService
         }
         
         return result;
-    }
-
-    
-    /// <summary>
-    /// Create folder name by filling template fields with item data using reflection.
-    /// Supports nested property access like {mediaInfo.tvdbId}.
-    /// </summary>
-    private string CreateFolderNameFromFormat<TJellyseerr>(TJellyseerr item, string template) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
-    {
-        var folderName = template;
-        
-        // Find all fields in the template
-        var fieldPattern = @"\{([^}]+)\}";
-        var matches = System.Text.RegularExpressions.Regex.Matches(template, fieldPattern);
-        
-        foreach (System.Text.RegularExpressions.Match match in matches)
-        {
-            var field = match.Groups[0].Value; // Full field like "{title}"
-            var propertyPath = match.Groups[1].Value; // Property path like "title" or "mediaInfo.tvdbId"
-            
-            var value = GetPropertyValue((IJellyseerrItem)item, propertyPath);
-            folderName = folderName.Replace(field, value);
-        }
-        
-        // Remove empty field blocks like [tvdbid-], [tmdbid-], [imdbid-] and empty parentheses ()
-        // Be more careful with spacing - don't remove spaces between title and ID when year is missing
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s*(\[[^]]*-\])\s*", " "); // Remove empty ID brackets but keep space
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\(\s*\)", ""); // Remove empty parentheses
-        folderName = System.Text.RegularExpressions.Regex.Replace(folderName, @"\s+", " "); // Normalize multiple spaces to single space
-        folderName = folderName.Trim(); // Remove leading/trailing spaces
-        
-        return SanitizeFileName(folderName);
-    }
-
-    /// <summary>
-    /// Get property value using reflection.
-    /// </summary>
-    private string GetPropertyValue(IJellyseerrItem item, string propertyPath)
-    {
-        if (item == null || string.IsNullOrEmpty(propertyPath))
-            return "";
-        
-        var currentObject = (object)item;
-        var pathParts = propertyPath.Split('.');
-        
-        foreach (var part in pathParts)
-        {
-            if (currentObject == null)
-                return "";
-            
-            var type = currentObject.GetType();
-            var property = type.GetProperty(part);
-            
-            if (property == null)
-                return "";
-            
-            currentObject = property.GetValue(currentObject);
-        }
-        
-        if (currentObject == null)
-            return "";
-        
-        // Convert to string
-        return currentObject.ToString() ?? "";
-    }
-
-    /// <summary>
-    /// Sanitize filename by removing invalid characters.
-    /// </summary>
-    private string SanitizeFileName(string fileName)
-    {
-        if (string.IsNullOrEmpty(fileName))
-            return string.Empty;
-
-        var invalidChars = Path.GetInvalidFileNameChars();
-        return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
-    }
-
-    /// <summary>
-    /// Create JSON metadata file for movies or TV shows.
-    /// </summary>
-    private async Task CreateMetadataFileAsync<TJellyseerr>(TJellyseerr item, string directoryPath) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
-    {
-        // Serialize the item directly as its specific type to preserve all properties
-        var json = JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
-        var filePath = Path.Combine(directoryPath, "metadata.json");
-        
-        await File.WriteAllTextAsync(filePath, json);
-        _logger.LogDebug("Created metadata file for {ItemType}: {Item}", typeof(TJellyseerr).Name, item);
     }
 }
 
