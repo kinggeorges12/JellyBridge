@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.215.0.0/JellyseerrBridge-0.215.0.0-DLL.zip",
+        "version": "0.215.0.0",
+        "timestamp": "2025-10-15T06:56:57.654Z",
+        "dependencies": [],
+        "checksum": "4CFCEF710FC29005BC7980AB209A6ADC",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.215.0.0 - Updated MediaInfo properties to use JellyseerrMediaTest instead of JellyseerrMedia for better JSON deserialization compatibility"
+      },
+      {
         "timestamp": "2025-10-15T06:40:58.383Z",
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.214.0.0/JellyseerrBridge-0.214.0.0-DLL.zip",
