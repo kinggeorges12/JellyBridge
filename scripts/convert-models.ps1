@@ -890,7 +890,8 @@ function isBasicType(typeName) {
                 } else if (modelType === 'Api') {
                     usingStatements += 'using ' + baseNamespace + ';\n';
                 } else if (modelType === 'Common') {
-                    usingStatements += 'using ' + baseNamespace + '.Server;\n';
+                    // Common models don't need Server using statements - they should be independent
+                    // usingStatements += 'using ' + baseNamespace + '.Server;\n';
                 }
                 
                 // TODO: Add cross-namespace using statements based on referenced types
