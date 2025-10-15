@@ -47,10 +47,19 @@ public class JellyseerrBridgeService
                 _logger.LogInformation("[JellyseerrBridge] Processing library: {LibraryName} (Type: {LibraryType})", 
                     library.Name, library.CollectionType);
 
+                // Only scan libraries that are compatible with the target item type
+                var libraryCollectionType = library.CollectionType?.ToString();
+                if (!JellyfinTypeMapping.IsLibraryTypeCompatible<T>(libraryCollectionType))
+                {
+                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - type {LibraryType} not compatible with {ItemType}", 
+                        library.Name, library.CollectionType, typeof(T).Name);
+                    continue;
+                }
+
                 // Get items from this library
                 var query = new InternalItemsQuery
                 {
-                    IncludeItemTypes = new[] { typeof(T).Name == "Movie" ? BaseItemKind.Movie : BaseItemKind.Series },
+                    IncludeItemTypes = new[] { JellyfinTypeMapping.GetBaseItemKind<T>() },
                     Recursive = true
                 };
 
@@ -319,5 +328,43 @@ public class JellyseerrBridgeService
             _logger.LogError(ex, "Error during library scan test");
             return new List<IJellyseerrMedia>();
         }
+    }
+}
+
+/// <summary>
+/// Maps between Jellyfin item types, collection type strings, and BaseItemKind enums.
+/// </summary>
+public class JellyfinTypeMapping
+{
+    // Collection type string constants
+    public const string MoviesCollectionType = "movies";
+    public const string TvShowsCollectionType = "tvshows";
+
+    // BaseItemKind constants
+    public static readonly BaseItemKind MovieKind = BaseItemKind.Movie;
+    public static readonly BaseItemKind SeriesKind = BaseItemKind.Series;
+
+    public static bool IsLibraryTypeCompatible<T>(string? libraryCollectionType) where T : BaseItem
+    {
+        if (string.IsNullOrEmpty(libraryCollectionType))
+            return false;
+
+        // Check if the collection type string actually contains the relevant keywords
+        return typeof(T) switch
+        {
+            Type t when t == typeof(Movie) => libraryCollectionType.Contains(MoviesCollectionType, StringComparison.OrdinalIgnoreCase),
+            Type t when t == typeof(Series) => libraryCollectionType.Contains(TvShowsCollectionType, StringComparison.OrdinalIgnoreCase),
+            _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
+        };
+    }
+
+    public static BaseItemKind GetBaseItemKind<T>() where T : BaseItem
+    {
+        return typeof(T) switch
+        {
+            Type t when t == typeof(Movie) => MovieKind,
+            Type t when t == typeof(Series) => SeriesKind,
+            _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
+        };
     }
 }

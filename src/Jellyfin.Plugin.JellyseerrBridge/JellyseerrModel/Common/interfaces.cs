@@ -429,12 +429,19 @@ public class TmdbVideo
 
 public enum TmdbVideoType
 {
+    [JsonPropertyName("Clip")]
     Clip = 0,
+    [JsonPropertyName("Teaser")]
     Teaser,
+    [JsonPropertyName("Trailer")]
     Trailer,
+    [JsonPropertyName("Featurette")]
     Featurette,
+    [JsonPropertyName("Opening Credits")]
     OpeningCredits,
+    [JsonPropertyName("Behind the Scenes")]
     BehindTheScenes,
+    [JsonPropertyName("Bloopers")]
     Bloopers
 }
 

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "changelog": "v0.204.0.0 - Improved library filtering with static type mapping, regenerated models with JsonPropertyName attributes, and enhanced collection type compatibility checking",
+        "targetAbi": "10.10.7.0",
+        "checksum": "FBF536B783F2AD9657F02DEEBAC88255",
+        "version": "0.204.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.204.0.0/JellyseerrBridge-0.204.0.0-DLL.zip",
+        "timestamp": "2025-10-15T00:24:36.188Z"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "checksum": "F63189E96FEF10C6E019C548DE21C9F6",
         "timestamp": "2025-10-14T23:03:07.474Z",
