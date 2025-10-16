@@ -22,7 +22,8 @@ public class PlaceholderVideoGenerator
         _mediaEncoder = mediaEncoder;
         
         // Assets are embedded in the plugin assembly
-        _assetsPath = Path.Combine(Path.GetDirectoryName(typeof(PlaceholderVideoGenerator).Assembly.Location)!, "Assets");
+        _assetsPath = Path.Combine(Path.GetTempPath(), "JellyseerrBridge", "assets");
+        Directory.CreateDirectory(_assetsPath);
         
         _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
             _mediaEncoder.EncoderPath, _assetsPath);
@@ -128,15 +129,9 @@ public class PlaceholderVideoGenerator
             var targetFile = assetStem + ".mp4";
             var targetPath = Path.Combine(targetDirectory, targetFile);
 
-            if (File.Exists(targetPath))
-            {
-                _logger.LogDebug("[PlaceholderVideoGenerator] Placeholder already exists at {TargetPath}", targetPath);
-                return true;
-            }
-
             // Copy cached file to target directory
-            File.Copy(cachedPath, targetPath, overwrite: false);
-            _logger.LogInformation("[PlaceholderVideoGenerator] Copied placeholder to {TargetPath}", targetPath);
+            File.Copy(cachedPath, targetPath, overwrite: true);
+            _logger.LogInformation("[PlaceholderVideoGenerator] Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
             return true;
         }
         catch (Exception ex)
@@ -144,6 +139,45 @@ public class PlaceholderVideoGenerator
             _logger.LogError(ex, "[PlaceholderVideoGenerator] Error generating placeholder video: {AssetName} -> {TargetDirectory}", 
                 assetName, targetDirectory);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Ensures an embedded asset is extracted to the temp directory.
+    /// </summary>
+    /// <param name="assetName">The asset filename (e.g., "movie.png")</param>
+    /// <returns>Path to the extracted asset file, or null if failed</returns>
+    private async Task<string?> EnsureAssetExtractedAsync(string assetName)
+    {
+        try
+        {
+            var assetPath = Path.Combine(_assetsPath, assetName);
+            
+            if (File.Exists(assetPath))
+            {
+                return assetPath;
+            }
+            
+            // Extract embedded resource
+            var resourceName = $"Jellyfin.Plugin.JellyseerrBridge.Assets.{assetName}";
+            using var stream = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceStream(resourceName);
+            
+            if (stream == null)
+            {
+                _logger.LogError("[PlaceholderVideoGenerator] Embedded asset not found: {ResourceName}", resourceName);
+                return null;
+            }
+            
+            using var fileStream = File.Create(assetPath);
+            await stream.CopyToAsync(fileStream);
+            
+            _logger.LogDebug("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
+            return assetPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[PlaceholderVideoGenerator] Failed to extract asset: {AssetName}", assetName);
+            return null;
         }
     }
 
@@ -157,11 +191,11 @@ public class PlaceholderVideoGenerator
     {
         try
         {
-            var assetPath = Path.Combine(_assetsPath, assetName);
+            var assetPath = await EnsureAssetExtractedAsync(assetName);
             
-            if (!File.Exists(assetPath))
+            if (string.IsNullOrEmpty(assetPath))
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Asset file not found: {AssetPath}", assetPath);
+                _logger.LogError("[PlaceholderVideoGenerator] Asset file not found: {AssetName}", assetName);
                 return false;
             }
 
