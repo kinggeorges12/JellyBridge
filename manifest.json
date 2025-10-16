@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "checksum": "BF719E39D4044ECE45516AD0A6F94419",
+        "dependencies": [],
+        "version": "0.229.0.0",
+        "timestamp": "2025-10-16T00:25:26.823Z",
+        "changelog": "v0.229.0.0 - v0.229.0.0 - Enhanced debugging and frontend improvements - Added detailed debugging messages to show individual Jellyfin items being read from libraries with their TMDB/TVDB/IMDB provider IDs for better troubleshooting, added TMDB ID display to bridge items in frontend library scan test results for easier identification and cross-referencing",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.229.0.0/JellyseerrBridge-0.229.0.0-DLL.zip"
+      },
+      {
         "checksum": "04BB1328477DF98866FC4832B8F57D32",
         "changelog": "v0.228.0.0 - v0.228.0.0 - Fixed stack overflow in ToString() method - Removed problematic ToString() method from IJellyseerrItem interface to prevent circular references that caused stack overflow during logging, moved folder naming logic directly into JellyseerrFolderManager.CreateFolderName() method for safer string building, eliminated infinite recursion issues when Serilog serializes bridge items for logging",
         "timestamp": "2025-10-15T23:55:24.215Z",

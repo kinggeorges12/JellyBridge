@@ -373,7 +373,8 @@ function initializeAdvancedSettings(page) {
                         result.bridgeItems.forEach((item, index) => {
                             const yearText = item._year ? ` (${item._year})` : '';
                             const name = item._mediaName || 'undefined';
-                            resultText += `\n${index + 1}. ${name}${yearText} [${item.mediaType}]`;
+                            const tmdbId = item.id ? ` [tmdbid-${item.id}]` : '';
+                            resultText += `\n${index + 1}. ${name}${yearText} [${item.mediaType}]${tmdbId}`;
                         });
                     } else {
                         resultText += `\n\nNo bridge items found.`;
