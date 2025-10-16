@@ -52,7 +52,12 @@ public static class JellyseerrFolderUtils
             var normalizedPath = Path.GetFullPath(pathToCheck);
             var normalizedSyncPath = Path.GetFullPath(directoryToCheck);
             
-            return normalizedPath.StartsWith(normalizedSyncPath, StringComparison.OrdinalIgnoreCase);
+            var result = normalizedPath.StartsWith(normalizedSyncPath, StringComparison.OrdinalIgnoreCase);
+            
+            // Debug logging to help troubleshoot
+            System.Diagnostics.Debug.WriteLine($"[JellyseerrFolderUtils] IsPathInSyncDirectory: '{pathToCheck}' -> '{normalizedPath}' starts with '{normalizedSyncPath}' = {result}");
+            
+            return result;
         }
         catch (Exception)
         {

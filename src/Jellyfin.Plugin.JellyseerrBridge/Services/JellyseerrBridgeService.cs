@@ -75,9 +75,16 @@ public class JellyseerrBridgeService
                 var hasSyncDirectoryLocation = library.Locations?.Any(location => 
                     JellyseerrFolderUtils.IsPathInSyncDirectory(location)) == true;
                 
-                if (hasSyncDirectoryLocation)
+                // Also skip libraries that appear to be the Jellyseerr library itself
+                var isJellyseerrLibrary = library.Name?.Contains("Jellyseerr", StringComparison.OrdinalIgnoreCase) == true ||
+                                        library.Name?.Contains("Bridge", StringComparison.OrdinalIgnoreCase) == true;
+                
+                _logger.LogDebug("[JellyseerrBridge] Library {LibraryName} locations: {Locations}, HasSyncDirectory: {HasSyncDirectory}, IsJellyseerrLibrary: {IsJellyseerrLibrary}", 
+                    library.Name, string.Join(", ", library.Locations ?? new string[0]), hasSyncDirectoryLocation, isJellyseerrLibrary);
+                
+                if (hasSyncDirectoryLocation || isJellyseerrLibrary)
                 {
-                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - monitors Jellyseerr sync directory", 
+                    _logger.LogInformation("[JellyseerrBridge] Skipping library {LibraryName} - monitors Jellyseerr sync directory or is Jellyseerr library", 
                         library.Name);
                     continue;
                 }
