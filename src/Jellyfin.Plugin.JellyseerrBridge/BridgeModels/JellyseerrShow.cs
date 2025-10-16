@@ -19,9 +19,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// </summary>
 public class JellyseerrShow 
     : TmdbTvResult, 
-      IJellyseerrItem,
-      IEquatable<JellyseerrShow>, 
-      IEquatable<Series>
+      IJellyseerrItem
 {
     /// <summary>
     /// The library type for shows.
@@ -104,18 +102,9 @@ public class JellyseerrShow
     public string ExtraIdName => "tvdbid";
 
     /// <summary>
-    /// Equality comparison with another JellyseerrShow.
-    /// </summary>
-    public bool Equals(JellyseerrShow? other)
-    {
-        if (other is null) return false;
-        return Id == other.Id;
-    }
-
-    /// <summary>
     /// Equality comparison with a Jellyfin Series item.
     /// </summary>
-    public bool Equals3(Series? other)
+    public bool EqualsSeries(Series? other)
     {
         if (other is null) return false;
         
@@ -136,23 +125,17 @@ public class JellyseerrShow
         return false;
     }
 
-    public bool Equals(Series? other)
-    {
-        if (other is null) return false;
-        return Equals3(other);
-    }
-
     /// <summary>
     /// Equality comparison with a Jellyfin BaseItem (Series).
     /// </summary>
-    public bool Equals2(BaseItem? other)
+    public bool EqualsItem(BaseItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Series items
         if (other is not Series series) return false;
         
-        return Equals3(series);
+        return EqualsSeries(series);
     }
     
     /// <summary>

@@ -95,13 +95,5 @@ public interface IJellyseerrItem
         return string.Join(" ", parts);
     }
 
-    public bool Equals2(BaseItem? other)
-    {
-        if (other is null) return false;
-        
-        // Only compare with BaseItem items
-        if (other is not BaseItem baseItem) return false;
-        
-        return Equals2(baseItem);
-    }
+    public abstract bool EqualsItem(BaseItem? other);
 }

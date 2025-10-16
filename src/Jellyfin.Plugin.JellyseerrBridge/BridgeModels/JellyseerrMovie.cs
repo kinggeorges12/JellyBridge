@@ -19,9 +19,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// </summary>
 public class JellyseerrMovie 
     : TmdbMovieResult, 
-      IJellyseerrItem,
-      IEquatable<JellyseerrMovie>, 
-      IEquatable<Movie>
+      IJellyseerrItem
 {
     /// <summary>
     /// The library type for movies.
@@ -101,18 +99,9 @@ public class JellyseerrMovie
     public string ExtraIdName => "imdbid";
 
     /// <summary>
-    /// Equality comparison with another JellyseerrMovie.
-    /// </summary>
-    public bool Equals(JellyseerrMovie? other)
-    {
-        if (other is null) return false;
-        return Id == other.Id;
-    }
-
-    /// <summary>
     /// Equality comparison with a Jellyfin Movie item.
     /// </summary>
-    public bool Equals3(Movie? other)
+    public bool EqualsMovie(Movie? other)
     {
         if (other is null) return false;
         
@@ -133,23 +122,17 @@ public class JellyseerrMovie
         return false;
     }
 
-    public bool Equals(Movie? other)
-    {
-        if (other is null) return false;
-        return Equals3(other);
-    }
-
     /// <summary>
     /// Equality comparison with a Jellyfin BaseItem (Movie).
     /// </summary>
-    public bool Equals2(BaseItem? other)
+    public bool EqualsItem(BaseItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Movie items
         if (other is not Movie movie) return false;
         
-        return Equals3(movie);
+        return EqualsMovie(movie);
     }
     
     /// <summary>
