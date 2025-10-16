@@ -10,6 +10,15 @@
     "versions": [
       {
         "targetAbi": "10.10.7.0",
+        "changelog": "v0.230.0.0 - v0.230.0.0 - Minor release for testing and debugging improvements",
+        "version": "0.230.0.0",
+        "checksum": "6FD91528DF5A2E4ED85C4B9DC37ABFBE",
+        "timestamp": "2025-10-16T00:40:44.686Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.230.0.0/JellyseerrBridge-0.230.0.0-DLL.zip",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.10.7.0",
         "checksum": "BF719E39D4044ECE45516AD0A6F94419",
         "dependencies": [],
         "version": "0.229.0.0",

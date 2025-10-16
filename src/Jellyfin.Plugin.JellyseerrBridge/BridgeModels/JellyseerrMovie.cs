@@ -145,4 +145,12 @@ public class JellyseerrMovie
         
         return Equals(movie);
     }
+    
+    /// <summary>
+    /// Returns the formatted string representation for automatic string conversion.
+    /// </summary>
+    public override string ToString()
+    {
+        return ((IJellyseerrItem)this).ToFolderString() ?? string.Empty;
+    }
 }
