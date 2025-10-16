@@ -219,6 +219,8 @@ public partial class JellyseerrSyncService
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
 
+            var matchedItems = await _bridgeService.LibraryScanAsync(allMovies, allShows);
+
             // Get the results
             result.Success = true;
             result.MoviesResult = await movieTask;
