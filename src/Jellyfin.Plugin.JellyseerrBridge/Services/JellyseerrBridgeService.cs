@@ -108,48 +108,9 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
-    /// Filter items to exclude those that already exist in main libraries.
-    /// </summary>
-    public async Task<List<TJellyseerr>> FilterItemsAsync<TJellyseerr, TExisting>(List<TJellyseerr> items, string itemTypeName) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
-        where TExisting : BaseItem
-    {
-        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
-        
-        if (!excludeFromMainLibraries)
-        {
-            _logger.LogInformation("[JellyseerrBridge] ExcludeFromMainLibraries is disabled - returning all {ItemCount} {ItemType}", items.Count, itemTypeName);
-            return items;
-        }
-
-        var existingItems = await GetExistingItemsAsync<TExisting>();
-        _logger.LogInformation("[JellyseerrBridge] Found {ExistingItemCount} existing {ItemType} in main libraries", existingItems.Count, itemTypeName);
-
-        var filteredItems = new List<TJellyseerr>();
-        int skippedCount = 0;
-
-        foreach (var item in items)
-        {
-            if (existingItems.Any(existing => item.Equals(existing)))
-            {
-                _logger.LogInformation("[JellyseerrBridge] Skipping {ItemType} {ItemMediaName} - already exists in main libraries", itemTypeName, item.MediaName);
-                skippedCount++;
-                continue;
-            }
-
-            filteredItems.Add(item);
-        }
-
-        _logger.LogInformation("[JellyseerrBridge] Filtered {OriginalCount} {ItemType} to {FilteredCount} (skipped {SkippedCount})", 
-            items.Count, itemTypeName, filteredItems.Count, skippedCount);
-
-        return filteredItems;
-    }
-
-    /// <summary>
     /// Find matches between existing Jellyfin items and bridge metadata.
     /// </summary>
-    public async Task<List<TJellyseerr>> FindMatches<TJellyfin, TJellyseerr>(
+    public async Task<List<TJellyseerr>> IgnoreMatches<TJellyfin, TJellyseerr>(
         List<TJellyfin> existingItems, 
         List<TJellyseerr> bridgeMetadata) 
         where TJellyfin : BaseItem 
@@ -157,6 +118,7 @@ public class JellyseerrBridgeService
     {
         var matches = new List<TJellyseerr>();
         var folderManager = new JellyseerrFolderManager<TJellyseerr>();
+        var ignoreFileTasks = new List<Task>();
 
         foreach (var existingItem in existingItems)
         {
@@ -187,13 +149,16 @@ public class JellyseerrBridgeService
                 // Get the bridge folder path using the folder manager
                 var bridgeFolderPath = folderManager.GetItemDirectory(bridgeMatch);
                 
-                // Create .ignore file with Jellyfin item metadata
-                await CreateIgnoreFileAsync(bridgeFolderPath, existingItem);
+                // Add .ignore file creation task to the list
+                ignoreFileTasks.Add(CreateIgnoreFileAsync(bridgeFolderPath, existingItem));
 
                 // Add the actual bridge model to matches
                 matches.Add(bridgeMatch);
             }
         }
+        
+        // Await all ignore file creation tasks at the end
+        await Task.WhenAll(ignoreFileTasks);
 
         _logger.LogInformation("[JellyseerrBridge] Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
         return matches;
@@ -280,11 +245,108 @@ public class JellyseerrBridgeService
     public async Task<List<IJellyseerrItem>> TestLibraryScanAsync()
     {
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
 
         try
         {
             _logger.LogInformation("Testing Jellyfin library scan functionality against bridge folder metadata...");
+            
+            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            {
+                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
+                return new List<IJellyseerrItem>();
+            }
+
+            // Read bridge folder metadata
+            var (bridgeMovieMetadata, bridgeShowMetadata) = await ReadBridgeFolderMetadataAsync();
+
+            // Use LibraryScanAsync to find matches
+            var matchedItems = await LibraryScanAsync(bridgeMovieMetadata, bridgeShowMetadata);
+
+            _logger.LogInformation("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
+                bridgeMovieMetadata.Count, bridgeShowMetadata.Count, matchedItems.Count);
+
+            // Return all bridge items (not just matches) for test display purposes
+            var allBridgeItems = new List<IJellyseerrItem>();
+            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<IJellyseerrItem>());
+            allBridgeItems.AddRange(bridgeShowMetadata.Cast<IJellyseerrItem>());
+
+            return allBridgeItems;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during library scan test");
+            return new List<IJellyseerrItem>();
+        }
+    }
+
+    /// <summary>
+    /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
+    /// </summary>
+    public Task<int> DeleteAllIgnoreFilesAsync()
+    {
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        
+        try
+        {
+            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            {
+                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
+                return Task.FromResult(0);
+            }
+
+            _logger.LogInformation("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
+            
+            var deletedCount = 0;
+            var ignoreFiles = Directory.GetFiles(syncDirectory, ".ignore", SearchOption.AllDirectories);
+            
+            foreach (var ignoreFile in ignoreFiles)
+            {
+                try
+                {
+                    File.Delete(ignoreFile);
+                    deletedCount++;
+                    _logger.LogDebug("Deleted .ignore file: {IgnoreFile}", ignoreFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete .ignore file: {IgnoreFile}", ignoreFile);
+                }
+            }
+
+            _logger.LogInformation("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
+                deletedCount, ignoreFiles.Length);
+            
+            return Task.FromResult(deletedCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during .ignore file deletion");
+            return Task.FromResult(0);
+        }
+    }
+
+    /// <summary>
+    /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
+    /// </summary>
+    public async Task<List<IJellyseerrItem>> LibraryScanAsync(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
+    {
+        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
+        if (!excludeFromMainLibraries)
+        {
+            _logger.LogInformation("Including main libraries in JellyseerrBridge");
+            
+            // Delete all existing .ignore files when including main libraries
+            var deletedCount = await DeleteAllIgnoreFilesAsync();
+            _logger.LogInformation("Deleted {DeletedCount} .ignore files from JellyseerrBridge", deletedCount);
+            
+            return new List<IJellyseerrItem>();
+        }
+        _logger.LogInformation("Excluding main libraries from JellyseerrBridge");
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+
+        try
+        {
+            _logger.LogInformation("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
             
             // For test purposes, always scan for bridge items regardless of ExcludeFromMainLibraries setting
             // This allows users to see what bridge items exist even when the setting is disabled
@@ -296,25 +358,27 @@ public class JellyseerrBridgeService
             }
 
             // Get existing Jellyfin items
-            var existingMovies = await GetExistingItemsAsync<Movie>();
-            var existingShows = await GetExistingItemsAsync<Series>();
-
-            // Read bridge folder metadata
-            var (bridgeMovieMetadata, bridgeShowMetadata) = await ReadBridgeFolderMetadataAsync();
+            var existingMoviesTask = GetExistingItemsAsync<Movie>();
+            var existingShowsTask = GetExistingItemsAsync<Series>();
 
             // Compare and find matches
-            var movieMatches = await FindMatches(existingMovies, bridgeMovieMetadata);
-            var showMatches = await FindMatches(existingShows, bridgeShowMetadata);
+            var movieMatchesTask = IgnoreMatches(await existingMoviesTask, movies);
+            var showMatchesTask = IgnoreMatches(await existingShowsTask, shows);
+
+            // Wait for both to complete
+            await Task.WhenAll(movieMatchesTask, showMatchesTask);
+            var movieMatches = await movieMatchesTask;
+            var showMatches = await showMatchesTask;
 
             // Combine all bridge metadata into a single list
-            var allBridgeItems = new List<IJellyseerrItem>();
-            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<IJellyseerrItem>());
-            allBridgeItems.AddRange(bridgeShowMetadata.Cast<IJellyseerrItem>());
+            var matchedItems = new List<IJellyseerrItem>();
+            matchedItems.AddRange(movieMatches);
+            matchedItems.AddRange(showMatches);
 
-            _logger.LogInformation("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
-                bridgeMovieMetadata.Count, bridgeShowMetadata.Count, movieMatches.Count + showMatches.Count);
+            _logger.LogInformation("Library scan test completed. Matched {MatchedMovieCount}/{MovieCount} movies + {MatchedShowCount}/{ShowCount} shows = {TotalCount} total", 
+                movieMatches.Count, movies.Count, showMatches.Count, shows.Count, matchedItems.Count);
 
-            return allBridgeItems;
+            return matchedItems;
         }
         catch (Exception ex)
         {

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "changelog": "v0.234.0.0 - Refactored TestLibraryScanAsync to reuse LibraryScanAsync logic and added DeleteAllIgnoreFilesAsync function for cleaning up .ignore files when including main libraries",
+        "version": "0.234.0.0",
+        "timestamp": "2025-10-16T06:49:46.595Z",
+        "checksum": "A002BA176FD1DCAE78D82767E893A13F",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.234.0.0/JellyseerrBridge-0.234.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "changelog": "v0.233.0.0 - Improved bridge folder path resolution using direct folder manager construction and enhanced .ignore file debugging with comprehensive logging",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.233.0.0/JellyseerrBridge-0.233.0.0-DLL.zip",
         "version": "0.233.0.0",
