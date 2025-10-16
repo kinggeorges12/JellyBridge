@@ -233,13 +233,6 @@
                             <div class="fieldDescription">When enabled, the Jellyseerr library will exclude streaming movies and shows that appear in your Jellyfin libraries. Enabling this option will create a .ignore file (containing Jellyfin metadata) in the movie or show directory.</div>
                         </div>
 
-                        <div>
-                            <button is="emby-button" type="button" id="testLibraryScan" class="raised button block emby-button">
-                                <span>Test Library Scan</span>
-                            </button>
-                            <div class="fieldDescription">Test the library scanning functionality to see what content would be excluded from main libraries.</div>
-                            <div id="testLibraryScanResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
-                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -337,6 +330,14 @@
                             <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
                                 <span>Manual Sync</span>
                             </button>
+                        </div>
+                        
+                        <div>
+                            <button is="emby-button" type="button" id="testLibraryScan" class="raised button block emby-button">
+                                <span>Test Library Scan</span>
+                            </button>
+                            <div class="fieldDescription">Test the library scanning functionality to see what content would be excluded from main libraries.</div>
+                            <div id="testLibraryScanResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
                     </details>
 

@@ -145,4 +145,12 @@ public class JellyseerrShow
     {
         return ((IJellyseerrItem)this).ToFolderString() ?? string.Empty;
     }
+    
+    /// <summary>
+    /// Returns a hash code for the show that can be used for matching.
+    /// </summary>
+    public int GetItemHashCode()
+    {
+        return HashCode.Combine(Id, MediaName, Year, MediaType);
+    }
 }

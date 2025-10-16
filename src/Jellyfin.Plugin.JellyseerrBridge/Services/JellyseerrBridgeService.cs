@@ -28,21 +28,7 @@ public class ProcessResult
 
     public override string ToString()
     {
-        var details = new List<string>();
-        
-        if (ItemsAdded.Count > 0)
-        {
-            var addedNames = ItemsAdded.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
-            details.Add($"Added: {string.Join(", ", addedNames)}");
-        }
-        
-        if (ItemsUpdated.Count > 0)
-        {
-            var updatedNames = ItemsUpdated.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
-            details.Add($"Updated: {string.Join(", ", updatedNames)}");
-        }
-        
-        return string.Join("\n", details);
+        return $"Created: {Created}, Updated: {Updated}";
     }
 }
 
@@ -445,16 +431,6 @@ public class JellyseerrBridgeService
                 
                 if (success)
                 {
-                    // Ensure placeholder video exists for this item directory
-                    try
-                    {
-                        var ok = await _placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderName);
-                        _logger.LogInformation("[JellyseerrBridge] Placeholder video {Status} for folder: {Folder}", ok ? "ensured" : "failed", folderName);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "[JellyseerrBridge] Failed to ensure placeholder video for {Folder}", folderName);
-                    }
                     if (folderExists)
                     {
                         result.Updated++;
@@ -485,6 +461,79 @@ public class JellyseerrBridgeService
         
         _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
             typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// Creates placeholder videos only for items that are NOT in the ignored items list.
+    /// </summary>
+    public async Task<ProcessResult> CreatePlaceholderVideosAsync<TJellyseerr>(
+        List<TJellyseerr> allItems, 
+        List<TJellyseerr> ignoredItems) 
+        where TJellyseerr : class, IJellyseerrItem
+    {
+        var result = new ProcessResult();
+        var folderManager = new JellyseerrFolderManager<TJellyseerr>();
+        
+        // Create a hash set of ignored items for fast lookup
+        var ignoredHashes = new HashSet<int>(ignoredItems.Select(item => item.GetItemHashCode()));
+        
+        _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: Processing {TotalCount} items, {IgnoredCount} ignored, {PlaceholderCount} will get placeholders", 
+            allItems.Count, ignoredItems.Count, allItems.Count - ignoredItems.Count);
+        
+        foreach (var item in allItems)
+        {
+            try
+            {
+                result.Processed++;
+                
+                // Skip if this item is in the ignored list
+                if (ignoredHashes.Contains(item.GetItemHashCode()))
+                {
+                    _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Skipping ignored item: {ItemName}", item.MediaName);
+                    continue;
+                }
+                
+                // Get the folder path for this item
+                var folderPath = folderManager.GetItemDirectory(item);
+                
+                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                {
+                    _logger.LogWarning("[JellyseerrBridge] CreatePlaceholderVideosAsync: Folder does not exist for {ItemName}: {FolderPath}", 
+                        item.MediaName, folderPath);
+                    continue;
+                }
+                
+                // Create placeholder video based on media type
+                bool success = false;
+                if (item is JellyseerrMovie)
+                {
+                    success = await _placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath);
+                }
+                else if (item is JellyseerrShow)
+                {
+                    success = await _placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath);
+                }
+                
+                if (success)
+                {
+                    result.Created++;
+                    _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrBridge] CreatePlaceholderVideosAsync: ❌ Failed to create placeholder video for {ItemName}", item.MediaName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] CreatePlaceholderVideosAsync: ❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
+            }
+        }
+        
+        _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: Completed - Processed: {Processed}, Created: {Created}", 
+            result.Processed, result.Created);
         
         return result;
     }
