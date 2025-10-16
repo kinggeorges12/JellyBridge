@@ -70,10 +70,11 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     private readonly ILogger _logger;
     private readonly string _baseDirectory;
 
-    public JellyseerrFolderManager(ILogger logger, string baseDirectory)
+    public JellyseerrFolderManager(string? baseDirectory = null)
     {
-        _logger = logger;
-        _baseDirectory = baseDirectory;
+        var loggerFactory = Plugin.Instance?.LoggerFactory;
+        _logger = loggerFactory?.CreateLogger<JellyseerrFolderManager<TJellyseerr>>() ?? throw new InvalidOperationException("Cannot create logger");
+        _baseDirectory = baseDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
     }
 
     /// <summary>
@@ -134,18 +135,11 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     public async Task<List<TJellyseerr>> ReadMetadataAsync()
     {
         var items = new List<TJellyseerr>();
-        var typeFolder = GetLibraryType();
-        var typeDirectory = Path.Combine(_baseDirectory, typeFolder);
-
-        if (!Directory.Exists(typeDirectory))
-        {
-            _logger.LogDebug("[JellyseerrFolderManager] Type directory does not exist: {TypeDirectory}", typeDirectory);
-            return items;
-        }
+        var typeDirectory = GetItemDirectory();
 
         try
         {
-            var directories = Directory.GetDirectories(typeDirectory, "*", SearchOption.TopDirectoryOnly);
+            var directories = Directory.GetDirectories(GetItemDirectory(), "*", SearchOption.TopDirectoryOnly);
             
             foreach (var directory in directories)
             {
@@ -155,33 +149,33 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogDebug("[JellyseerrFolderManager] Reading {Type} metadata from {MetadataFile}: {Json}", typeFolder, metadataFile, json);
+                        _logger.LogDebug("[JellyseerrFolderManager] Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                         
                         var item = JellyseerrJsonSerializer.Deserialize<TJellyseerr>(json);
                         if (item != null)
                         {
-                            _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized {Type} - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                                typeFolder, item.MediaName, item.Id, item.MediaType, item.Year);
+                            _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                item.MediaName, item.Id, item.MediaType, item.Year);
                             items.Add(item);
                         }
                         else
                         {
-                            _logger.LogWarning("[JellyseerrFolderManager] Failed to deserialize {Type} from {MetadataFile}", typeFolder, metadataFile);
+                            _logger.LogWarning("[JellyseerrFolderManager] Failed to deserialize from {MetadataFile}", metadataFile);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "[JellyseerrFolderManager] Error reading {Type} metadata file: {MetadataFile}", typeFolder, metadataFile);
+                        _logger.LogWarning(ex, "[JellyseerrFolderManager] Error reading metadata file: {MetadataFile}", metadataFile);
                     }
                 }
             }
 
-            _logger.LogInformation("[JellyseerrFolderManager] Read {Count} {Type} items from {TypeDirectory}", 
-                items.Count, typeFolder, typeDirectory);
+            _logger.LogInformation("[JellyseerrFolderManager] Read {Count} items from {TypeDirectory}", 
+                items.Count, typeDirectory);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[JellyseerrFolderManager] Error reading {Type} metadata from {TypeDirectory}", typeFolder, typeDirectory);
+            _logger.LogError(ex, "[JellyseerrFolderManager] Error reading metadata from {TypeDirectory}", typeDirectory);
         }
 
         return items;
@@ -194,22 +188,20 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     {
         try
         {
-            var typeFolder = GetLibraryType();
-            var folderName = CreateFolderName(item);
-            var targetDirectory = Path.Combine(_baseDirectory, typeFolder, folderName);
+            var targetDirectory = GetItemDirectory(item);
 
             // Create directory if it doesn't exist
             if (!Directory.Exists(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
-                _logger.LogDebug("[JellyseerrFolderManager] Created {Type} directory: {TargetDirectory}", typeFolder, targetDirectory);
+                _logger.LogDebug("[JellyseerrFolderManager] Created directory: {TargetDirectory}", targetDirectory);
             }
 
             var json = JellyseerrJsonSerializer.Serialize(item);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             
             await File.WriteAllTextAsync(metadataFile, json);
-            _logger.LogDebug("[JellyseerrFolderManager] Wrote {Type} metadata to {MetadataFile}", typeFolder, metadataFile);
+            _logger.LogDebug("[JellyseerrFolderManager] Wrote metadata to {MetadataFile}", metadataFile);
             
             return true;
         }
@@ -223,9 +215,13 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
     /// <summary>
     /// Get the directory path for a specific item.
     /// </summary>
-    public string GetItemDirectory(TJellyseerr item)
+    public string GetItemDirectory(TJellyseerr? item = null)
     {
         var typeFolder = GetLibraryType();
+        if (item == null)
+        {
+            return Path.Combine(_baseDirectory, typeFolder);
+        }
         var folderName = CreateFolderName(item);
         return Path.Combine(_baseDirectory, typeFolder, folderName);
     }

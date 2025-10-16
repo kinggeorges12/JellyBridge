@@ -210,20 +210,24 @@ public partial class JellyseerrSyncService
 
             // Process movies
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
-            var movieResults = await CreateFoldersAsync(allMovies);
+            var movieTask = CreateFoldersAsync(allMovies);
 
             // Process TV shows
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
-            var showResults = await CreateFoldersAsync(allShows);
+            var showTask = CreateFoldersAsync(allShows);
 
+            // Wait for both to complete
+            await Task.WhenAll(movieTask, showTask);
+
+            // Get the results
             result.Success = true;
-            result.MoviesResult = movieResults;
-            result.ShowsResult = showResults;
+            result.MoviesResult = await movieTask;
+            result.ShowsResult = await showTask;
             result.Message = "Folder structure creation completed successfully";
             result.Details = result.ToString();
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
-                movieResults.Created, movieResults.Updated, showResults.Created, showResults.Updated);
+                result.MoviesResult.Created, result.MoviesResult.Updated, result.ShowsResult.Created, result.ShowsResult.Updated);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -315,7 +319,7 @@ public partial class JellyseerrSyncService
             typeof(TJellyseerr).Name, baseDirectory, items.Count);
         
         // Create folder manager for this type
-        var folderManager = new JellyseerrFolderManager<TJellyseerr>(_logger, baseDirectory);
+        var folderManager = new JellyseerrFolderManager<TJellyseerr>();
         
         foreach (var item in items)
         {
