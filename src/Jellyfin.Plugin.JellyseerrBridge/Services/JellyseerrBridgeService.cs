@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Controller.Dto;
 using System.Text.Json;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
@@ -21,11 +22,13 @@ public class JellyseerrBridgeService
 {
     private readonly ILogger<JellyseerrBridgeService> _logger;
     private readonly ILibraryManager _libraryManager;
+    private readonly IDtoService _dtoService;
 
-    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager)
+    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService)
     {
         _logger = logger;
         _libraryManager = libraryManager;
+        _dtoService = dtoService;
     }
 
     /// <summary>
@@ -108,7 +111,7 @@ public class JellyseerrBridgeService
     /// Filter items to exclude those that already exist in main libraries.
     /// </summary>
     public async Task<List<TJellyseerr>> FilterItemsAsync<TJellyseerr, TExisting>(List<TJellyseerr> items, string itemTypeName) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
         where TExisting : BaseItem
     {
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
@@ -150,7 +153,7 @@ public class JellyseerrBridgeService
         List<TJellyfin> existingItems, 
         List<TJellyseerr> bridgeMetadata) 
         where TJellyfin : BaseItem 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var matches = new List<TJellyseerr>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -160,10 +163,10 @@ public class JellyseerrBridgeService
             _logger.LogDebug("[JellyseerrBridge] Checking existing item: {ItemName} (Id: {ItemId})", 
                 existingItem.Name, existingItem.Id);
             
-            // Use the built-in IEquatable<TJellyfin> implementation
+            // Use the custom EqualsItem implementation rather than Equals cause I don't trust compile-time resolution.
             var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => 
             {
-                var isMatch = bm.Equals2(existingItem);
+                var isMatch = bm.EqualsItem(existingItem);
                 
                 // Log detailed comparison info for debugging
                 var jellyfinType = existingItem.GetType().Name;
@@ -203,7 +206,7 @@ public class JellyseerrBridgeService
     /// Find the bridge folder path for a given item.
     /// </summary>
     public async Task<string?> FindBridgeFolderPathAsync<TJellyseerr>(string baseDirectory, TJellyseerr item) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
         {
@@ -253,7 +256,12 @@ public class JellyseerrBridgeService
         try
         {
             var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
-            var itemJson = JsonSerializer.Serialize(item, new JsonSerializerOptions {
+            
+            // Use DtoService to get a proper BaseItemDto with all metadata
+            var dtoOptions = new DtoOptions(); // Default constructor includes all fields
+            var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
+            
+            var itemJson = JsonSerializer.Serialize(itemDto, new JsonSerializerOptions {
                 WriteIndented = true
             });
 

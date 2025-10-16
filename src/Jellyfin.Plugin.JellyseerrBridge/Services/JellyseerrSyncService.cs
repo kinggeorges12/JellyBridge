@@ -304,7 +304,7 @@ public partial class JellyseerrSyncService
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
     private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem, IEquatable<TJellyseerr>
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var result = new ProcessResult();
         
