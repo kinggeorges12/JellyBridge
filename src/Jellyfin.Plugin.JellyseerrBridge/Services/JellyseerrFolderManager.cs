@@ -130,13 +130,14 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         var normalized = fileName.Normalize(NormalizationForm.FormKC);
 
         // Map common lookalikes to ASCII equivalents (colon, slashes, quotes, etc.)
-        var replacements = new Dictionary<char, char>
+        var charReplacements = new Dictionary<char, char>
         {
             { '：', ':' }, { '﹕', ':' }, { '꞉', ':' },
             { '／', '/' }, { '∕', '/' },
             { '＼', '\\' },
             { '？', '?' }, { '＊', '*' },
             { '＂', '"' },
+            { '’', '\'' }, { '‘', '\'' }, { 'ʼ', '\'' },
             { '＜', '<' }, { '＞', '>' },
             { '｜', '|' }
         };
@@ -144,7 +145,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         var sb = new StringBuilder(normalized.Length);
         foreach (var ch in normalized)
         {
-            if (replacements.TryGetValue(ch, out var mapped))
+            if (charReplacements.TryGetValue(ch, out var mapped))
             {
                 sb.Append(mapped);
             }
@@ -156,19 +157,30 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
 
         var mappedString = sb.ToString();
 
-        // Replace colons with the conventional separator using existing trailing space (": " -> " - ")
-        mappedString = mappedString.Replace(":", " -");
+        // Apply string-level replacements in a centralized loop
+        var stringReplacements = new (string from, string to)[]
+        {
+            ("\\u0027", "'"),
+            ("&#39;", "'"),
+            ("&apos;", "'"),
+            (":", " -") // Replace colons with conventional separator using existing trailing space
+        };
+        foreach (var (from, to) in stringReplacements)
+        {
+            mappedString = mappedString.Replace(from, to);
+        }
 
         // Remove invalid file name characters
         var invalidChars = Path.GetInvalidFileNameChars();
         var withoutInvalids = string.Join("_", mappedString.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
 
         // Replace any remaining undesirable unicode (control/private-use) with underscore
-        sb.Clear();
+        sb = new StringBuilder(withoutInvalids.Length);
+        var allowedPunctuation = new HashSet<char> { ' ', '-', '_', '.', '(', ')', '[', ']', '&', '\'' };
         foreach (var ch in withoutInvalids)
         {
             var category = char.GetUnicodeCategory(ch);
-            var isAllowed = char.IsLetterOrDigit(ch) || ch == ' ' || ch == '-' || ch == '_' || ch == '.' || ch == '(' || ch == ')' || ch == '[' || ch == ']';
+            var isAllowed = char.IsLetterOrDigit(ch) || allowedPunctuation.Contains(ch);
             var isSafeCategory = category != System.Globalization.UnicodeCategory.Control && category != System.Globalization.UnicodeCategory.PrivateUse;
 
             sb.Append(isAllowed && isSafeCategory ? ch : '_');
@@ -176,10 +188,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
 
         var cleaned = sb.ToString();
 
-        // Normalize whitespace and separators
+        // Normalize whitespace
         cleaned = Regex.Replace(cleaned, "\\s{2,}", " ");             // collapse multiple spaces
         cleaned = Regex.Replace(cleaned, "_+", "_");                  // collapse multiple underscores
-        cleaned = Regex.Replace(cleaned, "\\s*-\\s*", " - ");       // normalize space around hyphen separator
         cleaned = cleaned.Trim().Trim('-', '_', '.');
 
         return cleaned;
