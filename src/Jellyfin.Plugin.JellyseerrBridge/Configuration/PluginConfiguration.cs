@@ -44,6 +44,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RequestTimeout), 30 },
         { nameof(RetryAttempts), 3 },
         { nameof(EnableDebugLogging), false },
+        { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(Region), "US" },
         { nameof(NetworkMap), new List<NetworkEntry>
             {
@@ -146,6 +147,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to enable debug logging.
     /// </summary>
     public bool? EnableDebugLogging { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default duration (in seconds) for generated placeholder videos.
+    /// </summary>
+    public int? PlaceholderDurationSeconds { get; set; }
 
     /// <summary>
     /// Gets or sets the watch network region (ISO 3166-1 country code).

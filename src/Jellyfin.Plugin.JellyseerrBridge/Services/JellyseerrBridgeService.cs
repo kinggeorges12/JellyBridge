@@ -54,12 +54,14 @@ public class JellyseerrBridgeService
     private readonly ILogger<JellyseerrBridgeService> _logger;
     private readonly ILibraryManager _libraryManager;
     private readonly IDtoService _dtoService;
+    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
 
-    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService)
+    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator)
     {
         _logger = logger;
         _libraryManager = libraryManager;
         _dtoService = dtoService;
+        _placeholderVideoGenerator = placeholderVideoGenerator;
     }
 
     /// <summary>
@@ -456,6 +458,16 @@ public class JellyseerrBridgeService
                 
                 if (success)
                 {
+                    // Ensure placeholder video exists for this item directory
+                    try
+                    {
+                        var ok = await _placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderName);
+                        _logger.LogInformation("[JellyseerrBridge] Placeholder video {Status} for folder: {Folder}", ok ? "ensured" : "failed", folderName);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[JellyseerrBridge] Failed to ensure placeholder video for {Folder}", folderName);
+                    }
                     if (folderExists)
                     {
                         result.Updated++;
