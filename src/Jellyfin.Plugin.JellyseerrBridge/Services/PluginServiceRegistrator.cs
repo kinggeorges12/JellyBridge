@@ -28,6 +28,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             // Register the bridge service
             serviceCollection.AddScoped<JellyseerrBridgeService>();
             
+            // Register the library service
+            serviceCollection.AddScoped<JellyseerrLibraryService>();
+            
             // Register the sync service
             serviceCollection.AddScoped<JellyseerrSyncService>();
             

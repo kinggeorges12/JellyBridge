@@ -79,8 +79,18 @@ public class JellyseerrBridgeService
                 var isJellyseerrLibrary = library.Name?.Contains("Jellyseerr", StringComparison.OrdinalIgnoreCase) == true ||
                                         library.Name?.Contains("Bridge", StringComparison.OrdinalIgnoreCase) == true;
                 
-                _logger.LogDebug("[JellyseerrBridge] Library {LibraryName} locations: {Locations}, HasSyncDirectory: {HasSyncDirectory}, IsJellyseerrLibrary: {IsJellyseerrLibrary}", 
+                _logger.LogInformation("[JellyseerrBridge] Library {LibraryName} locations: {Locations}, HasSyncDirectory: {HasSyncDirectory}, IsJellyseerrLibrary: {IsJellyseerrLibrary}", 
                     library.Name, string.Join(", ", library.Locations ?? new string[0]), hasSyncDirectoryLocation, isJellyseerrLibrary);
+                
+                // Additional debugging for path comparison
+                if (library.Locations != null)
+                {
+                    foreach (var location in library.Locations)
+                    {
+                        var isInSync = JellyseerrFolderUtils.IsPathInSyncDirectory(location);
+                        _logger.LogInformation("[JellyseerrBridge] Location '{Location}' -> IsInSyncDirectory: {IsInSync}", location, isInSync);
+                    }
+                }
                 
                 if (hasSyncDirectoryLocation || isJellyseerrLibrary)
                 {
@@ -544,6 +554,7 @@ public class JellyseerrBridgeService
         
         return result;
     }
+
 }
 
 /// <summary>

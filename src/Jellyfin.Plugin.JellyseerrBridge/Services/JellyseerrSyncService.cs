@@ -24,6 +24,7 @@ public partial class JellyseerrSyncService
     private readonly JellyseerrApiService _apiService;
     private readonly ILibraryManager _libraryManager;
     private readonly JellyseerrBridgeService _bridgeService;
+    private readonly JellyseerrLibraryService _libraryService;
     
     // Semaphore to ensure only one sync operation runs at a time
     private static readonly SemaphoreSlim _syncSemaphore = new SemaphoreSlim(1, 1);
@@ -32,12 +33,14 @@ public partial class JellyseerrSyncService
         ILogger<JellyseerrSyncService> logger,
         JellyseerrApiService apiService,
         ILibraryManager libraryManager,
-        JellyseerrBridgeService bridgeService)
+        JellyseerrBridgeService bridgeService,
+        JellyseerrLibraryService libraryService)
     {
         _logger = logger;
         _apiService = apiService;
         _libraryManager = libraryManager;
         _bridgeService = bridgeService;
+        _libraryService = libraryService;
     }
 
     /// <summary>
@@ -230,6 +233,23 @@ public partial class JellyseerrSyncService
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
                 result.MoviesResult.Created, result.MoviesResult.Updated, result.ShowsResult.Created, result.ShowsResult.Updated);
+
+            // Check if library management is enabled
+            if (config?.ManageLibrariesWithJellyseerrBridge == true)
+            {
+                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
+                var refreshSuccess = await _libraryService.RefreshJellyseerrLibraryAsync();
+                if (refreshSuccess)
+                {
+                    _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Jellyseerr library management completed successfully");
+                    result.Message += " and library managed";
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrSyncService] CreateFolderStructureAsync: ⚠️ Jellyseerr library management failed");
+                    result.Message += " (library management failed)";
+                }
+            }
         }
         catch (DirectoryNotFoundException ex)
         {

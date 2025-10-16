@@ -315,33 +315,6 @@ function initializeLibrarySettings(page) {
     setInputField(page, 'LibraryPrefix');
     
     updateLibraryPrefixState();
-}
-
-
-// Function to initialize advanced settings
-function initializeAdvancedSettings(page) {
-    // Set advanced settings form values with null handling
-    setInputField(page, 'RequestTimeout');
-    setInputField(page, 'RetryAttempts');
-    setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'PlaceholderDurationSeconds');
-    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
-    if (placeholderDurationInput) {
-        placeholderDurationInput.addEventListener('input', function() {
-            if (this.value && parseInt(this.value) < 1) {
-                this.value = '1';
-            }
-        });
-    }
-    setInputField(page, 'EnableDebugLogging', true);
-    
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
-        });
-    }
     
     // Test Library Scan button functionality
     const testLibraryScanButton = page.querySelector('#testLibraryScan');
@@ -407,6 +380,33 @@ function initializeAdvancedSettings(page) {
 }
 
 
+// Function to initialize advanced settings
+function initializeAdvancedSettings(page) {
+    // Set advanced settings form values with null handling
+    setInputField(page, 'RequestTimeout');
+    setInputField(page, 'RetryAttempts');
+    setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'PlaceholderDurationSeconds');
+    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
+    if (placeholderDurationInput) {
+        placeholderDurationInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 1) {
+                this.value = '1';
+            }
+        });
+    }
+    setInputField(page, 'EnableDebugLogging', true);
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
+        });
+    }
+}
+
+
 // Function to initialize sync settings including network interface and sync buttons
 function initializeSyncSettings(page) {
     const config = window.configJellyseerrBridge || {};
@@ -430,6 +430,9 @@ function initializeSyncSettings(page) {
     
     // Update available networks with default networks that aren't already active
     updateAvailableNetworks(page);
+    
+    // Initialize library management options
+    setInputField(page, 'ManageLibrariesWithJellyseerrBridge', true);
     
     // Search functionality
     activeNetworkSearch.addEventListener('input', function() {
@@ -766,6 +769,7 @@ function savePluginConfiguration(view) {
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
             config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+            config.ManageLibrariesWithJellyseerrBridge = nullIfDefault(form.querySelector('#ManageLibrariesWithJellyseerrBridge').checked, config.DefaultValues.ManageLibrariesWithJellyseerrBridge);
             
             // Save the configuration using our custom endpoint
             return fetch('/JellyseerrBridge/UpdatePluginConfiguration', {
@@ -812,7 +816,9 @@ function loadRegions(page) {
 }
 
 // Shared sync function
-function performSync() {
+function performSync(page) {
+    const manualSyncResult = page.querySelector('#manualSyncResult');
+    
     Dashboard.showLoadingMsg();
     
     return ApiClient.ajax({
@@ -826,16 +832,21 @@ function performSync() {
         const message = syncData.message || 'Folder structure creation completed successfully';
         
         // Build detailed information if available
-        let details = '';
+        let resultText = `Manual Sync Results:\n`;
+        resultText += `✅ ${message}\n\n`;
+        
         if (syncData.details) {
-            details = `<br><br>Details:<br>${syncData.details.replace(/\n/g, '<br>')}`;
+            resultText += `Details:\n${syncData.details}`;
         }
         
-        Dashboard.alert('✅ Folder structure creation completed successfully!<br>' +
-            `${message}${details}`);
+        manualSyncResult.textContent = resultText;
+        manualSyncResult.style.display = 'block';
     }).catch(function(error) {
-        Dashboard.alert('❌ Folder structure creation failed: ' + (error?.message || 'Unknown error'));
-        scrollToSection('sync');
+        let resultText = `Manual Sync Results:\n`;
+        resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
+        
+        manualSyncResult.textContent = resultText;
+        manualSyncResult.style.display = 'block';
     }).finally(function() {
         Dashboard.hideLoadingMsg();
     });
@@ -866,7 +877,7 @@ function performManualSync(page) {
         }
         
         // Always sync after the if statement
-        performSync();
+        performSync(page);
     });
 }
 
