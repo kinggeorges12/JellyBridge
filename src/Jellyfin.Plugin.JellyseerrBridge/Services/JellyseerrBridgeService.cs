@@ -159,20 +159,7 @@ public class JellyseerrBridgeService
                 existingItem.Name, existingItem.Id);
             
             // Use the custom EqualsItem implementation rather than Equals cause I don't trust compile-time resolution.
-            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => 
-            {
-                var isMatch = bm.EqualsItem(existingItem);
-                
-                // Log detailed comparison info for debugging
-                var jellyfinType = existingItem.GetType().Name;
-                var tmdbId = existingItem.GetProviderId("Tmdb");
-                var tvdbId = existingItem.GetProviderId("Tvdb");
-                var imdbId = existingItem.GetProviderId("Imdb");
-                _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} (Type: {BridgeType}) with existing Jellyfin item: {JellyfinItem} (Type: {JellyfinType}, TMDB: {TmdbId}, TVDB: {TvdbId}, IMDB: {ImdbId}) - Match: {IsMatch}", 
-                    bm.ToString(), bm.GetType().Name, existingItem, jellyfinType, tmdbId ?? "null", tvdbId ?? "null", imdbId ?? "null", isMatch);
-                
-                return isMatch;
-            });
+            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => bm.EqualsItem(existingItem));
 
             if (bridgeMatch != null)
             {
