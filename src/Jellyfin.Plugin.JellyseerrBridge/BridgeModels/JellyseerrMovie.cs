@@ -112,7 +112,7 @@ public class JellyseerrMovie
     /// <summary>
     /// Equality comparison with a Jellyfin Movie item.
     /// </summary>
-    public bool Equals(Movie? other)
+    public bool Equals3(Movie? other)
     {
         if (other is null) return false;
         
@@ -133,17 +133,23 @@ public class JellyseerrMovie
         return false;
     }
 
+    public bool Equals(Movie? other)
+    {
+        if (other is null) return false;
+        return Equals3(other);
+    }
+
     /// <summary>
     /// Equality comparison with a Jellyfin BaseItem (Movie).
     /// </summary>
-    public bool Equals(BaseItem? other)
+    public bool Equals2(BaseItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Movie items
         if (other is not Movie movie) return false;
         
-        return Equals(movie);
+        return Equals3(movie);
     }
     
     /// <summary>
