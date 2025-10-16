@@ -156,7 +156,7 @@ public class JellyseerrBridgeService
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var matches = new List<TJellyseerr>();
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var folderManager = new JellyseerrFolderManager<TJellyseerr>();
 
         foreach (var existingItem in existingItems)
         {
@@ -184,14 +184,11 @@ public class JellyseerrBridgeService
                 _logger.LogInformation("[JellyseerrBridge] Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
                     bridgeMatch.MediaName, bridgeMatch.Id, existingItem.Name, existingItem.Id);
                 
-                // Find the bridge folder directory for this item
-                var bridgeFolderPath = await FindBridgeFolderPathAsync(syncDirectory, bridgeMatch);
+                // Get the bridge folder path using the folder manager
+                var bridgeFolderPath = folderManager.GetItemDirectory(bridgeMatch);
                 
                 // Create .ignore file with Jellyfin item metadata
-                if (!string.IsNullOrEmpty(bridgeFolderPath))
-                {
-                    await CreateIgnoreFileAsync(bridgeFolderPath, existingItem);
-                }
+                await CreateIgnoreFileAsync(bridgeFolderPath, existingItem);
 
                 // Add the actual bridge model to matches
                 matches.Add(bridgeMatch);
@@ -203,52 +200,6 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
-    /// Find the bridge folder path for a given item.
-    /// </summary>
-    public async Task<string?> FindBridgeFolderPathAsync<TJellyseerr>(string baseDirectory, TJellyseerr item) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
-    {
-        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
-        {
-            return null;
-        }
-
-        try
-        {
-            // Look for folders that might contain this item
-            var directories = Directory.GetDirectories(baseDirectory, "*", SearchOption.AllDirectories);
-            
-            foreach (var directory in directories)
-            {
-                var metadataFile = Path.Combine(directory, "metadata.json");
-                if (File.Exists(metadataFile))
-                {
-                    try
-                    {
-                        var json = await File.ReadAllTextAsync(metadataFile);
-                        var metadata = JellyseerrJsonSerializer.Deserialize<TJellyseerr>(json);
-                        
-                        if (metadata != null && item.Equals(metadata))
-                        {
-                            return directory;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "[JellyseerrBridge] Error reading metadata file: {MetadataFile}", metadataFile);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[JellyseerrBridge] Error finding bridge folder path for item: {ItemMediaName}", item.MediaName);
-        }
-
-        return null;
-    }
-
-    /// <summary>
     /// Create an ignore file for a Jellyfin item in the bridge folder.
     /// </summary>
     private async Task CreateIgnoreFileAsync(string bridgeFolderPath, BaseItem item)
@@ -257,13 +208,22 @@ public class JellyseerrBridgeService
         {
             var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
             
+            _logger.LogInformation("[JellyseerrBridge] Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
+                item.Name, item.Id, ignoreFilePath);
+            
             // Use DtoService to get a proper BaseItemDto with all metadata
             var dtoOptions = new DtoOptions(); // Default constructor includes all fields
             var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
             
+            _logger.LogInformation("[JellyseerrBridge] Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
+                item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
+            
             var itemJson = JsonSerializer.Serialize(itemDto, new JsonSerializerOptions {
                 WriteIndented = true
             });
+            
+            _logger.LogInformation("[JellyseerrBridge] Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
+                item.Name, itemJson?.Length ?? 0);
 
             await File.WriteAllTextAsync(ignoreFilePath, itemJson);
             _logger.LogInformation("[JellyseerrBridge] Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
@@ -290,8 +250,8 @@ public class JellyseerrBridgeService
         try
         {
             // Use the new folder managers for type-specific reading
-            var movieManager = new JellyseerrFolderManager<JellyseerrMovie>(_logger, syncDirectory);
-            var showManager = new JellyseerrFolderManager<JellyseerrShow>(_logger, syncDirectory);
+            var movieManager = new JellyseerrFolderManager<JellyseerrMovie>();
+            var showManager = new JellyseerrFolderManager<JellyseerrShow>();
 
             // Read both types in parallel
             var movieTask = movieManager.ReadMetadataAsync();

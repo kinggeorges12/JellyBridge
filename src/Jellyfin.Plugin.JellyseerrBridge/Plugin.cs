@@ -12,15 +12,19 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         private readonly ILogger<Plugin> _logger;
+        private readonly ILoggerFactory _loggerFactory;
 
         public override Guid Id => Guid.Parse("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
         
         public static Plugin Instance { get; private set; } = null!;
         
+        public ILoggerFactory LoggerFactory => _loggerFactory;
+        
         public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory) 
             : base(applicationPaths, xmlSerializer)
         {
+            _loggerFactory = loggerFactory;
             _logger = loggerFactory.CreateLogger<Plugin>();
             Instance = this;
             _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
