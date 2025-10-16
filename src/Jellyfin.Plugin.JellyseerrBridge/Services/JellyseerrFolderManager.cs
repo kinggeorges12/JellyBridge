@@ -174,16 +174,13 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         var invalidChars = Path.GetInvalidFileNameChars();
         var withoutInvalids = string.Join("_", mappedString.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
 
-        // Replace any remaining undesirable unicode (control/private-use) with underscore
+        // Replace only unsafe unicode categories; allow all other symbols (#, +, !, etc.)
         sb = new StringBuilder(withoutInvalids.Length);
-        var allowedPunctuation = new HashSet<char> { ' ', '-', '_', '.', '(', ')', '[', ']', '&', '\'' };
         foreach (var ch in withoutInvalids)
         {
             var category = char.GetUnicodeCategory(ch);
-            var isAllowed = char.IsLetterOrDigit(ch) || allowedPunctuation.Contains(ch);
             var isSafeCategory = category != System.Globalization.UnicodeCategory.Control && category != System.Globalization.UnicodeCategory.PrivateUse;
-
-            sb.Append(isAllowed && isSafeCategory ? ch : '_');
+            sb.Append(isSafeCategory ? ch : '_');
         }
 
         var cleaned = sb.ToString();

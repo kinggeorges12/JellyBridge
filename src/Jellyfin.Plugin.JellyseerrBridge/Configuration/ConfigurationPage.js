@@ -324,6 +324,15 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
     setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'PlaceholderDurationSeconds');
+    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
+    if (placeholderDurationInput) {
+        placeholderDurationInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 1) {
+                this.value = '1';
+            }
+        });
+    }
     setInputField(page, 'EnableDebugLogging', true);
     
     // Add event listener for Create Separate Libraries checkbox
@@ -755,6 +764,7 @@ function savePluginConfiguration(view) {
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
+            config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
             
             // Save the configuration using our custom endpoint

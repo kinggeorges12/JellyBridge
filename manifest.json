@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.237.0.0/JellyseerrBridge-0.237.0.0-DLL.zip",
+        "timestamp": "2025-10-16T20:15:09.237Z",
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "changelog": "v0.237.0.0 - Add placeholder video generation: FFmpeg-based video creation from asset images with configurable duration, caching system, and graceful FFmpeg availability checking",
+        "version": "0.237.0.0",
+        "checksum": "BF8AA69756D80D3B4888E47B202F4085"
+      },
+      {
         "version": "0.236.0.0",
         "checksum": "80C19AEADAE47C22D117AE224A83F52C",
         "timestamp": "2025-10-16T18:34:21.129Z",
