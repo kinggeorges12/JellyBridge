@@ -115,7 +115,7 @@ public class JellyseerrShow
     /// <summary>
     /// Equality comparison with a Jellyfin Series item.
     /// </summary>
-    public bool Equals(Series? other)
+    public bool Equals3(Series? other)
     {
         if (other is null) return false;
         
@@ -136,17 +136,23 @@ public class JellyseerrShow
         return false;
     }
 
+    public bool Equals(Series? other)
+    {
+        if (other is null) return false;
+        return Equals3(other);
+    }
+
     /// <summary>
     /// Equality comparison with a Jellyfin BaseItem (Series).
     /// </summary>
-    public bool Equals(BaseItem? other)
+    public bool Equals2(BaseItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Series items
         if (other is not Series series) return false;
         
-        return Equals(series);
+        return Equals3(series);
     }
     
     /// <summary>
