@@ -160,6 +160,12 @@ public class PlaceholderVideoGenerator
             
             // Extract embedded resource
             var resourceName = $"Jellyfin.Plugin.JellyseerrBridge.Assets.{assetName}";
+            _logger.LogDebug("[PlaceholderVideoGenerator] Looking for embedded resource: {ResourceName}", resourceName);
+            
+            // List all available resources for debugging
+            var allResources = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceNames();
+            _logger.LogDebug("[PlaceholderVideoGenerator] Available resources: {Resources}", string.Join(", ", allResources));
+            
             using var stream = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceStream(resourceName);
             
             if (stream == null)
@@ -172,6 +178,22 @@ public class PlaceholderVideoGenerator
             await stream.CopyToAsync(fileStream);
             
             _logger.LogDebug("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
+            
+            // Verify the extracted file exists and has content
+            if (!File.Exists(assetPath))
+            {
+                _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file does not exist: {AssetPath}", assetPath);
+                return null;
+            }
+            
+            var fileInfo = new FileInfo(assetPath);
+            if (fileInfo.Length == 0)
+            {
+                _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file is empty: {AssetPath}", assetPath);
+                return null;
+            }
+            
+            _logger.LogDebug("[PlaceholderVideoGenerator] Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
             return assetPath;
         }
         catch (Exception ex)
@@ -208,13 +230,21 @@ public class PlaceholderVideoGenerator
 
             // Resolve duration from configuration
             var duration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
+            
+            if (duration <= 0)
+            {
+                _logger.LogError("[PlaceholderVideoGenerator] Invalid duration: {Duration}. Must be greater than 0.", duration);
+                return false;
+            }
 
             // Build FFmpeg command
             var arguments = $"-loop 1 -i \"{assetPath}\" -t {duration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
             _logger.LogInformation("[PlaceholderVideoGenerator] Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
-            _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
+            _logger.LogInformation("[PlaceholderVideoGenerator] Asset path: {AssetPath}, Duration: {Duration}", 
+                assetPath, duration);
+            _logger.LogInformation("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
                 _mediaEncoder.EncoderPath, arguments);
 
             var processInfo = new ProcessStartInfo
@@ -256,13 +286,30 @@ public class PlaceholderVideoGenerator
 
             if (process.ExitCode == 0)
             {
-                _logger.LogInformation("[PlaceholderVideoGenerator] Successfully generated placeholder video: {OutputPath}", outputPath);
+                // Verify the output file was created and has content
+                if (!File.Exists(outputPath))
+                {
+                    _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
+                    return false;
+                }
+                
+                var outputFileInfo = new FileInfo(outputPath);
+                if (outputFileInfo.Length == 0)
+                {
+                    _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file is empty: {OutputPath}", outputPath);
+                    return false;
+                }
+                
+                _logger.LogInformation("[PlaceholderVideoGenerator] Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
+                    outputPath, outputFileInfo.Length);
+                _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
                 return true;
             }
             else
             {
                 _logger.LogError("[PlaceholderVideoGenerator] FFmpeg failed with exit code {ExitCode}. Error output: {ErrorOutput}", 
                     process.ExitCode, errorBuilder.ToString());
+                _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
                 return false;
             }
         }

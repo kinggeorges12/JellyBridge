@@ -142,4 +142,12 @@ public class JellyseerrMovie
     {
         return ((IJellyseerrItem)this).ToFolderString() ?? string.Empty;
     }
+    
+    /// <summary>
+    /// Returns a hash code for the movie that can be used for matching.
+    /// </summary>
+    public int GetItemHashCode()
+    {
+        return HashCode.Combine(Id, MediaName, Year, MediaType);
+    }
 }

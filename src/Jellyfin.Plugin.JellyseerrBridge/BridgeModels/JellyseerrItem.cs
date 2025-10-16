@@ -96,4 +96,9 @@ public interface IJellyseerrItem
     }
 
     public abstract bool EqualsItem(BaseItem? other);
+    
+    /// <summary>
+    /// Returns a hash code for the item that can be used for matching.
+    /// </summary>
+    int GetItemHashCode();
 }

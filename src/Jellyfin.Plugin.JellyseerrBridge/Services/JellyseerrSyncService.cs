@@ -204,7 +204,22 @@ public partial class JellyseerrSyncService
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
 
+            // Run library scan to find matches and create ignore files
             var matchedItems = await _bridgeService.LibraryScanAsync(allMovies, allShows);
+
+            // Separate matched items by type
+            var matchedMovies = matchedItems.OfType<JellyseerrMovie>().ToList();
+            var matchedShows = matchedItems.OfType<JellyseerrShow>().ToList();
+
+            // Create placeholder videos only for non-ignored items
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for non-ignored movies...");
+            var moviePlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(allMovies, matchedMovies);
+
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for non-ignored shows...");
+            var showPlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(allShows, matchedShows);
+
+            // Wait for placeholder creation to complete
+            await Task.WhenAll(moviePlaceholderTask, showPlaceholderTask);
 
             // Get the results
             result.Success = true;
@@ -301,21 +316,7 @@ public class SyncResult
 
     public override string ToString()
     {
-        var details = new List<string>();
-        
-        if (MoviesResult.Processed > 0)
-        {
-            details.Add($"Movies ({MoviesResult.Processed} processed):");
-            details.Add($"  {MoviesResult.ToString()}");
-        }
-        
-        if (ShowsResult.Processed > 0)
-        {
-            details.Add($"Shows ({ShowsResult.Processed} processed):");
-            details.Add($"  {ShowsResult.ToString()}");
-        }
-        
-        return string.Join("\n", details);
+        return $"Movies: {MoviesResult.Created} created, {MoviesResult.Updated} updated | Shows: {ShowsResult.Created} created, {ShowsResult.Updated} updated";
     }
 }
 
