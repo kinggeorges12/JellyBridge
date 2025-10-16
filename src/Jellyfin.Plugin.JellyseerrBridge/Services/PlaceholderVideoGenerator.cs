@@ -66,7 +66,7 @@ public class PlaceholderVideoGenerator
             // Build cache directory in the system temp path
             var cacheDir = Path.Combine(Path.GetTempPath(), "JellyseerrBridge", "placeholders");
             Directory.CreateDirectory(cacheDir);
-            var dur = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
+            var dur = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds)) ?? 10;
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
             var cachePath = Path.Combine(cacheDir, $"{assetStem}_{dur}.mp4");
 
@@ -229,7 +229,7 @@ public class PlaceholderVideoGenerator
             }
 
             // Resolve duration from configuration
-            var duration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
+            var duration = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds)) ?? 10;
             
             if (duration <= 0)
             {
