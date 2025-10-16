@@ -46,6 +46,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(EnableDebugLogging), false },
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(Region), "US" },
+        { nameof(ManageLibrariesWithJellyseerrBridge), false },
         { nameof(NetworkMap), new List<NetworkEntry>
             {
                 new NetworkEntry { Name = "Netflix", Id = 213 },
@@ -164,6 +165,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues[nameof(NetworkMap)]);
 
+    /// <summary>
+    /// Gets or sets whether to manage libraries with JellyseerrBridge.
+    /// </summary>
+    public bool? ManageLibrariesWithJellyseerrBridge { get; set; }
+
 
 
 
@@ -185,6 +191,7 @@ public class PluginConfiguration : BasePluginConfiguration
     {
         NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Value, Id = kvp.Key }).ToList();
     }
+
 
     /// <summary>
     /// Returns a JSON representation of the configuration with API key masked.
