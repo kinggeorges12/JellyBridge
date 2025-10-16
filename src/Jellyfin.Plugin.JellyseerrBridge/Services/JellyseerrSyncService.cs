@@ -190,31 +190,16 @@ public partial class JellyseerrSyncService
                 return result;
             }
 
-            // Create base directory
-            var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Starting folder structure creation - Base Directory: {BaseDirectory}", baseDirectory);
-
-            if (!Directory.Exists(baseDirectory))
-            {
-                Directory.CreateDirectory(baseDirectory);
-                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Created base directory: {BaseDirectory}", baseDirectory);
-            }
-            else
-            {
-                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Base directory already exists: {BaseDirectory}", baseDirectory);
-            }
-
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Processing {MovieCount} movies and {ShowCount} shows", 
                 allMovies.Count, allShows.Count);
 
             // Process movies
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
-            var movieTask = CreateFoldersAsync(allMovies);
+            var movieTask = _bridgeService.CreateFoldersAsync(allMovies);
 
             // Process TV shows
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
-            var showTask = CreateFoldersAsync(allShows);
+            var showTask = _bridgeService.CreateFoldersAsync(allShows);
 
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
@@ -301,83 +286,6 @@ public partial class JellyseerrSyncService
         // Implementation depends on Jellyfin's internal APIs
         return Task.CompletedTask;
     }
-
-
-
-
-
-    /// <summary>
-    /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
-    /// </summary>
-    private async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
-    {
-        var result = new ProcessResult();
-        
-        // Get configuration values using centralized helper
-        var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        
-        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
-            typeof(TJellyseerr).Name, baseDirectory, items.Count);
-        
-        // Create folder manager for this type
-        var folderManager = new JellyseerrFolderManager<TJellyseerr>();
-        
-        foreach (var item in items)
-        {
-            try
-            {
-                result.Processed++;
-                
-                    _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
-                        result.Processed, items.Count, item.MediaName, item.Id, item.Year);
-                
-                // Generate folder name and get directory path
-                var folderName = folderManager.CreateFolderName(item);
-                var itemDirectory = folderManager.GetItemDirectory(item);
-                var folderExists = Directory.Exists(itemDirectory);
-
-                _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Folder details - Name: '{FolderName}', Directory: '{ItemDirectory}', Exists: {FolderExists}", 
-                    folderName, itemDirectory, folderExists);
-
-                // Write metadata using folder manager
-                var success = await folderManager.WriteMetadataAsync(item);
-                
-                if (success)
-                {
-                    if (folderExists)
-                    {
-                        result.Updated++;
-                        result.ItemsUpdated.Add(item);
-                        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}' -> '{ItemDirectory}'", 
-                            typeof(TJellyseerr).Name, folderName, itemDirectory);
-                    }
-                    else
-                    {
-                        result.Created++;
-                        result.ItemsAdded.Add(item);
-                        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}' -> '{ItemDirectory}'", 
-                            typeof(TJellyseerr).Name, folderName, itemDirectory);
-                    }
-                }
-                else
-                {
-                        _logger.LogError("[JellyseerrSyncService] CreateFoldersAsync: ❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
-                            item, item.MediaName, item.Id);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrSyncService] CreateFoldersAsync: ❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
-                    item, item.MediaName, item.Id);
-            }
-        }
-        
-        _logger.LogInformation("[JellyseerrSyncService] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
-            typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
-        
-        return result;
-    }
 }
 
 /// <summary>
@@ -405,37 +313,6 @@ public class SyncResult
         {
             details.Add($"Shows ({ShowsResult.Processed} processed):");
             details.Add($"  {ShowsResult.ToString()}");
-        }
-        
-        return string.Join("\n", details);
-    }
-}
-
-/// <summary>
-/// Result of a processing operation.
-/// </summary>
-public class ProcessResult
-{
-    public int Processed { get; set; }
-    public int Created { get; set; }
-    public int Updated { get; set; }
-    public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
-    public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
-
-    public override string ToString()
-    {
-        var details = new List<string>();
-        
-        if (ItemsAdded.Count > 0)
-        {
-            var addedNames = ItemsAdded.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
-            details.Add($"Added: {string.Join(", ", addedNames)}");
-        }
-        
-        if (ItemsUpdated.Count > 0)
-        {
-            var updatedNames = ItemsUpdated.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
-            details.Add($"Updated: {string.Join(", ", updatedNames)}");
         }
         
         return string.Join("\n", details);

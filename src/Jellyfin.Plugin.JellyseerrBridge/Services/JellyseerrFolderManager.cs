@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Serialization;
@@ -125,8 +126,63 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
         if (string.IsNullOrEmpty(fileName))
             return string.Empty;
 
+        // Normalize to reduce compatibility forms (e.g., fullwidth characters)
+        var normalized = fileName.Normalize(NormalizationForm.FormKC);
+
+        // Map common lookalikes to ASCII equivalents (colon, slashes, quotes, etc.)
+        var replacements = new Dictionary<char, char>
+        {
+            { '：', ':' }, { '﹕', ':' }, { '꞉', ':' },
+            { '／', '/' }, { '∕', '/' },
+            { '＼', '\\' },
+            { '？', '?' }, { '＊', '*' },
+            { '＂', '"' },
+            { '＜', '<' }, { '＞', '>' },
+            { '｜', '|' }
+        };
+
+        var sb = new StringBuilder(normalized.Length);
+        foreach (var ch in normalized)
+        {
+            if (replacements.TryGetValue(ch, out var mapped))
+            {
+                sb.Append(mapped);
+            }
+            else
+            {
+                sb.Append(ch);
+            }
+        }
+
+        var mappedString = sb.ToString();
+
+        // Replace colons with the conventional separator using existing trailing space (": " -> " - ")
+        mappedString = mappedString.Replace(":", " -");
+
+        // Remove invalid file name characters
         var invalidChars = Path.GetInvalidFileNameChars();
-        return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var withoutInvalids = string.Join("_", mappedString.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+
+        // Replace any remaining undesirable unicode (control/private-use) with underscore
+        sb.Clear();
+        foreach (var ch in withoutInvalids)
+        {
+            var category = char.GetUnicodeCategory(ch);
+            var isAllowed = char.IsLetterOrDigit(ch) || ch == ' ' || ch == '-' || ch == '_' || ch == '.' || ch == '(' || ch == ')' || ch == '[' || ch == ']';
+            var isSafeCategory = category != System.Globalization.UnicodeCategory.Control && category != System.Globalization.UnicodeCategory.PrivateUse;
+
+            sb.Append(isAllowed && isSafeCategory ? ch : '_');
+        }
+
+        var cleaned = sb.ToString();
+
+        // Normalize whitespace and separators
+        cleaned = Regex.Replace(cleaned, "\\s{2,}", " ");             // collapse multiple spaces
+        cleaned = Regex.Replace(cleaned, "_+", "_");                  // collapse multiple underscores
+        cleaned = Regex.Replace(cleaned, "\\s*-\\s*", " - ");       // normalize space around hyphen separator
+        cleaned = cleaned.Trim().Trim('-', '_', '.');
+
+        return cleaned;
     }
 
     /// <summary>
@@ -139,7 +195,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
 
         try
         {
-            var directories = Directory.GetDirectories(GetItemDirectory(), "*", SearchOption.TopDirectoryOnly);
+            var directories = Directory.GetDirectories(typeDirectory, "*", SearchOption.TopDirectoryOnly);
             
             foreach (var directory in directories)
             {
