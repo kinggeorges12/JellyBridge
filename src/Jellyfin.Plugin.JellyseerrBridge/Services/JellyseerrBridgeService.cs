@@ -77,6 +77,16 @@ public class JellyseerrBridgeService
 
                 var libraryItems = _libraryManager.GetItemsResult(query).Items.Cast<T>().ToList();
                 
+                // Debug: Log each individual item being read from Jellyfin library
+                foreach (var item in libraryItems)
+                {
+                    var tmdbId = item.GetProviderId("Tmdb");
+                    var tvdbId = item.GetProviderId("Tvdb");
+                    var imdbId = item.GetProviderId("Imdb");
+                    _logger.LogDebug("[JellyseerrBridge] Reading Jellyfin {ItemType}: '{ItemName}' (TMDB: {TmdbId}, TVDB: {TvdbId}, IMDB: {ImdbId})", 
+                        typeof(T).Name, item.Name, tmdbId ?? "null", tvdbId ?? "null", imdbId ?? "null");
+                }
+                
                 items.AddRange(libraryItems);
                 
                 _logger.LogInformation("[JellyseerrBridge] Found {ItemCount} {ItemType} in library {LibraryName}", 
@@ -161,7 +171,7 @@ public class JellyseerrBridgeService
                 var tvdbId = existingItem.GetProviderId("Tvdb");
                 var imdbId = existingItem.GetProviderId("Imdb");
                 _logger.LogInformation("[JellyseerrBridge] Comparing bridge item: {BridgeItem} with existing Jellyfin item: {JellyfinItem} (Type: {JellyfinType}, TMDB: {TmdbId}, TVDB: {TvdbId}, IMDB: {ImdbId}) - Match: {IsMatch}", 
-                    bm, existingItem, jellyfinType, tmdbId ?? "null", tvdbId ?? "null", imdbId ?? "null", isMatch);
+                    bm.ToString(), existingItem, jellyfinType, tmdbId ?? "null", tvdbId ?? "null", imdbId ?? "null", isMatch);
                 
                 return isMatch;
             });
