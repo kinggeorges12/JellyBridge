@@ -385,3 +385,6 @@ github-token.txt
 
 # Temporary files from conversion scripts
 temp/
+
+# Personal todo files
+.todo

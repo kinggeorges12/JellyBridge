@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-16T16:08:59.846Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.235.0.0/JellyseerrBridge-0.235.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.235.0.0 - Sanitize folder names: normalize Unicode colons and replace ':' with ' -'",
+        "version": "0.235.0.0",
+        "checksum": "4321822B864D265A5BE9EF82C8DEB3DD"
+      },
+      {
         "dependencies": [],
         "changelog": "v0.234.0.0 - Refactored TestLibraryScanAsync to reuse LibraryScanAsync logic and added DeleteAllIgnoreFilesAsync function for cleaning up .ignore files when including main libraries",
         "version": "0.234.0.0",

@@ -16,6 +16,37 @@ using System.Text.Json;
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
 /// <summary>
+/// Result of a processing operation.
+/// </summary>
+public class ProcessResult
+{
+    public int Processed { get; set; }
+    public int Created { get; set; }
+    public int Updated { get; set; }
+    public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
+    public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
+
+    public override string ToString()
+    {
+        var details = new List<string>();
+        
+        if (ItemsAdded.Count > 0)
+        {
+            var addedNames = ItemsAdded.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
+            details.Add($"Added: {string.Join(", ", addedNames)}");
+        }
+        
+        if (ItemsUpdated.Count > 0)
+        {
+            var updatedNames = ItemsUpdated.Select(item => $"{item.MediaName} ({item.Year}) [{item.MediaType}]").ToList();
+            details.Add($"Updated: {string.Join(", ", updatedNames)}");
+        }
+        
+        return string.Join("\n", details);
+    }
+}
+
+/// <summary>
 /// Service for managing bridge folders and metadata.
 /// </summary>
 public class JellyseerrBridgeService
@@ -385,6 +416,78 @@ public class JellyseerrBridgeService
             _logger.LogError(ex, "Error during library scan test");
             return new List<IJellyseerrItem>();
         }
+    }
+
+    /// <summary>
+    /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
+    /// </summary>
+    public async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        var result = new ProcessResult();
+        
+        // Get configuration values using centralized helper
+        var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        
+        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+            typeof(TJellyseerr).Name, baseDirectory, items.Count);
+        
+        // Create folder manager for this type
+        var folderManager = new JellyseerrFolderManager<TJellyseerr>();
+        
+        foreach (var item in items)
+        {
+            try
+            {
+                result.Processed++;
+                
+                _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
+                    result.Processed, items.Count, item.MediaName, item.Id, item.Year);
+                
+                // Generate folder name and get directory path
+                var folderName = folderManager.GetItemDirectory(item);
+                var folderExists = Directory.Exists(folderName);
+
+                _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
+                    folderName, folderExists);
+
+                // Write metadata using folder manager
+                var success = await folderManager.WriteMetadataAsync(item);
+                
+                if (success)
+                {
+                    if (folderExists)
+                    {
+                        result.Updated++;
+                        result.ItemsUpdated.Add(item);
+                        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
+                            typeof(TJellyseerr).Name, folderName);
+                    }
+                    else
+                    {
+                        result.Created++;
+                        result.ItemsAdded.Add(item);
+                        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
+                            typeof(TJellyseerr).Name, folderName);
+                    }
+                }
+                else
+                {
+                    _logger.LogError("[JellyseerrBridge] CreateFoldersAsync: ❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                        item, item.MediaName, item.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] CreateFoldersAsync: ❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                    item, item.MediaName, item.Id);
+            }
+        }
+        
+        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
+            typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
+        
+        return result;
     }
 }
 
