@@ -711,55 +711,51 @@ public class JellyseerrApiService
     public async Task<List<T>> FetchDiscoverMediaAsync<T>() where T : TmdbMediaResult, IJellyseerrItem
     {
         var config = Plugin.GetConfiguration();
-        var networkDict = config?.GetNetworkMapDictionary() ?? new Dictionary<int, string>();
+        var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
         var allItems = new HashSet<T>();
         
-        foreach (var networkId in networkDict.Keys)
+        foreach (var network in networkMap)
         {
-            if (networkDict.TryGetValue(networkId, out var networkName))
-            {
-                _logger.LogInformation("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId})", T.LibraryType, networkName, networkId);
-                
-                // Add networkId parameter to query parameters
-                var networkIdParameters = new Dictionary<string, string> { ["network"] = networkId.ToString() };
-                JellyseerrEndpoint? endpoint = null;  
-                if (typeof(T) == typeof(JellyseerrMovie)) {
-                    endpoint = JellyseerrEndpoint.DiscoverMovies;
-                } else if (typeof(T) == typeof(JellyseerrShow)) {
-                    endpoint = JellyseerrEndpoint.DiscoverTv;
-                }
-                if (endpoint == null) {
-                    _logger.LogError("Unsupported type: {Type}", typeof(T));
-                    throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
-                }
+            _logger.LogInformation("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", T.LibraryType, network.Name, network.Id, network.Country, network.DisplayPriority);
+            
+            // Add network Id and Country parameters to query parameters
+            var networkParameters = new Dictionary<string, string> {
+                ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config),
+                ["watchProviders"] = network.Id.ToString()
+            };
+            JellyseerrEndpoint? endpoint = null;  
+            if (typeof(T) == typeof(JellyseerrMovie)) {
+                endpoint = JellyseerrEndpoint.DiscoverMovies;
+            } else if (typeof(T) == typeof(JellyseerrShow)) {
+                endpoint = JellyseerrEndpoint.DiscoverTv;
+            }
+            if (endpoint == null) {
+                _logger.LogError("Unsupported type: {Type}", typeof(T));
+                throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
+            }
 
-                var networkData = await CallEndpointAsync(endpoint.Value, config, parameters: networkIdParameters);
-                
-                if (networkData == null)
-                {
-                    _logger.LogWarning("API call returned null for {MediaType} endpoint for network: {NetworkName}", T.LibraryType, networkName);
-                    continue;
-                }
-                
-                var items = (List<T>)networkData;
-                
-                if (items.Count == 0)
-                {
-                    _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, networkName);
-                }
-                
-                // Add items to HashSet (automatically handles duplicates)
-                foreach (var item in items)
-                {
-                    allItems.Add(item);
-                }
-                
-                _logger.LogInformation("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, networkName);
-            }
-            else
+            var networkData = await CallEndpointAsync(endpoint.Value, config, parameters: networkParameters);
+            
+            if (networkData == null)
             {
-                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
+                _logger.LogWarning("API call returned null for {MediaType} endpoint for network: {NetworkName}", T.LibraryType, network.Name);
+                continue;
             }
+            
+            var items = (List<T>)networkData;
+            
+            if (items.Count == 0)
+            {
+                _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
+            }
+            
+            // Add items to HashSet (automatically handles duplicates)
+            foreach (var item in items)
+            {
+                allItems.Add(item);
+            }
+            
+            _logger.LogInformation("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
         }
         
         // Convert HashSet to List for return

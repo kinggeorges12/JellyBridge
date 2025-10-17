@@ -188,7 +188,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     EnableDebugLogging = config.EnableDebugLogging,
                     Region = config.Region,
-                    NetworkMap = config.GetNetworkMapDictionary(), // Convert to dictionary for JavaScript
+                    NetworkMap = config.NetworkMap, // Convert to dictionary for JavaScript
                     DefaultValues = PluginConfiguration.DefaultValues
                 };
                 
@@ -230,22 +230,26 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
                 SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
                 SetValueOrDefault<string>(configData, nameof(config.Region), config);
-                
-                // Handle NetworkMap dictionary conversion
-                if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
+                // Handle NetworkMap as array of JellyseerrNetwork objects
+                if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
+                    networkMapElement.ValueKind == JsonValueKind.Array)
                 {
-                    var networkDict = new Dictionary<int, string>();
-                    
-                    foreach (var property in networkMapElement.EnumerateObject())
+                    try
                     {
-                        if (property.Value.ValueKind == JsonValueKind.String && 
-                            int.TryParse(property.Name, out int id))
-                        {
-                            networkDict[id] = property.Value.GetString() ?? string.Empty;
-                        }
+                        config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
+                        _logger.LogInformation("[JellyseerrBridge] Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
                     }
-                    
-                    config.SetNetworkMapDictionary(networkDict);
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[JellyseerrBridge] Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+                        config.NetworkMap = new List<JellyseerrNetwork>();
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrBridge] NetworkMap is not an array or not found. ValueKind: {ValueKind}, JSON: {Json}", 
+                        networkMapElement.ValueKind, config.NetworkMap);
+                    config.NetworkMap = new List<JellyseerrNetwork>();
                 }
                 
                 // Save the configuration
@@ -424,42 +428,35 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 var config = Plugin.GetConfiguration();
                 // Use provided region or default from config
-                var targetRegion = region ?? config.Region ?? "US";
+                var targetRegion = region ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config);
+                config.Region = targetRegion;
                 
                 // Get networks for both movies and TV, then combine and deduplicate
-                var movieNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
-                var tvNetworks = await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
+                var movieNetworksTask = _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
+                var showNetworksTask = _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
+                await Task.WhenAll(movieNetworksTask, showNetworksTask);
+
+                var movieNetworksList = (List<JellyseerrNetwork>)await movieNetworksTask;
+                var showNetworksList = (List<JellyseerrNetwork>)await showNetworksTask;
+
                 _logger.LogInformation("[JellyseerrBridge] MovieNetworks response type: {Type}, Count: {Count}", 
-                    movieNetworks?.GetType().Name ?? "null", 
-                    movieNetworks is List<JellyseerrNetwork> movieList ? movieList.Count : "unknown");
+                    movieNetworksList?.GetType().Name ?? "null", 
+                    movieNetworksList?.Count ?? 0);
                 
-                _logger.LogInformation("[JellyseerrBridge] TvNetworks response type: {Type}, Count: {Count}", 
-                    tvNetworks?.GetType().Name ?? "null", 
-                    tvNetworks is List<JellyseerrNetwork> tvList ? tvList.Count : "unknown");
+                _logger.LogInformation("[JellyseerrBridge] showNetworks response type: {Type}, Count: {Count}", 
+                    showNetworksList?.GetType().Name ?? "null", 
+                    showNetworksList?.Count ?? 0);
                 
-                // Combine and deduplicate networks
-                var allNetworks = new List<JellyseerrNetwork>();
-                var seenIds = new HashSet<int>();
-                
-                var movieNetworksList = (List<JellyseerrNetwork>?)movieNetworks ?? new List<JellyseerrNetwork>();
-                var tvNetworksList = (List<JellyseerrNetwork>?)tvNetworks ?? new List<JellyseerrNetwork>();
-                
+                // Combine networks and add country
                 var combinedNetworks = new List<JellyseerrNetwork>();
-                combinedNetworks.AddRange(movieNetworksList);
-                combinedNetworks.AddRange(tvNetworksList);
+                combinedNetworks.AddRange(movieNetworksList ?? new List<JellyseerrNetwork>());
+                combinedNetworks.AddRange(showNetworksList ?? new List<JellyseerrNetwork>());
+                combinedNetworks.ForEach(network => network.Country = targetRegion);
                 
-                foreach (var network in combinedNetworks)
-                {
-                    if (seenIds.Add(network.Id))
-                    {
-                        allNetworks.Add(network);
-                    }
-                }
+                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", combinedNetworks.Count, targetRegion);
                 
-                _logger.LogInformation("[JellyseerrBridge] Retrieved {Count} networks for region {Region}", allNetworks.Count, targetRegion);
-                
-                return Ok(allNetworks);
+                return Ok(combinedNetworks);
             }
             catch (Exception ex)
             {
@@ -584,12 +581,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
 
             return false;
+        }
     }
+    
+    public class TestConnectionRequest
+    {
+        public string JellyseerrUrl { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
     }
-}
-
-public class TestConnectionRequest
-{
-    public string JellyseerrUrl { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
 }
