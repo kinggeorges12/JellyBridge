@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Controllers;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Tasks;
+using Jellyfin.Plugin.JellyseerrBridge.Services;
+using Scrutor;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services
 {
@@ -23,8 +25,22 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             // Register HTTP client for Jellyseerr API
             serviceCollection.AddHttpClient<JellyseerrApiService>();
             
-            // Register the API service
+            // Register the base services
             serviceCollection.AddScoped<JellyseerrApiService>();
+            serviceCollection.AddScoped<JellyseerrSyncService>();
+            
+            // Decorate services with configuration awareness
+            serviceCollection.Decorate<JellyseerrApiService>((service, provider) =>
+            {
+                var logger = provider.GetRequiredService<ILogger<ConfigurationAwareService<JellyseerrApiService>>>();
+                return ConfigurationAwareService<JellyseerrApiService>.Create(service, logger);
+            });
+            
+            serviceCollection.Decorate<JellyseerrSyncService>((service, provider) =>
+            {
+                var logger = provider.GetRequiredService<ILogger<ConfigurationAwareService<JellyseerrSyncService>>>();
+                return ConfigurationAwareService<JellyseerrSyncService>.Create(service, logger);
+            });
             
             // Register the bridge service
             serviceCollection.AddScoped<JellyseerrBridgeService>();

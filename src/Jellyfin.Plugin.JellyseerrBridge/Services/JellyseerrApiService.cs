@@ -546,6 +546,10 @@ public class JellyseerrApiService
                     }
                     
                     var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
+                    
+                    // Debug: Log the complete URL being used
+                    _logger.LogInformation("Making API request to URL: {Url}", pageRequestMessage.RequestUri);
+                    
                     content = await MakeApiRequestAsync(pageRequestMessage, config);
                     
                     if (content == null) break;
@@ -645,9 +649,18 @@ public class JellyseerrApiService
         return endpoint switch
         {
             // Discover endpoints - no parameters needed for GET requests
-            JellyseerrEndpoint.DiscoverMovies => (null, null),
-            JellyseerrEndpoint.DiscoverTv => (null, null),
-            
+            JellyseerrEndpoint.DiscoverMovies => (
+                new Dictionary<string, string> 
+                { 
+                    ["sortBy"] = "popularity.desc"
+                }, null
+            ),
+            JellyseerrEndpoint.DiscoverTv => (
+                new Dictionary<string, string> 
+                { 
+                    ["sortBy"] = "popularity.desc"
+                }, null
+            ),
             // Watch providers endpoints - use region as query parameter
             JellyseerrEndpoint.WatchProvidersMovies => (
                 new Dictionary<string, string> 
@@ -720,7 +733,7 @@ public class JellyseerrApiService
             
             // Add network Id and Country parameters to query parameters
             var networkParameters = new Dictionary<string, string> {
-                ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config),
+                ["watchRegion"] = network.Country,
                 ["watchProviders"] = network.Id.ToString()
             };
             JellyseerrEndpoint? endpoint = null;  
@@ -734,6 +747,11 @@ public class JellyseerrApiService
                 throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
             }
 
+            // Debug: Log the parameters being used
+            _logger.LogInformation("Calling {Endpoint} with parameters: {Parameters}", 
+                endpoint.Value, 
+                string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+            
             var networkData = await CallEndpointAsync(endpoint.Value, config, parameters: networkParameters);
             
             if (networkData == null)
@@ -743,6 +761,9 @@ public class JellyseerrApiService
             }
             
             var items = (List<T>)networkData;
+            
+            // Debug: Log the response data
+            _logger.LogInformation("API call returned {ItemCount} items for {NetworkName}", items.Count, network.Name);
             
             if (items.Count == 0)
             {
