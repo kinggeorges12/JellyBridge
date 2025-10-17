@@ -313,6 +313,7 @@ function initializeLibrarySettings(page) {
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'CreateSeparateLibraries', true);
     setInputField(page, 'LibraryPrefix');
+    setInputField(page, 'ManageLibrariesWithJellyseerrBridge', true);
     
     updateLibraryPrefixState();
     
@@ -430,9 +431,6 @@ function initializeSyncSettings(page) {
     
     // Update available networks with default networks that aren't already active
     updateAvailableNetworks(page);
-    
-    // Initialize library management options
-    setInputField(page, 'ManageLibrariesWithJellyseerrBridge', true);
     
     // Search functionality
     activeNetworkSearch.addEventListener('input', function() {

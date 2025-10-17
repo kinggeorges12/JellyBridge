@@ -155,11 +155,21 @@ public class JellyseerrBridgeService
         var matches = new List<TJellyseerr>();
         var folderManager = new JellyseerrFolderManager<TJellyseerr>();
         var ignoreFileTasks = new List<Task>();
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
         foreach (var existingItem in existingItems)
         {
             _logger.LogDebug("[JellyseerrBridge] Checking existing item: {ItemName} (Id: {ItemId})", 
                 existingItem.Name, existingItem.Id);
+            
+            // Safety check: Skip items that are already in the Jellyseerr library directory
+            if (string.IsNullOrEmpty(existingItem.Path) || 
+                JellyseerrFolderUtils.IsPathInSyncDirectory(existingItem.Path))
+            {
+                _logger.LogDebug("[JellyseerrBridge] Skipping item {ItemName} - already in Jellyseerr library directory: {ItemPath}", 
+                    existingItem.Name, existingItem.Path);
+                continue;
+            }
             
             // Use the custom EqualsItem implementation rather than Equals cause I don't trust compile-time resolution.
             var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => bm.EqualsItem(existingItem));

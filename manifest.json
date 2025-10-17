@@ -9,8 +9,17 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.240.1.0 - Fix circular ignore file creation: Added safety check in IgnoreMatches method to prevent creating ignore files for items already in Jellyseerr library directory, simplified IsPathInSyncDirectory method signature",
+        "targetAbi": "10.10.7.0",
+        "version": "0.240.1.0",
+        "checksum": "8DA81590D2F5BB5EE7C58A6C598B2258",
+        "timestamp": "2025-10-17T01:08:16.379Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.240.1.0/JellyseerrBridge-0.240.1.0-DLL.zip"
+      },
+      {
         "version": "0.240.0.0",
-        "timestamp": "2025-10-16T22:31:39.100Z",
+        "timestamp": "2025-10-16T22:31:39.1Z",
         "dependencies": [],
         "checksum": "75352D7DF3B0E3FBF28BB89CDECD48B1",
         "targetAbi": "10.10.7.0",
