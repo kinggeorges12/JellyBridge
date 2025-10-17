@@ -41,13 +41,17 @@ public class JellyseerrBridgeService
     private readonly ILibraryManager _libraryManager;
     private readonly IDtoService _dtoService;
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
+    private readonly IUserManager _userManager;
+    private readonly IUserDataManager _userDataManager;
 
-    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator)
+    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator, IUserManager userManager, IUserDataManager userDataManager)
     {
         _logger = logger;
         _libraryManager = libraryManager;
         _dtoService = dtoService;
         _placeholderVideoGenerator = placeholderVideoGenerator;
+        _userManager = userManager;
+        _userDataManager = userDataManager;
     }
 
     /// <summary>
@@ -326,6 +330,77 @@ public class JellyseerrBridgeService
         {
             _logger.LogError(ex, "Error during library scan test");
             return new List<IJellyseerrItem>();
+        }
+    }
+
+    /// <summary>
+    /// Test method to scan all users and their favorite items.
+    /// </summary>
+    public Task<TestFavoritesResult> TestFavoritesScanAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Testing Jellyfin favorites scan functionality...");
+            
+            var result = new TestFavoritesResult();
+            var allUsers = _userManager.Users.ToList();
+            result.TotalUsers = allUsers.Count;
+            
+            _logger.LogInformation("Found {UserCount} users in Jellyfin", allUsers.Count);
+            
+            foreach (var user in allUsers)
+            {
+                var userFavorites = new UserFavorites
+                {
+                    UserId = user.Id,
+                    UserName = user.Username ?? $"User {user.Id}",
+                    Favorites = new List<FavoriteItem>()
+                };
+                
+                // Get all items from all libraries
+                var allItems = _libraryManager.GetItemList(new InternalItemsQuery
+                {
+                    IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
+                    Recursive = true
+                });
+                
+                foreach (var item in allItems)
+                {
+                    var userData = _userDataManager.GetUserData(user, item);
+                    if (userData.IsFavorite)
+                    {
+                        userFavorites.Favorites.Add(new FavoriteItem
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+                            Type = item is Movie ? "Movie" : "Series",
+                            Year = item.ProductionYear,
+                            Path = item.Path
+                        });
+                    }
+                }
+                
+                userFavorites.FavoriteCount = userFavorites.Favorites.Count;
+                result.UserFavorites.Add(userFavorites);
+                
+                if (userFavorites.FavoriteCount > 0)
+                {
+                    result.UsersWithFavorites++;
+                    result.TotalFavorites += userFavorites.FavoriteCount;
+                }
+                
+                _logger.LogDebug("User {UserName} has {FavoriteCount} favorites", userFavorites.UserName, userFavorites.FavoriteCount);
+            }
+            
+            _logger.LogInformation("Favorites scan test completed. {UsersWithFavorites} users have favorites, total {TotalFavorites} favorite items", 
+                result.UsersWithFavorites, result.TotalFavorites);
+            
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during favorites scan test");
+            throw;
         }
     }
 
@@ -616,4 +691,38 @@ public class JellyfinTypeMapping
             _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
         };
     }
+}
+
+/// <summary>
+/// Result of a favorites scan test.
+/// </summary>
+public class TestFavoritesResult
+{
+    public int TotalUsers { get; set; }
+    public int UsersWithFavorites { get; set; }
+    public int TotalFavorites { get; set; }
+    public List<UserFavorites> UserFavorites { get; set; } = new();
+}
+
+/// <summary>
+/// User favorites data.
+/// </summary>
+public class UserFavorites
+{
+    public Guid UserId { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public int FavoriteCount { get; set; }
+    public List<FavoriteItem> Favorites { get; set; } = new();
+}
+
+/// <summary>
+/// Individual favorite item.
+/// </summary>
+public class FavoriteItem
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public int? Year { get; set; }
+    public string? Path { get; set; }
 }

@@ -198,7 +198,7 @@ public class JellyseerrApiService
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
             returnModel: typeof(List<JellyseerrUser>),
-            isPaginated: false,
+            isPaginated: true,
             description: "Get user list"
         ),
         [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
@@ -707,7 +707,7 @@ public class JellyseerrApiService
     public async Task<List<T>> FetchDiscoverMediaAsync<T>() where T : TmdbMediaResult, IJellyseerrItem
     {
         var config = Plugin.GetConfiguration();
-        var networkDict = Plugin.GetConfigOrDefault<Dictionary<int, string>>(nameof(PluginConfiguration.NetworkMap));
+        var networkDict = config?.GetNetworkMapDictionary() ?? new Dictionary<int, string>();
         var allItems = new HashSet<T>();
         
         foreach (var networkId in networkDict.Keys)
