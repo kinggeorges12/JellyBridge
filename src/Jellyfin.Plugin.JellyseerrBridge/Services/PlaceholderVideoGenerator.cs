@@ -15,6 +15,11 @@ public class PlaceholderVideoGenerator
     private readonly ILogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetsPath;
+    
+    // Asset file names for different media types
+    private const string MovieAsset = "movie.png";
+    private const string ShowAsset = "show.png";
+    private const string SeasonAsset = "season.png";
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
     {
@@ -34,7 +39,7 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderMovieAsync(string targetDirectory)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, "movie.png");
+        return await GeneratePlaceholderAsync(targetDirectory, MovieAsset);
     }
 
     /// <summary>
@@ -42,7 +47,7 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderShowAsync(string targetDirectory)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, "show.png");
+        return await GeneratePlaceholderAsync(targetDirectory, ShowAsset);
     }
 
     /// <summary>
@@ -50,7 +55,7 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderSeasonAsync(string targetDirectory)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, "season.png");
+        return await GeneratePlaceholderAsync(targetDirectory, SeasonAsset);
     }
 
     /// <summary>
@@ -368,7 +373,11 @@ public class PlaceholderVideoGenerator
         }
 
         var deletedCount = 0;
-        var placeholderFiles = new[] { "movie.mp4", "show.mp4", "season.mp4" };
+        var placeholderFiles = new[] { 
+            Path.GetFileNameWithoutExtension(MovieAsset) + ".mp4",
+            Path.GetFileNameWithoutExtension(ShowAsset) + ".mp4", 
+            Path.GetFileNameWithoutExtension(SeasonAsset) + ".mp4"
+        };
 
         try
         {

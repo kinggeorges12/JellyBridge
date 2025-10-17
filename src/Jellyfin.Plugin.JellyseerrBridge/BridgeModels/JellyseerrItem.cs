@@ -14,6 +14,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 public interface IJellyseerrItem
 {
     /// <summary>
+    /// The library type for the media item.
+    /// </summary>
+    [JsonIgnore]
+    static virtual string LibraryType => throw new NotImplementedException();
+
+    /// <summary>
     /// The TMDB ID of the media item.
     /// </summary>
     int Id { get; }

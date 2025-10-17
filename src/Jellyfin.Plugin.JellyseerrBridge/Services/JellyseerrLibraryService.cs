@@ -31,8 +31,13 @@ public class JellyseerrLibraryService
         try
         {
             var config = Plugin.GetConfiguration();
-            var syncDirectory = config?.LibraryDirectory;
+            var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
 
+            if (!manageJellyseerrLibrary) {
+                _logger.LogInformation("[JellyseerrLibraryService] Jellyseerr library management is disabled");
+                return true;
+            }
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
                 _logger.LogWarning("[JellyseerrLibraryService] Cannot refresh library - sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
