@@ -46,7 +46,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(EnableDebugLogging), false },
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(Region), "US" },
-        { nameof(ManageLibrariesWithJellyseerrBridge), false },
+        { nameof(ManageJellyseerrLibrary), true },
         { nameof(NetworkMap), new List<NetworkEntry>
             {
                 new NetworkEntry { Name = "Netflix", Id = 213 },
@@ -168,7 +168,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyseerrBridge.
     /// </summary>
-    public bool? ManageLibrariesWithJellyseerrBridge { get; set; }
+    public bool? ManageJellyseerrLibrary { get; set; }
 
 
 

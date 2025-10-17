@@ -181,9 +181,12 @@ public class JellyseerrBridgeService
                 
                 // Get the bridge folder path using the folder manager
                 var bridgeFolderPath = folderManager.GetItemDirectory(bridgeMatch);
-                
+
                 // Add .ignore file creation task to the list
                 ignoreFileTasks.Add(CreateIgnoreFileAsync(bridgeFolderPath, existingItem));
+                
+                // Add placeholder video deletion task to the list
+                ignoreFileTasks.Add(_placeholderVideoGenerator.DeletePlaceholderVideosAsync(bridgeFolderPath));
 
                 // Add the actual bridge model to matches
                 matches.Add(bridgeMatch);
