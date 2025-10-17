@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MediaBrowser.Model.Plugins;
-using Jellyfin.Plugin.JellyseerrBridge.Serialization;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
