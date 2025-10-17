@@ -108,15 +108,31 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 
                 _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
                 
-                return Ok(new
+            // Normalize casing for frontend (camelCase)
+            var userFavoritesCamel = result.UserFavorites.Select(u => new
+            {
+                userId = u.UserId,
+                userName = u.UserName,
+                favoriteCount = u.FavoriteCount,
+                favorites = (u.Favorites ?? new List<FavoriteItem>()).Select(f => new
                 {
-                    success = true,
-                    message = "Favorites scan test completed successfully",
-                    totalUsers = result.TotalUsers,
-                    usersWithFavorites = result.UsersWithFavorites,
-                    totalFavorites = result.TotalFavorites,
-                    userFavorites = result.UserFavorites
-                });
+                    id = f.Id,
+                    name = f.Name,
+                    type = f.Type,
+                    year = f.Year,
+                    path = f.Path
+                }).ToList()
+            }).ToList();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Favorites scan test completed successfully",
+                totalUsers = result.TotalUsers,
+                usersWithFavorites = result.UsersWithFavorites,
+                totalFavorites = result.TotalFavorites,
+                userFavorites = userFavoritesCamel
+            });
             }
             catch (OperationCanceledException)
             {
