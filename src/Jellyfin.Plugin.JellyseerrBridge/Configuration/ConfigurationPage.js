@@ -313,7 +313,7 @@ function initializeLibrarySettings(page) {
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'CreateSeparateLibraries', true);
     setInputField(page, 'LibraryPrefix');
-    setInputField(page, 'ManageLibrariesWithJellyseerrBridge', true);
+    setInputField(page, 'ManageJellyseerrLibrary', true);
     
     updateLibraryPrefixState();
     
@@ -767,7 +767,7 @@ function savePluginConfiguration(view) {
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
             config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-            config.ManageLibrariesWithJellyseerrBridge = nullIfDefault(form.querySelector('#ManageLibrariesWithJellyseerrBridge').checked, config.DefaultValues.ManageLibrariesWithJellyseerrBridge);
+            config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
             
             // Save the configuration using our custom endpoint
             return fetch('/JellyseerrBridge/UpdatePluginConfiguration', {

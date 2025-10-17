@@ -66,9 +66,9 @@ public class PlaceholderVideoGenerator
             // Build cache directory in the system temp path
             var cacheDir = Path.Combine(Path.GetTempPath(), "JellyseerrBridge", "placeholders");
             Directory.CreateDirectory(cacheDir);
-            var dur = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds)) ?? 10;
+            var videoDuration = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var cachePath = Path.Combine(cacheDir, $"{assetStem}_{dur}.mp4");
+            var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}.mp4");
 
             if (!File.Exists(cachePath))
             {
@@ -229,21 +229,21 @@ public class PlaceholderVideoGenerator
             }
 
             // Resolve duration from configuration
-            var duration = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds)) ?? 10;
+            var videoDuration = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             
-            if (duration <= 0)
+            if (videoDuration <= 0)
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Invalid duration: {Duration}. Must be greater than 0.", duration);
+                _logger.LogError("[PlaceholderVideoGenerator] Invalid duration: {Duration}. Must be greater than 0.", videoDuration);
                 return false;
             }
 
             // Build FFmpeg command
-            var arguments = $"-loop 1 -i \"{assetPath}\" -t {duration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
+            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
             _logger.LogInformation("[PlaceholderVideoGenerator] Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
             _logger.LogInformation("[PlaceholderVideoGenerator] Asset path: {AssetPath}, Duration: {Duration}", 
-                assetPath, duration);
+                assetPath, videoDuration);
             _logger.LogInformation("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
                 _mediaEncoder.EncoderPath, arguments);
 
@@ -352,5 +352,60 @@ public class PlaceholderVideoGenerator
             _logger.LogWarning(ex, "[PlaceholderVideoGenerator] FFmpeg availability check failed");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Deletes placeholder video files from the specified directory and its subfolders.
+    /// </summary>
+    /// <param name="bridgeFolderPath">The bridge folder path to clean up</param>
+    /// <returns>Number of placeholder files deleted</returns>
+    public async Task<int> DeletePlaceholderVideosAsync(string bridgeFolderPath)
+    {
+        if (string.IsNullOrEmpty(bridgeFolderPath) || !Directory.Exists(bridgeFolderPath))
+        {
+            _logger.LogDebug("[PlaceholderVideoGenerator] Directory does not exist or is empty: {BridgeFolderPath}", bridgeFolderPath);
+            return 0;
+        }
+
+        var deletedCount = 0;
+        var placeholderFiles = new[] { "movie.mp4", "show.mp4", "season.mp4" };
+
+        try
+        {
+            _logger.LogDebug("[PlaceholderVideoGenerator] Cleaning up placeholder videos in: {BridgeFolderPath}", bridgeFolderPath);
+
+            // Delete placeholder files in current directory and all subdirectories
+            foreach (var placeholderFile in placeholderFiles)
+            {
+                var searchPattern = $"*{placeholderFile}";
+                var files = Directory.GetFiles(bridgeFolderPath, searchPattern, SearchOption.AllDirectories);
+                
+                foreach (var filePath in files)
+                {
+                    try
+                    {
+                        await Task.Run(() => File.Delete(filePath));
+                        _logger.LogDebug("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
+                        deletedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[PlaceholderVideoGenerator] Failed to delete placeholder file: {FilePath}", filePath);
+                    }
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                _logger.LogInformation("[PlaceholderVideoGenerator] Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
+                    deletedCount, bridgeFolderPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[PlaceholderVideoGenerator] Error cleaning up placeholder videos in {BridgeFolderPath}", bridgeFolderPath);
+        }
+
+        return deletedCount;
     }
 }

@@ -235,7 +235,7 @@ public partial class JellyseerrSyncService
                 result.MoviesResult.Created, result.MoviesResult.Updated, result.ShowsResult.Created, result.ShowsResult.Updated);
 
             // Check if library management is enabled
-            if (config?.ManageLibrariesWithJellyseerrBridge == true)
+            if (config?.ManageJellyseerrLibrary == true)
             {
                 _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
                 var refreshSuccess = await _libraryService.RefreshJellyseerrLibraryAsync();

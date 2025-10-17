@@ -41,20 +41,19 @@ public class JellyseerrLibraryService
 
             _logger.LogInformation("[JellyseerrLibraryService] Starting Jellyseerr library refresh...");
 
-            // Find the Jellyseerr library
+            // Find all libraries that contain Jellyseerr folders
             var libraries = _libraryManager.GetVirtualFolders();
-            var jellyseerrLibrary = libraries.FirstOrDefault(lib => 
-                lib.Locations?.Any(location => JellyseerrFolderUtils.IsPathInSyncDirectory(location)) == true ||
-                lib.Name?.Contains("Jellyseerr", StringComparison.OrdinalIgnoreCase) == true ||
-                lib.Name?.Contains("Bridge", StringComparison.OrdinalIgnoreCase) == true);
+            var jellyseerrLibraries = libraries.Where(lib => 
+                lib.Locations?.Any(location => JellyseerrFolderUtils.IsPathInSyncDirectory(location)) == true).ToList();
 
-            if (jellyseerrLibrary == null)
+            if (!jellyseerrLibraries.Any())
             {
-                _logger.LogWarning("[JellyseerrLibraryService] Jellyseerr library not found for refresh");
+                _logger.LogWarning("[JellyseerrLibraryService] No Jellyseerr libraries found for refresh");
                 return false;
             }
 
-            _logger.LogInformation("[JellyseerrLibraryService] Found Jellyseerr library: {LibraryName}", jellyseerrLibrary.Name);
+            _logger.LogInformation("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
+                jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
             // Create refresh options with default settings
             var refreshOptions = CreateDefaultRefreshOptions();
@@ -62,16 +61,24 @@ public class JellyseerrLibraryService
             _logger.LogInformation("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
                 refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
 
-            // Get the root folder for the Jellyseerr library
-            var rootFolder = _libraryManager.RootFolder;
-            if (rootFolder == null)
+            // Refresh all Jellyseerr libraries
+            var refreshTasks = new List<Task>();
+            foreach (var jellyseerrLibrary in jellyseerrLibraries)
             {
-                _logger.LogError("[JellyseerrLibraryService] Root folder not found");
-                return false;
+                var libraryFolder = _libraryManager.GetItemById(jellyseerrLibrary.ItemId);
+                if (libraryFolder != null)
+                {
+                    _logger.LogInformation("[JellyseerrLibraryService] Refreshing library: {LibraryName}", jellyseerrLibrary.Name);
+                    refreshTasks.Add(libraryFolder.RefreshMetadata(refreshOptions, CancellationToken.None));
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrLibraryService] Library folder not found for: {LibraryName}", jellyseerrLibrary.Name);
+                }
             }
 
-            // Refresh the library
-            await rootFolder.RefreshMetadata(CancellationToken.None);
+            // Wait for all refreshes to complete
+            await Task.WhenAll(refreshTasks);
             
             _logger.LogInformation("[JellyseerrLibraryService] Jellyseerr library refresh completed successfully");
             return true;
@@ -97,45 +104,5 @@ public class JellyseerrLibraryService
             RegenerateTrickplay = false,
             ForceSave = true
         };
-    }
-
-    /// <summary>
-    /// Validates that the Jellyseerr library is properly configured and accessible.
-    /// </summary>
-    /// <returns>True if the library is valid, false otherwise.</returns>
-    public Task<bool> ValidateJellyseerrLibraryAsync()
-    {
-        try
-        {
-            var config = Plugin.GetConfiguration();
-            var syncDirectory = config?.LibraryDirectory;
-
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                _logger.LogWarning("[JellyseerrLibraryService] Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return Task.FromResult(false);
-            }
-
-            // Find the Jellyseerr library
-            var libraries = _libraryManager.GetVirtualFolders();
-            var jellyseerrLibrary = libraries.FirstOrDefault(lib => 
-                lib.Locations?.Any(location => JellyseerrFolderUtils.IsPathInSyncDirectory(location)) == true ||
-                lib.Name?.Contains("Jellyseerr", StringComparison.OrdinalIgnoreCase) == true ||
-                lib.Name?.Contains("Bridge", StringComparison.OrdinalIgnoreCase) == true);
-
-            if (jellyseerrLibrary == null)
-            {
-                _logger.LogWarning("[JellyseerrLibraryService] Jellyseerr library not found");
-                return Task.FromResult(false);
-            }
-
-            _logger.LogInformation("[JellyseerrLibraryService] Jellyseerr library validation successful: {LibraryName}", jellyseerrLibrary.Name);
-            return Task.FromResult(true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[JellyseerrLibraryService] Error validating Jellyseerr library");
-            return Task.FromResult(false);
-        }
     }
 }
