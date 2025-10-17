@@ -2,7 +2,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
-using Jellyfin.Plugin.JellyseerrBridge.Serialization;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;

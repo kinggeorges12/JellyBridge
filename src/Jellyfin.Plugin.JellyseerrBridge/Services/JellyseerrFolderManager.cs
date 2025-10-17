@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using System.Text;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
-using Jellyfin.Plugin.JellyseerrBridge.Serialization;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using System.Linq;
