@@ -432,14 +432,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 config.Region = targetRegion;
                 
                 // Get networks for both movies and TV, then combine and deduplicate
-                var movieNetworksTask = _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
-                var showNetworksTask = _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
+                var movieNetworksList = (List<JellyseerrNetwork>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
+                var showNetworksList = (List<JellyseerrNetwork>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
-                await Task.WhenAll(movieNetworksTask, showNetworksTask);
-
-                var movieNetworksList = (List<JellyseerrNetwork>)await movieNetworksTask;
-                var showNetworksList = (List<JellyseerrNetwork>)await showNetworksTask;
-
                 _logger.LogInformation("[JellyseerrBridge] MovieNetworks response type: {Type}, Count: {Count}", 
                     movieNetworksList?.GetType().Name ?? "null", 
                     movieNetworksList?.Count ?? 0);

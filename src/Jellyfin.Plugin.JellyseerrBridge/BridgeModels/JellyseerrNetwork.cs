@@ -27,11 +27,7 @@ public class JellyseerrNetwork : TmdbWatchProviderDetails
     }
 
     [JsonPropertyName("displayPriority")]
-    public new int? DisplayPriority
-    { 
-        get => base.DisplayPriority;
-        set => base.DisplayPriority = value;
-    }
+    public new int? DisplayPriority { get; set; }
 
     [JsonPropertyName("country")]
     public string Country { get; set; } = string.Empty;
