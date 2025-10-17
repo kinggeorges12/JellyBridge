@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.247.0.0/JellyseerrBridge-0.247.0.0-DLL.zip",
+        "timestamp": "2025-10-17T20:24:24.883Z",
+        "version": "0.247.0.0",
+        "changelog": "v0.247.0.0 - v0.247.0.0 - Generic delegating JSON converter added; unified DefaultOptions<T> path; Network model uses attribute-based converter.",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "checksum": "0F86C45BB99EA6AA9566D6194CDA7415"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.246.0.0/JellyseerrBridge-0.246.0.0-DLL.zip",
         "checksum": "A252C23B6028393C5AE9ECB09B03C7EF",
         "changelog": "v0.246.0.0 - v0.246.0.0 - Network config parsing fixes, UI data-attr handling, and release build stabilization",

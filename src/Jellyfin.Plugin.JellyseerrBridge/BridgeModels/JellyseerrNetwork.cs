@@ -1,5 +1,7 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.Serialization;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
@@ -7,27 +9,28 @@ namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 /// Bridge model for Jellyseerr networks that maps the actual API response format.
 /// Inherits from TmdbWatchProviderDetails but uses the correct JSON property names from Jellyseerr API.
 /// </summary>
+[JsonConverter(typeof(JellyseerrDelegatingConverter<JellyseerrNetwork>))]
 public class JellyseerrNetwork : TmdbWatchProviderDetails
 {
     [JsonPropertyName("id")]
-    public int Id 
+    public int Id
     { 
-        get => ProviderId; 
-        set => ProviderId = value; 
+        get => ProviderId;
+        set => ProviderId = value;
     }
 
     [JsonPropertyName("name")]
-    public string Name 
+    public string Name
     { 
-        get => ProviderName; 
-        set => ProviderName = value; 
+        get => ProviderName;
+        set => ProviderName = value;
     }
 
     [JsonPropertyName("displayPriority")]
-    public new int DisplayPriority 
+    public new int? DisplayPriority
     { 
-        get => base.DisplayPriority ?? 0; 
-        set => base.DisplayPriority = value; 
+        get => base.DisplayPriority;
+        set => base.DisplayPriority = value;
     }
 
     [JsonPropertyName("country")]
