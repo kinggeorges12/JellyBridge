@@ -22,4 +22,11 @@ public class JellyseerrNetwork : TmdbWatchProviderDetails
         get => ProviderName; 
         set => ProviderName = value; 
     }
+
+    [JsonPropertyName("displayPriority")]
+    public new int DisplayPriority 
+    { 
+        get => base.DisplayPriority ?? 0; 
+        set => base.DisplayPriority = value; 
+    }
 }

@@ -93,6 +93,58 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
+        [HttpPost("TestFavoritesScan")]
+        public async Task<IActionResult> TestFavoritesScan()
+        {
+            _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan endpoint called");
+            
+            try
+            {
+                // Add timeout to prevent hanging
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                
+                _logger.LogInformation("[JellyseerrBridge] Starting favorites scan...");
+                var result = await _bridgeService.TestFavoritesScanAsync();
+                
+                _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
+                
+                return Ok(new
+                {
+                    success = true,
+                    message = "Favorites scan test completed successfully",
+                    totalUsers = result.TotalUsers,
+                    usersWithFavorites = result.UsersWithFavorites,
+                    totalFavorites = result.TotalFavorites,
+                    userFavorites = result.UserFavorites
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("[JellyseerrBridge] TestFavoritesScan timed out after 2 minutes");
+                return StatusCode(408, new { 
+                    error = "Request timeout",
+                    details = "Favorites scan took too long and was cancelled. This might indicate a very large library or many users.",
+                    totalUsers = 0,
+                    usersWithFavorites = 0,
+                    totalFavorites = 0,
+                    userFavorites = new List<UserFavorites>()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Error in TestFavoritesScan endpoint");
+                return StatusCode(500, new { 
+                    error = "Internal server error", 
+                    details = ex.Message,
+                    totalUsers = 0,
+                    usersWithFavorites = 0,
+                    totalFavorites = 0,
+                    userFavorites = new List<UserFavorites>()
+                });
+            }
+        }
+
+
         [HttpGet("GetPluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {

@@ -317,21 +317,21 @@ function initializeLibrarySettings(page) {
     
     updateLibraryPrefixState();
     
-    // Test Library Scan button functionality
-    const testLibraryScanButton = page.querySelector('#testLibraryScan');
-    const testLibraryScanResult = page.querySelector('#testLibraryScanResult');
+    // Test Favorites Scan button functionality
+    const testFavoritesScanButton = page.querySelector('#testFavoritesScan');
+    const testFavoritesScanResult = page.querySelector('#testFavoritesScanResult');
     
-    if (testLibraryScanButton) {
-        testLibraryScanButton.addEventListener('click', async function() {
+    if (testFavoritesScanButton) {
+        testFavoritesScanButton.addEventListener('click', async function() {
             // Show immediate feedback that button was clicked
-            testLibraryScanResult.textContent = '🔄 Testing library scan...';
-            testLibraryScanResult.style.display = 'block';
+            testFavoritesScanResult.textContent = '🔄 Testing favorites scan...';
+            testFavoritesScanResult.style.display = 'block';
             
-            testLibraryScanButton.disabled = true;
-            testLibraryScanButton.querySelector('span').textContent = 'Testing...';
+            testFavoritesScanButton.disabled = true;
+            testFavoritesScanButton.querySelector('span').textContent = 'Testing...';
             
             try {
-                const response = await fetch('/JellyseerrBridge/TestLibraryScan', {
+                const response = await fetch('/JellyseerrBridge/TestFavoritesScan', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -341,40 +341,39 @@ function initializeLibrarySettings(page) {
                 const result = await response.json();
                 
                 if (response.ok) {
-                    let resultText = `Library Scan Test Results:\n`;
-                    resultText += `Sync Directory: ${result.syncDirectory || 'Not configured'}\n`;
-                    resultText += `ExcludeFromMainLibraries: ${result.excludeFromMainLibraries}\n\n`;
-                    resultText += `ℹ️ ${result.message}\n`;
+                    let resultText = `Favorites Scan Test Results:\n`;
+                    resultText += `Total Users: ${result.totalUsers || 0}\n`;
+                    resultText += `Users with Favorites: ${result.usersWithFavorites || 0}\n`;
+                    resultText += `Total Favorite Items: ${result.totalFavorites || 0}\n\n`;
                     
-                    if (result.movieCount > 0 || result.tvShowCount > 0) {
-                        resultText += `Movies in main libraries: ${result.movieCount}\n`;
-                        resultText += `TV Shows in main libraries: ${result.tvShowCount}`;
-                    }
-                    
-                    if (result.bridgeItems && result.bridgeItems.length > 0) {
-                        resultText += `\n\nBridge Items Found (${result.bridgeItems.length}):`;
-                        result.bridgeItems.forEach((item, index) => {
-                            const yearText = item._year ? ` (${item._year})` : '';
-                            const name = item._mediaName || 'undefined';
-                            const tmdbId = item.id ? ` [tmdbid-${item.id}]` : '';
-                            resultText += `\n${index + 1}. ${name}${yearText} [${item.mediaType}]${tmdbId}`;
+                    if (result.userFavorites && result.userFavorites.length > 0) {
+                        resultText += `User Favorites:\n`;
+                        result.userFavorites.forEach((user, index) => {
+                            resultText += `\n${index + 1}. ${user.userName} (${user.favoriteCount} favorites):\n`;
+                            if (user.favorites && user.favorites.length > 0) {
+                                user.favorites.forEach((favorite, favIndex) => {
+                                    resultText += `   ${favIndex + 1}. ${favorite.name} (${favorite.type})\n`;
+                                });
+                            } else {
+                                resultText += `   No favorites found.\n`;
+                            }
                         });
                     } else {
-                        resultText += `\n\nNo bridge items found.`;
+                        resultText += `\nNo user favorites found.`;
                     }
                     
-                    testLibraryScanResult.textContent = resultText;
-                    testLibraryScanResult.style.display = 'block';
+                    testFavoritesScanResult.textContent = resultText;
+                    testFavoritesScanResult.style.display = 'block';
                 } else {
-                    testLibraryScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
-                    testLibraryScanResult.style.display = 'block';
+                    testFavoritesScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
+                    testFavoritesScanResult.style.display = 'block';
                 }
             } catch (error) {
-                testLibraryScanResult.textContent = `❌ Test failed: ${error.message}`;
-                testLibraryScanResult.style.display = 'block';
+                testFavoritesScanResult.textContent = `❌ Test failed: ${error.message}`;
+                testFavoritesScanResult.style.display = 'block';
             } finally {
-                testLibraryScanButton.disabled = false;
-                testLibraryScanButton.querySelector('span').textContent = 'Test Library Scan';
+                testFavoritesScanButton.disabled = false;
+                testFavoritesScanButton.querySelector('span').textContent = 'Test Favorites Scan';
             }
         });
     }
