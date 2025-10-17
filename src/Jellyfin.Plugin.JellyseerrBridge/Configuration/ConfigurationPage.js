@@ -385,33 +385,6 @@ function initializeLibrarySettings(page) {
 }
 
 
-// Function to initialize advanced settings
-function initializeAdvancedSettings(page) {
-    // Set advanced settings form values with null handling
-    setInputField(page, 'RequestTimeout');
-    setInputField(page, 'RetryAttempts');
-    setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'PlaceholderDurationSeconds');
-    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
-    if (placeholderDurationInput) {
-        placeholderDurationInput.addEventListener('input', function() {
-            if (this.value && parseInt(this.value) < 1) {
-                this.value = '1';
-            }
-        });
-    }
-    setInputField(page, 'EnableDebugLogging', true);
-    
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
-        });
-    }
-}
-
-
 // Function to initialize sync settings including network interface and sync buttons
 function initializeSyncSettings(page) {
     const config = window.configJellyseerrBridge || {};
@@ -518,6 +491,33 @@ function initializeSyncSettings(page) {
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
+        });
+    }
+}
+
+
+// Function to initialize advanced settings
+function initializeAdvancedSettings(page) {
+    // Set advanced settings form values with null handling
+    setInputField(page, 'RequestTimeout');
+    setInputField(page, 'RetryAttempts');
+    setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'PlaceholderDurationSeconds');
+    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
+    if (placeholderDurationInput) {
+        placeholderDurationInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 1) {
+                this.value = '1';
+            }
+        });
+    }
+    setInputField(page, 'EnableDebugLogging', true);
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
         });
     }
 }
@@ -778,7 +778,7 @@ function savePluginConfiguration(view) {
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
             config.Region = form.querySelector('#selectWatchRegion').value;
-            config.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+            config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
