@@ -580,7 +580,9 @@ function populateSelectWithNetworks(selectElement, networks) {
 
             // Network object with id
             option.value = network.id.toString();
-            option.textContent = `${network.displayPriority}. ${network.name} (${network.id})${network.country ? ` [${network.country}]` : ''}`;
+            const displayText = `${network.displayPriority.toString().padStart(3, ' ')}. ${network.name} (${network.id})${network.country ? ` [${network.country}]` : ''}`;
+            option.textContent = displayText;
+            option.title = displayText; // Add hover tooltip
             
             // Store ALL properties as data attributes with proper prefixes
             Object.keys(network).forEach(key => {

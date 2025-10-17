@@ -26,8 +26,6 @@ public partial class JellyseerrSyncService
     private readonly JellyseerrBridgeService _bridgeService;
     private readonly JellyseerrLibraryService _libraryService;
     
-    // Semaphore to ensure only one sync operation runs at a time
-    private static readonly SemaphoreSlim _syncSemaphore = new SemaphoreSlim(1, 1);
 
     public JellyseerrSyncService(
         ILogger<JellyseerrSyncService> logger,
@@ -48,35 +46,17 @@ public partial class JellyseerrSyncService
     /// </summary>
     public async Task<SyncResult> CreateBridgeFoldersAsync()
     {
-        // Check if another sync operation is already running
-        if (!await _syncSemaphore.WaitAsync(TimeSpan.Zero))
-        {
-            _logger.LogWarning("Another sync operation is already running. Skipping this request.");
-            return new SyncResult
-            {
-                Success = false,
-                Message = "Another sync operation is already running. Please wait for it to complete.",
-                MoviesResult = new ProcessResult(),
-                ShowsResult = new ProcessResult()
-            };
-        }
-
-        try
-        {
-            _logger.LogInformation("Starting Jellyseerr sync operation...");
-            return await CreateBridgeFoldersInternalAsync();
-        }
-        finally
-        {
-            _syncSemaphore.Release();
-            _logger.LogInformation("Jellyseerr sync operation completed and lock released.");
-        }
+        return await Plugin.ExecuteWithLockAsync(
+            async () => await CreateBridgeFoldersInternalAsync(),
+            _logger,
+            "Jellyseerr Sync Operation"
+        );
     }
 
     /// <summary>
     /// Check if a sync operation is currently running.
     /// </summary>
-    public bool IsSyncRunning => _syncSemaphore.CurrentCount == 0;
+    public bool IsSyncRunning => Plugin.IsOperationRunning;
 
     /// <summary>
     /// Internal method that performs the actual sync operation.

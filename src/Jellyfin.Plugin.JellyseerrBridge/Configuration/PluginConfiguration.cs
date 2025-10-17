@@ -51,7 +51,7 @@ public class PluginConfiguration : BasePluginConfiguration
                 new JellyseerrNetwork { Country = "US", Name = "NBC", Id = 79, DisplayPriority = 51 }, // NBC: 6    
                 //new JellyseerrNetwork { Name = "CBS", Id = 16 }, // Not available on show providers
                 new JellyseerrNetwork { Country = "US", Name = "Paramount Plus", Id = 531, DisplayPriority = 6 }, // Paramount+: 4330
-                new JellyseerrNetwork { Country = "GB", Name = "BBC iPlayer", Id = 2039, DisplayPriority = 12 }, // BBC One: 4
+                new JellyseerrNetwork { Country = "GB", Name = "BBC iPlayer", Id = 38, DisplayPriority = 12 }, // BBC One: 4
                 new JellyseerrNetwork { Country = "US", Name = "Cartoon Network Amazon Channel", Id = 2329, DisplayPriority = 240 }, // Cartoon Network: 56
                 new JellyseerrNetwork { Country = "US", Name = "Adult Swim", Id = 318, DisplayPriority = 95 }, // Adult Swim: 80
                 //new JellyseerrNetwork { Name = "Nickelodeon", Id = 13 }, // Not available on show providers
