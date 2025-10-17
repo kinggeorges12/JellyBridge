@@ -178,3 +178,16 @@ public static class JellyseerrJsonSerializer
         return JsonSerializer.Serialize(value, mergedOptions);
     }
 }
+
+/// <summary>
+/// Generic delegating converter that routes any type through JellyseerrJsonSerializer.DefaultOptions.
+/// </summary>
+/// <typeparam name="T">The type to convert.</typeparam>
+public sealed class JellyseerrDelegatingConverter<T> : JsonConverter<T> where T : class
+{
+    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        => JsonSerializer.Deserialize<T>(ref reader, JellyseerrJsonSerializer.DefaultOptions<T>()) ?? (T)Activator.CreateInstance(typeof(T))!;
+
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        => JsonSerializer.Serialize(writer, value, JellyseerrJsonSerializer.DefaultOptions<T>());
+}
