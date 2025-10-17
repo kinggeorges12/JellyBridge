@@ -239,16 +239,18 @@ public class JellyseerrApiService
             typeof(List<JellyseerrWatchProviderRegion>),
             description: "Get watch provider regions"
         ),
-            [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(
-                "/api/v1/watchproviders/movies",
-                typeof(List<JellyseerrNetwork>),
-                description: "Get movie watch providers"
-            ),
-            [JellyseerrEndpoint.WatchProvidersTv] = new JellyseerrEndpointConfig(
-                "/api/v1/watchproviders/tv",
-                typeof(List<JellyseerrNetwork>),
-                description: "Get TV watch providers"
-            ),
+
+        [JellyseerrEndpoint.WatchProvidersMovies] = new JellyseerrEndpointConfig(
+            "/api/v1/watchproviders/movies",
+            typeof(List<JellyseerrNetwork>),
+            description: "Get movie watch providers"
+        ),
+        
+        [JellyseerrEndpoint.WatchProvidersTv] = new JellyseerrEndpointConfig(
+            "/api/v1/watchproviders/tv",
+            typeof(List<JellyseerrNetwork>),
+            description: "Get TV watch providers"
+        ),
     };
 
     /// <summary>
@@ -339,13 +341,6 @@ public class JellyseerrApiService
         var expectedType = GetEndpoint(endpoint).ResponseModel;
         return typeof(TResponse).IsAssignableFrom(expectedType);
     }
-
-
-
-
-
-
-
 
     /// <summary>
     /// Gets the default value for type T.
@@ -493,15 +488,17 @@ public class JellyseerrApiService
     /// <returns>The response in the correct type for the endpoint</returns>
     public async Task<object> CallEndpointAsync(
         JellyseerrEndpoint endpoint, 
-        PluginConfiguration? config = null)
-    {
+        PluginConfiguration? config = null,
+        Dictionary<string, string>? parameters = null,
+        Dictionary<string, string>? templates = null
+    ) {
+        // Use default plugin config if none provided
+        config ??= Plugin.GetConfiguration();
+        
         string? content = null;
         var operationName = endpoint.ToString();
         try
         {
-            // Use default plugin config if none provided
-            config ??= Plugin.GetConfiguration();
-            
             // Get endpoint configuration
             var endpointConfig = GetEndpoint(endpoint);
             
@@ -509,7 +506,11 @@ public class JellyseerrApiService
             
             // Handle endpoint-specific logic
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
-            
+
+            // Merge parameters if they exist, otherwise keep existing
+            queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, string>>()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? parameters;
+            templateValues = templateValues?.Concat(templates ?? Enumerable.Empty<KeyValuePair<string, string>>()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? templates;
+
             // Handle response based on pagination
             _logger.LogInformation("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
             if (endpointConfig.IsPaginated)
@@ -628,141 +629,6 @@ public class JellyseerrApiService
         }
     }
 
-    /// <summary>
-    /// Test connection method that throws exceptions instead of returning default values.
-    /// Used specifically for connection testing where we want to know about failures.
-    /// </summary>
-    /// <param name="endpoint">The endpoint to test</param>
-    /// <param name="config">Plugin configuration</param>
-    /// <returns>The response in the correct type for the endpoint</returns>
-    /// <exception cref="HttpRequestException">When HTTP request fails</exception>
-    /// <exception cref="TimeoutException">When request times out</exception>
-    /// <exception cref="JsonException">When JSON deserialization fails</exception>
-    public async Task<object> TestConnectionAsync(
-        JellyseerrEndpoint endpoint, 
-        PluginConfiguration config)
-    {
-        string? content = null;
-        var operationName = endpoint.ToString();
-        
-        // Use the same retry logic as CallEndpointAsync but throw exceptions instead of returning defaults
-        var retryAttempts = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RetryAttempts), config) ?? 3;
-        var enableDebugLogging = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.EnableDebugLogging), config) ?? false;
-        Exception? lastException = null;
-        
-        for (int attempt = 1; attempt <= retryAttempts; attempt++)
-        {
-            try
-            {
-                // Get endpoint configuration
-                var endpointConfig = GetEndpoint(endpoint);
-                
-                _logger.LogInformation("Testing connection to endpoint: {Endpoint}", endpoint);
-                
-                // Handle endpoint-specific logic
-                var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
-                
-                // Make the HTTP request
-                var request = JellyseerrUrlBuilder.CreateRequest(
-                    config.JellyseerrUrl, 
-                    endpoint, 
-                    config.ApiKey, 
-                    HttpMethod.Get, 
-                    queryParameters, 
-                    templateValues
-                );
-                
-                var response = await _httpClient.SendAsync(request);
-                content = await response.Content.ReadAsStringAsync();
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        errorMessage += $" - {content}";
-                    }
-                    throw new HttpRequestException(errorMessage);
-                }
-                
-                // Deserialize using the response type from endpoint config
-                var responseType = endpointConfig.ResponseModel;
-                var result = JsonSerializer.Deserialize(content, responseType);
-                
-                if (result == null)
-                {
-                    throw new InvalidOperationException($"Deserialization returned null for {operationName}");
-                }
-                
-                _logger.LogInformation("Successfully tested connection to {Operation}", operationName);
-                return result;
-            }
-            catch (TaskCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
-            {
-                lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} timed out", 
-                        attempt, retryAttempts);
-                }
-                
-                if (attempt == retryAttempts)
-                {
-                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts timed out", retryAttempts);
-                    throw new TimeoutException($"Connection test timed out after {retryAttempts} attempts", ex);
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} failed: {Error}", 
-                        attempt, retryAttempts, ex.Message);
-                }
-                
-                if (attempt == retryAttempts)
-                {
-                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts failed", retryAttempts);
-                    throw;
-                }
-            }
-            catch (JsonException jsonEx)
-            {
-                _logger.LogError(jsonEx, "Failed to deserialize {Operation} response JSON. Content: {Content}", operationName, content);
-                throw new JsonException($"Failed to deserialize {operationName} response: {jsonEx.Message}", jsonEx);
-            }
-            catch (Exception ex)
-            {
-                lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] Connection test attempt {Attempt}/{MaxAttempts} failed with unexpected error: {Error}", 
-                        attempt, retryAttempts, ex.Message);
-                }
-                
-                if (attempt == retryAttempts)
-                {
-                    _logger.LogError("[JellyseerrBridge] All {MaxAttempts} connection test attempts failed with unexpected error", retryAttempts);
-                    throw;
-                }
-            }
-            
-            // Wait before retry (exponential backoff)
-            if (attempt < retryAttempts)
-            {
-                var delay = TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, attempt - 1))); // 1s, 2s, 4s, etc. up to 60 seconds
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
-                }
-                await Task.Delay(delay);
-            }
-        }
-        
-        throw lastException ?? new InvalidOperationException("All connection test attempts failed");
-    }
-
     #endregion
 
     #region Factory Helper Methods
@@ -798,7 +664,7 @@ public class JellyseerrApiService
             JellyseerrEndpoint.UserRequests => (
                 null,
                 new Dictionary<string, string> 
-                { 
+                {
                     ["id"] = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.UserId), config).ToString() 
                 }
             ),
@@ -831,6 +697,72 @@ public class JellyseerrApiService
         }
         
         return Activator.CreateInstance(returnModelType) ?? new object();
+    }
+
+    /// <summary>
+    /// Generic method to fetch discover data for all networks using the specified endpoint.
+    /// </summary>
+    /// <typeparam name="T">The Jellyseerr type (JellyseerrMovie or JellyseerrShow)</typeparam>
+    /// <returns>List of items fetched from all networks</returns>
+    public async Task<List<T>> FetchDiscoverMediaAsync<T>() where T : TmdbMediaResult, IJellyseerrItem
+    {
+        var config = Plugin.GetConfiguration();
+        var networkDict = Plugin.GetConfigOrDefault<Dictionary<int, string>>(nameof(PluginConfiguration.NetworkMap));
+        var allItems = new HashSet<T>();
+        
+        foreach (var networkId in networkDict.Keys)
+        {
+            if (networkDict.TryGetValue(networkId, out var networkName))
+            {
+                _logger.LogInformation("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId})", T.LibraryType, networkName, networkId);
+                
+                // Add networkId parameter to query parameters
+                var networkIdParameters = new Dictionary<string, string> { ["networkId"] = networkId.ToString() };
+                JellyseerrEndpoint? endpoint = null;  
+                if (typeof(T) == typeof(JellyseerrMovie)) {
+                    endpoint = JellyseerrEndpoint.DiscoverMovies;
+                } else if (typeof(T) == typeof(JellyseerrShow)) {
+                    endpoint = JellyseerrEndpoint.DiscoverTv;
+                }
+                if (endpoint == null) {
+                    _logger.LogError("Unsupported type: {Type}", typeof(T));
+                    throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
+                }
+
+                var networkData = await CallEndpointAsync(endpoint.Value, config, parameters: networkIdParameters);
+                
+                if (networkData == null)
+                {
+                    _logger.LogWarning("API call returned null for {MediaType} endpoint for network: {NetworkName}", T.LibraryType, networkName);
+                    continue;
+                }
+                
+                var items = (List<T>)networkData;
+                
+                if (items.Count == 0)
+                {
+                    _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, networkName);
+                }
+                
+                // Add items to HashSet (automatically handles duplicates)
+                foreach (var item in items)
+                {
+                    allItems.Add(item);
+                }
+                
+                _logger.LogInformation("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, networkName);
+            }
+            else
+            {
+                _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
+            }
+        }
+        
+        // Convert HashSet to List for return
+        var result = allItems.ToList();
+        _logger.LogInformation("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
+        
+        return result;
     }
 
     #endregion

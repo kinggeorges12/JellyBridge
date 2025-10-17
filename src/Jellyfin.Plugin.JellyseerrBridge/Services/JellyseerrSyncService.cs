@@ -83,7 +83,6 @@ public partial class JellyseerrSyncService
     /// </summary>
     private async Task<SyncResult> CreateBridgeFoldersInternalAsync()
     {
-        var config = Plugin.GetConfiguration();
         var result = new SyncResult();
         
         if (!Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.IsEnabled)) ?? false)
@@ -99,7 +98,8 @@ public partial class JellyseerrSyncService
             _logger.LogInformation("Starting folder structure creation...");
 
             // Test connection first
-            if (!await TestConnectionAsync(config))
+            var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status);
+            if (status == null)
             {
                 _logger.LogWarning("Failed to connect to Jellyseerr, skipping folder structure creation");
                 result.Success = false;
@@ -108,79 +108,18 @@ public partial class JellyseerrSyncService
             }
 
             // Get data from Jellyseerr - handle network iteration business logic here
-            var allMovies = new List<JellyseerrMovie>();
-            var allShows = new List<JellyseerrShow>();
             
-            // Get network ID-to-name mapping
-            var networkDict = config.GetNetworkMapDictionary();
+            // Fetch movies for all networks
+            var discoverMovies = await _apiService.FetchDiscoverMediaAsync<JellyseerrMovie>();
             
-            // Loop through each active network for movies
-            foreach (var networkId in networkDict.Keys)
-            {
-                if (networkDict.TryGetValue(networkId, out var networkName))
-                {
-                    _logger.LogInformation("Fetching movies for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                    
-                    var networkMovies = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, config);
-                    
-                    if (networkMovies == null)
-                    {
-                        _logger.LogError("API call returned null for movies endpoint for network: {NetworkName}", networkName);
-                        throw new InvalidOperationException($"Failed to retrieve movies for network {networkName} - API returned null");
-                    }
-                    
-                    var movies = (List<JellyseerrMovie>)networkMovies;
-                    
-                    if (movies.Count == 0)
-                    {
-                        _logger.LogWarning("No movies returned for network: {NetworkName}", networkName);
-                    }
-                    
-                    allMovies.AddRange(movies);
-                    _logger.LogInformation("Retrieved {MovieCount} movies for {NetworkName}", movies.Count, networkName);
-                }
-                else
-                {
-                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-                }
-            }
-            
-            // Loop through each active network for TV shows
-            foreach (var networkId in networkDict.Keys)
-            {
-                if (networkDict.TryGetValue(networkId, out var networkName))
-                {
-                    _logger.LogInformation("Fetching TV shows for network: {NetworkName} (ID: {NetworkId})", networkName, networkId);
-                    
-                    var networkShows = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, config);
-                    
-                    if (networkShows == null)
-                    {
-                        _logger.LogError("API call returned null for TV shows endpoint for network: {NetworkName}", networkName);
-                        throw new InvalidOperationException($"Failed to retrieve TV shows for network {networkName} - API returned null");
-                    }
-                    
-                    var shows = (List<JellyseerrShow>)networkShows;
-                    
-                    if (shows.Count == 0)
-                    {
-                        _logger.LogWarning("No TV shows returned for network: {NetworkName}", networkName);
-                    }
-                    
-                    allShows.AddRange(shows);
-                    _logger.LogInformation("Retrieved {ShowCount} shows for {NetworkName}", shows.Count, networkName);
-                }
-                else
-                {
-                    _logger.LogWarning("Network '{NetworkName}' not found in available networks", networkName);
-                }
-            }
+            // Fetch TV shows for all networks
+            var discoverShows = await _apiService.FetchDiscoverMediaAsync<JellyseerrShow>();
 
             _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
-                allMovies.Count, allShows.Count);
+                discoverMovies.Count, discoverShows.Count);
 
             // Check if we actually got any data from the API calls
-            if (allMovies.Count == 0 && allShows.Count == 0)
+            if (discoverMovies.Count == 0 && discoverShows.Count == 0)
             {
                 _logger.LogError("No data retrieved from Jellyseerr API - all API calls returned empty results");
                 result.Success = false;
@@ -194,21 +133,21 @@ public partial class JellyseerrSyncService
             }
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Processing {MovieCount} movies and {ShowCount} shows", 
-                allMovies.Count, allShows.Count);
+                discoverMovies.Count, discoverShows.Count);
 
             // Process movies
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
-            var movieTask = _bridgeService.CreateFoldersAsync(allMovies);
+            var movieTask = _bridgeService.CreateFoldersAsync(discoverMovies);
 
             // Process TV shows
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
-            var showTask = _bridgeService.CreateFoldersAsync(allShows);
+            var showTask = _bridgeService.CreateFoldersAsync(discoverShows);
 
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
 
             // Run library scan to find matches and create ignore files
-            var matchedItems = await _bridgeService.LibraryScanAsync(allMovies, allShows);
+            var matchedItems = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
 
             // Separate matched items by type
             var matchedMovies = matchedItems.OfType<JellyseerrMovie>().ToList();
@@ -216,10 +155,10 @@ public partial class JellyseerrSyncService
 
             // Create placeholder videos only for non-ignored items
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for non-ignored movies...");
-            var moviePlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(allMovies, matchedMovies);
+            var moviePlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(discoverMovies, matchedMovies);
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for non-ignored shows...");
-            var showPlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(allShows, matchedShows);
+            var showPlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(discoverShows, matchedShows);
 
             // Wait for placeholder creation to complete
             await Task.WhenAll(moviePlaceholderTask, showPlaceholderTask);
@@ -235,20 +174,17 @@ public partial class JellyseerrSyncService
                 result.MoviesResult.Created, result.MoviesResult.Updated, result.ShowsResult.Created, result.ShowsResult.Updated);
 
             // Check if library management is enabled
-            if (config?.ManageJellyseerrLibrary == true)
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
+            var refreshSuccess = await _libraryService.RefreshJellyseerrLibraryAsync();
+            if (refreshSuccess)
             {
-                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
-                var refreshSuccess = await _libraryService.RefreshJellyseerrLibraryAsync();
-                if (refreshSuccess)
-                {
-                    _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Jellyseerr library management completed successfully");
-                    result.Message += " and library managed";
-                }
-                else
-                {
-                    _logger.LogWarning("[JellyseerrSyncService] CreateFolderStructureAsync: ⚠️ Jellyseerr library management failed");
-                    result.Message += " (library management failed)";
-                }
+                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Jellyseerr library management completed successfully");
+                result.Message += " and library managed";
+            }
+            else
+            {
+                _logger.LogWarning("[JellyseerrSyncService] CreateFolderStructureAsync: ⚠️ Jellyseerr library management failed");
+                result.Message += " (library management failed)";
             }
         }
         catch (DirectoryNotFoundException ex)
@@ -339,38 +275,3 @@ public class SyncResult
         return $"Movies: {MoviesResult.Created} created, {MoviesResult.Updated} updated | Shows: {ShowsResult.Created} created, {ShowsResult.Updated} updated";
     }
 }
-
-
-/// <summary>
-/// Helper methods for business logic that was moved from JellyseerrApiService.
-/// </summary>
-public partial class JellyseerrSyncService
-{
-    /// <summary>
-    /// Test connection to Jellyseerr API using the factory method.
-    /// </summary>
-    private async Task<bool> TestConnectionAsync(PluginConfiguration config)
-    {
-        try
-        {
-            // Use the factory method to get status - this automatically handles the correct response type
-            var status = await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, config);
-            var statusResponse = (SystemStatus)status;
-            
-            // If we get a status response, the connection is working
-            if (status != null)
-            {
-                _logger.LogInformation("Successfully connected to Jellyseerr API");
-                return true;
-            }
-            
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to connect to Jellyseerr API");
-            return false;
-        }
-    }
-}
-

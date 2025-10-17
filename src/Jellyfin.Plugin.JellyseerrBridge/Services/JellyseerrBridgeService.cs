@@ -184,12 +184,26 @@ public class JellyseerrBridgeService
 
                 // Add .ignore file creation task to the list
                 ignoreFileTasks.Add(CreateIgnoreFileAsync(bridgeFolderPath, existingItem));
-                
-                // Add placeholder video deletion task to the list
-                ignoreFileTasks.Add(_placeholderVideoGenerator.DeletePlaceholderVideosAsync(bridgeFolderPath));
 
                 // Add the actual bridge model to matches
                 matches.Add(bridgeMatch);
+            }
+            else
+            {
+                // No match found - check if there's a .ignore file to delete
+                var bridgeItem = bridgeMetadata.FirstOrDefault(bm => bm.EqualsItem(existingItem));
+                if (bridgeItem != null)
+                {
+                    var bridgeFolderPath = folderManager.GetItemDirectory(bridgeItem);
+                    var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
+                    
+                    if (File.Exists(ignoreFilePath))
+                    {
+                        _logger.LogInformation("[JellyseerrBridge] No match found for '{BridgeMediaName}' - deleting .ignore file", 
+                            bridgeItem.MediaName);
+                        ignoreFileTasks.Add(Task.Run(() => File.Delete(ignoreFilePath)));
+                    }
+                }
             }
         }
         
@@ -505,6 +519,7 @@ public class JellyseerrBridgeService
     {
         var result = new ProcessResult();
         var folderManager = new JellyseerrFolderManager<TJellyseerr>();
+        var tasks = new List<Task>();
         
         // Create a hash set of ignored items for fast lookup
         var ignoredHashes = new HashSet<int>(ignoredItems.Select(item => item.GetItemHashCode()));
@@ -518,13 +533,6 @@ public class JellyseerrBridgeService
             {
                 result.Processed++;
                 
-                // Skip if this item is in the ignored list
-                if (ignoredHashes.Contains(item.GetItemHashCode()))
-                {
-                    _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Skipping ignored item: {ItemName}", item.MediaName);
-                    continue;
-                }
-                
                 // Get the folder path for this item
                 var folderPath = folderManager.GetItemDirectory(item);
                 
@@ -535,32 +543,38 @@ public class JellyseerrBridgeService
                     continue;
                 }
                 
+                // Skip if this item is in the ignored list
+                if (ignoredHashes.Contains(item.GetItemHashCode()))
+                {
+                    _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Skipping ignored item: {ItemName}", item.MediaName);
+                    
+                    // Delete any existing placeholder videos for ignored items
+                    _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Deleting placeholder videos for ignored item: {ItemName}", item.MediaName);
+                    tasks.Add(_placeholderVideoGenerator.DeletePlaceholderVideosAsync(folderPath));
+                    continue;
+                }
+                
                 // Create placeholder video based on media type
-                bool success = false;
                 if (item is JellyseerrMovie)
                 {
-                    success = await _placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath);
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath));
                 }
                 else if (item is JellyseerrShow)
                 {
-                    success = await _placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath);
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
                 }
                 
-                if (success)
-                {
-                    result.Created++;
-                    _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
-                }
-                else
-                {
-                    _logger.LogWarning("[JellyseerrBridge] CreatePlaceholderVideosAsync: ❌ Failed to create placeholder video for {ItemName}", item.MediaName);
-                }
+                result.Created++;
+                _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[JellyseerrBridge] CreatePlaceholderVideosAsync: ❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
             }
         }
+        
+        // Await all placeholder video tasks
+        await Task.WhenAll(tasks);
         
         _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: Completed - Processed: {Processed}, Created: {Created}", 
             result.Processed, result.Created);
