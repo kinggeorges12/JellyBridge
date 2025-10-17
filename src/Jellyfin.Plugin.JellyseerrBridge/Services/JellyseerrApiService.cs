@@ -540,6 +540,10 @@ public class JellyseerrApiService
                     var pageParameters = queryParameters != null 
                         ? new Dictionary<string, string>(queryParameters) { ["page"] = page.ToString() }
                         : new Dictionary<string, string> { ["page"] = page.ToString() };
+                    // User list is a special case that uses take and skip rather than page
+                    if(endpoint!=JellyseerrEndpoint.UserList){
+                        pageParameters = queryParameters;
+                    }
                     
                     var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
                     content = await MakeApiRequestAsync(pageRequestMessage, config);
@@ -717,7 +721,7 @@ public class JellyseerrApiService
                 _logger.LogInformation("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId})", T.LibraryType, networkName, networkId);
                 
                 // Add networkId parameter to query parameters
-                var networkIdParameters = new Dictionary<string, string> { ["networkId"] = networkId.ToString() };
+                var networkIdParameters = new Dictionary<string, string> { ["network"] = networkId.ToString() };
                 JellyseerrEndpoint? endpoint = null;  
                 if (typeof(T) == typeof(JellyseerrMovie)) {
                     endpoint = JellyseerrEndpoint.DiscoverMovies;
