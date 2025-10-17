@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Serialization;
 
@@ -185,9 +186,37 @@ public static class JellyseerrJsonSerializer
 /// <typeparam name="T">The type to convert.</typeparam>
 public sealed class JellyseerrDelegatingConverter<T> : JsonConverter<T> where T : class
 {
+    private static JsonSerializerOptions CreateOptionsWithoutThisConverter()
+    {
+        // Start from our default options
+        var baseOptions = JellyseerrJsonSerializer.DefaultOptions<T>();
+
+        // Create new options without the delegating converter to prevent recursion
+        var merged = new JsonSerializerOptions(baseOptions);
+        
+        // Remove this delegating converter from the converters list
+        for (int i = merged.Converters.Count - 1; i >= 0; i--)
+        {
+            var conv = merged.Converters[i];
+            var convType = conv.GetType();
+            if (convType.IsGenericType && convType.GetGenericTypeDefinition() == typeof(JellyseerrDelegatingConverter<>))
+            {
+                merged.Converters.RemoveAt(i);
+            }
+        }
+        
+        return merged;
+    }
+
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        => JsonSerializer.Deserialize<T>(ref reader, JellyseerrJsonSerializer.DefaultOptions<T>()) ?? (T)Activator.CreateInstance(typeof(T))!;
+    {
+        var safeOptions = CreateOptionsWithoutThisConverter();
+        return JsonSerializer.Deserialize<T>(ref reader, safeOptions) ?? (T)Activator.CreateInstance(typeof(T))!;
+    }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
-        => JsonSerializer.Serialize(writer, value, JellyseerrJsonSerializer.DefaultOptions<T>());
+    {
+        var safeOptions = CreateOptionsWithoutThisConverter();
+        JsonSerializer.Serialize(writer, value, safeOptions);
+    }
 }
