@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.246.0.0/JellyseerrBridge-0.246.0.0-DLL.zip",
+        "checksum": "A252C23B6028393C5AE9ECB09B03C7EF",
+        "changelog": "v0.246.0.0 - v0.246.0.0 - Network config parsing fixes, UI data-attr handling, and release build stabilization",
+        "version": "0.246.0.0",
+        "timestamp": "2025-10-17T19:54:17.367Z",
+        "targetAbi": "10.10.7.0",
+        "dependencies": []
+      },
+      {
         "changelog": "v0.245.0.0 - Favorites scan response normalized to camelCase in API; no UI changes",
         "targetAbi": "10.10.7.0",
         "checksum": "8839720E1EFBF8280E6D9D3E400F7C92",

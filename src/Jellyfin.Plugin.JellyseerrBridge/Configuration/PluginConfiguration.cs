@@ -1,24 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using MediaBrowser.Model.Plugins;
 using Jellyfin.Plugin.JellyseerrBridge.Serialization;
+using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Configuration;
-
-/// <summary>
-/// Represents a network ID to name mapping for XML serialization compatibility.
-/// </summary>
-public class NetworkEntry
-{
-    /// <summary>
-    /// Gets or sets the network name.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the network ID.
-    /// </summary>
-    public int Id { get; set; }
-}
 
 /// <summary>
 /// Plugin configuration.
@@ -47,30 +32,30 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(Region), "US" },
         { nameof(ManageJellyseerrLibrary), true },
-        { nameof(NetworkMap), new List<NetworkEntry>
-            {
-                new NetworkEntry { Name = "Netflix", Id = 213 },
-                new NetworkEntry { Name = "Disney+", Id = 2739 },
-                new NetworkEntry { Name = "Prime Video", Id = 1024 },
-                new NetworkEntry { Name = "Apple TV+", Id = 2552 },
-                new NetworkEntry { Name = "Hulu", Id = 453 },
-                new NetworkEntry { Name = "HBO", Id = 49 },
-                new NetworkEntry { Name = "Discovery+", Id = 4353 },
-                new NetworkEntry { Name = "ABC", Id = 2 },
-                new NetworkEntry { Name = "FOX", Id = 19 },
-                new NetworkEntry { Name = "Cinemax", Id = 359 },
-                new NetworkEntry { Name = "AMC", Id = 174 },
-                new NetworkEntry { Name = "Showtime", Id = 67 },
-                new NetworkEntry { Name = "Starz", Id = 318 },
-                new NetworkEntry { Name = "The CW", Id = 71 },
-                new NetworkEntry { Name = "NBC", Id = 6 },
-                new NetworkEntry { Name = "CBS", Id = 16 },
-                new NetworkEntry { Name = "Paramount+", Id = 4330 },
-                new NetworkEntry { Name = "BBC One", Id = 4 },
-                new NetworkEntry { Name = "Cartoon Network", Id = 56 },
-                new NetworkEntry { Name = "Adult Swim", Id = 80 },
-                new NetworkEntry { Name = "Nickelodeon", Id = 13 },
-                new NetworkEntry { Name = "Peacock", Id = 3353 }
+        { nameof(NetworkMap), new List<JellyseerrNetwork>
+            { // Network Names and IDs in comments
+                new JellyseerrNetwork { Country = "US", Name = "Netflix", Id = 8, DisplayPriority = 4 }, // Netflix: 213
+                new JellyseerrNetwork { Country = "US", Name = "Disney Plus", Id = 337, DisplayPriority = 1 }, // Disney+: 2739
+                new JellyseerrNetwork { Country = "US", Name = "Amazon Prime Video", Id = 9, DisplayPriority = 3 }, // Prime Video: 1024
+                new JellyseerrNetwork { Country = "US", Name = "Apple TV+", Id = 350, DisplayPriority = 8 }, // Apple TV+: 2552
+                new JellyseerrNetwork { Country = "US", Name = "Hulu", Id = 15, DisplayPriority = 7 }, // Hulu: 453
+                new JellyseerrNetwork { Country = "US", Name = "HBO Max", Id = 49, DisplayPriority = 27 }, // HBO: 49
+                new JellyseerrNetwork { Country = "US", Name = "Discovery +", Id = 520, DisplayPriority = 163 }, // Discovery+: 4353
+                new JellyseerrNetwork { Country = "US", Name = "ABC", Id = 148, DisplayPriority = 255 }, // ABC: 2
+                new JellyseerrNetwork { Country = "US", Name = "FOX", Id = 328, DisplayPriority = 97 }, // FOX: 19
+                new JellyseerrNetwork { Country = "US", Name = "Cinemax Amazon Channel", Id = 289, DisplayPriority = 72 }, // Cinemax: 359
+                new JellyseerrNetwork { Country = "US", Name = "AMC", Id = 80, DisplayPriority = 47 }, // AMC: 174
+                new JellyseerrNetwork { Country = "US", Name = "Paramount+ with Showtime", Id = 1770, DisplayPriority = 19 }, // Showtime: 67
+                new JellyseerrNetwork { Country = "US", Name = "Starz", Id = 43, DisplayPriority = 40 }, // Starz: 318
+                new JellyseerrNetwork { Country = "US", Name = "The CW", Id = 83, DisplayPriority = 35 }, // The CW: 71
+                new JellyseerrNetwork { Country = "US", Name = "NBC", Id = 79, DisplayPriority = 51 }, // NBC: 6    
+                //new JellyseerrNetwork { Name = "CBS", Id = 16 }, // Not available on show providers
+                new JellyseerrNetwork { Country = "US", Name = "Paramount Plus", Id = 531, DisplayPriority = 6 }, // Paramount+: 4330
+                new JellyseerrNetwork { Country = "GB", Name = "BBC iPlayer", Id = 2039, DisplayPriority = 12 }, // BBC One: 4
+                new JellyseerrNetwork { Country = "US", Name = "Cartoon Network Amazon Channel", Id = 2329, DisplayPriority = 240 }, // Cartoon Network: 56
+                new JellyseerrNetwork { Country = "US", Name = "Adult Swim", Id = 318, DisplayPriority = 95 }, // Adult Swim: 80
+                //new JellyseerrNetwork { Name = "Nickelodeon", Id = 13 }, // Not available on show providers
+                new JellyseerrNetwork { Country = "US", Name = "Peacock Premium Plus", Id = 387, DisplayPriority = 219 }, // Peacock: 3353
             }
         }
     };
@@ -163,35 +148,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the mapping of network IDs to their names (populated after API communication).
     /// This is stored as a list of key-value pairs for XML serialization compatibility.
     /// </summary>
-    public List<NetworkEntry> NetworkMap { get; set; } = new List<NetworkEntry>((List<NetworkEntry>)DefaultValues[nameof(NetworkMap)]);
+    public List<JellyseerrNetwork> NetworkMap { get; set; } = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)DefaultValues[nameof(NetworkMap)]);
 
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyseerrBridge.
     /// </summary>
     public bool? ManageJellyseerrLibrary { get; set; }
-
-
-
-
-    /// <summary>
-    /// Gets the network ID to name mapping as a dictionary for easier access.
-    /// </summary>
-    public Dictionary<int, string> GetNetworkMapDictionary()
-    {
-        return NetworkMap
-            .GroupBy(m => m.Id)
-            .ToDictionary(g => g.Key, g => g.First().Name);
-    }
-
-    /// <summary>
-    /// Sets the network ID to name mapping from a dictionary.
-    /// </summary>
-    /// <param name="mapping">The dictionary mapping network IDs to names.</param>
-    public void SetNetworkMapDictionary(Dictionary<int, string> mapping)
-    {
-        NetworkMap = mapping.Select(kvp => new NetworkEntry { Name = kvp.Value, Id = kvp.Key }).ToList();
-    }
-
 
     /// <summary>
     /// Returns a JSON representation of the configuration with API key masked.

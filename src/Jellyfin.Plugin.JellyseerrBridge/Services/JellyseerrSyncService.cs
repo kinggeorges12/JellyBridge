@@ -107,8 +107,6 @@ public partial class JellyseerrSyncService
                 return result;
             }
 
-            // Get data from Jellyseerr - handle network iteration business logic here
-            
             // Fetch movies for all networks
             var discoverMovies = await _apiService.FetchDiscoverMediaAsync<JellyseerrMovie>();
             

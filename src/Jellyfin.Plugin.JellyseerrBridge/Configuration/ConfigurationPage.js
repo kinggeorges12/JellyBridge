@@ -119,40 +119,45 @@ function updateLibraryPrefixState() {
     }
 }
 
+// Helper function to parse network options array and return network objects
+function parseNetworkOptions(options) {
+    return Array.from(options).map(option => {
+        const networkObj = {};
+        // Extract all data attributes
+        Array.from(option.attributes).forEach(attr => {
+            if (attr.name.startsWith('data-int-')) {
+                const propName = attr.name.replace('data-int-', '');
+                networkObj[propName] = parseInt(attr.value);
+            } else if (attr.name.startsWith('data-str-')) {
+                const propName = attr.name.replace('data-str-', '');
+                networkObj[propName] = attr.value;
+            }
+        });
+        return networkObj;
+    });
+}
+
 // Helper function to update available networks list
-function updateAvailableNetworks(page, newNetworkMap = null) {
+function updateAvailableNetworks(page, networkMap = []) {
     const config = window.configJellyseerrBridge || {};
     
     const availableNetworksSelect = page.querySelector('#availableNetworks');
     
-    // Get currently active network names
+    // Get currently active network objects by extracting data attributes from options
     const activeNetworksSelect = page.querySelector('#activeNetworks');
-    const activeNetworks = Array.from(activeNetworksSelect.options).map(option => option.value);
-    
-    // Create a Map to store unique networks (id -> name)
-    const networkMap = new Map();
+    const activeNetworks = parseNetworkOptions(activeNetworksSelect.options);
     
     // Get default network map from global config
     const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
     
-    // Convert default networks array to object for easier processing (ID as key, name as value)
-    const defaultNetworkObj = {};
-    defaultNetworkMap.forEach(network => {
-        defaultNetworkObj[network.Id] = network.Name;
-    });
+    // Combine default networks with API networks from parameter
+    const combinedNetworks = [...defaultNetworkMap, ...networkMap];
     
-    // Combine newNetworkMap and defaultNetworkMap, only adding networks that aren't active
-    const combinedNetworkMap = { ...defaultNetworkObj, ...newNetworkMap };
+    // Filter out active networks by ID
+    const availableNetworks = combinedNetworks.filter(network => 
+        network && network.id && !activeNetworks.some(active => active.id === network.id)
+    );
     
-    Object.entries(combinedNetworkMap).forEach(([id, name]) => {
-        if (!activeNetworks.includes(name)) {
-            networkMap.set(parseInt(id), name);
-        }
-    });
-        
-    // Convert to array format
-    const availableNetworks = Array.from(networkMap.entries()).map(([id, name]) => ({ id, name }));
-        
     // Update the available networks select
     populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
     
@@ -424,9 +429,8 @@ function initializeSyncSettings(page) {
     populateRegion(page, [{ iso_3166_1: config.Region }], config.Region);
     
     // Load active networks from saved configuration
-    const networkMapping = config.NetworkMap || {};
-    const activeNetworks = Object.entries(networkMapping).map(([id, name]) => ({ id: parseInt(id), name }));
-    populateSelectWithNetworks(activeNetworksSelect, activeNetworks);
+    populateSelectWithNetworks(activeNetworksSelect, config.NetworkMap || []);
+    sortSelectOptions(activeNetworksSelect);
     
     // Update available networks with default networks that aren't already active
     updateAvailableNetworks(page);
@@ -539,16 +543,11 @@ function loadAvailableNetworks(page) {
         Dashboard.alert(`🔍 DEBUG: API Response received for networks. Networks count: ${response?.length || 0}`);
         
         if (response && Array.isArray(response)) {
-            // Convert networks to the format expected by updateAvailableNetworks (ID as key, name as value)
-            const newNetworkMap = {};
-            response.forEach(network => {
-                if (network && network.id && network.name) {
-                    newNetworkMap[network.id] = network.name;
-                }
-            });
+            // Store the full network objects for later use
+            window.availableNetworksData = response;
                         
             // Use updateAvailableNetworks to handle the rest
-            return Promise.resolve(updateAvailableNetworks(page, newNetworkMap));
+            return Promise.resolve(updateAvailableNetworks(page, response));
         } else {
             // Use updateAvailableNetworks with empty map to show defaults
             return Promise.resolve(updateAvailableNetworks(page));
@@ -566,16 +565,34 @@ function populateSelectWithNetworks(selectElement, networks) {
     
     // Handle different input formats
     const networkList = Array.isArray(networks) ? networks : [];
+    const seenIds = new Set();
     
     networkList.forEach(network => {
         const option = document.createElement('option');
         
         // Check if network has the expected format
-        if (network && network.id !== undefined && network.name) {
-            // Network object with id and name
-            option.value = network.name;
-            option.textContent = `${network.name} (${network.id})`;
-            option.dataset.networkId = network.id.toString();
+        if (network && network.id !== undefined) {
+            // Skip if we've already seen this ID
+            if (seenIds.has(network.id)) {
+                return;
+            }
+            seenIds.add(network.id);
+
+            // Network object with id
+            option.value = network.id.toString();
+            option.textContent = `${network.displayPriority}. ${network.name} (${network.id})${network.country ? ` [${network.country}]` : ''}`;
+            
+            // Store ALL properties as data attributes with proper prefixes
+            Object.keys(network).forEach(key => {
+                if (network[key] !== undefined && network[key] !== null) {
+                    // Determine if it's an integer or string
+                    if (typeof value === 'number' && Number.isInteger(value)) {
+                        option.setAttribute(`data-int-${key}`, network[key].toString());
+                    } else {
+                        option.setAttribute(`data-str-${key}`, network[key]);
+                    }
+                }
+            });
             
             selectElement.appendChild(option);
         } else {
@@ -616,9 +633,12 @@ function moveNetworks(fromSelect, toSelect) {
         const newOption = document.createElement('option');
         newOption.value = option.value;
         newOption.textContent = option.textContent;
-        if (option.dataset.networkId) {
-            newOption.dataset.networkId = option.dataset.networkId;
-        }
+        
+        // Copy ALL data attributes generically
+        Object.keys(option.dataset).forEach(dataKey => {
+            newOption.dataset[dataKey] = option.dataset[dataKey];
+        });
+        
         toSelect.appendChild(newOption);
         
         // Remove from source
@@ -695,10 +715,8 @@ function getActiveNetworkMap(page) {
     const activeNetworksSelect = page.querySelector('#activeNetworks');
     const mapping = {};
     
-    Array.from(activeNetworksSelect.options).forEach(option => {
-        if (option.dataset.networkId) {
-            mapping[parseInt(option.dataset.networkId)] = option.value;
-        }
+    parseNetworkOptions(activeNetworksSelect.options).forEach(network => {
+        mapping[network.id] = network.name;
     });
     
     return mapping;
@@ -760,7 +778,7 @@ function savePluginConfiguration(view) {
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
             config.Region = form.querySelector('#selectWatchRegion').value;
-            config.NetworkMap = getActiveNetworkMap(view);
+            config.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
