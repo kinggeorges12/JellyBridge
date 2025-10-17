@@ -251,6 +251,18 @@
                             <div class="fieldDescription">Prefix for streaming service library names (e.g., "Streaming - ")</div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ManageLibrariesWithJellyseerrBridge" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Manage libraries with JellyseerrBridge</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, JellyseerrBridge will manage the Jellyseerr library by refreshing metadata and images after sync. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
+                        </div>
+
                         <div>
                             <button is="emby-button" type="button" id="testLibraryScan" class="raised button block emby-button">
                                 <span>Test Library Scan</span>
@@ -334,17 +346,6 @@
                             <div class="fieldDescription">Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Active networks will be used for filtering and categorization.</div>
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="ManageLibrariesWithJellyseerrBridge" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Manage libraries with JellyseerrBridge</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">When enabled, JellyseerrBridge will manage the Jellyseerr library by refreshing metadata and images after sync. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
-                        </div>
 
                         <div>
                             <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">

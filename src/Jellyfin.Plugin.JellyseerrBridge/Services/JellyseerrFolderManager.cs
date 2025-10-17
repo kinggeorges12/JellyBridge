@@ -15,10 +15,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public static class JellyseerrFolderUtils
 {
-    /// <summary>
-    /// Static base directory path from settings.
-    /// </summary>
-    private static string? _staticBaseDirectory;
 
     /// <summary>
     /// Get the base directory from settings or return a default.
@@ -26,11 +22,7 @@ public static class JellyseerrFolderUtils
     /// <returns>The configured base directory path</returns>
     public static string GetBaseDirectory()
     {
-        if (_staticBaseDirectory == null)
-        {
-            _staticBaseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        }
-        return _staticBaseDirectory;
+        return Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
     }
 
 
@@ -40,17 +32,17 @@ public static class JellyseerrFolderUtils
     /// <param name="pathToCheck">The path to check</param>
     /// <param name="syncDirectory">The sync directory base path (optional, uses static base directory if null)</param>
     /// <returns>True if the path is within the sync directory</returns>
-    public static bool IsPathInSyncDirectory(string? pathToCheck, string? syncDirectory = null)
+    public static bool IsPathInSyncDirectory(string? pathToCheck)
     {
         if (string.IsNullOrEmpty(pathToCheck))
             return false;
 
-        var directoryToCheck = syncDirectory ?? GetBaseDirectory();
+        var syncDirectory = GetBaseDirectory();
 
         try
         {
             var normalizedPath = Path.GetFullPath(pathToCheck);
-            var normalizedSyncPath = Path.GetFullPath(directoryToCheck);
+            var normalizedSyncPath = Path.GetFullPath(syncDirectory);
             
             var result = normalizedPath.StartsWith(normalizedSyncPath, StringComparison.OrdinalIgnoreCase);
             
@@ -59,7 +51,7 @@ public static class JellyseerrFolderUtils
         catch (Exception)
         {
             // If path normalization fails, fall back to string comparison
-            return pathToCheck.StartsWith(directoryToCheck, StringComparison.OrdinalIgnoreCase);
+            return pathToCheck.StartsWith(syncDirectory, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
