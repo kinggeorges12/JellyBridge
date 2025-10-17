@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.249.0.0/JellyseerrBridge-0.249.0.0-DLL.zip",
+        "checksum": "F4E954DB118276CC9A916925E561443A",
+        "version": "0.249.0.0",
+        "dependencies": [],
+        "changelog": "v0.249.0.0 - Fix JSON serialization stack overflow in JellyseerrDelegatingConverter; minor improvements",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-17T20:51:46.533Z"
+      },
+      {
         "version": "0.248.0.0",
         "changelog": "v0.248.0.0 - Minor release with bug fixes and improvements",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.248.0.0/JellyseerrBridge-0.248.0.0-DLL.zip",
