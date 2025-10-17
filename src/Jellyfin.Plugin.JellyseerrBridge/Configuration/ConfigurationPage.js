@@ -586,7 +586,7 @@ function populateSelectWithNetworks(selectElement, networks) {
             Object.keys(network).forEach(key => {
                 if (network[key] !== undefined && network[key] !== null) {
                     // Determine if it's an integer or string
-                    if (typeof value === 'number' && Number.isInteger(value)) {
+                    if (typeof network[key] === 'number' && Number.isInteger(network[key])) {
                         option.setAttribute(`data-int-${key}`, network[key].toString());
                     } else {
                         option.setAttribute(`data-str-${key}`, network[key]);
@@ -708,18 +708,6 @@ function populateRegion(page, regionValues, initialValue = null) {
     
     // Set current value back to the original value
     regionSelect.value = initialValue;
-}
-
-
-function getActiveNetworkMap(page) {
-    const activeNetworksSelect = page.querySelector('#activeNetworks');
-    const mapping = {};
-    
-    parseNetworkOptions(activeNetworksSelect.options).forEach(network => {
-        mapping[network.id] = network.name;
-    });
-    
-    return mapping;
 }
 
 // Helper function to check if a value is different from default
