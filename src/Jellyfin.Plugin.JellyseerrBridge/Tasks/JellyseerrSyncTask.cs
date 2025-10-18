@@ -55,8 +55,9 @@ public class JellyseerrSyncTask : IScheduledTask
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
         var config = Plugin.GetConfiguration();
+        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
         
-        if (!Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.IsEnabled)) ?? false)
+        if (!isEnabled)
         {
             return Array.Empty<TaskTriggerInfo>();
         }
@@ -66,7 +67,7 @@ public class JellyseerrSyncTask : IScheduledTask
             new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(Plugin.GetConfigOrDefault<double?>(nameof(PluginConfiguration.SyncIntervalHours)) ?? 24).Ticks
+                IntervalTicks = TimeSpan.FromHours(Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours))).Ticks
             }
         };
     }

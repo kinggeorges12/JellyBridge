@@ -361,9 +361,9 @@ public class JellyseerrApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds(Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RequestTimeout), config) ?? 30);
-        var retryAttempts = Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RetryAttempts), config) ?? 3;
-        var enableDebugLogging = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.EnableDebugLogging), config) ?? false;
+        var timeout = TimeSpan.FromSeconds((double)Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
+        var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts), config);
+        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
         Exception? lastException = null;
         string? content = null;
@@ -392,7 +392,7 @@ public class JellyseerrApiService
                 // Check if the response was successful
                 if (!response.IsSuccessStatusCode)
                 {
-                    if (enableDebugLogging)
+                    if (enableDebugLogging == true)
                     {
                         _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
                     }
@@ -421,7 +421,7 @@ public class JellyseerrApiService
                 if (enableDebugLogging)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.RequestTimeout), config) ?? 30);
+                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
                 }
                 
                 if (attempt == retryAttempts)
@@ -516,7 +516,7 @@ public class JellyseerrApiService
             if (endpointConfig.IsPaginated)
             {
                 // Paginated endpoints - fetch all pages starting from page 1
-                var maxPages = endpointConfig.MaxPages ?? Plugin.GetConfigOrDefault<int?>(nameof(PluginConfiguration.MaxDiscoverPages), config);
+                var maxPages = endpointConfig.MaxPages ?? Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config);
                 _logger.LogInformation("Initial maxPages value: {MaxPages}", maxPages);
                 if (maxPages == 0)
                 {

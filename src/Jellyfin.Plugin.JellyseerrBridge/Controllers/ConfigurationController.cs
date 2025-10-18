@@ -199,7 +199,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     EnableDebugLogging = config.EnableDebugLogging,
                     Region = config.Region,
-                    NetworkMap = config.NetworkMap, // Convert to dictionary for JavaScript
+                    NetworkMap = config.NetworkMap,
                     DefaultValues = PluginConfiguration.DefaultValues
                 };
                 
@@ -256,14 +256,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "[JellyseerrBridge] Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
-                            config.NetworkMap = new List<JellyseerrNetwork>();
                         }
                     }
                     else
                     {
                         _logger.LogWarning("[JellyseerrBridge] NetworkMap is not an array or not found. ValueKind: {ValueKind}, JSON: {Json}", 
                             networkMapElement.ValueKind, config.NetworkMap);
-                        config.NetworkMap = new List<JellyseerrNetwork>();
+                        config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
                     }
                     
                     // Save the configuration
@@ -596,6 +595,98 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
 
             return false;
+        }
+
+
+        /// <summary>
+        /// Delete all Jellyseerr library data.
+        /// </summary>
+        [HttpPost("ResetPlugin")]
+        public async Task<IActionResult> ResetPlugin()
+        {
+            _logger.LogInformation("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
+            
+            try
+            {
+                // Use Jellyfin-style locking that pauses instead of canceling
+                await Plugin.ExecuteWithLockAsync(() =>
+                {
+                    // Get current configuration to find library directory
+                    var currentConfig = Plugin.Instance.Configuration;
+                    var libraryDir = currentConfig.LibraryDirectory;
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
+                    
+                    // Delete all data in library directory if it exists
+                    if (!string.IsNullOrEmpty(libraryDir) && Directory.Exists(libraryDir))
+                    {
+                        try
+                        {
+                            _logger.LogInformation("[JellyseerrBridge] Deleting all files and folders inside library directory: {LibraryDir}", libraryDir);
+                            
+                            // Get all files and directories inside the library directory
+                            var files = Directory.GetFiles(libraryDir, "*", SearchOption.AllDirectories);
+                            var directories = Directory.GetDirectories(libraryDir, "*", SearchOption.AllDirectories);
+                            
+                            // Delete all files first
+                            foreach (var file in files)
+                            {
+                                try
+                                {
+                                    System.IO.File.Delete(file);
+                                    _logger.LogDebug("[JellyseerrBridge] Deleted file: {File}", file);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "[JellyseerrBridge] Failed to delete file: {File}", file);
+                                }
+                            }
+                            
+                            // Delete all directories (in reverse order to handle nested directories)
+                            foreach (var dir in directories.OrderByDescending(d => d.Length))
+                            {
+                                try
+                                {
+                                    Directory.Delete(dir, true);
+                                    _logger.LogDebug("[JellyseerrBridge] Deleted directory: {Dir}", dir);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "[JellyseerrBridge] Failed to delete directory: {Dir}", dir);
+                                }
+                            }
+                            
+                            _logger.LogInformation("[JellyseerrBridge] Successfully deleted all contents inside library directory");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[JellyseerrBridge] Failed to delete contents of library directory: {LibraryDir}", libraryDir);
+                            throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("[JellyseerrBridge] No library directory found or configured, nothing to delete");
+                    }
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Data deletion completed successfully");
+                    return Task.CompletedTask;
+                }, _logger, "Delete Library Data");
+                
+                return Ok(new { 
+                    success = true, 
+                    message = "All Jellyseerr library data has been deleted successfully." 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Error deleting library data");
+                return StatusCode(500, new { 
+                    error = "Failed to delete library data",
+                    details = $"Data deletion failed: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace
+                });
+            }
         }
     }
     

@@ -478,6 +478,12 @@ function initializeSyncSettings(page) {
         performManualSync(page);
     });
 
+    // Add reset plugin button functionality
+    const resetButton = page.querySelector('#resetPlugin');
+    resetButton.addEventListener('click', function () {
+        performPluginReset(page);
+    });
+
     // Add refresh networks button functionality
     const refreshButton = page.querySelector('#refreshNetworks');
     if (refreshButton) {
@@ -883,6 +889,108 @@ function performManualSync(page) {
         
         // Always sync after the if statement
         performSync(page);
+    });
+}
+
+// Reset plugin configuration and delete data with double confirmation
+function performPluginReset(page) {
+    // First confirmation with information warning emoji
+    Dashboard.confirm({
+        title: '⚠️ Reset Plugin Configuration',
+        text: 'This will reset ALL plugin settings to their default values. Are you sure you want to continue?',
+        confirmText: 'Yes, Reset Settings',
+        cancelText: 'Cancel',
+        primary: "cancel"
+    }, 'Title', (confirmed1) => {
+        if (confirmed1) {
+            // Reset configuration to defaults first
+            Dashboard.showLoadingMsg();
+            
+            // Create reset configuration with null/empty values
+            const resetConfig = {
+                JellyseerrUrl: '',
+                ApiKey: '',
+                LibraryDirectory: '',
+                UserId: null,
+                SyncIntervalHours: null,
+                LibraryPrefix: '',
+                RequestTimeout: null,
+                RetryAttempts: null,
+                MaxDiscoverPages: null,
+                IsEnabled: null,
+                CreateSeparateLibraries: null,
+                ExcludeFromMainLibraries: null,
+                AutoSyncOnStartup: null,
+                EnableDebugLogging: null,
+                Region: '',
+                NetworkMap: null
+            };
+            
+            // Send reset configuration to the plugin
+            ApiClient.ajax({
+                url: ApiClient.getUrl('JellyseerrBridge/UpdatePluginConfiguration'),
+                type: 'POST',
+                data: JSON.stringify(resetConfig),
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function(result) {
+                Dashboard.alert('✅ Plugin configuration has been reset to defaults! Please refresh the page to see the changes.');
+                
+                // Second confirmation with warning emoji for data deletion
+                Dashboard.confirm({
+                    title: '❗ Delete Library Data',
+                    text: 'This will permanently delete ALL Jellyseerr library data:\n\n• Delete ALL library folders and files\n• Remove ALL generated content\n• This action CANNOT be undone!\n\nAre you sure you want to delete the data?',
+                    confirmText: 'Yes! Proceed to final confirmation...',
+                    cancelText: 'Cancel',
+                    primary: "cancel"
+                }, 'Title', (confirmed2) => {
+                    if (confirmed2) {
+                        // Third confirmation with emergency emoji for final data deletion
+                        Dashboard.confirm({
+                            title: '🚨 FINAL CONFIRMATION - DELETE DATA',
+                            text: 'LAST WARNING: This is your final chance to cancel!\n\nThis will permanently delete ALL Jellyseerr library data:\n\n• Delete ALL library folders and files\n• Remove ALL generated content\n• This action CANNOT be undone!\n\nAre you absolutely certain you want to proceed?',
+                            confirmText: '🚩 YES, DELETE EVERYTHING',
+                            cancelText: 'Cancel',
+                            primary: "cancel"
+                        }, 'Title', (confirmed3) => {
+                            if (confirmed3) {
+                                // Proceed with data deletion
+                                Dashboard.showLoadingMsg();
+                                
+                                ApiClient.ajax({
+                                    url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
+                                    type: 'POST',
+                                    data: '{}',
+                                    contentType: 'application/json',
+                                    dataType: 'json'
+                                }).then(function(result) {
+                                    Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
+                                    
+                                    // Reload the page to show default values
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
+                                }).finally(function() {
+                                    Dashboard.hideLoadingMsg();
+                                });
+                            }
+                        });
+                    }
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                
+                // Refresh the configuration page to show updated values
+                const view = document.querySelector('.configurationPage');
+                if (view) {
+                    // Call the main configuration function to refresh the UI
+                    const configModule = require('./ConfigurationPage.js');
+                    configModule.default(view);
+                }
+            });
+        }
     });
 }
 

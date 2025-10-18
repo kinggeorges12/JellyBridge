@@ -392,6 +392,15 @@
                             <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This will generate more verbose logs in the Jellyfin server logs.</div>
                         </div>
 
+                        <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
+                            <button is="emby-button" type="button" id="resetPlugin" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
+                                <span>Reset Plugin & Delete Data</span>
+                            </button>
+                            <div class="fieldDescription" style="color: #ff6b6b; font-size: 0.85em; margin-top: 5px;">
+                                <strong>WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
+                            </div>
+                        </div>
+
                     </details>
 
                     <br>
@@ -406,7 +415,8 @@
             
             <div style="margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.1); border-radius: 5px; font-size: 0.9em; color: #888;">
                 <p><strong>Credits & Acknowledgments:</strong></p>
-                <p>Thank you to the creator of the <a href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" target="_blank" style="color: #2196f3;">Overseer-Jellyfin Bridge Script</a> for the inspiration. Special thanks to the developers of the <a href="https://github.com/intro-skipper" target="_blank" style="color: #2196f3;"><strong>Intro Skipper</strong></a> and <a href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" target="_blank" style="color: #2196f3;"><strong>Custom Tabs</strong></a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.</p>
+                <p>Thank you to the creator of the <a href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" target="_blank" style="color: #2196f3;"><strong>Overseer-Jellyfin Bridge Script</strong></a> for the inspiration. Special thanks to the developers of the <a href="https://github.com/intro-skipper" target="_blank" style="color: #2196f3;"><strong>Intro Skipper</strong></a> and <a href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" target="_blank" style="color: #2196f3;"><strong>Custom Tabs</strong></a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.</p>
+                <p>And of course, thanks to the developers of <a href="https://jellyfin.org/" target="_blank" style="color: #2196f3;"><strong></strong>Jellyfin</strong></a> and <a href="https://seerr.dev/" target="_blank" style="color: #2196f3;"><strong>Jellyseerr</strong></a> for making it all possible.</p>
             </div>
         </div>
     </div>

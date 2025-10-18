@@ -9,12 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.255.0.0 - Fixed GetConfigOrDefault method to properly handle nullable types and string conversions, resolved compilation errors with notnull constraint",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.255.0.0/JellyseerrBridge-0.255.0.0-DLL.zip",
+        "version": "0.255.0.0",
+        "checksum": "504EE00C48D92340D84BA9853950D9CD",
+        "timestamp": "2025-10-18T07:57:51.584Z",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "checksum": "16B5BA23D5C3151F2703C6CBCF6A35A4",
         "dependencies": [],
         "changelog": "v0.254.3.0 - Fixed nested locking issue and simplified architecture. Removed unnecessary wrapper function in JellyseerrSyncService that was causing deadlocks. Eliminated duplicate locking by removing service-level locking since controllers and tasks already handle concurrency control. This prevents sync operations from getting stuck when called after configuration updates.",
         "targetAbi": "10.10.7.0",
         "version": "0.254.3.0",
-        "timestamp": "2025-10-18T06:02:02.750Z",
+        "timestamp": "2025-10-18T06:02:02.75Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.254.3.0/JellyseerrBridge-0.254.3.0-DLL.zip"
       },
       {
