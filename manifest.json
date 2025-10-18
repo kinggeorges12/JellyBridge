@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-18T04:51:06.248Z",
+        "checksum": "B78CB063D0FA9B540E517224FF7E2D59",
+        "version": "0.253.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.253.0.0/JellyseerrBridge-0.253.0.0-DLL.zip",
+        "changelog": "v0.253.0.0 - Fix dependency injection issue with JellyseerrSyncService duplicate registration",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "checksum": "0351BE247D26634821D4928CA78793AB",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.252.0.0/JellyseerrBridge-0.252.0.0-DLL.zip",
         "dependencies": [],
