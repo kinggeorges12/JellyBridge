@@ -209,36 +209,49 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         {
             timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
             var startTime = DateTime.UtcNow;
+            bool lockAcquired = false;
             
-            // Wait for any running operation to complete (pausing, not canceling)
-            while (DateTime.UtcNow - startTime < timeout.Value)
+            try
             {
-                lock (_operationSyncLock)
+                // Wait for any running operation to complete (pausing, not canceling)
+                while (DateTime.UtcNow - startTime < timeout.Value)
                 {
-                    if (!_isOperationRunning)
+                    lock (_operationSyncLock)
                     {
-                        _isOperationRunning = true;
-                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
-                        
-                        try
+                        if (!_isOperationRunning)
                         {
-                            operation();
+                            _isOperationRunning = true;
+                            lockAcquired = true;
+                            logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                            break;
                         }
-                        finally
-                        {
-                            _isOperationRunning = false;
-                            logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
-                        }
-                        return;
                     }
+                    
+                    logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                    Thread.Sleep(100); // Small delay to prevent busy waiting
                 }
                 
-                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
-                Thread.Sleep(100); // Small delay to prevent busy waiting
+                // Check if we timed out
+                if (!lockAcquired)
+                {
+                    throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
+                }
+                
+                // Execute the operation
+                operation();
             }
-            
-            // If we get here, we timed out
-            throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
+            finally
+            {
+                // Always release the lock if we acquired it
+                if (lockAcquired)
+                {
+                    lock (_operationSyncLock)
+                    {
+                        _isOperationRunning = false;
+                        logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                    }
+                }
+            }
         }
     }
 }

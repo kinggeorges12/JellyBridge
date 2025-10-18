@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "DCF76D3C882F9A69FDCBA8920574EB04",
+        "version": "0.254.2.0",
+        "timestamp": "2025-10-18T05:45:48.531Z",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.254.2.0 - Fixed backend locking mechanism to properly handle sequential operations. Added proper lock acquisition tracking and guaranteed lock release in finally block. This ensures that save operations complete and release the lock before sync operations can acquire it, preventing the 1-minute timeout issue.",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.254.2.0/JellyseerrBridge-0.254.2.0-DLL.zip",
+        "dependencies": []
+      },
+      {
         "changelog": "v0.254.1.0 - Fixed critical deadlock issue and added timeout protection. Operations now timeout after 1 minute instead of waiting indefinitely. This prevents infinite loops and provides better user experience when operations get stuck.",
         "targetAbi": "10.10.7.0",
         "version": "0.254.1.0",
