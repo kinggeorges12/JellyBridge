@@ -447,7 +447,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             {
                 var config = Plugin.GetConfiguration();
                 // Use provided region or default from config
-                var targetRegion = region ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config);
+                var targetRegion = region ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region));
                 config.Region = targetRegion;
                 
                 // Get networks for both movies and TV, then combine and deduplicate
@@ -602,18 +602,28 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         /// Delete all Jellyseerr library data.
         /// </summary>
         [HttpPost("ResetPlugin")]
-        public async Task<IActionResult> ResetPlugin()
+        public async Task<IActionResult> ResetPlugin([FromBody] JsonElement requestData)
         {
             _logger.LogInformation("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
             
             try
             {
+                // Extract library directory from request
+                string? libraryDir = null;
+                if (requestData.TryGetProperty("libraryDirectory", out var libraryDirElement))
+                {
+                    libraryDir = libraryDirElement.GetString();
+                }
+                
+                // Fallback to current configuration if not provided
+                if (string.IsNullOrEmpty(libraryDir))
+                {
+                    libraryDir = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                }
+                
                 // Use Jellyfin-style locking that pauses instead of canceling
                 await Plugin.ExecuteWithLockAsync(() =>
                 {
-                    // Get current configuration to find library directory
-                    var currentConfig = Plugin.Instance.Configuration;
-                    var libraryDir = currentConfig.LibraryDirectory;
                     
                     _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     

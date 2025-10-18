@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.256.0.0 - Enhanced reset plugin functionality with library directory parameter, improved confirmation dialogs with clear directory paths, fixed sync workflow to run after successful configuration save, and added descriptive text for network services display format",
+        "version": "0.256.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.256.0.0/JellyseerrBridge-0.256.0.0-DLL.zip",
+        "checksum": "BC22CE008DFA083353B0DE2DECB7A303",
+        "timestamp": "2025-10-18T08:47:21.371Z"
+      },
+      {
         "changelog": "v0.255.0.0 - Fixed GetConfigOrDefault method to properly handle nullable types and string conversions, resolved compilation errors with notnull constraint",
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.255.0.0/JellyseerrBridge-0.255.0.0-DLL.zip",

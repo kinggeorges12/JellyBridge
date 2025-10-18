@@ -399,7 +399,8 @@ function initializeSyncSettings(page) {
     const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
     // Populate region settings
-    populateRegion(page, [{ iso_3166_1: config.Region }], config.Region);
+    const regionSelect = config.Region || config.DefaultValues.Region;
+    populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
     populateSelectWithNetworks(activeNetworksSelect, config.NetworkMap || []);
@@ -773,7 +774,7 @@ function savePluginConfiguration(view) {
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
             config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
-            config.Region = form.querySelector('#selectWatchRegion').value;
+            config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
             config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
@@ -879,6 +880,8 @@ function performManualSync(page) {
             
             savePluginConfiguration(page).then(function(result) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
+                // sync if confirmed
+                performSync(page);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyseerrBridgeConfigurationForm');
@@ -886,14 +889,14 @@ function performManualSync(page) {
                 Dashboard.hideLoadingMsg();
             });
         }
-        
-        // Always sync after the if statement
-        performSync(page);
     });
 }
 
 // Reset plugin configuration and delete data with double confirmation
 function performPluginReset(page) {
+    // Get current library directory before resetting configuration, fallback to default if empty
+    const displayLibraryDir = getInputValue(page, 'LibraryDirectory') || getDefaultValue(page, 'LibraryDirectory') || '(not configured)';
+    
     // First confirmation with information warning emoji
     Dashboard.confirm({
         title: '⚠️ Reset Plugin Configuration',
@@ -939,7 +942,7 @@ function performPluginReset(page) {
                 // Second confirmation with warning emoji for data deletion
                 Dashboard.confirm({
                     title: '❗ Delete Library Data',
-                    text: 'This will permanently delete ALL Jellyseerr library data:\n\n• Delete ALL library folders and files\n• Remove ALL generated content\n• This action CANNOT be undone!\n\nAre you sure you want to delete the data?',
+                    text: `This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${displayLibraryDir}". Are you sure you want to delete the data?`,
                     confirmText: 'Yes! Proceed to final confirmation...',
                     cancelText: 'Cancel',
                     primary: "cancel"
@@ -948,7 +951,7 @@ function performPluginReset(page) {
                         // Third confirmation with emergency emoji for final data deletion
                         Dashboard.confirm({
                             title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                            text: 'LAST WARNING: This is your final chance to cancel!\n\nThis will permanently delete ALL Jellyseerr library data:\n\n• Delete ALL library folders and files\n• Remove ALL generated content\n• This action CANNOT be undone!\n\nAre you absolutely certain you want to proceed?',
+                            text: `LAST WARNING: This is your final chance to cancel! This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${displayLibraryDir}". Are you absolutely certain you want to proceed?`,
                             confirmText: '🚩 YES, DELETE EVERYTHING',
                             cancelText: 'Cancel',
                             primary: "cancel"
@@ -960,7 +963,9 @@ function performPluginReset(page) {
                                 ApiClient.ajax({
                                     url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
                                     type: 'POST',
-                                    data: '{}',
+                                    data: JSON.stringify({
+                                        libraryDirectory: currentLibraryDir
+                                    }),
                                     contentType: 'application/json',
                                     dataType: 'json'
                                 }).then(function(result) {
