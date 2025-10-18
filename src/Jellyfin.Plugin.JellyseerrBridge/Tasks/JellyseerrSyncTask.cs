@@ -35,7 +35,11 @@ public class JellyseerrSyncTask : IScheduledTask
             
             progress.Report(0);
             
-            await _syncService.CreateBridgeFoldersAsync();
+            // Use Jellyfin-style locking that pauses instead of canceling
+            await Plugin.ExecuteWithLockAsync(async () =>
+            {
+                await _syncService.CreateBridgeFoldersAsync();
+            }, _logger, "Scheduled Jellyseerr Sync");
             
             progress.Report(100);
             

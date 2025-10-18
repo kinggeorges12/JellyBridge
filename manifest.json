@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.254.0.0 - Implemented Jellyfin-style locking pattern for better concurrency control. Fixed settings page accessibility by properly registering ConfigurationController. Removed unused Scrutor dependency and simplified service registration. All HTTP endpoints and scheduled tasks now use proper locking that pauses operations instead of canceling them.",
+        "timestamp": "2025-10-18T05:23:49.130Z",
+        "version": "0.254.0.0",
+        "checksum": "0B1324C79CEC54B93B8499667EA2E6DE",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.254.0.0/JellyseerrBridge-0.254.0.0-DLL.zip",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "timestamp": "2025-10-18T04:51:06.248Z",
         "checksum": "B78CB063D0FA9B540E517224FF7E2D59",
         "version": "0.253.0.0",
