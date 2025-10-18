@@ -21,8 +21,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         
         public ILoggerFactory LoggerFactory => _loggerFactory;
         
-        // Central semaphore to block all operations when any operation is running
-        private static readonly SemaphoreSlim _operationLock = new SemaphoreSlim(1, 1);
+        // Jellyfin-style locking for operations that should be mutually exclusive
+        private static readonly object _operationSyncLock = new object();
         private static bool _isOperationRunning = false;
         
         public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory) 
@@ -49,29 +49,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             _logger.LogInformation("[JellyseerrBridge] Configuration update requested");
             _logger.LogInformation("[JellyseerrBridge] Configuration update method called - this means the save button was clicked!");
             
-            // Block other operations during configuration update
-            _isOperationRunning = true;
-            _logger.LogInformation("[JellyseerrBridge] Acquiring operation lock to block other operations");
+            var pluginConfig = (PluginConfiguration)configuration;
+            _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, UserId: {UserId}, SyncInterval: {SyncInterval}", 
+                pluginConfig.IsEnabled, 
+                pluginConfig.JellyseerrUrl, 
+                !string.IsNullOrEmpty(pluginConfig.ApiKey),
+                pluginConfig.LibraryDirectory,
+                pluginConfig.UserId ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.UserId)],
+                pluginConfig.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
             
-            try
-            {
-                var pluginConfig = (PluginConfiguration)configuration;
-                _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, UserId: {UserId}, SyncInterval: {SyncInterval}", 
-                    pluginConfig.IsEnabled, 
-                    pluginConfig.JellyseerrUrl, 
-                    !string.IsNullOrEmpty(pluginConfig.ApiKey),
-                    pluginConfig.LibraryDirectory,
-                    pluginConfig.UserId ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.UserId)],
-                    pluginConfig.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
-                
-                base.UpdateConfiguration(configuration);
-                _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
-            }
-            finally
-            {
-                _isOperationRunning = false;
-                _logger.LogInformation("[JellyseerrBridge] Operation lock released, other operations can resume");
-            }
+            base.UpdateConfiguration(configuration);
+            _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
         }
 
         /// <summary>
@@ -120,43 +108,27 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         }
 
         /// <summary>
-        /// Acquires the operation lock to block other operations.
-        /// </summary>
-        public static async Task<bool> TryAcquireOperationLockAsync(TimeSpan timeout = default)
-        {
-            if (timeout == default)
-                timeout = TimeSpan.FromSeconds(30);
-
-            return await _operationLock.WaitAsync(timeout);
-        }
-
-        /// <summary>
-        /// Releases the operation lock.
-        /// </summary>
-        public static void ReleaseOperationLock()
-        {
-            _operationLock.Release();
-        }
-
-        /// <summary>
         /// Checks if any operation is currently running.
         /// </summary>
         public static bool IsOperationRunning => _isOperationRunning;
 
         /// <summary>
-        /// Executes an operation with automatic locking.
+        /// Executes an operation with Jellyfin-style locking that pauses instead of canceling.
         /// </summary>
         public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName)
         {
-            if (_isOperationRunning)
+            // Wait for any running operation to complete (pausing, not canceling)
+            while (_isOperationRunning)
             {
-                logger.LogInformation("Another operation is running, waiting for lock before executing {OperationName}", operationName);
-                await _operationLock.WaitAsync();
-                _operationLock.Release();
+                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                await Task.Delay(100); // Small delay to prevent busy waiting
             }
 
-            _isOperationRunning = true;
-            logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+            lock (_operationSyncLock)
+            {
+                _isOperationRunning = true;
+                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+            }
             
             try
             {
@@ -164,25 +136,31 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             }
             finally
             {
-                _isOperationRunning = false;
-                logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                lock (_operationSyncLock)
+                {
+                    _isOperationRunning = false;
+                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                }
             }
         }
 
         /// <summary>
-        /// Executes an operation with automatic locking (no return value).
+        /// Executes an operation with Jellyfin-style locking that pauses instead of canceling (no return value).
         /// </summary>
         public static async Task ExecuteWithLockAsync(Func<Task> operation, ILogger logger, string operationName)
         {
-            if (_isOperationRunning)
+            // Wait for any running operation to complete (pausing, not canceling)
+            while (_isOperationRunning)
             {
-                logger.LogInformation("Another operation is running, waiting for lock before executing {OperationName}", operationName);
-                await _operationLock.WaitAsync();
-                _operationLock.Release();
+                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                await Task.Delay(100); // Small delay to prevent busy waiting
             }
 
-            _isOperationRunning = true;
-            logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+            lock (_operationSyncLock)
+            {
+                _isOperationRunning = true;
+                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+            }
             
             try
             {
@@ -190,8 +168,40 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             }
             finally
             {
-                _isOperationRunning = false;
-                logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                lock (_operationSyncLock)
+                {
+                    _isOperationRunning = false;
+                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Executes a synchronous operation with Jellyfin-style locking that pauses instead of canceling.
+        /// </summary>
+        public static void ExecuteWithLock(Action operation, ILogger logger, string operationName)
+        {
+            // Wait for any running operation to complete (pausing, not canceling)
+            while (_isOperationRunning)
+            {
+                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                Thread.Sleep(100); // Small delay to prevent busy waiting
+            }
+
+            lock (_operationSyncLock)
+            {
+                _isOperationRunning = true;
+                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                
+                try
+                {
+                    operation();
+                }
+                finally
+                {
+                    _isOperationRunning = false;
+                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                }
             }
         }
     }

@@ -38,35 +38,40 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                // Add timeout to prevent hanging
-                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                
-                _logger.LogInformation("[JellyseerrBridge] Starting bridge items scan...");
-                var bridgeItems = await _bridgeService.TestLibraryScanAsync();
-                
-                _logger.LogInformation("[JellyseerrBridge] Getting plugin configuration...");
-                var config = Plugin.GetConfiguration();
-                
-                _logger.LogInformation("[JellyseerrBridge] Getting existing movies...");
-                var existingMovies = await _bridgeService.GetExistingItemsAsync<Movie>();
-                
-                _logger.LogInformation("[JellyseerrBridge] Getting existing shows...");
-                var existingShows = await _bridgeService.GetExistingItemsAsync<Series>();
-                
-                _logger.LogInformation("[JellyseerrBridge] Preparing response...");
-                
-                // Always return a response
-                return Ok(new
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    bridgeItems = bridgeItems ?? new List<IJellyseerrItem>(),
-                    syncDirectory = config?.LibraryDirectory ?? "Not configured",
-                    excludeFromMainLibraries = config?.ExcludeFromMainLibraries ?? true,
-                    message = $"Library scan test completed. Found {bridgeItems?.Count ?? 0} bridge items, {existingMovies?.Count ?? 0} movies, {existingShows?.Count ?? 0} shows in main libraries",
-                    movieCount = existingMovies?.Count ?? 0,
-                    tvShowCount = existingShows?.Count ?? 0,
-                    movieIds = existingMovies?.Select(m => m.Id.ToString()).ToList() ?? new List<string>(),
-                    tvShowIds = existingShows?.Select(s => s.Id.ToString()).ToList() ?? new List<string>()
-                });
+                    // Add timeout to prevent hanging
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Starting bridge items scan...");
+                    var bridgeItems = await _bridgeService.TestLibraryScanAsync();
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Getting plugin configuration...");
+                    var config = Plugin.GetConfiguration();
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Getting existing movies...");
+                    var existingMovies = await _bridgeService.GetExistingItemsAsync<Movie>();
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Getting existing shows...");
+                    var existingShows = await _bridgeService.GetExistingItemsAsync<Series>();
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Preparing response...");
+                    
+                    return new
+                    {
+                        bridgeItems = bridgeItems ?? new List<IJellyseerrItem>(),
+                        syncDirectory = config?.LibraryDirectory ?? "Not configured",
+                        excludeFromMainLibraries = config?.ExcludeFromMainLibraries ?? true,
+                        message = $"Library scan test completed. Found {bridgeItems?.Count ?? 0} bridge items, {existingMovies?.Count ?? 0} movies, {existingShows?.Count ?? 0} shows in main libraries",
+                        movieCount = existingMovies?.Count ?? 0,
+                        tvShowCount = existingShows?.Count ?? 0,
+                        movieIds = existingMovies?.Select(m => m.Id.ToString()).ToList() ?? new List<string>(),
+                        tvShowIds = existingShows?.Select(s => s.Id.ToString()).ToList() ?? new List<string>()
+                    };
+                }, _logger, "Test Library Scan");
+                
+                return Ok(result);
             }
             catch (OperationCanceledException)
             {
@@ -100,39 +105,45 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                // Add timeout to prevent hanging
-                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                
-                _logger.LogInformation("[JellyseerrBridge] Starting favorites scan...");
-                var result = await _bridgeService.TestFavoritesScanAsync();
-                
-                _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
-                
-            // Normalize casing for frontend (camelCase)
-            var userFavoritesCamel = result.UserFavorites.Select(u => new
-            {
-                userId = u.UserId,
-                userName = u.UserName,
-                favoriteCount = u.FavoriteCount,
-                favorites = (u.Favorites ?? new List<FavoriteItem>()).Select(f => new
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    id = f.Id,
-                    name = f.Name,
-                    type = f.Type,
-                    year = f.Year,
-                    path = f.Path
-                }).ToList()
-            }).ToList();
+                    // Add timeout to prevent hanging
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Starting favorites scan...");
+                    var scanResult = await _bridgeService.TestFavoritesScanAsync();
+                    
+                    _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
+                    
+                    // Normalize casing for frontend (camelCase)
+                    var userFavoritesCamel = scanResult.UserFavorites.Select(u => new
+                    {
+                        userId = u.UserId,
+                        userName = u.UserName,
+                        favoriteCount = u.FavoriteCount,
+                        favorites = (u.Favorites ?? new List<FavoriteItem>()).Select(f => new
+                        {
+                            id = f.Id,
+                            name = f.Name,
+                            type = f.Type,
+                            year = f.Year,
+                            path = f.Path
+                        }).ToList()
+                    }).ToList();
 
-            return Ok(new
-            {
-                success = true,
-                message = "Favorites scan test completed successfully",
-                totalUsers = result.TotalUsers,
-                usersWithFavorites = result.UsersWithFavorites,
-                totalFavorites = result.TotalFavorites,
-                userFavorites = userFavoritesCamel
-            });
+                    return new
+                    {
+                        success = true,
+                        message = "Favorites scan test completed successfully",
+                        totalUsers = scanResult.TotalUsers,
+                        usersWithFavorites = scanResult.UsersWithFavorites,
+                        totalFavorites = scanResult.TotalFavorites,
+                        userFavorites = userFavoritesCamel
+                    };
+                }, _logger, "Test Favorites Scan");
+                
+                return Ok(result);
             }
             catch (OperationCanceledException)
             {
@@ -212,50 +223,55 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var config = new PluginConfiguration();
-                
-                // Update configuration properties using simplified helper
-                SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
-                SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
-                SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
-                SetValueOrDefault<int?>(configData, nameof(config.UserId), config);
-                SetValueOrDefault<double?>(configData, nameof(config.SyncIntervalHours), config);
-                SetValueOrDefault<string>(configData, nameof(config.LibraryPrefix), config);
-                SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
-                SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
-                SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
-                SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
-                SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
-                SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
-                SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
-                SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
-                SetValueOrDefault<string>(configData, nameof(config.Region), config);
-                // Handle NetworkMap as array of JellyseerrNetwork objects
-                if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
-                    networkMapElement.ValueKind == JsonValueKind.Array)
+                // Use Jellyfin-style locking that pauses instead of canceling
+                Plugin.ExecuteWithLock(() =>
                 {
-                    try
+                    var config = new PluginConfiguration();
+                    
+                    // Update configuration properties using simplified helper
+                    SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
+                    SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
+                    SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
+                    SetValueOrDefault<int?>(configData, nameof(config.UserId), config);
+                    SetValueOrDefault<double?>(configData, nameof(config.SyncIntervalHours), config);
+                    SetValueOrDefault<string>(configData, nameof(config.LibraryPrefix), config);
+                    SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
+                    SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
+                    SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
+                    SetValueOrDefault<string>(configData, nameof(config.Region), config);
+                    // Handle NetworkMap as array of JellyseerrNetwork objects
+                    if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
+                        networkMapElement.ValueKind == JsonValueKind.Array)
                     {
-                        config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
-                        _logger.LogInformation("[JellyseerrBridge] Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+                        try
+                        {
+                            config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
+                            _logger.LogInformation("[JellyseerrBridge] Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[JellyseerrBridge] Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+                            config.NetworkMap = new List<JellyseerrNetwork>();
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogError(ex, "[JellyseerrBridge] Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+                        _logger.LogWarning("[JellyseerrBridge] NetworkMap is not an array or not found. ValueKind: {ValueKind}, JSON: {Json}", 
+                            networkMapElement.ValueKind, config.NetworkMap);
                         config.NetworkMap = new List<JellyseerrNetwork>();
                     }
-                }
-                else
-                {
-                    _logger.LogWarning("[JellyseerrBridge] NetworkMap is not an array or not found. ValueKind: {ValueKind}, JSON: {Json}", 
-                        networkMapElement.ValueKind, config.NetworkMap);
-                    config.NetworkMap = new List<JellyseerrNetwork>();
-                }
+                    
+                    // Save the configuration
+                    Plugin.Instance.UpdateConfiguration(config);
+                    
+                    _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
+                }, _logger, "Update Plugin Configuration");
                 
-                // Save the configuration
-                Plugin.Instance.UpdateConfiguration(config);
-                
-                _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
                 return Ok(new { success = true, message = "Configuration updated successfully" });
             }
             catch (Exception ex)
@@ -343,7 +359,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             
             try
             {
-                var result = await _syncService.CreateBridgeFoldersAsync();
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
+                {
+                    return await _syncService.CreateBridgeFoldersAsync();
+                }, _logger, "Manual Sync");
                 
                 if (result.Success)
                 {
