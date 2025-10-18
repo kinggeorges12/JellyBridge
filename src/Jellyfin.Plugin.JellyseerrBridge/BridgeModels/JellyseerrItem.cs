@@ -92,11 +92,12 @@ public interface IJellyseerrItem
         // Always include TMDB ID
         parts.Add($"[tmdbid-{Id}]");
         
+        //TODO: Testing
         // Add extra ID if available
-        if (!string.IsNullOrEmpty(ExtraId))
-        {
+        //if (!string.IsNullOrEmpty(ExtraId))
+        //{
             parts.Add($"[{ExtraIdName}-{ExtraId}]");
-        }
+        //}
         
         return string.Join(" ", parts);
     }

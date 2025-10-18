@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "4D89261F121036138ABB48B3414ADD58",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.260.0.0/JellyseerrBridge-0.260.0.0-DLL.zip",
+        "version": "0.260.0.0",
+        "timestamp": "2025-10-18T10:51:31.465Z",
+        "changelog": "v0.260.0.0 - Added season folder creation for TV shows with Season 01 folders and season placeholder videos, while maintaining show placeholder videos for compatibility",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "version": "0.259.0.0",
         "checksum": "F8C1DE72622911C51404A873C7F150FE",
         "dependencies": [],

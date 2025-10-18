@@ -114,6 +114,10 @@ public partial class JellyseerrSyncService
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
 
+            // Create season folders for TV shows
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for TV shows...");
+            await _bridgeService.CreateSeasonFoldersForShows(discoverShows);
+
             // Run library scan to find matches and create ignore files
             var matchedItems = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
 
