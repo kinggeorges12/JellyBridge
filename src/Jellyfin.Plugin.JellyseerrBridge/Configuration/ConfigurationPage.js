@@ -873,17 +873,16 @@ function performManualSync(page) {
             
             savePluginConfiguration(page).then(function(result) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
-                
-                // Only start sync after save is successful
-                Dashboard.alert('✅ Configuration saved successfully. Starting sync...');
-                performSync(page);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyseerrBridgeConfigurationForm');
             }).finally(function() {
-                // Don't hide loading here since sync might still be running
+                Dashboard.hideLoadingMsg();
             });
         }
+        
+        // Always sync after the if statement
+        performSync(page);
     });
 }
 

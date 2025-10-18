@@ -42,26 +42,15 @@ public partial class JellyseerrSyncService
     }
 
     /// <summary>
-    /// Create folder structure and JSON metadata files for manual sync.
-    /// </summary>
-    public async Task<SyncResult> CreateBridgeFoldersAsync()
-    {
-        return await Plugin.ExecuteWithLockAsync(
-            async () => await CreateBridgeFoldersInternalAsync(),
-            _logger,
-            "Jellyseerr Sync Operation"
-        );
-    }
-
-    /// <summary>
     /// Check if a sync operation is currently running.
     /// </summary>
     public bool IsSyncRunning => Plugin.IsOperationRunning;
 
     /// <summary>
-    /// Internal method that performs the actual sync operation.
+    /// Create folder structure and JSON metadata files for manual sync.
+    /// Note: Caller is responsible for locking.
     /// </summary>
-    private async Task<SyncResult> CreateBridgeFoldersInternalAsync()
+    public async Task<SyncResult> CreateBridgeFoldersAsync()
     {
         var result = new SyncResult();
         
