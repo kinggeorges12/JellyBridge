@@ -552,7 +552,7 @@ public class JellyseerrApiService
                         ? new Dictionary<string, string>(queryParameters) { ["page"] = page.ToString() }
                         : new Dictionary<string, string> { ["page"] = page.ToString() };
                     // User list is a special case that uses take and skip rather than page
-                    if(endpoint!=JellyseerrEndpoint.UserList){
+                    if(endpoint==JellyseerrEndpoint.UserList){
                         pageParameters = queryParameters;
                     }
                     
