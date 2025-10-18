@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-18T09:35:21.143Z",
+        "checksum": "ACDBB681B831813ADC618685CA402775",
+        "changelog": "v0.258.0.0 - Fixed critical HttpRequestMessage reuse bug in API retry logic that caused 'request message was already sent' errors, enhanced TestConnection endpoint with proper validation to fail when API calls fail or return empty results, and improved error handling with specific error codes and detailed failure messages",
+        "version": "0.258.0.0",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.258.0.0/JellyseerrBridge-0.258.0.0-DLL.zip"
+      },
+      {
         "timestamp": "2025-10-18T09:06:22.111Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.257.0.0/JellyseerrBridge-0.257.0.0-DLL.zip",
         "version": "0.257.0.0",
