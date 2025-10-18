@@ -313,6 +313,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test basic connectivity using JellyseerrApiService
                 var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, testConfig);
+                if (status == null)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Basic connectivity test failed - Status endpoint returned null");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "Failed to connect to Jellyseerr API",
+                        details = "The Status endpoint did not return a valid response. Check if Jellyseerr is running and accessible.",
+                        errorCode = "CONNECTION_FAILED"
+                    });
+                }
                 
                 _logger.LogInformation("[JellyseerrBridge] Basic connectivity test successful");
 
@@ -336,10 +346,35 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test user list permissions using JellyseerrApiService
                 var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
+                if (users == null)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] User list test failed - UserList endpoint returned null");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "Failed to retrieve user list",
+                        details = "The UserList endpoint did not return a valid response. Check API permissions.",
+                        errorCode = "USER_LIST_FAILED"
+                    });
+                }
                     
                 _logger.LogInformation("[JellyseerrBridge] Successfully retrieved user list from object list. Found {UserCount} users", users.Count);
 
-                return Ok(status);
+                if (users.Count == 0)
+                {
+                    _logger.LogWarning("[JellyseerrBridge] User list test failed - No users found");
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "No users found in Jellyseerr",
+                        details = "The API key has access but no users were found. This may indicate a configuration issue in Jellyseerr.",
+                        errorCode = "NO_USERS_FOUND"
+                    });
+                }
+
+                return Ok(new { 
+                    success = true, 
+                    message = "Connection test successful",
+                    details = $"Connected to Jellyseerr v{status.Version}, authenticated as {typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown"}, found {users.Count} users"
+                });
             }
             catch (Exception ex)
             {

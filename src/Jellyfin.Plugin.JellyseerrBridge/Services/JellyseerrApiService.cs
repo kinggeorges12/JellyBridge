@@ -372,16 +372,27 @@ public class JellyseerrApiService
         {
             try
             {
+                // Create a new HttpRequestMessage for each retry attempt since HttpRequestMessage can only be sent once
+                using var requestMessage = new HttpRequestMessage(request.Method, request.RequestUri);
+                foreach (var header in request.Headers)
+                {
+                    requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+                if (request.Content != null)
+                {
+                    requestMessage.Content = request.Content;
+                }
+                
                 if (enableDebugLogging)
                 {
                     _logger.LogDebug("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts}: {Method} {Url}", 
-                        attempt, retryAttempts, request.Method, request.RequestUri);
+                        attempt, retryAttempts, requestMessage.Method, requestMessage.RequestUri);
                 }
                 
                 // Use the injected HttpClient with timeout for this request
                 using var cts = new CancellationTokenSource(timeout);
                 
-                var response = await _httpClient.SendAsync(request, cts.Token);
+                var response = await _httpClient.SendAsync(requestMessage, cts.Token);
                 
                 if (enableDebugLogging)
                 {
