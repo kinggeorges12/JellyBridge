@@ -291,6 +291,11 @@
                         </div>
 
                         <div class="inputContainer">
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
+                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
+                        </div>
+
+                        <div class="inputContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1;">
                                     <label class="inputLabel inputLabelUnfocused" for="selectWatchRegion">Region <span class="helpIcon" title="Click the refresh button to load all regions from Jellyseerr. Only unselected default networks from Jellyseerr's Network Slider are shown in the list.">?</span></label>
@@ -371,11 +376,6 @@
                         <div class="inputContainer">
                             <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" label="Retry Attempts"/>
                             <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
                         </div>
 
                         <div class="inputContainer">
