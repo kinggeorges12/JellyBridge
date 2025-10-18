@@ -65,16 +65,15 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// <summary>
         /// Gets a configuration value or its default value.
         /// </summary>
-        public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null)
+        public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null) where T : notnull
         {
             config ??= GetConfiguration();
             var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
-            T? value = propertyInfo?.GetValue(config) is T t ? t : default;
+            var rawValue = propertyInfo?.GetValue(config);
             
-            // For string types, also check if the value is empty
-            if (value != null && !(value is string str && string.IsNullOrEmpty(str)))
-            {
-                return value;
+            // If the value is not null and is of type T, return it
+            if (rawValue != null && rawValue is T t) {
+                return t;
             }
 
             // Try to get default value from dictionary
@@ -83,8 +82,14 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 return (T)defaultValue;
             }
 
-            // Return default value for the type if no default is found
-            return default(T)!;
+            // Reference type string may be null
+            if (typeof(T) == typeof(string))
+            {
+                return (T)(object)string.Empty;
+            }
+            
+            // Return default value for the type
+            throw new InvalidOperationException($"Cannot provide default value for type {typeof(T)}");
         }
 
         /// <summary>

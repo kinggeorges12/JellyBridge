@@ -455,7 +455,7 @@ public class JellyseerrBridgeService
     /// </summary>
     public async Task<List<IJellyseerrItem>> LibraryScanAsync(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
     {
-        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool?>(nameof(PluginConfiguration.ExcludeFromMainLibraries)) ?? true;
+        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
         if (!excludeFromMainLibraries)
         {
             _logger.LogInformation("Including main libraries in JellyseerrBridge");
