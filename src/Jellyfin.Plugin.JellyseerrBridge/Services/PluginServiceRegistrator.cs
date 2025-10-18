@@ -48,9 +48,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             // Register the library service
             serviceCollection.AddScoped<JellyseerrLibraryService>();
             
-            // Register the sync service
-            serviceCollection.AddScoped<JellyseerrSyncService>();
-            
             // Register placeholder video generator
             serviceCollection.AddScoped<PlaceholderVideoGenerator>();
 
