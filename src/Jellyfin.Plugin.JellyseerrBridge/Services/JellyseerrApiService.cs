@@ -566,7 +566,7 @@ public class JellyseerrApiService
                     if (content == null) break;
                     
                     // Log the actual response content for debugging
-                    _logger.LogInformation("Raw response content for {Operation} page {Page}: {ResponseContent}", operationName, page, content);
+                    _logger.LogDebug("Raw response content for {Operation} page {Page}: {ResponseContent}", operationName, page, content);
                     
                     // Deserialize paginated response using the response type from endpoint config
                     var responseType = endpointConfig.ResponseModel;
@@ -633,7 +633,7 @@ public class JellyseerrApiService
                 }
                 
                 // Log the actual response content for debugging
-                _logger.LogInformation("Raw response content for {Operation}: {ResponseContent}", operationName, content);
+                _logger.LogDebug("Raw response content for {Operation}: {ResponseContent}", operationName, content);
                 
                 // Deserialize using the response type from endpoint config
                 var responseType = endpointConfig.ResponseModel;

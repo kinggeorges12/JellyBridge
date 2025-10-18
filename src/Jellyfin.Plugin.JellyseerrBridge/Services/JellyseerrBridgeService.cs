@@ -583,6 +583,64 @@ public class JellyseerrBridgeService
         
         return result;
     }
+
+    /// <summary>
+    /// Create season folders for all TV shows.
+    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
+    /// </summary>
+    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
+    {
+        _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
+        
+        var folderManager = new JellyseerrFolderManager<JellyseerrShow>();
+        
+        foreach (var show in shows)
+        {
+            try
+            {
+                var showFolderPath = folderManager.GetItemDirectory(show);
+                
+                _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                    show.MediaName, showFolderPath);
+                
+                var seasonFolderName = "Season 01";
+                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
+                
+                try
+                {
+                    // Create season folder if it doesn't exist
+                    if (!Directory.Exists(seasonFolderPath))
+                    {
+                        Directory.CreateDirectory(seasonFolderPath);
+                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    // Generate season placeholder video
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    if (placeholderSuccess)
+                    {
+                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
+            }
+        }
+        
+        _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
+    }
     
     /// <summary>
     /// Creates placeholder videos only for items that are NOT in the ignored items list.
