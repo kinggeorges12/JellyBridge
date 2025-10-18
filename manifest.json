@@ -9,8 +9,17 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.254.1.0 - Fixed critical deadlock issue and added timeout protection. Operations now timeout after 1 minute instead of waiting indefinitely. This prevents infinite loops and provides better user experience when operations get stuck.",
+        "targetAbi": "10.10.7.0",
+        "version": "0.254.1.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.254.1.0/JellyseerrBridge-0.254.1.0-DLL.zip",
+        "timestamp": "2025-10-18T05:36:39.651Z",
+        "checksum": "F39AEB65D71F9B33097436CB41E7F1E0",
+        "dependencies": []
+      },
+      {
         "changelog": "v0.254.0.0 - Implemented Jellyfin-style locking pattern for better concurrency control. Fixed settings page accessibility by properly registering ConfigurationController. Removed unused Scrutor dependency and simplified service registration. All HTTP endpoints and scheduled tasks now use proper locking that pauses operations instead of canceling them.",
-        "timestamp": "2025-10-18T05:23:49.130Z",
+        "timestamp": "2025-10-18T05:23:49.13Z",
         "version": "0.254.0.0",
         "checksum": "0B1324C79CEC54B93B8499667EA2E6DE",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.254.0.0/JellyseerrBridge-0.254.0.0-DLL.zip",

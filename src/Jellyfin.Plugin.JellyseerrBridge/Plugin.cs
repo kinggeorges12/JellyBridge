@@ -115,19 +115,32 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// <summary>
         /// Executes an operation with Jellyfin-style locking that pauses instead of canceling.
         /// </summary>
-        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName)
+        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
         {
+            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
+            var startTime = DateTime.UtcNow;
+            
             // Wait for any running operation to complete (pausing, not canceling)
-            while (_isOperationRunning)
+            while (DateTime.UtcNow - startTime < timeout.Value)
             {
+                lock (_operationSyncLock)
+                {
+                    if (!_isOperationRunning)
+                    {
+                        _isOperationRunning = true;
+                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                        break;
+                    }
+                }
+                
                 logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
                 await Task.Delay(100); // Small delay to prevent busy waiting
             }
-
-            lock (_operationSyncLock)
+            
+            // Check if we timed out
+            if (DateTime.UtcNow - startTime >= timeout.Value)
             {
-                _isOperationRunning = true;
-                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
             }
             
             try
@@ -147,19 +160,32 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// <summary>
         /// Executes an operation with Jellyfin-style locking that pauses instead of canceling (no return value).
         /// </summary>
-        public static async Task ExecuteWithLockAsync(Func<Task> operation, ILogger logger, string operationName)
+        public static async Task ExecuteWithLockAsync(Func<Task> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
         {
+            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
+            var startTime = DateTime.UtcNow;
+            
             // Wait for any running operation to complete (pausing, not canceling)
-            while (_isOperationRunning)
+            while (DateTime.UtcNow - startTime < timeout.Value)
             {
+                lock (_operationSyncLock)
+                {
+                    if (!_isOperationRunning)
+                    {
+                        _isOperationRunning = true;
+                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                        break;
+                    }
+                }
+                
                 logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
                 await Task.Delay(100); // Small delay to prevent busy waiting
             }
-
-            lock (_operationSyncLock)
+            
+            // Check if we timed out
+            if (DateTime.UtcNow - startTime >= timeout.Value)
             {
-                _isOperationRunning = true;
-                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
             }
             
             try
@@ -179,30 +205,40 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         /// <summary>
         /// Executes a synchronous operation with Jellyfin-style locking that pauses instead of canceling.
         /// </summary>
-        public static void ExecuteWithLock(Action operation, ILogger logger, string operationName)
+        public static void ExecuteWithLock(Action operation, ILogger logger, string operationName, TimeSpan? timeout = null)
         {
+            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
+            var startTime = DateTime.UtcNow;
+            
             // Wait for any running operation to complete (pausing, not canceling)
-            while (_isOperationRunning)
+            while (DateTime.UtcNow - startTime < timeout.Value)
             {
+                lock (_operationSyncLock)
+                {
+                    if (!_isOperationRunning)
+                    {
+                        _isOperationRunning = true;
+                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                        
+                        try
+                        {
+                            operation();
+                        }
+                        finally
+                        {
+                            _isOperationRunning = false;
+                            logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                        }
+                        return;
+                    }
+                }
+                
                 logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
                 Thread.Sleep(100); // Small delay to prevent busy waiting
             }
-
-            lock (_operationSyncLock)
-            {
-                _isOperationRunning = true;
-                logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
-                
-                try
-                {
-                    operation();
-                }
-                finally
-                {
-                    _isOperationRunning = false;
-                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
-                }
-            }
+            
+            // If we get here, we timed out
+            throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
         }
     }
 }
