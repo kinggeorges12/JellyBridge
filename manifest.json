@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-18T09:06:22.111Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.257.0.0/JellyseerrBridge-0.257.0.0-DLL.zip",
+        "version": "0.257.0.0",
+        "checksum": "56C8BA6343F0961D53DBB3EB67227BA2",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.257.0.0 - Enhanced API debugging with raw response logging for both paginated and non-paginated endpoints, improved configuration page layout by moving Max Discover Pages between Auto Sync and Region settings, and fixed TestConnection endpoint to properly handle null/empty Jellyseerr URL values using default configuration"
+      },
+      {
         "dependencies": [],
         "targetAbi": "10.10.7.0",
         "changelog": "v0.256.0.0 - Enhanced reset plugin functionality with library directory parameter, improved confirmation dialogs with clear directory paths, fixed sync workflow to run after successful configuration save, and added descriptive text for network services display format",

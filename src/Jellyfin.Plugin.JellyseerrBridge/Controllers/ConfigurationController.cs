@@ -287,13 +287,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpPost("TestConnection")]
         public async Task<IActionResult> TestConnection([FromBody] TestConnectionRequest request)
         {
+            var jellyseerUrl = string.IsNullOrEmpty(request.JellyseerrUrl) 
+                ? PluginConfiguration.DefaultValues[nameof(PluginConfiguration.JellyseerrUrl)]?.ToString() 
+                : request.JellyseerrUrl;
             _logger.LogInformation("[JellyseerrBridge] TestConnection endpoint called");
             _logger.LogInformation("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
-                request.JellyseerrUrl, !string.IsNullOrEmpty(request.ApiKey), request.ApiKey?.Length ?? 0);
+                jellyseerUrl, !string.IsNullOrEmpty(request.ApiKey), request.ApiKey?.Length ?? 0);
 
             try
             {
-                if (string.IsNullOrEmpty(request.JellyseerrUrl) || string.IsNullOrEmpty(request.ApiKey))
+                if (string.IsNullOrEmpty(jellyseerUrl) || string.IsNullOrEmpty(request.ApiKey))
                 {
                     _logger.LogWarning("[JellyseerrBridge] TestConnection failed: Missing required fields");
                     return BadRequest(new { success = false, message = "Jellyseerr URL and API Key are required" });
@@ -302,7 +305,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Create temporary config for testing
                 var testConfig = new PluginConfiguration
                 {
-                    JellyseerrUrl = request.JellyseerrUrl,
+                    JellyseerrUrl = jellyseerUrl,
                     ApiKey = request.ApiKey
                 };
 

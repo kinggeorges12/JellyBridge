@@ -269,7 +269,7 @@ function initializeGeneralSettings(page) {
                 // HTTP status code error
                 switch (error.status) {
                     case 400:
-                        errorMessage = '❌ Bad Request: Invalid URL or API Key format';
+                        errorMessage = '❌ Bad Request: Cannot reach URL';
                         break;
                     case 401:
                         errorMessage = '❌ Unauthorized: Invalid API Key';
