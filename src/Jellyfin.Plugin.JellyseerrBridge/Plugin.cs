@@ -70,9 +70,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             config ??= GetConfiguration();
             var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
             var rawValue = propertyInfo?.GetValue(config);
-            
-            // If the value is not null and is of type T, return it
-            if (rawValue != null && rawValue is T t) {
+
+            if (typeof(T) == typeof(string) && rawValue is string str && string.IsNullOrEmpty(str))
+            {
+                // If the value is an empty string, return an empty string
+                return (T)(object)string.Empty;
+            } else if (rawValue != null && rawValue is T t) {
+                // If the value is not null and is of type T, return it
                 return t;
             }
 
@@ -80,12 +84,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             if (PluginConfiguration.DefaultValues?.TryGetValue(propertyName, out var defaultValue) == true)
             {
                 return (T)defaultValue;
-            }
-
-            // Reference type string may be null
-            if (typeof(T) == typeof(string))
-            {
-                return (T)(object)string.Empty;
             }
             
             // Return default value for the type
