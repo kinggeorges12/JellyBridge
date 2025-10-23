@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "45620BBA53340B5FA88F2EA27C9681BC",
+        "dependencies": [],
+        "version": "0.263.0.0",
+        "changelog": "v0.263.0.0 - Added test request creation functionality to TestFavoritesScan endpoint - now creates both TV and movie test requests using CallEndpointAsync with specified parameters",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-23T11:16:46.318Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.263.0.0/JellyseerrBridge-0.263.0.0-DLL.zip"
+      },
+      {
         "dependencies": [],
         "checksum": "25C33C2F3BA6186B409CCB61C1F709C3",
         "targetAbi": "10.10.7.0",

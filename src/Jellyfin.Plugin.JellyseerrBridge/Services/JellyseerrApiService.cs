@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Linq;
@@ -194,6 +195,12 @@ public class JellyseerrApiService
             isPaginated: true,
             description: "Get all requests"
         ),
+        [JellyseerrEndpoint.CreateRequest] = new JellyseerrEndpointConfig(
+            "/api/v1/request",
+            typeof(MediaRequest),
+            method: HttpMethod.Post,
+            description: "Create a new request"
+        ),
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
@@ -307,9 +314,21 @@ public class JellyseerrApiService
         /// <returns>Configured HttpRequestMessage</returns>
         public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
         {
-            var url = BuildUrl(baseUrl, endpoint, parameters, templateValues);
-            var requestMessage = new HttpRequestMessage(method ?? HttpMethod.Get, url);
+            var httpMethod = method ?? GetEndpoint(endpoint).Method;
+            var isBodyMethod = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put;
+
+            // For POST/PUT, use parameters as JSON body and omit from query string
+            var url = BuildUrl(baseUrl, endpoint, !isBodyMethod ? parameters : null, templateValues);
+
+            var requestMessage = new HttpRequestMessage(httpMethod, url);
             requestMessage.Headers.Add("X-Api-Key", apiKey);
+            
+            if (isBodyMethod && parameters != null)
+            {
+                var json = JsonSerializer.Serialize(parameters);
+                requestMessage.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            }
+            
             return requestMessage;
         }
     }
@@ -672,6 +691,17 @@ public class JellyseerrApiService
     {
         return endpoint switch
         {
+            // CreateRequest endpoint - default parameters for POST body
+            JellyseerrEndpoint.CreateRequest => (
+                new Dictionary<string, string> 
+                {
+                    ["mediaType"] = "", //REQUIRED
+                    ["mediaId"] = "-1", //REQUIRED
+                    ["seasons"] = "all", // Accepts an array of season numbers or "all"
+                    ["userId"] = "-1" //REQUIRED
+                }, null
+            ),
+
             // Discover endpoints - no parameters needed for GET requests
             JellyseerrEndpoint.DiscoverMovies => (
                 new Dictionary<string, string> 

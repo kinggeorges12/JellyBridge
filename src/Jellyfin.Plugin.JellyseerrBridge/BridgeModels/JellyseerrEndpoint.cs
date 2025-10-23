@@ -19,6 +19,7 @@ public enum JellyseerrEndpoint
     
     // Request endpoints (from server/routes/request.ts)
     Requests,
+    CreateRequest,
     
     // Discover endpoints (from server/routes/discover.ts)
     DiscoverMovies,
