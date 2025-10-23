@@ -102,6 +102,12 @@ public class JellyseerrShow
     public string ExtraIdName => "tvdbid";
 
     /// <summary>
+    /// The creation date of the media item.
+    /// </summary>
+    [JsonPropertyName("createdDate")]
+    public DateTimeOffset? CreatedDate { get; set; }
+
+    /// <summary>
     /// Equality comparison with a Jellyfin Series item.
     /// </summary>
     public bool EqualsSeries(Series? other)

@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "25C33C2F3BA6186B409CCB61C1F709C3",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.262.0.0 - Fixed CreatedDate serialization and interface implementation; ensured CreatedDate set on write and preserved on read. Qualified System.IO usages in controller to avoid name conflicts. Enhanced sync result Details to include movies, shows, and cleanup.",
+        "timestamp": "2025-10-23T09:06:32.239Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.262.0.0/JellyseerrBridge-0.262.0.0-DLL.zip",
+        "version": "0.262.0.0"
+      },
+      {
         "changelog": "v0.261.0.0 - Added ProcessResult combining functionality with + operator and Combine() method, centralized result classes in JellyseerrApiResults.cs, implemented metadata cleanup with MaxCollectionDays setting, fixed namespace conflicts with File.Delete and File.Exists, improved library directory cleanup logic, and enhanced sync result aggregation.",
         "dependencies": [],
         "version": "0.261.0.0",

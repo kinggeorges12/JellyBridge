@@ -50,12 +50,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             _logger.LogInformation("[JellyseerrBridge] Configuration update method called - this means the save button was clicked!");
             
             var pluginConfig = (PluginConfiguration)configuration;
-            _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, UserId: {UserId}, SyncInterval: {SyncInterval}", 
+            _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
                 pluginConfig.IsEnabled, 
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
                 pluginConfig.LibraryDirectory,
-                pluginConfig.UserId ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.UserId)],
                 pluginConfig.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
             
             base.UpdateConfiguration(configuration);

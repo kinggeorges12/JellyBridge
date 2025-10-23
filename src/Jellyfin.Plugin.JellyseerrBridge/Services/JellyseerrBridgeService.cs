@@ -184,11 +184,11 @@ public class JellyseerrBridgeService
                     var bridgeFolderPath = folderManager.GetItemDirectory(bridgeItem);
                     var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
                     
-                    if (System.IO.File.Exists(ignoreFilePath))
+                    if (File.Exists(ignoreFilePath))
                     {
                         _logger.LogInformation("[JellyseerrBridge] No match found for '{BridgeMediaName}' - deleting .ignore file", 
                             bridgeItem.MediaName);
-                        ignoreFileTasks.Add(Task.Run(() => System.IO.File.Delete(ignoreFilePath)));
+                        ignoreFileTasks.Add(Task.Run(() => File.Delete(ignoreFilePath)));
                     }
                 }
             }
@@ -410,7 +410,7 @@ public class JellyseerrBridgeService
             {
                 try
                 {
-                    System.IO.File.Delete(ignoreFile);
+                    File.Delete(ignoreFile);
                     deletedCount++;
                     _logger.LogDebug("Deleted .ignore file: {IgnoreFile}", ignoreFile);
                 }
@@ -701,23 +701,23 @@ public class JellyseerrBridgeService
         {
             foreach (var item in items)
             {
-                    // Check if the item's CreatedDate is older than the cutoff date
-                    // Treat null CreatedDate as very old (past cutoff date)
-                    if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
+                // Check if the item's CreatedDate is older than the cutoff date
+                // Treat null CreatedDate as very old (past cutoff date)
+                if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
+                {
+                    _logger.LogDebug("[JellyseerrBridge] ProcessItemsForCleanup: Marking {ItemType} for removal - {ItemName} (Created: {CreatedDate})", 
+                        itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
+                    
+                    var itemDirectory = folderManager.GetItemDirectory(item);
+                    
+                    if (Directory.Exists(itemDirectory))
                     {
-                        _logger.LogDebug("[JellyseerrBridge] ProcessItemsForCleanup: Marking {ItemType} for removal - {ItemName} (Created: {CreatedDate})", 
+                        Directory.Delete(itemDirectory, true);
+                        deletedItems.Add(item);
+                        _logger.LogInformation("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed old {ItemType} '{ItemName}' (Created: {CreatedDate})", 
                             itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
-                        
-                        var itemDirectory = folderManager.GetItemDirectory(item);
-                        
-                        if (Directory.Exists(itemDirectory))
-                        {
-                            Directory.Delete(itemDirectory, true);
-                            deletedItems.Add(item);
-                            _logger.LogInformation("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed old {ItemType} '{ItemName}' (Created: {CreatedDate})", 
-                                itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
-                        }
                     }
+                }
             }
         }
         catch (Exception ex)

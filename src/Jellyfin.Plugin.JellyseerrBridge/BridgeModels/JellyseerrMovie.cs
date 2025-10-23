@@ -99,6 +99,12 @@ public class JellyseerrMovie
     public string ExtraIdName => "imdbid";
 
     /// <summary>
+    /// The creation date of the media item.
+    /// </summary>
+    [JsonPropertyName("createdDate")]
+    public DateTimeOffset? CreatedDate { get; set; }
+
+    /// <summary>
     /// Equality comparison with a Jellyfin Movie item.
     /// </summary>
     public bool EqualsMovie(Movie? other)

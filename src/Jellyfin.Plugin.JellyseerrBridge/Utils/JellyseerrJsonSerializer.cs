@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Linq;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Utils;
 
@@ -98,8 +99,17 @@ public class JellyseerrPropertiesConverter<T> : JsonConverter<T> where T : class
     {
         writer.WriteStartObject();
 
-        // Reflect over all public properties
-        foreach (PropertyInfo prop in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        // Reflect over all public properties including interface properties
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        
+        // Also get properties from interfaces
+        var interfaceProperties = typeof(T).GetInterfaces()
+            .SelectMany(i => i.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            .Where(p => !properties.Any(prop => prop.Name == p.Name && prop.DeclaringType == p.DeclaringType));
+        
+        var allProperties = properties.Concat(interfaceProperties);
+        
+        foreach (PropertyInfo prop in allProperties)
         {
             // Get the JsonPropertyName attribute if present
             var jsonNameAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();

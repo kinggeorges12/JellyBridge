@@ -75,7 +75,7 @@ public class PlaceholderVideoGenerator
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
             var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}.mp4");
 
-            if (!System.IO.File.Exists(cachePath))
+            if (!File.Exists(cachePath))
             {
                 _logger.LogInformation("[PlaceholderVideoGenerator] Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
                 
@@ -158,7 +158,7 @@ public class PlaceholderVideoGenerator
         {
             var assetPath = Path.Combine(_assetsPath, assetName);
             
-            if (System.IO.File.Exists(assetPath))
+            if (File.Exists(assetPath))
             {
                 return assetPath;
             }
@@ -185,7 +185,7 @@ public class PlaceholderVideoGenerator
             _logger.LogDebug("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
             
             // Verify the extracted file exists and has content
-            if (!System.IO.File.Exists(assetPath))
+            if (!File.Exists(assetPath))
             {
                 _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file does not exist: {AssetPath}", assetPath);
                 return null;
@@ -292,7 +292,7 @@ public class PlaceholderVideoGenerator
             if (process.ExitCode == 0)
             {
                 // Verify the output file was created and has content
-                if (!System.IO.File.Exists(outputPath))
+                if (!File.Exists(outputPath))
                 {
                     _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
                     return false;
@@ -392,7 +392,7 @@ public class PlaceholderVideoGenerator
                 {
                     try
                     {
-                        await Task.Run(() => System.IO.File.Delete(filePath));
+                        await Task.Run(() => File.Delete(filePath));
                         _logger.LogDebug("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
                         deletedCount++;
                     }
