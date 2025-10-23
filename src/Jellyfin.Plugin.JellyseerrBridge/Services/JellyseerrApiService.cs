@@ -537,9 +537,9 @@ public class JellyseerrApiService
             // Handle endpoint-specific logic
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
 
-            // Merge parameters if they exist, otherwise keep existing
-            queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, string>>()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? parameters;
-            templateValues = templateValues?.Concat(templates ?? Enumerable.Empty<KeyValuePair<string, string>>()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? templates;
+            // Merge parameters if they exist, allowing passed parameters to overwrite defaults
+            queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, string>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? parameters;
+            templateValues = templateValues?.Concat(templates ?? Enumerable.Empty<KeyValuePair<string, string>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? templates;
 
             // Handle response based on pagination
             _logger.LogInformation("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
