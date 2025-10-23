@@ -124,15 +124,30 @@ public class JellyseerrLogger<T> : ILogger<T>
         
         if (enableDebugLogging)
         {
-            // When debug logging is enabled, format the message first, then limit, then add prefix
-            var formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
-            var limitedMessage = LimitMessageToLinesAndCharacters(formattedMessage, 10, 100);
-            var prefixedMessage = "[TRACE] " + limitedMessage;
+            try
+            {
+                // When debug logging is enabled, try to format first, then limit and prefix
+                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
             
-            if (exception != null)
-                _innerLogger.LogInformation(exception, prefixedMessage);
-            else
-                _innerLogger.LogInformation(prefixedMessage);
+                var limitedMessage = LimitMessageToLinesAndCharacters(formattedMessage, 10, 100);
+                var prefixedMessage = "[TRACE] " + limitedMessage;
+                
+                if (exception != null)
+                    _innerLogger.LogInformation(exception, prefixedMessage);
+                else
+                    _innerLogger.LogInformation(prefixedMessage);
+            }
+            catch (FormatException)
+            {
+                // If formatting fails, let the logger handle it with the original message and args
+                var prefixedMessage = "[TRACE] " + message;
+                
+                if (exception != null)
+                    _innerLogger.LogInformation(exception, prefixedMessage, args);
+                else
+                    _innerLogger.LogInformation(prefixedMessage, args);
+                return;
+            }
         }
         else
         {
