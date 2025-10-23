@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
-using Jellyfin.Plugin.JellyseerrBridge.Services;
+using Jellyfin.Plugin.JellyseerrBridge.Controllers;
 using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
@@ -11,15 +11,15 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Tasks;
 public class JellyseerrSyncTask : IScheduledTask
 {
     private readonly ILogger<JellyseerrSyncTask> _logger;
-    private readonly JellyseerrSyncService _syncService;
+    private readonly RouteController _routeController;
 
 
     public JellyseerrSyncTask(
         ILogger<JellyseerrSyncTask> logger,
-        JellyseerrSyncService syncService)
+        RouteController routeController)
     {
         _logger = logger;
-        _syncService = syncService;
+        _routeController = routeController;
     }
 
     public string Name => "Jellyseerr Bridge Sync";
@@ -35,15 +35,19 @@ public class JellyseerrSyncTask : IScheduledTask
             
             progress.Report(0);
             
-            // Use Jellyfin-style locking that pauses instead of canceling
-            await Plugin.ExecuteWithLockAsync(async () =>
-            {
-                await _syncService.CreateBridgeFoldersAsync();
-            }, _logger, "Scheduled Jellyseerr Sync");
+            // Call the SyncLibrary method directly
+            var result = await _routeController.SyncLibrary();
             
             progress.Report(100);
             
-            _logger.LogInformation("Scheduled Jellyseerr sync task completed");
+            if (result is Microsoft.AspNetCore.Mvc.OkObjectResult okResult)
+            {
+                _logger.LogInformation("Scheduled Jellyseerr sync task completed successfully");
+            }
+            else
+            {
+                _logger.LogWarning("Scheduled Jellyseerr sync task failed");
+            }
         }
         catch (Exception ex)
         {

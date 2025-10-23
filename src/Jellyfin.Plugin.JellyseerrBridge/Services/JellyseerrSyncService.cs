@@ -47,10 +47,10 @@ public partial class JellyseerrSyncService
     public bool IsSyncRunning => Plugin.IsOperationRunning;
 
     /// <summary>
-    /// Create folder structure and JSON metadata files for manual sync.
+    /// Sync folder structure and JSON metadata files for manual sync.
     /// Note: Caller is responsible for locking.
     /// </summary>
-    public async Task<SyncResult> CreateBridgeFoldersAsync()
+    public async Task<SyncResult> SyncBridgeFoldersAsync()
     {
         var result = new SyncResult();
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
@@ -113,37 +113,42 @@ public partial class JellyseerrSyncService
 
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
-
-            // Create season folders for TV shows
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for TV shows...");
-            await _bridgeService.CreateSeasonFoldersForShows(discoverShows);
-
-            // Run library scan to find matches and create ignore files
-            var matchedItems = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
-
-            // Separate matched items by type
-            var matchedMovies = matchedItems.OfType<JellyseerrMovie>().ToList();
-            var matchedShows = matchedItems.OfType<JellyseerrShow>().ToList();
-
-            // Create placeholder videos only for non-ignored items
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for non-ignored movies...");
-            var moviePlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(discoverMovies, matchedMovies);
-
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for non-ignored shows...");
-            var showPlaceholderTask = _bridgeService.CreatePlaceholderVideosAsync(discoverShows, matchedShows);
-
-            // Wait for placeholder creation to complete
-            await Task.WhenAll(moviePlaceholderTask, showPlaceholderTask);
-
+            
             // Get the results
+            var moviesResult = await movieTask;
+            var showsResult = await showTask;
+
+            // Run library scan to find matches and get unmatched items
+            var (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
+
+            // Separate unmatched items by type for processing
+            var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
+            var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
+
+            // Create placeholder videos only for unmatched items
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies...", unmatchedMovies.Count);
+            var processedMovies = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
+
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            var processedShows = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedShows);
+
+            // Create season folders for unmatched TV shows only
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
+
+            // Clean up old metadata before refreshing library
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
+            var cleanupResult = await _bridgeService.CleanupMetadataAsync();
+            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Cleanup completed - {CleanupResult}", cleanupResult.ToString());
+            
             result.Success = true;
-            result.MoviesResult = await movieTask;
-            result.ShowsResult = await showTask;
+            result.MoviesResult = moviesResult;
+            result.ShowsResult = showsResult;
             result.Message = "Folder structure creation completed successfully";
-            result.Details = result.ToString();
+            result.Details = cleanupResult.ToString();
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
-                result.MoviesResult.Created, result.MoviesResult.Updated, result.ShowsResult.Created, result.ShowsResult.Updated);
+                moviesResult.Created, moviesResult.Updated, showsResult.Created, showsResult.Updated);
 
             // Check if library management is enabled
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
@@ -200,8 +205,6 @@ public partial class JellyseerrSyncService
         {
             try
             {
-                result.Processed++;
-                
                 _logger.LogDebug("Processing request {RequestId} for {MediaType} (ID: {MediaId})",
                     request.Id, request.Type.ToString(), request.Media?.Id ?? 0);
 
@@ -231,19 +234,3 @@ public partial class JellyseerrSyncService
     }
 }
 
-/// <summary>
-/// Result of a sync operation.
-/// </summary>
-public class SyncResult
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
-    public ProcessResult MoviesResult { get; set; } = new();
-    public ProcessResult ShowsResult { get; set; } = new();
-
-    public override string ToString()
-    {
-        return $"Movies: {MoviesResult.Created} created, {MoviesResult.Updated} updated | Shows: {ShowsResult.Created} created, {ShowsResult.Updated} updated";
-    }
-}

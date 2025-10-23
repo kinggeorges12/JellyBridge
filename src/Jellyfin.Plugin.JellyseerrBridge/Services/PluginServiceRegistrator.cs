@@ -40,8 +40,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             // Register the scheduled task
             serviceCollection.AddScoped<JellyseerrSyncTask>();
             
-            // Register the configuration controller
-            serviceCollection.AddScoped<Controllers.ConfigurationController>();
+            // Register the route controller
+            serviceCollection.AddScoped<Controllers.RouteController>();
         }
     }
 }

@@ -75,7 +75,7 @@ public class PlaceholderVideoGenerator
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
             var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}.mp4");
 
-            if (!File.Exists(cachePath))
+            if (!System.IO.File.Exists(cachePath))
             {
                 _logger.LogInformation("[PlaceholderVideoGenerator] Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
                 
@@ -158,7 +158,7 @@ public class PlaceholderVideoGenerator
         {
             var assetPath = Path.Combine(_assetsPath, assetName);
             
-            if (File.Exists(assetPath))
+            if (System.IO.File.Exists(assetPath))
             {
                 return assetPath;
             }
@@ -185,7 +185,7 @@ public class PlaceholderVideoGenerator
             _logger.LogDebug("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
             
             // Verify the extracted file exists and has content
-            if (!File.Exists(assetPath))
+            if (!System.IO.File.Exists(assetPath))
             {
                 _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file does not exist: {AssetPath}", assetPath);
                 return null;
@@ -292,7 +292,7 @@ public class PlaceholderVideoGenerator
             if (process.ExitCode == 0)
             {
                 // Verify the output file was created and has content
-                if (!File.Exists(outputPath))
+                if (!System.IO.File.Exists(outputPath))
                 {
                     _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
                     return false;
@@ -366,12 +366,6 @@ public class PlaceholderVideoGenerator
     /// <returns>Number of placeholder files deleted</returns>
     public async Task<int> DeletePlaceholderVideosAsync(string bridgeFolderPath)
     {
-        if (string.IsNullOrEmpty(bridgeFolderPath) || !Directory.Exists(bridgeFolderPath))
-        {
-            _logger.LogDebug("[PlaceholderVideoGenerator] Directory does not exist or is empty: {BridgeFolderPath}", bridgeFolderPath);
-            return 0;
-        }
-
         var deletedCount = 0;
         var placeholderFiles = new[] { 
             Path.GetFileNameWithoutExtension(MovieAsset) + ".mp4",
@@ -381,6 +375,11 @@ public class PlaceholderVideoGenerator
 
         try
         {
+            if (string.IsNullOrEmpty(bridgeFolderPath) || !Directory.Exists(bridgeFolderPath))
+            {
+                throw new InvalidOperationException($"Bridge folder does not exist: {bridgeFolderPath}");
+            }
+
             _logger.LogDebug("[PlaceholderVideoGenerator] Cleaning up placeholder videos in: {BridgeFolderPath}", bridgeFolderPath);
 
             // Delete placeholder files in current directory and all subdirectories
@@ -393,7 +392,7 @@ public class PlaceholderVideoGenerator
                 {
                     try
                     {
-                        await Task.Run(() => File.Delete(filePath));
+                        await Task.Run(() => System.IO.File.Delete(filePath));
                         _logger.LogDebug("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
                         deletedCount++;
                     }

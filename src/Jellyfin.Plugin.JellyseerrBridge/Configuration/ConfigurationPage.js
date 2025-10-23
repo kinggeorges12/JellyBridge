@@ -68,7 +68,7 @@ export default function (view) {
         const page = this;
         
         // Use our custom endpoint to get the configuration
-        fetch('/JellyseerrBridge/GetPluginConfiguration')
+        fetch('/JellyseerrBridge/PluginConfiguration')
             .then(response => response.json())
             .then(function (config) {
                 // Store configuration globally for other functions to use
@@ -476,7 +476,7 @@ function initializeSyncSettings(page) {
     // Add manual sync button functionality
     const syncButton = page.querySelector('#manualSync');
     syncButton.addEventListener('click', function () {
-        performManualSync(page);
+        performManualSyncLibrary(page);
     });
 
     // Add reset plugin button functionality
@@ -509,6 +509,7 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
     setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'MaxCollectionDays');
     setInputField(page, 'PlaceholderDurationSeconds');
     const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
     if (placeholderDurationInput) {
@@ -757,9 +758,10 @@ function savePluginConfiguration(view) {
     if (!validateField('RequestTimeout', validators.number, 'Invalid Request Timeout').isValid) return;
     if (!validateField('RetryAttempts', validators.number, 'Invalid Retry Attempts').isValid) return;
     if (!validateField('MaxDiscoverPages', validators.number, 'Invalid Max Discover Pages').isValid) return;
+    if (!validateField('MaxCollectionDays', validators.number, 'Invalid Max Collection Days').isValid) return;
     
     // Use our custom endpoint to get the current configuration
-    return fetch('/JellyseerrBridge/GetPluginConfiguration')
+    return fetch('/JellyseerrBridge/PluginConfiguration')
         .then(response => response.json())
         .then(function (config) {
             // Update config with current form values
@@ -779,12 +781,13 @@ function savePluginConfiguration(view) {
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
+            config.MaxCollectionDays = safeParseInt(form.querySelector('#MaxCollectionDays'));
             config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
             config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
             
             // Save the configuration using our custom endpoint
-            return fetch('/JellyseerrBridge/UpdatePluginConfiguration', {
+            return fetch('/JellyseerrBridge/PluginConfiguration', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -828,13 +831,13 @@ function loadRegions(page) {
 }
 
 // Shared sync function
-function performSync(page) {
+function performSyncLibrary(page) {
     const manualSyncResult = page.querySelector('#manualSyncResult');
     
     Dashboard.showLoadingMsg();
     
     return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/Sync'),
+        url: ApiClient.getUrl('JellyseerrBridge/SyncLibrary'),
         type: 'POST',
         data: '{}',
         contentType: 'application/json',
@@ -865,7 +868,7 @@ function performSync(page) {
 }
 
 // Complete manual sync workflow
-function performManualSync(page) {
+function performManualSyncLibrary(page) {
     // Show confirmation dialog for saving settings before sync
     Dashboard.confirm({
         title: 'Confirm Save',
@@ -881,7 +884,7 @@ function performManualSync(page) {
             savePluginConfiguration(page).then(function(result) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // sync if confirmed
-                performSync(page);
+                performSyncLibrary(page);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyseerrBridgeConfigurationForm');
@@ -920,6 +923,7 @@ function performPluginReset(page) {
                 RequestTimeout: null,
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
+                MaxCollectionDays: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
                 ExcludeFromMainLibraries: null,
@@ -931,7 +935,7 @@ function performPluginReset(page) {
             
             // Send reset configuration to the plugin
             ApiClient.ajax({
-                url: ApiClient.getUrl('JellyseerrBridge/UpdatePluginConfiguration'),
+                url: ApiClient.getUrl('JellyseerrBridge/PluginConfiguration'),
                 type: 'POST',
                 data: JSON.stringify(resetConfig),
                 contentType: 'application/json',
