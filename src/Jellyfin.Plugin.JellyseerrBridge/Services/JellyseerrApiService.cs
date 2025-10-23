@@ -598,6 +598,13 @@ public class JellyseerrApiService
                                 itemCount++;
                             }
                             _logger.LogInformation("Added {Count} items from page {Page}", itemCount, page);
+                            
+                            // Stop pagination if no items were returned from this page
+                            if (itemCount == 0)
+                            {
+                                _logger.LogInformation("No items returned from page {Page}, stopping pagination", page);
+                                break;
+                            }
                         }
                         else
                         {
@@ -699,7 +706,7 @@ public class JellyseerrApiService
                 null,
                 new Dictionary<string, string> 
                 {
-                    ["id"] = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.UserId), config).ToString() 
+                    ["id"] = "1" // Should always specify a user ID when calling this endpoint
                 }
             ),
             

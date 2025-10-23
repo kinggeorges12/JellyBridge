@@ -18,7 +18,6 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(LibraryDirectory), "/data/Jellyseerr" },
-        { nameof(UserId), 1 },
         { nameof(IsEnabled), true },
         { nameof(SyncIntervalHours), 24 },
         { nameof(CreateSeparateLibraries), false },
@@ -79,10 +78,6 @@ public class PluginConfiguration : BasePluginConfiguration
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the user ID for requests.
-    /// </summary>
-    public int? UserId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.

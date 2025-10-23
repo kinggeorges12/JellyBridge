@@ -145,7 +145,7 @@ public partial class JellyseerrSyncService
             result.MoviesResult = moviesResult;
             result.ShowsResult = showsResult;
             result.Message = "Folder structure creation completed successfully";
-            result.Details = cleanupResult.ToString();
+            result.Details = $"Movies: {moviesResult.ToString()}\nShows: {showsResult.ToString()}\nCleanup: {cleanupResult.ToString()}";
 
             _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
                 moviesResult.Created, moviesResult.Updated, showsResult.Created, showsResult.Updated);

@@ -189,7 +189,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     JellyseerrUrl = config.JellyseerrUrl,
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
-                    UserId = config.UserId,
                     IsEnabled = config.IsEnabled,
                     SyncIntervalHours = config.SyncIntervalHours,
                     CreateSeparateLibraries = config.CreateSeparateLibraries,
@@ -235,7 +234,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
                     SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
                     SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
-                    SetValueOrDefault<int?>(configData, nameof(config.UserId), config);
                     SetValueOrDefault<double?>(configData, nameof(config.SyncIntervalHours), config);
                     SetValueOrDefault<string>(configData, nameof(config.LibraryPrefix), config);
                     SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
@@ -668,15 +666,15 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
                     // Delete all contents inside library directory if it exists
-                    if (Directory.Exists(libraryDir))
+                    if (System.IO.Directory.Exists(libraryDir))
                     {
                         _logger.LogInformation("[JellyseerrBridge] Deleting all contents inside library directory: {LibraryDir}", libraryDir);
                         
                         try
                         {
                             // Get all subdirectories and files
-                            var subdirs = Directory.GetDirectories(libraryDir);
-                            var files = Directory.GetFiles(libraryDir);
+                            var subdirs = System.IO.Directory.GetDirectories(libraryDir);
+                            var files = System.IO.Directory.GetFiles(libraryDir);
                             
                             // Delete all files in the root directory
                             foreach (var file in files)
@@ -688,7 +686,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             // Delete all subdirectories (recursively)
                             foreach (var subdir in subdirs)
                             {
-                                Directory.Delete(subdir, true);
+                                System.IO.Directory.Delete(subdir, true);
                                 _logger.LogDebug("[JellyseerrBridge] Deleted subdirectory: {Subdir}", subdir);
                             }
                             

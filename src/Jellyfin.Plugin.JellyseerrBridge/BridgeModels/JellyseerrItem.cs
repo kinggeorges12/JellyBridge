@@ -62,7 +62,7 @@ public interface IJellyseerrItem
     /// The creation date of the media item.
     /// </summary>
     [JsonPropertyName("createdDate")]
-    virtual DateTimeOffset? CreatedDate => DateTimeOffset.Now;
+    DateTimeOffset? CreatedDate { get; set; }
 
     /// <summary>
     /// Extract year from date string.

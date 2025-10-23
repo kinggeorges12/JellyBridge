@@ -196,7 +196,6 @@ function initializeGeneralSettings(page) {
     setInputField(page, 'IsEnabled', true);
     setInputField(page, 'JellyseerrUrl');
     setInputField(page, 'ApiKey');
-    setInputField(page, 'UserId');
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'AutoSyncOnStartup', true);
     
@@ -753,7 +752,6 @@ function savePluginConfiguration(view) {
     if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
     
     // Validate number fields
-    if (!validateField('UserId', validators.number, 'Invalid User ID').isValid) return;
     if (!validateField('SyncIntervalHours', validators.number, 'Invalid Sync Interval').isValid) return;
     if (!validateField('RequestTimeout', validators.number, 'Invalid Request Timeout').isValid) return;
     if (!validateField('RetryAttempts', validators.number, 'Invalid Retry Attempts').isValid) return;
@@ -770,7 +768,6 @@ function savePluginConfiguration(view) {
             config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
             config.ApiKey = form.querySelector('#ApiKey').value.trim();
             config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
-            config.UserId = safeParseInt(form.querySelector('#UserId'));
             config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
             config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
@@ -917,7 +914,6 @@ function performPluginReset(page) {
                 JellyseerrUrl: '',
                 ApiKey: '',
                 LibraryDirectory: '',
-                UserId: null,
                 SyncIntervalHours: null,
                 LibraryPrefix: '',
                 RequestTimeout: null,

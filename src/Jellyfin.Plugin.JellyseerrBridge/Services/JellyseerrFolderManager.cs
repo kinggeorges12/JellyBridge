@@ -202,7 +202,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             foreach (var directory in directories)
             {
                 var metadataFile = Path.Combine(directory, "metadata.json");
-                if (System.IO.File.Exists(metadataFile))
+                if (File.Exists(metadataFile))
                 {
                     try
                     {
@@ -255,6 +255,9 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                 _logger.LogDebug("[JellyseerrFolderManager] Created directory: {TargetDirectory}", targetDirectory);
             }
 
+            // Set CreatedDate to current time when writing
+            item.CreatedDate = DateTimeOffset.Now;
+            
             var json = JellyseerrJsonSerializer.Serialize(item);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             
