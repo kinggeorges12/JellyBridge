@@ -20,7 +20,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public class JellyseerrBridgeService
 {
-    private readonly ILogger<JellyseerrBridgeService> _logger;
+    private readonly JellyseerrLogger<JellyseerrBridgeService> _logger;
     private readonly ILibraryManager _libraryManager;
     private readonly IDtoService _dtoService;
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
@@ -29,7 +29,7 @@ public class JellyseerrBridgeService
 
     public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator, IUserManager userManager, IUserDataManager userDataManager)
     {
-        _logger = logger;
+        _logger = new JellyseerrLogger<JellyseerrBridgeService>(logger);
         _libraryManager = libraryManager;
         _dtoService = dtoService;
         _placeholderVideoGenerator = placeholderVideoGenerator;
@@ -45,7 +45,7 @@ public class JellyseerrBridgeService
         var items = new List<T>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
-        _logger.LogInformation("[JellyseerrBridge] Sync directory: {SyncDirectory}", syncDirectory);
+        _logger.LogDebug("[JellyseerrBridge] Sync directory: {SyncDirectory}", syncDirectory);
 
         try
         {
@@ -54,7 +54,7 @@ public class JellyseerrBridgeService
             
             foreach (var library in libraries)
             {
-                _logger.LogInformation("[JellyseerrBridge] Processing library: {LibraryName} (Type: {LibraryType})", 
+                _logger.LogTrace("[JellyseerrBridge] Processing library: {LibraryName} (Type: {LibraryType})", 
                     library.Name, library.CollectionType);
 
                 // Skip libraries that contain the Jellyseerr sync directory
@@ -66,7 +66,7 @@ public class JellyseerrBridgeService
                 var isJellyseerrLibrary = library.Name?.Contains("Jellyseerr", StringComparison.OrdinalIgnoreCase) == true ||
                                         library.Name?.Contains("Bridge", StringComparison.OrdinalIgnoreCase) == true;
                 
-                _logger.LogInformation("[JellyseerrBridge] Library {LibraryName} locations: {Locations}, HasSyncDirectory: {HasSyncDirectory}, IsJellyseerrLibrary: {IsJellyseerrLibrary}", 
+                _logger.LogTrace("[JellyseerrBridge] Library {LibraryName} locations: {Locations}, HasSyncDirectory: {HasSyncDirectory}, IsJellyseerrLibrary: {IsJellyseerrLibrary}", 
                     library.Name, string.Join(", ", library.Locations ?? new string[0]), hasSyncDirectoryLocation, isJellyseerrLibrary);
                 
                 // Additional debugging for path comparison
@@ -75,13 +75,13 @@ public class JellyseerrBridgeService
                     foreach (var location in library.Locations)
                     {
                         var isInSync = JellyseerrFolderUtils.IsPathInSyncDirectory(location);
-                        _logger.LogInformation("[JellyseerrBridge] Location '{Location}' -> IsInSyncDirectory: {IsInSync}", location, isInSync);
+                        _logger.LogTrace("[JellyseerrBridge] Location '{Location}' -> IsInSyncDirectory: {IsInSync}", location, isInSync);
                     }
                 }
                 
                 if (hasSyncDirectoryLocation || isJellyseerrLibrary)
                 {
-                    _logger.LogInformation("[JellyseerrBridge] Skipping library {LibraryName} - monitors Jellyseerr sync directory or is Jellyseerr library", 
+                    _logger.LogDebug("[JellyseerrBridge] Skipping library {LibraryName} - monitors Jellyseerr sync directory or is Jellyseerr library", 
                         library.Name);
                     continue;
                 }
@@ -115,11 +115,11 @@ public class JellyseerrBridgeService
                 
                 items.AddRange(libraryItems);
                 
-                _logger.LogInformation("[JellyseerrBridge] Found {ItemCount} {ItemType} in library {LibraryName}", 
+                _logger.LogDebug("[JellyseerrBridge] Found {ItemCount} {ItemType} in library {LibraryName}", 
                     libraryItems.Count, typeof(T).Name, library.Name);
             }
 
-            _logger.LogInformation("[JellyseerrBridge] Total {ItemType} found across all libraries: {TotalCount}", 
+            _logger.LogDebug("[JellyseerrBridge] Total {ItemType} found across all libraries: {TotalCount}", 
                 typeof(T).Name, items.Count);
         }
         catch (Exception ex)
@@ -163,7 +163,7 @@ public class JellyseerrBridgeService
 
             if (bridgeMatch != null)
             {
-                _logger.LogInformation("[JellyseerrBridge] Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
+                _logger.LogTrace("[JellyseerrBridge] Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
                     bridgeMatch.MediaName, bridgeMatch.Id, existingItem.Name, existingItem.Id);
                 
                 // Get the bridge folder path using the folder manager
@@ -186,7 +186,7 @@ public class JellyseerrBridgeService
                     
                     if (File.Exists(ignoreFilePath))
                     {
-                        _logger.LogInformation("[JellyseerrBridge] No match found for '{BridgeMediaName}' - deleting .ignore file", 
+                        _logger.LogTrace("[JellyseerrBridge] No match found for '{BridgeMediaName}' - deleting .ignore file", 
                             bridgeItem.MediaName);
                         ignoreFileTasks.Add(Task.Run(() => File.Delete(ignoreFilePath)));
                     }
@@ -197,7 +197,7 @@ public class JellyseerrBridgeService
         // Await all ignore file creation tasks at the end
         await Task.WhenAll(ignoreFileTasks);
 
-        _logger.LogInformation("[JellyseerrBridge] Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
+        _logger.LogDebug("[JellyseerrBridge] Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
         return matches;
     }
 
@@ -210,25 +210,25 @@ public class JellyseerrBridgeService
         {
             var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
             
-            _logger.LogInformation("[JellyseerrBridge] Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
+            _logger.LogTrace("[JellyseerrBridge] Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
                 item.Name, item.Id, ignoreFilePath);
             
             // Use DtoService to get a proper BaseItemDto with all metadata
             var dtoOptions = new DtoOptions(); // Default constructor includes all fields
             var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
             
-            _logger.LogInformation("[JellyseerrBridge] Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
+            _logger.LogTrace("[JellyseerrBridge] Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
                 item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
             
             var itemJson = JsonSerializer.Serialize(itemDto, new JsonSerializerOptions {
                 WriteIndented = true
             });
             
-            _logger.LogInformation("[JellyseerrBridge] Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
+            _logger.LogTrace("[JellyseerrBridge] Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
                 item.Name, itemJson?.Length ?? 0);
 
             await File.WriteAllTextAsync(ignoreFilePath, itemJson);
-            _logger.LogInformation("[JellyseerrBridge] Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+            _logger.LogTrace("[JellyseerrBridge] Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
         }
         catch (Exception ex)
         {
@@ -263,7 +263,7 @@ public class JellyseerrBridgeService
             var movies = await movieTask;
             var shows = await showTask;
 
-            _logger.LogInformation("[JellyseerrBridge] Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
+            _logger.LogDebug("[JellyseerrBridge] Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
                 movies.Count, shows.Count);
 
             return (movies, shows);
@@ -284,7 +284,7 @@ public class JellyseerrBridgeService
 
         try
         {
-            _logger.LogInformation("Testing Jellyfin library scan functionality against bridge folder metadata...");
+            _logger.LogDebug("Testing Jellyfin library scan functionality against bridge folder metadata...");
             
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
@@ -298,7 +298,7 @@ public class JellyseerrBridgeService
             // Find matches between bridge folder metadata and existing Jellyfin items
             var (matchedItems, unmatchedItems) = await LibraryScanAsync(bridgeMovieMetadata, bridgeShowMetadata);
 
-            _logger.LogInformation("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
+            _logger.LogTrace("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
                 bridgeMovieMetadata.Count, bridgeShowMetadata.Count, matchedItems.Count);
 
             // Return all bridge items (not just matches) for test display purposes
@@ -322,13 +322,13 @@ public class JellyseerrBridgeService
     {
         try
         {
-            _logger.LogInformation("Testing Jellyfin favorites scan functionality...");
+            _logger.LogDebug("Testing Jellyfin favorites scan functionality...");
             
             var result = new TestFavoritesResult();
             var allUsers = _userManager.Users.ToList();
             result.TotalUsers = allUsers.Count;
             
-            _logger.LogInformation("Found {UserCount} users in Jellyfin", allUsers.Count);
+            _logger.LogTrace("Found {UserCount} users in Jellyfin", allUsers.Count);
             
             foreach (var user in allUsers)
             {
@@ -374,7 +374,7 @@ public class JellyseerrBridgeService
                 _logger.LogDebug("User {UserName} has {FavoriteCount} favorites", userFavorites.UserName, userFavorites.FavoriteCount);
             }
             
-            _logger.LogInformation("Favorites scan test completed. {UsersWithFavorites} users have favorites, total {TotalFavorites} favorite items", 
+            _logger.LogDebug("Favorites scan test completed. {UsersWithFavorites} users have favorites, total {TotalFavorites} favorite items", 
                 result.UsersWithFavorites, result.TotalFavorites);
             
             return Task.FromResult(result);
@@ -401,7 +401,7 @@ public class JellyseerrBridgeService
                 return Task.FromResult(0);
             }
 
-            _logger.LogInformation("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
+            _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
             
             var deletedCount = 0;
             var ignoreFiles = Directory.GetFiles(syncDirectory, ".ignore", SearchOption.AllDirectories);
@@ -420,7 +420,7 @@ public class JellyseerrBridgeService
                 }
             }
 
-            _logger.LogInformation("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
+            _logger.LogTrace("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
                 deletedCount, ignoreFiles.Length);
             
             return Task.FromResult(deletedCount);
@@ -443,7 +443,7 @@ public class JellyseerrBridgeService
         allItems.AddRange(movies.Cast<IJellyseerrItem>());
         allItems.AddRange(shows.Cast<IJellyseerrItem>());
         
-        _logger.LogInformation("Excluding main libraries from JellyseerrBridge");
+        _logger.LogDebug("Excluding main libraries from JellyseerrBridge");
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
 
@@ -455,7 +455,7 @@ public class JellyseerrBridgeService
                     throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
                 }
 
-                _logger.LogInformation("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
+                _logger.LogTrace("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
 
                 // Get existing Jellyfin items
                 var existingMoviesTask = GetExistingItemsAsync<Movie>();
@@ -479,7 +479,7 @@ public class JellyseerrBridgeService
                 var matchedIds = matchedItems.Select(m => m.Id).ToHashSet();
                 var unmatchedItems = allItems.Where(item => !matchedIds.Contains(item.Id)).ToList();
 
-                _logger.LogInformation("Library scan completed. Matched {MatchedMovieCount}/{MovieCount} movies + {MatchedShowCount}/{ShowCount} shows = {TotalCount} total. Unmatched: {UnmatchedCount} items", 
+                _logger.LogDebug("Library scan completed. Matched {MatchedMovieCount}/{MovieCount} movies + {MatchedShowCount}/{ShowCount} shows = {TotalCount} total. Unmatched: {UnmatchedCount} items", 
                     movieMatches.Count, movies.Count, showMatches.Count, shows.Count, matchedItems.Count, unmatchedItems.Count);
 
                 return (matchedItems, unmatchedItems);
@@ -489,11 +489,11 @@ public class JellyseerrBridgeService
                 _logger.LogError(ex, "Error during library scan test");
             }
         } else {
-            _logger.LogInformation("Including main libraries in JellyseerrBridge");
+            _logger.LogDebug("Including main libraries in JellyseerrBridge");
             
             // Delete all existing .ignore files when including main libraries
             var deletedCount = await DeleteAllIgnoreFilesAsync();
-            _logger.LogInformation("Deleted {DeletedCount} .ignore files from JellyseerrBridge", deletedCount);
+            _logger.LogTrace("Deleted {DeletedCount} .ignore files from JellyseerrBridge", deletedCount);
         } 
         return (new List<IJellyseerrItem>(), allItems);
     }
@@ -509,7 +509,7 @@ public class JellyseerrBridgeService
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
-        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+        _logger.LogDebug("[JellyseerrBridge] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
             typeof(TJellyseerr).Name, baseDirectory, items.Count);
         
         // Create folder manager for this type
@@ -522,14 +522,14 @@ public class JellyseerrBridgeService
         {
             try
             {
-                _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
+                _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
                     result.Processed, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
                 var folderName = folderManager.GetItemDirectory(item);
                 var folderExists = Directory.Exists(folderName);
 
-                _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
+                _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
                     folderName, folderExists);
 
                 // Write metadata using folder manager
@@ -540,13 +540,13 @@ public class JellyseerrBridgeService
                     if (folderExists)
                     {
                         result.ItemsUpdated.Add(item);
-                        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
+                        _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
                     else
                     {
                         result.ItemsAdded.Add(item);
-                        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
+                        _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
                 }
@@ -563,7 +563,7 @@ public class JellyseerrBridgeService
             }
         }
         
-        _logger.LogInformation("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
+        _logger.LogDebug("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
             typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
         
         return result;
@@ -575,7 +575,7 @@ public class JellyseerrBridgeService
     /// </summary>
     public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
     {
-        _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
+        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
         
         var folderManager = new JellyseerrFolderManager<JellyseerrShow>();
         
@@ -585,7 +585,7 @@ public class JellyseerrBridgeService
             {
                 var showFolderPath = folderManager.GetItemDirectory(show);
                 
-                _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
                     show.MediaName, showFolderPath);
                 
                 var seasonFolderName = "Season 01";
@@ -611,7 +611,7 @@ public class JellyseerrBridgeService
                         _logger.LogWarning("[JellyseerrBridge] CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     
-                    _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
+                    _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
                 }
                 catch (Exception ex)
                 {
@@ -624,7 +624,7 @@ public class JellyseerrBridgeService
             }
         }
         
-        _logger.LogInformation("[JellyseerrBridge] CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
+        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
     }
     
     /// <summary>
@@ -638,7 +638,7 @@ public class JellyseerrBridgeService
         var folderManager = new JellyseerrFolderManager<TJellyseerr>();
         var tasks = new List<Task>();
         
-        _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: Processing {UnmatchedCount} unmatched items for placeholder creation", 
+        _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
         
         foreach (var item in unmatchedItems)
@@ -664,7 +664,7 @@ public class JellyseerrBridgeService
                 }
                 
                 processedItems.Add(item);
-                _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
+                _logger.LogTrace("[JellyseerrBridge] CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
@@ -675,7 +675,7 @@ public class JellyseerrBridgeService
         // Await all placeholder video tasks
         await Task.WhenAll(tasks);
         
-        _logger.LogInformation("[JellyseerrBridge] CreatePlaceholderVideosAsync: Completed - Processed {ProcessedCount} items", 
+        _logger.LogDebug("[JellyseerrBridge] CreatePlaceholderVideosAsync: Completed - Processed {ProcessedCount} items", 
             processedItems.Count);
         
         return processedItems;
@@ -694,7 +694,7 @@ public class JellyseerrBridgeService
         var folderManager = new JellyseerrFolderManager<TJellyseerr>();
         var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
         
-        _logger.LogInformation("[JellyseerrBridge] ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxCollectionDays} days, before {CutoffDate})", 
+        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxCollectionDays} days, before {CutoffDate})", 
             items.Count, itemType, maxCollectionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
         
         try
@@ -714,7 +714,7 @@ public class JellyseerrBridgeService
                     {
                         Directory.Delete(itemDirectory, true);
                         deletedItems.Add(item);
-                        _logger.LogInformation("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed old {ItemType} '{ItemName}' (Created: {CreatedDate})", 
+                        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed old {ItemType} '{ItemName}' (Created: {CreatedDate})", 
                             itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
                     }
                 }
@@ -743,7 +743,7 @@ public class JellyseerrBridgeService
             // Read all bridge folder metadata
             var (movies, shows) = await ReadBridgeFolderMetadataAsync();
             
-            _logger.LogInformation("[JellyseerrBridge] CleanupMetadataAsync: Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
+            _logger.LogDebug("[JellyseerrBridge] CleanupMetadataAsync: Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
                 movies.Count, shows.Count);
 
             // Process movies and shows using the same logic
@@ -756,7 +756,7 @@ public class JellyseerrBridgeService
             result.ItemsDeleted.AddRange(deletedMovies);
             result.ItemsDeleted.AddRange(deletedShows);
 
-            _logger.LogInformation("[JellyseerrBridge] CleanupMetadataAsync: Completed cleanup - {Result}", result.ToString());
+            _logger.LogDebug("[JellyseerrBridge] CleanupMetadataAsync: Completed cleanup - {Result}", result.ToString());
         }
         catch (Exception ex)
         {

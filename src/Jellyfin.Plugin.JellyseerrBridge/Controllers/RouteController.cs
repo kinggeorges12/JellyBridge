@@ -7,6 +7,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 
@@ -16,25 +17,25 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     [Route("JellyseerrBridge")]
     public class RouteController : ControllerBase
     {
-        private readonly ILogger<RouteController> _logger;
+        private readonly JellyseerrLogger<RouteController> _logger;
         private readonly JellyseerrSyncService _syncService;
         private readonly JellyseerrApiService _apiService;
         private readonly JellyseerrBridgeService _bridgeService;
 
         public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService)
         {
-            _logger = loggerFactory.CreateLogger<RouteController>();
+            _logger = new JellyseerrLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
             _syncService = syncService;
             _apiService = apiService;
             _bridgeService = bridgeService;
-            _logger.LogInformation("[JellyseerrBridge] RouteController initialized");
+            _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
         }
 
 
         [HttpPost("TestLibraryScan")]
         public async Task<IActionResult> TestLibraryScan()
         {
-            _logger.LogInformation("[JellyseerrBridge] TestLibraryScan endpoint called");
+            _logger.LogDebug("[JellyseerrBridge] TestLibraryScan endpoint called");
             
             try
             {
@@ -47,16 +48,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     _logger.LogInformation("[JellyseerrBridge] Starting bridge items scan...");
                     var (bridgeItems, matchedItems, unmatchedItems) = await _bridgeService.TestLibraryScanAsync();
                     
-                    _logger.LogInformation("[JellyseerrBridge] Getting plugin configuration...");
+                    _logger.LogTrace("[JellyseerrBridge] Getting plugin configuration...");
                     var config = Plugin.GetConfiguration();
                     
-                    _logger.LogInformation("[JellyseerrBridge] Getting existing movies...");
+                    _logger.LogTrace("[JellyseerrBridge] Getting existing movies...");
                     var existingMovies = matchedItems.OfType<Movie>().ToList();
                     
-                    _logger.LogInformation("[JellyseerrBridge] Getting existing shows...");
+                    _logger.LogTrace("[JellyseerrBridge] Getting existing shows...");
                     var existingShows = matchedItems.OfType<Series>().ToList();
                     
-                    _logger.LogInformation("[JellyseerrBridge] Preparing response...");
+                    _logger.LogTrace("[JellyseerrBridge] Preparing response...");
                     
                     return new
                     {
@@ -103,7 +104,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpPost("TestFavoritesScan")]
         public async Task<IActionResult> TestFavoritesScan()
         {
-            _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan endpoint called");
+            _logger.LogDebug("[JellyseerrBridge] TestFavoritesScan endpoint called");
             
             try
             {
@@ -113,28 +114,28 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     // Add timeout to prevent hanging
                     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
                     
-                    _logger.LogInformation("[JellyseerrBridge] Starting favorites scan...");
+                    _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
                     var scanResult = await _bridgeService.TestFavoritesScanAsync();
                     
-                    _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
+                    _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
                     
                     // Create test requests using CallEndpointAsync
-                    _logger.LogInformation("[JellyseerrBridge] Creating test requests...");
+                    _logger.LogTrace("[JellyseerrBridge] Creating test requests...");
                     
                     var testRequestResults = new List<object>();
                     
                     try
                     {
                         // Create TV show test request
-                        var tvRequestParams = new Dictionary<string, string>
+                        var tvRequestParams = new Dictionary<string, object>
                         {
                             ["mediaType"] = "tv",
-                            ["mediaId"] = "32692",
+                            ["mediaId"] = 32692,
                             ["seasons"] = "all",
-                            ["profileId"] = "2"
+                            ["profileId"] = 2
                         };
                         
-                        _logger.LogInformation("[JellyseerrBridge] Creating TV test request with parameters: {Parameters}", 
+                        _logger.LogDebug("[JellyseerrBridge] Creating TV test request with parameters: {Parameters}", 
                             string.Join(", ", tvRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
                         
                         var tvRequestResult = await _apiService.CallEndpointAsync(
@@ -150,7 +151,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             success = tvRequestResult != null
                         });
                         
-                        _logger.LogInformation("[JellyseerrBridge] TV test request completed successfully");
+                        _logger.LogDebug("[JellyseerrBridge] TV test request completed successfully");
                     }
                     catch (Exception ex)
                     {
@@ -158,12 +159,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         testRequestResults.Add(new
                         {
                             type = "tv",
-                            parameters = new Dictionary<string, string>
+                            parameters = new Dictionary<string, object>
                             {
                                 ["mediaType"] = "tv",
-                                ["mediaId"] = "32692",
+                                ["mediaId"] = 32692,
                                 ["seasons"] = "all",
-                                ["profileId"] = "2"
+                                ["profileId"] = 2
                             },
                             result = (object?)null,
                             success = false,
@@ -174,14 +175,14 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     try
                     {
                         // Create movie test request
-                        var movieRequestParams = new Dictionary<string, string>
+                        var movieRequestParams = new Dictionary<string, object>
                         {
                             ["mediaType"] = "movie",
-                            ["mediaId"] = "123",
-                            ["profileId"] = "2"
+                            ["mediaId"] = 123,
+                            ["profileId"] = 2
                         };
                         
-                        _logger.LogInformation("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
+                        _logger.LogTrace("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
                             string.Join(", ", movieRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
                         
                         var movieRequestResult = await _apiService.CallEndpointAsync(
@@ -197,7 +198,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             success = movieRequestResult != null
                         });
                         
-                        _logger.LogInformation("[JellyseerrBridge] Movie test request completed successfully");
+                        _logger.LogDebug("[JellyseerrBridge] Movie test request completed successfully");
                     }
                     catch (Exception ex)
                     {
@@ -279,7 +280,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpGet("PluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {
-            _logger.LogInformation("[JellyseerrBridge] PluginConfiguration GET endpoint called");
+            _logger.LogTrace("[JellyseerrBridge] PluginConfiguration GET endpoint called");
             
             try
             {
@@ -323,7 +324,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpPost("PluginConfiguration")]
         public IActionResult UpdatePluginConfiguration([FromBody] JsonElement configData)
         {
-            _logger.LogInformation("[JellyseerrBridge] PluginConfiguration POST endpoint called");
+            _logger.LogTrace("[JellyseerrBridge] PluginConfiguration POST endpoint called");
             
             try
             {
@@ -354,7 +355,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         try
                         {
                             config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
-                            _logger.LogInformation("[JellyseerrBridge] Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+                            _logger.LogTrace("[JellyseerrBridge] Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
                         }
                         catch (Exception ex)
                         {
@@ -393,8 +394,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             var jellyseerUrl = string.IsNullOrEmpty(request.JellyseerrUrl) 
                 ? PluginConfiguration.DefaultValues[nameof(PluginConfiguration.JellyseerrUrl)]?.ToString() 
                 : request.JellyseerrUrl;
-            _logger.LogInformation("[JellyseerrBridge] TestConnection endpoint called");
-            _logger.LogInformation("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
+            _logger.LogDebug("[JellyseerrBridge] TestConnection endpoint called");
+            _logger.LogTrace("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
                 jellyseerUrl, !string.IsNullOrEmpty(request.ApiKey), request.ApiKey?.Length ?? 0);
 
             try
@@ -431,7 +432,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
                 // Test authentication using JellyseerrApiService
                 var userInfo = await _apiService.CallEndpointAsync(JellyseerrEndpoint.AuthMe, testConfig);
-                _logger.LogInformation("[JellyseerrBridge] AuthMe response type: {Type}, Value: {Value}", userInfo?.GetType().Name ?? "null", userInfo?.ToString() ?? "null");
+                _logger.LogTrace("[JellyseerrBridge] AuthMe response type: {Type}, Value: {Value}", userInfo?.GetType().Name ?? "null", userInfo?.ToString() ?? "null");
                 
                 var typedUserInfo = (JellyseerrUser?)userInfo;
                 if (typedUserInfo == null)
@@ -445,7 +446,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     });
                 }
                 
-                _logger.LogInformation("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown");
+                _logger.LogDebug("[JellyseerrBridge] API key authentication successful for user: {Username}", typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown");
 
                 // Test user list permissions using JellyseerrApiService
                 var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
@@ -495,7 +496,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpPost("SyncLibrary")]
         public async Task<IActionResult> SyncLibrary()
         {
-            _logger.LogInformation("[JellyseerrBridge] Manual sync requested");
+            _logger.LogTrace("[JellyseerrBridge] Manual sync requested");
             
             try
             {
@@ -535,12 +536,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpGet("Regions")]
         public async Task<IActionResult> GetRegions()
         {
-            _logger.LogInformation("[JellyseerrBridge] Regions requested");
+            _logger.LogDebug("[JellyseerrBridge] Regions requested");
             
             try
             {
                 var config = Plugin.GetConfiguration();
-                _logger.LogInformation("[JellyseerrBridge] Config - JellyseerrUrl: {Url}, ApiKey: {ApiKey}", 
+                _logger.LogDebug("[JellyseerrBridge] Config - JellyseerrUrl: {Url}, ApiKey: {ApiKey}", 
                     config.JellyseerrUrl, 
                     string.IsNullOrEmpty(config.ApiKey) ? "EMPTY" : "SET");
                 
@@ -582,7 +583,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpGet("Networks")]
         public async Task<IActionResult> GetNetworks([FromQuery] string? region = null)
         {
-            _logger.LogInformation("[JellyseerrBridge] Networks requested for region: {Region}", region);
+            _logger.LogDebug("[JellyseerrBridge] Networks requested for region: {Region}", region);
             
             try
             {
@@ -595,11 +596,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var movieNetworksList = (List<JellyseerrNetwork>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersMovies, config);
                 var showNetworksList = (List<JellyseerrNetwork>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.WatchProvidersTv, config);
                 
-                _logger.LogInformation("[JellyseerrBridge] MovieNetworks response type: {Type}, Count: {Count}", 
+                _logger.LogTrace("[JellyseerrBridge] MovieNetworks response type: {Type}, Count: {Count}", 
                     movieNetworksList?.GetType().Name ?? "null", 
                     movieNetworksList?.Count ?? 0);
                 
-                _logger.LogInformation("[JellyseerrBridge] showNetworks response type: {Type}, Count: {Count}", 
+                _logger.LogTrace("[JellyseerrBridge] showNetworks response type: {Type}, Count: {Count}", 
                     showNetworksList?.GetType().Name ?? "null", 
                     showNetworksList?.Count ?? 0);
                 
@@ -745,7 +746,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         [HttpPost("ResetPlugin")]
         public async Task<IActionResult> ResetPlugin([FromBody] JsonElement requestData)
         {
-            _logger.LogInformation("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
+            _logger.LogDebug("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
             
             try
             {
@@ -770,7 +771,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     // Delete all contents inside library directory if it exists
                     if (System.IO.Directory.Exists(libraryDir))
                     {
-                        _logger.LogInformation("[JellyseerrBridge] Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                        _logger.LogTrace("[JellyseerrBridge] Deleting all contents inside library directory: {LibraryDir}", libraryDir);
                         
                         try
                         {
@@ -802,11 +803,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     }
                     else
                     {
-                        _logger.LogInformation("[JellyseerrBridge] Library directory does not exist: {LibraryDir}", libraryDir);
+                        _logger.LogError("[JellyseerrBridge] Library directory does not exist: {LibraryDir}", libraryDir);
                         throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
                     }
                     
-                    _logger.LogInformation("[JellyseerrBridge] Data deletion completed successfully");
+                    _logger.LogDebug("[JellyseerrBridge] Data deletion completed successfully");
                     return Task.CompletedTask;
                 }, _logger, "Delete Library Data");
                 

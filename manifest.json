@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "version": "0.264.0.0",
+        "timestamp": "2025-10-23T21:20:10.591Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.264.0.0/JellyseerrBridge-0.264.0.0-DLL.zip",
+        "changelog": "v0.264.0.0 - Implemented central JellyseerrLogger with configurable debug logging, fixed API request parameter handling with proper type support (Dictionary<string, object>), added Accept header, and fixed parameter merging logic for CreateRequest endpoint",
+        "checksum": "97C83F8D400156F1ABEED8886FB2F377"
+      },
+      {
         "checksum": "C076C31D19ED2AF35E8DFDCC0878CDB6",
         "targetAbi": "10.10.7.0",
         "changelog": "v0.263.2.0 - Fixed parameter merging logic to prevent duplicate key errors - now properly overwrites default parameters with passed parameters using GroupBy and Last() approach",

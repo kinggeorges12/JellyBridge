@@ -9,6 +9,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -34,12 +35,12 @@ public class JellyseerrApiService
     public const int MAX_PAGES = int.MaxValue;
 
     private readonly HttpClient _httpClient;
-    private readonly ILogger<JellyseerrApiService> _logger;
+    private readonly JellyseerrLogger<JellyseerrApiService> _logger;
 
     public JellyseerrApiService(HttpClient httpClient, ILogger<JellyseerrApiService> logger)
     {
         _httpClient = httpClient;
-        _logger = logger;
+        _logger = new JellyseerrLogger<JellyseerrApiService>(logger);
     }
 
     /// <summary>
@@ -273,7 +274,7 @@ public class JellyseerrApiService
         /// <param name="parameters">Optional query parameters</param>
         /// <param name="templateValues">Optional template values for URL placeholders</param>
         /// <returns>Complete URL string</returns>
-        private static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
+        private static string BuildUrl(string baseUrl, JellyseerrEndpoint endpoint, Dictionary<string, object>? parameters = null, Dictionary<string, string>? templateValues = null)
         {
             var cleanBaseUrl = baseUrl.TrimEnd('/');
             var endpointPath = GetEndpoint(endpoint).Path;
@@ -295,7 +296,7 @@ public class JellyseerrApiService
             
             if (parameters != null && parameters.Count > 0)
             {
-                var queryString = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                var queryString = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value?.ToString() ?? "")}"));
                 url = $"{url}?{queryString}";
             }
             
@@ -312,7 +313,7 @@ public class JellyseerrApiService
         /// <param name="parameters">Optional query parameters</param>
         /// <param name="templateValues">Optional template values for URL placeholders</param>
         /// <returns>Configured HttpRequestMessage</returns>
-        public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, string>? parameters = null, Dictionary<string, string>? templateValues = null)
+        public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, object>? parameters = null, Dictionary<string, string>? templateValues = null)
         {
             var httpMethod = method ?? GetEndpoint(endpoint).Method;
             var isBodyMethod = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put;
@@ -322,6 +323,7 @@ public class JellyseerrApiService
 
             var requestMessage = new HttpRequestMessage(httpMethod, url);
             requestMessage.Headers.Add("X-Api-Key", apiKey);
+            requestMessage.Headers.Add("Accept", "application/json");
             
             if (isBodyMethod && parameters != null)
             {
@@ -331,6 +333,7 @@ public class JellyseerrApiService
             
             return requestMessage;
         }
+
     }
         
     /// <summary>
@@ -382,7 +385,6 @@ public class JellyseerrApiService
     {
         var timeout = TimeSpan.FromSeconds((double)Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
         var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts), config);
-        var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
         Exception? lastException = null;
         string? content = null;
@@ -402,57 +404,39 @@ public class JellyseerrApiService
                     requestMessage.Content = request.Content;
                 }
                 
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts}: {Method} {Url}", 
-                        attempt, retryAttempts, requestMessage.Method, requestMessage.RequestUri);
-                }
+                _logger.LogTrace("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts}: {Method} {Url}", 
+                    attempt, retryAttempts, requestMessage.Method, requestMessage.RequestUri);
                 
                 // Use the injected HttpClient with timeout for this request
                 using var cts = new CancellationTokenSource(timeout);
                 
                 var response = await _httpClient.SendAsync(requestMessage, cts.Token);
                 
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
-                        attempt, response.StatusCode, response.ReasonPhrase);
-                }
+                _logger.LogTrace("[JellyseerrBridge] API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
+                    attempt, response.StatusCode, response.ReasonPhrase);
                 
                 // Check if the response was successful
                 if (!response.IsSuccessStatusCode)
                 {
-                    if (enableDebugLogging == true)
-                    {
-                        _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
-                    }
+                    _logger.LogWarning("[JellyseerrBridge] API Request failed with status: {StatusCode}", response.StatusCode);
                     return null!;
                 }
                 
                 // Log successful response
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
-                }
+                _logger.LogTrace("[JellyseerrBridge] API Request successful with status: {StatusCode}", response.StatusCode);
                 
                 // Read the response content
                 content = await response.Content.ReadAsStringAsync();
                 
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] API Response Content: {Content}", content);
-                }
+                _logger.LogTrace("[JellyseerrBridge] API Response Content: {Content}", content);
                 
                 return content;
             }
             catch (TaskCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
             {
                 lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
-                        attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
-                }
+                _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} timed out after {Timeout}s", 
+                    attempt, retryAttempts, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
                 
                 if (attempt == retryAttempts)
                 {
@@ -463,11 +447,8 @@ public class JellyseerrApiService
             catch (HttpRequestException ex)
             {
                 lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed: {Error}", 
-                        attempt, retryAttempts, ex.Message);
-                }
+                _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed: {Error}", 
+                    attempt, retryAttempts, ex.Message);
                 
                 if (attempt == retryAttempts)
                 {
@@ -478,11 +459,8 @@ public class JellyseerrApiService
             catch (Exception ex)
             {
                 lastException = ex;
-                if (enableDebugLogging)
-                {
-                    _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed with unexpected error: {Error}", 
-                        attempt, retryAttempts, ex.Message);
-                }
+                _logger.LogWarning("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts} failed with unexpected error: {Error}", 
+                    attempt, retryAttempts, ex.Message);
                 
                 if (attempt == retryAttempts)
                 {
@@ -495,10 +473,7 @@ public class JellyseerrApiService
             if (attempt < retryAttempts)
             {
                 var delay = TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, attempt - 1))); // 1s, 2s, 4s, etc. up to 60 seconds
-                if (enableDebugLogging)
-                {
-                    _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
-                }
+                _logger.LogDebug("[JellyseerrBridge] Waiting {Delay}s before retry attempt {NextAttempt}", delay.TotalSeconds, attempt + 1);
                 await Task.Delay(delay);
             }
         }
@@ -519,7 +494,7 @@ public class JellyseerrApiService
     public async Task<object> CallEndpointAsync(
         JellyseerrEndpoint endpoint, 
         PluginConfiguration? config = null,
-        Dictionary<string, string>? parameters = null,
+        Dictionary<string, object>? parameters = null,
         Dictionary<string, string>? templates = null
     ) {
         // Use default plugin config if none provided
@@ -532,26 +507,26 @@ public class JellyseerrApiService
             // Get endpoint configuration
             var endpointConfig = GetEndpoint(endpoint);
             
-            _logger.LogInformation("Making API call to endpoint: {Endpoint}", endpoint);
+            _logger.LogDebug("Making API call to endpoint: {Endpoint}", endpoint);
             
             // Handle endpoint-specific logic
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
 
             // Merge parameters if they exist, allowing passed parameters to overwrite defaults
-            queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, string>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? parameters;
+            queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, object>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? parameters;
             templateValues = templateValues?.Concat(templates ?? Enumerable.Empty<KeyValuePair<string, string>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? templates;
 
             // Handle response based on pagination
-            _logger.LogInformation("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
+            _logger.LogTrace("Endpoint {Endpoint} isPaginated: {IsPaginated}", endpoint, endpointConfig.IsPaginated);
             if (endpointConfig.IsPaginated)
             {
                 // Paginated endpoints - fetch all pages starting from page 1
                 var maxPages = endpointConfig.MaxPages ?? Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config);
-                _logger.LogInformation("Initial maxPages value: {MaxPages}", maxPages);
+                _logger.LogTrace("Initial maxPages value: {MaxPages}", maxPages);
                 if (maxPages == 0)
                 {
                     maxPages = MAX_PAGES;
-                    _logger.LogInformation("Converted maxPages from 0 to {MaxPages}", maxPages);
+                    _logger.LogTrace("Converted maxPages from 0 to {MaxPages}", maxPages);
                 }
                 
                 // Get the item type from the paginated response model
@@ -564,12 +539,12 @@ public class JellyseerrApiService
                 int page = 1;
                 do
                 {
-                    _logger.LogInformation("Fetching {Operation} page {Page}", operationName, page);
+                    _logger.LogDebug("Fetching {Operation} page {Page}", operationName, page);
                     
                     // Add page parameter to query parameters
                     var pageParameters = queryParameters != null 
-                        ? new Dictionary<string, string>(queryParameters) { ["page"] = page.ToString() }
-                        : new Dictionary<string, string> { ["page"] = page.ToString() };
+                        ? new Dictionary<string, object>(queryParameters) { ["page"] = page }
+                        : new Dictionary<string, object> { ["page"] = page };
                     // User list is a special case that uses take and skip rather than page
                     if(endpoint==JellyseerrEndpoint.UserList){
                         pageParameters = queryParameters;
@@ -578,18 +553,18 @@ public class JellyseerrApiService
                     var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
                     
                     // Debug: Log the complete URL being used
-                    _logger.LogInformation("Making API request to URL: {Url}", pageRequestMessage.RequestUri);
+                    _logger.LogDebug("Making API request to URL: {Url}", pageRequestMessage.RequestUri);
                     
                     content = await MakeApiRequestAsync(pageRequestMessage, config);
                     
                     if (content == null) break;
                     
                     // Log the actual response content for debugging
-                    _logger.LogDebug("Raw response content for {Operation} page {Page}: {ResponseContent}", operationName, page, content);
+                    _logger.LogTrace("Raw response content for {Operation} page {Page}: {ResponseContent}", operationName, page, content);
                     
                     // Deserialize paginated response using the response type from endpoint config
                     var responseType = endpointConfig.ResponseModel;
-                    _logger.LogInformation("Deserializing {Operation} response as type: {ResponseType}", operationName, responseType.Name);
+                    _logger.LogTrace("Deserializing {Operation} response as type: {ResponseType}", operationName, responseType.Name);
                     var pageResponse = JsonSerializer.Deserialize(content, responseType);
                     if (pageResponse == null) 
                     {
@@ -597,16 +572,16 @@ public class JellyseerrApiService
                         break;
                     }
                     
-                    _logger.LogInformation("Successfully deserialized {Operation} response, type: {ResponseType}", operationName, pageResponse.GetType().Name);
+                    _logger.LogTrace("Successfully deserialized {Operation} response, type: {ResponseType}", operationName, pageResponse.GetType().Name);
                     
                     // Extract the Results property directly from the paginated response
                     var resultsProperty = pageResponse.GetType().GetProperty("Results");
-                    _logger.LogInformation("Results property found: {HasResults}", resultsProperty != null);
+                    _logger.LogDebug("Results property found: {HasResults}", resultsProperty != null);
                     
                     if (resultsProperty != null)
                     {
                         var results = resultsProperty.GetValue(pageResponse);
-                        _logger.LogInformation("Results value type: {ResultsType}, IsNull: {IsNull}", results?.GetType().Name ?? "null", results == null);
+                        _logger.LogTrace("Results value type: {ResultsType}, IsNull: {IsNull}", results?.GetType().Name ?? "null", results == null);
                         
                         if (results is System.Collections.IEnumerable resultsEnumerable)
                         {
@@ -616,12 +591,12 @@ public class JellyseerrApiService
                                 allItems.Add(item);
                                 itemCount++;
                             }
-                            _logger.LogInformation("Added {Count} items from page {Page}", itemCount, page);
+                            _logger.LogDebug("Added {Count} items from page {Page}", itemCount, page);
                             
                             // Stop pagination if no items were returned from this page
                             if (itemCount == 0)
                             {
-                                _logger.LogInformation("No items returned from page {Page}, stopping pagination", page);
+                                _logger.LogDebug("No items returned from page {Page}, stopping pagination", page);
                                 break;
                             }
                         }
@@ -638,7 +613,7 @@ public class JellyseerrApiService
                     page++;
                 } while (page <= maxPages);
                 
-                _logger.LogInformation("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, page - 1);
+                _logger.LogDebug("Retrieved {Count} total {Operation} across {Pages} pages", allItems.Count, operationName, page - 1);
                 
                 // Return the typed list directly
                 return allItems ?? GetDefaultReturnValueForEndpoint(endpoint);
@@ -647,7 +622,7 @@ public class JellyseerrApiService
             {
                 // Non-paginated endpoints - single request
                 var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: queryParameters, templateValues: templateValues);
-                _logger.LogInformation("Request URL: {Url}", requestMessage.RequestUri);
+                _logger.LogDebug("Request URL: {Url}", requestMessage.RequestUri);
                 
                 // Make the API request
                 content = await MakeApiRequestAsync(requestMessage, config);
@@ -659,12 +634,12 @@ public class JellyseerrApiService
                 }
                 
                 // Log the actual response content for debugging
-                _logger.LogDebug("Raw response content for {Operation}: {ResponseContent}", operationName, content);
+                _logger.LogTrace("Raw response content for {Operation}: {ResponseContent}", operationName, content);
                 
                 // Deserialize using the response type from endpoint config
                 var responseType = endpointConfig.ResponseModel;
                 var response = JsonSerializer.Deserialize(content, responseType);
-                _logger.LogInformation("Successfully deserialized response for {Operation}", operationName);
+                _logger.LogDebug("Successfully deserialized response for {Operation}", operationName);
                 return response ?? GetDefaultReturnValueForEndpoint(endpoint);
             }
         }
@@ -687,44 +662,44 @@ public class JellyseerrApiService
     /// <summary>
     /// Handles endpoint-specific logic including query parameters and template values.
     /// </summary>
-    private (Dictionary<string, string>? queryParameters, Dictionary<string, string>? templateValues) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
+    private (Dictionary<string, object>? queryParameters, Dictionary<string, string>? templateValues) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
     {
         return endpoint switch
         {
             // CreateRequest endpoint - default parameters for POST body
             JellyseerrEndpoint.CreateRequest => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 {
                     ["mediaType"] = "", //REQUIRED
-                    ["mediaId"] = "-1", //REQUIRED
+                    ["mediaId"] = -1, //REQUIRED
                     ["seasons"] = "all", // Accepts an array of season numbers or "all"
-                    ["userId"] = "-1" //REQUIRED
+                    ["userId"] = -1 //REQUIRED
                 }, null
             ),
 
             // Discover endpoints - no parameters needed for GET requests
             JellyseerrEndpoint.DiscoverMovies => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 { 
                     ["sortBy"] = "popularity.desc"
                 }, null
             ),
             JellyseerrEndpoint.DiscoverTv => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 { 
                     ["sortBy"] = "popularity.desc"
                 }, null
             ),
             // Watch providers endpoints - use region as query parameter
             JellyseerrEndpoint.WatchProvidersMovies => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 { 
                     ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) 
                 },
                 null
             ),
             JellyseerrEndpoint.WatchProvidersTv => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 { 
                     ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) 
                 },
@@ -742,9 +717,9 @@ public class JellyseerrApiService
             
             // UserList endpoint - use take parameter to get all users
             JellyseerrEndpoint.UserList => (
-                new Dictionary<string, string> 
+                new Dictionary<string, object> 
                 { 
-                    ["take"] = MAX_SAFE_INTEGER.ToString()
+                    ["take"] = MAX_SAFE_INTEGER
                 },
                 null
             ),
@@ -783,12 +758,12 @@ public class JellyseerrApiService
         
         foreach (var network in networkMap)
         {
-            _logger.LogInformation("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", T.LibraryType, network.Name, network.Id, network.Country, network.DisplayPriority);
+            _logger.LogDebug("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", T.LibraryType, network.Name, network.Id, network.Country, network.DisplayPriority);
             
             // Add network Id and Country parameters to query parameters
-            var networkParameters = new Dictionary<string, string> {
+            var networkParameters = new Dictionary<string, object> {
                 ["watchRegion"] = network.Country,
-                ["watchProviders"] = network.Id.ToString()
+                ["watchProviders"] = network.Id
             };
             JellyseerrEndpoint? endpoint = null;  
             if (typeof(T) == typeof(JellyseerrMovie)) {
@@ -802,7 +777,7 @@ public class JellyseerrApiService
             }
 
             // Debug: Log the parameters being used
-            _logger.LogInformation("Calling {Endpoint} with parameters: {Parameters}", 
+            _logger.LogTrace("Calling {Endpoint} with parameters: {Parameters}", 
                 endpoint.Value, 
                 string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
             
@@ -817,7 +792,7 @@ public class JellyseerrApiService
             var items = (List<T>)networkData;
             
             // Debug: Log the response data
-            _logger.LogInformation("API call returned {ItemCount} items for {NetworkName}", items.Count, network.Name);
+            _logger.LogTrace("API call returned {ItemCount} items for {NetworkName}", items.Count, network.Name);
             
             if (items.Count == 0)
             {
@@ -830,12 +805,12 @@ public class JellyseerrApiService
                 allItems.Add(item);
             }
             
-            _logger.LogInformation("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
+            _logger.LogTrace("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
         }
         
         // Convert HashSet to List for return
         var result = allItems.ToList();
-        _logger.LogInformation("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
+        _logger.LogDebug("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
         
         return result;
     }
