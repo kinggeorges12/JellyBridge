@@ -212,7 +212,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                         var item = JellyseerrJsonSerializer.Deserialize<TJellyseerr>(json);
                         if (item != null)
                         {
-                            _logger.LogInformation("[JellyseerrFolderManager] Successfully deserialized - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                            _logger.LogTrace("[JellyseerrFolderManager] Successfully deserialized - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
                                 item.MediaName, item.Id, item.MediaType, item.Year);
                             items.Add(item);
                         }
@@ -228,7 +228,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
                 }
             }
 
-            _logger.LogInformation("[JellyseerrFolderManager] Read {Count} items from {TypeDirectory}", 
+            _logger.LogDebug("[JellyseerrFolderManager] Read {Count} items from {TypeDirectory}", 
                 items.Count, typeDirectory);
         }
         catch (Exception ex)

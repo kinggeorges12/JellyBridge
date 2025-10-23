@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.MediaEncoding;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -12,7 +13,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public class PlaceholderVideoGenerator
 {
-    private readonly ILogger<PlaceholderVideoGenerator> _logger;
+    private readonly JellyseerrLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetsPath;
     
@@ -23,14 +24,14 @@ public class PlaceholderVideoGenerator
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
     {
-        _logger = logger;
+        _logger = new JellyseerrLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
         
         // Assets are embedded in the plugin assembly
         _assetsPath = Path.Combine(Path.GetTempPath(), "JellyseerrBridge", "assets");
         Directory.CreateDirectory(_assetsPath);
         
-        _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
+        _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
             _mediaEncoder.EncoderPath, _assetsPath);
     }
 
@@ -77,7 +78,7 @@ public class PlaceholderVideoGenerator
 
             if (!File.Exists(cachePath))
             {
-                _logger.LogInformation("[PlaceholderVideoGenerator] Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
+                _logger.LogTrace("[PlaceholderVideoGenerator] Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
                 
                 // Check if FFmpeg is available before attempting to generate
                 if (!await IsFFmpegAvailableAsync())
@@ -136,7 +137,7 @@ public class PlaceholderVideoGenerator
 
             // Copy cached file to target directory
             File.Copy(cachedPath, targetPath, overwrite: true);
-            _logger.LogInformation("[PlaceholderVideoGenerator] Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
+            _logger.LogTrace("[PlaceholderVideoGenerator] Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
             return true;
         }
         catch (Exception ex)
@@ -165,11 +166,11 @@ public class PlaceholderVideoGenerator
             
             // Extract embedded resource
             var resourceName = $"Jellyfin.Plugin.JellyseerrBridge.Assets.{assetName}";
-            _logger.LogDebug("[PlaceholderVideoGenerator] Looking for embedded resource: {ResourceName}", resourceName);
+            _logger.LogTrace("[PlaceholderVideoGenerator] Looking for embedded resource: {ResourceName}", resourceName);
             
             // List all available resources for debugging
             var allResources = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceNames();
-            _logger.LogDebug("[PlaceholderVideoGenerator] Available resources: {Resources}", string.Join(", ", allResources));
+            _logger.LogTrace("[PlaceholderVideoGenerator] Available resources: {Resources}", string.Join(", ", allResources));
             
             using var stream = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceStream(resourceName);
             
@@ -182,7 +183,7 @@ public class PlaceholderVideoGenerator
             using var fileStream = File.Create(assetPath);
             await stream.CopyToAsync(fileStream);
             
-            _logger.LogDebug("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
+            _logger.LogTrace("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
             
             // Verify the extracted file exists and has content
             if (!File.Exists(assetPath))
@@ -198,7 +199,7 @@ public class PlaceholderVideoGenerator
                 return null;
             }
             
-            _logger.LogDebug("[PlaceholderVideoGenerator] Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
+            _logger.LogTrace("[PlaceholderVideoGenerator] Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
             return assetPath;
         }
         catch (Exception ex)
@@ -245,11 +246,11 @@ public class PlaceholderVideoGenerator
             // Build FFmpeg command
             var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
-            _logger.LogInformation("[PlaceholderVideoGenerator] Generating placeholder video: {AssetName} -> {OutputPath}", 
+            _logger.LogTrace("[PlaceholderVideoGenerator] Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
-            _logger.LogInformation("[PlaceholderVideoGenerator] Asset path: {AssetPath}, Duration: {Duration}", 
+            _logger.LogTrace("[PlaceholderVideoGenerator] Asset path: {AssetPath}, Duration: {Duration}", 
                 assetPath, videoDuration);
-            _logger.LogInformation("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
+            _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
                 _mediaEncoder.EncoderPath, arguments);
 
             var processInfo = new ProcessStartInfo
@@ -305,16 +306,16 @@ public class PlaceholderVideoGenerator
                     return false;
                 }
                 
-                _logger.LogInformation("[PlaceholderVideoGenerator] Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
+                _logger.LogDebug("[PlaceholderVideoGenerator] Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
                     outputPath, outputFileInfo.Length);
-                _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
+                _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
                 return true;
             }
             else
             {
                 _logger.LogError("[PlaceholderVideoGenerator] FFmpeg failed with exit code {ExitCode}. Error output: {ErrorOutput}", 
                     process.ExitCode, errorBuilder.ToString());
-                _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
+                _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
                 return false;
             }
         }
@@ -349,7 +350,7 @@ public class PlaceholderVideoGenerator
             await process.WaitForExitAsync();
 
             var isAvailable = process.ExitCode == 0;
-            _logger.LogDebug("[PlaceholderVideoGenerator] FFmpeg availability check: {IsAvailable}", isAvailable);
+            _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg availability check: {IsAvailable}", isAvailable);
             return isAvailable;
         }
         catch (Exception ex)
@@ -393,7 +394,7 @@ public class PlaceholderVideoGenerator
                     try
                     {
                         await Task.Run(() => File.Delete(filePath));
-                        _logger.LogDebug("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
+                        _logger.LogTrace("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
                         deletedCount++;
                     }
                     catch (Exception ex)
@@ -405,7 +406,7 @@ public class PlaceholderVideoGenerator
 
             if (deletedCount > 0)
             {
-                _logger.LogInformation("[PlaceholderVideoGenerator] Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
+                _logger.LogDebug("[PlaceholderVideoGenerator] Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
                     deletedCount, bridgeFolderPath);
             }
         }

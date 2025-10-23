@@ -46,11 +46,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge
 
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
         {
-            _logger.LogInformation("[JellyseerrBridge] Configuration update requested");
-            _logger.LogInformation("[JellyseerrBridge] Configuration update method called - this means the save button was clicked!");
+            _logger.LogTrace("[JellyseerrBridge] Configuration update requested");
+            _logger.LogTrace("[JellyseerrBridge] Configuration update method called - this means the save button was clicked!");
             
             var pluginConfig = (PluginConfiguration)configuration;
-            _logger.LogInformation("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
+            _logger.LogDebug("[JellyseerrBridge] Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
                 pluginConfig.IsEnabled, 
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
@@ -126,12 +126,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                     if (!_isOperationRunning)
                     {
                         _isOperationRunning = true;
-                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                        logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
                         break;
                     }
                 }
                 
-                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
                 await Task.Delay(100); // Small delay to prevent busy waiting
             }
             
@@ -150,7 +150,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 lock (_operationSyncLock)
                 {
                     _isOperationRunning = false;
-                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                    logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
                 }
             }
         }
@@ -171,12 +171,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                     if (!_isOperationRunning)
                     {
                         _isOperationRunning = true;
-                        logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                        logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
                         break;
                     }
                 }
                 
-                logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
                 await Task.Delay(100); // Small delay to prevent busy waiting
             }
             
@@ -195,7 +195,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 lock (_operationSyncLock)
                 {
                     _isOperationRunning = false;
-                    logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                    logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
                 }
             }
         }
@@ -220,12 +220,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                         {
                             _isOperationRunning = true;
                             lockAcquired = true;
-                            logger.LogInformation("Acquiring operation lock for {OperationName}", operationName);
+                            logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
                             break;
                         }
                     }
                     
-                    logger.LogInformation("Another operation is running, pausing {OperationName} until it completes", operationName);
+                    logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
                     Thread.Sleep(100); // Small delay to prevent busy waiting
                 }
                 
@@ -246,7 +246,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                     lock (_operationSyncLock)
                     {
                         _isOperationRunning = false;
-                        logger.LogInformation("Releasing operation lock for {OperationName}", operationName);
+                        logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
                     }
                 }
             }

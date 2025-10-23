@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -20,7 +21,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public partial class JellyseerrSyncService
 {
-    private readonly ILogger<JellyseerrSyncService> _logger;
+    private readonly JellyseerrLogger<JellyseerrSyncService> _logger;
     private readonly JellyseerrApiService _apiService;
     private readonly ILibraryManager _libraryManager;
     private readonly JellyseerrBridgeService _bridgeService;
@@ -34,7 +35,7 @@ public partial class JellyseerrSyncService
         JellyseerrBridgeService bridgeService,
         JellyseerrLibraryService libraryService)
     {
-        _logger = logger;
+        _logger = new JellyseerrLogger<JellyseerrSyncService>(logger);
         _apiService = apiService;
         _libraryManager = libraryManager;
         _bridgeService = bridgeService;
@@ -57,7 +58,7 @@ public partial class JellyseerrSyncService
         
         if (!isEnabled)
         {
-            _logger.LogInformation("Jellyseerr Bridge is disabled, skipping folder structure creation");
+            _logger.LogDebug("Jellyseerr Bridge is disabled, skipping folder structure creation");
             result.Success = false;
             result.Message = "Jellyseerr Bridge is disabled";
             return result;
@@ -65,7 +66,7 @@ public partial class JellyseerrSyncService
 
         try
         {
-            _logger.LogInformation("Starting folder structure creation...");
+            _logger.LogDebug("Starting folder structure creation...");
 
             // Test connection first
             var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status);
@@ -83,7 +84,7 @@ public partial class JellyseerrSyncService
             // Fetch TV shows for all networks
             var discoverShows = await _apiService.FetchDiscoverMediaAsync<JellyseerrShow>();
 
-            _logger.LogInformation("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
+            _logger.LogDebug("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
                 discoverMovies.Count, discoverShows.Count);
 
             // Check if we actually got any data from the API calls
@@ -100,15 +101,15 @@ public partial class JellyseerrSyncService
                 return result;
             }
 
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: Processing {MovieCount} movies and {ShowCount} shows", 
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: Processing {MovieCount} movies and {ShowCount} shows", 
                 discoverMovies.Count, discoverShows.Count);
 
             // Process movies
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Starting movie folder creation...");
             var movieTask = _bridgeService.CreateFoldersAsync(discoverMovies);
 
             // Process TV shows
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Starting TV show folder creation...");
             var showTask = _bridgeService.CreateFoldersAsync(discoverShows);
 
             // Wait for both to complete
@@ -126,20 +127,20 @@ public partial class JellyseerrSyncService
             var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
 
             // Create placeholder videos only for unmatched items
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies...", unmatchedMovies.Count);
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies...", unmatchedMovies.Count);
             var processedMovies = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
 
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
             var processedShows = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedShows);
 
             // Create season folders for unmatched TV shows only
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
             await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
 
             // Clean up old metadata before refreshing library
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
             var cleanupResult = await _bridgeService.CleanupMetadataAsync();
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Cleanup completed - {CleanupResult}", cleanupResult.ToString());
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Cleanup completed - {CleanupResult}", cleanupResult.ToString());
             
             result.Success = true;
             result.MoviesResult = moviesResult;
@@ -147,15 +148,15 @@ public partial class JellyseerrSyncService
             result.Message = "Folder structure creation completed successfully";
             result.Details = $"Movies: {moviesResult.ToString()}\nShows: {showsResult.ToString()}\nCleanup: {cleanupResult.ToString()}";
 
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Folder structure creation completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
                 moviesResult.Created, moviesResult.Updated, showsResult.Created, showsResult.Updated);
 
             // Check if library management is enabled
-            _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
+            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Managing Jellyseerr library...");
             var refreshSuccess = await _libraryService.RefreshJellyseerrLibraryAsync();
             if (refreshSuccess)
             {
-                _logger.LogInformation("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Jellyseerr library management completed successfully");
+                _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Jellyseerr library management completed successfully");
                 result.Message += " and library managed";
             }
             else

@@ -4,6 +4,7 @@ using MediaBrowser.Controller.IO;
 using MediaBrowser.Controller.Providers;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
+using Jellyfin.Plugin.JellyseerrBridge.Utils;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 
@@ -12,13 +13,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services;
 /// </summary>
 public class JellyseerrLibraryService
 {
-    private readonly ILogger<JellyseerrLibraryService> _logger;
+    private readonly JellyseerrLogger<JellyseerrLibraryService> _logger;
     private readonly ILibraryManager _libraryManager;
     private readonly IDirectoryService _directoryService;
 
     public JellyseerrLibraryService(ILogger<JellyseerrLibraryService> logger, ILibraryManager libraryManager, IDirectoryService directoryService)
     {
-        _logger = logger;
+        _logger = new JellyseerrLogger<JellyseerrLibraryService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
     }
@@ -35,7 +36,7 @@ public class JellyseerrLibraryService
             var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
 
             if (!manageJellyseerrLibrary) {
-                _logger.LogInformation("[JellyseerrLibraryService] Jellyseerr library management is disabled");
+                _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library management is disabled");
                 return true;
             }
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
@@ -43,7 +44,7 @@ public class JellyseerrLibraryService
                 throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
             }
 
-            _logger.LogInformation("[JellyseerrLibraryService] Starting Jellyseerr library refresh...");
+            _logger.LogDebug("[JellyseerrLibraryService] Starting Jellyseerr library refresh...");
 
             // Find all libraries that contain Jellyseerr folders
             var libraries = _libraryManager.GetVirtualFolders();
@@ -55,13 +56,13 @@ public class JellyseerrLibraryService
                 throw new InvalidOperationException("No Jellyseerr libraries found for refresh");
             }
 
-            _logger.LogInformation("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
+            _logger.LogTrace("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
             // Create refresh options with default settings
             var refreshOptions = CreateDefaultRefreshOptions();
             
-            _logger.LogInformation("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
+            _logger.LogTrace("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
                 refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
 
             // Refresh all Jellyseerr libraries
@@ -71,7 +72,7 @@ public class JellyseerrLibraryService
                 var libraryFolder = _libraryManager.GetItemById(jellyseerrLibrary.ItemId);
                 if (libraryFolder != null)
                 {
-                    _logger.LogInformation("[JellyseerrLibraryService] Refreshing library: {LibraryName}", jellyseerrLibrary.Name);
+                    _logger.LogTrace("[JellyseerrLibraryService] Refreshing library: {LibraryName}", jellyseerrLibrary.Name);
                     refreshTasks.Add(libraryFolder.RefreshMetadata(refreshOptions, CancellationToken.None));
                 }
                 else
@@ -83,7 +84,7 @@ public class JellyseerrLibraryService
             // Wait for all refreshes to complete
             await Task.WhenAll(refreshTasks);
             
-            _logger.LogInformation("[JellyseerrLibraryService] Jellyseerr library refresh completed successfully");
+            _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library refresh completed successfully");
             return true;
         }
         catch (Exception ex)
