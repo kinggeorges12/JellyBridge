@@ -18,7 +18,7 @@ public enum JellyseerrEndpoint
     Status,
     
     // Request endpoints (from server/routes/request.ts)
-    Requests,
+    ReadRequests,
     CreateRequest,
     
     // Discover endpoints (from server/routes/discover.ts)

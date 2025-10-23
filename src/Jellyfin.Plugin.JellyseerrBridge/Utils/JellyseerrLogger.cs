@@ -91,14 +91,16 @@ public class JellyseerrLogger<T> : ILogger<T>
         var config = Plugin.GetConfiguration();
         var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
-        var prefixedMessage = "[DEBUG] " + message;
-        
         if (enableDebugLogging)
         {
+            // When debug logging is enabled, we need to format the message first, then add the prefix
+            var formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+            var prefixedMessage = "[DEBUG] " + formattedMessage;
+            
             if (exception != null)
-                _innerLogger.LogInformation(exception, prefixedMessage, args);
+                _innerLogger.LogInformation(exception, prefixedMessage);
             else
-                _innerLogger.LogInformation(prefixedMessage, args);
+                _innerLogger.LogInformation(prefixedMessage);
         }
         else
         {
@@ -120,22 +122,25 @@ public class JellyseerrLogger<T> : ILogger<T>
         var config = Plugin.GetConfiguration();
         var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
-        var limitedMessage = LimitMessageToLinesAndCharacters(message, 10, 100);
-        var prefixedMessage = "[TRACE] " + limitedMessage;
-        
         if (enableDebugLogging)
         {
+            // When debug logging is enabled, format the message first, then limit, then add prefix
+            var formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+            var limitedMessage = LimitMessageToLinesAndCharacters(formattedMessage, 10, 100);
+            var prefixedMessage = "[TRACE] " + limitedMessage;
+            
             if (exception != null)
-                _innerLogger.LogInformation(exception, prefixedMessage, args);
+                _innerLogger.LogInformation(exception, prefixedMessage);
             else
-                _innerLogger.LogInformation(prefixedMessage, args);
+                _innerLogger.LogInformation(prefixedMessage);
         }
         else
         {
+            // When debug logging is disabled, use full structured logging without limiting
             if (exception != null)
-                _innerLogger.LogTrace(exception, limitedMessage, args);
+                _innerLogger.LogTrace(exception, message, args);
             else
-                _innerLogger.LogTrace(limitedMessage, args);
+                _innerLogger.LogTrace(message, args);
         }
     }
 
