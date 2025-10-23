@@ -9,12 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.266.0.0/JellyseerrBridge-0.266.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.266.0.0",
+        "changelog": "v0.266.0.0 - Fixed JellyseerrLogger format string parsing errors with special characters, improved error handling for API test requests, and enhanced request body debugging for better troubleshooting",
+        "checksum": "63C6A88D4EA2316F979E59381043C386",
+        "timestamp": "2025-10-23T22:01:02.672Z"
+      },
+      {
         "dependencies": [],
         "version": "0.265.0.0",
         "targetAbi": "10.10.7.0",
         "changelog": "v0.265.0.0 - Fixed JellyseerrLogger structured logging issues, improved error handling for API test requests, added request body debugging, and renamed methods for better clarity (CreateRequest->BuildEndpointRequest, Requests->ReadRequests)",
         "checksum": "957879CDF289E6302403F418B3F673D2",
-        "timestamp": "2025-10-23T21:50:01.920Z",
+        "timestamp": "2025-10-23T21:50:01.92Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.265.0.0/JellyseerrBridge-0.265.0.0-DLL.zip"
       },
       {
