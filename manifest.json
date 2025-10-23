@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "10FD247954FB25206E7E73AB980B35DE",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.263.1.0/JellyseerrBridge-0.263.1.0-DLL.zip",
+        "version": "0.263.1.0",
+        "changelog": "v0.263.1.0 - Updated frontend to display test request creation results in the TestFavoritesScan content box - now shows both TV and movie request parameters, success status, and API responses",
+        "timestamp": "2025-10-23T11:18:14.428Z",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "checksum": "45620BBA53340B5FA88F2EA27C9681BC",
         "dependencies": [],
         "version": "0.263.0.0",

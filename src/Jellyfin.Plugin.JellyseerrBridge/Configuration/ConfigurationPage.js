@@ -366,6 +366,22 @@ function initializeLibrarySettings(page) {
                         resultText += `\nNo user favorites found.`;
                     }
                     
+                    // Add test request results
+                    if (result.testRequests && result.testRequests.length > 0) {
+                        resultText += `\n\n=== Test Request Creation Results ===\n`;
+                        result.testRequests.forEach((testRequest, index) => {
+                            resultText += `\n${index + 1}. ${testRequest.type.toUpperCase()} Request:\n`;
+                            resultText += `   Parameters: ${JSON.stringify(testRequest.parameters, null, 2).replace(/\n/g, '\n   ')}\n`;
+                            resultText += `   Success: ${testRequest.success ? '✅' : '❌'}\n`;
+                            if (testRequest.error) {
+                                resultText += `   Error: ${testRequest.error}\n`;
+                            }
+                            if (testRequest.result) {
+                                resultText += `   Response: ${JSON.stringify(testRequest.result, null, 2).replace(/\n/g, '\n   ')}\n`;
+                            }
+                        });
+                    }
+                    
                     testFavoritesScanResult.textContent = resultText;
                     testFavoritesScanResult.style.display = 'block';
                 } else {
