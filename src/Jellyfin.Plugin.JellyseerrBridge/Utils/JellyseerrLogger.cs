@@ -93,14 +93,13 @@ public class JellyseerrLogger<T> : ILogger<T>
         
         if (enableDebugLogging)
         {
-            // When debug logging is enabled, we need to format the message first, then add the prefix
-            var formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
-            var prefixedMessage = "[DEBUG] " + formattedMessage;
+            // When debug logging is enabled, we need to add the prefix and log as info
+            var prefixedMessage = "[DEBUG] " + message;
             
             if (exception != null)
-                _innerLogger.LogInformation(exception, prefixedMessage);
+                _innerLogger.LogInformation(exception, prefixedMessage, args);
             else
-                _innerLogger.LogInformation(prefixedMessage);
+                _innerLogger.LogInformation(prefixedMessage, args);
         }
         else
         {
