@@ -143,15 +143,28 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             parameters: tvRequestParams
                         );
                         
+                        // Check if the result indicates a successful API call
+                        // For CreateRequest, we expect a specific response type, not just any object
+                        var isSuccess = tvRequestResult != null && 
+                                       !tvRequestResult.GetType().Name.Contains("Object") && 
+                                       tvRequestResult.GetType() != typeof(object);
+                        
                         testRequestResults.Add(new
                         {
                             type = "tv",
                             parameters = tvRequestParams,
                             result = tvRequestResult,
-                            success = tvRequestResult != null
+                            success = isSuccess
                         });
                         
-                        _logger.LogDebug("[JellyseerrBridge] TV test request completed successfully");
+                        if (isSuccess)
+                        {
+                            _logger.LogDebug("[JellyseerrBridge] TV test request completed successfully");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("[JellyseerrBridge] TV test request failed - API returned error or default value");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -190,15 +203,28 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             parameters: movieRequestParams
                         );
                         
+                        // Check if the result indicates a successful API call
+                        // For CreateRequest, we expect a specific response type, not just any object
+                        var isSuccess = movieRequestResult != null && 
+                                       !movieRequestResult.GetType().Name.Contains("Object") && 
+                                       movieRequestResult.GetType() != typeof(object);
+                        
                         testRequestResults.Add(new
                         {
                             type = "movie",
                             parameters = movieRequestParams,
                             result = movieRequestResult,
-                            success = movieRequestResult != null
+                            success = isSuccess
                         });
                         
-                        _logger.LogDebug("[JellyseerrBridge] Movie test request completed successfully");
+                        if (isSuccess)
+                        {
+                            _logger.LogDebug("[JellyseerrBridge] Movie test request completed successfully");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("[JellyseerrBridge] Movie test request failed - API returned error or default value");
+                        }
                     }
                     catch (Exception ex)
                     {

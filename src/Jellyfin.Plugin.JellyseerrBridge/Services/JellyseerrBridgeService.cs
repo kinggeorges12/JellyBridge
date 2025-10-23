@@ -328,7 +328,7 @@ public class JellyseerrBridgeService
             var allUsers = _userManager.Users.ToList();
             result.TotalUsers = allUsers.Count;
             
-            _logger.LogTrace("Found {UserCount} users in Jellyfin", allUsers.Count);
+            _logger.LogDebug("Found {UserCount} users in Jellyfin", allUsers.Count);
             
             foreach (var user in allUsers)
             {
@@ -371,7 +371,7 @@ public class JellyseerrBridgeService
                     result.TotalFavorites += userFavorites.FavoriteCount;
                 }
                 
-                _logger.LogDebug("User {UserName} has {FavoriteCount} favorites", userFavorites.UserName, userFavorites.FavoriteCount);
+                _logger.LogTrace("User {UserName} has {FavoriteCount} favorites", userFavorites.UserName, userFavorites.FavoriteCount);
             }
             
             _logger.LogDebug("Favorites scan test completed. {UsersWithFavorites} users have favorites, total {TotalFavorites} favorite items", 

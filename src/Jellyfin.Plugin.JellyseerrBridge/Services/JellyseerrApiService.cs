@@ -189,7 +189,7 @@ public class JellyseerrApiService
         ),
         
         // Request endpoints - use paginated response with MediaRequest base model
-        [JellyseerrEndpoint.Requests] = new JellyseerrEndpointConfig(
+        [JellyseerrEndpoint.ReadRequests] = new JellyseerrEndpointConfig(
             "/api/v1/request",
             typeof(JellyseerrPaginatedResponse<MediaRequest>),
             returnModel: typeof(List<MediaRequest>),
@@ -313,7 +313,7 @@ public class JellyseerrApiService
         /// <param name="parameters">Optional query parameters</param>
         /// <param name="templateValues">Optional template values for URL placeholders</param>
         /// <returns>Configured HttpRequestMessage</returns>
-        public static HttpRequestMessage CreateRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, object>? parameters = null, Dictionary<string, string>? templateValues = null)
+        public static HttpRequestMessage BuildEndpointRequest(string baseUrl, JellyseerrEndpoint endpoint, string apiKey, HttpMethod? method = null, Dictionary<string, object>? parameters = null, Dictionary<string, string>? templateValues = null)
         {
             var httpMethod = method ?? GetEndpoint(endpoint).Method;
             var isBodyMethod = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put;
@@ -406,6 +406,16 @@ public class JellyseerrApiService
                 
                 _logger.LogTrace("[JellyseerrBridge] API Request Attempt {Attempt}/{MaxAttempts}: {Method} {Url}", 
                     attempt, retryAttempts, requestMessage.Method, requestMessage.RequestUri);
+                
+                // Log request body for POST/PUT requests
+                if (request.Content != null)
+                {
+                    var bodyContent = await request.Content.ReadAsStringAsync();
+                    _logger.LogTrace("[JellyseerrBridge] Request Body: {Body}", bodyContent);
+                    
+                    // Recreate the content since ReadAsStringAsync consumes the stream
+                    requestMessage.Content = new StringContent(bodyContent, Encoding.UTF8, "application/json");
+                }
                 
                 // Use the injected HttpClient with timeout for this request
                 using var cts = new CancellationTokenSource(timeout);
@@ -550,7 +560,7 @@ public class JellyseerrApiService
                         pageParameters = queryParameters;
                     }
                     
-                    var pageRequestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
+                    var pageRequestMessage = JellyseerrUrlBuilder.BuildEndpointRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
                     
                     // Debug: Log the complete URL being used
                     _logger.LogDebug("Making API request to URL: {Url}", pageRequestMessage.RequestUri);
@@ -621,7 +631,7 @@ public class JellyseerrApiService
             else
             {
                 // Non-paginated endpoints - single request
-                var requestMessage = JellyseerrUrlBuilder.CreateRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: queryParameters, templateValues: templateValues);
+                var requestMessage = JellyseerrUrlBuilder.BuildEndpointRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: queryParameters, templateValues: templateValues);
                 _logger.LogDebug("Request URL: {Url}", requestMessage.RequestUri);
                 
                 // Make the API request
