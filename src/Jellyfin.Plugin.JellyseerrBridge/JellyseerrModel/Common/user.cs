@@ -78,8 +78,11 @@ public class User
     [JsonPropertyName("avatarVersion")]
     public string? AvatarVersion { get; set; } = null!;
 
-    [JsonPropertyName("requestCount")]
-    public int RequestCount { get; set; }
+    // Calculated property removed. Typescript definition then C# property in comments below.
+    // @RelationCount((user: User) => user.requests)
+    //   public requestCount: number;
+    // [JsonPropertyName("requestCount")]
+    // public int RequestCount { get; set; }
 
     [JsonPropertyName("requests")]
     public List<MediaRequest> Requests { get; set; } = new();

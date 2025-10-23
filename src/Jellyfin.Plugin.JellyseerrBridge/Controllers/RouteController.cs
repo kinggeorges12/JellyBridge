@@ -118,6 +118,105 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     
                     _logger.LogInformation("[JellyseerrBridge] TestFavoritesScan completed successfully");
                     
+                    // Create test requests using CallEndpointAsync
+                    _logger.LogInformation("[JellyseerrBridge] Creating test requests...");
+                    
+                    var testRequestResults = new List<object>();
+                    
+                    try
+                    {
+                        // Create TV show test request
+                        var tvRequestParams = new Dictionary<string, string>
+                        {
+                            ["mediaType"] = "tv",
+                            ["mediaId"] = "32692",
+                            ["seasons"] = "all",
+                            ["profileId"] = "2"
+                        };
+                        
+                        _logger.LogInformation("[JellyseerrBridge] Creating TV test request with parameters: {Parameters}", 
+                            string.Join(", ", tvRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+                        
+                        var tvRequestResult = await _apiService.CallEndpointAsync(
+                            JellyseerrEndpoint.CreateRequest, 
+                            parameters: tvRequestParams
+                        );
+                        
+                        testRequestResults.Add(new
+                        {
+                            type = "tv",
+                            parameters = tvRequestParams,
+                            result = tvRequestResult,
+                            success = tvRequestResult != null
+                        });
+                        
+                        _logger.LogInformation("[JellyseerrBridge] TV test request completed successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[JellyseerrBridge] Failed to create TV test request");
+                        testRequestResults.Add(new
+                        {
+                            type = "tv",
+                            parameters = new Dictionary<string, string>
+                            {
+                                ["mediaType"] = "tv",
+                                ["mediaId"] = "32692",
+                                ["seasons"] = "all",
+                                ["profileId"] = "2"
+                            },
+                            result = (object?)null,
+                            success = false,
+                            error = ex.Message
+                        });
+                    }
+                    
+                    try
+                    {
+                        // Create movie test request
+                        var movieRequestParams = new Dictionary<string, string>
+                        {
+                            ["mediaType"] = "movie",
+                            ["mediaId"] = "123",
+                            ["profileId"] = "2"
+                        };
+                        
+                        _logger.LogInformation("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
+                            string.Join(", ", movieRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+                        
+                        var movieRequestResult = await _apiService.CallEndpointAsync(
+                            JellyseerrEndpoint.CreateRequest, 
+                            parameters: movieRequestParams
+                        );
+                        
+                        testRequestResults.Add(new
+                        {
+                            type = "movie",
+                            parameters = movieRequestParams,
+                            result = movieRequestResult,
+                            success = movieRequestResult != null
+                        });
+                        
+                        _logger.LogInformation("[JellyseerrBridge] Movie test request completed successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[JellyseerrBridge] Failed to create movie test request");
+                        testRequestResults.Add(new
+                        {
+                            type = "movie",
+                            parameters = new Dictionary<string, string>
+                            {
+                                ["mediaType"] = "movie",
+                                ["mediaId"] = "123",
+                                ["profileId"] = "2"
+                            },
+                            result = (object?)null,
+                            success = false,
+                            error = ex.Message
+                        });
+                    }
+                    
                     // Normalize casing for frontend (camelCase)
                     var userFavoritesCamel = scanResult.UserFavorites.Select(u => new
                     {
@@ -137,11 +236,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     return new
                     {
                         success = true,
-                        message = "Favorites scan test completed successfully",
+                        message = "Favorites scan test completed successfully with test request creation",
                         totalUsers = scanResult.TotalUsers,
                         usersWithFavorites = scanResult.UsersWithFavorites,
                         totalFavorites = scanResult.TotalFavorites,
-                        userFavorites = userFavoritesCamel
+                        userFavorites = userFavoritesCamel,
+                        testRequests = testRequestResults
                     };
                 }, _logger, "Test Favorites Scan");
                 
@@ -156,7 +256,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalUsers = 0,
                     usersWithFavorites = 0,
                     totalFavorites = 0,
-                    userFavorites = new List<UserFavorites>()
+                    userFavorites = new List<UserFavorites>(),
+                    testRequests = new List<object>()
                 });
             }
             catch (Exception ex)
@@ -168,7 +269,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalUsers = 0,
                     usersWithFavorites = 0,
                     totalFavorites = 0,
-                    userFavorites = new List<UserFavorites>()
+                    userFavorites = new List<UserFavorites>(),
+                    testRequests = new List<object>()
                 });
             }
         }

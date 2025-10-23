@@ -603,6 +603,18 @@ function isBasicType(typeName) {
                             console.log('DEBUG: No TypeScript type but have column type:', columnType, 'for property:', propertyName, 'csharpType:', csharpType);
                         }
                         
+                        // Skip @RelationCount properties (calculated fields)
+                        // Check if this property has a @RelationCount decorator by looking at the source code
+                        if (fullPropertyText.includes('@RelationCount')) {
+                            console.log('Skipping @RelationCount property: ' + propertyName);
+                            // Add a commented-out entry to explain why this property was skipped
+                            csharpCode += '    // Calculated property removed. Typescript definition then C# property in comments below.\n';
+                            csharpCode += '    // ' + fullPropertyText.replace(/([\r\n]+)/g, '\n    // ') + '\n';
+                            csharpCode += '    // [JsonPropertyName("' + propertyName + '")]\n';
+                            csharpCode += '    // ' + generatePropertyDeclaration(csharpType, propertyName, isOptional ? '?' : '').trimStart();
+                            continue; // Skip this property
+                        }
+                        
                         // Add JSON property attribute
                         const commentPrefix = blockedClasses.includes(csharpType) ? '    // ' : '    ';
                         csharpCode += commentPrefix + '[JsonPropertyName("' + propertyName + '")]\n';

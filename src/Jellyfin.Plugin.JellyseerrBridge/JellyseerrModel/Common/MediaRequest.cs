@@ -52,8 +52,11 @@ public class MediaRequest
     [JsonPropertyName("type")]
     public MediaType Type { get; set; } = new();
 
-    [JsonPropertyName("seasonCount")]
-    public int SeasonCount { get; set; }
+    // Calculated property removed. Typescript definition then C# property in comments below.
+    // @RelationCount((request: MediaRequest) => request.seasons)
+    //   public seasonCount: number;
+    // [JsonPropertyName("seasonCount")]
+    // public int SeasonCount { get; set; }
 
     [JsonPropertyName("seasons")]
     public List<SeasonRequest> Seasons { get; set; } = new();
