@@ -59,6 +59,12 @@ public interface IJellyseerrItem
     string ExtraIdName { get; }
 
     /// <summary>
+    /// The creation date of the media item.
+    /// </summary>
+    [JsonPropertyName("createdDate")]
+    virtual DateTimeOffset? CreatedDate => DateTimeOffset.Now;
+
+    /// <summary>
     /// Extract year from date string.
     /// </summary>
     static string ExtractYear(string? dateString)
@@ -94,10 +100,12 @@ public interface IJellyseerrItem
         
         //TODO: Testing
         // Add extra ID if available
-        //if (!string.IsNullOrEmpty(ExtraId))
-        //{
+        if (!string.IsNullOrEmpty(ExtraId))
+        {
             parts.Add($"[{ExtraIdName}-{ExtraId}]");
-        //}
+        } else {
+            parts.Add($"[{ExtraIdName}-]");
+        }
         
         return string.Join(" ", parts);
     }

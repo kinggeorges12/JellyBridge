@@ -40,8 +40,7 @@ public class JellyseerrLibraryService
             }
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
-                _logger.LogWarning("[JellyseerrLibraryService] Cannot refresh library - sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return false;
+                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
             }
 
             _logger.LogInformation("[JellyseerrLibraryService] Starting Jellyseerr library refresh...");
@@ -53,8 +52,7 @@ public class JellyseerrLibraryService
 
             if (!jellyseerrLibraries.Any())
             {
-                _logger.LogWarning("[JellyseerrLibraryService] No Jellyseerr libraries found for refresh");
-                return false;
+                throw new InvalidOperationException("No Jellyseerr libraries found for refresh");
             }
 
             _logger.LogInformation("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 

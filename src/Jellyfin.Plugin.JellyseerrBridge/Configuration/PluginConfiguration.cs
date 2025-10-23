@@ -25,7 +25,8 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(LibraryPrefix), "Streaming - " },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(AutoSyncOnStartup), false },
-        { nameof(MaxDiscoverPages), 10 },
+        { nameof(MaxDiscoverPages), 1 },
+        { nameof(MaxCollectionDays), 30 },
         { nameof(RequestTimeout), 30 },
         { nameof(RetryAttempts), 3 },
         { nameof(EnableDebugLogging), false },
@@ -118,6 +119,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// This applies to both movies and TV shows discovery.
     /// </summary>
     public int? MaxDiscoverPages { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of days to keep items in the collection before cleanup.
+    /// Items older than this will be removed during sync operations.
+    /// </summary>
+    public int? MaxCollectionDays { get; set; }
 
     /// <summary>
     /// Gets or sets the request timeout in seconds.

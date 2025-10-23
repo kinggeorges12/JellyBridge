@@ -202,7 +202,7 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             foreach (var directory in directories)
             {
                 var metadataFile = Path.Combine(directory, "metadata.json");
-                if (File.Exists(metadataFile))
+                if (System.IO.File.Exists(metadataFile))
                 {
                     try
                     {
