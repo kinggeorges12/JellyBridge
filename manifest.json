@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.271.0.0",
+        "checksum": "40125CE6CE1DC0B18B3401811B1100B0",
+        "timestamp": "2025-10-24T18:05:47.249Z",
+        "changelog": "v0.271.0.0 - Fixed convert script regex pattern to properly detect property hiding scenarios and automatically add 'new' keyword to inherited properties",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.271.0.0/JellyseerrBridge-0.271.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-24T16:53:54.187Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.270.0.0/JellyseerrBridge-0.270.0.0-DLL.zip",
