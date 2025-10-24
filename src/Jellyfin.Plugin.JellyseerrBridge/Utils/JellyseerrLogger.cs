@@ -6,6 +6,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Utils;
 
 /// <summary>
 /// Jellyseerr-specific logger wrapper that implements ILogger<T> and handles debug logging configuration.
+/// This class is a workaround for the complications of using the Jellyfin built-in logger.
 /// </summary>
 /// <typeparam name="T">The type for which the logger is created</typeparam>
 public class JellyseerrLogger<T> : ILogger<T>

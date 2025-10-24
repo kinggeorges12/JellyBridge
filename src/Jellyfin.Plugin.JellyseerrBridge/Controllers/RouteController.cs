@@ -112,150 +112,41 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     
-                    // Create test requests using CallEndpointAsync
+                    // Create test requests using the bridge service
                     _logger.LogTrace("[JellyseerrBridge] Creating test requests...");
                     
-                    var testRequestResults = new List<object>();
-                    
-                    // Create TV show test request
-                    var tvRequestParams = new Dictionary<string, object>
-                    {
-                        ["mediaType"] = "tv",
-                        ["mediaId"] = 32692,
-                        ["seasons"] = "all",
-                        ["userId"] = 2
-                    };
-                    
-                    // Create movie test request
-                    var movieRequestParams = new Dictionary<string, object>
-                    {
-                        ["mediaType"] = "movie",
-                        ["mediaId"] = 123,
-                        ["userId"] = 2
-                    };
-                    
-                    try
-                    {
-                        _logger.LogDebug("[JellyseerrBridge] Creating TV test request with parameters: {Parameters}", 
-                            string.Join(", ", tvRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
-                        
-                        var tvRequestResult = await _apiService.CallEndpointAsync(
-                            JellyseerrEndpoint.CreateRequest, 
-                            parameters: tvRequestParams
-                        );
-                        
-                        // Check if the result indicates a successful API call
-                        // For CreateRequest, we expect a specific response type, not just any object
-                        var isSuccess = tvRequestResult != null && 
-                                       !tvRequestResult.GetType().Name.Contains("Object") && 
-                                       tvRequestResult.GetType() != typeof(object);
-                        
-                        testRequestResults.Add(new
-                        {
-                            type = "tv",
-                            parameters = tvRequestParams,
-                            result = tvRequestResult,
-                            success = isSuccess
-                        });
-                        
-                        if (isSuccess)
-                        {
-                            _logger.LogDebug("[JellyseerrBridge] TV test request completed successfully");
-                        }
-                        else
-                        {
-                            _logger.LogWarning("[JellyseerrBridge] TV test request failed - API returned error or default value");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "[JellyseerrBridge] Failed to create TV test request");
-                        testRequestResults.Add(new
-                        {
-                            type = "tv",
-                            parameters = tvRequestParams,
-                            result = (object?)null,
-                            success = false,
-                            error = ex.Message
-                        });
-                    }
-                    
-                    try
-                    {
-                        _logger.LogTrace("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
-                            string.Join(", ", movieRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
-                        
-                        var movieRequestResult = await _apiService.CallEndpointAsync(
-                            JellyseerrEndpoint.CreateRequest, 
-                            parameters: movieRequestParams
-                        );
-                        
-                        // Check if the result indicates a successful API call
-                        // For CreateRequest, we expect a specific response type, not just any object
-                        var isSuccess = movieRequestResult != null && 
-                                       !movieRequestResult.GetType().Name.Contains("Object") && 
-                                       movieRequestResult.GetType() != typeof(object);
-                        
-                        testRequestResults.Add(new
-                        {
-                            type = "movie",
-                            parameters = movieRequestParams,
-                            result = movieRequestResult,
-                            success = isSuccess
-                        });
-                        
-                        if (isSuccess)
-                        {
-                            _logger.LogDebug("[JellyseerrBridge] Movie test request completed successfully");
-                        }
-                        else
-                        {
-                            _logger.LogWarning("[JellyseerrBridge] Movie test request failed - API returned error or default value");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "[JellyseerrBridge] Failed to create movie test request");
-                        testRequestResults.Add(new
-                        {
-                            type = "movie",
-                            parameters = movieRequestParams,
-                            result = (object?)null,
-                            success = false,
-                            error = ex.Message
-                        });
-                    }
+                    //TODO: disabled for testing
+                    // var testRequestResults = await _bridgeService.TestAddRequestsAsync();
                     
                     _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
                     var scanResult = await _bridgeService.TestFavoritesScanAsync();
                     
                     _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
                     
-                    // Normalize casing for frontend (camelCase)
-                    var userFavoritesCamel = scanResult.UserFavorites.Select(u => new
+                    // Convert requests to camelCase for frontend
+                    var requestsCamel = scanResult.Requests.Select(r => new
                     {
-                        userId = u.UserId,
-                        userName = u.UserName,
-                        favoriteCount = u.FavoriteCount,
-                        favorites = (u.Favorites ?? new List<FavoriteItem>()).Select(f => new
+                        id = r.Id,
+                        type = r.Type.ToString(),
+                        createdAt = r.CreatedAt,
+                        updatedAt = r.UpdatedAt,
+                        status = r.Status.ToString(),
+                        requestedBy = r.RequestedBy?.Username,
+                        jellyfinUserId = r.RequestedBy?.JellyfinUserId,
+                        jellyfinUsername = r.RequestedBy?.JellyfinUsername,
+                        media = r.Media != null ? new
                         {
-                            id = f.Id,
-                            name = f.Name,
-                            type = f.Type,
-                            year = f.Year,
-                            path = f.Path
-                        }).ToList(),
-                        requestCount = u.RequestCount,
-                        requests = (u.Requests ?? new List<RequestItem>()).Select(r => new
+                            id = r.Media.Id,
+                            mediaType = r.Media.MediaType.ToString(),
+                            tmdbId = r.Media.TmdbId,
+                            tvdbId = r.Media.TvdbId,
+                            imdbId = r.Media.ImdbId
+                        } : null,
+                        seasons = r.Seasons?.Select(s => new
                         {
-                            id = r.Id,
-                            type = r.Type,
-                            createdAt = r.CreatedAt,
-                            updatedAt = r.UpdatedAt,
-                            mediaUrl = r.MediaUrl,
-                            serviceUrl = r.ServiceUrl,
-                            is4k = r.Is4k,
-                            seasonCount = r.SeasonCount
+                            id = s.Id,
+                            seasonNumber = s.SeasonNumber,
+                            status = s.Status.ToString()
                         }).ToList()
                     }).ToList();
 
@@ -268,8 +159,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         totalFavorites = scanResult.TotalFavorites,
                         usersWithRequests = scanResult.UsersWithRequests,
                         totalRequests = scanResult.TotalRequests,
-                        userFavorites = userFavoritesCamel,
-                        testRequests = testRequestResults
+                        requests = requestsCamel
                     };
                 }, _logger, "Test Favorites Scan");
                 
@@ -286,7 +176,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalFavorites = 0,
                     usersWithRequests = 0,
                     totalRequests = 0,
-                    userFavorites = new List<UserFavorites>(),
+                    requests = new List<object>(),
                     testRequests = new List<object>()
                 });
             }
@@ -301,7 +191,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalFavorites = 0,
                     usersWithRequests = 0,
                     totalRequests = 0,
-                    userFavorites = new List<UserFavorites>(),
+                    requests = new List<object>(),
                     testRequests = new List<object>()
                 });
             }

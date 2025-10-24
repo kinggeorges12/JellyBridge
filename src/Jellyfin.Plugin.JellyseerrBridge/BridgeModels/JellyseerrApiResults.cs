@@ -115,7 +115,7 @@ public class TestFavoritesResult
     public int TotalFavorites { get; set; }
     public int UsersWithRequests { get; set; }
     public int TotalRequests { get; set; }
-    public List<UserFavorites> UserFavorites { get; set; } = new();
+    public List<JellyseerrMediaRequest> Requests { get; set; } = new();
 }
 
 /// <summary>
