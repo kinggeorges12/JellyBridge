@@ -18,6 +18,14 @@ public class JellyseerrMediaRequest : MediaRequest
     [JsonPropertyName("type")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public new MediaType Type { get; set; }
+
+    /// <summary>
+    /// Media as Media object ignored in json output - override to use JellyseerrMedia
+    /// </summary>
+    //[JsonIgnore]
+    //public new Media Media { get; set; } = new();
+    [JsonPropertyName("media")]
+    public new JellyseerrMedia Media { get; set; } = new();
     
     // All other properties inherit from base class with correct types and JSON names
 }
