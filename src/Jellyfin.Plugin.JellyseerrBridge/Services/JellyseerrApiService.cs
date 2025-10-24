@@ -812,6 +812,8 @@ public class JellyseerrApiService
             // Add items to HashSet (automatically handles duplicates)
             foreach (var item in items)
             {
+                // Set the network tag for this item
+                item.NetworkTag = network.Name;
                 allItems.Add(item);
             }
             

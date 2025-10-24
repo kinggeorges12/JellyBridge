@@ -345,25 +345,36 @@ function initializeLibrarySettings(page) {
                 const result = await response.json();
                 
                 if (response.ok) {
-                    let resultText = `Favorites Scan Test Results:\n`;
+                    let resultText = `Favorites & Requests Scan Test Results:\n`;
                     resultText += `Total Users: ${result.totalUsers || 0}\n`;
                     resultText += `Users with Favorites: ${result.usersWithFavorites || 0}\n`;
-                    resultText += `Total Favorite Items: ${result.totalFavorites || 0}\n\n`;
+                    resultText += `Total Favorite Items: ${result.totalFavorites || 0}\n`;
+                    resultText += `Users with Requests: ${result.usersWithRequests || 0}\n`;
+                    resultText += `Total Request Items: ${result.totalRequests || 0}\n\n`;
                     
                     if (result.userFavorites && result.userFavorites.length > 0) {
-                        resultText += `User Favorites:\n`;
+                        resultText += `User Favorites & Requests:\n`;
                         result.userFavorites.forEach((user, index) => {
-                            resultText += `\n${index + 1}. ${user.userName} (${user.favoriteCount} favorites):\n`;
+                            resultText += `\n${index + 1}. ${user.userName}:\n`;
+                            resultText += `   Favorites: ${user.favoriteCount || 0}\n`;
+                            resultText += `   Requests: ${user.requestCount || 0}\n`;
+                            
                             if (user.favorites && user.favorites.length > 0) {
+                                resultText += `   \n   Favorites:\n`;
                                 user.favorites.forEach((favorite, favIndex) => {
-                                    resultText += `   ${favIndex + 1}. ${favorite.name} (${favorite.type})\n`;
+                                    resultText += `     ${favIndex + 1}. ${favorite.name} (${favorite.type})\n`;
                                 });
-                            } else {
-                                resultText += `   No favorites found.\n`;
+                            }
+                            
+                            if (user.requests && user.requests.length > 0) {
+                                resultText += `   \n   Requests:\n`;
+                                user.requests.forEach((request, reqIndex) => {
+                                    resultText += `     ${reqIndex + 1}. ${request.name} (${request.type}) - Status: ${request.status}\n`;
+                                });
                             }
                         });
                     } else {
-                        resultText += `\nNo user favorites found.`;
+                        resultText += `\nNo user favorites or requests found.`;
                     }
                     
                     testFavoritesScanResult.textContent = resultText;

@@ -177,7 +177,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                                 ["mediaType"] = "tv",
                                 ["mediaId"] = 32692,
                                 ["seasons"] = "all",
-                                ["profileId"] = 2
+                                ["userId"] = 2
                             },
                             result = (object?)null,
                             success = false,
@@ -192,7 +192,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         {
                             ["mediaType"] = "movie",
                             ["mediaId"] = 123,
-                            ["profileId"] = 2
+                            ["userId"] = 2
                         };
                         
                         _logger.LogTrace("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
@@ -257,6 +257,21 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                             type = f.Type,
                             year = f.Year,
                             path = f.Path
+                        }).ToList(),
+                        requestCount = u.RequestCount,
+                        requests = (u.Requests ?? new List<RequestItem>()).Select(r => new
+                        {
+                            id = r.Id,
+                            name = r.Name,
+                            type = r.Type,
+                            year = r.Year,
+                            status = r.Status,
+                            createdAt = r.CreatedAt,
+                            updatedAt = r.UpdatedAt,
+                            mediaUrl = r.MediaUrl,
+                            serviceUrl = r.ServiceUrl,
+                            is4k = r.Is4k,
+                            seasonCount = r.SeasonCount
                         }).ToList()
                     }).ToList();
 
@@ -267,6 +282,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         totalUsers = scanResult.TotalUsers,
                         usersWithFavorites = scanResult.UsersWithFavorites,
                         totalFavorites = scanResult.TotalFavorites,
+                        usersWithRequests = scanResult.UsersWithRequests,
+                        totalRequests = scanResult.TotalRequests,
                         userFavorites = userFavoritesCamel,
                         testRequests = testRequestResults
                     };
@@ -283,6 +300,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalUsers = 0,
                     usersWithFavorites = 0,
                     totalFavorites = 0,
+                    usersWithRequests = 0,
+                    totalRequests = 0,
                     userFavorites = new List<UserFavorites>(),
                     testRequests = new List<object>()
                 });
@@ -296,6 +315,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     totalUsers = 0,
                     usersWithFavorites = 0,
                     totalFavorites = 0,
+                    usersWithRequests = 0,
+                    totalRequests = 0,
                     userFavorites = new List<UserFavorites>(),
                     testRequests = new List<object>()
                 });

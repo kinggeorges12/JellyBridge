@@ -92,13 +92,13 @@ public class JellyseerrShow
     /// <summary>
     /// The extra external ID (TVDB for shows).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("extraId")]
     public string? ExtraId => MediaInfo?.TvdbId?.ToString();
 
     /// <summary>
     /// The display name for the extra external ID (tvdbid for shows).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("extraIdName")]
     public string ExtraIdName => "tvdbid";
 
     /// <summary>
@@ -106,6 +106,12 @@ public class JellyseerrShow
     /// </summary>
     [JsonPropertyName("createdDate")]
     public DateTimeOffset? CreatedDate { get; set; }
+
+    /// <summary>
+    /// The network tag for the media item.
+    /// </summary>
+    [JsonPropertyName("networkTag")]
+    public string NetworkTag { get; set; } = string.Empty;
 
     /// <summary>
     /// Equality comparison with a Jellyfin Series item.
@@ -158,5 +164,44 @@ public class JellyseerrShow
     public int GetItemHashCode()
     {
         return HashCode.Combine(Id, MediaName, Year, MediaType);
+    }
+    
+    /// <summary>
+    /// Generates XML content for the TV show in tvshow.nfo format.
+    /// </summary>
+    /// <returns>XML string for the TV show</returns>
+    public string ToXmlString()
+    {
+        var xml = new System.Text.StringBuilder();
+        xml.AppendLine("<tvshow>");
+        xml.AppendLine($"  <title>{Name}</title>");
+        
+        // Add TVDB ID if available
+        if (!string.IsNullOrEmpty(ExtraId))
+        {
+            xml.AppendLine($"  <id>{ExtraId}</id>");
+            xml.AppendLine($"  <uniqueid type=\"tvdb\" default=\"true\">{ExtraId}</uniqueid>");
+        }
+        
+        xml.AppendLine($"  <uniqueid type=\"tmdb\">{Id}</uniqueid>");
+        
+        // Add network tag if available
+        if (!string.IsNullOrEmpty(NetworkTag))
+        {
+            xml.AppendLine($"  <tag>{NetworkTag}</tag>");
+        }
+        
+        xml.AppendLine("</tvshow>");
+        
+        return xml.ToString();
+    }
+    
+    /// <summary>
+    /// Gets the NFO filename for the TV show.
+    /// </summary>
+    /// <returns>NFO filename string</returns>
+    public string GetNfoFilename()
+    {
+        return "tvshow.nfo"; // Static value for TV shows
     }
 }
