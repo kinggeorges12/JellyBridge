@@ -54,15 +54,6 @@ public partial class JellyseerrSyncService
     public async Task<SyncResult> SyncBridgeFoldersAsync()
     {
         var result = new SyncResult();
-        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
-        
-        if (!isEnabled)
-        {
-            _logger.LogDebug("Jellyseerr Bridge is disabled, skipping folder structure creation");
-            result.Success = false;
-            result.Message = "Jellyseerr Bridge is disabled";
-            return result;
-        }
 
         try
         {

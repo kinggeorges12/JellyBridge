@@ -547,8 +547,9 @@ public class JellyseerrApiService
                     var pageParameters = queryParameters != null 
                         ? new Dictionary<string, object>(queryParameters) { ["page"] = page }
                         : new Dictionary<string, object> { ["page"] = page };
-                    // User list is a special case that uses take and skip rather than page
-                    if(endpoint==JellyseerrEndpoint.UserList){
+                    // If "take" parameter is present, use query parameters as-is (no page parameter)
+                    if (queryParameters != null && queryParameters.ContainsKey("take"))
+                    {
                         pageParameters = queryParameters;
                     }
                     
@@ -682,6 +683,7 @@ public class JellyseerrApiService
             JellyseerrEndpoint.ReadRequests => (
                 new Dictionary<string, object> 
                 {
+                    ["take"] = MAX_SAFE_INTEGER,
                     ["mediaType"] = "all" // Optional: all, movie, tv
                 },
                 null
@@ -719,7 +721,7 @@ public class JellyseerrApiService
             // UserList endpoint - use take parameter to get all users
             JellyseerrEndpoint.UserList => (
                 new Dictionary<string, object> 
-                { 
+                {
                     ["take"] = MAX_SAFE_INTEGER
                 },
                 null
