@@ -262,10 +262,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         requests = (u.Requests ?? new List<RequestItem>()).Select(r => new
                         {
                             id = r.Id,
-                            name = r.Name,
                             type = r.Type,
-                            year = r.Year,
-                            status = r.Status,
                             createdAt = r.CreatedAt,
                             updatedAt = r.UpdatedAt,
                             mediaUrl = r.MediaUrl,

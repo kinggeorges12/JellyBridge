@@ -34,6 +34,5 @@ public enum JellyseerrEndpoint
     WatchProvidersTv,
     
     // Additional endpoints that might be useful
-    UserList,
-    UserRequests
+    UserList
 }

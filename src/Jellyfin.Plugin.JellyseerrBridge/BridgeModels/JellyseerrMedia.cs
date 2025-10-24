@@ -23,22 +23,24 @@ public class JellyseerrMedia : Media
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])
     /// Override: Remove nullable from base class
     /// </summary>
-    [JsonPropertyName("downloadStatus")]
-    public new List<DownloadingItem> DownloadStatus { get; set; } = new();
+    //[JsonPropertyName("downloadStatus")]
+    //public new List<DownloadingItem> DownloadStatus { get; set; } = new();
 
     /// <summary>
     /// Download status for 4K as array (TypeScript: downloadStatus4k?: DownloadingItem[] = [])
     /// Override: Remove nullable from base class
     /// </summary>
-    [JsonPropertyName("downloadStatus4k")]
-    public new List<DownloadingItem> DownloadStatus4k { get; set; } = new();
+    //[JsonPropertyName("downloadStatus4k")]
+    //public new List<DownloadingItem> DownloadStatus4k { get; set; } = new();
 
     /// <summary>
     /// Watchlists as array (TypeScript: watchlists: null | Watchlist[])
     /// Override: Change from string to List<Watchlist>
     /// </summary>
+    [JsonIgnore]
+    public new string Watchlists { get; set; } = string.Empty;
     [JsonPropertyName("watchlists")]
-    public new List<Watchlist> Watchlists { get; set; } = new();
+    public List<Watchlist> WatchlistsList { get; set; } = new();
 
     /// <summary>
     /// Service ID as nullable number (TypeScript: serviceId?: number | null)
@@ -46,7 +48,6 @@ public class JellyseerrMedia : Media
     /// </summary>
     [JsonIgnore]
     public new string? ServiceId { get; set; }
-
     [JsonPropertyName("serviceId")]
     public int? ServiceIdInt { get; set; }
 
@@ -56,7 +57,6 @@ public class JellyseerrMedia : Media
     /// </summary>
     [JsonIgnore]
     public new string? ServiceId4k { get; set; }
-
     [JsonPropertyName("serviceId4k")]
     public int? ServiceId4kInt { get; set; }
 
@@ -66,7 +66,6 @@ public class JellyseerrMedia : Media
     /// </summary>
     [JsonIgnore]
     public new string? ExternalServiceId { get; set; }
-
     [JsonPropertyName("externalServiceId")]
     public int? ExternalServiceIdInt { get; set; }
 
@@ -76,7 +75,6 @@ public class JellyseerrMedia : Media
     /// </summary>
     [JsonIgnore]
     public new string? ExternalServiceId4k { get; set; }
-
     [JsonPropertyName("externalServiceId4k")]
     public int? ExternalServiceId4kInt { get; set; }
 
@@ -86,7 +84,7 @@ public class JellyseerrMedia : Media
     /// Requests - Not used in Jellyseerr API responses
     /// </summary>
     [JsonIgnore]
-    public new List<MediaRequest>? Requests { get; set; } = new();
+    public new List<JellyseerrMediaRequest>? Requests { get; set; } = new();
 
     /// <summary>
     /// Seasons - Not used in Jellyseerr API responses
