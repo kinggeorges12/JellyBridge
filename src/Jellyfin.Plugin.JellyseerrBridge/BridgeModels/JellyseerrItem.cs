@@ -22,6 +22,7 @@ public interface IJellyseerrItem
     /// <summary>
     /// The TMDB ID of the media item.
     /// </summary>
+    [JsonIgnore]
     int Id { get; }
 
     /// <summary>
@@ -39,29 +40,31 @@ public interface IJellyseerrItem
     /// <summary>
     /// The media type from the API response (inherited from base classes).
     /// </summary>
-    [JsonPropertyName("mediaType")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonIgnore]
     JellyseerrModel.MediaType MediaType { get; }
 
     /// <summary>
     /// Jellyseerr-specific media information (download status, service IDs, etc.).
     /// </summary>
+    [JsonIgnore]
     JellyseerrMedia? MediaInfo { get; set; }
 
     /// <summary>
     /// The extra external ID (IMDB for movies, TVDB for shows).
     /// </summary>
+    [JsonIgnore]
     string? ExtraId { get; }
 
     /// <summary>
     /// The display name for the extra external ID (e.g., "imdbid", "tvdbid").
     /// </summary>
+    [JsonIgnore]
     string ExtraIdName { get; }
 
     /// <summary>
     /// The creation date of the media item.
     /// </summary>
-    [JsonPropertyName("createdDate")]
+    [JsonIgnore]
     DateTimeOffset? CreatedDate { get; set; }
 
     /// <summary>
@@ -116,4 +119,21 @@ public interface IJellyseerrItem
     /// Returns a hash code for the item that can be used for matching.
     /// </summary>
     int GetItemHashCode();
+    
+    /// <summary>
+    /// Generates XML content for the media item (movie.nfo or tvshow.nfo format).
+    /// </summary>
+    /// <returns>XML string for the media item</returns>
+    string ToXmlString();
+    
+    /// <summary>
+    /// Gets the NFO filename for the media item.
+    /// </summary>
+    /// <returns>NFO filename string</returns>
+    string GetNfoFilename();
+    
+    /// <summary>
+    /// The network tag for the media item.
+    /// </summary>
+    string NetworkTag { get; set; }
 }

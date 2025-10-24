@@ -89,13 +89,13 @@ public class JellyseerrMovie
     /// <summary>
     /// The extra external ID (IMDB for movies).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("extraId")]
     public string? ExtraId => MediaInfo?.ImdbId;
 
     /// <summary>
     /// The display name for the extra external ID (imdbid for movies).
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("extraIdName")]
     public string ExtraIdName => "imdbid";
 
     /// <summary>
@@ -103,6 +103,12 @@ public class JellyseerrMovie
     /// </summary>
     [JsonPropertyName("createdDate")]
     public DateTimeOffset? CreatedDate { get; set; }
+
+    /// <summary>
+    /// The network tag for the media item.
+    /// </summary>
+    [JsonPropertyName("networkTag")]
+    public string NetworkTag { get; set; } = string.Empty;
 
     /// <summary>
     /// Equality comparison with a Jellyfin Movie item.
@@ -155,5 +161,47 @@ public class JellyseerrMovie
     public int GetItemHashCode()
     {
         return HashCode.Combine(Id, MediaName, Year, MediaType);
+    }
+    
+    /// <summary>
+    /// Generates XML content for the movie in movie.nfo format.
+    /// </summary>
+    /// <returns>XML string for the movie</returns>
+    public string ToXmlString()
+    {
+        var xml = new System.Text.StringBuilder();
+        xml.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+        xml.AppendLine("<movie>");
+        xml.AppendLine($"  <id>{Id}</id>");
+        xml.AppendLine($"  <uniqueid type=\"tmdb\" default=\"true\">{Id}</uniqueid>");
+        
+        // Add IMDB ID if available
+        if (!string.IsNullOrEmpty(ExtraId))
+        {
+            xml.AppendLine($"  <uniqueid type=\"imdb\">{ExtraId}</uniqueid>");
+        }
+        
+        xml.AppendLine($"  <title>{Title}</title>");
+        xml.AppendLine($"  <originaltitle>{OriginalTitle}</originaltitle>");
+        
+        // Add network tag if available
+        if (!string.IsNullOrEmpty(NetworkTag))
+        {
+            xml.AppendLine($"  <tag>{NetworkTag}</tag>");
+        }
+        
+        xml.AppendLine("  <watched>false</watched>");
+        xml.AppendLine("</movie>");
+        
+        return xml.ToString();
+    }
+    
+    /// <summary>
+    /// Gets the NFO filename for the movie.
+    /// </summary>
+    /// <returns>NFO filename string</returns>
+    public string GetNfoFilename()
+    {
+        return "movie.nfo"; // Static value for movies
     }
 }

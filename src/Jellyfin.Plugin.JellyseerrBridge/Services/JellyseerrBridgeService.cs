@@ -26,8 +26,9 @@ public class JellyseerrBridgeService
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
     private readonly IUserManager _userManager;
     private readonly IUserDataManager _userDataManager;
+    private readonly JellyseerrApiService _apiService;
 
-    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator, IUserManager userManager, IUserDataManager userDataManager)
+    public JellyseerrBridgeService(ILogger<JellyseerrBridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator, IUserManager userManager, IUserDataManager userDataManager, JellyseerrApiService apiService)
     {
         _logger = new JellyseerrLogger<JellyseerrBridgeService>(logger);
         _libraryManager = libraryManager;
@@ -35,6 +36,7 @@ public class JellyseerrBridgeService
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _userManager = userManager;
         _userDataManager = userDataManager;
+        _apiService = apiService;
     }
 
     /// <summary>
@@ -316,13 +318,13 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
-    /// Test method to scan all users and their favorite items.
+    /// Test method to scan all users and their favorite items, plus requests from Jellyseerr.
     /// </summary>
-    public Task<TestFavoritesResult> TestFavoritesScanAsync()
+    public async Task<TestFavoritesResult> TestFavoritesScanAsync()
     {
         try
         {
-            _logger.LogDebug("Testing Jellyfin favorites scan functionality...");
+            _logger.LogDebug("Testing Jellyfin favorites scan functionality with Jellyseerr requests...");
             
             var result = new TestFavoritesResult();
             var allUsers = _userManager.Users.ToList();
@@ -330,13 +332,34 @@ public class JellyseerrBridgeService
             
             _logger.LogDebug("Found {UserCount} users in Jellyfin", allUsers.Count);
             
+            // Fetch all requests from Jellyseerr
+            List<MediaRequest> allRequests = new();
+            try
+            {
+                var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
+                if (requestsResult is List<MediaRequest> requests)
+                {
+                    allRequests = requests;
+                    _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr", allRequests.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to fetch requests from Jellyseerr - unexpected result type");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
+            }
+            
             foreach (var user in allUsers)
             {
                 var userFavorites = new UserFavorites
                 {
                     UserId = user.Id,
                     UserName = user.Username ?? $"User {user.Id}",
-                    Favorites = new List<FavoriteItem>()
+                    Favorites = new List<FavoriteItem>(),
+                    Requests = new List<RequestItem>()
                 };
                 
                 // Get all items from all libraries
@@ -362,7 +385,32 @@ public class JellyseerrBridgeService
                     }
                 }
                 
+                // Find requests for this user by matching Jellyfin user ID
+                var userRequests = allRequests.Where(r => 
+                    r.RequestedBy?.JellyfinUserId == user.Id.ToString() ||
+                    r.RequestedBy?.JellyfinUsername == user.Username)
+                    .ToList();
+                
+                foreach (var request in userRequests)
+                {
+                    userFavorites.Requests.Add(new RequestItem
+                    {
+                        Id = request.Id,
+                        Name = GetRequestDisplayName(request),
+                        Type = request.Type.ToString(),
+                        Year = GetRequestYear(request),
+                        Status = request.Status.ToString(),
+                        CreatedAt = request.CreatedAt,
+                        UpdatedAt = request.UpdatedAt,
+                        MediaUrl = request.Media?.MediaUrl,
+                        ServiceUrl = request.Media?.ServiceUrl,
+                        Is4k = request.Is4k,
+                        SeasonCount = request.Seasons?.Count ?? 0
+                    });
+                }
+                
                 userFavorites.FavoriteCount = userFavorites.Favorites.Count;
+                userFavorites.RequestCount = userFavorites.Requests.Count;
                 result.UserFavorites.Add(userFavorites);
                 
                 if (userFavorites.FavoriteCount > 0)
@@ -371,19 +419,51 @@ public class JellyseerrBridgeService
                     result.TotalFavorites += userFavorites.FavoriteCount;
                 }
                 
-                _logger.LogTrace("User {UserName} has {FavoriteCount} favorites", userFavorites.UserName, userFavorites.FavoriteCount);
+                if (userFavorites.RequestCount > 0)
+                {
+                    result.UsersWithRequests++;
+                    result.TotalRequests += userFavorites.RequestCount;
+                }
+                
+                _logger.LogTrace("User {UserName} has {FavoriteCount} favorites and {RequestCount} requests", 
+                    userFavorites.UserName, userFavorites.FavoriteCount, userFavorites.RequestCount);
             }
             
-            _logger.LogDebug("Favorites scan test completed. {UsersWithFavorites} users have favorites, total {TotalFavorites} favorite items", 
-                result.UsersWithFavorites, result.TotalFavorites);
+            _logger.LogDebug("Favorites scan test completed. {UsersWithFavorites} users have favorites ({TotalFavorites} total), {UsersWithRequests} users have requests ({TotalRequests} total)", 
+                result.UsersWithFavorites, result.TotalFavorites, result.UsersWithRequests, result.TotalRequests);
             
-            return Task.FromResult(result);
+            return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during favorites scan test");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Gets a display name for a request based on the media information.
+    /// </summary>
+    private static string GetRequestDisplayName(MediaRequest request)
+    {
+        // Try to get name from media if available, otherwise use a default
+        if (request.Media != null)
+        {
+            // For now, we'll use the external service slug or ID as a fallback
+            // In a real implementation, you might want to fetch additional metadata
+            return $"Request #{request.Id}";
+        }
+        return $"Request #{request.Id}";
+    }
+
+    /// <summary>
+    /// Gets the year for a request based on the media information.
+    /// </summary>
+    private static int? GetRequestYear(MediaRequest request)
+    {
+        // For now, return null as we don't have year information in the basic request data
+        // In a real implementation, you might want to fetch additional metadata from TMDB
+        return null;
     }
 
     /// <summary>

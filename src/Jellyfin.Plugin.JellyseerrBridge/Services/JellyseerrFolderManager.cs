@@ -258,11 +258,24 @@ public class JellyseerrFolderManager<TJellyseerr> where TJellyseerr : class, IJe
             // Set CreatedDate to current time when writing
             item.CreatedDate = DateTimeOffset.Now;
             
+            // Write JSON metadata
             var json = JellyseerrJsonSerializer.Serialize(item);
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
-            
             await File.WriteAllTextAsync(metadataFile, json);
             _logger.LogDebug("[JellyseerrFolderManager] Wrote metadata to {MetadataFile}", metadataFile);
+            
+            // Write XML metadata only if NFO file doesn't exist
+            var xmlFile = Path.Combine(targetDirectory, item.GetNfoFilename());
+            if (!File.Exists(xmlFile))
+            {
+                var xmlText = item.ToXmlString();
+                await File.WriteAllTextAsync(xmlFile, xmlText);
+                _logger.LogDebug("[JellyseerrFolderManager] Wrote XML to {XmlFile}", xmlFile);
+            }
+            else
+            {
+                _logger.LogTrace("[JellyseerrFolderManager] Skipped writing XML to {XmlFile} - file already exists", xmlFile);
+            }
             
             return true;
         }

@@ -135,7 +135,8 @@ public partial class JellyseerrSyncService
 
             // Create season folders for unmatched TV shows only
             _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
-            await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
+            //TODO: Uncomment this if nfo files don't work
+            //await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
 
             // Clean up old metadata before refreshing library
             _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
