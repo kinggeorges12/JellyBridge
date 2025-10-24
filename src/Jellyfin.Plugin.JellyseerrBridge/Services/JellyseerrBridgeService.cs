@@ -333,11 +333,11 @@ public class JellyseerrBridgeService
             _logger.LogDebug("Found {UserCount} users in Jellyfin", allUsers.Count);
             
             // Fetch all requests from Jellyseerr
-            List<MediaRequest> allRequests = new();
+            List<JellyseerrMediaRequest> allRequests = new();
             try
             {
                 var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
-                if (requestsResult is List<MediaRequest> requests)
+                if (requestsResult is List<JellyseerrMediaRequest> requests)
                 {
                     allRequests = requests;
                     _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr", allRequests.Count);
@@ -396,10 +396,7 @@ public class JellyseerrBridgeService
                     userFavorites.Requests.Add(new RequestItem
                     {
                         Id = request.Id,
-                        Name = GetRequestDisplayName(request),
                         Type = request.Type.ToString(),
-                        Year = GetRequestYear(request),
-                        Status = request.Status.ToString(),
                         CreatedAt = request.CreatedAt,
                         UpdatedAt = request.UpdatedAt,
                         MediaUrl = request.Media?.MediaUrl,
@@ -439,31 +436,6 @@ public class JellyseerrBridgeService
             _logger.LogError(ex, "Error during favorites scan test");
             throw;
         }
-    }
-
-    /// <summary>
-    /// Gets a display name for a request based on the media information.
-    /// </summary>
-    private static string GetRequestDisplayName(MediaRequest request)
-    {
-        // Try to get name from media if available, otherwise use a default
-        if (request.Media != null)
-        {
-            // For now, we'll use the external service slug or ID as a fallback
-            // In a real implementation, you might want to fetch additional metadata
-            return $"Request #{request.Id}";
-        }
-        return $"Request #{request.Id}";
-    }
-
-    /// <summary>
-    /// Gets the year for a request based on the media information.
-    /// </summary>
-    private static int? GetRequestYear(MediaRequest request)
-    {
-        // For now, return null as we don't have year information in the basic request data
-        // In a real implementation, you might want to fetch additional metadata from TMDB
-        return null;
     }
 
     /// <summary>

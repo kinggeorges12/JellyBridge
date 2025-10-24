@@ -74,7 +74,7 @@ public class JellyseerrApiService
         UserResponse,
         
         /// <summary>
-        /// Uses JellyseerrPaginatedResponse&lt;MediaRequest&gt; bridge model (maps to JellyseerrModel.MediaRequest).
+        /// Uses JellyseerrPaginatedResponse&lt;JellyseerrMediaRequest&gt; bridge model (maps to JellyseerrModel.MediaRequest).
         /// </summary>
         RequestResponse,
         
@@ -188,17 +188,17 @@ public class JellyseerrApiService
             description: "Get Jellyseerr status"
         ),
         
-        // Request endpoints - use paginated response with MediaRequest base model
+        // Request endpoints - use paginated response with JellyseerrMediaRequest model
         [JellyseerrEndpoint.ReadRequests] = new JellyseerrEndpointConfig(
             "/api/v1/request",
-            typeof(JellyseerrPaginatedResponse<MediaRequest>),
-            returnModel: typeof(List<MediaRequest>),
+            typeof(JellyseerrPaginatedResponse<JellyseerrMediaRequest>),
+            returnModel: typeof(List<JellyseerrMediaRequest>),
             isPaginated: true,
             description: "Get all requests"
         ),
         [JellyseerrEndpoint.CreateRequest] = new JellyseerrEndpointConfig(
             "/api/v1/request",
-            typeof(MediaRequest),
+            typeof(JellyseerrMediaRequest),
             method: HttpMethod.Post,
             description: "Create a new request"
         ),
@@ -208,14 +208,6 @@ public class JellyseerrApiService
             returnModel: typeof(List<JellyseerrUser>),
             isPaginated: true,
             description: "Get user list"
-        ),
-        [JellyseerrEndpoint.UserRequests] = new JellyseerrEndpointConfig(
-            "/api/v1/user/{id}/requests",
-            typeof(JellyseerrPaginatedResponse<MediaRequest>),
-            returnModel: typeof(List<MediaRequest>),
-            isPaginated: true,
-            requiresTemplateValues: true,
-            description: "Get user requests"
         ),
         
         // Discover endpoints - use paginated response with bridge models
@@ -686,6 +678,14 @@ public class JellyseerrApiService
                     ["userId"] = -1 //REQUIRED
                 }, null
             ),
+            // ReadRequests endpoint - no parameters needed for GET requests
+            JellyseerrEndpoint.ReadRequests => (
+                new Dictionary<string, object> 
+                {
+                    ["mediaType"] = "all" // Optional: all, movie, tv
+                },
+                null
+            ),
 
             // Discover endpoints - no parameters needed for GET requests
             JellyseerrEndpoint.DiscoverMovies => (
@@ -714,15 +714,6 @@ public class JellyseerrApiService
                     ["watchRegion"] = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.Region), config) 
                 },
                 null
-            ),
-            
-            // User requests endpoint - use user ID as template value for URL path
-            JellyseerrEndpoint.UserRequests => (
-                null,
-                new Dictionary<string, string> 
-                {
-                    ["id"] = "1" // Should always specify a user ID when calling this endpoint
-                }
             ),
             
             // UserList endpoint - use take parameter to get all users

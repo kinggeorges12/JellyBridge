@@ -11,7 +11,7 @@ public class SearchResult
     public int Id { get; set; }
 
     [JsonPropertyName("mediaType")]
-    public MediaType MediaType { get; set; } = new();
+    public SearchMediaType MediaType { get; set; } = new();
 
     [JsonPropertyName("popularity")]
     public double Popularity { get; set; }
@@ -143,7 +143,7 @@ public class PersonResult
 
 }
 
-public enum MediaType
+public enum SearchMediaType
 {
     [JsonPropertyName("tv")]
     Tv = 0,

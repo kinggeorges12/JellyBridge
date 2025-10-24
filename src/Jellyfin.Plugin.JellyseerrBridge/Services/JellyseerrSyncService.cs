@@ -194,45 +194,5 @@ public partial class JellyseerrSyncService
         
         return result;
     }
-
-
-    /// <summary>
-    /// Process requests from Jellyseerr.
-    /// </summary>
-    private async Task<ProcessResult> ProcessRequestsAsync(List<MediaRequest> requests)
-    {
-        var result = new ProcessResult();
-        
-        foreach (var request in requests)
-        {
-            try
-            {
-                _logger.LogDebug("Processing request {RequestId} for {MediaType} (ID: {MediaId})",
-                    request.Id, request.Type.ToString(), request.Media?.Id ?? 0);
-
-                // Update request status in Jellyfin metadata
-                await UpdateRequestStatusAsync(request);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing request {RequestId}", request.Id);
-            }
-        }
-        
-        return result;
-    }
-
-    /// <summary>
-    /// Update request status in Jellyfin metadata.
-    /// </summary>
-    private Task UpdateRequestStatusAsync(MediaRequest request)
-    {
-        _logger.LogDebug("Updating request status for {MediaType} (ID: {MediaId}): {Status}", 
-            request.Type.ToString(), request.Media?.Id ?? 0, request.Status);
-        
-        // Update request status in Jellyfin metadata
-        // Implementation depends on Jellyfin's internal APIs
-        return Task.CompletedTask;
-    }
 }
 
