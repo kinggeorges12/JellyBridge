@@ -340,6 +340,7 @@ public class JellyseerrBridgeService
                 if (requestsResult is List<JellyseerrMediaRequest> requests)
                 {
                     allRequests = requests;
+                    result.Requests = requests; // Store requests directly in result
                     _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr", allRequests.Count);
                 }
                 else
@@ -352,79 +353,22 @@ public class JellyseerrBridgeService
                 _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
             }
             
-            foreach (var user in allUsers)
+            // Count users with favorites (simplified - just count total users for now)
+            result.UsersWithFavorites = allUsers.Count;
+            result.TotalFavorites = 0; // Not tracking favorites anymore
+            
+            // Count users with requests
+            var usersWithRequests = new HashSet<Guid>();
+            foreach (var request in allRequests)
             {
-                var userFavorites = new UserFavorites
+                if (request.RequestedBy?.JellyfinUserId != null && Guid.TryParse(request.RequestedBy.JellyfinUserId, out var userId))
                 {
-                    UserId = user.Id,
-                    UserName = user.Username ?? $"User {user.Id}",
-                    Favorites = new List<FavoriteItem>(),
-                    Requests = new List<RequestItem>()
-                };
-                
-                // Get all items from all libraries
-                var allItems = _libraryManager.GetItemList(new InternalItemsQuery
-                {
-                    IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
-                    Recursive = true
-                });
-                
-                foreach (var item in allItems)
-                {
-                    var userData = _userDataManager.GetUserData(user, item);
-                    if (userData.IsFavorite)
-                    {
-                        userFavorites.Favorites.Add(new FavoriteItem
-                        {
-                            Id = item.Id,
-                            Name = item.Name,
-                            Type = item is Movie ? "Movie" : "Series",
-                            Year = item.ProductionYear,
-                            Path = item.Path
-                        });
-                    }
+                    usersWithRequests.Add(userId);
                 }
-                
-                // Find requests for this user by matching Jellyfin user ID
-                var userRequests = allRequests.Where(r => 
-                    r.RequestedBy?.JellyfinUserId == user.Id.ToString() ||
-                    r.RequestedBy?.JellyfinUsername == user.Username)
-                    .ToList();
-                
-                foreach (var request in userRequests)
-                {
-                    userFavorites.Requests.Add(new RequestItem
-                    {
-                        Id = request.Id,
-                        Type = request.Type.ToString(),
-                        CreatedAt = request.CreatedAt,
-                        UpdatedAt = request.UpdatedAt,
-                        MediaUrl = request.Media?.MediaUrl,
-                        ServiceUrl = request.Media?.ServiceUrl,
-                        Is4k = request.Is4k,
-                        SeasonCount = request.Seasons?.Count ?? 0
-                    });
-                }
-                
-                userFavorites.FavoriteCount = userFavorites.Favorites.Count;
-                userFavorites.RequestCount = userFavorites.Requests.Count;
-                result.UserFavorites.Add(userFavorites);
-                
-                if (userFavorites.FavoriteCount > 0)
-                {
-                    result.UsersWithFavorites++;
-                    result.TotalFavorites += userFavorites.FavoriteCount;
-                }
-                
-                if (userFavorites.RequestCount > 0)
-                {
-                    result.UsersWithRequests++;
-                    result.TotalRequests += userFavorites.RequestCount;
-                }
-                
-                _logger.LogTrace("User {UserName} has {FavoriteCount} favorites and {RequestCount} requests", 
-                    userFavorites.UserName, userFavorites.FavoriteCount, userFavorites.RequestCount);
             }
+            
+            result.UsersWithRequests = usersWithRequests.Count;
+            result.TotalRequests = allRequests.Count;
             
             _logger.LogDebug("Favorites scan test completed. {UsersWithFavorites} users have favorites ({TotalFavorites} total), {UsersWithRequests} users have requests ({TotalRequests} total)", 
                 result.UsersWithFavorites, result.TotalFavorites, result.UsersWithRequests, result.TotalRequests);
@@ -434,6 +378,96 @@ public class JellyseerrBridgeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during favorites scan test");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Test method to create test requests (TV show and movie) to verify API functionality.
+    /// </summary>
+    public async Task<List<JellyseerrMediaRequest>> TestAddRequestsAsync()
+    {
+        try
+        {
+            _logger.LogDebug("Testing request creation functionality...");
+            
+            var testRequestResults = new List<JellyseerrMediaRequest>();
+            
+            // Create TV show test request
+            var tvRequestParams = new Dictionary<string, object>
+            {
+                ["mediaType"] = "tv",
+                ["mediaId"] = 32692,
+                ["seasons"] = "all",
+                ["userId"] = 2
+            };
+            
+            // Create movie test request
+            var movieRequestParams = new Dictionary<string, object>
+            {
+                ["mediaType"] = "movie",
+                ["mediaId"] = 123,
+                ["userId"] = 2
+            };
+            
+            try
+            {
+                _logger.LogDebug("Creating TV test request with parameters: {Parameters}", 
+                    string.Join(", ", tvRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+                
+                var tvRequestResult = await _apiService.CallEndpointAsync(
+                    JellyseerrEndpoint.CreateRequest, 
+                    parameters: tvRequestParams
+                );
+                
+                // Check if the result indicates a successful API call
+                if (tvRequestResult is JellyseerrMediaRequest tvRequest)
+                {
+                    testRequestResults.Add(tvRequest);
+                    _logger.LogDebug("TV test request completed successfully");
+                }
+                else
+                {
+                    _logger.LogWarning("TV test request failed - API returned error or default value");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create TV test request");
+            }
+            
+            try
+            {
+                _logger.LogTrace("Creating movie test request with parameters: {Parameters}", 
+                    string.Join(", ", movieRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+                
+                var movieRequestResult = await _apiService.CallEndpointAsync(
+                    JellyseerrEndpoint.CreateRequest, 
+                    parameters: movieRequestParams
+                );
+                
+                // Check if the result indicates a successful API call
+                if (movieRequestResult is JellyseerrMediaRequest movieRequest)
+                {
+                    testRequestResults.Add(movieRequest);
+                    _logger.LogDebug("Movie test request completed successfully");
+                }
+                else
+                {
+                    _logger.LogWarning("Movie test request failed - API returned error or default value");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create movie test request");
+            }
+            
+            _logger.LogDebug("Test request creation completed with {ResultCount} successful requests", testRequestResults.Count);
+            return testRequestResults;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during test request creation");
             throw;
         }
     }

@@ -352,29 +352,32 @@ function initializeLibrarySettings(page) {
                     resultText += `Users with Requests: ${result.usersWithRequests || 0}\n`;
                     resultText += `Total Request Items: ${result.totalRequests || 0}\n\n`;
                     
-                    if (result.userFavorites && result.userFavorites.length > 0) {
-                        resultText += `User Favorites & Requests:\n`;
-                        result.userFavorites.forEach((user, index) => {
-                            resultText += `\n${index + 1}. ${user.userName}:\n`;
-                            resultText += `   Favorites: ${user.favoriteCount || 0}\n`;
-                            resultText += `   Requests: ${user.requestCount || 0}\n`;
+                    if (result.requests && result.requests.length > 0) {
+                        resultText += `Jellyseerr Requests:\n`;
+                        result.requests.forEach((request, reqIndex) => {
+                            resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
+                            resultText += `   Type: ${request.type || 'Unknown'}\n`;
+                            resultText += `   Status: ${request.status || 'Unknown'}\n`;
+                            resultText += `   Requested By: ${request.requestedBy || 'Unknown'}\n`;
+                            resultText += `   Jellyfin User: ${request.jellyfinUsername || request.jellyfinUserId || 'Unknown'}\n`;
+                            resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
                             
-                            if (user.favorites && user.favorites.length > 0) {
-                                resultText += `   \n   Favorites:\n`;
-                                user.favorites.forEach((favorite, favIndex) => {
-                                    resultText += `     ${favIndex + 1}. ${favorite.name} (${favorite.type})\n`;
-                                });
+                            if (request.media) {
+                                resultText += `   Media: ${request.media.title || 'Unknown'} (${request.media.year || 'Unknown'})\n`;
+                                resultText += `   Media Type: ${request.media.mediaType || 'Unknown'}\n`;
+                                if (request.media.tmdbId) resultText += `   TMDB ID: ${request.media.tmdbId}\n`;
+                                if (request.media.imdbId) resultText += `   IMDB ID: ${request.media.imdbId}\n`;
                             }
                             
-                            if (user.requests && user.requests.length > 0) {
-                                resultText += `   \n   Requests:\n`;
-                                user.requests.forEach((request, reqIndex) => {
-                                    resultText += `     ${reqIndex + 1}. ${request.name} (${request.type}) - Status: ${request.status}\n`;
+                            if (request.seasons && request.seasons.length > 0) {
+                                resultText += `   Seasons: ${request.seasons.length}\n`;
+                                request.seasons.forEach((season, seasonIndex) => {
+                                    resultText += `     Season ${season.seasonNumber}: ${season.status || 'Unknown'}\n`;
                                 });
                             }
                         });
                     } else {
-                        resultText += `\nNo user favorites or requests found.`;
+                        resultText += `\nNo requests found.`;
                     }
                     
                     testFavoritesScanResult.textContent = resultText;
