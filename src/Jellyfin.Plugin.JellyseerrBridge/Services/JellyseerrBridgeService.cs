@@ -757,7 +757,7 @@ public class JellyseerrBridgeService
                 // Treat null CreatedDate as very old (past cutoff date)
                 if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
                 {
-                    _logger.LogDebug("[JellyseerrBridge] ProcessItemsForCleanup: Marking {ItemType} for removal - {ItemName} (Created: {CreatedDate})", 
+                    _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Marking {ItemType} for removal - {ItemName} (Created: {CreatedDate})", 
                         itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
                     
                     var itemDirectory = folderManager.GetItemDirectory(item);
