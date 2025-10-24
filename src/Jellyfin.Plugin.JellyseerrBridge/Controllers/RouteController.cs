@@ -111,30 +111,31 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    // Add timeout to prevent hanging
-                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
-                    var scanResult = await _bridgeService.TestFavoritesScanAsync();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
                     
                     // Create test requests using CallEndpointAsync
                     _logger.LogTrace("[JellyseerrBridge] Creating test requests...");
                     
                     var testRequestResults = new List<object>();
                     
+                    // Create TV show test request
+                    var tvRequestParams = new Dictionary<string, object>
+                    {
+                        ["mediaType"] = "tv",
+                        ["mediaId"] = 32692,
+                        ["seasons"] = "all",
+                        ["userId"] = 2
+                    };
+                    
+                    // Create movie test request
+                    var movieRequestParams = new Dictionary<string, object>
+                    {
+                        ["mediaType"] = "movie",
+                        ["mediaId"] = 123,
+                        ["userId"] = 2
+                    };
+                    
                     try
                     {
-                        // Create TV show test request
-                        var tvRequestParams = new Dictionary<string, object>
-                        {
-                            ["mediaType"] = "tv",
-                            ["mediaId"] = 32692,
-                            ["seasons"] = "all",
-                            ["profileId"] = 2
-                        };
-                        
                         _logger.LogDebug("[JellyseerrBridge] Creating TV test request with parameters: {Parameters}", 
                             string.Join(", ", tvRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
                         
@@ -172,13 +173,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         testRequestResults.Add(new
                         {
                             type = "tv",
-                            parameters = new Dictionary<string, object>
-                            {
-                                ["mediaType"] = "tv",
-                                ["mediaId"] = 32692,
-                                ["seasons"] = "all",
-                                ["userId"] = 2
-                            },
+                            parameters = tvRequestParams,
                             result = (object?)null,
                             success = false,
                             error = ex.Message
@@ -187,14 +182,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     
                     try
                     {
-                        // Create movie test request
-                        var movieRequestParams = new Dictionary<string, object>
-                        {
-                            ["mediaType"] = "movie",
-                            ["mediaId"] = 123,
-                            ["userId"] = 2
-                        };
-                        
                         _logger.LogTrace("[JellyseerrBridge] Creating movie test request with parameters: {Parameters}", 
                             string.Join(", ", movieRequestParams.Select(kvp => $"{kvp.Key}={kvp.Value}")));
                         
@@ -232,17 +219,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         testRequestResults.Add(new
                         {
                             type = "movie",
-                            parameters = new Dictionary<string, string>
-                            {
-                                ["mediaType"] = "movie",
-                                ["mediaId"] = "123",
-                                ["profileId"] = "2"
-                            },
+                            parameters = movieRequestParams,
                             result = (object?)null,
                             success = false,
                             error = ex.Message
                         });
                     }
+                    
+                    _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
+                    var scanResult = await _bridgeService.TestFavoritesScanAsync();
+                    
+                    _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
                     
                     // Normalize casing for frontend (camelCase)
                     var userFavoritesCamel = scanResult.UserFavorites.Select(u => new
