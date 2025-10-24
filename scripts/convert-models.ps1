@@ -601,6 +601,36 @@ function isBasicType(typeName) {
                         // Handle case where member.type is undefined but we have a column type
                         if (!member.type && isColumn && columnType) {
                             console.log('DEBUG: No TypeScript type but have column type:', columnType, 'for property:', propertyName, 'csharpType:', csharpType);
+                            
+                            // Apply column type conversion when TypeScript type is undefined
+                            switch (columnType) {
+                                case 'integer':
+                                case 'int':
+                                    csharpType = 'int';
+                                    break;
+                                case 'varchar':
+                                case 'text':
+                                case 'string':
+                                    csharpType = 'string';
+                                    break;
+                                case 'boolean':
+                                case 'bool':
+                                    csharpType = 'bool';
+                                    break;
+                                case 'double':
+                                case 'float':
+                                case 'decimal':
+                                    csharpType = 'double';
+                                    break;
+                                case 'datetime':
+                                case 'timestamp':
+                                    csharpType = 'DateTimeOffset';
+                                    break;
+                                case 'date':
+                                    csharpType = 'DateTimeOffset';
+                                    break;
+                            }
+                            console.log('DEBUG: Applied column type conversion for', propertyName, ':', columnType, '->', csharpType);
                         }
                         
                         // Skip @RelationCount properties (calculated fields)
@@ -2695,7 +2725,7 @@ function Add-CrossNamespaceUsingStatements {
             
             foreach ($searchFile in $allFiles) {
                 $searchContent = Get-Content $searchFile.FullName -Raw
-                if ($searchContent -match "public\s+(?:static\s+)?(?:class|enum)\s+$className\b") {
+                if ($searchContent -match "public\s+(?:static\s+)?(?:class|enum)\s+$([regex]::Escape($className))\b") {
                     # Determine namespace from file path
                     if ($searchFile.FullName -like "*\Server\*") {
                         $foundNamespaces += "Server"
@@ -2895,7 +2925,7 @@ foreach ($file in $allCSharpFiles) {
                         $classSuffix = $Matches[3]
                         
                         # Now find and modify the property within the class body
-                        $propPattern = "(public\s+)($escapedPropType)(\s+$escapedPropName\s*\{[^}]*\}[^;]*;)"
+                        $propPattern = "(public\s+)($escapedPropType)(\s+$escapedPropName\s*\{[^}]*\}[^;]*=.*?;)"
                         if ($classBody -match $propPattern) {
                             $newClassBody = $classBody -replace $propPattern, '$1new $2$3'
                             if ($newClassBody -ne $classBody) {

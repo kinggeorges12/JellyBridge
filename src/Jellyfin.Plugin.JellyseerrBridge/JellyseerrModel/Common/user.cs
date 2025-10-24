@@ -67,7 +67,7 @@ public class User
     public string? PlexToken { get; set; } = null!;
 
     [JsonPropertyName("permissions")]
-    public string Permissions { get; set; } = string.Empty;
+    public int Permissions { get; set; }
 
     [JsonPropertyName("avatar")]
     public string Avatar { get; set; } = string.Empty;
