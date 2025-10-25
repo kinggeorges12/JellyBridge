@@ -9,12 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.276.0.0 - Fixed TestFavoritesScan to properly display Jellyfin user favorites and user mapping, moved favorites scanning logic into TestFavoritesScanAsync service method, made WriteMetadataAsync generic to preserve JSON properties during serialization, and improved frontend display of request information",
+        "checksum": "23C942E6EAE42BE108415EEE82CBBEF6",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.276.0.0/JellyseerrBridge-0.276.0.0-DLL.zip",
+        "version": "0.276.0.0",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-25T03:24:20.934Z"
+      },
+      {
         "checksum": "E266DC5A50E66F13F748AE5656700609",
         "version": "0.275.0.0",
         "changelog": "v0.275.0.0 - Refactored TestAddRequestsAsync to use LibraryScanAsync for better logic flow, eliminated unnecessary GUID parsing, improved type safety with JellyfinUser alias, and enhanced frontend button/endpoint alignment",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.275.0.0/JellyseerrBridge-0.275.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
-        "timestamp": "2025-10-25T02:30:37.210Z",
+        "timestamp": "2025-10-25T02:30:37.21Z",
         "dependencies": []
       },
       {

@@ -358,8 +358,8 @@ function initializeLibrarySettings(page) {
                             resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
                             resultText += `   Type: ${request.type || 'Unknown'}\n`;
                             resultText += `   Status: ${request.status || 'Unknown'}\n`;
-                            resultText += `   Requested By: ${request.requestedBy || 'Unknown'}\n`;
-                            resultText += `   Jellyfin User: ${request.jellyfinUsername || request.jellyfinUserId || 'Unknown'}\n`;
+                            resultText += `   Requested By: ${request.requestedBy?.displayName || request.requestedBy?.username || 'Unknown'}\n`;
+                            resultText += `   Jellyfin User: ${request.requestedBy?.jellyfinUsername || 'Unknown'}\n`;
                             resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
                             
                             if (request.media) {
@@ -435,8 +435,8 @@ function initializeLibrarySettings(page) {
                             resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
                             resultText += `   Type: ${request.type || 'Unknown'}\n`;
                             resultText += `   Status: ${request.status || 'Unknown'}\n`;
-                            resultText += `   Requested By: ${request.requestedBy || 'Unknown'}\n`;
-                            resultText += `   Jellyfin User: ${request.jellyfinUsername || request.jellyfinUserId || 'Unknown'}\n`;
+                            resultText += `   Requested By: ${request.requestedBy?.displayName || request.requestedBy?.username || 'Unknown'}\n`;
+                            resultText += `   Jellyfin User: ${request.requestedBy?.jellyfinUsername || 'Unknown'}\n`;
                             resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
                             
                             if (request.media) {

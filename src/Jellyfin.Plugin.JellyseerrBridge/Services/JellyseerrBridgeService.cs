@@ -85,11 +85,14 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Test method to scan all users and their favorite items, plus requests from Jellyseerr.
     /// </summary>
-    public async Task<List<JellyseerrMediaRequest>> TestFavoritesScanAsync()
+    public async Task<(List<JellyseerrMediaRequest> requests, Dictionary<JellyfinUser, List<BaseItem>> userFavorites)> TestFavoritesScanAsync()
     {
         try
         {
             _logger.LogDebug("Testing Jellyfin favorites scan functionality with Jellyseerr requests...");
+            
+            // Get all Jellyfin users and their favorites
+            var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
             
             // Fetch all requests from Jellyseerr
             try
@@ -97,19 +100,20 @@ public class JellyseerrBridgeService
                 var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
                 if (requestsResult is List<JellyseerrMediaRequest> requests)
                 {
-                    _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr", requests.Count);
-                    return requests;
+                    _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr, {UserCount} users with {FavoriteCount} favorites", 
+                        requests.Count, allFavorites.Count, allFavorites.Values.SelectMany(f => f).Count());
+                    return (requests, allFavorites);
                 }
                 else
                 {
                     _logger.LogWarning("Failed to fetch requests from Jellyseerr - unexpected result type");
-                    return new List<JellyseerrMediaRequest>();
+                    return (new List<JellyseerrMediaRequest>(), allFavorites);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
-                return new List<JellyseerrMediaRequest>();
+                return (new List<JellyseerrMediaRequest>(), allFavorites);
             }
         }
         catch (Exception ex)
@@ -588,7 +592,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
-    private async Task<bool> WriteMetadataAsync(IJellyseerrItem item)
+    private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         try
         {
@@ -604,8 +608,9 @@ public class JellyseerrBridgeService
             // Set CreatedDate to current time when writing
             item.CreatedDate = DateTimeOffset.Now;
             
-            // Write JSON metadata
+            // Write JSON metadata - serialize as concrete type to preserve JSON attributes
             var json = JellyseerrJsonSerializer.Serialize(item);
+            
             var metadataFile = Path.Combine(targetDirectory, "metadata.json");
             await File.WriteAllTextAsync(metadataFile, json);
             _logger.LogDebug("[JellyseerrBridge] Wrote metadata to {MetadataFile}", metadataFile);
