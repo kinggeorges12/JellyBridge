@@ -10,6 +10,7 @@ using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Library;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
@@ -21,13 +22,15 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         private readonly JellyseerrSyncService _syncService;
         private readonly JellyseerrApiService _apiService;
         private readonly JellyseerrBridgeService _bridgeService;
+        private readonly IUserManager _userManager;
 
-        public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService)
+        public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService, IUserManager userManager)
         {
             _logger = new JellyseerrLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
             _syncService = syncService;
             _apiService = apiService;
             _bridgeService = bridgeService;
+            _userManager = userManager;
             _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
         }
 
@@ -52,10 +55,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     var config = Plugin.GetConfiguration();
                     
                     _logger.LogTrace("[JellyseerrBridge] Getting existing movies...");
-                    var existingMovies = matchedItems.OfType<Movie>().ToList();
+                    var existingMovies = matchedItems.Where(m => m.JellyfinItem is Movie).Select(m => m.JellyfinItem).Cast<Movie>().ToList();
                     
                     _logger.LogTrace("[JellyseerrBridge] Getting existing shows...");
-                    var existingShows = matchedItems.OfType<Series>().ToList();
+                    var existingShows = matchedItems.Where(m => m.JellyfinItem is Series).Select(m => m.JellyfinItem).Cast<Series>().ToList();
                     
                     _logger.LogTrace("[JellyseerrBridge] Preparing response...");
                     
@@ -115,51 +118,24 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     // Create test requests using the bridge service
                     _logger.LogTrace("[JellyseerrBridge] Creating test requests...");
                     
-                    //TODO: disabled for testing
-                    // var testRequestResults = await _bridgeService.TestAddRequestsAsync();
-                    
                     _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
-                    var scanResult = await _bridgeService.TestFavoritesScanAsync();
+                    
+                    // Use the existing TestFavoritesScanAsync method which already handles this logic
+                    var requests = await _bridgeService.TestFavoritesScanAsync();
                     
                     _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
-                    
-                    // Convert requests to camelCase for frontend
-                    var requestsCamel = scanResult.Requests.Select(r => new
-                    {
-                        id = r.Id,
-                        type = r.Type.ToString(),
-                        createdAt = r.CreatedAt,
-                        updatedAt = r.UpdatedAt,
-                        status = r.Status.ToString(),
-                        requestedBy = r.RequestedBy?.Username,
-                        jellyfinUserId = r.RequestedBy?.JellyfinUserId,
-                        jellyfinUsername = r.RequestedBy?.JellyfinUsername,
-                        media = r.Media != null ? new
-                        {
-                            id = r.Media.Id,
-                            mediaType = r.Media.MediaType.ToString(),
-                            tmdbId = r.Media.TmdbId,
-                            tvdbId = r.Media.TvdbId,
-                            imdbId = r.Media.ImdbId
-                        } : null,
-                        seasons = r.Seasons?.Select(s => new
-                        {
-                            id = s.Id,
-                            seasonNumber = s.SeasonNumber,
-                            status = s.Status.ToString()
-                        }).ToList()
-                    }).ToList();
+                    _logger.LogDebug("[JellyseerrBridge] Found {RequestCount} requests to process", requests?.Count ?? 0);
 
                     return new
                     {
                         success = true,
-                        message = "Favorites scan test completed successfully with test request creation",
-                        totalUsers = scanResult.TotalUsers,
-                        usersWithFavorites = scanResult.UsersWithFavorites,
-                        totalFavorites = scanResult.TotalFavorites,
-                        usersWithRequests = scanResult.UsersWithRequests,
-                        totalRequests = scanResult.TotalRequests,
-                        requests = requestsCamel
+                        message = "Favorites scan test completed successfully",
+                        totalUsers = _userManager.Users.Count(),
+                        usersWithFavorites = _userManager.Users.Count(),
+                        totalFavorites = 0,
+                        usersWithRequests = requests?.Select(r => r.RequestedBy?.JellyfinUserId).Where(id => !string.IsNullOrEmpty(id)).Distinct().Count() ?? 0,
+                        totalRequests = requests?.Count ?? 0,
+                        requests = requests
                     };
                 }, _logger, "Test Favorites Scan");
                 
@@ -197,6 +173,52 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
+        [HttpPost("TestFavoritesRequest")]
+        public async Task<IActionResult> TestFavoritesRequest()
+        {
+            _logger.LogDebug("[JellyseerrBridge] TestFavoritesRequest endpoint called");
+            
+            try
+            {
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
+                {
+                    _logger.LogTrace("[JellyseerrBridge] Creating test requests for Jellyfin favorites...");
+                    
+                    var testRequestResults = await _bridgeService.TestAddRequestsAsync();
+                    
+                    _logger.LogTrace("[JellyseerrBridge] TestAddRequestsAsync completed successfully");
+                    _logger.LogDebug("[JellyseerrBridge] Created {RequestCount} test requests", testRequestResults?.Count ?? 0);
+
+                    return new
+                    {
+                        success = true,
+                        message = "Test request creation completed successfully",
+                        requests = testRequestResults
+                    };
+                }, _logger, "Test Favorites Request");
+                
+                return Ok(result);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("[JellyseerrBridge] TestFavoritesRequest timed out after 2 minutes");
+                return StatusCode(408, new { 
+                    error = "Request timeout",
+                    details = "Request creation took too long and was cancelled.",
+                    requests = new List<object>()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Error in TestFavoritesRequest endpoint");
+                return StatusCode(500, new { 
+                    error = "Internal server error", 
+                    details = ex.Message,
+                    requests = new List<object>()
+                });
+            }
+        }
 
         [HttpGet("PluginConfiguration")]
         public IActionResult GetPluginConfiguration()
@@ -424,7 +446,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    return await _syncService.SyncBridgeFoldersAsync();
+                    return await _syncService.SyncBridgeAsync();
                 }, _logger, "Manual Sync");
                 
                 if (result.Success)

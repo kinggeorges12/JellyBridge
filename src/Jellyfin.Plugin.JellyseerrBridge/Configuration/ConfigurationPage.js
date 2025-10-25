@@ -395,6 +395,84 @@ function initializeLibrarySettings(page) {
             }
         });
     }
+
+    // Test Favorites Request button functionality
+    const testFavoritesRequestButton = page.querySelector('#testFavoritesRequest');
+    const testFavoritesRequestResult = page.querySelector('#testFavoritesRequestResult');
+    const testFavoritesRequestRawResult = page.querySelector('#testFavoritesRequestRawResult');
+    
+    if (testFavoritesRequestButton) {
+        testFavoritesRequestButton.addEventListener('click', async function() {
+            // Show immediate feedback that button was clicked
+            testFavoritesRequestResult.textContent = '🔄 Testing favorites request creation...';
+            testFavoritesRequestResult.style.display = 'block';
+            testFavoritesRequestRawResult.value = 'Loading...';
+            
+            testFavoritesRequestButton.disabled = true;
+            testFavoritesRequestButton.querySelector('span').textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/JellyseerrBridge/TestFavoritesRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                // Display raw JSON response in textbox
+                testFavoritesRequestRawResult.value = JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    let resultText = `Jellyseerr Request Creation Test Results:\n`;
+                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
+                    resultText += `Message: ${result.message || 'No message'}\n\n`;
+                    
+                    if (result.requests && result.requests.length > 0) {
+                        resultText += `Created Requests (${result.requests.length}):\n`;
+                        result.requests.forEach((request, reqIndex) => {
+                            resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
+                            resultText += `   Type: ${request.type || 'Unknown'}\n`;
+                            resultText += `   Status: ${request.status || 'Unknown'}\n`;
+                            resultText += `   Requested By: ${request.requestedBy || 'Unknown'}\n`;
+                            resultText += `   Jellyfin User: ${request.jellyfinUsername || request.jellyfinUserId || 'Unknown'}\n`;
+                            resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
+                            
+                            if (request.media) {
+                                resultText += `   Media: ${request.media.title || 'Unknown'} (${request.media.year || 'Unknown'})\n`;
+                                resultText += `   Media Type: ${request.media.mediaType || 'Unknown'}\n`;
+                                if (request.media.tmdbId) resultText += `   TMDB ID: ${request.media.tmdbId}\n`;
+                                if (request.media.imdbId) resultText += `   IMDB ID: ${request.media.imdbId}\n`;
+                            }
+                            
+                            if (request.seasons && request.seasons.length > 0) {
+                                resultText += `   Seasons: ${request.seasons.length}\n`;
+                                request.seasons.forEach((season, seasonIndex) => {
+                                    resultText += `     Season ${season.seasonNumber}: ${season.status || 'Unknown'}\n`;
+                                });
+                            }
+                        });
+                    } else {
+                        resultText += `\nNo requests created.`;
+                    }
+                    
+                    testFavoritesRequestResult.textContent = resultText;
+                    testFavoritesRequestResult.style.display = 'block';
+                } else {
+                    testFavoritesRequestResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
+                    testFavoritesRequestResult.style.display = 'block';
+                }
+            } catch (error) {
+                testFavoritesRequestResult.textContent = `❌ Test failed: ${error.message}`;
+                testFavoritesRequestResult.style.display = 'block';
+                testFavoritesRequestRawResult.value = `Error: ${error.message}`;
+            } finally {
+                testFavoritesRequestButton.disabled = false;
+                testFavoritesRequestButton.querySelector('span').textContent = 'Jellyseerr Request for Jellyfin Favorites';
+            }
+        });
+    }
 }
 
 

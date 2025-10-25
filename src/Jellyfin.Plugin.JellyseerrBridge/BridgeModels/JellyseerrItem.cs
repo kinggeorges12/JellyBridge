@@ -101,14 +101,8 @@ public interface IJellyseerrItem
         // Always include TMDB ID
         parts.Add($"[tmdbid-{Id}]");
         
-        //TODO: Testing
-        // Add extra ID if available
-        if (!string.IsNullOrEmpty(ExtraId))
-        {
-            parts.Add($"[{ExtraIdName}-{ExtraId}]");
-        } else {
-            parts.Add($"[{ExtraIdName}-]");
-        }
+        // Add extra ID name to identify the item as a movie or show in the folder name
+        parts.Add($"[{ExtraIdName}]");
         
         return string.Join(" ", parts);
     }

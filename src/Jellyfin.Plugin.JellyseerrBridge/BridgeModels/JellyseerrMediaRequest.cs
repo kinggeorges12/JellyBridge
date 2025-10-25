@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
@@ -28,4 +31,41 @@ public class JellyseerrMediaRequest : MediaRequest
     public new JellyseerrMedia Media { get; set; } = new();
     
     // All other properties inherit from base class with correct types and JSON names
+    
+    /// <summary>
+    /// Tests if this request matches a Jellyfin BaseItem by comparing TMDB IDs and media types.
+    /// </summary>
+    /// <param name="jellyfinItem">The Jellyfin item to compare against</param>
+    /// <returns>True if the request matches the Jellyfin item, false otherwise</returns>
+    public bool EqualsItem(BaseItem jellyfinItem)
+    {
+        if (jellyfinItem == null || Media == null)
+            return false;
+            
+        // Compare media types first
+        var jellyfinType = jellyfinItem switch
+        {
+            Movie => MediaType.MOVIE,
+            Series => MediaType.TV,
+            _ => MediaType.MOVIE // Default fallback
+        };
+        if (Type != jellyfinType)
+            return false;
+            
+        // Get TMDB ID from Jellyfin item
+        int? jellyfinTmdbId = null;
+        // Try to get TMDB ID from provider IDs
+        if (jellyfinItem.ProviderIds.TryGetValue("Tmdb", out var providerId) && !string.IsNullOrEmpty(providerId))
+        {
+            if (int.TryParse(providerId, out var id))
+            {
+                jellyfinTmdbId = id;
+            }
+        }
+        if (!jellyfinTmdbId.HasValue)
+            return false;
+            
+        // Compare TMDB IDs
+        return Media.Id == jellyfinTmdbId.Value;
+    }
 }

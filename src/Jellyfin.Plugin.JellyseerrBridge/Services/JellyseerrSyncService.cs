@@ -51,7 +51,7 @@ public partial class JellyseerrSyncService
     /// Sync folder structure and JSON metadata files for manual sync.
     /// Note: Caller is responsible for locking.
     /// </summary>
-    public async Task<SyncResult> SyncBridgeFoldersAsync()
+    public async Task<SyncResult> SyncBridgeAsync()
     {
         var result = new SyncResult();
 
@@ -113,26 +113,29 @@ public partial class JellyseerrSyncService
             // Run library scan to find matches and get unmatched items
             var (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
 
+            // Create ignore files for matched items
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: 🔄 Creating ignore files for {MatchCount} matched items", matchedItems.Count);
+            await _bridgeService.CreateIgnoreFilesAsync(matchedItems);
+
             // Separate unmatched items by type for processing
             var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
             var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
 
             // Create placeholder videos only for unmatched items
-            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies...", unmatchedMovies.Count);
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies...", unmatchedMovies.Count);
             var processedMovies = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
 
-            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating placeholder videos for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
             var processedShows = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedShows);
 
             // Create season folders for unmatched TV shows only
-            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: 📺 Creating season folders for {UnmatchedShowCount} unmatched shows...", unmatchedShows.Count);
             //TODO: Uncomment this if nfo files don't work
             //await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
 
             // Clean up old metadata before refreshing library
-            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
+            _logger.LogDebug("[JellyseerrSyncService] CreateFolderStructureAsync: 🧹 Cleaning up old metadata...");
             var cleanupResult = await _bridgeService.CleanupMetadataAsync();
-            _logger.LogTrace("[JellyseerrSyncService] CreateFolderStructureAsync: ✅ Cleanup completed - {CleanupResult}", cleanupResult.ToString());
             
             result.Success = true;
             result.MoviesResult = moviesResult;

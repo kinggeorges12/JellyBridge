@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "E266DC5A50E66F13F748AE5656700609",
+        "version": "0.275.0.0",
+        "changelog": "v0.275.0.0 - Refactored TestAddRequestsAsync to use LibraryScanAsync for better logic flow, eliminated unnecessary GUID parsing, improved type safety with JellyfinUser alias, and enhanced frontend button/endpoint alignment",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.275.0.0/JellyseerrBridge-0.275.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-25T02:30:37.210Z",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.10.7.0",
         "dependencies": [],
         "timestamp": "2025-10-24T20:34:30.166Z",
