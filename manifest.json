@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-25T23:29:03.033Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.282.0.0/JellyseerrBridge-0.282.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.282.0.0 - Added error handling for null/empty ToString() results in GetJellyseerrItemDirectory",
+        "version": "0.282.0.0",
+        "checksum": "C802E4FB2F3B9BA856CE587F5F6F269C",
+        "dependencies": []
+      },
+      {
         "version": "0.281.0.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.281.0.0/JellyseerrBridge-0.281.0.0-DLL.zip",
         "changelog": "v0.281.0.0 - Fixed user ID matching with GUID conversion, improved button disabled styling, added Library Prefix validation, and refined filename sanitization",
