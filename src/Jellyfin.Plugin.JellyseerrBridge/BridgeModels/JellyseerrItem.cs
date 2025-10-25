@@ -146,5 +146,6 @@ public interface IJellyseerrItem
     /// <summary>
     /// The network tag for the media item.
     /// </summary>
+    [JsonIgnore]
     string NetworkTag { get; set; }
 }

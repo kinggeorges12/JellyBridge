@@ -117,7 +117,8 @@ public static class JellyseerrFolderUtils
         // Normalize whitespace
         cleaned = Regex.Replace(cleaned, "\\s{2,}", " ");             // collapse multiple spaces
         cleaned = Regex.Replace(cleaned, "_+", "_");                  // collapse multiple underscores
-        cleaned = cleaned.Trim().Trim('-', '_', '.');
+        cleaned = cleaned.TrimStart();  // Trim leading whitespace only
+        cleaned = cleaned.TrimEnd(' ', '\t', '\n', '\r', '.');  // Trim trailing whitespace and periods
 
         return cleaned;
     }

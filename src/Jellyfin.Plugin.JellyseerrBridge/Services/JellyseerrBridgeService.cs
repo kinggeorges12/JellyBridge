@@ -199,8 +199,12 @@ public class JellyseerrBridgeService
         
         // Create a lookup for Jellyseerr users by their Jellyfin user ID for quick access
         var jellyseerrUserLookup = jellyseerrUsers
-            .Where(u => !string.IsNullOrEmpty(u.JellyfinUserId))
-            .ToDictionary(u => u.JellyfinUserId!, u => u);
+            .Where(u => !string.IsNullOrEmpty(u.JellyfinUserGuid))
+            .ToDictionary(u => u.JellyfinUserGuid!, u => u);
+        
+        _logger.LogTrace("Jellyseerr user lookup created with {Count} users: {UserLookup}", 
+            jellyseerrUserLookup.Count, 
+            string.Join(", ", jellyseerrUserLookup.Select(kvp => $"{kvp.Key}->{kvp.Value.JellyfinUsername}")));
         
         // Loop through all favorites to find the first Jellyseerr user for each bridge-only item
         foreach (var (jellyfinUser, favoriteItems) in allFavorites)
@@ -527,8 +531,15 @@ public class JellyseerrBridgeService
         {
             return JellyseerrFolderUtils.GetBaseDirectory();
         }
-        var folderName = JellyseerrFolderUtils.SanitizeFileName(item.ToString() ?? string.Empty);
-        return Path.Combine(JellyseerrFolderUtils.GetBaseDirectory(), folderName);
+        var itemFolder = JellyseerrFolderUtils.SanitizeFileName(item.ToString() ?? string.Empty);
+        if(Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries)) && !string.IsNullOrEmpty(item.NetworkTag))
+        {
+            var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+            var networkFolder = JellyseerrFolderUtils.SanitizeFileName(networkPrefix + item.NetworkTag);
+            return Path.Combine(JellyseerrFolderUtils.GetBaseDirectory(), networkFolder, itemFolder);
+        }
+        // If not using network prefix, just store in the base directory with the folder name
+        return Path.Combine(JellyseerrFolderUtils.GetBaseDirectory(), itemFolder);
     }
 
     /// <summary>

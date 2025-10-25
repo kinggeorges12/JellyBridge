@@ -172,6 +172,12 @@
                 .disabled .inputLabel {
                     color: #999;
                 }
+                
+                /* Disabled button styling */
+                button:disabled {
+                    opacity: 0.6;
+                    pointer-events: none;
+                }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -233,7 +239,7 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="CreateSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">[NOT IMPLEMENTED] Create separate libraries for streaming services</span>
+                                <span class="checkboxLabel">Create separate libraries for streaming services</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
@@ -244,7 +250,7 @@
 
                         <div class="inputContainer">
                             <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                            <div class="fieldDescription">Prefix for streaming service library names. The folder structure would look like: /data/Jellyseerr/Provider - FOX/The Matrix (1999)</div>
+                            <div class="fieldDescription">Prefix for streaming service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/Jellyseerr/Network - FOX/The Matrix (1999)</code></div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
