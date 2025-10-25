@@ -346,6 +346,8 @@ function initializeLibrarySettings(page) {
                 
                 if (response.ok) {
                     let resultText = `Favorites & Requests Scan Test Results:\n`;
+                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
+                    resultText += `Message: ${result.message || 'No message'}\n`;
                     resultText += `Total Users: ${result.totalUsers || 0}\n`;
                     resultText += `Users with Favorites: ${result.usersWithFavorites || 0}\n`;
                     resultText += `Total Favorite Items: ${result.totalFavorites || 0}\n`;
@@ -353,7 +355,7 @@ function initializeLibrarySettings(page) {
                     resultText += `Total Request Items: ${result.totalRequests || 0}\n\n`;
                     
                     if (result.requests && result.requests.length > 0) {
-                        resultText += `Jellyseerr Requests:\n`;
+                        resultText += `Jellyseerr Requests (${result.requests.length}):\n`;
                         result.requests.forEach((request, reqIndex) => {
                             resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
                             resultText += `   Type: ${request.type || 'Unknown'}\n`;
@@ -363,7 +365,7 @@ function initializeLibrarySettings(page) {
                             resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
                             
                             if (request.media) {
-                                resultText += `   Media: ${request.media.title || 'Unknown'} (${request.media.year || 'Unknown'})\n`;
+                                resultText += `   Media: ${request.media.title || request.media.name || 'Unknown'} (${request.media.year || request.media.releaseDate || 'Unknown'})\n`;
                                 resultText += `   Media Type: ${request.media.mediaType || 'Unknown'}\n`;
                                 if (request.media.tmdbId) resultText += `   TMDB ID: ${request.media.tmdbId}\n`;
                                 if (request.media.imdbId) resultText += `   IMDB ID: ${request.media.imdbId}\n`;
@@ -377,13 +379,19 @@ function initializeLibrarySettings(page) {
                             }
                         });
                     } else {
-                        resultText += `\nNo requests found.`;
+                        resultText += `No requests found.`;
                     }
                     
                     testFavoritesScanResult.textContent = resultText;
                     testFavoritesScanResult.style.display = 'block';
                 } else {
-                    testFavoritesScanResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
+                    let resultText = `Favorites & Requests Scan Test Results:\n`;
+                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
+                    resultText += `Error: ${result.error || 'Unknown error'}\n`;
+                    resultText += `Message: ${result.message || 'No message'}\n`;
+                    resultText += `Details: ${result.details || 'No details'}\n`;
+                    
+                    testFavoritesScanResult.textContent = resultText;
                     testFavoritesScanResult.style.display = 'block';
                 }
             } catch (error) {
@@ -404,12 +412,12 @@ function initializeLibrarySettings(page) {
     if (testFavoritesRequestButton) {
         testFavoritesRequestButton.addEventListener('click', async function() {
             // Show immediate feedback that button was clicked
-            testFavoritesRequestResult.textContent = '🔄 Testing favorites request creation...';
+            testFavoritesRequestResult.textContent = '🔄 Syncing to Jellyseerr...';
             testFavoritesRequestResult.style.display = 'block';
             testFavoritesRequestRawResult.value = 'Loading...';
             
             testFavoritesRequestButton.disabled = true;
-            testFavoritesRequestButton.querySelector('span').textContent = 'Testing...';
+            testFavoritesRequestButton.querySelector('span').textContent = 'Syncing...';
             
             try {
                 const response = await fetch('/JellyseerrBridge/TestFavoritesRequest', {
@@ -425,42 +433,36 @@ function initializeLibrarySettings(page) {
                 testFavoritesRequestRawResult.value = JSON.stringify(result, null, 2);
                 
                 if (response.ok) {
-                    let resultText = `Jellyseerr Request Creation Test Results:\n`;
+                    let resultText = `Sync to Jellyseerr Results:\n`;
                     resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-                    resultText += `Message: ${result.message || 'No message'}\n\n`;
+                    resultText += `Message: ${result.message || 'No message'}\n`;
                     
-                    if (result.requests && result.requests.length > 0) {
-                        resultText += `Created Requests (${result.requests.length}):\n`;
-                        result.requests.forEach((request, reqIndex) => {
-                            resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
-                            resultText += `   Type: ${request.type || 'Unknown'}\n`;
-                            resultText += `   Status: ${request.status || 'Unknown'}\n`;
-                            resultText += `   Requested By: ${request.requestedBy?.displayName || request.requestedBy?.username || 'Unknown'}\n`;
-                            resultText += `   Jellyfin User: ${request.requestedBy?.jellyfinUsername || 'Unknown'}\n`;
-                            resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
-                            
-                            if (request.media) {
-                                resultText += `   Media: ${request.media.title || 'Unknown'} (${request.media.year || 'Unknown'})\n`;
-                                resultText += `   Media Type: ${request.media.mediaType || 'Unknown'}\n`;
-                                if (request.media.tmdbId) resultText += `   TMDB ID: ${request.media.tmdbId}\n`;
-                                if (request.media.imdbId) resultText += `   IMDB ID: ${request.media.imdbId}\n`;
-                            }
-                            
-                            if (request.seasons && request.seasons.length > 0) {
-                                resultText += `   Seasons: ${request.seasons.length}\n`;
-                                request.seasons.forEach((season, seasonIndex) => {
-                                    resultText += `     Season ${season.seasonNumber}: ${season.status || 'Unknown'}\n`;
-                                });
-                            }
-                        });
-                    } else {
-                        resultText += `\nNo requests created.`;
+                    if (result.details) {
+                        resultText += `\nDetails: ${result.details}\n`;
+                    }
+                    
+                    if (result.moviesResult) {
+                        resultText += `\nMovies Result:\n`;
+                        resultText += `  Created: ${result.moviesResult.created || 0}\n`;
+                        resultText += `  Updated: ${result.moviesResult.updated || 0}\n`;
+                    }
+                    
+                    if (result.showsResult) {
+                        resultText += `\nShows Result:\n`;
+                        resultText += `  Created: ${result.showsResult.created || 0}\n`;
+                        resultText += `  Updated: ${result.showsResult.updated || 0}\n`;
                     }
                     
                     testFavoritesRequestResult.textContent = resultText;
                     testFavoritesRequestResult.style.display = 'block';
                 } else {
-                    testFavoritesRequestResult.textContent = `❌ Test failed: ${result.message || result.error || 'Unknown error'}`;
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
+                    resultText += `Error: ${result.error || 'Unknown error'}\n`;
+                    resultText += `Message: ${result.message || 'No message'}\n`;
+                    resultText += `Details: ${result.details || 'No details'}\n`;
+                    
+                    testFavoritesRequestResult.textContent = resultText;
                     testFavoritesRequestResult.style.display = 'block';
                 }
             } catch (error) {
@@ -469,7 +471,7 @@ function initializeLibrarySettings(page) {
                 testFavoritesRequestRawResult.value = `Error: ${error.message}`;
             } finally {
                 testFavoritesRequestButton.disabled = false;
-                testFavoritesRequestButton.querySelector('span').textContent = 'Jellyseerr Request for Jellyfin Favorites';
+                testFavoritesRequestButton.querySelector('span').textContent = 'Sync to Jellyseerr';
             }
         });
     }

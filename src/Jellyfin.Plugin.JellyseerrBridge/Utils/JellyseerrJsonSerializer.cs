@@ -111,6 +111,9 @@ public class JellyseerrPropertiesConverter<T> : JsonConverter<T> where T : class
         
         foreach (PropertyInfo prop in allProperties)
         {
+            // Skip properties marked with JsonIgnore only at the current level (not inherited)
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>(false) != null) continue;
+            
             // Get the JsonPropertyName attribute if present
             var jsonNameAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
             string jsonName = jsonNameAttr?.Name ?? prop.Name;
