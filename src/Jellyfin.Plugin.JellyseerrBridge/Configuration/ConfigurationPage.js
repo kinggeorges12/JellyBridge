@@ -27,7 +27,13 @@ function scrollToElement(elementId, offset = 20) {
 const validators = {
     notNull: (value) => !!value,
     url: (value) => /^https?:\/\/.+/.test(value),
-    number: (value) => !value || !isNaN(parseFloat(value))
+    number: (value) => !value || !isNaN(parseFloat(value)),
+    windowsFilename: (value) => {
+        if (!value) return true; // Allow empty values
+        // Check for invalid Windows filename characters: \ / : * ? " < > |
+        const invalidChars = /[\\/:*?"<>|]/;
+        return !invalidChars.test(value);
+    }
 };
 
 // Central field validation function
@@ -387,6 +393,14 @@ function initializeAdvancedSettings(page) {
             updateLibraryPrefixState();
         });
     }
+    
+    // Library Prefix real-time validation
+    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
+    if (libraryPrefixInput) {
+        libraryPrefixInput.addEventListener('input', function() {
+            validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
+        });
+    }
 }
 
 function updateClearButtonVisibility(clearButton, searchValue) {
@@ -611,6 +625,9 @@ function savePluginConfiguration(view) {
     if (!validateField('RetryAttempts', validators.number, 'Invalid Retry Attempts').isValid) return;
     if (!validateField('MaxDiscoverPages', validators.number, 'Invalid Max Discover Pages').isValid) return;
     if (!validateField('MaxCollectionDays', validators.number, 'Invalid Max Collection Days').isValid) return;
+    
+    // Validate Library Prefix for Windows filename compatibility
+    if (!validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
     
     // Use our custom endpoint to get the current configuration
     return fetch('/JellyseerrBridge/PluginConfiguration')

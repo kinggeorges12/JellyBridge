@@ -33,4 +33,14 @@ public class JellyseerrUser : User
     
     [JsonPropertyName("settings")]
     public object? Settings { get; set; } // Keep as object to avoid circular references
+    
+    /// <summary>
+    /// Helper property that converts the JellyfinUserId string to a proper GUID format.
+    /// Jellyseerr stores Jellyfin user IDs without hyphens, but Jellyfin uses standard GUID format with hyphens.
+    /// </summary>
+    [JsonIgnore]
+    public string? JellyfinUserGuid => 
+        !string.IsNullOrEmpty(JellyfinUserId) && Guid.TryParse(JellyfinUserId, out var guid) 
+            ? guid.ToString() 
+            : null;
 }

@@ -21,7 +21,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(IsEnabled), true },
         { nameof(SyncIntervalHours), 24 },
         { nameof(CreateSeparateLibraries), false },
-        { nameof(LibraryPrefix), "Provider - " },
+        { nameof(LibraryPrefix), string.Empty },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(AutoSyncOnStartup), false },
         { nameof(MaxDiscoverPages), 1 },
