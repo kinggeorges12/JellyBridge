@@ -266,6 +266,18 @@
                             <div class="fieldDescription">Test the favorites scanning functionality to see what content each user has favorited.</div>
                             <div id="testFavoritesScanResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="testFavoritesRequest" class="raised button block emby-button">
+                                <span>Jellyseerr Request for Jellyfin Favorites</span>
+                            </button>
+                            <div class="fieldDescription">Test creating Jellyseerr requests for Jellyfin favorites.</div>
+                            <div id="testFavoritesRequestResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div class="inputContainer" style="margin-top: 10px;">
+                                <textarea is="emby-textarea" id="testFavoritesRequestRawResult" placeholder="Raw JSON response will appear here..." readonly style="height: 200px; font-family: monospace; font-size: 12px;"></textarea>
+                                <div class="fieldDescription">Raw JSON response from the TestFavoritesRequest endpoint</div>
+                            </div>
+                        </div>
                     </details>
 
                     <br>
