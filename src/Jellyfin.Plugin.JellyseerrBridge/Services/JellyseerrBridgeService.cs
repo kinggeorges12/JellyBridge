@@ -531,7 +531,12 @@ public class JellyseerrBridgeService
         {
             return JellyseerrFolderUtils.GetBaseDirectory();
         }
-        var itemFolder = JellyseerrFolderUtils.SanitizeFileName(item.ToString() ?? string.Empty);
+        var itemString = item.ToString();
+        if (string.IsNullOrEmpty(itemString))
+        {
+            throw new ArgumentException($"Item {item.GetType().Name} returned null or empty string from ToString()", nameof(item));
+        }
+        var itemFolder = JellyseerrFolderUtils.SanitizeFileName(itemString);
         if(Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries)) && !string.IsNullOrEmpty(item.NetworkTag))
         {
             var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
