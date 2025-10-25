@@ -43,85 +43,65 @@ public class JellyseerrBridgeService
     #region Testing/Deprecated Methods
 
     /// <summary>
-    /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
+    /// Create season folders for all TV shows.
+    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
     /// </summary>
-    public async Task<(List<IJellyseerrItem> allBridgeItems, List<JellyMatch> matchedItems, List<IJellyseerrItem> unmatchedItems)> TestLibraryScanAsync()
+    [Obsolete("This method is no longer needed after default nfo files are added to movies and shows.")]
+    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
     {
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
         
-        try
+        foreach (var show in shows)
         {
-            _logger.LogDebug("Testing Jellyfin library scan functionality against bridge folder metadata...");
-            
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            try
             {
-                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return (new List<IJellyseerrItem>(), new List<JellyMatch>(), new List<IJellyseerrItem>());
-            }
-
-            // Read bridge folder metadata
-            var (bridgeMovieMetadata, bridgeShowMetadata) = await ReadMetadataAsync();
-
-            // Find matches between bridge folder metadata and existing Jellyfin items
-            var (matchedItems, unmatchedItems) = await LibraryScanAsync(bridgeMovieMetadata, bridgeShowMetadata);
-
-            _logger.LogTrace("Library scan test completed. Found {MovieCount} movies, {ShowCount} shows, {MatchCount} matches", 
-                bridgeMovieMetadata.Count, bridgeShowMetadata.Count, matchedItems.Count);
-
-            // Return all bridge items (not just matches) for test display purposes
-            var allBridgeItems = new List<IJellyseerrItem>();
-            allBridgeItems.AddRange(bridgeMovieMetadata.Cast<IJellyseerrItem>());
-            allBridgeItems.AddRange(bridgeShowMetadata.Cast<IJellyseerrItem>());
-
-            return (allBridgeItems, matchedItems, unmatchedItems);
+                var showFolderPath = GetJellyseerrItemDirectory(show);
+                
+                _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                    show.MediaName, showFolderPath);
+                
+                var seasonFolderName = "Season 01";
+                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
+                
+                try
+                {
+                    // Create season folder if it doesn't exist
+                    if (!Directory.Exists(seasonFolderPath))
+                    {
+                        Directory.CreateDirectory(seasonFolderPath);
+                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    // Generate season placeholder video
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    if (placeholderSuccess)
+                    {
+                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during library scan test");
-            return (new List<IJellyseerrItem>(), new List<JellyMatch>(), new List<IJellyseerrItem>());
-        }
-    }
-
-    /// <summary>
-    /// Test method to scan all users and their favorite items, plus requests from Jellyseerr.
-    /// </summary>
-    public async Task<(List<JellyseerrMediaRequest> requests, Dictionary<JellyfinUser, List<BaseItem>> userFavorites)> TestFavoritesScanAsync()
-    {
-        try
-        {
-            _logger.LogDebug("Testing Jellyfin favorites scan functionality with Jellyseerr requests...");
-            
-            // Get all Jellyfin users and their favorites
-            var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
-            
-            // Fetch all requests from Jellyseerr
-            try
-            {
-                var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
-                if (requestsResult is List<JellyseerrMediaRequest> requests)
-                {
-                    _logger.LogDebug("Fetched {RequestCount} requests from Jellyseerr, {UserCount} users with {FavoriteCount} favorites", 
-                        requests.Count, allFavorites.Count, allFavorites.Values.SelectMany(f => f).Count());
-                    return (requests, allFavorites);
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to fetch requests from Jellyseerr - unexpected result type");
-                    return (new List<JellyseerrMediaRequest>(), allFavorites);
+                    _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
-                return (new List<JellyseerrMediaRequest>(), allFavorites);
+                _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during favorites scan test");
-            throw;
-        }
+        
+        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
     }
+
+    #endregion
+
+    #region Writing File/Folder Data
 
 
     /// <summary>
@@ -266,67 +246,6 @@ public class JellyseerrBridgeService
         
         return uniqueItemsWithFirstUser;
     }
-
-    /// <summary>
-    /// Create season folders for all TV shows.
-    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
-    /// </summary>
-    [Obsolete("This method is deprecated and will be removed in a future version.")]
-    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
-    {
-        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
-        
-        foreach (var show in shows)
-        {
-            try
-            {
-                var showFolderPath = GetJellyseerrItemDirectory(show);
-                
-                _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
-                    show.MediaName, showFolderPath);
-                
-                var seasonFolderName = "Season 01";
-                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
-                
-                try
-                {
-                    // Create season folder if it doesn't exist
-                    if (!Directory.Exists(seasonFolderPath))
-                    {
-                        Directory.CreateDirectory(seasonFolderPath);
-                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    // Generate season placeholder video
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
-                    if (placeholderSuccess)
-                    {
-                        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("[JellyseerrBridge] CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    _logger.LogTrace("[JellyseerrBridge] CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
-        }
-        catch (Exception ex)
-        {
-                    _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
-            }
-        }
-        
-        _logger.LogDebug("[JellyseerrBridge] CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
-    }
-
-    #endregion
-
-    #region Writing File/Folder Data
 
     /// <summary>
     /// Find matches between existing Jellyfin items and bridge metadata.

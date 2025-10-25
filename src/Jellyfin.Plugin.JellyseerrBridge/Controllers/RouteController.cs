@@ -34,199 +34,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
         }
 
-
-        [HttpPost("TestLibraryScan")]
-        public async Task<IActionResult> TestLibraryScan()
-        {
-            _logger.LogDebug("[JellyseerrBridge] TestLibraryScan endpoint called");
-            
-            try
-            {
-                // Use Jellyfin-style locking that pauses instead of canceling
-                var result = await Plugin.ExecuteWithLockAsync(async () =>
-                {
-                    // Add timeout to prevent hanging
-                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                    
-                    _logger.LogInformation("[JellyseerrBridge] Starting bridge items scan...");
-                    var (bridgeItems, matchedItems, unmatchedItems) = await _bridgeService.TestLibraryScanAsync();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Getting plugin configuration...");
-                    var config = Plugin.GetConfiguration();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Getting existing movies...");
-                    var existingMovies = matchedItems.Where(m => m.JellyfinItem is Movie).Select(m => m.JellyfinItem).Cast<Movie>().ToList();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Getting existing shows...");
-                    var existingShows = matchedItems.Where(m => m.JellyfinItem is Series).Select(m => m.JellyfinItem).Cast<Series>().ToList();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Preparing response...");
-                    
-                    return new
-                    {
-                        bridgeItems = bridgeItems,
-                        matchedItems = matchedItems,
-                        unmatchedItems = unmatchedItems,
-                        syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory)),
-                        excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries)),
-                        message = $"Library scan test completed. Found {bridgeItems.Count} bridge items, {matchedItems.Count} matched items, {unmatchedItems.Count} unmatched items, {existingMovies.Count} matched movies, {existingShows.Count} matched shows in main libraries",
-                        movieCount = existingMovies.Count,
-                        tvShowCount = existingShows.Count,
-                        movieIds = existingMovies.Select(m => m.Id.ToString()).ToList(),
-                        tvShowIds = existingShows.Select(s => s.Id.ToString()).ToList()
-                    };
-                }, _logger, "Test Library Scan");
-                
-                return Ok(result);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogWarning("[JellyseerrBridge] TestLibraryScan timed out after 2 minutes");
-                return StatusCode(408, new { 
-                    error = "Request timeout",
-                    details = "Library scan took too long and was cancelled. This might indicate a very large library or slow storage.",
-                    bridgeItems = new List<IJellyseerrItem>(),
-                    movieCount = 0,
-                    tvShowCount = 0
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] Error testing library scan");
-                return StatusCode(500, new { 
-                    error = ex.Message,
-                    details = $"Library scan failed: {ex.GetType().Name} - {ex.Message}",
-                    stackTrace = ex.StackTrace,
-                    bridgeItems = new List<IJellyseerrItem>(),
-                    movieCount = 0,
-                    tvShowCount = 0
-                });
-            }
-        }
-
-        [HttpPost("TestFavoritesScan")]
-        public async Task<IActionResult> TestFavoritesScan()
-        {
-            _logger.LogDebug("[JellyseerrBridge] TestFavoritesScan endpoint called");
-            
-            try
-            {
-                // Use Jellyfin-style locking that pauses instead of canceling
-                var result = await Plugin.ExecuteWithLockAsync(async () =>
-                {
-                    
-                    // Create test requests using the bridge service
-                    _logger.LogTrace("[JellyseerrBridge] Creating test requests...");
-                    
-                    _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
-                    
-                    // Get both Jellyseerr requests and Jellyfin user favorites
-                    var (requests, allFavorites) = await _bridgeService.TestFavoritesScanAsync();
-                    var totalFavorites = allFavorites.Values.SelectMany(f => f).Count();
-                    var usersWithFavorites = allFavorites.Count(kvp => kvp.Value.Count > 0);
-                    
-                    _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
-                    _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users, {FavoriteCount} favorites, {RequestCount} existing requests", 
-                        allFavorites.Count, totalFavorites, requests?.Count ?? 0);
-
-                    return new
-                    {
-                        success = true,
-                        message = "Favorites scan test completed successfully",
-                        totalUsers = allFavorites.Count,
-                        usersWithFavorites = usersWithFavorites,
-                        totalFavorites = totalFavorites,
-                        usersWithRequests = requests?.Select(r => r.RequestedBy?.JellyfinUserId).Where(id => !string.IsNullOrEmpty(id)).Distinct().Count() ?? 0,
-                        totalRequests = requests?.Count ?? 0,
-                        requests = requests
-                    };
-                }, _logger, "Test Favorites Scan");
-                
-                return Ok(result);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogWarning("[JellyseerrBridge] TestFavoritesScan timed out after 2 minutes");
-                return StatusCode(408, new { 
-                    error = "Request timeout",
-                    details = "Favorites scan took too long and was cancelled. This might indicate a very large library or many users.",
-                    totalUsers = 0,
-                    usersWithFavorites = 0,
-                    totalFavorites = 0,
-                    usersWithRequests = 0,
-                    totalRequests = 0,
-                    requests = new List<object>(),
-                    testRequests = new List<object>()
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] Error in TestFavoritesScan endpoint");
-                return StatusCode(500, new { 
-                    error = "Internal server error", 
-                    details = ex.Message,
-                    totalUsers = 0,
-                    usersWithFavorites = 0,
-                    totalFavorites = 0,
-                    usersWithRequests = 0,
-                    totalRequests = 0,
-                    requests = new List<object>(),
-                    testRequests = new List<object>()
-                });
-            }
-        }
-
-        [HttpPost("TestFavoritesRequest")]
-        public async Task<IActionResult> TestFavoritesRequest()
-        {
-            _logger.LogDebug("[JellyseerrBridge] TestFavoritesRequest endpoint called");
-            
-            try
-            {
-                // Use Jellyfin-style locking that pauses instead of canceling
-                var result = await Plugin.ExecuteWithLockAsync(async () =>
-                {
-                    _logger.LogTrace("[JellyseerrBridge] Starting sync to Jellyseerr...");
-                    
-                    var syncResult = await _syncService.SyncToJellyseerr();
-                    
-                    _logger.LogTrace("[JellyseerrBridge] SyncToJellyseerr completed successfully");
-                    _logger.LogDebug("[JellyseerrBridge] Sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
-
-                    return new
-                    {
-                        success = syncResult.Success,
-                        message = syncResult.Message,
-                        details = syncResult.Details,
-                        moviesResult = syncResult.MoviesResult,
-                        showsResult = syncResult.ShowsResult
-                    };
-                }, _logger, "Sync to Jellyseerr");
-                
-                return Ok(result);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogWarning("[JellyseerrBridge] SyncToJellyseerr timed out after 2 minutes");
-                return StatusCode(408, new { 
-                    success = false,
-                    error = "Request timeout",
-                    message = "Sync to Jellyseerr took too long and was cancelled. This might indicate a very large library or many users.",
-                    details = "Operation timed out after 2 minutes"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] Error in SyncToJellyseerr endpoint");
-                return StatusCode(500, new { 
-                    success = false,
-                    error = "Internal server error", 
-                    message = ex.Message,
-                    details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
-                });
-            }
-        }
-
         [HttpGet("PluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {
@@ -339,18 +146,33 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         }
 
         [HttpPost("TestConnection")]
-        public async Task<IActionResult> TestConnection([FromBody] TestConnectionRequest request)
+        public async Task<IActionResult> TestConnection([FromBody] JsonElement requestData)
         {
-            var jellyseerUrl = string.IsNullOrEmpty(request.JellyseerrUrl) 
-                ? PluginConfiguration.DefaultValues[nameof(PluginConfiguration.JellyseerrUrl)]?.ToString() 
-                : request.JellyseerrUrl;
             _logger.LogDebug("[JellyseerrBridge] TestConnection endpoint called");
-            _logger.LogTrace("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
-                jellyseerUrl, !string.IsNullOrEmpty(request.ApiKey), request.ApiKey?.Length ?? 0);
-
+            
             try
             {
-                if (string.IsNullOrEmpty(jellyseerUrl) || string.IsNullOrEmpty(request.ApiKey))
+                // Extract parameters from request
+                string? jellyseerUrl = null;
+                string? apiKey = null;
+                
+                if (requestData.TryGetProperty("JellyseerrUrl", out var urlElement))
+                {
+                    jellyseerUrl = urlElement.GetString();
+                }
+                
+                if (requestData.TryGetProperty("ApiKey", out var apiKeyElement))
+                {
+                    apiKey = apiKeyElement.GetString();
+                }
+                
+                // Fallback to current configuration if not provided
+                jellyseerUrl ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
+                
+                _logger.LogTrace("[JellyseerrBridge] Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
+                    jellyseerUrl, !string.IsNullOrEmpty(apiKey), apiKey?.Length ?? 0);
+
+                if (string.IsNullOrEmpty(jellyseerUrl) || string.IsNullOrEmpty(apiKey))
                 {
                     _logger.LogWarning("[JellyseerrBridge] TestConnection failed: Missing required fields");
                     return BadRequest(new { success = false, message = "Jellyseerr URL and API Key are required" });
@@ -360,7 +182,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var testConfig = new PluginConfiguration
                 {
                     JellyseerrUrl = jellyseerUrl,
-                    ApiKey = request.ApiKey
+                    ApiKey = apiKey
                 };
 
                 _logger.LogInformation("[JellyseerrBridge] Testing connection using JellyseerrApiService");
@@ -443,42 +265,53 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
-        [HttpPost("SyncLibrary")]
-        public async Task<IActionResult> SyncLibrary()
+        [HttpPost("SyncFavorites")]
+        public async Task<IActionResult> SyncFavorites()
         {
-            _logger.LogTrace("[JellyseerrBridge] Manual sync requested");
+            _logger.LogDebug("[JellyseerrBridge] SyncFavorites endpoint called");
             
             try
             {
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    return await _syncService.SyncFromJellyseerr();
-                }, _logger, "Manual Sync");
+                    _logger.LogTrace("[JellyseerrBridge] Starting favorites sync to Jellyseerr...");
+                    
+                    var syncResult = await _syncService.SyncToJellyseerr();
+                    
+                    _logger.LogTrace("[JellyseerrBridge] Favorites sync completed successfully");
+                    _logger.LogDebug("[JellyseerrBridge] Favorites sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
+
+                    return new
+                    {
+                        success = syncResult.Success,
+                        message = syncResult.Message,
+                        details = syncResult.Details,
+                        moviesResult = syncResult.MoviesResult,
+                        showsResult = syncResult.ShowsResult
+                    };
+                }, _logger, "Sync to Jellyseerr");
                 
-                if (result.Success)
-                {
-                    _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
-                    return Ok(new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
-                else
-                {
-                    _logger.LogWarning("[JellyseerrBridge] Manual sync failed: {Message}", result.Message);
-                    return StatusCode(500, new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
+                return Ok(result);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("[JellyseerrBridge] Favorites sync timed out after 2 minutes");
+                return StatusCode(408, new { 
+                    success = false,
+                    error = "Request timeout",
+                    message = "Favorites sync took too long and was cancelled. This might indicate a very large library or many users.",
+                    details = "Operation timed out after 2 minutes"
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
+                _logger.LogError(ex, "[JellyseerrBridge] Error in favorites sync endpoint");
                 return StatusCode(500, new { 
-                    message = $"Sync failed: {ex.Message}", 
-                    details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
+                    success = false,
+                    error = "Internal server error", 
+                    message = ex.Message,
+                    details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                 });
             }
         }
@@ -573,6 +406,149 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     details = $"Networks retrieval exception for region '{region}': {ex.GetType().Name} - {ex.Message}",
                     stackTrace = ex.StackTrace,
                     errorCode = "NETWORKS_EXCEPTION"
+                });
+            }
+        }
+
+        [HttpPost("SyncLibrary")]
+        public async Task<IActionResult> SyncLibrary()
+        {
+            _logger.LogTrace("[JellyseerrBridge] Manual sync requested");
+            
+            try
+            {
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
+                {
+                    return await _syncService.SyncFromJellyseerr();
+                }, _logger, "Manual Sync");
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
+                    return Ok(new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("[JellyseerrBridge] Manual sync failed: {Message}", result.Message);
+                    return StatusCode(500, new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
+                return StatusCode(500, new { 
+                    message = $"Sync failed: {ex.Message}", 
+                    details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
+                });
+            }
+        }
+
+        /// <summary>
+        /// Delete all Jellyseerr library data.
+        /// </summary>
+        [HttpPost("ResetPlugin")]
+        public async Task<IActionResult> ResetPlugin([FromBody] JsonElement requestData)
+        {
+            _logger.LogDebug("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
+            
+            try
+            {
+                // Extract library directory from request
+                string? libraryDir = null;
+                if (requestData.TryGetProperty("libraryDirectory", out var libraryDirElement))
+                {
+                    libraryDir = libraryDirElement.GetString();
+                }
+                
+                // Fallback to default configuration if not provided
+                libraryDir ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                
+                // Use Jellyfin-style locking that pauses instead of canceling
+                await Plugin.ExecuteWithLockAsync(() =>
+                {
+                    _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
+                    
+                    // Delete all contents inside library directory if it exists
+                    if (System.IO.Directory.Exists(libraryDir))
+                    {
+                        _logger.LogTrace("[JellyseerrBridge] Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                        
+                        try
+                        {
+                            // Get all subdirectories and files
+                            var subdirs = System.IO.Directory.GetDirectories(libraryDir);
+                            var files = System.IO.Directory.GetFiles(libraryDir);
+                            
+                            // Delete all files in the root directory
+                            foreach (var file in files)
+                            {
+                                System.IO.File.Delete(file);
+                                _logger.LogTrace("[JellyseerrBridge] Deleted file: {File}", file);
+                            }
+                            
+                            // Delete all subdirectories (recursively)
+                            foreach (var subdir in subdirs)
+                            {
+                                System.IO.Directory.Delete(subdir, true);
+                                _logger.LogTrace("[JellyseerrBridge] Deleted subdirectory: {Subdir}", subdir);
+                            }
+                            
+                            _logger.LogInformation("[JellyseerrBridge] Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[JellyseerrBridge] Failed to delete contents of library directory: {LibraryDir}", libraryDir);
+                            throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogError("[JellyseerrBridge] Library directory does not exist: {LibraryDir}", libraryDir);
+                        throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
+                    }
+                    
+                    _logger.LogDebug("[JellyseerrBridge] Data deletion completed successfully");
+                    
+                    // Refresh the Jellyseerr library after data deletion
+                    _logger.LogDebug("[JellyseerrBridge] Starting Jellyseerr library refresh after data deletion...");
+                    
+                    // Get the library service from dependency injection
+                    var libraryService = HttpContext.RequestServices.GetRequiredService<JellyseerrLibraryService>();
+                    
+                    // Call the refresh method
+                    var refreshSuccess = libraryService.RefreshJellyseerrLibrary();
+                    
+                    if (refreshSuccess)
+                    {
+                        _logger.LogInformation("[JellyseerrBridge] Jellyseerr library refresh started successfully");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[JellyseerrBridge] Jellyseerr library refresh failed");
+                    }
+                    
+                    return Task.CompletedTask;
+                }, _logger, "Delete Library Data");
+                
+                return Ok(new { 
+                    success = true, 
+                    message = "All Jellyseerr library data has been deleted successfully and library has been refreshed." 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Error deleting library data");
+                return StatusCode(500, new { 
+                    error = "Failed to delete library data",
+                    details = $"Data deletion failed: {ex.GetType().Name} - {ex.Message}",
+                    stackTrace = ex.StackTrace
                 });
             }
         }
@@ -688,99 +664,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 
             return false;
         }
-
-
-        /// <summary>
-        /// Delete all Jellyseerr library data.
-        /// </summary>
-        [HttpPost("ResetPlugin")]
-        public async Task<IActionResult> ResetPlugin([FromBody] JsonElement requestData)
-        {
-            _logger.LogDebug("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
-            
-            try
-            {
-                // Extract library directory from request
-                string? libraryDir = null;
-                if (requestData.TryGetProperty("libraryDirectory", out var libraryDirElement))
-                {
-                    libraryDir = libraryDirElement.GetString();
-                }
-                
-                // Fallback to current configuration if not provided
-                if (string.IsNullOrEmpty(libraryDir))
-                {
-                    libraryDir = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-                }
-                
-                // Use Jellyfin-style locking that pauses instead of canceling
-                await Plugin.ExecuteWithLockAsync(() =>
-                {
-                    _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
-                    
-                    // Delete all contents inside library directory if it exists
-                    if (System.IO.Directory.Exists(libraryDir))
-                    {
-                        _logger.LogTrace("[JellyseerrBridge] Deleting all contents inside library directory: {LibraryDir}", libraryDir);
-                        
-                        try
-                        {
-                            // Get all subdirectories and files
-                            var subdirs = System.IO.Directory.GetDirectories(libraryDir);
-                            var files = System.IO.Directory.GetFiles(libraryDir);
-                            
-                            // Delete all files in the root directory
-                            foreach (var file in files)
-                            {
-                                System.IO.File.Delete(file);
-                                _logger.LogDebug("[JellyseerrBridge] Deleted file: {File}", file);
-                            }
-                            
-                            // Delete all subdirectories (recursively)
-                            foreach (var subdir in subdirs)
-                            {
-                                System.IO.Directory.Delete(subdir, true);
-                                _logger.LogDebug("[JellyseerrBridge] Deleted subdirectory: {Subdir}", subdir);
-                            }
-                            
-                            _logger.LogInformation("[JellyseerrBridge] Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[JellyseerrBridge] Failed to delete contents of library directory: {LibraryDir}", libraryDir);
-                            throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogError("[JellyseerrBridge] Library directory does not exist: {LibraryDir}", libraryDir);
-                        throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
-                    }
-                    
-                    _logger.LogDebug("[JellyseerrBridge] Data deletion completed successfully");
-                    return Task.CompletedTask;
-                }, _logger, "Delete Library Data");
-                
-                return Ok(new { 
-                    success = true, 
-                    message = "All Jellyseerr library data has been deleted successfully." 
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[JellyseerrBridge] Error deleting library data");
-                return StatusCode(500, new { 
-                    error = "Failed to delete library data",
-                    details = $"Data deletion failed: {ex.GetType().Name} - {ex.Message}",
-                    stackTrace = ex.StackTrace
-                });
-            }
-        }
     }
     
-    public class TestConnectionRequest
-    {
-        public string JellyseerrUrl { get; set; } = string.Empty;
-        public string ApiKey { get; set; } = string.Empty;
-    }
 }

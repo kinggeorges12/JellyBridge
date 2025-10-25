@@ -199,95 +199,10 @@ function initializeGeneralSettings(page) {
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'AutoSyncOnStartup', true);
     
+    // Test connection button functionality
     const testButton = page.querySelector('#testConnection');
-    if (!testButton) {
-        Dashboard.alert('❌ Jellyseerr Bridge: Test connection button not found');
-        return;
-    }
-    
     testButton.addEventListener('click', function () {
-        const url = page.querySelector('#JellyseerrUrl').value.trim();
-        const apiKey = page.querySelector('#ApiKey').value.trim();
-        
-        // Validate URL format if provided
-        if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
-        
-        // Validate API Key
-        if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
-        
-        Dashboard.showLoadingMsg();
-        
-        const testData = {
-            JellyseerrUrl: url,
-            ApiKey: apiKey
-        };
-
-        ApiClient.ajax({
-            url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-            type: 'POST',
-            data: JSON.stringify(testData),
-            contentType: 'application/json',
-            dataType: 'json'
-        }).then(function (data) {
-            // HTTP 200 response means connection test was successful
-            Dashboard.alert('✅ Connected to Jellyseerr!');
-            // Show confirmation dialog for saving settings
-            Dashboard.confirm({
-                    title: 'Connection Success!',
-                    text: 'Save connection settings now?',
-                    confirmText: 'Confirm',
-                    cancelText: 'Cancel',
-                    primary: "confirm"
-                }, 'Title', (confirmed) => {
-                    if (confirmed) {
-                        // Save the current settings using the reusable function
-                        savePluginConfiguration(page).then(function (result) {
-                            Dashboard.hideLoadingMsg();
-                            Dashboard.processPluginConfigurationUpdateResult(result);
-                        }).catch(function (error) {
-                            Dashboard.hideLoadingMsg();
-                            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                            scrollToElement('jellyseerrBridgeConfigurationForm');
-                        });
-                    } else {
-                        Dashboard.alert('🚫 Exited without saving');
-                    }
-                });
-        }).catch(function (error) {
-            // Handle different types of errors
-            let errorMessage = '❌ Connection test failed';
-            
-            if (error && error.responseJSON) {
-                // Server returned structured error response
-                const errorData = error.responseJSON;
-                errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
-                if (errorData.details) {
-                    errorMessage += `<br><br>Details: ${errorData.details}`;
-                }
-            } else if (error && error.status) {
-                // HTTP status code error
-                switch (error.status) {
-                    case 400:
-                        errorMessage = '❌ Bad Request: Cannot reach URL';
-                        break;
-                    case 401:
-                        errorMessage = '❌ Unauthorized: Invalid API Key';
-                        break;
-                    case 500:
-                        errorMessage = '❌ Server Error: Connection test failed';
-                        break;
-                    default:
-                        errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
-                }
-            } else {
-                // Generic error
-                errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
-            }
-            
-            Dashboard.alert(errorMessage);
-        }).finally(function() {
-            Dashboard.hideLoadingMsg();
-        });
+        performTestConnection(page);
     });
     
     // Add form submit event listener
@@ -321,160 +236,11 @@ function initializeLibrarySettings(page) {
     
     updateLibraryPrefixState();
     
-    // Test Favorites Scan button functionality
-    const testFavoritesScanButton = page.querySelector('#testFavoritesScan');
-    const testFavoritesScanResult = page.querySelector('#testFavoritesScanResult');
-    
-    if (testFavoritesScanButton) {
-        testFavoritesScanButton.addEventListener('click', async function() {
-            // Show immediate feedback that button was clicked
-            testFavoritesScanResult.textContent = '🔄 Testing favorites scan...';
-            testFavoritesScanResult.style.display = 'block';
-            
-            testFavoritesScanButton.disabled = true;
-            testFavoritesScanButton.querySelector('span').textContent = 'Testing...';
-            
-            try {
-                const response = await fetch('/JellyseerrBridge/TestFavoritesScan', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    let resultText = `Favorites & Requests Scan Test Results:\n`;
-                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-                    resultText += `Message: ${result.message || 'No message'}\n`;
-                    resultText += `Total Users: ${result.totalUsers || 0}\n`;
-                    resultText += `Users with Favorites: ${result.usersWithFavorites || 0}\n`;
-                    resultText += `Total Favorite Items: ${result.totalFavorites || 0}\n`;
-                    resultText += `Users with Requests: ${result.usersWithRequests || 0}\n`;
-                    resultText += `Total Request Items: ${result.totalRequests || 0}\n\n`;
-                    
-                    if (result.requests && result.requests.length > 0) {
-                        resultText += `Jellyseerr Requests (${result.requests.length}):\n`;
-                        result.requests.forEach((request, reqIndex) => {
-                            resultText += `\n${reqIndex + 1}. Request ID: ${request.id}\n`;
-                            resultText += `   Type: ${request.type || 'Unknown'}\n`;
-                            resultText += `   Status: ${request.status || 'Unknown'}\n`;
-                            resultText += `   Requested By: ${request.requestedBy?.displayName || request.requestedBy?.username || 'Unknown'}\n`;
-                            resultText += `   Jellyfin User: ${request.requestedBy?.jellyfinUsername || 'Unknown'}\n`;
-                            resultText += `   Created: ${request.createdAt || 'Unknown'}\n`;
-                            
-                            if (request.media) {
-                                resultText += `   Media: ${request.media.title || request.media.name || 'Unknown'} (${request.media.year || request.media.releaseDate || 'Unknown'})\n`;
-                                resultText += `   Media Type: ${request.media.mediaType || 'Unknown'}\n`;
-                                if (request.media.tmdbId) resultText += `   TMDB ID: ${request.media.tmdbId}\n`;
-                                if (request.media.imdbId) resultText += `   IMDB ID: ${request.media.imdbId}\n`;
-                            }
-                            
-                            if (request.seasons && request.seasons.length > 0) {
-                                resultText += `   Seasons: ${request.seasons.length}\n`;
-                                request.seasons.forEach((season, seasonIndex) => {
-                                    resultText += `     Season ${season.seasonNumber}: ${season.status || 'Unknown'}\n`;
-                                });
-                            }
-                        });
-                    } else {
-                        resultText += `No requests found.`;
-                    }
-                    
-                    testFavoritesScanResult.textContent = resultText;
-                    testFavoritesScanResult.style.display = 'block';
-                } else {
-                    let resultText = `Favorites & Requests Scan Test Results:\n`;
-                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-                    resultText += `Error: ${result.error || 'Unknown error'}\n`;
-                    resultText += `Message: ${result.message || 'No message'}\n`;
-                    resultText += `Details: ${result.details || 'No details'}\n`;
-                    
-                    testFavoritesScanResult.textContent = resultText;
-                    testFavoritesScanResult.style.display = 'block';
-                }
-            } catch (error) {
-                testFavoritesScanResult.textContent = `❌ Test failed: ${error.message}`;
-                testFavoritesScanResult.style.display = 'block';
-            } finally {
-                testFavoritesScanButton.disabled = false;
-                testFavoritesScanButton.querySelector('span').textContent = 'Test Favorites Scan';
-            }
-        });
-    }
-
-    // Test Favorites Request button functionality
-    const testFavoritesRequestButton = page.querySelector('#testFavoritesRequest');
-    const testFavoritesRequestResult = page.querySelector('#testFavoritesRequestResult');
-    const testFavoritesRequestRawResult = page.querySelector('#testFavoritesRequestRawResult');
-    
-    if (testFavoritesRequestButton) {
-        testFavoritesRequestButton.addEventListener('click', async function() {
-            // Show immediate feedback that button was clicked
-            testFavoritesRequestResult.textContent = '🔄 Syncing to Jellyseerr...';
-            testFavoritesRequestResult.style.display = 'block';
-            testFavoritesRequestRawResult.value = 'Loading...';
-            
-            testFavoritesRequestButton.disabled = true;
-            testFavoritesRequestButton.querySelector('span').textContent = 'Syncing...';
-            
-            try {
-                const response = await fetch('/JellyseerrBridge/TestFavoritesRequest', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                // Display raw JSON response in textbox
-                testFavoritesRequestRawResult.value = JSON.stringify(result, null, 2);
-                
-                if (response.ok) {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-                    resultText += `Message: ${result.message || 'No message'}\n`;
-                    
-                    if (result.details) {
-                        resultText += `\nDetails: ${result.details}\n`;
-                    }
-                    
-                    if (result.moviesResult) {
-                        resultText += `\nMovies Result:\n`;
-                        resultText += `  Created: ${result.moviesResult.created || 0}\n`;
-                        resultText += `  Updated: ${result.moviesResult.updated || 0}\n`;
-                    }
-                    
-                    if (result.showsResult) {
-                        resultText += `\nShows Result:\n`;
-                        resultText += `  Created: ${result.showsResult.created || 0}\n`;
-                        resultText += `  Updated: ${result.showsResult.updated || 0}\n`;
-                    }
-                    
-                    testFavoritesRequestResult.textContent = resultText;
-                    testFavoritesRequestResult.style.display = 'block';
-                } else {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-                    resultText += `Error: ${result.error || 'Unknown error'}\n`;
-                    resultText += `Message: ${result.message || 'No message'}\n`;
-                    resultText += `Details: ${result.details || 'No details'}\n`;
-                    
-                    testFavoritesRequestResult.textContent = resultText;
-                    testFavoritesRequestResult.style.display = 'block';
-                }
-            } catch (error) {
-                testFavoritesRequestResult.textContent = `❌ Test failed: ${error.message}`;
-                testFavoritesRequestResult.style.display = 'block';
-                testFavoritesRequestRawResult.value = `Error: ${error.message}`;
-            } finally {
-                testFavoritesRequestButton.disabled = false;
-                testFavoritesRequestButton.querySelector('span').textContent = 'Sync to Jellyseerr';
-            }
-        });
-    }
+    // Sync Favorites button functionality
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    syncFavoritesButton.addEventListener('click', function() {
+        performSyncFavorites(page);
+    });
 }
 
 
@@ -569,7 +335,7 @@ function initializeSyncSettings(page) {
     // Add manual sync button functionality
     const syncButton = page.querySelector('#manualSync');
     syncButton.addEventListener('click', function () {
-        performManualSyncLibrary(page);
+        performSyncLibrary(page);
     });
 
     // Add reset plugin button functionality
@@ -624,7 +390,7 @@ function initializeAdvancedSettings(page) {
 }
 
 function updateClearButtonVisibility(clearButton, searchValue) {
-    if (searchValue && searchValue.trim() !== '') {
+    if (searchValue && searchValue !== '') {
         clearButton.style.display = 'flex';
     } else {
         clearButton.style.display = 'none';
@@ -634,15 +400,11 @@ function updateClearButtonVisibility(clearButton, searchValue) {
 function loadAvailableNetworks(page) {
     const region = page.querySelector('#selectWatchRegion').value;
     
-    Dashboard.alert(`🔍 DEBUG: Starting loadAvailableNetworks with region: "${region}"`);
-    
     return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/Networks', { region: region }),
         type: 'GET',
         dataType: 'json'
     }).then(function(response) {
-        Dashboard.alert(`🔍 DEBUG: API Response received for networks. Networks count: ${response?.length || 0}`);
-        
         if (response && Array.isArray(response)) {
             // Store the full network objects for later use
             window.availableNetworksData = response;
@@ -703,8 +465,6 @@ function populateSelectWithNetworks(selectElement, networks) {
             Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
         }
     });
-    
-    Dashboard.alert(`🔍 DEBUG: Added ${selectElement.options.length} network options to select element`);
 }
 
 function filterSelect(selectElement, searchTerm) {
@@ -839,7 +599,7 @@ function savePluginConfiguration(view) {
     const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
     // Validate URL format if provided
-    const url = form.querySelector('#JellyseerrUrl').value.trim();
+    const url = form.querySelector('#JellyseerrUrl').value;
     if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
@@ -859,13 +619,13 @@ function savePluginConfiguration(view) {
             // Update config with current form values
             // Only include checkbox values if they differ from defaults
             config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value.trim();
+            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
             config.ApiKey = form.querySelector('#ApiKey').value.trim();
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value.trim();
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
             config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
             config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
             config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value.trim();
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
             config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
             config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
             config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
@@ -921,45 +681,152 @@ function loadRegions(page) {
     });
 }
 
-// Shared sync function
-function performSyncLibrary(page) {
-    const manualSyncResult = page.querySelector('#manualSyncResult');
+// Test connection function
+function performTestConnection(page) {
+    const testButton = page.querySelector('#testConnection');
+    const url = page.querySelector('#JellyseerrUrl').value;
+    const apiKey = page.querySelector('#ApiKey').value.trim();
     
+    // Validate URL format if provided
+    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    
+    // Validate API Key
+    if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
+    
+    testButton.disabled = true;
     Dashboard.showLoadingMsg();
     
-    return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/SyncLibrary'),
+    const testData = {
+        JellyseerrUrl: url,
+        ApiKey: apiKey
+    };
+
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+        type: 'POST',
+        data: JSON.stringify(testData),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (data) {
+        // HTTP 200 response means connection test was successful
+        Dashboard.alert('✅ Connected to Jellyseerr!');
+        // Show confirmation dialog for saving settings
+        Dashboard.confirm({
+                title: 'Connection Success!',
+                text: 'Save connection settings now?',
+                confirmText: 'Confirm',
+                cancelText: 'Cancel',
+                primary: "confirm"
+            }, 'Title', (confirmed) => {
+                if (confirmed) {
+                    // Save the current settings using the reusable function
+                    savePluginConfiguration(page).then(function (result) {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    }).catch(function (error) {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                        scrollToElement('jellyseerrBridgeConfigurationForm');
+                    });
+                } else {
+                    Dashboard.alert('🚫 Exited without saving');
+                }
+            });
+    }).catch(function (error) {
+        // Handle different types of errors
+        let errorMessage = '❌ Connection test failed';
+        
+        if (error && error.responseJSON) {
+            // Server returned structured error response
+            const errorData = error.responseJSON;
+            errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
+            if (errorData.details) {
+                errorMessage += `<br><br>Details: ${errorData.details}`;
+            }
+        } else if (error && error.status) {
+            // HTTP status code error
+            switch (error.status) {
+                case 400:
+                    errorMessage = '❌ Bad Request: Cannot reach URL';
+                    break;
+                case 401:
+                    errorMessage = '❌ Unauthorized: Invalid API Key';
+                    break;
+                case 500:
+                    errorMessage = '❌ Server Error: Connection test failed';
+                    break;
+                default:
+                    errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
+            }
+        } else {
+            // Generic error
+            errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
+        }
+        
+        Dashboard.alert(errorMessage);
+    }).finally(function() {
+        Dashboard.hideLoadingMsg();
+        testButton.disabled = false;
+    });
+}
+
+// Sync favorites function
+function performSyncFavorites(page) {
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
+    
+    // Show immediate feedback that button was clicked
+    syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
+    syncFavoritesResult.style.display = 'block';
+    
+    syncFavoritesButton.disabled = true;
+    Dashboard.showLoadingMsg();
+    
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/SyncFavorites'),
         type: 'POST',
         data: '{}',
         contentType: 'application/json',
         dataType: 'json'
-    }).then(function(syncData) {
-        // Parse the sync results for better user feedback
-        const message = syncData.message || 'Folder structure creation completed successfully';
+    }).then(function(result) {
+        let resultText = `Sync to Jellyseerr Results:\n`;
+        resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
+        resultText += `Message: ${result.message || 'No message'}\n`;
         
-        // Build detailed information if available
-        let resultText = `Manual Sync Results:\n`;
-        resultText += `✅ ${message}\n\n`;
-        
-        if (syncData.details) {
-            resultText += `Details:\n${syncData.details}`;
+        if (result.details) {
+            resultText += `\nDetails: ${result.details}\n`;
         }
         
-        manualSyncResult.textContent = resultText;
-        manualSyncResult.style.display = 'block';
-    }).catch(function(error) {
-        let resultText = `Manual Sync Results:\n`;
-        resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
+        if (result.moviesResult) {
+            resultText += `\nMovies Result:\n`;
+            resultText += `  Created: ${result.moviesResult.created || 0}\n`;
+            resultText += `  Updated: ${result.moviesResult.updated || 0}\n`;
+        }
         
-        manualSyncResult.textContent = resultText;
-        manualSyncResult.style.display = 'block';
+        if (result.showsResult) {
+            resultText += `\nShows Result:\n`;
+            resultText += `  Created: ${result.showsResult.created || 0}\n`;
+            resultText += `  Updated: ${result.showsResult.updated || 0}\n`;
+        }
+        
+        syncFavoritesResult.textContent = resultText;
+    }).catch(function(error) {
+        Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
+        
+        let resultText = `Sync to Jellyseerr Results:\n`;
+        resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
+        
+        syncFavoritesResult.textContent = resultText;
     }).finally(function() {
         Dashboard.hideLoadingMsg();
+        syncFavoritesButton.disabled = false;
     });
 }
 
 // Complete manual sync workflow
-function performManualSyncLibrary(page) {
+function performSyncLibrary(page) {
+    const syncButton = page.querySelector('#manualSync');
+    
     // Show confirmation dialog for saving settings before sync
     Dashboard.confirm({
         title: 'Confirm Save',
@@ -969,18 +836,51 @@ function performManualSyncLibrary(page) {
         primary: "confirm"
     }, 'Title', (confirmed) => {
         if (confirmed) {
+            syncButton.disabled = true;
             // Save settings first, then sync
             Dashboard.showLoadingMsg();
             
             savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sync result textbox
+                const manualSyncResult = page.querySelector('#manualSyncResult');
+                manualSyncResult.textContent = '🔄 Syncing library...';
+                manualSyncResult.style.display = 'block';
+                
                 Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed - wait for sync to complete before hiding loading message
-                return performSyncLibrary(page);
+                // sync if confirmed
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyseerrBridge/SyncLibrary'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncData) {
+                    // Parse the sync results for better user feedback
+                    const message = syncData.message || 'Folder structure creation completed successfully';
+                    
+                    // Build detailed information if available
+                    let resultText = `Manual Sync Results:\n`;
+                    resultText += `✅ ${message}\n\n`;
+                    
+                    if (syncData.details) {
+                        resultText += `Details:\n${syncData.details}`;
+                    }
+                    
+                    manualSyncResult.textContent = resultText;
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Manual Sync Results:\n`;
+                    resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    manualSyncResult.textContent = resultText;
+                });
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyseerrBridgeConfigurationForm');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
+                syncButton.disabled = false;
             });
         }
     });
@@ -989,7 +889,8 @@ function performManualSyncLibrary(page) {
 // Reset plugin configuration and delete data with double confirmation
 function performPluginReset(page) {
     // Get current library directory before resetting configuration, fallback to default if empty
-    const displayLibraryDir = getInputValue(page, 'LibraryDirectory') || getDefaultValue(page, 'LibraryDirectory') || '(not configured)';
+    const config = window.configJellyseerrBridge || {};
+    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
     
     // First confirmation with information warning emoji
     Dashboard.confirm({
@@ -1036,7 +937,7 @@ function performPluginReset(page) {
                 // Second confirmation with warning emoji for data deletion
                 Dashboard.confirm({
                     title: '❗ Delete Library Data',
-                    text: `This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${displayLibraryDir}". Are you sure you want to delete the data?`,
+                    text: `This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${currentLibraryDir}". Are you sure you want to delete the data?`,
                     confirmText: 'Yes! Proceed to final confirmation...',
                     cancelText: 'Cancel',
                     primary: "cancel"
@@ -1045,7 +946,7 @@ function performPluginReset(page) {
                         // Third confirmation with emergency emoji for final data deletion
                         Dashboard.confirm({
                             title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                            text: `LAST WARNING: This is your final chance to cancel! This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${displayLibraryDir}". Are you absolutely certain you want to proceed?`,
+                            text: `LAST WARNING: This is your final chance to cancel! This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${currentLibraryDir}". Are you absolutely certain you want to proceed?`,
                             confirmText: '🚩 YES, DELETE EVERYTHING',
                             cancelText: 'Cancel',
                             primary: "cancel"
