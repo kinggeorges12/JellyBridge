@@ -120,19 +120,22 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     
                     _logger.LogTrace("[JellyseerrBridge] Starting favorites scan...");
                     
-                    // Use the existing TestFavoritesScanAsync method which already handles this logic
-                    var requests = await _bridgeService.TestFavoritesScanAsync();
+                    // Get both Jellyseerr requests and Jellyfin user favorites
+                    var (requests, allFavorites) = await _bridgeService.TestFavoritesScanAsync();
+                    var totalFavorites = allFavorites.Values.SelectMany(f => f).Count();
+                    var usersWithFavorites = allFavorites.Count(kvp => kvp.Value.Count > 0);
                     
                     _logger.LogTrace("[JellyseerrBridge] TestFavoritesScan completed successfully");
-                    _logger.LogDebug("[JellyseerrBridge] Found {RequestCount} requests to process", requests?.Count ?? 0);
+                    _logger.LogDebug("[JellyseerrBridge] Found {UserCount} users, {FavoriteCount} favorites, {RequestCount} existing requests", 
+                        allFavorites.Count, totalFavorites, requests?.Count ?? 0);
 
                     return new
                     {
                         success = true,
                         message = "Favorites scan test completed successfully",
-                        totalUsers = _userManager.Users.Count(),
-                        usersWithFavorites = _userManager.Users.Count(),
-                        totalFavorites = 0,
+                        totalUsers = allFavorites.Count,
+                        usersWithFavorites = usersWithFavorites,
+                        totalFavorites = totalFavorites,
                         usersWithRequests = requests?.Select(r => r.RequestedBy?.JellyfinUserId).Where(id => !string.IsNullOrEmpty(id)).Distinct().Count() ?? 0,
                         totalRequests = requests?.Count ?? 0,
                         requests = requests
