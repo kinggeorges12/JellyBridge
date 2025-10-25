@@ -752,6 +752,9 @@ function performTestConnection(page) {
                 case 401:
                     errorMessage = '❌ Unauthorized: Invalid API Key';
                     break;
+                case 403:
+                    errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
+                    break;
                 case 500:
                     errorMessage = '❌ Server Error: Connection test failed';
                     break;
@@ -848,6 +851,7 @@ function performSyncLibrary(page) {
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // sync if confirmed
+                Dashboard.showLoadingMsg();
                 return ApiClient.ajax({
                     url: ApiClient.getUrl('JellyseerrBridge/SyncLibrary'),
                     type: 'POST',

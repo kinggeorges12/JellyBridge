@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using Jellyfin.Plugin.JellyseerrBridge.Utils;
+using Jellyfin.Plugin.JellyseerrBridge;
 using JellyfinUser = Jellyfin.Data.Entities.User;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
@@ -208,22 +209,41 @@ public partial class JellyseerrSyncService
         {
             _logger.LogDebug("Starting sync to Jellyseerr...");
             
-            // Step 1: Get bridge folder items and use LibraryScanAsync to get matched and bridge-only items
-            var (bridgeMovies, bridgeShows) = await _bridgeService.ReadMetadataAsync();
-            var (matchedItems, bridgeOnlyItems) = await _bridgeService.LibraryScanAsync(bridgeMovies, bridgeShows);
+            // Step 1: Get bridge folder items directly from Jellyfin
+            var bridgeLibraryPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            
+            // Get bridge-only items directly from Jellyfin
+            var bridgeMovies = JellyfinHelper.GetExistingItems<Movie>(_libraryManager, bridgeLibraryPath);
+            var bridgeShows = JellyfinHelper.GetExistingItems<Series>(_libraryManager, bridgeLibraryPath);
+            
+            var bridgeOnlyItems = new List<BaseItem>();
+            bridgeOnlyItems.AddRange(bridgeMovies);
+            bridgeOnlyItems.AddRange(bridgeShows);
             
             if (bridgeOnlyItems.Count == 0)
             {
-                _logger.LogWarning("No bridge-only items found in Jellyseerr bridge folder");
+                _logger.LogWarning("No bridge-only items found in Jellyseerr bridge folder: {BridgePath}", bridgeLibraryPath);
                 result.Success = true;
                 result.Message = "No bridge-only items found to sync";
                 return result;
             }
             
-            _logger.LogDebug("Found {BridgeOnlyCount} bridge-only items in Jellyseerr bridge folder", bridgeOnlyItems.Count);
+            _logger.LogDebug("Found {BridgeOnlyCount} bridge-only items in Jellyseerr bridge folder: {BridgePath}", bridgeOnlyItems.Count, bridgeLibraryPath);
             
             // Step 2: Get all Jellyfin users and their favorites
             var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
+            _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavorites.Count);
+            
+            var totalFavorites = allFavorites.Values.Sum(favs => favs.Count);
+            _logger.LogDebug("Total favorites across all users: {TotalFavorites}", totalFavorites);
+            
+            foreach (var (user, favorites) in allFavorites)
+            {
+                if (favorites.Count > 0)
+                {
+                    _logger.LogTrace("User '{Username}' has {FavoriteCount} favorites", user.Username, favorites.Count);
+                }
+            }
             
             // Step 3: Get all Jellyseerr users for request creation
             var jellyseerrUsers = await _bridgeService.GetJellyseerrUsersAsync();
@@ -236,10 +256,12 @@ public partial class JellyseerrSyncService
             }
             
             // Step 4: Group bridge-only items by TMDB ID and find first user who favorited each
-            var uniqueItemsWithFirstUser = _bridgeService.EnsureFirstJellyseerrUser(bridgeOnlyItems, allFavorites, jellyseerrUsers);
+            var uniqueItemsWithJellyseerrUser = _bridgeService.EnsureFirstJellyseerrUser(bridgeOnlyItems, allFavorites, jellyseerrUsers);
+            _logger.LogDebug("Found {UniqueCount} unique bridge-only items with favorited Jellyseerr users (from {TotalCount} total)", 
+                uniqueItemsWithJellyseerrUser.Count, bridgeOnlyItems.Count);
             
             // Step 5 & 6: Create requests for favorited bridge-only items
-            var requestResults = await _bridgeService.RequestFavorites(uniqueItemsWithFirstUser);
+            var requestResults = await _bridgeService.RequestFavorites(uniqueItemsWithJellyseerrUser);
             
             result.Success = true;
             result.Message = $"Sync to Jellyseerr completed successfully - Created {requestResults.Count} requests";

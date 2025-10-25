@@ -88,8 +88,9 @@ public static class JellyfinHelper
     /// </summary>
     /// <typeparam name="T">The type of items to retrieve</typeparam>
     /// <param name="libraryManager">The library manager</param>
+    /// <param name="libraryPath">Optional library path to filter items. If provided, only items in this path will be returned.</param>
     /// <returns>List of existing items</returns>
-    public static List<T> GetExistingItems<T>(ILibraryManager libraryManager) where T : BaseItem
+    public static List<T> GetExistingItems<T>(ILibraryManager libraryManager, string? libraryPath = null) where T : BaseItem
     {
         try
         {
@@ -114,7 +115,17 @@ public static class JellyfinHelper
                 Recursive = true
             });
             
-            return items.OfType<T>().ToList();
+            var filteredItems = items.OfType<T>();
+            
+            // Filter by library path if provided
+            if (!string.IsNullOrEmpty(libraryPath))
+            {
+                filteredItems = filteredItems.Where(item => 
+                    !string.IsNullOrEmpty(item.Path) && 
+                    item.Path.StartsWith(libraryPath, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            return filteredItems.ToList();
         }
         catch
         {

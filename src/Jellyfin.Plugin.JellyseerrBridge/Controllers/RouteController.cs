@@ -192,11 +192,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (status == null)
                 {
                     _logger.LogWarning("[JellyseerrBridge] Basic connectivity test failed - Status endpoint returned null");
-                    return BadRequest(new { 
+                    return Unauthorized(new { 
                         success = false, 
-                        message = "Failed to connect to Jellyseerr API",
-                        details = "The Status endpoint did not return a valid response. Check if Jellyseerr is running and accessible.",
-                        errorCode = "CONNECTION_FAILED"
+                        message = "Authentication failed",
+                        details = "The API key is invalid or Jellyseerr is not accessible. Verify the API key and URL.",
+                        errorCode = "AUTH_FAILED"
                     });
                 }
                 
@@ -210,11 +210,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (typedUserInfo == null)
                 {
                     _logger.LogWarning("[JellyseerrBridge] API key authentication failed - userInfo is null");
-                    return Unauthorized(new { 
+                    return StatusCode(503, new { 
                         success = false, 
-                        message = "API key authentication failed",
-                        details = "The provided API key is invalid or does not have sufficient permissions. Verify the API key in Jellyseerr settings.",
-                        errorCode = "AUTH_FAILED"
+                        message = "Jellyseerr service unavailable",
+                        details = "Unable to authenticate with Jellyseerr service. The service may be down or unreachable.",
+                        errorCode = "SERVICE_UNAVAILABLE"
                     });
                 }
                 
@@ -225,11 +225,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (users == null)
                 {
                     _logger.LogWarning("[JellyseerrBridge] User list test failed - UserList endpoint returned null");
-                    return BadRequest(new { 
+                    return StatusCode(403, new { 
                         success = false, 
-                        message = "Failed to retrieve user list",
-                        details = "The UserList endpoint did not return a valid response. Check API permissions.",
-                        errorCode = "USER_LIST_FAILED"
+                        message = "Insufficient privileges to access user list",
+                        details = "The API key does not have sufficient permissions to access the user list endpoint.",
+                        errorCode = "INSUFFICIENT_PRIVILEGES"
                     });
                 }
                     
@@ -238,7 +238,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (users.Count == 0)
                 {
                     _logger.LogWarning("[JellyseerrBridge] User list test failed - No users found");
-                    return BadRequest(new { 
+                    return StatusCode(500, new { 
                         success = false, 
                         message = "No users found in Jellyseerr",
                         details = "The API key has access but no users were found. This may indicate a configuration issue in Jellyseerr.",
