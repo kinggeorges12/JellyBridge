@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "version": "0.278.0.0",
+        "changelog": "v0.278.0.0 - Improved configuration page UI consistency, refactored API endpoints to use JsonElement, added loading messages and better error handling for sync operations",
+        "timestamp": "2025-10-25T19:17:07.531Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.278.0.0/JellyseerrBridge-0.278.0.0-DLL.zip",
+        "checksum": "CA4F4953F98371F915DC8C486A0C95D5",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "changelog": "v0.277.0.0 - Implemented AutoSyncOnStartup configuration, moved favorites sync button to Library Settings, removed Test Favorites Scan functionality, and improved frontend response handling",
         "checksum": "1E834B32EC4EF3D6D57E763AFB9480CF",
         "dependencies": [],

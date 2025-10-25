@@ -174,11 +174,14 @@ public class JellyseerrMovie
         xml.AppendLine("<movie>");
         xml.AppendLine($"  <id>{Id}</id>");
         xml.AppendLine($"  <uniqueid type=\"tmdb\" default=\"true\">{Id}</uniqueid>");
+        xml.AppendLine($"  <tmdbid>{Id}</tmdbid>");
         
         // Add IMDB ID if available
         if (!string.IsNullOrEmpty(ExtraId))
         {
-            xml.AppendLine($"  <uniqueid type=\"imdb\">{ExtraId}</uniqueid>");
+            xml.AppendLine($"  <{ExtraIdName}>{ExtraId}</{ExtraIdName}>");
+            //<imdbid>tt21821260</imdbid>
+            //<tvdbid>342663</tvdbid>
         }
         
         xml.AppendLine($"  <title>{Title}</title>");

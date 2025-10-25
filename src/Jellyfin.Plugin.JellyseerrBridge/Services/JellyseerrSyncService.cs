@@ -158,7 +158,7 @@ public partial class JellyseerrSyncService
             var refreshSuccess = _libraryService.RefreshJellyseerrLibrary();
             if (refreshSuccess)
             {
-                _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh completed successfully");
+                _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
                 result.Message += " and library managed";
             }
             else

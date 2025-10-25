@@ -261,10 +261,10 @@
 
 
                         <div>
-                            <button is="emby-button" type="button" id="testFavoritesRequest" class="raised button block emby-button">
+                            <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
                                 <span>Sync favorites from Jellyfin library to Jellyseerr</span>
                             </button>
-                            <div id="testFavoritesRequestResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="syncFavoritesResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
 
                     </details>
@@ -359,7 +359,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
-                                <span>Manually sync discover content from Jellyseerr to Jellyfin</span>
+                                <span>Manually sync discover content from Jellyseerr to Jellyfin library</span>
                             </button>
                             <div id="manualSyncResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
@@ -400,7 +400,7 @@
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
                             <button is="emby-button" type="button" id="resetPlugin" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
-                                <span>Reset Plugin & Delete Data</span>
+                                <span>Reset Jellyseerr Bridge plugin & delete Jellyfin library data</span>
                             </button>
                             <div class="fieldDescription" style="color: #ff6b6b; font-size: 0.85em; margin-top: 5px;">
                                 <strong>WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.

@@ -180,10 +180,14 @@ public class JellyseerrShow
         if (!string.IsNullOrEmpty(ExtraId))
         {
             xml.AppendLine($"  <id>{ExtraId}</id>");
-            xml.AppendLine($"  <uniqueid type=\"tvdb\" default=\"true\">{ExtraId}</uniqueid>");
+            xml.AppendLine($"  <uniqueid type=\"{ExtraIdName}\" default=\"true\">{ExtraId}</uniqueid>");
+            xml.AppendLine($"  <tvdbid>{ExtraId}</tvdbid>");
+            //<imdb_id>tt1305826</imdb_id>
+            //<tvrageid>2638</tvrageid>
         }
         
         xml.AppendLine($"  <uniqueid type=\"tmdb\">{Id}</uniqueid>");
+        xml.AppendLine($"  <tmdbid>{Id}</tmdbid>");
         
         // Add network tag if available
         if (!string.IsNullOrEmpty(NetworkTag))
