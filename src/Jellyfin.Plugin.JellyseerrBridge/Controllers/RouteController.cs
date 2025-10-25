@@ -186,39 +186,43 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    _logger.LogTrace("[JellyseerrBridge] Creating test requests for Jellyfin favorites...");
+                    _logger.LogTrace("[JellyseerrBridge] Starting sync to Jellyseerr...");
                     
-                    var testRequestResults = await _bridgeService.TestAddRequestsAsync();
+                    var syncResult = await _syncService.SyncToJellyseerr();
                     
-                    _logger.LogTrace("[JellyseerrBridge] TestAddRequestsAsync completed successfully");
-                    _logger.LogDebug("[JellyseerrBridge] Created {RequestCount} test requests", testRequestResults?.Count ?? 0);
+                    _logger.LogTrace("[JellyseerrBridge] SyncToJellyseerr completed successfully");
+                    _logger.LogDebug("[JellyseerrBridge] Sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
 
                     return new
                     {
-                        success = true,
-                        message = "Test request creation completed successfully",
-                        requests = testRequestResults
+                        success = syncResult.Success,
+                        message = syncResult.Message,
+                        details = syncResult.Details,
+                        moviesResult = syncResult.MoviesResult,
+                        showsResult = syncResult.ShowsResult
                     };
-                }, _logger, "Test Favorites Request");
+                }, _logger, "Sync to Jellyseerr");
                 
                 return Ok(result);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("[JellyseerrBridge] TestFavoritesRequest timed out after 2 minutes");
+                _logger.LogWarning("[JellyseerrBridge] SyncToJellyseerr timed out after 2 minutes");
                 return StatusCode(408, new { 
+                    success = false,
                     error = "Request timeout",
-                    details = "Request creation took too long and was cancelled.",
-                    requests = new List<object>()
+                    message = "Sync to Jellyseerr took too long and was cancelled. This might indicate a very large library or many users.",
+                    details = "Operation timed out after 2 minutes"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Error in TestFavoritesRequest endpoint");
+                _logger.LogError(ex, "[JellyseerrBridge] Error in SyncToJellyseerr endpoint");
                 return StatusCode(500, new { 
+                    success = false,
                     error = "Internal server error", 
-                    details = ex.Message,
-                    requests = new List<object>()
+                    message = ex.Message,
+                    details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                 });
             }
         }
@@ -449,7 +453,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    return await _syncService.SyncBridgeAsync();
+                    return await _syncService.SyncFromJellyseerr();
                 }, _logger, "Manual Sync");
                 
                 if (result.Success)

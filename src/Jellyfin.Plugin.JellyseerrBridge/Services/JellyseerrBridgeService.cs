@@ -123,181 +123,148 @@ public class JellyseerrBridgeService
         }
     }
 
+
     /// <summary>
-    /// Test method to create requests for favorited items that are in the Jellyseerr bridge folder but not in the main Jellyfin library.
+    /// Create requests for favorited bridge-only items.
+    /// These are items that exist only in the Jellyseerr bridge folder and are favorited by users.
     /// </summary>
-    public async Task<List<JellyseerrMediaRequest>> TestAddRequestsAsync()
+    public async Task<List<JellyseerrMediaRequest>> RequestFavorites(
+        List<(IJellyseerrItem item, JellyseerrUser firstUser)> uniqueItemsWithFirstUser)
     {
-        try
+        var requestResults = new List<JellyseerrMediaRequest>();
+        
+        // Step 5 & 6: Process unique bridge-only items with their first favorited user
+        var favoritedCount = 0;
+        
+        foreach (var (item, firstUser) in uniqueItemsWithFirstUser)
         {
-            _logger.LogDebug("Starting test request creation for favorited unmatched items");
-            
-            var testRequestResults = new List<JellyseerrMediaRequest>();
-            
-            // Step 1: Get bridge folder items and use LibraryScanAsync to get matched and unmatched items
-            var (bridgeMovies, bridgeShows) = await ReadMetadataAsync();
-            var (matchedItems, unmatchedItems) = await LibraryScanAsync(bridgeMovies, bridgeShows);
-            
-            if (unmatchedItems.Count == 0)
+            try
             {
-                _logger.LogWarning("No unmatched items found in Jellyseerr bridge folder");
-                return testRequestResults;
-            }
-            
-            _logger.LogDebug("Found {UnmatchedCount} unmatched items in Jellyseerr bridge folder", unmatchedItems.Count);
-            
-            // Step 2: Get all Jellyfin users and their favorites
-            var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
-            
-            // Step 3: Get all Jellyseerr users for request creation
-            var jellyseerrUsers = await GetJellyseerrUsersAsync();
-            if (jellyseerrUsers == null || jellyseerrUsers.Count == 0)
-            {
-                _logger.LogWarning("No Jellyseerr users found");
-                return testRequestResults;
-            }
-            
-            // Step 4: Get existing requests to avoid duplicates
-            var existingRequests = await GetExistingRequestsAsync();
-            
-            // Step 5: Filter unmatched items to only include those that are favorited
-            var favoritedUnmatchedItems = new List<IJellyseerrItem>();
-            
-            foreach (var unmatchedItem in unmatchedItems)
-            {
-                // Check if this unmatched item is favorited by any user
-                var isFavorited = false;
-                foreach (var (jellyfinUser, favoriteItems) in allFavorites)
-                {
-                    var isFavoritedByUser = favoriteItems.Any(favItem => 
-                    {
-                        var favTmdbId = JellyfinHelper.GetTmdbId(favItem);
-                        return favTmdbId.HasValue && favTmdbId.Value == unmatchedItem.Id;
-                    });
-                    
-                    if (isFavoritedByUser)
-                    {
-                        isFavorited = true;
-                        break;
-                    }
-                }
+                _logger.LogTrace("Processing bridge-only item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
+                    item.MediaName, item.Id, firstUser.Username);
+
+                favoritedCount++;
+                _logger.LogDebug("Creating request for {ItemName} on behalf of {UserName}", 
+                    item.MediaName, firstUser.Username);
                 
-                if (isFavorited)
-                {
-                    favoritedUnmatchedItems.Add(unmatchedItem);
-                }
-            }
-            
-            if (favoritedUnmatchedItems.Count == 0)
-            {
-                _logger.LogWarning("No favorited unmatched items found");
-                return testRequestResults;
-            }
-            
-            _logger.LogDebug("Found {FavoritedUnmatchedCount} favorited unmatched items", favoritedUnmatchedItems.Count);
-            
-            // Step 6: Create requests for each favorited unmatched item
-            foreach (var favoritedItem in favoritedUnmatchedItems)
-            {
+                // Create request for the user who favorited this item
                 try
                 {
-                    _logger.LogTrace("Processing favorited unmatched item: {ItemName} (TMDB ID: {TmdbId})", 
-                        favoritedItem.MediaName, favoritedItem.Id);
-                    
-                    // Check if already requested in Jellyseerr
-                    var alreadyRequested = existingRequests.Any(req => req.Media?.Id == favoritedItem.Id);
-                    if (alreadyRequested)
+                    var requestParams = new Dictionary<string, object>
                     {
-                        _logger.LogTrace("Skipping {ItemName} - already requested in Jellyseerr", favoritedItem.MediaName);
-                    continue;
-                }
-                
-                    // Find users who have favorited this item
-                    var favoritedByUsers = new List<(JellyfinUser user, JellyseerrUser jellyseerrUser)>();
+                        ["mediaType"] = item.MediaType.ToString().ToLower(),
+                        ["mediaId"] = item.Id,
+                        ["userId"] = firstUser.Id,
+                        ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
+                    };
                     
-                    foreach (var (jellyfinUser, favoriteItems) in allFavorites)
+                    _logger.LogTrace("Creating request for {ItemName} on behalf of {UserName}", 
+                        item.MediaName, firstUser.Username);
+                    
+                    var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
+                    var request = requestResult as JellyseerrMediaRequest;
+                    if (request != null)
                     {
-                        var isFavoritedByUser = favoriteItems.Any(favItem => 
-                        {
-                            var favTmdbId = JellyfinHelper.GetTmdbId(favItem);
-                            return favTmdbId.HasValue && favTmdbId.Value == favoritedItem.Id;
-                        });
-                        
-                        if (isFavoritedByUser)
-                        {
-                            // Find corresponding Jellyseerr user
-                            var jellyseerrUser = jellyseerrUsers.FirstOrDefault(u => 
-                                !string.IsNullOrEmpty(u.JellyfinUserId) && 
-                                Guid.TryParse(u.JellyfinUserId, out var parsedId) && 
-                                parsedId == jellyfinUser.Id);
-                            
-                            if (jellyseerrUser != null)
-                            {
-                                favoritedByUsers.Add((jellyfinUser, jellyseerrUser));
-                            }
-                        }
+                        requestResults.Add(request);
+                        _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
+                            item.MediaName, firstUser.Username);
                     }
-                    
-                    if (favoritedByUsers.Count == 0)
+                    else
                     {
-                        _logger.LogTrace("Skipping {ItemName} - not favorited by any user", favoritedItem.MediaName);
-                    continue;
-                }
-
-                    _logger.LogDebug("Found {FavoriteCount} users who favorited {ItemName}", 
-                        favoritedByUsers.Count, favoritedItem.MediaName);
-                    
-                    // Create requests for each user who favorited this item
-                    foreach (var (jellyfinUser, jellyseerrUser) in favoritedByUsers)
-                    {
-                        try
-                        {
-                            var requestParams = new Dictionary<string, object>
-                            {
-                                ["mediaType"] = favoritedItem.MediaType.ToString().ToLower(),
-                                ["mediaId"] = favoritedItem.Id,
-                                ["userId"] = jellyseerrUser.Id,
-                                ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
-                            };
-                            
-                            _logger.LogTrace("Creating request for {ItemName} on behalf of {UserName}", 
-                                favoritedItem.MediaName, jellyfinUser.Username);
-                            
-                            var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
-                            var request = requestResult as JellyseerrMediaRequest;
-                            if (request != null)
-                            {
-                                testRequestResults.Add(request);
-                                _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
-                                    favoritedItem.MediaName, jellyfinUser.Username);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Failed to create request for {ItemName} on behalf of {UserName}", 
-                                    favoritedItem.MediaName, jellyfinUser.Username);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Failed to create request for {ItemName} on behalf of {UserName}", 
-                                favoritedItem.MediaName, jellyfinUser.Username);
-                        }
+                        _logger.LogWarning("Failed to create request for {ItemName} on behalf of {UserName}", 
+                            item.MediaName, firstUser.Username);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to process favorited unmatched item: {ItemName}", favoritedItem.MediaName);
+                    _logger.LogError(ex, "Failed to create request for {ItemName} on behalf of {UserName}", 
+                        item.MediaName, firstUser.Username);
                 }
             }
-            
-            _logger.LogDebug("Test request creation completed with {ResultCount} successful requests", testRequestResults.Count);
-            return testRequestResults;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process bridge-only item: {ItemName}", item.MediaName);
+            }
         }
-        catch (Exception ex)
+        
+        if (favoritedCount == 0)
         {
-            _logger.LogError(ex, "Error in TestAddRequestsAsync");
-            throw;
+            _logger.LogWarning("No favorited bridge-only items found");
         }
+        else
+        {
+            _logger.LogDebug("Found {FavoritedCount} favorited bridge-only items and created requests", favoritedCount);
+        }
+        
+        return requestResults;
+    }
+
+    /// <summary>
+    /// Find the first Jellyseerr user who favorited the given item.
+    /// </summary>
+    private JellyseerrUser? FindFavoritedByUser(
+        IJellyseerrItem item, 
+        Dictionary<JellyfinUser, List<BaseItem>> allFavorites, 
+        List<JellyseerrUser> jellyseerrUsers)
+    {
+        foreach (var (jellyfinUser, favoriteItems) in allFavorites)
+        {
+            var isFavoritedByUser = favoriteItems.Any(favItem => 
+            {
+                var favTmdbId = JellyfinHelper.GetTmdbId(favItem);
+                return favTmdbId.HasValue && favTmdbId.Value == item.Id;
+            });
+            
+            if (isFavoritedByUser)
+            {
+                // Find corresponding Jellyseerr user
+                var jellyseerrUser = jellyseerrUsers.FirstOrDefault(u => 
+                    !string.IsNullOrEmpty(u.JellyfinUserId) && 
+                    u.JellyfinUserId == jellyfinUser.Id.ToString());
+                
+                if (jellyseerrUser != null)
+                {
+                    return jellyseerrUser;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /// <summary>
+    /// Group bridge-only items by TMDB ID and find first Jellyseerr user who favorited each.
+    /// These are items that exist only in the Jellyseerr bridge folder (not in main Jellyfin library).
+    /// </summary>
+    public List<(IJellyseerrItem item, JellyseerrUser firstUser)> EnsureFirstJellyseerrUser(
+        List<IJellyseerrItem> bridgeOnlyItems, 
+        Dictionary<JellyfinUser, List<BaseItem>> allFavorites, 
+        List<JellyseerrUser> jellyseerrUsers)
+    {
+        var uniqueItemsWithFirstUser = new List<(IJellyseerrItem item, JellyseerrUser firstUser)>();
+        
+        foreach (var itemGroup in bridgeOnlyItems.GroupBy(item => item.Id))
+        {
+            var firstItem = itemGroup.First();
+            var firstUser = FindFavoritedByUser(firstItem, allFavorites, jellyseerrUsers);
+            
+            if (firstUser != null)
+            {
+                uniqueItemsWithFirstUser.Add((firstItem, firstUser));
+                _logger.LogTrace("Found first user {UserName} for item {ItemName} (TMDB ID: {TmdbId})", 
+                    firstUser.Username, firstItem.MediaName, firstItem.Id);
+            }
+            else
+            {
+                _logger.LogTrace("No Jellyseerr user favorited item {ItemName} (TMDB ID: {TmdbId}) - item may be favorited by users without Jellyseerr accounts", 
+                    firstItem.MediaName, firstItem.Id);
+            }
+        }
+        
+        _logger.LogDebug("Found {UniqueCount} unique bridge-only items with favorited users (from {TotalCount} total)", 
+            uniqueItemsWithFirstUser.Count, bridgeOnlyItems.Count);
+        
+        return uniqueItemsWithFirstUser;
     }
 
     /// <summary>
@@ -450,7 +417,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Get all Jellyseerr users to map with Jellyfin users.
     /// </summary>
-    private async Task<List<JellyseerrUser>> GetJellyseerrUsersAsync()
+    public async Task<List<JellyseerrUser>> GetJellyseerrUsersAsync()
     {
         try
         {
@@ -507,7 +474,7 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Read all metadata files from the bridge folder, detecting movie vs show based on NFO files.
     /// </summary>
-    private async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
     {
         var movies = new List<JellyseerrMovie>();
         var shows = new List<JellyseerrShow>();

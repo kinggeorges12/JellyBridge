@@ -259,25 +259,14 @@
                             <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyseerrBridge <i>Library Directory</i> path. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
                         </div>
 
-                        <div>
-                            <button is="emby-button" type="button" id="testFavoritesScan" class="raised button block emby-button">
-                                <span>Test Favorites Scan</span>
-                            </button>
-                            <div class="fieldDescription">Test the favorites scanning functionality to see what content each user has favorited.</div>
-                            <div id="testFavoritesScanResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
-                        </div>
 
                         <div>
                             <button is="emby-button" type="button" id="testFavoritesRequest" class="raised button block emby-button">
-                                <span>Jellyseerr Request for Jellyfin Favorites</span>
+                                <span>Sync favorites from Jellyfin library to Jellyseerr</span>
                             </button>
-                            <div class="fieldDescription">Test creating Jellyseerr requests for Jellyfin favorites.</div>
                             <div id="testFavoritesRequestResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
-                            <div class="inputContainer" style="margin-top: 10px;">
-                                <textarea is="emby-textarea" id="testFavoritesRequestRawResult" placeholder="Raw JSON response will appear here..." readonly style="height: 200px; font-family: monospace; font-size: 12px;"></textarea>
-                                <div class="fieldDescription">Raw JSON response from the TestFavoritesRequest endpoint</div>
-                            </div>
                         </div>
+
                     </details>
 
                     <br>
@@ -370,10 +359,11 @@
 
                         <div>
                             <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
-                                <span>Manual Sync</span>
+                                <span>Manually sync discover content from Jellyseerr to Jellyfin</span>
                             </button>
                             <div id="manualSyncResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
+
                     </details>
 
                     <br>
@@ -383,17 +373,17 @@
                         <br>
                         <div class="inputContainer">
                             <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" label="Request Timeout (seconds)"/>
-                            <div class="fieldDescription">Timeout for API requests to Jellyseerr. Default is 30 seconds.</div>
+                            <div class="fieldDescription">Timeout for API requests to Jellyseerr.</div>
                         </div>
 
                         <div class="inputContainer">
                             <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" label="Retry Attempts"/>
-                            <div class="fieldDescription">Number of retry attempts for failed requests. Default is 3.</div>
+                            <div class="fieldDescription">Number of retry attempts for failed API requests to Jellyseerr.</div>
                         </div>
 
                         <div class="inputContainer">
                             <input id="PlaceholderDurationSeconds" type="number" is="emby-input" min="1" max="3600" label="Placeholder Video Duration (seconds)"/>
-                            <div class="fieldDescription">Length of generated placeholder videos. Default is 10 seconds.</div>
+                            <div class="fieldDescription">Length of generated placeholder videos in the Jellyseerr library.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

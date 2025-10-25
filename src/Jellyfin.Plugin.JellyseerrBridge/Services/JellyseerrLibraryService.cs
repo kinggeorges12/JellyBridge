@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.IO;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Entities;
 using Jellyfin.Plugin.JellyseerrBridge.Configuration;
 using Jellyfin.Plugin.JellyseerrBridge.Services;
 using Jellyfin.Plugin.JellyseerrBridge.Utils;
@@ -27,7 +28,7 @@ public class JellyseerrLibraryService
     /// <summary>
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
-    public async Task<bool> RefreshJellyseerrLibraryAsync()
+    public bool RefreshJellyseerrLibrary()
     {
         try
         {
@@ -60,20 +61,47 @@ public class JellyseerrLibraryService
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
             // Create refresh options with default settings
-            var refreshOptions = CreateDefaultRefreshOptions();
+            var refreshOptions = new MetadataRefreshOptions(_directoryService)
+            {
+                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                ReplaceAllMetadata = true,
+                ReplaceAllImages = true,
+                RegenerateTrickplay = false,
+                ForceSave = true
+            };
             
             _logger.LogTrace("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
                 refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
 
-            // Refresh all Jellyseerr libraries
-            var refreshTasks = new List<Task>();
+            // Scan and refresh each Jellyseerr library individually in background
+            var backgroundTasks = new List<Task>();
+            
             foreach (var jellyseerrLibrary in jellyseerrLibraries)
             {
                 var libraryFolder = _libraryManager.GetItemById(jellyseerrLibrary.ItemId);
-                if (libraryFolder != null)
+                if (libraryFolder is Folder folder)
                 {
-                    _logger.LogTrace("[JellyseerrLibraryService] Refreshing library: {LibraryName}", jellyseerrLibrary.Name);
-                    refreshTasks.Add(libraryFolder.RefreshMetadata(refreshOptions, CancellationToken.None));
+                    _logger.LogTrace("[JellyseerrLibraryService] Starting background scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                    // Start the complete scan and refresh process in the background (don't await)
+                    backgroundTasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            // First scan the library to detect new/changed files
+                            _logger.LogTrace("[JellyseerrLibraryService] Scanning library: {LibraryName}", jellyseerrLibrary.Name);
+                            await folder.ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
+                            
+                            // Then refresh metadata for the detected items
+                            _logger.LogTrace("[JellyseerrLibraryService] Refreshing metadata for library: {LibraryName}", jellyseerrLibrary.Name);
+                            await folder.RefreshMetadata(refreshOptions, CancellationToken.None);
+                            
+                            _logger.LogTrace("[JellyseerrLibraryService] Completed scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[JellyseerrLibraryService] Error during background scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                        }
+                    }));
                 }
                 else
                 {
@@ -81,10 +109,8 @@ public class JellyseerrLibraryService
                 }
             }
 
-            // Wait for all refreshes to complete
-            await Task.WhenAll(refreshTasks);
-            
-            _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library refresh completed successfully");
+            // Return immediately - background tasks continue running
+            _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library refresh started successfully. Background scan and refresh tasks are running for {TaskCount} libraries", backgroundTasks.Count);
             return true;
         }
         catch (Exception ex)
@@ -92,21 +118,5 @@ public class JellyseerrLibraryService
             _logger.LogError(ex, "[JellyseerrLibraryService] Error refreshing Jellyseerr library");
             return false;
         }
-    }
-
-    /// <summary>
-    /// Creates default MetadataRefreshOptions for library refresh.
-    /// </summary>
-    /// <returns>Configured MetadataRefreshOptions instance.</returns>
-    private MetadataRefreshOptions CreateDefaultRefreshOptions()
-    {
-        return new MetadataRefreshOptions(_directoryService)
-        {
-            MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-            ReplaceAllMetadata = true,
-            ReplaceAllImages = true,
-            RegenerateTrickplay = false,
-            ForceSave = true
-        };
     }
 }

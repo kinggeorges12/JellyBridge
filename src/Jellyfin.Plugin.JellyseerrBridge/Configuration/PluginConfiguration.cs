@@ -26,7 +26,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(AutoSyncOnStartup), false },
         { nameof(MaxDiscoverPages), 1 },
         { nameof(MaxCollectionDays), 30 },
-        { nameof(RequestTimeout), 30 },
+        { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
         { nameof(EnableDebugLogging), false },
         { nameof(PlaceholderDurationSeconds), 10 },

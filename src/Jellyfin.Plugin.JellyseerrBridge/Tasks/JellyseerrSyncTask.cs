@@ -66,14 +66,26 @@ public class JellyseerrSyncTask : IScheduledTask
             return Array.Empty<TaskTriggerInfo>();
         }
 
-        return new[]
+        var triggers = new List<TaskTriggerInfo>();
+        
+        // Add interval trigger for regular syncing
+        triggers.Add(new TaskTriggerInfo
         {
-            new TaskTriggerInfo
+            Type = TaskTriggerInfo.TriggerInterval,
+            IntervalTicks = TimeSpan.FromHours(Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours))).Ticks
+        });
+        
+        // Add startup trigger if AutoSyncOnStartup is enabled
+        var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+        if (autoSyncOnStartup)
+        {
+            triggers.Add(new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours))).Ticks
-            }
-        };
+                Type = TaskTriggerInfo.TriggerStartup
+            });
+        }
+        
+        return triggers;
     }
 }
 
