@@ -800,17 +800,15 @@ function performSyncFavorites(page) {
             resultText += `\nDetails: ${result.details}\n`;
         }
         
-        if (result.moviesResult) {
-            resultText += `\nMovies Result:\n`;
-            resultText += `  Created: ${result.moviesResult.created || 0}\n`;
-            resultText += `  Updated: ${result.moviesResult.updated || 0}\n`;
-        }
-        
-        if (result.showsResult) {
-            resultText += `\nShows Result:\n`;
-            resultText += `  Created: ${result.showsResult.created || 0}\n`;
-            resultText += `  Updated: ${result.showsResult.updated || 0}\n`;
-        }
+                resultText += `\nMovies Result:\n`;
+                resultText += `  Processed: ${result.moviesResult?.moviesProcessed || 0}\n`;
+                resultText += `  Updated: ${result.moviesResult?.moviesUpdated || 0}\n`;
+                resultText += `  Created: ${result.moviesResult?.moviesCreated || 0}\n`;
+                
+                resultText += `\nShows Result:\n`;
+                resultText += `  Processed: ${result.showsResult?.showsProcessed || 0}\n`;
+                resultText += `  Updated: ${result.showsResult?.showsUpdated || 0}\n`;
+                resultText += `  Created: ${result.showsResult?.showsCreated || 0}\n`;
         
         syncFavoritesResult.textContent = resultText;
     }).catch(function(error) {

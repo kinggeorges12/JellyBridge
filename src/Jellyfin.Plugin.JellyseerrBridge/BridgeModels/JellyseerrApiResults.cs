@@ -2,13 +2,14 @@ using Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MediaBrowser.Controller.Entities;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.BridgeModels;
 
 /// <summary>
-/// Result of a processing operation.
+/// Result of processing Jellyseerr items with counts for created, updated, deleted items.
 /// </summary>
-public class ProcessResult
+public class ProcessJellyseerrResult
 {
     public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
     public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
@@ -20,10 +21,10 @@ public class ProcessResult
     public int Updated => ItemsUpdated.Count;
     public int Deleted => ItemsDeleted.Count;
 
-    // Combine two ProcessResult instances into a new aggregated result
-    public static ProcessResult operator +(ProcessResult left, ProcessResult right)
+    // Combine two ProcessJellyseerrResult instances into a new aggregated result
+    public static ProcessJellyseerrResult operator +(ProcessJellyseerrResult left, ProcessJellyseerrResult right)
     {
-        var combined = new ProcessResult();
+        var combined = new ProcessJellyseerrResult();
 
         if (left != null)
         {
@@ -45,9 +46,9 @@ public class ProcessResult
     }
 
     // Helper to combine many results at once
-    public static ProcessResult Combine(IEnumerable<ProcessResult> results)
+    public static ProcessJellyseerrResult Combine(IEnumerable<ProcessJellyseerrResult> results)
     {
-        var total = new ProcessResult();
+        var total = new ProcessJellyseerrResult();
         if (results == null)
         {
             return total;
@@ -89,19 +90,55 @@ public class ProcessResult
 }
 
 /// <summary>
-/// Result of a sync operation.
+/// Result of a sync operation to Jellyseerr (creating requests).
 /// </summary>
-public class SyncResult
+public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
-    public ProcessResult MoviesResult { get; set; } = new();
-    public ProcessResult ShowsResult { get; set; } = new();
+    public ProcessJellyseerrResult MoviesResult { get; set; } = new();
+    public ProcessJellyseerrResult ShowsResult { get; set; } = new();
 
     public override string ToString()
     {
         return $"Movies: {MoviesResult.Created} created, {MoviesResult.Updated} updated | Shows: {ShowsResult.Created} created, {ShowsResult.Updated} updated";
+    }
+}
+
+/// <summary>
+/// Result of a sync operation from Jellyfin (processing favorites).
+/// </summary>
+public class SyncJellyfinResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public ProcessJellyfinResult MoviesResult { get; set; } = new();
+    public ProcessJellyfinResult ShowsResult { get; set; } = new();
+
+    public override string ToString()
+    {
+        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Updated} updated, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Updated} updated, {ShowsResult.Created} created";
+    }
+}
+
+/// <summary>
+/// Result of processing Jellyfin items with lists of BaseItem for processed, updated, created items.
+/// </summary>
+public class ProcessJellyfinResult
+{
+    public List<BaseItem> ItemsProcessed { get; set; } = new();
+    public List<BaseItem> ItemsUpdated { get; set; } = new();
+    public List<BaseItem> ItemsCreated { get; set; } = new();
+
+    public int Processed => ItemsProcessed.Count;
+    public int Updated => ItemsUpdated.Count;
+    public int Created => ItemsCreated.Count;
+
+    public override string ToString()
+    {
+        return $"Processed: {Processed}, Updated: {Updated}, Created: {Created}";
     }
 }
 

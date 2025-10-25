@@ -3,6 +3,8 @@ using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
 using System;
 
@@ -18,6 +20,21 @@ public interface IJellyseerrItem
     /// </summary>
     [JsonIgnore]
     static virtual string LibraryType => throw new NotImplementedException();
+
+    /// <summary>
+    /// Get the Jellyseerr media type for a BaseItem.
+    /// </summary>
+    /// <param name="item">The BaseItem to get the media type for</param>
+    /// <returns>The Jellyseerr media type enum</returns>
+    static JellyseerrModel.MediaType GetMediaType(BaseItem item)
+    {
+        return item switch
+        {
+            Movie => JellyseerrModel.MediaType.MOVIE,
+            Series => JellyseerrModel.MediaType.TV,
+            _ => throw new NotSupportedException($"Unsupported item type: {item.GetType().Name}")
+        };
+    }
 
     /// <summary>
     /// The TMDB ID of the media item.

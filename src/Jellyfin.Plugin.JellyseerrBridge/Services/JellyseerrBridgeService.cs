@@ -114,7 +114,6 @@ public class JellyseerrBridgeService
         var requestResults = new List<JellyseerrMediaRequest>();
         
         // Step 5 & 6: Process unique bridge-only items with their first favorited user
-        var favoritedCount = 0;
         
         foreach (var (item, firstUser) in uniqueItemsWithFirstUser)
         {
@@ -123,17 +122,15 @@ public class JellyseerrBridgeService
                 var tmdbId = JellyfinHelper.GetTmdbId(item);
                 if (!tmdbId.HasValue)
                 {
-                    _logger.LogWarning("Skipping item {ItemName} - no TMDB ID found", item.Name);
+                    _logger.LogError("Skipping item {ItemName} - no TMDB ID found", item.Name);
                     continue;
                 }
                 
-                var mediaType = item is Movie ? "movie" : "tv";
+                var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
                 
                 _logger.LogTrace("Processing bridge-only item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
                     item.Name, tmdbId.Value, firstUser.Username);
-
-                favoritedCount++;
-                _logger.LogDebug("Creating request for {ItemName} on behalf of {UserName}", 
+                _logger.LogTrace("Creating request for {ItemName} on behalf of {UserName}", 
                     item.Name, firstUser.Username);
                 
                 // Create request for the user who favorited this item
@@ -160,7 +157,7 @@ public class JellyseerrBridgeService
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to create request for {ItemName} on behalf of {UserName}", 
+                        _logger.LogError("Received no response from Jellyseerr for item request {ItemName} on behalf of {UserName}", 
                             item.Name, firstUser.Username);
                     }
                 }
@@ -176,13 +173,13 @@ public class JellyseerrBridgeService
             }
         }
         
-        if (favoritedCount == 0)
+        if (requestResults.Count == 0)
         {
-            _logger.LogWarning("No favorited bridge-only items found");
+            _logger.LogDebug("No favorited bridge-only items found");
         }
         else
         {
-            _logger.LogDebug("Found {FavoritedCount} favorited bridge-only items and created requests", favoritedCount);
+            _logger.LogDebug("Found {FavoritedCount} favorited bridge-only items and created requests", requestResults.Count);
         }
         
         return requestResults;
@@ -198,58 +195,46 @@ public class JellyseerrBridgeService
         List<JellyseerrUser> jellyseerrUsers)
     {
         var uniqueItemsWithFirstUser = new List<(BaseItem item, JellyseerrUser firstUser)>();
-        var processedItemIds = new HashSet<int>(); // Track which items we've already processed by TMDB ID
+        var processedItemIds = new HashSet<Guid>(); // Track which items we've already processed by ID
         
-        // Create a lookup for Jellyseerr users by their Jellyfin username for quick access
+        // Create a lookup for Jellyseerr users by their Jellyfin user ID for quick access
         var jellyseerrUserLookup = jellyseerrUsers
-            .Where(u => !string.IsNullOrEmpty(u.JellyfinUsername))
-            .ToDictionary(
-                u => u.JellyfinUsername!.ToLowerInvariant(), 
-                u => u, 
-                StringComparer.OrdinalIgnoreCase);
-        
-        // Create a lookup for bridge-only items by their TMDB ID for quick access
-        var bridgeItemsLookup = bridgeOnlyItems
-            .Select(item => new { Item = item, TmdbId = JellyfinHelper.GetTmdbId(item) })
-            .Where(x => x.TmdbId.HasValue)
-            .ToLookup(x => x.TmdbId!.Value, x => x.Item);
+            .Where(u => !string.IsNullOrEmpty(u.JellyfinUserId))
+            .ToDictionary(u => u.JellyfinUserId!, u => u);
         
         // Loop through all favorites to find the first Jellyseerr user for each bridge-only item
         foreach (var (jellyfinUser, favoriteItems) in allFavorites)
         {
             // Check if this Jellyfin user has a corresponding Jellyseerr account
-            if (string.IsNullOrEmpty(jellyfinUser.Username) || 
-                !jellyseerrUserLookup.TryGetValue(jellyfinUser.Username.ToLowerInvariant(), out var jellyseerrUser))
+            if (!jellyseerrUserLookup.TryGetValue(jellyfinUser.Id.ToString(), out var jellyseerrUser))
             {
-                _logger.LogWarning("Jellyfin user '{JellyfinUsername}' does not have a corresponding Jellyseerr account - skipping favorites", jellyfinUser.Username);
+                _logger.LogWarning("Jellyfin user '{JellyfinUsername}' (ID: {JellyfinUserId}) does not have a corresponding Jellyseerr account - skipping favorites", 
+                    jellyfinUser.Username, jellyfinUser.Id);
                 continue; // Skip users without Jellyseerr accounts
             }
             
             // Check each favorited item to see if it matches a bridge-only item
             foreach (var favoriteItem in favoriteItems)
             {
-                var favoriteTmdbId = JellyfinHelper.GetTmdbId(favoriteItem);
-                if (!favoriteTmdbId.HasValue) continue;
-                
                 // Find bridge-only items that match this favorited item
-                var matchingBridgeItems = bridgeItemsLookup[favoriteTmdbId.Value];
-                
-                foreach (var bridgeItem in matchingBridgeItems)
+                foreach (var bridgeItem in bridgeOnlyItems)
                 {
-                    // Only process each unique item once (by TMDB ID)
-                    if (processedItemIds.Contains(favoriteTmdbId.Value))
+                    if (!JellyfinHelper.ItemsMatch(favoriteItem, bridgeItem)) continue;
+                    
+                    // Only process each unique item once (by ID)
+                    if (processedItemIds.Contains(bridgeItem.Id))
                     {
-                        _logger.LogDebug("Item {ItemName} (TMDB ID: {TmdbId}) was already favorited by another user - skipping favorite for user {UserName}", 
-                            bridgeItem.Name, favoriteTmdbId.Value, jellyseerrUser.Username);
+                        _logger.LogDebug("Item {ItemName} was already favorited by another user - skipping favorite for user {UserName}", 
+                            bridgeItem.Name, jellyseerrUser.Username);
                         continue;
                     }
                     
                     // Found the first Jellyseerr user for this bridge-only item
-                    processedItemIds.Add(favoriteTmdbId.Value);
+                    processedItemIds.Add(bridgeItem.Id);
                     uniqueItemsWithFirstUser.Add((bridgeItem, jellyseerrUser));
                     
-                    _logger.LogTrace("Found first Jellyseerr user {UserName} (Jellyfin: {JellyfinUser}) for item {ItemName} (TMDB ID: {TmdbId})", 
-                        jellyseerrUser.Username, jellyfinUser.Username, bridgeItem.Name, favoriteTmdbId.Value);
+                    _logger.LogTrace("Found first Jellyseerr user {UserName} (Jellyfin: {JellyfinUser}) for item {ItemName}", 
+                        jellyseerrUser.Username, jellyfinUser.Username, bridgeItem.Name);
                 }
             }
         }
@@ -610,10 +595,10 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    public async Task<ProcessResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
+    public async Task<ProcessJellyseerrResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
-        var result = new ProcessResult();
+        var result = new ProcessJellyseerrResult();
         
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -828,9 +813,9 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Cleans up metadata by removing items older than the specified number of days.
     /// </summary>
-    public async Task<ProcessResult> CleanupMetadataAsync()
+    public async Task<ProcessJellyseerrResult> CleanupMetadataAsync()
     {
-        var result = new ProcessResult();
+        var result = new ProcessJellyseerrResult();
 
         var maxCollectionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxCollectionDays));
         var cutoffDate = DateTime.Now.AddDays(-maxCollectionDays);
@@ -847,7 +832,7 @@ public class JellyseerrBridgeService
             var deletedMovies = ProcessItemsForCleanup(movies);
             var deletedShows = ProcessItemsForCleanup(shows);
             
-            // Create ProcessResult from the results
+            // Create ProcessJellyseerrResult from the results
             result.ItemsProcessed.AddRange(movies);
             result.ItemsProcessed.AddRange(shows);
             result.ItemsDeleted.AddRange(deletedMovies);
