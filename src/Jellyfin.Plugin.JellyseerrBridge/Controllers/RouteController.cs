@@ -287,8 +287,18 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         success = syncResult.Success,
                         message = syncResult.Message,
                         details = syncResult.Details,
-                        moviesResult = syncResult.MoviesResult,
-                        showsResult = syncResult.ShowsResult
+                        moviesResult = new
+                        {
+                            moviesProcessed = syncResult.MoviesResult.Processed,
+                            moviesUpdated = syncResult.MoviesResult.Updated,
+                            moviesCreated = syncResult.MoviesResult.Created
+                        },
+                        showsResult = new
+                        {
+                            showsProcessed = syncResult.ShowsResult.Processed,
+                            showsUpdated = syncResult.ShowsResult.Updated,
+                            showsCreated = syncResult.ShowsResult.Created
+                        }
                     };
                 }, _logger, "Sync to Jellyseerr");
                 

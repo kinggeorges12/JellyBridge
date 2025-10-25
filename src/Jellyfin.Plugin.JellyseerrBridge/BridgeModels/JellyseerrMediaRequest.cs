@@ -47,7 +47,7 @@ public class JellyseerrMediaRequest : MediaRequest
         {
             Movie => MediaType.MOVIE,
             Series => MediaType.TV,
-            _ => MediaType.MOVIE // Default fallback
+            _ => throw new NotSupportedException($"Unsupported item type: {jellyfinItem.GetType().Name}")
         };
         if (Type != jellyfinType)
             return false;

@@ -59,9 +59,9 @@ public partial class JellyseerrSyncService
     /// Sync folder structure and JSON metadata files from Jellyseerr to Jellyfin.
     /// Note: Caller is responsible for locking.
     /// </summary>
-    public async Task<SyncResult> SyncFromJellyseerr()
+    public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
-        var result = new SyncResult();
+        var result = new SyncJellyseerrResult();
 
         try
         {
@@ -201,9 +201,9 @@ public partial class JellyseerrSyncService
     /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items.
     /// Note: Caller is responsible for locking.
     /// </summary>
-    public async Task<SyncResult> SyncToJellyseerr()
+    public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
-        var result = new SyncResult();
+        var result = new SyncJellyfinResult();
 
         try
         {
@@ -230,20 +230,18 @@ public partial class JellyseerrSyncService
             
             _logger.LogDebug("Found {BridgeOnlyCount} bridge-only items in Jellyseerr bridge folder: {BridgePath}", bridgeOnlyItems.Count, bridgeLibraryPath);
             
+            // Add all bridge items to processed lists (these are all items we're working with)
+            result.MoviesResult.ItemsProcessed.AddRange(bridgeMovies);
+            result.ShowsResult.ItemsProcessed.AddRange(bridgeShows);
+            
             // Step 2: Get all Jellyfin users and their favorites
             var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
             _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavorites.Count);
             
-            var totalFavorites = allFavorites.Values.Sum(favs => favs.Count);
-            _logger.LogDebug("Total favorites across all users: {TotalFavorites}", totalFavorites);
-            
-            foreach (var (user, favorites) in allFavorites)
-            {
-                if (favorites.Count > 0)
-                {
-                    _logger.LogTrace("User '{Username}' has {FavoriteCount} favorites", user.Username, favorites.Count);
-                }
-            }
+            // Add all favorited items to updated lists (these are items that were favorited by users)
+            var allFavoritedItems = allFavorites.Values.SelectMany(favs => favs).ToList();
+            result.MoviesResult.ItemsUpdated.AddRange(allFavoritedItems.OfType<Movie>());
+            result.ShowsResult.ItemsUpdated.AddRange(allFavoritedItems.OfType<Series>());
             
             // Step 3: Get all Jellyseerr users for request creation
             var jellyseerrUsers = await _bridgeService.GetJellyseerrUsersAsync();
@@ -262,6 +260,16 @@ public partial class JellyseerrSyncService
             
             // Step 5 & 6: Create requests for favorited bridge-only items
             var requestResults = await _bridgeService.RequestFavorites(uniqueItemsWithJellyseerrUser);
+            
+            // Add items that had requests successfully created to the created lists
+            var createdItems = requestResults
+                .Select(request => bridgeOnlyItems.FirstOrDefault(item => 
+                    request.EqualsItem(item)))
+                .Where(item => item != null)
+                .ToList();
+            
+            result.MoviesResult.ItemsCreated.AddRange(createdItems.OfType<Movie>());
+            result.ShowsResult.ItemsCreated.AddRange(createdItems.OfType<Series>());
             
             result.Success = true;
             result.Message = $"Sync to Jellyseerr completed successfully - Created {requestResults.Count} requests";

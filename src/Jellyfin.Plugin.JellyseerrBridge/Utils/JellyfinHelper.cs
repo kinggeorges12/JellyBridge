@@ -158,6 +158,23 @@ public static class JellyfinHelper
         
         return null;
     }
+
+    /// <summary>
+    /// Check if two BaseItem objects match by comparing IDs and media types.
+    /// </summary>
+    /// <param name="item1">First BaseItem to compare</param>
+    /// <param name="item2">Second BaseItem to compare</param>
+    /// <returns>True if the items match, false otherwise</returns>
+    public static bool ItemsMatch(BaseItem item1, BaseItem item2)
+    {
+        if (item1 == null || item2 == null) return false;
+        
+        // Check item IDs first
+        if (item1.Id != item2.Id) return false;
+        
+        // Then check media types match
+        return (item1 is Movie && item2 is Movie) || (item1 is Series && item2 is Series);
+    }
 }
 
 /// <summary>
@@ -179,7 +196,7 @@ public class JellyfinTypeMapping
         {
             Type t when t == typeof(Movie) => libraryCollectionType.Value == CollectionTypeOptions.movies || libraryCollectionType.Value == CollectionTypeOptions.mixed,
             Type t when t == typeof(Series) => libraryCollectionType.Value == CollectionTypeOptions.tvshows || libraryCollectionType.Value == CollectionTypeOptions.mixed,
-            _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
+            _ => false // Unsupported item type
         };
     }
 
@@ -192,4 +209,5 @@ public class JellyfinTypeMapping
             _ => throw new NotSupportedException($"Unsupported item type: {typeof(T).Name}")
         };
     }
+
 }
