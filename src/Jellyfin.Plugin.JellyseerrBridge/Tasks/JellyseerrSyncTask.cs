@@ -37,14 +37,6 @@ public class JellyseerrSyncTask : IScheduledTask
         {
             _logger.LogInformation("Starting scheduled Jellyseerr sync task");
             
-            // Wait 15 seconds before starting if this is a startup triggered execution
-            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-            if (autoSyncOnStartup)
-            {
-                _logger.LogInformation("Startup sync detected, waiting 15 seconds before starting...");
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
-            }
-            
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync(async () =>
             {
@@ -135,14 +127,16 @@ public class JellyseerrSyncTask : IScheduledTask
         
         _logger.LogInformation("[JellyseerrSyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
         
-        // Add startup trigger if AutoSyncOnStartup is enabled
+        // Add startup trigger with configurable delay if AutoSyncOnStartup is enabled
         if (autoSyncOnStartup)
         {
+            var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             triggers.Add(new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerStartup
+                Type = TaskTriggerInfo.TriggerInterval,
+                IntervalTicks = TimeSpan.FromSeconds(startupDelaySeconds).Ticks
             });
-            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger");
+            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger with {StartupDelaySeconds} second delay", startupDelaySeconds);
         }
         
         _logger.LogInformation("[JellyseerrSyncTask] Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);

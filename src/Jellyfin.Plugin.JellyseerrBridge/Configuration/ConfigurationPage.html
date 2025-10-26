@@ -131,6 +131,10 @@
                 .helpButton {
                     display: flex;
                     flex: 1;
+                    width: 32px;
+                    height: 32px;
+                    line-height: 32px;
+                    align-items: center;
                 }
                 
                 .setupInstructions {
@@ -224,8 +228,8 @@
                         <div id="taskLastRun" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
                     </div>
                     
-                    <div class="checkboxContainer" id="IsEnabledContainer">
-                        <label class="emby-checkbox-label">
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label" id="IsEnabledContainer">
                             <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                             <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
                             <span class="checkboxOutline">
@@ -284,6 +288,18 @@
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
+                                <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Manage Jellyseerr library</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyseerrBridge <i>Library Directory</i> path. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
                                 <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Exclude Jellyfin library media from streaming libraries</span>
                                 <span class="checkboxOutline">
@@ -312,18 +328,6 @@
                             <div class="fieldDescription">Prefix for streaming service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/Jellyseerr/Network - FOX/The Matrix (1999)</code></div>
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Manage Jellyseerr library</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyseerrBridge <i>Library Directory</i> path. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
-                        </div>
-
 
                         <div>
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
@@ -337,20 +341,8 @@
                     <br>
 
                     <details id="syncSettings">
-                        <summary>Sync Settings</summary>
+                        <summary>Discover Settings</summary>
                         <br>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="AutoSyncOnStartup" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Auto-sync on Plugin Startup</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
-                        </div>
 
                         <div class="inputContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
@@ -436,6 +428,24 @@
                     <details id="advancedSettings">
                         <summary>Advanced</summary>
                         <br>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="AutoSyncOnStartup" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Auto-sync on Plugin Startup</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
+                        </div>
+
+                        <div class="inputContainer" id="StartupDelaySecondsContainer">
+                            <input id="StartupDelaySeconds" type="number" is="emby-input" min="0" max="900" label="Startup Delay (seconds)"/>
+                            <div class="fieldDescription">Delay a number of seconds before running the auto-sync task on startup.</div>
+                        </div>
+
                         <div class="inputContainer">
                             <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" label="Request Timeout (seconds)"/>
                             <div class="fieldDescription">Timeout for API requests to Jellyseerr.</div>
