@@ -217,7 +217,10 @@
                     <div id="taskStatusContainer" class="taskStatusContainer" style="margin-bottom: 20px; padding: 15px; background-color: rgba(0, 0, 0, 0.1); border-radius: 8px;">
                         <div class="taskStatusHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <h3 style="margin: 0; font-size: 1.1em;">🔄 Scheduled Sync Status</h3>
-                            <span id="taskStatusText" style="font-weight: bold; color: #666;">Checking...</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button type="button" id="refreshTaskStatus" is="emby-button" class="raised button emby-button" style="padding: 5px 10px; font-size: 0.8em;" title="Refresh status">↻</button>
+                                <span id="taskStatusText" style="font-weight: bold; color: #666;">Checking...</span>
+                            </div>
                         </div>
                         <div id="taskProgressContainer" style="display: none;">
                             <div class="itemProgressBar">
@@ -225,7 +228,7 @@
                             </div>
                             <div id="taskProgressText" style="text-align: center; margin-top: 5px; font-size: 0.9em; color: #999;"></div>
                         </div>
-                        <div id="taskLastRun" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
+                        <div id="taskStatusTimes" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
                     </div>
                     
                     <div class="checkboxContainer">

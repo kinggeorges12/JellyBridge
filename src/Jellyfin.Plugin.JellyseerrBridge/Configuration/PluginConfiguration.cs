@@ -24,7 +24,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(AutoSyncOnStartup), true },
-        { nameof(StartupDelaySeconds), 15 },
+        { nameof(StartupDelaySeconds), 60 },
         { nameof(MaxDiscoverPages), 1 },
         { nameof(MaxCollectionDays), 30 },
         { nameof(RequestTimeout), 60 },
