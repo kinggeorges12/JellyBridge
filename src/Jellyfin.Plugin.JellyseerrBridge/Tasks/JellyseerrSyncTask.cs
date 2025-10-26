@@ -120,26 +120,28 @@ public class JellyseerrSyncTask : IScheduledTask
         var config = Plugin.GetConfiguration();
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
         var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+        var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
+        var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
         
-        _logger.LogInformation("[JellyseerrSyncTask] GetDefaultTriggers called - IsEnabled: {IsEnabled}, AutoSyncOnStartup: {AutoSyncOnStartup}", isEnabled, autoSyncOnStartup);
+        _logger.LogInformation("Adding default triggers - IsEnabled: {IsEnabled}, IntervalHours: {IntervalHours}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}",
+            isEnabled, autoSyncOnStartup, intervalHours, startupDelaySeconds);
         
         if (!isEnabled)
         {
-            _logger.LogInformation("[JellyseerrSyncTask] Plugin is disabled, returning empty triggers");
+            _logger.LogDebug("[JellyseerrSyncTask] Plugin is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 
         var triggers = new List<TaskTriggerInfo>();
         
         // Add interval trigger for regular syncing
-        var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
         triggers.Add(new TaskTriggerInfo
         {
             Type = TaskTriggerInfo.TriggerInterval,
             IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
         });
         
-        _logger.LogInformation("[JellyseerrSyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
+        _logger.LogDebug("[JellyseerrSyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
         
         // Add startup trigger if AutoSyncOnStartup is enabled
         if (autoSyncOnStartup)
@@ -148,10 +150,10 @@ public class JellyseerrSyncTask : IScheduledTask
             {
                 Type = TaskTriggerInfo.TriggerStartup
             });
-            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger");
+            _logger.LogDebug("[JellyseerrSyncTask] Added startup trigger");
         }
         
-        _logger.LogInformation("[JellyseerrSyncTask] Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
+        _logger.LogDebug("[JellyseerrSyncTask] Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
         return triggers;
     }
 }

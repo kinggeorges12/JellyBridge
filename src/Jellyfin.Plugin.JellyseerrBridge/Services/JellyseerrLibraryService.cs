@@ -28,7 +28,8 @@ public class JellyseerrLibraryService
     /// <summary>
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
-    public bool RefreshJellyseerrLibrary()
+    /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
+    public bool RefreshJellyseerrLibrary(bool fullRefresh = true)
     {
         try
         {
@@ -45,7 +46,7 @@ public class JellyseerrLibraryService
                 throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
             }
 
-            _logger.LogDebug("[JellyseerrLibraryService] Starting Jellyseerr library refresh...");
+            _logger.LogDebug("[JellyseerrLibraryService] Starting Jellyseerr library refresh (FullRefresh: {FullRefresh})...", fullRefresh);
 
             // Find all libraries that contain Jellyseerr folders
             var libraries = _libraryManager.GetVirtualFolders();
@@ -60,21 +61,21 @@ public class JellyseerrLibraryService
             _logger.LogTrace("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
-            // Create refresh options with full refresh settings
+            // Create refresh options based on fullRefresh parameter
             var refreshOptions = new MetadataRefreshOptions(_directoryService)
             {
-                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                ReplaceAllMetadata = true,
-                ReplaceAllImages = true,
+                MetadataRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
+                ImageRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
+                ReplaceAllMetadata = fullRefresh,
+                ReplaceAllImages = fullRefresh,
                 RegenerateTrickplay = false,
                 ForceSave = true,
                 IsAutomated = false,
                 RemoveOldMetadata = false
             };
             
-            _logger.LogTrace("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
-                refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
+            _logger.LogTrace("[JellyseerrLibraryService] Refresh options - MetadataRefreshMode: {MetadataRefreshMode}, ImageRefreshMode: {ImageRefreshMode}, ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
+                refreshOptions.MetadataRefreshMode, refreshOptions.ImageRefreshMode, refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
 
             // Scan and refresh each Jellyseerr library individually in background
             var backgroundTasks = new List<Task>();
