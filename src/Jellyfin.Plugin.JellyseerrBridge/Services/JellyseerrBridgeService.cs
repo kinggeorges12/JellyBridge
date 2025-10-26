@@ -607,10 +607,11 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    public async Task<ProcessJellyseerrResult> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
+    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
-        var result = new ProcessJellyseerrResult();
+        var addedItems = new List<TJellyseerr>();
+        var updatedItems = new List<TJellyseerr>();
         
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
@@ -618,16 +619,13 @@ public class JellyseerrBridgeService
         _logger.LogDebug("[JellyseerrBridge] CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
             typeof(TJellyseerr).Name, baseDirectory, items.Count);
         
-        
-        // Add all items to processed list at once
-        result.ItemsProcessed.AddRange(items);
-        
-        foreach (var item in items)
+        for (int i = 0; i < items.Count; i++)
         {
+            var item = items[i];
             try
             {
                 _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
-                    result.Processed, items.Count, item.MediaName, item.Id, item.Year);
+                    i + 1, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
                 var folderName = GetJellyseerrItemDirectory(item);
@@ -643,13 +641,13 @@ public class JellyseerrBridgeService
                 {
                     if (folderExists)
                     {
-                        result.ItemsUpdated.Add(item);
+                        updatedItems.Add(item);
                         _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
                     else
                     {
-                        result.ItemsAdded.Add(item);
+                        addedItems.Add(item);
                         _logger.LogTrace("[JellyseerrBridge] CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
@@ -667,10 +665,10 @@ public class JellyseerrBridgeService
             }
         }
         
-        _logger.LogDebug("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Processed: {Processed}, Created: {Created}, Updated: {Updated}", 
-            typeof(TJellyseerr).Name, result.Processed, result.Created, result.Updated);
+        _logger.LogDebug("[JellyseerrBridge] CreateFoldersAsync: Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
+            typeof(TJellyseerr).Name, addedItems.Count, updatedItems.Count);
         
-        return result;
+        return (addedItems, updatedItems);
     }
     
     /// <summary>
@@ -678,7 +676,7 @@ public class JellyseerrBridgeService
     /// </summary>
     public async Task<List<TJellyseerr>> CreatePlaceholderVideosAsync<TJellyseerr>(
         List<TJellyseerr> unmatchedItems) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+        where TJellyseerr : IJellyseerrItem
     {
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
@@ -825,10 +823,8 @@ public class JellyseerrBridgeService
     /// <summary>
     /// Cleans up metadata by removing items older than the specified number of days.
     /// </summary>
-    public async Task<ProcessJellyseerrResult> CleanupMetadataAsync()
+    public async Task<(List<JellyseerrMovie> deletedMovies, List<JellyseerrShow> deletedShows)> CleanupMetadataAsync()
     {
-        var result = new ProcessJellyseerrResult();
-
         var maxCollectionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxCollectionDays));
         var cutoffDate = DateTime.Now.AddDays(-maxCollectionDays);
 
@@ -843,21 +839,17 @@ public class JellyseerrBridgeService
             // Process movies and shows using the same logic
             var deletedMovies = ProcessItemsForCleanup(movies);
             var deletedShows = ProcessItemsForCleanup(shows);
-            
-            // Create ProcessJellyseerrResult from the results
-            result.ItemsProcessed.AddRange(movies);
-            result.ItemsProcessed.AddRange(shows);
-            result.ItemsDeleted.AddRange(deletedMovies);
-            result.ItemsDeleted.AddRange(deletedShows);
 
-            _logger.LogDebug("[JellyseerrBridge] CleanupMetadataAsync: Completed cleanup - {Result}", result.ToString());
+            _logger.LogDebug("[JellyseerrBridge] CleanupMetadataAsync: Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
+                deletedMovies.Count, deletedShows.Count);
+            
+            return (deletedMovies, deletedShows);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[JellyseerrBridge] CleanupMetadataAsync: Error during cleanup process");
+            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
         }
-
-        return result;
     }
 
     #endregion

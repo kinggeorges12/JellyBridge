@@ -119,53 +119,55 @@ public partial class JellyseerrSyncService
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
             
-            // Get the results
-            var moviesResult = await movieTask;
-            var showsResult = await showTask;
+            // Get the results and set them immediately
+            var (addedMovies, updatedMovies) = await movieTask;
+            var (addedShows, updatedShows) = await showTask;
+            result.AddedMovies = addedMovies;
+            result.UpdatedMovies = updatedMovies;
+            result.AddedShows = addedShows;
+            result.UpdatedShows = updatedShows;
 
             // Run library scan to find matches and get unmatched items
             var (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
 
             // Create ignore files for matched items
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library", matchedItems.Count);
-            await _bridgeService.CreateIgnoreFilesAsync(matchedItems);
-
-            // Separate unmatched items by type for processing
-            var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
-            var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
+            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
+                matchedItems.Count);
+            var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
             // Create placeholder videos only for unmatched items
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedMovieCount} movies not in Jellyfin library...", unmatchedMovies.Count);
-            var processedMovies = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
-
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating placeholder videos for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
-            var processedShows = await _bridgeService.CreatePlaceholderVideosAsync(unmatchedShows);
+            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedCount} unmatched items not in Jellyfin library...", 
+                unmatchedItems.Count);
+            var placeholderTask = _bridgeService.CreatePlaceholderVideosAsync(unmatchedItems);
+            await Task.WhenAll(ignoreTask, placeholderTask);
 
             // Create season folders for unmatched TV shows only
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
+            //_logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
             //TODO: Uncomment this if nfo files don't work
             //await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
 
             // Clean up old metadata before refreshing library
             _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
-            var cleanupResult = await _bridgeService.CleanupMetadataAsync();
+            var (deletedMovies, deletedShows) = await _bridgeService.CleanupMetadataAsync();
+            result.DeletedMovies = deletedMovies;
+            result.DeletedShows = deletedShows;
             
             result.Success = true;
-            result.MoviesResult = moviesResult;
-            result.ShowsResult = showsResult;
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
-            result.Details = $"Movies: {moviesResult.ToString()}\nShows: {showsResult.ToString()}\nCleanup: {cleanupResult.ToString()}";
+            result.Details = $"Movies: {addedMovies.Count} added, {updatedMovies.Count} updated, {deletedMovies.Count} deleted | Shows: {addedShows.Count} added, {updatedShows.Count} updated, {deletedShows.Count} deleted";
 
-            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
-                moviesResult.Created, moviesResult.Updated, showsResult.Created, showsResult.Updated);
+            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated | Shows: {ShowAdded} added, {ShowUpdated} updated", 
+                addedMovies.Count, updatedMovies.Count, addedShows.Count, updatedShows.Count);
 
             // Check if library management is enabled
-            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Refreshing Jellyfin library with synced content...");
-            var refreshSuccess = _libraryService.RefreshJellyseerrLibrary();
+            // Only perform full refresh if items were deleted (cleanup result)
+            var itemsDeleted = deletedMovies.Count > 0 || deletedShows.Count > 0;
+            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Refreshing Jellyfin library with synced content... (FullRefresh: {FullRefresh})", itemsDeleted);
+            var refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted);
             if (refreshSuccess)
             {
                 _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
-                result.Message += " and library refreshed";
+                result.Message += $" and started {(itemsDeleted ? "full" : "partial")} library refresh";
             }
             else
             {

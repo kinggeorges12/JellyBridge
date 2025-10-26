@@ -97,12 +97,16 @@ public class SyncJellyseerrResult
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
-    public ProcessJellyseerrResult MoviesResult { get; set; } = new();
-    public ProcessJellyseerrResult ShowsResult { get; set; } = new();
+    public List<JellyseerrMovie> AddedMovies { get; set; } = new();
+    public List<JellyseerrMovie> UpdatedMovies { get; set; } = new();
+    public List<JellyseerrShow> AddedShows { get; set; } = new();
+    public List<JellyseerrShow> UpdatedShows { get; set; } = new();
+    public List<JellyseerrMovie> DeletedMovies { get; set; } = new();
+    public List<JellyseerrShow> DeletedShows { get; set; } = new();
 
     public override string ToString()
     {
-        return $"Movies: {MoviesResult.Created} created, {MoviesResult.Updated} updated | Shows: {ShowsResult.Created} created, {ShowsResult.Updated} updated";
+        return $"Movies: {AddedMovies.Count} added, {UpdatedMovies.Count} updated, {DeletedMovies.Count} deleted | Shows: {AddedShows.Count} added, {UpdatedShows.Count} updated, {DeletedShows.Count} deleted";
     }
 }
 

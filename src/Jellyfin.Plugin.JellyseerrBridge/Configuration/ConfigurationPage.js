@@ -148,7 +148,7 @@ function updateTaskStatusDisplay(page, taskData) {
         if (taskData.lastRun) {
             if (runInfo) runInfo += ' • ';
             runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-        } else {
+    } else {
             runInfo = 'No previous runs';
         }
         if (taskData.nextRun) {
@@ -197,6 +197,7 @@ function initializeGeneralSettings(page) {
             // Use the reusable function to save configuration
             savePluginConfiguration(page).then(function (result) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
+                checkTaskStatus(page);
             }).catch(function (error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyseerrBridgeConfigurationForm');
@@ -249,6 +250,7 @@ function performTestConnection(page) {
                     // Save the current settings using the reusable function
                     savePluginConfiguration(page).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
+                        checkTaskStatus(page);
                     }).catch(function (error) {
                         Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                     }).finally(function() {
