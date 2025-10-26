@@ -37,6 +37,14 @@ public class JellyseerrSyncTask : IScheduledTask
         {
             _logger.LogInformation("Starting scheduled Jellyseerr sync task");
             
+            // Wait 15 seconds before starting if this is a startup triggered execution
+            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+            if (autoSyncOnStartup)
+            {
+                _logger.LogInformation("Startup sync detected, waiting 15 seconds before starting...");
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+            }
+            
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync(async () =>
             {
