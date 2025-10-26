@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-26T02:12:51.109Z",
+        "version": "0.283.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.283.0.0 - Fixed username logging to use JellyfinUsername instead of Username, optimized GetUserFavorites to query favorites directly using InternalItemsQuery.IsFavorite, and fixed duplicate processing in EnsureFirstJellyseerrUser",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.283.0.0/JellyseerrBridge-0.283.0.0-DLL.zip",
+        "checksum": "63D05A70F17C54A616947C6B8ECEF903",
+        "dependencies": []
+      },
+      {
         "timestamp": "2025-10-25T23:29:03.033Z",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.282.0.0/JellyseerrBridge-0.282.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
