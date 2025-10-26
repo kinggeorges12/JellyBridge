@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.291.0.0 - Fixed library refresh to call both ValidateChildren and RefreshMetadata with full refresh options, fixed FFmpeg initialization race condition",
+        "version": "0.291.0.0",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-26T17:55:34.992Z",
+        "checksum": "0C940B232900F21A5C279A48827D18D6",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.291.0.0/JellyseerrBridge-0.291.0.0-DLL.zip"
+      },
+      {
         "changelog": "v0.290.0.0 - Added 15 second delay on startup sync, fixed IsEnabled checkbox structure, moved Sync Interval field, improved UI layout, and added region container ID",
         "timestamp": "2025-10-26T17:40:29.054Z",
         "version": "0.290.0.0",

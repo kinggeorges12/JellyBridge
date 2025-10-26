@@ -60,14 +60,17 @@ public class JellyseerrLibraryService
             _logger.LogTrace("[JellyseerrLibraryService] Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
-            // Create refresh options with default settings
+            // Create refresh options with full refresh settings
             var refreshOptions = new MetadataRefreshOptions(_directoryService)
             {
                 MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
                 ReplaceAllMetadata = true,
                 ReplaceAllImages = true,
                 RegenerateTrickplay = false,
-                ForceSave = true
+                ForceSave = true,
+                IsAutomated = false,
+                RemoveOldMetadata = false
             };
             
             _logger.LogTrace("[JellyseerrLibraryService] Refresh options - ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
@@ -87,15 +90,15 @@ public class JellyseerrLibraryService
                     {
                         try
                         {
-                            // First scan the library to detect new/changed files
-                            _logger.LogTrace("[JellyseerrLibraryService] Scanning library: {LibraryName}", jellyseerrLibrary.Name);
+                            // First validate children to scan for new/changed files
+                            _logger.LogTrace("[JellyseerrLibraryService] Validating library: {LibraryName}", jellyseerrLibrary.Name);
                             await folder.ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
                             
-                            // Then refresh metadata for the detected items
+                            // Then refresh metadata with the refresh options
                             _logger.LogTrace("[JellyseerrLibraryService] Refreshing metadata for library: {LibraryName}", jellyseerrLibrary.Name);
                             await folder.RefreshMetadata(refreshOptions, CancellationToken.None);
                             
-                            _logger.LogTrace("[JellyseerrLibraryService] Completed scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                            _logger.LogTrace("[JellyseerrLibraryService] Completed validation and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
                         }
                         catch (Exception ex)
                         {
