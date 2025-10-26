@@ -18,7 +18,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(LibraryDirectory), "/data/Jellyseerr" },
-        { nameof(IsEnabled), true },
+        { nameof(IsEnabled), false },
         { nameof(SyncIntervalHours), 24 },
         { nameof(CreateSeparateLibraries), false },
         { nameof(LibraryPrefix), string.Empty },

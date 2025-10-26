@@ -211,6 +211,18 @@ function initializeGeneralSettings(page) {
         performTestConnection(page);
     });
     
+    // Library setup help button functionality
+    const helpButton = page.querySelector('#librarySetupHelp');
+    if (helpButton) {
+        helpButton.addEventListener('click', function () {
+            const instructionsDiv = page.querySelector('#librarySetupInstructions');
+            if (instructionsDiv) {
+                const isVisible = instructionsDiv.style.display !== 'none';
+                instructionsDiv.style.display = isVisible ? 'none' : 'block';
+            }
+        });
+    }
+    
     // Add form submit event listener
     const form = page.querySelector('#jellyseerrBridgeConfigurationForm');
     if (form) {
@@ -956,7 +968,7 @@ function performPluginReset(page) {
                 // Second confirmation with warning emoji for data deletion
                 Dashboard.confirm({
                     title: '❗ Delete Library Data',
-                    text: `This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${currentLibraryDir}". Are you sure you want to delete the data?`,
+                    text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
                     confirmText: 'Yes! Proceed to final confirmation...',
                     cancelText: 'Cancel',
                     primary: "cancel"
@@ -965,7 +977,7 @@ function performPluginReset(page) {
                         // Third confirmation with emergency emoji for final data deletion
                         Dashboard.confirm({
                             title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                            text: `LAST WARNING: This is your final chance to cancel! This will permanently delete ALL Jellyseerr library data: Delete ALL library folders and files, Remove ALL generated content, This action CANNOT be undone! Library Directory: "${currentLibraryDir}". Are you absolutely certain you want to proceed?`,
+                            text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
                             confirmText: '🚩 YES, DELETE EVERYTHING',
                             cancelText: 'Cancel',
                             primary: "cancel"

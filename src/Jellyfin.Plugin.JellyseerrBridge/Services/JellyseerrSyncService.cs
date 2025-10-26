@@ -269,15 +269,9 @@ public partial class JellyseerrSyncService
             // Step 5 & 6: Create requests for favorited bridge-only items
             var requestResults = await _bridgeService.RequestFavorites(uniqueItemsWithJellyseerrUser);
             
-            // Add items that had requests successfully created to the created lists
-            var createdItems = requestResults
-                .Select(request => bridgeOnlyItems.FirstOrDefault(item => 
-                    request.EqualsItem(item)))
-                .Where(item => item != null)
-                .ToList();
-            
-            result.MoviesResult.ItemsCreated.AddRange(createdItems.OfType<Movie>());
-            result.ShowsResult.ItemsCreated.AddRange(createdItems.OfType<Series>());
+            // Add the successful requests directly to the created lists
+            result.MoviesResult.ItemsCreated.AddRange(requestResults.Where(r => r.Type == JellyseerrModel.MediaType.MOVIE));
+            result.ShowsResult.ItemsCreated.AddRange(requestResults.Where(r => r.Type == JellyseerrModel.MediaType.TV));
             
             result.Success = true;
             result.Message = $"Sync to Jellyseerr completed successfully - Created {requestResults.Count} requests";
