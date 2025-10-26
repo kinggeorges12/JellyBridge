@@ -229,23 +229,31 @@
                     
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
-                            <span>Enable the automated task to sync Jellyseerr and Jellyfin</span>
+                            <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                            <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
                             <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
+                            <span class="checkboxOutline">
+                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                            </span>
                         </label>
+                        <div id="librarySetupInstructions" class="setup-instructions verticalSection" style="display: none;">
+                            <h4>Library Setup Instructions</h4>
+                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                            <ul>
+                                <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
+                                <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
+                                <li><strong>Folders:</strong> 📁 Use the default folder '/data/Jellyseerr' OR specify the same root folder as found under Library Settings > Library Directory</li>
+                                <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
+                                <li>☑️ Save artwork into media folders</li>
+                                <li><strong>Subtitle downloaders:</strong> ☐ Open Subtitles</li>
+                            </ul>
+                        </div>
                     </div>
                     
-                    <div id="librarySetupInstructions" class="setup-instructions verticalSection" style="display: none;">
-                        <h4>Library Setup Instructions</h4>
-                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
-                        <ul>
-                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming".</li>
-                            <li><strong>Folders:</strong> 📁 Use the default folder '/data/Jellyseerr' OR specify the same root folder as found under Library Settings > Library Directory</li>
-                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
-                            <li>☑️ Save artwork into media folders</li>
-                            <li><strong>Subtitle downloaders:</strong> ☐ Open Subtitles</li>
-                        </ul>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" step="0.1"/>
+                        <div class="fieldDescription">How often to sync with Jellyseerr (accepts partial hours, e.g., 1.5). Set to 0 to disable automatic syncing.</div>
                     </div>
 
                     <div class="inputContainer">
@@ -262,13 +270,6 @@
                         <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
                             <span>Test Connection</span>
                         </button>
-                    </div>
-
-
-
-                    <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" step="0.1"/>
-                        <div class="fieldDescription">How often to sync with Jellyseerr (accepts partial hours, e.g., 1.5). Set to 0 to disable automatic syncing.</div>
                     </div>
 
                     <br>
@@ -361,7 +362,7 @@
                             <div class="fieldDescription">Maximum number of days to keep items in the collection before cleanup. Items older than this will be removed during sync operations. Default is 30 days.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="regionContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1;">
                                     <label class="inputLabel inputLabelUnfocused" for="selectWatchRegion">Region <span class="helpIcon" title="Click the refresh button to load all regions from Jellyseerr. Only unselected default networks from Jellyseerr's Network Slider are shown in the list.">?</span></label>

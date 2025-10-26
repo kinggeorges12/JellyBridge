@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.290.0.0 - Added 15 second delay on startup sync, fixed IsEnabled checkbox structure, moved Sync Interval field, improved UI layout, and added region container ID",
+        "timestamp": "2025-10-26T17:40:29.054Z",
+        "version": "0.290.0.0",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "checksum": "2AEFE091B91658804C813776F7021E8E",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.290.0.0/JellyseerrBridge-0.290.0.0-DLL.zip"
+      },
+      {
         "changelog": "v0.289.0.0 - Fixed help icon clickability, improved disabled state styling, added scroll offset for plugin container bar, and enhanced decimal support for sync interval",
         "targetAbi": "10.10.7.0",
         "version": "0.289.0.0",
