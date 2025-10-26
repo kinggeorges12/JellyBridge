@@ -178,6 +178,50 @@
                     opacity: 0.6;
                     pointer-events: none;
                 }
+                
+                .help-button {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-color: #0078d4;
+                    color: white;
+                    border-radius: 50%;
+                    text-align: center;
+                    line-height: 20px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    margin-left: 8px;
+                    vertical-align: middle;
+                    transition: background-color 0.2s ease;
+                }
+                
+                .help-button:hover {
+                    background-color: #106ebe;
+                }
+                
+                .setup-instructions {
+                    background-color: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    padding: 16px;
+                    margin-top: 12px;
+                    margin-bottom: 16px;
+                }
+                
+                .setup-instructions h4 {
+                    margin-top: 0;
+                    margin-bottom: 12px;
+                    color: #495057;
+                }
+                
+                .setup-instructions ul {
+                    margin-bottom: 0;
+                }
+                
+                .setup-instructions li {
+                    margin-bottom: 4px;
+                }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -188,6 +232,20 @@
                             <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
                             <span>Enable the automated task to sync Jellyseerr and Jellyfin</span>
                         </label>
+                        <span class="help-button" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
+                    </div>
+                    
+                    <div id="librarySetupInstructions" class="setup-instructions" style="display: none;">
+                        <h4>Library Setup Instructions</h4>
+                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                        <ul>
+                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
+                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming".</li>
+                            <li><strong>Folders:</strong> 📁 Use the default folder '/data/Jellyseerr' OR specify the same root folder as found under Library Settings > Library Directory</li>
+                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
+                            <li>☑️ Save artwork into media folders</li>
+                            <li><strong>Subtitle downloaders:</strong> ☐ Open Subtitles</li>
+                        </ul>
                     </div>
 
                     <div class="inputContainer">
@@ -411,6 +469,9 @@
                             <div class="fieldDescription" style="color: #ff6b6b; font-size: 0.85em; margin-top: 5px;">
                                 <strong>WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
                             </div>
+                            <div class="fieldDescription" style="color: #ffa726; font-size: 0.85em; margin-top: 8px; font-weight: bold;">
+                                <strong>⚠️ IMPORTANT:</strong> After resetting, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page.
+                            </div>
                         </div>
 
                     </details>
@@ -428,7 +489,7 @@
             <div style="margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.1); border-radius: 5px; font-size: 0.9em; color: #888;">
                 <p><strong>Credits & Acknowledgments:</strong></p>
                 <p>Thank you to the creator of the <a href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" target="_blank" style="color: #2196f3;"><strong>Overseer-Jellyfin Bridge Script</strong></a> for the inspiration. Special thanks to the developers of the <a href="https://github.com/intro-skipper" target="_blank" style="color: #2196f3;"><strong>Intro Skipper</strong></a> and <a href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" target="_blank" style="color: #2196f3;"><strong>Custom Tabs</strong></a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.</p>
-                <p>And of course, thanks to the developers of <a href="https://jellyfin.org/" target="_blank" style="color: #2196f3;"><strong></strong>Jellyfin</strong></a> and <a href="https://seerr.dev/" target="_blank" style="color: #2196f3;"><strong>Jellyseerr</strong></a> for making it all possible.</p>
+                <p>And of course, thanks to the developers of <a href="https://jellyfin.org/" target="_blank" style="color: #2196f3;"><strong>Jellyfin</strong></a> and <a href="https://seerr.dev/" target="_blank" style="color: #2196f3;"><strong>Jellyseerr</strong></a> for making it all possible.</p>
             </div>
         </div>
     </div>
