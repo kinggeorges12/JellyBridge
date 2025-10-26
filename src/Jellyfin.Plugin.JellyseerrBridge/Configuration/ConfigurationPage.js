@@ -340,7 +340,8 @@ function initializeSyncSettings(page) {
         refreshAvailableButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
             loadAvailableNetworks(page).then(function(availableNetworks) {
-                Dashboard.alert(`✅ Available networks refreshed successfully! Loaded ${availableNetworks.length} new networks.`);
+                Dashboard.alert(`✅ Refreshed available networks.`);
+                scrollToElement('availableNetworks');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
                 scrollToElement('syncSettings');
@@ -350,10 +351,10 @@ function initializeSyncSettings(page) {
         });
     }
     
-    // Add manual sync button functionality
-    const syncButton = page.querySelector('#manualSync');
+    // Add sync discover button functionality
+    const syncButton = page.querySelector('#syncDiscover');
     syncButton.addEventListener('click', function () {
-        performSyncLibrary(page);
+        performSyncDiscover(page);
     });
 
     // Add reset plugin button functionality
@@ -805,61 +806,83 @@ function performTestConnection(page) {
 // Sync favorites function
 function performSyncFavorites(page) {
     const syncFavoritesButton = page.querySelector('#syncFavorites');
-    const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-    
-    // Show immediate feedback that button was clicked
-    syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
-    syncFavoritesResult.style.display = 'block';
-    
-    syncFavoritesButton.disabled = true;
-    Dashboard.showLoadingMsg();
-    
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/SyncFavorites'),
-        type: 'POST',
-        data: '{}',
-        contentType: 'application/json',
-        dataType: 'json'
-    }).then(function(result) {
-        let resultText = `Sync to Jellyseerr Results:\n`;
-        resultText += `${result.message || 'No message'}\n`;
-        
-        if (result.details) {
-            resultText += `\nDetails: ${result.details}\n`;
-        }
-        
-                resultText += `\nMovies Result:\n`;
-                resultText += `  Processed: ${result.moviesResult?.moviesProcessed || 0}\n`;
-                resultText += `  Updated: ${result.moviesResult?.moviesUpdated || 0}\n`;
-                resultText += `  Created: ${result.moviesResult?.moviesCreated || 0}\n`;
-                
-                resultText += `\nShows Result:\n`;
-                resultText += `  Processed: ${result.showsResult?.showsProcessed || 0}\n`;
-                resultText += `  Updated: ${result.showsResult?.showsUpdated || 0}\n`;
-                resultText += `  Created: ${result.showsResult?.showsCreated || 0}\n`;
-        
-        syncFavoritesResult.textContent = resultText;
-    }).catch(function(error) {
-        Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
-        
-        let resultText = `Sync to Jellyseerr Results:\n`;
-        resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
-        
-        syncFavoritesResult.textContent = resultText;
-    }).finally(function() {
-        Dashboard.hideLoadingMsg();
-        syncFavoritesButton.disabled = false;
-    });
-}
-
-// Complete manual sync workflow
-function performSyncLibrary(page) {
-    const syncButton = page.querySelector('#manualSync');
     
     // Show confirmation dialog for saving settings before sync
     Dashboard.confirm({
         title: 'Confirm Save',
-        text: 'Settings will be saved before starting sync.',
+        text: 'Settings will be saved before starting favorites sync.',
+        confirmText: 'Save & Sync',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            syncFavoritesButton.disabled = true;
+            // Save settings first, then sync
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sync result textbox
+                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
+                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
+                syncFavoritesResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // sync if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyseerrBridge/SyncFavorites'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncResult) {
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `${syncResult.message || 'No message'}\n`;
+                    
+                    if (syncResult.details) {
+                        resultText += `\nDetails: ${syncResult.details}\n`;
+                    }
+                    
+                    resultText += `\nMovies Result:\n`;
+                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
+                    
+                    resultText += `\nShows Result:\n`;
+                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyseerrBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                syncFavoritesButton.disabled = false;
+            });
+        }
+    });
+}
+
+// Complete sync discover workflow
+function performSyncDiscover(page) {
+    const syncButton = page.querySelector('#syncDiscover');
+    
+    // Show confirmation dialog for saving settings before sync
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting discover sync.',
         confirmText: 'Save & Sync',
         cancelText: 'Cancel',
         primary: "confirm"
@@ -871,15 +894,15 @@ function performSyncLibrary(page) {
             
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
-                const manualSyncResult = page.querySelector('#manualSyncResult');
-                manualSyncResult.textContent = '🔄 Syncing library...';
-                manualSyncResult.style.display = 'block';
+                const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
+                syncDiscoverResult.textContent = '🔄 Syncing library...';
+                syncDiscoverResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // sync if confirmed
                 Dashboard.showLoadingMsg();
                 return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyseerrBridge/SyncLibrary'),
+                    url: ApiClient.getUrl('JellyseerrBridge/SyncDiscover'),
                     type: 'POST',
                     data: '{}',
                     contentType: 'application/json',
@@ -896,14 +919,16 @@ function performSyncLibrary(page) {
                         resultText += `Details:\n${syncData.details}`;
                     }
                     
-                    manualSyncResult.textContent = resultText;
+                    syncDiscoverResult.textContent = resultText;
+                    scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `Discover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
                     
-                    manualSyncResult.textContent = resultText;
+                    syncDiscoverResult.textContent = resultText;
+                    scrollToElement('syncDiscoverResult');
                 });
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));

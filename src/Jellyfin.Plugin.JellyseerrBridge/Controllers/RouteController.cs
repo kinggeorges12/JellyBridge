@@ -420,10 +420,10 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
         }
 
-        [HttpPost("SyncLibrary")]
-        public async Task<IActionResult> SyncLibrary()
+        [HttpPost("SyncDiscover")]
+        public async Task<IActionResult> SyncDiscover()
         {
-            _logger.LogTrace("[JellyseerrBridge] Manual sync requested");
+            _logger.LogTrace("[JellyseerrBridge] Sync discover requested");
             
             try
             {
@@ -431,11 +431,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     return await _syncService.SyncFromJellyseerr();
-                }, _logger, "Manual Sync");
+                }, _logger, "Sync Discover");
                 
                 if (result.Success)
                 {
-                    _logger.LogInformation("[JellyseerrBridge] Manual sync completed successfully");
+                    _logger.LogInformation("[JellyseerrBridge] Sync discover completed successfully");
                     return Ok(new { 
                         message = result.Message, 
                         details = result.Details 
@@ -443,7 +443,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("[JellyseerrBridge] Manual sync failed: {Message}", result.Message);
+                    _logger.LogWarning("[JellyseerrBridge] Sync discover failed: {Message}", result.Message);
                     return StatusCode(500, new { 
                         message = result.Message, 
                         details = result.Details 
@@ -452,7 +452,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[JellyseerrBridge] Manual sync failed");
+                _logger.LogError(ex, "[JellyseerrBridge] Sync discover failed");
                 return StatusCode(500, new { 
                     message = $"Sync failed: {ex.Message}", 
                     details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 

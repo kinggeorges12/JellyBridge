@@ -73,7 +73,7 @@ public partial class JellyseerrSyncService
             {
                 _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync from Jellyseerr to Jellyfin");
                 result.Success = false;
-                result.Message = "Failed to connect to Jellyseerr API";
+                result.Message = "🔌 Failed to connect to Jellyseerr API";
                 return result;
             }
 
@@ -91,7 +91,7 @@ public partial class JellyseerrSyncService
             {
                 _logger.LogError("No data retrieved from Jellyseerr API - all API calls returned empty results");
                 result.Success = false;
-                result.Message = "No data retrieved from Jellyseerr API. Check API connection and configuration.";
+                result.Message = "📭 No data retrieved from Jellyseerr API. Check API connection and configuration.";
                 result.Details = "All API calls returned empty results. This may indicate:\n" +
                                "- API connection issues\n" +
                                "- Invalid API key\n" +
@@ -148,7 +148,7 @@ public partial class JellyseerrSyncService
             result.Success = true;
             result.MoviesResult = moviesResult;
             result.ShowsResult = showsResult;
-            result.Message = "Sync from Jellyseerr to Jellyfin completed successfully";
+            result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
             result.Details = $"Movies: {moviesResult.ToString()}\nShows: {showsResult.ToString()}\nCleanup: {cleanupResult.ToString()}";
 
             _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieCreated} created, {MovieUpdated} updated | Shows: {ShowCreated} created, {ShowUpdated} updated", 
@@ -172,25 +172,25 @@ public partial class JellyseerrSyncService
         {
             _logger.LogError(ex, "Directory not found during sync from Jellyseerr to Jellyfin");
             result.Success = false;
-            result.Message = $"Directory not found: {ex.Message}";
+            result.Message = $"📁 Directory not found: {ex.Message}";
         }
         catch (UnauthorizedAccessException ex)
         {
             _logger.LogError(ex, "Access denied during sync from Jellyseerr to Jellyfin");
             result.Success = false;
-            result.Message = $"Access denied: {ex.Message}";
+            result.Message = $"🚫 Access denied: {ex.Message}";
         }
         catch (IOException ex)
         {
             _logger.LogError(ex, "I/O error during sync from Jellyseerr to Jellyfin");
             result.Success = false;
-            result.Message = $"I/O error: {ex.Message}";
+            result.Message = $"💾 I/O error: {ex.Message}";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during sync from Jellyseerr to Jellyfin");
             result.Success = false;
-            result.Message = $"Sync from Jellyseerr to Jellyfin failed: {ex.Message}";
+            result.Message = $"❌ Sync from Jellyseerr to Jellyfin failed: {ex.Message}";
             result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
         }
         
@@ -224,7 +224,7 @@ public partial class JellyseerrSyncService
             {
                 _logger.LogWarning("No bridge-only items found in Jellyseerr bridge folder: {BridgePath}", bridgeLibraryPath);
                 result.Success = true;
-                result.Message = "No bridge-only items found to sync";
+                result.Message = "📭 No bridge-only items found to sync";
                 return result;
             }
             
@@ -257,7 +257,7 @@ public partial class JellyseerrSyncService
             {
                 _logger.LogWarning("No Jellyseerr users found");
                 result.Success = false;
-                result.Message = "No Jellyseerr users found";
+                result.Message = "👥 No Jellyseerr users found";
                 return result;
             }
             
