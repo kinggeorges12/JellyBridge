@@ -34,8 +34,8 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             // Register the library service
             serviceCollection.AddScoped<JellyseerrLibraryService>();
             
-            // Register placeholder video generator
-            serviceCollection.AddScoped<PlaceholderVideoGenerator>();
+            // Register placeholder video generator as transient to avoid early initialization
+            serviceCollection.AddTransient<PlaceholderVideoGenerator>();
             
             // Register the route controller
             serviceCollection.AddScoped<Controllers.RouteController>();
