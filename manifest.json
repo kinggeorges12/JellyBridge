@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.295.0.0/JellyseerrBridge-0.295.0.0-DLL.zip",
+        "timestamp": "2025-10-26T20:14:00.709Z",
+        "dependencies": [],
+        "version": "0.295.0.0",
+        "targetAbi": "10.10.7.0",
+        "checksum": "C38CBCFE208E01AA57D8C650317F2085",
+        "changelog": "v0.295.0.0 - Updated from v0.294.0.0"
+      },
+      {
         "checksum": "2D7DE2E1396543212101491107CFB6C1",
         "version": "0.295.0.0",
         "dependencies": [],
