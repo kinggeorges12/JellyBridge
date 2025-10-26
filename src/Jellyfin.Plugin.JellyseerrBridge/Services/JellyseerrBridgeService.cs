@@ -139,7 +139,7 @@ public class JellyseerrBridgeService
                         ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
                     };
                     
-                    _logger.LogTrace("Processing bridge-only item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
+                    _logger.LogTrace("Processing Jellyseerr bridge item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
                         item.Name, tmdbId.Value, firstUser.JellyfinUsername);
                     
                     var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
@@ -164,17 +164,17 @@ public class JellyseerrBridgeService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to process bridge-only item: {ItemName}", item.Name);
+                _logger.LogError(ex, "Failed to process Jellyseerr bridge item: {ItemName}", item.Name);
             }
         }
         
         if (requestResults.Count == 0)
         {
-            _logger.LogDebug("No favorited bridge-only items found");
+            _logger.LogDebug("No favorited Jellyseerr bridge items found");
         }
         else
         {
-            _logger.LogDebug("Found {FavoritedCount} favorited bridge-only items and created requests", requestResults.Count);
+            _logger.LogDebug("Found {FavoritedCount} favorited Jellyseerr bridge items and created requests", requestResults.Count);
         }
         
         return requestResults;
