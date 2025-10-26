@@ -122,6 +122,24 @@
                     background: #106ebe;
                 }
                 
+                #IsEnabledContainer {
+                    display: flex;
+                    flex:0;
+                    white-space: nowrap;
+                }
+                
+                .helpButton {
+                    display: flex;
+                    flex: 1;
+                }
+                
+                .setupInstructions {
+                    border-radius: 4px;
+                    padding: 0px;
+                    margin-top: 0px;
+                    margin-bottom: 16px;
+                }
+
                 /* Search input with clear button */
                 .searchInputContainer {
                     position: relative;
@@ -186,27 +204,6 @@
                     opacity: 0.6;
                     pointer-events: none;
                 }
-                
-                .help-button {
-                    display: inline-block;
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    text-align: center;
-                    line-height: 32px;
-                    font-size: 18px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    margin-left: 8px;
-                    vertical-align: middle;
-                }
-                
-                .setup-instructions {
-                    border-radius: 4px;
-                    padding: 16px;
-                    margin-top: 12px;
-                    margin-bottom: 16px;
-                }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -227,28 +224,31 @@
                         <div id="taskLastRun" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
                     </div>
                     
-                    <div class="checkboxContainer">
+                    <div class="checkboxContainer" id="IsEnabledContainer">
                         <label class="emby-checkbox-label">
                             <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                             <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
-                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
                             <span class="checkboxOutline">
                                 <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                 <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                             </span>
                         </label>
-                        <div id="librarySetupInstructions" class="setup-instructions verticalSection" style="display: none;">
-                            <h4>Library Setup Instructions</h4>
-                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
-                            <ul>
-                                <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                                <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
-                                <li><strong>Folders:</strong> 📁 Use the default folder '/data/Jellyseerr' OR specify the same root folder as found under Library Settings > Library Directory</li>
-                                <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
-                                <li>☑️ Save artwork into media folders</li>
-                                <li><strong>Subtitle downloaders:</strong> ☐ Open Subtitles</li>
-                            </ul>
+                        <div class="helpButton">
+                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
                         </div>
+                    </div>
+                    
+                    <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
+                        <h4>Library Setup Instructions</h4>
+                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                        <ul>
+                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
+                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
+                            <li><strong>Folders:</strong> 📁 Use the default folder '/data/Jellyseerr' OR specify the same root folder as found under Library Settings > Library Directory</li>
+                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
+                            <li>☑️ <strong>Save artwork into media folders</strong></li>
+                            <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles</li>
+                        </ul>
                     </div>
                     
                     <div class="inputContainer">
