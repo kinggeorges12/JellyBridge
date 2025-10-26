@@ -461,6 +461,45 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         }
 
         /// <summary>
+        /// Get the current status of the scheduled sync task.
+        /// </summary>
+        [HttpGet("TaskStatus")]
+        public IActionResult GetTaskStatus()
+        {
+            _logger.LogTrace("[JellyseerrBridge] Task status requested");
+            
+            try
+            {
+                // Check if any operation is currently running
+                var isRunning = Plugin.IsOperationRunning;
+                
+                // For now, return basic status - in a real implementation you'd track progress
+                var result = new
+                {
+                    isRunning = isRunning,
+                    status = isRunning ? "Running" : "Idle",
+                    progress = isRunning ? 50 : 0, // Placeholder - would need to track actual progress
+                    message = isRunning ? "Sync operation in progress..." : "No active sync operation",
+                    lastRun = DateTime.UtcNow.AddMinutes(-30) // Placeholder - would need to track actual last run
+                };
+                
+                _logger.LogDebug("[JellyseerrBridge] Task status: {Status}", result.status);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[JellyseerrBridge] Failed to get task status");
+                return StatusCode(500, new { 
+                    isRunning = false,
+                    status = "Error",
+                    progress = 0,
+                    message = $"Failed to get task status: {ex.Message}",
+                    lastRun = (DateTime?)null
+                });
+            }
+        }
+
+        /// <summary>
         /// Delete all Jellyseerr library data.
         /// </summary>
         [HttpPost("ResetPlugin")]

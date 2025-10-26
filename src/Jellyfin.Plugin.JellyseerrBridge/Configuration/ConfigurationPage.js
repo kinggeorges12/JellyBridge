@@ -95,6 +95,9 @@ export default function (view) {
                 // Scroll to top of page after successful initialization
                 scrollToElement('jellyseerrBridgeConfigurationPage');
                 
+                // Start task status polling
+                startTaskStatusPolling(page);
+                
                 isInitialized = true;
             })
             .catch(function (error) {
@@ -111,17 +114,24 @@ export default function (view) {
 function updateLibraryPrefixState() {
     const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
+    const libraryPrefixContainer = libraryPrefixInput.closest('.inputContainer');
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
     // Enable/disable the input
     libraryPrefixInput.disabled = !isEnabled;
     
-    // Add/remove disabled styling
+    // Add/remove disabled styling to both input and container
     if (isEnabled) {
         libraryPrefixInput.classList.remove('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.remove('disabled');
+        }
     } else {
         libraryPrefixInput.classList.add('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.add('disabled');
+        }
     }
 }
 
@@ -1047,6 +1057,85 @@ function performPluginReset(page) {
             });
         }
     });
+}
+
+// Task Status Polling Functions
+let taskStatusInterval = null;
+
+function startTaskStatusPolling(page) {
+    // Clear any existing interval
+    if (taskStatusInterval) {
+        clearInterval(taskStatusInterval);
+    }
+    
+    // Initial check
+    checkTaskStatus(page);
+    
+    // Poll every 2 seconds
+    taskStatusInterval = setInterval(() => {
+        checkTaskStatus(page);
+    }, 2000);
+}
+
+function stopTaskStatusPolling() {
+    if (taskStatusInterval) {
+        clearInterval(taskStatusInterval);
+        taskStatusInterval = null;
+    }
+}
+
+function checkTaskStatus(page) {
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/TaskStatus'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(result) {
+        updateTaskStatusDisplay(page, result);
+    }).catch(function(error) {
+        console.error('Failed to get task status:', error);
+        updateTaskStatusDisplay(page, {
+            isRunning: false,
+            status: 'Error',
+            progress: 0,
+            message: 'Failed to get task status'
+        });
+    });
+}
+
+function updateTaskStatusDisplay(page, taskData) {
+    const statusText = page.querySelector('#taskStatusText');
+    const progressContainer = page.querySelector('#taskProgressContainer');
+    const progressBar = page.querySelector('#taskProgressBar');
+    const progressText = page.querySelector('#taskProgressText');
+    const lastRun = page.querySelector('#taskLastRun');
+    
+    if (!statusText || !progressContainer || !progressBar || !progressText || !lastRun) {
+        return;
+    }
+    
+    if (taskData.isRunning) {
+        statusText.textContent = '🔄 Running';
+        statusText.style.color = '#00a4d6';
+        progressContainer.style.display = 'block';
+        
+        const progress = Math.round(taskData.progress || 0);
+        progressBar.style.width = progress + '%';
+        progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
+        
+        if (taskData.lastRun) {
+            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+        }
+    } else {
+        statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
+        statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
+        progressContainer.style.display = 'none';
+        
+        if (taskData.lastRun) {
+            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+        } else {
+            lastRun.textContent = 'No previous runs';
+        }
+    }
 }
 
 
