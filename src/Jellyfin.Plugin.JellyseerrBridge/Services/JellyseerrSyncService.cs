@@ -160,7 +160,7 @@ public partial class JellyseerrSyncService
             if (refreshSuccess)
             {
                 _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
-                result.Message += " and library managed";
+                result.Message += " and library refreshed";
             }
             else
             {
@@ -274,7 +274,7 @@ public partial class JellyseerrSyncService
             result.ShowsResult.ItemsCreated.AddRange(requestResults.Where(r => r.Type == JellyseerrModel.MediaType.TV));
             
             result.Success = true;
-            result.Message = $"Sync to Jellyseerr completed successfully - Created {requestResults.Count} requests";
+            result.Message = "✅ Sync to Jellyseerr completed successfully";
             result.Details = $"Processed {bridgeOnlyItems.Count} bridge-only items, created {requestResults.Count} requests for favorited items";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
@@ -283,7 +283,7 @@ public partial class JellyseerrSyncService
         {
             _logger.LogError(ex, "Error during sync to Jellyseerr");
             result.Success = false;
-            result.Message = $"Sync to Jellyseerr failed: {ex.Message}";
+            result.Message = $"❌ Sync to Jellyseerr failed: {ex.Message}";
             result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
         }
         
