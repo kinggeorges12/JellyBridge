@@ -7,7 +7,8 @@ function scrollToElement(elementId, offset = 20) {
     const element = document.getElementById(elementId);
     if (element) {
         const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        const pluginContainerHeight = 48; // Plugin container bar height
+        const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
         
         window.scrollTo({
             top: offsetPosition,
@@ -114,7 +115,7 @@ export default function (view) {
 function updateLibraryPrefixState() {
     const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixContainer = libraryPrefixInput.closest('.inputContainer');
+    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
@@ -761,12 +762,12 @@ function performTestConnection(page) {
                 if (confirmed) {
                     // Save the current settings using the reusable function
                     savePluginConfiguration(page).then(function (result) {
-                        Dashboard.hideLoadingMsg();
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     }).catch(function (error) {
-                        Dashboard.hideLoadingMsg();
                         Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                         scrollToElement('jellyseerrBridgeConfigurationForm');
+                    }).finally(function() {
+                        Dashboard.hideLoadingMsg();
                     });
                 } else {
                     Dashboard.alert('🚫 Exited without saving');
