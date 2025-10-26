@@ -121,19 +121,31 @@ function updateTaskStatusDisplay(page, taskData) {
         progressBar.style.width = progress + '%';
         progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
         
+        let runInfo = '';
         if (taskData.lastRun) {
-            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+            runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
         }
+        if (taskData.nextRun) {
+            if (runInfo) runInfo += ' • ';
+            runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
+        }
+        lastRun.textContent = runInfo || 'No run information available';
     } else {
         statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
         statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
         progressContainer.style.display = 'none';
         
+        let runInfo = '';
         if (taskData.lastRun) {
-            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-    } else {
-            lastRun.textContent = 'No previous runs';
+            runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+        } else {
+            runInfo = 'No previous runs';
         }
+        if (taskData.nextRun) {
+            runInfo += ' • ';
+            runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
+        }
+        lastRun.textContent = runInfo;
     }
 }
 
@@ -476,7 +488,7 @@ function initializeSyncSettings(page) {
             Dashboard.showLoadingMsg();
             loadAvailableNetworks(page).then(function(availableNetworks) {
                 Dashboard.alert(`✅ Refreshed available networks.`);
-                scrollToElement('availableNetworks');
+                scrollToElement('availableNetworksSelectBox');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
                 scrollToElement('syncSettings');
@@ -505,6 +517,7 @@ function initializeSyncSettings(page) {
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
                 Dashboard.alert('✅ Regions refreshed successfully!');
+                scrollToElement('selectWatchRegion');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
                 scrollToElement('syncSettings');
@@ -746,10 +759,8 @@ function moveNetworks(fromSelect, toSelect) {
         option.remove();
     });
     
-    // Only sort the destination (available networks), maintain order in active networks
-    if (toSelect.id === 'availableNetworks') {
-        sortSelectOptions(toSelect);
-    }
+    // Sort destination select to maintain alphabetical order
+    sortSelectOptions(toSelect);
     
     // Select the newly moved items in the destination
     movedValues.forEach(value => {

@@ -11,6 +11,7 @@ using Jellyfin.Plugin.JellyseerrBridge.Utils;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
 {
@@ -18,21 +19,23 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     [Route("JellyseerrBridge")]
     public class RouteController : ControllerBase
     {
-        private readonly JellyseerrLogger<RouteController> _logger;
-        private readonly JellyseerrSyncService _syncService;
-        private readonly JellyseerrApiService _apiService;
-        private readonly JellyseerrBridgeService _bridgeService;
-        private readonly IUserManager _userManager;
+    private readonly JellyseerrLogger<RouteController> _logger;
+    private readonly JellyseerrSyncService _syncService;
+    private readonly JellyseerrApiService _apiService;
+    private readonly JellyseerrBridgeService _bridgeService;
+    private readonly IUserManager _userManager;
+    private readonly ITaskManager _taskManager;
 
-        public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService, IUserManager userManager)
-        {
-            _logger = new JellyseerrLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
-            _syncService = syncService;
-            _apiService = apiService;
-            _bridgeService = bridgeService;
-            _userManager = userManager;
-            _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
-        }
+    public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService, IUserManager userManager, ITaskManager taskManager)
+    {
+        _logger = new JellyseerrLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
+        _syncService = syncService;
+        _apiService = apiService;
+        _bridgeService = bridgeService;
+        _userManager = userManager;
+        _taskManager = taskManager;
+        _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
+    }
 
         [HttpGet("PluginConfiguration")]
         public IActionResult GetPluginConfiguration()
@@ -473,17 +476,44 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 // Check if any operation is currently running
                 var isRunning = Plugin.IsOperationRunning;
                 
-                // For now, return basic status - in a real implementation you'd track progress
+                // Try to get the scheduled task worker
+                var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyseerrBridgeSync");
+                DateTime? lastRun = null;
+                DateTime? nextRun = null;
+                
+                if (task != null)
+                {
+                    // Get last run time from last execution result
+                    if (task.LastExecutionResult != null && task.LastExecutionResult.StartTimeUtc > DateTime.MinValue)
+                    {
+                        lastRun = task.LastExecutionResult.StartTimeUtc;
+                    }
+                    
+                    // Calculate next run time based on triggers
+                    if (task.Triggers != null && task.Triggers.Count > 0)
+                    {
+                        var nextRunTime = task.Triggers
+                            .Where(t => t.Type == TaskTriggerInfo.TriggerInterval)
+                            .Select(t => CalculateNextRunTime(t, lastRun))
+                            .Where(t => t.HasValue)
+                            .OrderBy(t => t!.Value)
+                            .FirstOrDefault();
+                        
+                        nextRun = nextRunTime.HasValue ? nextRunTime : null;
+                    }
+                }
+                
                 var result = new
                 {
                     isRunning = isRunning,
                     status = isRunning ? "Running" : "Idle",
-                    progress = isRunning ? 50 : 0, // Placeholder - would need to track actual progress
+                    progress = task?.CurrentProgress ?? (isRunning ? 50 : 0),
                     message = isRunning ? "Sync operation in progress..." : "No active sync operation",
-                    lastRun = DateTime.UtcNow.AddMinutes(-30) // Placeholder - would need to track actual last run
+                    lastRun = lastRun,
+                    nextRun = nextRun
                 };
                 
-                _logger.LogDebug("[JellyseerrBridge] Task status: {Status}", result.status);
+                _logger.LogDebug("[JellyseerrBridge] Task status: {Status}, LastRun: {LastRun}, NextRun: {NextRun}", result.status, lastRun, nextRun);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -494,9 +524,34 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     status = "Error",
                     progress = 0,
                     message = $"Failed to get task status: {ex.Message}",
-                    lastRun = (DateTime?)null
+                    lastRun = (DateTime?)null,
+                    nextRun = (DateTime?)null
                 });
             }
+        }
+        
+        /// <summary>
+        /// Calculate the next run time based on a trigger and last run time.
+        /// </summary>
+        private DateTime? CalculateNextRunTime(TaskTriggerInfo trigger, DateTime? lastRun)
+        {
+            if (trigger == null || !lastRun.HasValue)
+                return null;
+            
+            try
+            {
+                if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
+                {
+                    var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
+                    return lastRun.Value.Add(interval);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[JellyseerrBridge] Failed to calculate next run time for trigger");
+            }
+            
+            return null;
         }
 
         /// <summary>
