@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "1D5B9EF59F935A02004DFB53412A6A88",
+        "timestamp": "2025-10-26T18:42:31.804Z",
+        "version": "0.292.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.292.0.0/JellyseerrBridge-0.292.0.0-DLL.zip",
+        "changelog": "v0.292.0.0 - Improved help icon layout with flexbox, moved Library Setup Instructions outside container",
+        "targetAbi": "10.10.7.0",
+        "dependencies": []
+      },
+      {
         "changelog": "v0.291.0.0 - Fixed library refresh to call both ValidateChildren and RefreshMetadata with full refresh options, fixed FFmpeg initialization race condition",
         "version": "0.291.0.0",
         "targetAbi": "10.10.7.0",
