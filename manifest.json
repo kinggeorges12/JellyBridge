@@ -9,10 +9,19 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-26T22:11:53.594Z",
+        "dependencies": [],
+        "changelog": "v0.299.1.0 - Fixed type conversion error by changing SyncIntervalHours default value from int to double in PluginConfiguration",
+        "version": "0.299.1.0",
+        "targetAbi": "10.10.7.0",
+        "checksum": "6EE130468C4F1D121C944482B37BEB3C",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.299.1.0/JellyseerrBridge-0.299.1.0-DLL.zip"
+      },
+      {
         "changelog": "v0.299.0.0 - Refactored CleanupMetadataAsync and CreateFoldersAsync to return lists directly, added ProcessedMovies/ProcessedShows to sync results",
         "version": "0.299.0.0",
         "targetAbi": "10.10.7.0",
-        "timestamp": "2025-10-26T21:55:05.410Z",
+        "timestamp": "2025-10-26T21:55:05.41Z",
         "checksum": "3CF0434FD081C08EF708A482FDB49979",
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.299.0.0/JellyseerrBridge-0.299.0.0-DLL.zip"

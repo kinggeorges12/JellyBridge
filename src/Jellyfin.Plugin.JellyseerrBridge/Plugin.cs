@@ -58,7 +58,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
                 pluginConfig.LibraryDirectory,
-                pluginConfig.SyncIntervalHours ?? (int)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
+                pluginConfig.SyncIntervalHours ?? (double)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
             
             base.UpdateConfiguration(configuration);
             _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
