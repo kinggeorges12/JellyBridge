@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "timestamp": "2025-10-26T19:51:38.904Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.294.0.0/JellyseerrBridge-0.294.0.0-DLL.zip",
+        "version": "0.294.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.294.0.0 - Added next run time display to task status, fixed continuously updating last run time, added ITaskManager integration for task info, fixed scroll targets for region and available networks refresh, added automatic sorting of active networks multiselect when moving items, increased lock check delay from 100ms to 1 second to reduce log spam",
+        "checksum": "040769C6733F82248FBBED63247E3D03"
+      },
+      {
         "timestamp": "2025-10-26T19:33:18.305Z",
         "targetAbi": "10.10.7.0",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.293.0.0/JellyseerrBridge-0.293.0.0-DLL.zip",

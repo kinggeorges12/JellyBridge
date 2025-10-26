@@ -226,7 +226,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                     }
                     
                     logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                    Thread.Sleep(100); // Small delay to prevent busy waiting
+                    Thread.Sleep(1000); // 1 second delay to reduce log spam
                 }
                 
                 // Check if we timed out
