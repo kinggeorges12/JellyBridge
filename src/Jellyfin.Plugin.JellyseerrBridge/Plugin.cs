@@ -67,10 +67,25 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             try
             {
                 var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyseerrBridgeSync");
-                if (task != null)
+                if (task != null && task.ScheduledTask is Tasks.JellyseerrSyncTask syncTask)
                 {
                     _logger.LogInformation("[JellyseerrBridge] Reloading task triggers for new configuration");
+                    
+                    // Log current configuration values
+                    var newSyncInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
+                    var newAutoSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+                    _logger.LogInformation("[JellyseerrBridge] New config - SyncInterval: {Interval} hours, AutoSync: {AutoSync}", newSyncInterval, newAutoSync);
+                    
+                    // Get new triggers from GetDefaultTriggers
+                    var newTriggers = syncTask.GetDefaultTriggers();
+                    _logger.LogInformation("[JellyseerrBridge] New triggers count: {Count}", newTriggers.Count());
+                    
+                    // Set the new triggers
+                    task.Triggers = newTriggers.ToList();
+                    
+                    // Reload trigger events
                     task.ReloadTriggerEvents();
+                    _logger.LogInformation("[JellyseerrBridge] Task triggers reloaded successfully");
                 }
             }
             catch (Exception ex)

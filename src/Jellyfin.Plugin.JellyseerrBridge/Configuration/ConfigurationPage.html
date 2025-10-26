@@ -208,27 +208,83 @@
                     opacity: 0.6;
                     pointer-events: none;
                 }
+                
+                /* Refresh button styling */
+                .refreshButton {
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    margin: 0;
+                    cursor: pointer;
+                    font-size: inherit;
+                    transition: transform 0.2s ease;
+                }
+                
+                .refreshButton:hover {
+                    transform: rotate(180deg);
+                }
+                
+                /* Task status container styling */
+                .taskStatusContainer {
+                    margin-bottom: 20px;
+                    padding: 15px;
+                    background-color: rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                }
+                
+                .taskStatusHeader {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                }
+                
+                .taskStatusHeader h3 {
+                    margin: 0;
+                    font-size: 1.1em;
+                }
+                
+                .taskStatusText {
+                    font-weight: bold;
+                    color: #666;
+                }
+                
+                .taskProgressContainer {
+                    display: none;
+                }
+                
+                .taskProgressText {
+                    text-align: center;
+                    margin-top: 5px;
+                    font-size: 0.9em;
+                    color: #999;
+                }
+                
+                .taskStatusTimes {
+                    font-size: 0.85em;
+                    color: #888;
+                    margin-top: 8px;
+                }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
                     <legend>Jellyseerr Bridge Configuration</legend>
                     
                     <!-- Task Status Progress Bar -->
-                    <div id="taskStatusContainer" class="taskStatusContainer" style="margin-bottom: 20px; padding: 15px; background-color: rgba(0, 0, 0, 0.1); border-radius: 8px;">
-                        <div class="taskStatusHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h3 style="margin: 0; font-size: 1.1em;">🔄 Scheduled Sync Status</h3>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <button type="button" id="refreshTaskStatus" is="emby-button" class="raised button emby-button" style="padding: 5px 10px; font-size: 0.8em;" title="Refresh status">↻</button>
-                                <span id="taskStatusText" style="font-weight: bold; color: #666;">Checking...</span>
-                            </div>
+                    <div id="taskStatusContainer" class="taskStatusContainer">
+                        <div class="taskStatusHeader">
+                            <h3>
+                                <button type="button" id="refreshTaskStatus" is="emby-button" class="refreshButton" title="Refresh status">🔄</button> Scheduled Sync Status
+                            </h3>
+                            <span id="taskStatusText" class="taskStatusText">Checking...</span>
                         </div>
-                        <div id="taskProgressContainer" style="display: none;">
+                        <div id="taskProgressContainer" class="taskProgressContainer">
                             <div class="itemProgressBar">
                                 <div class="itemProgressBarForeground" id="taskProgressBar" style="width: 0%;"></div>
                             </div>
-                            <div id="taskProgressText" style="text-align: center; margin-top: 5px; font-size: 0.9em; color: #999;"></div>
+                            <div id="taskProgressText" class="taskProgressText"></div>
                         </div>
-                        <div id="taskStatusTimes" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
+                        <div id="taskStatusTimes" class="taskStatusTimes"></div>
                     </div>
                     
                     <div class="checkboxContainer">
