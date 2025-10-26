@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.285.0.0 - Updated favorite sync frontend to match discover sync format by showing just the message with emoji instead of adding extra checkmark, updated backend messages with emojis for both success and error cases",
+        "targetAbi": "10.10.7.0",
+        "checksum": "EC5F80FCFCE11FCA1C055288513DA1AA",
+        "timestamp": "2025-10-26T03:09:42.768Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.285.0.0/JellyseerrBridge-0.285.0.0-DLL.zip",
+        "dependencies": [],
+        "version": "0.285.0.0"
+      },
+      {
         "dependencies": [],
         "checksum": "99F2E19298F531D24AAD25CDF91A3ECC",
         "changelog": "v0.284.0.0 - Added yellow warning text after reset button explaining to delete and recreate Jellyfin library, improved library setup instructions with personal example, fixed created items count by changing ItemsCreated to use JellyseerrMediaRequest",

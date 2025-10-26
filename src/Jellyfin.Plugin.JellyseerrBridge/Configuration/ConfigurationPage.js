@@ -822,8 +822,7 @@ function performSyncFavorites(page) {
         dataType: 'json'
     }).then(function(result) {
         let resultText = `Sync to Jellyseerr Results:\n`;
-        resultText += `Success: ${result.success ? 'Yes' : 'No'}\n`;
-        resultText += `Message: ${result.message || 'No message'}\n`;
+        resultText += `${result.message || 'No message'}\n`;
         
         if (result.details) {
             resultText += `\nDetails: ${result.details}\n`;
@@ -890,7 +889,7 @@ function performSyncLibrary(page) {
                     const message = syncData.message || 'Folder structure creation completed successfully';
                     
                     // Build detailed information if available
-                    let resultText = `Manual Sync Results:\n`;
+                    let resultText = `Discover Sync Results:\n`;
                     resultText += `✅ ${message}\n\n`;
                     
                     if (syncData.details) {
@@ -901,7 +900,7 @@ function performSyncLibrary(page) {
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Manual Sync Results:\n`;
+                    let resultText = `Discover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
                     
                     manualSyncResult.textContent = resultText;
