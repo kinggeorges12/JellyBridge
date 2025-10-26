@@ -181,46 +181,23 @@
                 
                 .help-button {
                     display: inline-block;
-                    width: 20px;
-                    height: 20px;
-                    background-color: #0078d4;
-                    color: white;
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
                     text-align: center;
-                    line-height: 20px;
-                    font-size: 14px;
+                    line-height: 32px;
+                    font-size: 18px;
                     font-weight: bold;
                     cursor: pointer;
                     margin-left: 8px;
                     vertical-align: middle;
-                    transition: background-color 0.2s ease;
-                }
-                
-                .help-button:hover {
-                    background-color: #106ebe;
                 }
                 
                 .setup-instructions {
-                    background-color: #f8f9fa;
-                    border: 1px solid #dee2e6;
                     border-radius: 4px;
                     padding: 16px;
                     margin-top: 12px;
                     margin-bottom: 16px;
-                }
-                
-                .setup-instructions h4 {
-                    margin-top: 0;
-                    margin-bottom: 12px;
-                    color: #495057;
-                }
-                
-                .setup-instructions ul {
-                    margin-bottom: 0;
-                }
-                
-                .setup-instructions li {
-                    margin-bottom: 4px;
                 }
             </style>
             <form id="jellyseerrBridgeConfigurationForm">
@@ -232,10 +209,10 @@
                             <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
                             <span>Enable the automated task to sync Jellyseerr and Jellyfin</span>
                         </label>
-                        <span class="help-button" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
+                        <span class="help-button emby-button" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
                     </div>
                     
-                    <div id="librarySetupInstructions" class="setup-instructions" style="display: none;">
+                    <div id="librarySetupInstructions" class="setup-instructions verticalSection" style="display: none;">
                         <h4>Library Setup Instructions</h4>
                         <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
                         <ul>
@@ -422,10 +399,10 @@
 
 
                         <div>
-                            <button is="emby-button" type="button" id="manualSync" class="raised button block emby-button">
+                            <button is="emby-button" type="button" id="syncDiscover" class="raised button block emby-button">
                                 <span>Sync discover content from Jellyseerr to Jellyfin library</span>
                             </button>
-                            <div id="manualSyncResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="syncDiscoverResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
 
                     </details>
@@ -467,7 +444,7 @@
                                 <span>Reset Jellyseerr Bridge plugin & delete Jellyfin library data</span>
                             </button>
                             <div class="fieldDescription" style="color: #ff6b6b; font-size: 0.85em; margin-top: 5px;">
-                                <strong>WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
+                                <strong>☠️ WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
                             </div>
                             <div class="fieldDescription" style="color: #ffa726; font-size: 0.85em; margin-top: 8px; font-weight: bold;">
                                 <strong>⚠️ IMPORTANT:</strong> After resetting, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page.
