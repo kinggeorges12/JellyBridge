@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.298.0.0/JellyseerrBridge-0.298.0.0-DLL.zip",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-26T21:07:53.690Z",
+        "dependencies": [],
+        "changelog": "v0.298.0.0 - Made scheduled sync status emoji a clickable refresh button with rotation hover effect, moved inline styles to CSS classes, added proper task trigger reload that updates sync interval when config is saved, added logging for trigger updates",
+        "version": "0.298.0.0",
+        "checksum": "D5C4F10FEA03FE9E596CC21BD560865D"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.297.0.0/JellyseerrBridge-0.297.0.0-DLL.zip",
         "version": "0.297.0.0",
         "checksum": "AE9397E6D3209747BE89E67EB472923E",

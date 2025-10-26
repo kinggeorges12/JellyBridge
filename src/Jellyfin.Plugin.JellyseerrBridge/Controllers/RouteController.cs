@@ -489,6 +489,20 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         lastRun = task.LastExecutionResult.StartTimeUtc;
                     }
                     
+                    // Log trigger details
+                    if (task.Triggers != null && task.Triggers.Count > 0)
+                    {
+                        _logger.LogDebug("[JellyseerrBridge] Found {Count} triggers", task.Triggers.Count);
+                        foreach (var trigger in task.Triggers)
+                        {
+                            if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
+                            {
+                                var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
+                                _logger.LogDebug("[JellyseerrBridge] Trigger interval: {Interval} hours", interval.TotalHours);
+                            }
+                        }
+                    }
+                    
                     // Calculate next run time based on triggers
                     if (task.Triggers != null && task.Triggers.Count > 0)
                     {
