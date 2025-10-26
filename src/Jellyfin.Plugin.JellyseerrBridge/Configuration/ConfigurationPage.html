@@ -354,7 +354,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyseerrBridge <i>Library Directory</i> path. Uses default refresh settings: Replace all metadata, Replace all images, Keep existing trickplay images.</div>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the <i>Library Directory</i> path. Runs a partial refresh "Search for missing metadata" (this should finish quickly), or a full refresh "Replace all metadata" if items are deleted from Jellyseerr (this takes a while). Uses default refresh settings: Replace all images, Keep existing trickplay images.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -540,7 +540,7 @@
                                 <strong>☠️ WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
                             </div>
                             <div class="fieldDescription" style="color: #ffa726; font-size: 0.85em; margin-top: 8px; font-weight: bold;">
-                                <strong>⚠️ IMPORTANT:</strong> After resetting, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page.
+                                <strong>⚠️ IMPORTANT:</strong> After resetting, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page. After creating the Jellyfin library, click the "Scan All Libraries" button to remove any old metadata (this will take a while but I promise it is worth it).
                             </div>
                         </div>
 

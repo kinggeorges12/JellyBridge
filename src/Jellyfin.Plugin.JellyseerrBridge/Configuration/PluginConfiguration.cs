@@ -19,7 +19,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ApiKey), string.Empty },
         { nameof(LibraryDirectory), "/data/Jellyseerr" },
         { nameof(IsEnabled), false },
-        { nameof(SyncIntervalHours), 24 },
+        { nameof(SyncIntervalHours), 24.0 },
         { nameof(CreateSeparateLibraries), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ExcludeFromMainLibraries), true },
