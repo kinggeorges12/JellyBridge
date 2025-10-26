@@ -169,8 +169,10 @@
                     pointer-events: none;
                 }
                 
-                .disabled .inputLabel {
-                    color: #999;
+                .disabled .inputLabel,
+                .disabled label,
+                .disabled .emby-input-label {
+                    color: #999 !important;
                 }
                 
                 /* Disabled button styling */
@@ -204,12 +206,27 @@
                 <fieldset class="verticalSection-extrabottompadding">
                     <legend>Jellyseerr Bridge Configuration</legend>
                     
+                    <!-- Task Status Progress Bar -->
+                    <div id="taskStatusContainer" class="taskStatusContainer" style="margin-bottom: 20px; padding: 15px; background-color: rgba(0, 0, 0, 0.1); border-radius: 8px;">
+                        <div class="taskStatusHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="margin: 0; font-size: 1.1em;">🔄 Scheduled Sync Status</h3>
+                            <span id="taskStatusText" style="font-weight: bold; color: #666;">Checking...</span>
+                        </div>
+                        <div id="taskProgressContainer" style="display: none;">
+                            <div class="itemProgressBar">
+                                <div class="itemProgressBarForeground" id="taskProgressBar" style="width: 0%;"></div>
+                            </div>
+                            <div id="taskProgressText" style="text-align: center; margin-top: 5px; font-size: 0.9em; color: #999;"></div>
+                        </div>
+                        <div id="taskLastRun" style="font-size: 0.85em; color: #888; margin-top: 8px;"></div>
+                    </div>
+                    
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" id="IsEnabled" />
                             <span>Enable the automated task to sync Jellyseerr and Jellyfin</span>
+                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
                         </label>
-                        <span class="help-button emby-button" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
                     </div>
                     
                     <div id="librarySetupInstructions" class="setup-instructions verticalSection" style="display: none;">

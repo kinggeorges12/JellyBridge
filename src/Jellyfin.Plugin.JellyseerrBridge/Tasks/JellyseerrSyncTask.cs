@@ -107,11 +107,11 @@ public class JellyseerrSyncTask : IScheduledTask
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
         var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
         
-        _logger.LogDebug("GetDefaultTriggers called - IsEnabled: {IsEnabled}, AutoSyncOnStartup: {AutoSyncOnStartup}", isEnabled, autoSyncOnStartup);
+        _logger.LogInformation("[JellyseerrSyncTask] GetDefaultTriggers called - IsEnabled: {IsEnabled}, AutoSyncOnStartup: {AutoSyncOnStartup}", isEnabled, autoSyncOnStartup);
         
         if (!isEnabled)
         {
-            _logger.LogDebug("Plugin is disabled, returning empty triggers");
+            _logger.LogInformation("[JellyseerrSyncTask] Plugin is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 
@@ -125,7 +125,7 @@ public class JellyseerrSyncTask : IScheduledTask
             IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
         });
         
-        _logger.LogDebug("Added interval trigger with {IntervalHours} hours", intervalHours);
+        _logger.LogInformation("[JellyseerrSyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
         
         // Add startup trigger if AutoSyncOnStartup is enabled
         if (autoSyncOnStartup)
@@ -134,10 +134,10 @@ public class JellyseerrSyncTask : IScheduledTask
             {
                 Type = TaskTriggerInfo.TriggerStartup
             });
-            _logger.LogDebug("Added startup trigger");
+            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger");
         }
         
-        _logger.LogInformation("Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
+        _logger.LogInformation("[JellyseerrSyncTask] Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
         return triggers;
     }
 }
