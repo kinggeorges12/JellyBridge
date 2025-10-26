@@ -23,6 +23,7 @@ public class JellyseerrSyncTask : IScheduledTask
     {
         _logger = logger;
         _syncService = syncService;
+        _logger.LogInformation("JellyseerrSyncTask constructor called - task initialized");
     }
 
     public string Name => "Jellyseerr Bridge Sync";
@@ -104,31 +105,39 @@ public class JellyseerrSyncTask : IScheduledTask
     {
         var config = Plugin.GetConfiguration();
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
+        var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+        
+        _logger.LogDebug("GetDefaultTriggers called - IsEnabled: {IsEnabled}, AutoSyncOnStartup: {AutoSyncOnStartup}", isEnabled, autoSyncOnStartup);
         
         if (!isEnabled)
         {
+            _logger.LogDebug("Plugin is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 
         var triggers = new List<TaskTriggerInfo>();
         
         // Add interval trigger for regular syncing
+        var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
         triggers.Add(new TaskTriggerInfo
         {
             Type = TaskTriggerInfo.TriggerInterval,
-            IntervalTicks = TimeSpan.FromHours(Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours))).Ticks
+            IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
         });
         
+        _logger.LogDebug("Added interval trigger with {IntervalHours} hours", intervalHours);
+        
         // Add startup trigger if AutoSyncOnStartup is enabled
-        var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
         if (autoSyncOnStartup)
         {
             triggers.Add(new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerStartup
             });
+            _logger.LogDebug("Added startup trigger");
         }
         
+        _logger.LogInformation("Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
         return triggers;
     }
 }

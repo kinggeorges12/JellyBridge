@@ -36,9 +36,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Services
             
             // Register placeholder video generator
             serviceCollection.AddScoped<PlaceholderVideoGenerator>();
-
-            // Register the scheduled task
-            serviceCollection.AddScoped<JellyseerrSyncTask>();
             
             // Register the route controller
             serviceCollection.AddScoped<Controllers.RouteController>();
