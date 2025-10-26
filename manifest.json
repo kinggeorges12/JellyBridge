@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "checksum": "351FAF897D39ED4F2B85F05F014C1B61",
+        "timestamp": "2025-10-26T20:14:29.653Z",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.296.0.0/JellyseerrBridge-0.296.0.0-DLL.zip",
+        "version": "0.296.0.0",
+        "changelog": "v0.296.0.0 - Reorganized JS functions by feature area with proper section headers, added configurable Startup Delay with enable/disable, moved Manage Jellyseerr library under Library Directory, moved Auto-sync on Plugin Startup to top of Advanced section, changed Sync Settings to Discover Settings, improved validators with int/double support and min/max bounds, added next run time display to task status"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.295.0.0/JellyseerrBridge-0.295.0.0-DLL.zip",
         "timestamp": "2025-10-26T20:14:00.709Z",
         "dependencies": [],
