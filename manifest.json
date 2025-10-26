@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.289.0.0 - Fixed help icon clickability, improved disabled state styling, added scroll offset for plugin container bar, and enhanced decimal support for sync interval",
+        "targetAbi": "10.10.7.0",
+        "version": "0.289.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.289.0.0/JellyseerrBridge-0.289.0.0-DLL.zip",
+        "checksum": "9FD1D68C3B335443DCE6E7D99CC8383C",
+        "timestamp": "2025-10-26T17:26:50.751Z",
+        "dependencies": []
+      },
+      {
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.288.0.0/JellyseerrBridge-0.288.0.0-DLL.zip",
         "version": "0.288.0.0",
