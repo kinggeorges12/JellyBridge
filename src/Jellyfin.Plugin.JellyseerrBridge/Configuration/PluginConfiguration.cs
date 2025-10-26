@@ -23,7 +23,8 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(CreateSeparateLibraries), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ExcludeFromMainLibraries), true },
-        { nameof(AutoSyncOnStartup), false },
+        { nameof(AutoSyncOnStartup), true },
+        { nameof(StartupDelaySeconds), 15 },
         { nameof(MaxDiscoverPages), 1 },
         { nameof(MaxCollectionDays), 30 },
         { nameof(RequestTimeout), 60 },
@@ -108,6 +109,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to auto-sync on startup.
     /// </summary>
     public bool? AutoSyncOnStartup { get; set; }
+
+    /// <summary>
+    /// Gets or sets the delay in seconds before running the auto-sync on startup task.
+    /// </summary>
+    public int? StartupDelaySeconds { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).

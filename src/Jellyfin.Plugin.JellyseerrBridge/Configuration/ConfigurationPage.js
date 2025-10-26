@@ -2,62 +2,6 @@ const JellyseerrBridgeConfigurationPage = {
     pluginUniqueId: '8ecc808c-d6e9-432f-9219-b638fbfb37e6'
 };
 
-// Scroll to a specific element by ID with smooth scrolling
-function scrollToElement(elementId, offset = 20) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        const elementPosition = element.getBoundingClientRect().top;
-        const pluginContainerHeight = 48; // Plugin container bar height
-        const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
-        
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-        });
-        
-        // Add a temporary highlight effect
-        element.style.transition = 'box-shadow 0.3s ease';
-        element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
-        setTimeout(() => {
-            element.style.boxShadow = '';
-        }, 2000);
-    }
-}
-
-// Global validators object
-const validators = {
-    notNull: (value) => !!value,
-    url: (value) => /^https?:\/\/.+/.test(value),
-    number: (value) => !value || !isNaN(parseFloat(value)),
-    windowsFilename: (value) => {
-        if (!value) return true; // Allow empty values
-        // Check for invalid Windows filename characters: \ / : * ? " < > |
-        const invalidChars = /[\\/:*?"<>|]/;
-        return !invalidChars.test(value);
-    }
-};
-
-// Central field validation function
-function validateField(fieldId, validator = null, errorMessage = null) {
-    const field = document.querySelector(`#${fieldId}`);
-    if (!field) {
-        console.warn(`Field with ID "${fieldId}" not found`);
-        return { isValid: false, error: `Field "${fieldId}" not found` };
-    }
-    
-    const value = field.value.trim();
-    
-    // Check validator function if provided
-    if (validator && !validator(value)) {
-        const message = errorMessage || `${fieldId} is invalid`;
-        Dashboard.alert(`❌ ${message}`);
-        scrollToElement(fieldId);
-        return { isValid: false, error: message };
-    }
-    
-    return { isValid: true, error: null };
-}
-
 export default function (view) {
     if (!view) {
         Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
@@ -111,103 +55,92 @@ export default function (view) {
     
 }
 
-// Updates the enabled/disabled state of the Library Prefix field based on the Create Separate Libraries checkbox
-function updateLibraryPrefixState() {
-    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
-    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
+// ==========================================
+// TASK STATUS FUNCTIONS
+// ==========================================
+
+let taskStatusInterval = null;
+
+function startTaskStatusPolling(page) {
+    // Clear any existing interval
+    if (taskStatusInterval) {
+        clearInterval(taskStatusInterval);
+    }
     
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    // Initial check
+    checkTaskStatus(page);
     
-    // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Add/remove disabled styling to both input and container
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.remove('disabled');
-        }
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.add('disabled');
-        }
+    // Poll every 2 seconds
+    taskStatusInterval = setInterval(() => {
+        checkTaskStatus(page);
+    }, 2000);
+}
+
+function stopTaskStatusPolling() {
+    if (taskStatusInterval) {
+        clearInterval(taskStatusInterval);
+        taskStatusInterval = null;
     }
 }
 
-// Helper function to parse network options array and return network objects
-function parseNetworkOptions(options) {
-    return Array.from(options).map(option => {
-        const networkObj = {};
-        // Extract all data attributes
-        Array.from(option.attributes).forEach(attr => {
-            if (attr.name.startsWith('data-int-')) {
-                const propName = attr.name.replace('data-int-', '');
-                networkObj[propName] = parseInt(attr.value);
-            } else if (attr.name.startsWith('data-str-')) {
-                const propName = attr.name.replace('data-str-', '');
-                networkObj[propName] = attr.value;
-            }
+function checkTaskStatus(page) {
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/TaskStatus'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(result) {
+        updateTaskStatusDisplay(page, result);
+    }).catch(function(error) {
+        console.error('Failed to get task status:', error);
+        updateTaskStatusDisplay(page, {
+            isRunning: false,
+            status: 'Error',
+            progress: 0,
+            message: 'Failed to get task status'
         });
-        return networkObj;
     });
 }
 
-// Helper function to update available networks list
-function updateAvailableNetworks(page, networkMap = []) {
-    const config = window.configJellyseerrBridge || {};
+function updateTaskStatusDisplay(page, taskData) {
+    const statusText = page.querySelector('#taskStatusText');
+    const progressContainer = page.querySelector('#taskProgressContainer');
+    const progressBar = page.querySelector('#taskProgressBar');
+    const progressText = page.querySelector('#taskProgressText');
+    const lastRun = page.querySelector('#taskLastRun');
     
-    const availableNetworksSelect = page.querySelector('#availableNetworks');
-    
-    // Get currently active network objects by extracting data attributes from options
-    const activeNetworksSelect = page.querySelector('#activeNetworks');
-    const activeNetworks = parseNetworkOptions(activeNetworksSelect.options);
-    
-    // Get default network map from global config
-    const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
-    
-    // Combine default networks with API networks from parameter
-    const combinedNetworks = [...defaultNetworkMap, ...networkMap];
-    
-    // Filter out active networks by ID
-    const availableNetworks = combinedNetworks.filter(network => 
-        network && network.id && !activeNetworks.some(active => active.id === network.id)
-    );
-    
-    // Update the available networks select
-    populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
-    
-    // Sort the available networks by name (value)
-    sortSelectOptions(availableNetworksSelect);
-
-    return availableNetworks;
-}
-
-// Helper function to set input field value and placeholder
-function setInputField(page, propertyName, isCheckbox = false) {
-    const field = page.querySelector(`#${propertyName}`);
-    if (!field) {
-        Dashboard.alert(`❌ Field with ID "${propertyName}" not found`);
+    if (!statusText || !progressContainer || !progressBar || !progressText || !lastRun) {
         return;
     }
     
-    const config = window.configJellyseerrBridge || {};
-    const defaults = config.DefaultValues || {};
-    const configValue = config[propertyName];
-    const defaultValue = defaults[propertyName];
-    
-    if (isCheckbox) {
-        field.checked = configValue ?? defaultValue;
+    if (taskData.isRunning) {
+        statusText.textContent = '🔄 Running';
+        statusText.style.color = '#00a4d6';
+        progressContainer.style.display = 'block';
+        
+        const progress = Math.round(taskData.progress || 0);
+        progressBar.style.width = progress + '%';
+        progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
+        
+        if (taskData.lastRun) {
+            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+        }
     } else {
-        field.value = configValue ?? '';
-        if (defaultValue !== undefined) {
-            field.placeholder = defaultValue.toString();
+        statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
+        statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
+        progressContainer.style.display = 'none';
+        
+        if (taskData.lastRun) {
+            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
+    } else {
+            lastRun.textContent = 'No previous runs';
         }
     }
 }
 
-// Function to initialize general settings including test connection
+// ==========================================
+// GENERAL SETTINGS FUNCTIONS
+// ==========================================
+
 function initializeGeneralSettings(page) {
     // Set general settings form values with null handling
     setInputField(page, 'IsEnabled', true);
@@ -254,7 +187,101 @@ function initializeGeneralSettings(page) {
     }
 }
 
-// Function to initialize library settings
+function performTestConnection(page) {
+    const testButton = page.querySelector('#testConnection');
+    const url = page.querySelector('#JellyseerrUrl').value;
+    const apiKey = page.querySelector('#ApiKey').value.trim();
+    
+    // Validate URL format if provided
+    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    
+    // Validate API Key
+    if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
+    
+    testButton.disabled = true;
+    Dashboard.showLoadingMsg();
+    
+    const testData = {
+        JellyseerrUrl: url,
+        ApiKey: apiKey
+    };
+
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
+        type: 'POST',
+        data: JSON.stringify(testData),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (data) {
+        // HTTP 200 response means connection test was successful
+        Dashboard.alert('✅ Connected to Jellyseerr!');
+        // Show confirmation dialog for saving settings
+        Dashboard.confirm({
+                title: 'Connection Success!',
+                text: 'Save connection settings now?',
+                confirmText: 'Confirm',
+                cancelText: 'Cancel',
+                primary: "confirm"
+            }, 'Title', (confirmed) => {
+                if (confirmed) {
+                    // Save the current settings using the reusable function
+                    savePluginConfiguration(page).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    }).catch(function (error) {
+                        Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                        scrollToElement('jellyseerrBridgeConfigurationForm');
+                    }).finally(function() {
+                        Dashboard.hideLoadingMsg();
+                    });
+                } else {
+                    Dashboard.alert('🚫 Exited without saving');
+                }
+            });
+    }).catch(function (error) {
+        // Handle different types of errors
+        let errorMessage = '❌ Connection test failed';
+        
+        if (error && error.responseJSON) {
+            // Server returned structured error response
+            const errorData = error.responseJSON;
+            errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
+            if (errorData.details) {
+                errorMessage += `<br><br>Details: ${errorData.details}`;
+            }
+        } else if (error && error.status) {
+            // HTTP status code error
+            switch (error.status) {
+                case 400:
+                    errorMessage = '❌ Bad Request: Cannot reach URL';
+                    break;
+                case 401:
+                    errorMessage = '❌ Unauthorized: Invalid API Key';
+                    break;
+                case 403:
+                    errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
+                    break;
+                case 500:
+                    errorMessage = '❌ Server Error: Connection test failed';
+                    break;
+                default:
+                    errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
+            }
+        } else {
+            // Generic error
+            errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
+        }
+        
+        Dashboard.alert(errorMessage);
+    }).finally(function() {
+        Dashboard.hideLoadingMsg();
+        testButton.disabled = false;
+    });
+}
+
+// ==========================================
+// LIBRARY SETTINGS FUNCTIONS
+// ==========================================
+
 function initializeLibrarySettings(page) {
     // Set library settings form values with null handling
     setInputField(page, 'LibraryDirectory');
@@ -272,8 +299,105 @@ function initializeLibrarySettings(page) {
     });
 }
 
+function updateLibraryPrefixState() {
+    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
+    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
+    
+    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    
+    // Enable/disable the input
+    libraryPrefixInput.disabled = !isEnabled;
+    
+    // Add/remove disabled styling to both input and container
+    if (isEnabled) {
+        libraryPrefixInput.classList.remove('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.remove('disabled');
+        }
+    } else {
+        libraryPrefixInput.classList.add('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.add('disabled');
+        }
+    }
+}
 
-// Function to initialize sync settings including network interface and sync buttons
+function performSyncFavorites(page) {
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    
+    // Show confirmation dialog for saving settings before sync
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting favorites sync.',
+        confirmText: 'Save & Sync',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            syncFavoritesButton.disabled = true;
+            // Save settings first, then sync
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sync result textbox
+                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
+                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
+                syncFavoritesResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // sync if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyseerrBridge/SyncFavorites'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncResult) {
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `${syncResult.message || 'No message'}\n`;
+                    
+                    if (syncResult.details) {
+                        resultText += `\nDetails: ${syncResult.details}\n`;
+                    }
+                    
+                    resultText += `\nMovies Result:\n`;
+                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
+                    
+                    resultText += `\nShows Result:\n`;
+                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyseerrBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                syncFavoritesButton.disabled = false;
+            });
+        }
+    });
+}
+
+// ==========================================
+// DISCOVER SETTINGS FUNCTIONS
+// ==========================================
+
 function initializeSyncSettings(page) {
     const config = window.configJellyseerrBridge || {};
     
@@ -391,40 +515,116 @@ function initializeSyncSettings(page) {
     }
 }
 
+function performSyncDiscover(page) {
+    const syncButton = page.querySelector('#syncDiscover');
+    
+    // Show confirmation dialog for saving settings before sync
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting discover sync.',
+        confirmText: 'Save & Sync',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            syncButton.disabled = true;
+            // Save settings first, then sync
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sync result textbox
+                const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
+                syncDiscoverResult.textContent = '🔄 Syncing library...';
+                syncDiscoverResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // sync if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyseerrBridge/SyncDiscover'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncData) {
+                    // Parse the sync results for better user feedback
+                    const message = syncData.message || 'Folder structure creation completed successfully';
+                    
+                    // Build detailed information if available
+                    let resultText = `Discover Sync Results:\n`;
+                    resultText += `✅ ${message}\n\n`;
+                    
+                    if (syncData.details) {
+                        resultText += `Details:\n${syncData.details}`;
+                    }
+                    
+                    syncDiscoverResult.textContent = resultText;
+                    scrollToElement('syncDiscoverResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Discover Sync Results:\n`;
+                    resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    syncDiscoverResult.textContent = resultText;
+                    scrollToElement('syncDiscoverResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyseerrBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                syncButton.disabled = false;
+            });
+        }
+    });
+}
 
-// Function to initialize advanced settings
-function initializeAdvancedSettings(page) {
-    // Set advanced settings form values with null handling
-    setInputField(page, 'RequestTimeout');
-    setInputField(page, 'RetryAttempts');
-    setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'MaxCollectionDays');
-    setInputField(page, 'PlaceholderDurationSeconds');
-    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
-    if (placeholderDurationInput) {
-        placeholderDurationInput.addEventListener('input', function() {
-            if (this.value && parseInt(this.value) < 1) {
-                this.value = '1';
+// Helper functions for Discover Settings
+function parseNetworkOptions(options) {
+    return Array.from(options).map(option => {
+        const networkObj = {};
+        // Extract all data attributes
+        Array.from(option.attributes).forEach(attr => {
+            if (attr.name.startsWith('data-int-')) {
+                const propName = attr.name.replace('data-int-', '');
+                networkObj[propName] = parseInt(attr.value);
+            } else if (attr.name.startsWith('data-str-')) {
+                const propName = attr.name.replace('data-str-', '');
+                networkObj[propName] = attr.value;
             }
         });
-    }
-    setInputField(page, 'EnableDebugLogging', true);
+        return networkObj;
+    });
+}
+
+function updateAvailableNetworks(page, networkMap = []) {
+    const config = window.configJellyseerrBridge || {};
     
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
-        });
-    }
+    const availableNetworksSelect = page.querySelector('#availableNetworks');
     
-    // Library Prefix real-time validation
-    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
-    if (libraryPrefixInput) {
-        libraryPrefixInput.addEventListener('input', function() {
-            validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
-        });
-    }
+    // Get currently active network objects by extracting data attributes from options
+    const activeNetworksSelect = page.querySelector('#activeNetworks');
+    const activeNetworks = parseNetworkOptions(activeNetworksSelect.options);
+    
+    // Get default network map from global config
+    const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
+    
+    // Combine default networks with API networks from parameter
+    const combinedNetworks = [...defaultNetworkMap, ...networkMap];
+    
+    // Filter out active networks by ID
+    const availableNetworks = combinedNetworks.filter(network => 
+        network && network.id && !activeNetworks.some(active => active.id === network.id)
+    );
+    
+    // Update the available networks select
+    populateSelectWithNetworks(availableNetworksSelect, availableNetworks);
+    
+    // Sort the available networks by name (value)
+    sortSelectOptions(availableNetworksSelect);
+
+    return availableNetworks;
 }
 
 function updateClearButtonVisibility(clearButton, searchValue) {
@@ -611,94 +811,6 @@ function populateRegion(page, regionValues, initialValue = null) {
     regionSelect.value = initialValue;
 }
 
-// Helper function to check if a value is different from default
-function nullIfDefault(value, defaultValue) {
-    return value !== defaultValue ? value : null;
-}
-
-// Helper function to safely parse integers with user feedback
-function safeParseInt(element) {
-    const value = element.value;
-    if (value === null || value === undefined || value === '') {
-        return null;
-    }
-    return parseInt(value);
-}
-
-function safeParseDouble(element) {
-    const value = element.value;
-    if (value === null || value === undefined || value === '') {
-        return null;
-    }
-    return parseFloat(value);
-}
-
-function savePluginConfiguration(view) {
-    const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
-    
-    // Validate URL format if provided
-    const url = form.querySelector('#JellyseerrUrl').value;
-    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
-    
-    // Validate API Key
-    if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
-    
-    // Validate number fields
-    if (!validateField('SyncIntervalHours', validators.number, 'Invalid Sync Interval').isValid) return;
-    if (!validateField('RequestTimeout', validators.number, 'Invalid Request Timeout').isValid) return;
-    if (!validateField('RetryAttempts', validators.number, 'Invalid Retry Attempts').isValid) return;
-    if (!validateField('MaxDiscoverPages', validators.number, 'Invalid Max Discover Pages').isValid) return;
-    if (!validateField('MaxCollectionDays', validators.number, 'Invalid Max Collection Days').isValid) return;
-    
-    // Validate Library Prefix for Windows filename compatibility
-    if (!validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
-    
-    // Use our custom endpoint to get the current configuration
-    return fetch('/JellyseerrBridge/PluginConfiguration')
-        .then(response => response.json())
-        .then(function (config) {
-            // Update config with current form values
-            // Only include checkbox values if they differ from defaults
-            config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-            config.ApiKey = form.querySelector('#ApiKey').value.trim();
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
-            config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
-            config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-            config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
-            config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
-            config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
-            config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
-            config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
-            config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
-            config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
-            config.MaxCollectionDays = safeParseInt(form.querySelector('#MaxCollectionDays'));
-            config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
-            config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-            config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
-            
-            // Save the configuration using our custom endpoint
-            return fetch('/JellyseerrBridge/PluginConfiguration', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(config)
-            });
-        })
-        .then(async response => {
-            const result = await response.json();
-            if (result.success) {
-                return result;
-            } else {
-                throw new Error(result.error || 'Failed to save configuration');
-            }
-        });
-}
-
-
-
 function loadRegions(page) {
     return ApiClient.ajax({
         url: ApiClient.getUrl('JellyseerrBridge/Regions'),
@@ -722,237 +834,81 @@ function loadRegions(page) {
     });
 }
 
-// Test connection function
-function performTestConnection(page) {
-    const testButton = page.querySelector('#testConnection');
-    const url = page.querySelector('#JellyseerrUrl').value;
-    const apiKey = page.querySelector('#ApiKey').value.trim();
-    
-    // Validate URL format if provided
-    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
-    
-    // Validate API Key
-    if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
-    
-    testButton.disabled = true;
-    Dashboard.showLoadingMsg();
-    
-    const testData = {
-        JellyseerrUrl: url,
-        ApiKey: apiKey
-    };
+// ==========================================
+// ADVANCED SETTINGS FUNCTIONS
+// ==========================================
 
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/TestConnection'),
-        type: 'POST',
-        data: JSON.stringify(testData),
-        contentType: 'application/json',
-        dataType: 'json'
-    }).then(function (data) {
-        // HTTP 200 response means connection test was successful
-        Dashboard.alert('✅ Connected to Jellyseerr!');
-        // Show confirmation dialog for saving settings
-        Dashboard.confirm({
-                title: 'Connection Success!',
-                text: 'Save connection settings now?',
-                confirmText: 'Confirm',
-                cancelText: 'Cancel',
-                primary: "confirm"
-            }, 'Title', (confirmed) => {
-                if (confirmed) {
-                    // Save the current settings using the reusable function
-                    savePluginConfiguration(page).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                    }).catch(function (error) {
-                        Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                        scrollToElement('jellyseerrBridgeConfigurationForm');
-                    }).finally(function() {
-                        Dashboard.hideLoadingMsg();
-                    });
-                } else {
-                    Dashboard.alert('🚫 Exited without saving');
-                }
-            });
-    }).catch(function (error) {
-        // Handle different types of errors
-        let errorMessage = '❌ Connection test failed';
-        
-        if (error && error.responseJSON) {
-            // Server returned structured error response
-            const errorData = error.responseJSON;
-            errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
-            if (errorData.details) {
-                errorMessage += `<br><br>Details: ${errorData.details}`;
+function initializeAdvancedSettings(page) {
+    // Set advanced settings form values with null handling
+    setInputField(page, 'RequestTimeout');
+    setInputField(page, 'RetryAttempts');
+    setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'MaxCollectionDays');
+    setInputField(page, 'PlaceholderDurationSeconds');
+    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
+    if (placeholderDurationInput) {
+        placeholderDurationInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 1) {
+                this.value = '1';
             }
-        } else if (error && error.status) {
-            // HTTP status code error
-            switch (error.status) {
-                case 400:
-                    errorMessage = '❌ Bad Request: Cannot reach URL';
-                    break;
-                case 401:
-                    errorMessage = '❌ Unauthorized: Invalid API Key';
-                    break;
-                case 403:
-                    errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
-                    break;
-                case 500:
-                    errorMessage = '❌ Server Error: Connection test failed';
-                    break;
-                default:
-                    errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
-            }
-        } else {
-            // Generic error
-            errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
-        }
-        
-        Dashboard.alert(errorMessage);
-    }).finally(function() {
-        Dashboard.hideLoadingMsg();
-        testButton.disabled = false;
-    });
-}
-
-// Sync favorites function
-function performSyncFavorites(page) {
-    const syncFavoritesButton = page.querySelector('#syncFavorites');
+        });
+    }
+    setInputField(page, 'AutoSyncOnStartup', true);
+    setInputField(page, 'StartupDelaySeconds');
+    setInputField(page, 'EnableDebugLogging', true);
     
-    // Show confirmation dialog for saving settings before sync
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before starting favorites sync.',
-        confirmText: 'Save & Sync',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            syncFavoritesButton.disabled = true;
-            // Save settings first, then sync
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the sync result textbox
-                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
-                syncFavoritesResult.style.display = 'block';
-                
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed
-                Dashboard.showLoadingMsg();
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyseerrBridge/SyncFavorites'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(syncResult) {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `${syncResult.message || 'No message'}\n`;
-                    
-                    if (syncResult.details) {
-                        resultText += `\nDetails: ${syncResult.details}\n`;
-                    }
-                    
-                    resultText += `\nMovies Result:\n`;
-                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
-                    
-                    resultText += `\nShows Result:\n`;
-                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
-                    
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyseerrBridgeConfigurationForm');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-                syncFavoritesButton.disabled = false;
-            });
-        }
-    });
-}
-
-// Complete sync discover workflow
-function performSyncDiscover(page) {
-    const syncButton = page.querySelector('#syncDiscover');
+    // Initialize startup delay state
+    updateStartupDelayState();
     
-    // Show confirmation dialog for saving settings before sync
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before starting discover sync.',
-        confirmText: 'Save & Sync',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            syncButton.disabled = true;
-            // Save settings first, then sync
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the sync result textbox
-                const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                syncDiscoverResult.textContent = '🔄 Syncing library...';
-                syncDiscoverResult.style.display = 'block';
-                
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed
-                Dashboard.showLoadingMsg();
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyseerrBridge/SyncDiscover'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(syncData) {
-                    // Parse the sync results for better user feedback
-                    const message = syncData.message || 'Folder structure creation completed successfully';
-                    
-                    // Build detailed information if available
-                    let resultText = `Discover Sync Results:\n`;
-                    resultText += `✅ ${message}\n\n`;
-                    
-                    if (syncData.details) {
-                        resultText += `Details:\n${syncData.details}`;
-                    }
-                    
-                    syncDiscoverResult.textContent = resultText;
-                    scrollToElement('syncDiscoverResult');
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
-                    
-                    let resultText = `Discover Sync Results:\n`;
-                    resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
-                    
-                    syncDiscoverResult.textContent = resultText;
-                    scrollToElement('syncDiscoverResult');
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyseerrBridgeConfigurationForm');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-                syncButton.disabled = false;
-            });
-        }
-    });
+    // Add event listener for AutoSyncOnStartup checkbox
+    const autoSyncOnStartupCheckbox = page.querySelector('#AutoSyncOnStartup');
+    if (autoSyncOnStartupCheckbox) {
+        autoSyncOnStartupCheckbox.addEventListener('change', function() {
+            updateStartupDelayState();
+        });
+    }
+    
+    // Add event listener for Create Separate Libraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
+        });
+    }
+    
+    // Library Prefix real-time validation
+    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
+    if (libraryPrefixInput) {
+        libraryPrefixInput.addEventListener('input', function() {
+            validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
+        });
+    }
 }
 
-// Reset plugin configuration and delete data with double confirmation
+function updateStartupDelayState() {
+    const autoSyncOnStartupCheckbox = document.querySelector('#AutoSyncOnStartup');
+    const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
+    const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
+    
+    const isEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
+    
+    // Enable/disable the input
+    startupDelaySecondsInput.disabled = !isEnabled;
+    
+    // Add/remove disabled styling
+    if (isEnabled) {
+        startupDelaySecondsInput.classList.remove('disabled');
+        if (startupDelaySecondsContainer) {
+            startupDelaySecondsContainer.classList.remove('disabled');
+        }
+    } else {
+        startupDelaySecondsInput.classList.add('disabled');
+        if (startupDelaySecondsContainer) {
+            startupDelaySecondsContainer.classList.add('disabled');
+        }
+    }
+}
+
 function performPluginReset(page) {
     // Get current library directory before resetting configuration, fallback to default if empty
     const config = window.configJellyseerrBridge || {};
@@ -1060,84 +1016,189 @@ function performPluginReset(page) {
     });
 }
 
-// Task Status Polling Functions
-let taskStatusInterval = null;
+// ==========================================
+// SAVE CONFIGURATION FUNCTION
+// ==========================================
 
-function startTaskStatusPolling(page) {
-    // Clear any existing interval
-    if (taskStatusInterval) {
-        clearInterval(taskStatusInterval);
-    }
+function savePluginConfiguration(view) {
+    const form = view.querySelector('#jellyseerrBridgeConfigurationForm');
     
-    // Initial check
-    checkTaskStatus(page);
+    // Validate URL format if provided
+    const url = form.querySelector('#JellyseerrUrl').value;
+    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
-    // Poll every 2 seconds
-    taskStatusInterval = setInterval(() => {
-        checkTaskStatus(page);
-    }, 2000);
-}
-
-function stopTaskStatusPolling() {
-    if (taskStatusInterval) {
-        clearInterval(taskStatusInterval);
-        taskStatusInterval = null;
-    }
-}
-
-function checkTaskStatus(page) {
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyseerrBridge/TaskStatus'),
-        type: 'GET',
-        dataType: 'json'
-    }).then(function(result) {
-        updateTaskStatusDisplay(page, result);
-    }).catch(function(error) {
-        console.error('Failed to get task status:', error);
-        updateTaskStatusDisplay(page, {
-            isRunning: false,
-            status: 'Error',
-            progress: 0,
-            message: 'Failed to get task status'
+    // Validate API Key
+    if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
+    
+    // Validate number fields with appropriate types
+    if (!validateField('SyncIntervalHours', validators.double, 'Sync Interval must be a valid number between 0 and 17976931348623157').isValid) return;
+    if (!validateField('RequestTimeout', validators.int, 'Request Timeout must be an integer between 1 and 2147483647').isValid) return;
+    if (!validateField('RetryAttempts', validators.int, 'Retry Attempts must be an integer between 0 and 2147483647').isValid) return;
+    if (!validateField('MaxDiscoverPages', validators.int, 'Max Discover Pages must be an integer between 0 and 2147483647').isValid) return;
+    if (!validateField('MaxCollectionDays', validators.int, 'Max Collection Days must be an integer between 1 and 2147483647').isValid) return;
+    if (!validateField('StartupDelaySeconds', validators.int, 'Startup Delay must be an integer between 0 and 2147483647').isValid) return;
+    if (!validateField('PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be an integer between 1 and 2147483647').isValid) return;
+    
+    // Validate Library Prefix for Windows filename compatibility
+    if (!validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
+    
+    // Use our custom endpoint to get the current configuration
+    return fetch('/JellyseerrBridge/PluginConfiguration')
+        .then(response => response.json())
+        .then(function (config) {
+            // Update config with current form values
+            // Only include checkbox values if they differ from defaults
+            config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
+            config.ApiKey = form.querySelector('#ApiKey').value.trim();
+            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+            config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
+            config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+            config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
+            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+            config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
+            config.StartupDelaySeconds = safeParseInt(form.querySelector('#StartupDelaySeconds'));
+            config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+            config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
+            config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
+            config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
+            config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
+            config.MaxCollectionDays = safeParseInt(form.querySelector('#MaxCollectionDays'));
+            config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
+            config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+            config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+            
+            // Save the configuration using our custom endpoint
+            return fetch('/JellyseerrBridge/PluginConfiguration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+        })
+        .then(async response => {
+            const result = await response.json();
+            if (result.success) {
+                return result;
+            } else {
+                throw new Error(result.error || 'Failed to save configuration');
+            }
         });
-    });
 }
 
-function updateTaskStatusDisplay(page, taskData) {
-    const statusText = page.querySelector('#taskStatusText');
-    const progressContainer = page.querySelector('#taskProgressContainer');
-    const progressBar = page.querySelector('#taskProgressBar');
-    const progressText = page.querySelector('#taskProgressText');
-    const lastRun = page.querySelector('#taskLastRun');
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+
+// Scroll to a specific element by ID with smooth scrolling
+function scrollToElement(elementId, offset = 20) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const elementPosition = element.getBoundingClientRect().top;
+        const pluginContainerHeight = 48; // Plugin container bar height
+        const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
+        
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+        
+        // Add a temporary highlight effect
+        element.style.transition = 'box-shadow 0.3s ease';
+        element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
+        setTimeout(() => {
+            element.style.boxShadow = '';
+    }, 2000);
+    }
+}
+
+// Global validators object
+const validators = {
+    notNull: (value) => !!value,
+    url: (value) => /^https?:\/\/.+/.test(value),
+    int: (value) => {
+        if (!value) return true; // Allow empty values
+        const num = parseInt(value);
+        return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
+    },
+    double: (value) => {
+        if (!value) return true; // Allow empty values
+        const num = parseFloat(value);
+        return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
+    },
+    windowsFilename: (value) => {
+        if (!value) return true; // Allow empty values
+        // Check for invalid Windows filename characters: \ / : * ? " < > |
+        const invalidChars = /[\\/:*?"<>|]/;
+        return !invalidChars.test(value);
+    }
+};
+
+// Central field validation function
+function validateField(fieldId, validator = null, errorMessage = null) {
+    const field = document.querySelector(`#${fieldId}`);
+    if (!field) {
+        console.warn(`Field with ID "${fieldId}" not found`);
+        return { isValid: false, error: `Field "${fieldId}" not found` };
+    }
     
-    if (!statusText || !progressContainer || !progressBar || !progressText || !lastRun) {
+    const value = field.value.trim();
+    
+    // Check validator function if provided
+    if (validator && !validator(value)) {
+        const message = errorMessage || `${fieldId} is invalid`;
+        Dashboard.alert(`❌ ${message}`);
+        scrollToElement(fieldId);
+        return { isValid: false, error: message };
+    }
+    
+    return { isValid: true, error: null };
+}
+
+// Helper function to set input field value and placeholder
+function setInputField(page, propertyName, isCheckbox = false) {
+    const field = page.querySelector(`#${propertyName}`);
+    if (!field) {
+        Dashboard.alert(`❌ Field with ID "${propertyName}" not found`);
         return;
     }
     
-    if (taskData.isRunning) {
-        statusText.textContent = '🔄 Running';
-        statusText.style.color = '#00a4d6';
-        progressContainer.style.display = 'block';
-        
-        const progress = Math.round(taskData.progress || 0);
-        progressBar.style.width = progress + '%';
-        progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
-        
-        if (taskData.lastRun) {
-            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-        }
+    const config = window.configJellyseerrBridge || {};
+    const defaults = config.DefaultValues || {};
+    const configValue = config[propertyName];
+    const defaultValue = defaults[propertyName];
+    
+    if (isCheckbox) {
+        field.checked = configValue ?? defaultValue;
     } else {
-        statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
-        statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
-        progressContainer.style.display = 'none';
-        
-        if (taskData.lastRun) {
-            lastRun.textContent = `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-        } else {
-            lastRun.textContent = 'No previous runs';
+        field.value = configValue ?? '';
+        if (defaultValue !== undefined) {
+            field.placeholder = defaultValue.toString();
         }
     }
 }
 
+// Helper function to check if a value is different from default
+function nullIfDefault(value, defaultValue) {
+    return value !== defaultValue ? value : null;
+}
+
+// Helper function to safely parse integers with user feedback
+function safeParseInt(element) {
+    const value = element.value;
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    return parseInt(value);
+}
+
+function safeParseDouble(element) {
+    const value = element.value;
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    return parseFloat(value);
+}
 
 
