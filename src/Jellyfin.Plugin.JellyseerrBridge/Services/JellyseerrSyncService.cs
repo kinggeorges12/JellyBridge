@@ -238,6 +238,14 @@ public partial class JellyseerrSyncService
             var allFavorites = JellyfinHelper.GetUserFavorites(_userManager, _libraryManager, _userDataManager);
             _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavorites.Count);
             
+            // Log all favorites for debugging
+            foreach (var (user, favorites) in allFavorites)
+            {
+                _logger.LogTrace("User '{UserName}' has {FavoriteCount} favorites: {FavoriteNames}", 
+                    user.Username, favorites.Count, 
+                    string.Join(", ", favorites.Select(f => f.Name)));
+            }
+            
             // Add all favorited items to updated lists (these are items that were favorited by users)
             var allFavoritedItems = allFavorites.Values.SelectMany(favs => favs).ToList();
             result.MoviesResult.ItemsUpdated.AddRange(allFavoritedItems.OfType<Movie>());

@@ -24,60 +24,20 @@ public static class JellyfinHelper
     {
         var userFavorites = new Dictionary<JellyfinUser, List<BaseItem>>();
         
-        try
+        // Get all users from user manager
+        var users = userManager.Users.ToList();
+        
+        // Get favorites for each user directly
+        foreach (var user in users)
         {
-            // Get all users from user manager
-            var users = userManager.Users.ToList();
-            
-            // Get all items from libraries
-            var allItems = libraryManager.GetItemList(new InternalItemsQuery
+            var userFavs = libraryManager.GetItemList(new InternalItemsQuery(user)
             {
                 IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
+                IsFavorite = true,
                 Recursive = true
             });
             
-            // Initialize empty lists for each user
-            foreach (var user in users)
-            {
-                userFavorites[user] = new List<BaseItem>();
-            }
-            
-            // Check favorites for each user
-            foreach (var user in users)
-            {
-                try
-                {
-                    var userFavs = new List<BaseItem>();
-                    
-                    foreach (var item in allItems)
-                    {
-                        try
-                        {
-                            // Check if item is favorited by user
-                            var userData = userDataManager.GetUserData(user, item);
-                            if (userData.IsFavorite)
-                            {
-                                userFavs.Add(item);
-                            }
-                        }
-                        catch
-                        {
-                            // Ignore errors and continue
-                        }
-                    }
-                    
-                    userFavorites[user] = userFavs;
-                }
-                catch
-                {
-                    // Ignore errors and continue with empty list
-                    userFavorites[user] = new List<BaseItem>();
-                }
-            }
-        }
-        catch
-        {
-            // Ignore errors and return empty dictionary
+            userFavorites[user] = userFavs;
         }
         
         return userFavorites;

@@ -128,11 +128,6 @@ public class JellyseerrBridgeService
                 
                 var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
                 
-                _logger.LogTrace("Processing bridge-only item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
-                    item.Name, tmdbId.Value, firstUser.Username);
-                _logger.LogTrace("Creating request for {ItemName} on behalf of {UserName}", 
-                    item.Name, firstUser.Username);
-                
                 // Create request for the user who favorited this item
                 try
                 {
@@ -144,8 +139,8 @@ public class JellyseerrBridgeService
                         ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
                     };
                     
-                    _logger.LogTrace("Creating request for {ItemName} on behalf of {UserName}", 
-                        item.Name, firstUser.Username);
+                    _logger.LogTrace("Processing bridge-only item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
+                        item.Name, tmdbId.Value, firstUser.JellyfinUsername);
                     
                     var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
                     var request = requestResult as JellyseerrMediaRequest;
@@ -153,18 +148,18 @@ public class JellyseerrBridgeService
                     {
                         requestResults.Add(request);
                         _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
-                            item.Name, firstUser.Username);
+                            item.Name, firstUser.JellyfinUsername);
                     }
                     else
                     {
                         _logger.LogError("Received no response from Jellyseerr for item request {ItemName} on behalf of {UserName}", 
-                            item.Name, firstUser.Username);
+                            item.Name, firstUser.JellyfinUsername);
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to create request for {ItemName} on behalf of {UserName}", 
-                        item.Name, firstUser.Username);
+                        item.Name, firstUser.JellyfinUsername);
                 }
             }
             catch (Exception ex)
@@ -206,7 +201,7 @@ public class JellyseerrBridgeService
             jellyseerrUserLookup.Count, 
             string.Join(", ", jellyseerrUserLookup.Select(kvp => $"{kvp.Key}->{kvp.Value.JellyfinUsername}")));
         
-        // Loop through all favorites to find the first Jellyseerr user for each bridge-only item
+        // Loop through favorites to find matching bridge-only items
         foreach (var (jellyfinUser, favoriteItems) in allFavorites)
         {
             // Check if this Jellyfin user has a corresponding Jellyseerr account
@@ -229,7 +224,7 @@ public class JellyseerrBridgeService
                     if (processedItemIds.Contains(bridgeItem.Id))
                     {
                         _logger.LogDebug("Item {ItemName} was already favorited by another user - skipping favorite for user {UserName}", 
-                            bridgeItem.Name, jellyseerrUser.Username);
+                            bridgeItem.Name, jellyseerrUser.JellyfinUsername);
                         continue;
                     }
                     
@@ -238,7 +233,8 @@ public class JellyseerrBridgeService
                     uniqueItemsWithFirstUser.Add((bridgeItem, jellyseerrUser));
                     
                     _logger.LogTrace("Found first Jellyseerr user {UserName} (Jellyfin: {JellyfinUser}) for item {ItemName}", 
-                        jellyseerrUser.Username, jellyfinUser.Username, bridgeItem.Name);
+                        jellyseerrUser.JellyfinUsername, jellyfinUser.Username, bridgeItem.Name);
+                    break; // Move to next favorite item
                 }
             }
         }

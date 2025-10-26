@@ -81,10 +81,12 @@ public class JellyseerrMedia : Media
     // Properties that are not used in Jellyseerr API responses - exclude from JSON
 
     /// <summary>
-    /// Requests - Not used in Jellyseerr API responses
+    /// Requests - returned from create request endpoint
     /// </summary>
     [JsonIgnore]
-    public new List<JellyseerrMediaRequest>? Requests { get; set; } = new();
+    public new List<MediaRequest>? Requests { get; set; }
+    [JsonPropertyName("requests")]
+    public List<JellyseerrMediaRequest> JellyseerrRequests { get; set; } = new();
 
     /// <summary>
     /// Seasons - Not used in Jellyseerr API responses
