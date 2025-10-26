@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.297.0.0/JellyseerrBridge-0.297.0.0-DLL.zip",
+        "version": "0.297.0.0",
+        "checksum": "AE9397E6D3209747BE89E67EB472923E",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-26T20:51:16.686Z",
+        "dependencies": [],
+        "changelog": "v0.297.0.0 - Changed task status polling from 2 to 10 seconds, added manual refresh button for task status, added Last update timestamp displayed before Last run and Next run, added reload of task triggers after configuration save to update sync interval, removed scroll on test connection button"
+      },
+      {
         "targetAbi": "10.10.7.0",
         "dependencies": [],
         "checksum": "351FAF897D39ED4F2B85F05F014C1B61",

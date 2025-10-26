@@ -3,6 +3,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge
     {
         private readonly ILogger<Plugin> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly ITaskManager _taskManager;
 
         public override Guid Id => Guid.Parse("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "Jellyseerr Bridge";
@@ -25,11 +27,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         private static readonly object _operationSyncLock = new object();
         private static bool _isOperationRunning = false;
         
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory) 
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory, ITaskManager taskManager) 
             : base(applicationPaths, xmlSerializer)
         {
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.CreateLogger<Plugin>();
+            _taskManager = taskManager;
             Instance = this;
             _logger.LogInformation("[JellyseerrBridge] Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
             _logger.LogInformation("[JellyseerrBridge] Plugin ID: {PluginId}", Id);
@@ -59,6 +62,21 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             
             base.UpdateConfiguration(configuration);
             _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
+            
+            // Reload the scheduled task triggers to apply new configuration
+            try
+            {
+                var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyseerrBridgeSync");
+                if (task != null)
+                {
+                    _logger.LogInformation("[JellyseerrBridge] Reloading task triggers for new configuration");
+                    task.ReloadTriggerEvents();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[JellyseerrBridge] Failed to reload task triggers");
+            }
         }
 
         /// <summary>

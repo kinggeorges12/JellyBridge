@@ -280,7 +280,7 @@ public partial class JellyseerrSyncService
             
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, created {requestResults.Count} requests for favorited items";
+            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, updated (scanned) {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }

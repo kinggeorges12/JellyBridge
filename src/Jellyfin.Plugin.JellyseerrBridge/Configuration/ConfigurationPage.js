@@ -70,10 +70,18 @@ function startTaskStatusPolling(page) {
     // Initial check
     checkTaskStatus(page);
     
-    // Poll every 2 seconds
+    // Poll every 10 seconds
     taskStatusInterval = setInterval(() => {
         checkTaskStatus(page);
-    }, 2000);
+    }, 10000);
+    
+    // Add refresh button handler
+    const refreshButton = page.querySelector('#refreshTaskStatus');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            checkTaskStatus(page);
+        });
+    }
 }
 
 function stopTaskStatusPolling() {
@@ -106,12 +114,14 @@ function updateTaskStatusDisplay(page, taskData) {
     const progressContainer = page.querySelector('#taskProgressContainer');
     const progressBar = page.querySelector('#taskProgressBar');
     const progressText = page.querySelector('#taskProgressText');
-    const lastRun = page.querySelector('#taskLastRun');
+    const taskStatusTimes = page.querySelector('#taskStatusTimes');
     
-    if (!statusText || !progressContainer || !progressBar || !progressText || !lastRun) {
+    if (!statusText || !progressContainer || !progressBar || !progressText || !taskStatusTimes) {
         return;
     }
     
+    let runInfo = '';
+    runInfo += `Last update: ${new Date().toLocaleString()}`;
     if (taskData.isRunning) {
         statusText.textContent = '🔄 Running';
         statusText.style.color = '#00a4d6';
@@ -121,31 +131,31 @@ function updateTaskStatusDisplay(page, taskData) {
         progressBar.style.width = progress + '%';
         progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
         
-        let runInfo = '';
         if (taskData.lastRun) {
+            if (runInfo) runInfo += ' • ';
             runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
         }
         if (taskData.nextRun) {
             if (runInfo) runInfo += ' • ';
             runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
         }
-        lastRun.textContent = runInfo || 'No run information available';
+        taskStatusTimes.textContent = runInfo || 'No run information available';
     } else {
         statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
         statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
         progressContainer.style.display = 'none';
         
-        let runInfo = '';
         if (taskData.lastRun) {
+            if (runInfo) runInfo += ' • ';
             runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
         } else {
             runInfo = 'No previous runs';
         }
         if (taskData.nextRun) {
-            runInfo += ' • ';
+            if (runInfo) runInfo += ' • ';
             runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
         }
-        lastRun.textContent = runInfo;
+        taskStatusTimes.textContent = runInfo;
     }
 }
 
@@ -241,7 +251,6 @@ function performTestConnection(page) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     }).catch(function (error) {
                         Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                        scrollToElement('jellyseerrBridgeConfigurationForm');
                     }).finally(function() {
                         Dashboard.hideLoadingMsg();
                     });
@@ -760,7 +769,7 @@ function moveNetworks(fromSelect, toSelect) {
     });
     
     // Sort destination select to maintain alphabetical order
-    sortSelectOptions(toSelect);
+        sortSelectOptions(toSelect);
     
     // Select the newly moved items in the destination
     movedValues.forEach(value => {
