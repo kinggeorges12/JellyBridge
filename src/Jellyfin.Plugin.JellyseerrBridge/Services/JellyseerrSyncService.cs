@@ -31,6 +31,11 @@ public partial class JellyseerrSyncService
     private readonly JellyseerrBridgeService _bridgeService;
     private readonly JellyseerrLibraryService _libraryService;
     
+    /// <summary>
+    /// Tracks if the sync has run at least once (for startup delay logic)
+    /// </summary>
+    public static bool HasRunOnce { get; set; }
+    
 
     public JellyseerrSyncService(
         ILogger<JellyseerrSyncService> logger,
@@ -222,13 +227,13 @@ public partial class JellyseerrSyncService
             
             if (bridgeOnlyItems.Count == 0)
             {
-                _logger.LogWarning("No bridge-only items found in Jellyseerr bridge folder: {BridgePath}", bridgeLibraryPath);
+                _logger.LogWarning("No Jellyseerr bridge items found in folder: {BridgePath}", bridgeLibraryPath);
                 result.Success = true;
-                result.Message = "📭 No bridge-only items found to sync";
+                result.Message = "📭 No Jellyseerr bridge items found to sync";
                 return result;
             }
             
-            _logger.LogDebug("Found {BridgeOnlyCount} bridge-only items in Jellyseerr bridge folder: {BridgePath}", bridgeOnlyItems.Count, bridgeLibraryPath);
+            _logger.LogDebug("Found {BridgeOnlyCount} Jellyseerr bridge items in folder: {BridgePath}", bridgeOnlyItems.Count, bridgeLibraryPath);
             
             // Add all bridge items to processed lists (these are all items we're working with)
             result.MoviesResult.ItemsProcessed.AddRange(bridgeMovies);
@@ -263,7 +268,7 @@ public partial class JellyseerrSyncService
             
             // Step 4: Group bridge-only items by TMDB ID and find first user who favorited each
             var uniqueItemsWithJellyseerrUser = _bridgeService.EnsureFirstJellyseerrUser(bridgeOnlyItems, allFavorites, jellyseerrUsers);
-            _logger.LogDebug("Found {UniqueCount} unique bridge-only items with favorited Jellyseerr users (from {TotalCount} total)", 
+            _logger.LogDebug("Found {UniqueCount} unique Jellyseerr bridge items from Jellyseerr user favorites (from {TotalCount} total)", 
                 uniqueItemsWithJellyseerrUser.Count, bridgeOnlyItems.Count);
             
             // Step 5 & 6: Create requests for favorited bridge-only items
@@ -275,7 +280,7 @@ public partial class JellyseerrSyncService
             
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Processed {bridgeOnlyItems.Count} bridge-only items, created {requestResults.Count} requests for favorited items";
+            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, created {requestResults.Count} requests for favorited items";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }

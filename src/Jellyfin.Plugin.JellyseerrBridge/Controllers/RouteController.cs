@@ -543,6 +543,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
                 {
                     var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
+                    
+                    // Ignore very short intervals (less than 30 minutes) - these are likely one-time startup triggers
+                    if (interval.TotalMinutes < 30)
+                        return null;
+                    
                     return lastRun.Value.Add(interval);
                 }
             }

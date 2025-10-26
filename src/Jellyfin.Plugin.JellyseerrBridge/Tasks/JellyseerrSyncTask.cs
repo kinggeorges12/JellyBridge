@@ -37,6 +37,20 @@ public class JellyseerrSyncTask : IScheduledTask
         {
             _logger.LogInformation("Starting scheduled Jellyseerr sync task");
             
+            // Add startup delay if this is the first run and AutoSyncOnStartup is enabled
+            var isFirstRun = !JellyseerrSyncService.HasRunOnce;
+            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+            if (isFirstRun && autoSyncOnStartup)
+            {
+                var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
+                if (startupDelaySeconds > 0)
+                {
+                    _logger.LogInformation("[JellyseerrSyncTask] First run, waiting {StartupDelaySeconds} seconds before startup sync", startupDelaySeconds);
+                    await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
+                }
+                JellyseerrSyncService.HasRunOnce = true;
+            }
+            
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync(async () =>
             {
@@ -127,16 +141,14 @@ public class JellyseerrSyncTask : IScheduledTask
         
         _logger.LogInformation("[JellyseerrSyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
         
-        // Add startup trigger with configurable delay if AutoSyncOnStartup is enabled
+        // Add startup trigger if AutoSyncOnStartup is enabled
         if (autoSyncOnStartup)
         {
-            var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             triggers.Add(new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromSeconds(startupDelaySeconds).Ticks
+                Type = TaskTriggerInfo.TriggerStartup
             });
-            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger with {StartupDelaySeconds} second delay", startupDelaySeconds);
+            _logger.LogInformation("[JellyseerrSyncTask] Added startup trigger");
         }
         
         _logger.LogInformation("[JellyseerrSyncTask] Registered {TriggerCount} triggers for JellyseerrSyncTask", triggers.Count);
