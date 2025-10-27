@@ -27,7 +27,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(StartupDelaySeconds), 60 },
         { nameof(RanFirstTime), false },
         { nameof(MaxDiscoverPages), 1 },
-        { nameof(MaxCollectionDays), 30 },
+        { nameof(MaxRetentionDays), 30 },
         { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
         { nameof(EnableDebugLogging), false },
@@ -128,10 +128,10 @@ public class PluginConfiguration : BasePluginConfiguration
     public int? MaxDiscoverPages { get; set; }
 
     /// <summary>
-    /// Gets or sets the maximum number of days to keep items in the collection before cleanup.
+    /// Gets or sets the maximum number of days to retain items in the collection before cleanup.
     /// Items older than this will be removed during sync operations.
     /// </summary>
-    public int? MaxCollectionDays { get; set; }
+    public int? MaxRetentionDays { get; set; }
 
     /// <summary>
     /// Gets or sets the request timeout in seconds.
