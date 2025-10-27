@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "changelog": "v0.316.0.0 - Fix startup trigger detection to properly apply startup delay on first run",
+        "version": "0.316.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.316.0.0/JellyBridge-0.316.0.0-DLL.zip",
+        "checksum": "F2E1728CEC4854EF18B36031025A7CEB",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-27T11:29:18.357Z"
+      },
+      {
         "changelog": "v0.315.0.0 - Fix S00E00.png asset embedding for season placeholders",
         "timestamp": "2025-10-27T11:16:03.537Z",
         "dependencies": [],
