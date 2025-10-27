@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "5244858D12F93A16D0BDC176E96A7577",
+        "targetAbi": "10.10.7.0",
+        "dependencies": [],
+        "changelog": "v0.317.0.0 - Fix startup delay detection to compare against plugin load time instead of first run ever",
+        "version": "0.317.0.0",
+        "timestamp": "2025-10-27T11:52:24.262Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.317.0.0/JellyBridge-0.317.0.0-DLL.zip"
+      },
+      {
         "dependencies": [],
         "changelog": "v0.316.0.0 - Fix startup trigger detection to properly apply startup delay on first run",
         "version": "0.316.0.0",
