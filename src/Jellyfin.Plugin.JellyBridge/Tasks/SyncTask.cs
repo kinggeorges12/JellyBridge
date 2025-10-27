@@ -43,23 +43,45 @@ public class SyncTask : IScheduledTask
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
             var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             
-            // Determine if this is the first run by checking if the task has ever completed before
-            bool isFirstRun = false;
+            // Determine if this is the first run since server startup
+            bool isStartupRun = false;
             var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == Key);
-            if (task?.LastExecutionResult == null || task.LastExecutionResult.StartTimeUtc == DateTime.MinValue)
+            
+            if (task?.LastExecutionResult != null && task.LastExecutionResult.StartTimeUtc != DateTime.MinValue)
             {
-                isFirstRun = true;
-                _logger.LogInformation("[SyncTask] This appears to be the first run - no previous execution result found");
+                // Check if last execution was before plugin load (server started)
+                var lastExecutionTime = task.LastExecutionResult.StartTimeUtc;
+                var pluginLoadTime = Plugin.LastPluginLoad;
+                
+                _logger.LogDebug("[SyncTask] LastExecutionTime: {LastExecutionTime}, PluginLoadTime: {PluginLoadTime}", 
+                    lastExecutionTime, pluginLoadTime);
+                
+                if (lastExecutionTime < pluginLoadTime)
+                {
+                    isStartupRun = true;
+                    _logger.LogInformation("[SyncTask] Last execution ({LastExecutionTime}) was before plugin load ({PluginLoadTime}) - this is a startup run", 
+                        lastExecutionTime, pluginLoadTime);
+                }
+            }
+            else
+            {
+                // No previous execution, so this is definitely the first/startup run
+                isStartupRun = true;
+                _logger.LogInformation("[SyncTask] No previous execution result - this is a startup run");
             }
             
-            _logger.LogInformation("[SyncTask] IsFirstRun: {IsFirstRun}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}", 
-                isFirstRun, autoSyncOnStartup, startupDelaySeconds);
+            _logger.LogInformation("[SyncTask] IsStartupRun: {IsStartupRun}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}", 
+                isStartupRun, autoSyncOnStartup, startupDelaySeconds);
             
-            // Only apply startup delay on first run and if auto-sync on startup is enabled
-            if (isFirstRun && autoSyncOnStartup && startupDelaySeconds > 0)
+            // Only apply startup delay on startup run and if auto-sync on startup is enabled
+            if (isStartupRun && autoSyncOnStartup && startupDelaySeconds > 0)
             {
-                _logger.LogInformation("[SyncTask] First run detected with startup sync enabled - waiting {StartupDelaySeconds} seconds before sync", startupDelaySeconds);
+                _logger.LogInformation("[SyncTask] Startup run detected - waiting {StartupDelaySeconds} seconds before sync", startupDelaySeconds);
                 await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
+            }
+            else if (isStartupRun && autoSyncOnStartup)
+            {
+                _logger.LogInformation("[SyncTask] Startup run detected but delay is disabled (StartupDelaySeconds = 0)");
             }
             
             // Use Jellyfin-style locking that pauses instead of canceling
