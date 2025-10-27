@@ -38,25 +38,7 @@ public class SyncTask : IScheduledTask
     {
         try
         {
-            _logger.LogInformation("Starting scheduled sync task");
-            
-            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-            var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
-            
-            var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == Key);
-            
-            // If task has interval trigger, it will run again in the future = scheduled run (not startup)
-            bool isRecurringTask = task?.Triggers?.Any(t => t.Type == TaskTriggerInfo.TriggerInterval) == true;
-            
-            _logger.LogInformation("[SyncTask] isRecurringTask: {isRecurringTask}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}", 
-                isRecurringTask, autoSyncOnStartup, startupDelaySeconds);
-            
-            // Only apply startup delay on startup run and if auto-sync on startup is enabled
-            if (!isRecurringTask && autoSyncOnStartup && startupDelaySeconds > 0)
-            {
-                _logger.LogDebug("[SyncTask] Startup run detected - waiting {StartupDelaySeconds} seconds before sync", startupDelaySeconds);
-                await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
-            }
+            _logger.LogInformation("Starting interval sync task");
             
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<(SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
@@ -126,14 +108,8 @@ public class SyncTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        var config = Plugin.GetConfiguration();
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
-        var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
         var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
-        var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
-        
-        _logger.LogInformation("Adding default triggers - IsEnabled: {IsEnabled}, IntervalHours: {IntervalHours}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}",
-            isEnabled, autoSyncOnStartup, intervalHours, startupDelaySeconds);
         
         if (!isEnabled)
         {
@@ -141,29 +117,16 @@ public class SyncTask : IScheduledTask
             return Array.Empty<TaskTriggerInfo>();
         }
 
-        var triggers = new List<TaskTriggerInfo>();
-        
-        // Add interval trigger for regular syncing
-        triggers.Add(new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfo.TriggerInterval,
-            IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
-        });
-        
         _logger.LogDebug("[SyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
         
-        // Add startup trigger if AutoSyncOnStartup is enabled
-        if (autoSyncOnStartup)
+        return new List<TaskTriggerInfo>
         {
-            triggers.Add(new TaskTriggerInfo
+            new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerStartup
-            });
-            _logger.LogDebug("[SyncTask] Added startup trigger");
-        }
-        
-        _logger.LogDebug("[SyncTask] Registered {TriggerCount} triggers for SyncTask", triggers.Count);
-        return triggers;
+                Type = TaskTriggerInfo.TriggerInterval,
+                IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
+            }
+        };
     }
 }
 
