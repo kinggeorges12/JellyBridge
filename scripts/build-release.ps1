@@ -73,6 +73,7 @@ Write-Host "[~] Build successful" -ForegroundColor Green
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
 # Step 3: Create meta.json file
+
 # Read manifest to get plugin metadata
 $manifestPath = "manifest.json"
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -91,7 +92,6 @@ $metaJson = @{
     timestamp = $timestamp
     status = "Active"
     autoUpdate = $true
-    imagePath = $pluginInfo.imageUrl
     assemblies = @("JellyBridge.dll")
 } | ConvertTo-Json -Compress
 
