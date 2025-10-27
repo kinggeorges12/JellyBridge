@@ -89,7 +89,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
             try
             {
                 // Use Jellyfin-style locking that pauses instead of canceling
-                Plugin.ExecuteWithLock(() =>
+                var result = Plugin.ExecuteWithLockAsync<bool>(() =>
                 {
                     var config = new PluginConfiguration();
                     
@@ -133,7 +133,9 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     Plugin.Instance.UpdateConfiguration(config);
                     
                     _logger.LogInformation("[JellyseerrBridge] Configuration updated successfully");
-                }, _logger, "Update Plugin Configuration");
+                    
+                    return Task.FromResult(true);
+                }, _logger, "Update Plugin Configuration").GetAwaiter().GetResult();
                 
                 return Ok(new { success = true, message = "Configuration updated successfully" });
             }
@@ -483,37 +485,41 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 
                 if (task != null)
                 {
+                    // Log all available properties on the task object to see what's available
+                    _logger.LogDebug("[JellyseerrBridge] Task State type: {StateType}", task.State.GetType().Name);
+                    
                     // Get last run time from last execution result
-                    if (task.LastExecutionResult != null && task.LastExecutionResult.StartTimeUtc > DateTime.MinValue)
+                    // Use EndTimeUtc to match how Jellyfin's IntervalTrigger calculates next run
+                    if (task.LastExecutionResult != null && task.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
                     {
-                        lastRun = task.LastExecutionResult.StartTimeUtc;
+                        lastRun = task.LastExecutionResult.EndTimeUtc;
                     }
                     
-                    // Log trigger details
+                    // Calculate next run time based on triggers (only for interval triggers, not startup)
                     if (task.Triggers != null && task.Triggers.Count > 0)
                     {
                         _logger.LogDebug("[JellyseerrBridge] Found {Count} triggers", task.Triggers.Count);
+                        
                         foreach (var trigger in task.Triggers)
                         {
                             if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
                             {
                                 var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
                                 _logger.LogDebug("[JellyseerrBridge] Trigger interval: {Interval} hours", interval.TotalHours);
+                                
+                                // Calculate next run time
+                                if (lastRun.HasValue)
+                                {
+                                    nextRun = lastRun.Value.Add(interval);
+                                }
+                                else
+                                {
+                                    // Task hasn't run yet, calculate from current time
+                                    nextRun = DateTime.UtcNow.Add(interval);
+                                }
+                                break; // Only use the first interval trigger
                             }
                         }
-                    }
-                    
-                    // Calculate next run time based on triggers
-                    if (task.Triggers != null && task.Triggers.Count > 0)
-                    {
-                        var nextRunTime = task.Triggers
-                            .Where(t => t.Type == TaskTriggerInfo.TriggerInterval)
-                            .Select(t => CalculateNextRunTime(t, lastRun))
-                            .Where(t => t.HasValue)
-                            .OrderBy(t => t!.Value)
-                            .FirstOrDefault();
-                        
-                        nextRun = nextRunTime.HasValue ? nextRunTime : null;
                     }
                 }
                 
@@ -521,7 +527,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 {
                     isRunning = isRunning,
                     status = isRunning ? "Running" : "Idle",
-                    progress = task?.CurrentProgress ?? (isRunning ? 50 : 0),
+                    progress = task?.CurrentProgress,
                     message = isRunning ? "Sync operation in progress..." : "No active sync operation",
                     lastRun = lastRun,
                     nextRun = nextRun
@@ -545,30 +551,6 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         }
         
         /// <summary>
-        /// Calculate the next run time based on a trigger and last run time.
-        /// </summary>
-        private DateTime? CalculateNextRunTime(TaskTriggerInfo trigger, DateTime? lastRun)
-        {
-            if (trigger == null || !lastRun.HasValue)
-                return null;
-            
-            try
-            {
-                if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
-                {
-                    var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
-                    return lastRun.Value.Add(interval);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[JellyseerrBridge] Failed to calculate next run time for trigger");
-            }
-            
-            return null;
-        }
-
-        /// <summary>
         /// Delete all Jellyseerr library data.
         /// </summary>
         [HttpPost("ResetPlugin")]
@@ -589,7 +571,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                 libraryDir ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
                 
                 // Use Jellyfin-style locking that pauses instead of canceling
-                await Plugin.ExecuteWithLockAsync(() =>
+                var success = await Plugin.ExecuteWithLockAsync<bool>(() =>
                 {
                     _logger.LogInformation("[JellyseerrBridge] Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
@@ -634,6 +616,12 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     
                     _logger.LogDebug("[JellyseerrBridge] Data deletion completed successfully");
                     
+                    // Reset RanFirstTime flag so next sync will do full refresh
+                    var config = (PluginConfiguration)Plugin.GetConfiguration();
+                    config.RanFirstTime = false;
+                    Plugin.Instance.UpdateConfiguration(config);
+                    _logger.LogDebug("[JellyseerrBridge] Reset RanFirstTime to false");
+                    
                     // Refresh the Jellyseerr library after data deletion
                     _logger.LogDebug("[JellyseerrBridge] Starting Jellyseerr library refresh after data deletion...");
                     
@@ -643,16 +631,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     // Call the refresh method
                     var refreshSuccess = libraryService.RefreshJellyseerrLibrary();
                     
-                    if (refreshSuccess)
+                    if (refreshSuccess == true)
                     {
                         _logger.LogInformation("[JellyseerrBridge] Jellyseerr library refresh started successfully");
                     }
-                    else
+                    else if (refreshSuccess == false)
                     {
                         _logger.LogWarning("[JellyseerrBridge] Jellyseerr library refresh failed");
                     }
+                    // refreshSuccess is null if library management is disabled
                     
-                    return Task.CompletedTask;
+                    return Task.FromResult(true);
                 }, _logger, "Delete Library Data");
                 
                 return Ok(new { 

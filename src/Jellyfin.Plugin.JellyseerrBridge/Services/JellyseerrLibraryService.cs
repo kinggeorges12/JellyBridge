@@ -29,7 +29,7 @@ public class JellyseerrLibraryService
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
     /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
-    public bool RefreshJellyseerrLibrary(bool fullRefresh = true)
+    public bool? RefreshJellyseerrLibrary(bool fullRefresh = true)
     {
         try
         {
@@ -39,7 +39,7 @@ public class JellyseerrLibraryService
 
             if (!manageJellyseerrLibrary) {
                 _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library management is disabled");
-                return true;
+                return null;
             }
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
@@ -120,6 +120,49 @@ public class JellyseerrLibraryService
         catch (Exception ex)
         {
             _logger.LogError(ex, "[JellyseerrLibraryService] Error refreshing Jellyseerr library");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Scans all Jellyfin libraries for first-time plugin initialization.
+    /// Uses the same functionality as the "Scan All Libraries" button.
+    /// </summary>
+    public bool? ScanAllLibrariesForFirstTime()
+    {
+        try
+        {
+            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
+
+            if (!manageJellyseerrLibrary)
+            {
+                _logger.LogDebug("[JellyseerrLibraryService] Jellyseerr library management is disabled");
+                return null;
+            }
+
+            _logger.LogDebug("[JellyseerrLibraryService] Starting full scan of all Jellyfin libraries for first-time initialization...");
+
+            // Use the same method as the "Scan All Libraries" button, run in background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _libraryManager.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+                    _logger.LogDebug("[JellyseerrLibraryService] Full scan of all libraries completed");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[JellyseerrLibraryService] Error during full scan of all libraries");
+                }
+            });
+
+            // Return immediately - background task continues running
+            _logger.LogDebug("[JellyseerrLibraryService] Full scan of all libraries started successfully");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[JellyseerrLibraryService] Error scanning all libraries for first time");
             return false;
         }
     }

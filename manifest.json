@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "changelog": "v0.300.0.0 - Moved CSS styles back to inline HTML to match Jellyfin plugin conventions",
+        "timestamp": "2025-10-27T02:43:50.022Z",
+        "targetAbi": "10.10.7.0",
+        "checksum": "1B04E84AB1B04C19D9846D0CE7525973",
+        "dependencies": [],
+        "version": "0.300.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.300.0.0/JellyseerrBridge-0.300.0.0-DLL.zip"
+      },
+      {
+        "timestamp": "2025-10-27T00:00:00Z",
+        "dependencies": [],
+        "changelog": "v0.300.0.0 - Moved CSS styles back to inline HTML to match Jellyfin plugin conventions",
+        "version": "0.300.0.0",
+        "targetAbi": "10.10.7.0",
+        "checksum": "PLACEHOLDER",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.300.0.0/JellyseerrBridge-0.300.0.0-DLL.zip"
+      },
+      {
         "timestamp": "2025-10-26T22:11:53.594Z",
         "dependencies": [],
         "changelog": "v0.299.1.0 - Fixed type conversion error by changing SyncIntervalHours default value from int to double in PluginConfiguration",

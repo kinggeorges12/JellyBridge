@@ -127,7 +127,7 @@ function updateTaskStatusDisplay(page, taskData) {
         statusText.style.color = '#00a4d6';
         progressContainer.style.display = 'block';
         
-        const progress = Math.round(taskData.progress || 0);
+        const progress = taskData.progress !== null && taskData.progress !== undefined ? Math.round(taskData.progress) : 0;
         progressBar.style.width = progress + '%';
         progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
         
@@ -326,11 +326,17 @@ function updateLibraryPrefixState() {
     const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
     const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
+    const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
     // Enable/disable the input
     libraryPrefixInput.disabled = !isEnabled;
+    
+    // Show/hide warning message
+    if (separateLibrariesWarning) {
+        separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
+    }
     
     // Add/remove disabled styling to both input and container
     if (isEnabled) {
@@ -515,10 +521,16 @@ function initializeSyncSettings(page) {
         performSyncDiscover(page);
     });
 
-    // Add reset plugin button functionality
-    const resetButton = page.querySelector('#resetPlugin');
-    resetButton.addEventListener('click', function () {
+    // Add reset plugin config button functionality
+    const resetPluginConfigButton = page.querySelector('#resetPluginConfig');
+    resetPluginConfigButton.addEventListener('click', function () {
         performPluginReset(page);
+    });
+
+    // Add delete library data button functionality
+    const deleteLibraryDataButton = page.querySelector('#deleteLibraryData');
+    deleteLibraryDataButton.addEventListener('click', function () {
+        performDeleteLibraryData(page);
     });
 
     // Add refresh networks button functionality
@@ -932,20 +944,16 @@ function updateStartupDelayState() {
 }
 
 function performPluginReset(page) {
-    // Get current library directory before resetting configuration, fallback to default if empty
-    const config = window.configJellyseerrBridge || {};
-    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
-    
-    // First confirmation with information warning emoji
+    // Single confirmation for configuration reset
     Dashboard.confirm({
         title: '⚠️ Reset Plugin Configuration',
-        text: 'This will reset ALL plugin settings to their default values. Are you sure you want to continue?',
+        text: 'This will reset ALL plugin settings to their default values. This does not delete library data. Are you sure you want to continue?',
         confirmText: 'Yes, Reset Settings',
         cancelText: 'Cancel',
         primary: "cancel"
-    }, 'Title', (confirmed1) => {
-        if (confirmed1) {
-            // Reset configuration to defaults first
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            // Reset configuration to defaults
             Dashboard.showLoadingMsg();
             
             // Create reset configuration with null/empty values
@@ -978,60 +986,61 @@ function performPluginReset(page) {
             }).then(function(result) {
                 Dashboard.alert('✅ Plugin configuration has been reset to defaults! Please refresh the page to see the changes.');
                 
-                // Second confirmation with warning emoji for data deletion
-                Dashboard.confirm({
-                    title: '❗ Delete Library Data',
-                    text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-                    confirmText: 'Yes! Proceed to final confirmation...',
-                    cancelText: 'Cancel',
-                    primary: "cancel"
-                }, 'Title', (confirmed2) => {
-                    if (confirmed2) {
-                        // Third confirmation with emergency emoji for final data deletion
-                        Dashboard.confirm({
-                            title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                            text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-                            confirmText: '🚩 YES, DELETE EVERYTHING',
-                            cancelText: 'Cancel',
-                            primary: "cancel"
-                        }, 'Title', (confirmed3) => {
-                            if (confirmed3) {
-                                // Proceed with data deletion
-                                Dashboard.showLoadingMsg();
-                                
-                                ApiClient.ajax({
-                                    url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
-                                    type: 'POST',
-                                    data: JSON.stringify({
-                                        libraryDirectory: currentLibraryDir
-                                    }),
-                                    contentType: 'application/json',
-                                    dataType: 'json'
-                                }).then(function(result) {
-                                    Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
-                                    
-                                    // Reload the page to show default values
-                                    window.location.reload();
-                                }).catch(function(error) {
-                                    Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
-                                }).finally(function() {
-                                    Dashboard.hideLoadingMsg();
-                                });
-                            }
-                        });
-                    }
-                });
+                // Reload the page to show default values
+                window.location.reload();
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
-                
-                // Refresh the configuration page to show updated values
-                const view = document.querySelector('.configurationPage');
-                if (view) {
-                    // Call the main configuration function to refresh the UI
-                    const configModule = require('./ConfigurationPage.js');
-                    configModule.default(view);
+            });
+        }
+    });
+}
+
+function performDeleteLibraryData(page) {
+    // Get current library directory, fallback to default if empty
+    const config = window.configJellyseerrBridge || {};
+    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
+    
+    // First confirmation with warning emoji
+    Dashboard.confirm({
+        title: '❗ Delete Library Data',
+        text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+        confirmText: 'Yes! Proceed to final confirmation...',
+        cancelText: 'Cancel',
+        primary: "cancel"
+    }, 'Title', (confirmed1) => {
+        if (confirmed1) {
+            // Second confirmation with emergency emoji for final data deletion
+            Dashboard.confirm({
+                title: '🚨 FINAL CONFIRMATION - DELETE DATA',
+                text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                confirmText: '🚩 YES, DELETE EVERYTHING',
+                cancelText: 'Cancel',
+                primary: "cancel"
+            }, 'Title', (confirmed2) => {
+                if (confirmed2) {
+                    // Proceed with data deletion
+                    Dashboard.showLoadingMsg();
+                    
+                    ApiClient.ajax({
+                        url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
+                        type: 'POST',
+                        data: JSON.stringify({
+                            libraryDirectory: currentLibraryDir
+                        }),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).then(function(result) {
+                        Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
+                        
+                        // Reload the page to show updated values
+                        window.location.reload();
+                    }).catch(function(error) {
+                        Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
+                    }).finally(function() {
+                        Dashboard.hideLoadingMsg();
+                    });
                 }
             });
         }
@@ -1193,7 +1202,7 @@ function setInputField(page, propertyName, isCheckbox = false) {
     
     if (isCheckbox) {
         field.checked = configValue ?? defaultValue;
-    } else {
+        } else {
         field.value = configValue ?? '';
         if (defaultValue !== undefined) {
             field.placeholder = defaultValue.toString();
