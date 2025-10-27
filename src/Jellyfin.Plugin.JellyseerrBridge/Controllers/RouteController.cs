@@ -61,7 +61,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
-                    MaxCollectionDays = config.MaxCollectionDays,
+                    MaxRetentionDays = config.MaxRetentionDays,
                     EnableDebugLogging = config.EnableDebugLogging,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
@@ -102,6 +102,7 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
                     SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
                     SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
+                    SetValueOrDefault<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);

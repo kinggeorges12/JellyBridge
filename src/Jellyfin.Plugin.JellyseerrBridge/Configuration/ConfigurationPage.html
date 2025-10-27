@@ -424,8 +424,8 @@
                         </div>
 
                         <div class="inputContainer">
-                            <input id="MaxCollectionDays" type="number" is="emby-input" min="1" label="Max Collection Days"/>
-                            <div class="fieldDescription">Maximum number of days to keep items in the collection before cleanup. Items older than this will be removed during sync operations. Default is 30 days.</div>
+                            <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Max Retention Days"/>
+                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. Items older than this will be removed during sync operations. Default is 30 days.</div>
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
@@ -446,7 +446,7 @@
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Network Services</label>
                             <div class="fieldDescription">
-                                Networks are shown below with their Jellyseerr sort order, watch provider name, (watch provider id), and [watch region identifier]
+                                Shown below as: Jellyseerr sort order #. Watch Provider Name (Provider ID #), and [REGION ID]
                             </div>
                             <div class="multiSelectContainer">
                                 <!-- Active Networks (Left) -->

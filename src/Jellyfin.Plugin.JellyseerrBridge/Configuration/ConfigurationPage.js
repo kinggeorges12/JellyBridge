@@ -877,7 +877,7 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
     setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'MaxCollectionDays');
+    setInputField(page, 'MaxRetentionDays');
     setInputField(page, 'PlaceholderDurationSeconds');
     const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
     if (placeholderDurationInput) {
@@ -966,7 +966,7 @@ function performPluginReset(page) {
                 RequestTimeout: null,
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
-                MaxCollectionDays: null,
+                MaxRetentionDays: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
                 ExcludeFromMainLibraries: null,
@@ -1003,48 +1003,48 @@ function performDeleteLibraryData(page) {
     const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
     
     // First confirmation with warning emoji
-    Dashboard.confirm({
-        title: '❗ Delete Library Data',
-        text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-        confirmText: 'Yes! Proceed to final confirmation...',
-        cancelText: 'Cancel',
-        primary: "cancel"
+                Dashboard.confirm({
+                    title: '❗ Delete Library Data',
+                    text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                    confirmText: 'Yes! Proceed to final confirmation...',
+                    cancelText: 'Cancel',
+                    primary: "cancel"
     }, 'Title', (confirmed1) => {
         if (confirmed1) {
             // Second confirmation with emergency emoji for final data deletion
-            Dashboard.confirm({
-                title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-                confirmText: '🚩 YES, DELETE EVERYTHING',
-                cancelText: 'Cancel',
-                primary: "cancel"
+                        Dashboard.confirm({
+                            title: '🚨 FINAL CONFIRMATION - DELETE DATA',
+                            text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                            confirmText: '🚩 YES, DELETE EVERYTHING',
+                            cancelText: 'Cancel',
+                            primary: "cancel"
             }, 'Title', (confirmed2) => {
                 if (confirmed2) {
-                    // Proceed with data deletion
-                    Dashboard.showLoadingMsg();
-                    
-                    ApiClient.ajax({
-                        url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
-                        type: 'POST',
-                        data: JSON.stringify({
-                            libraryDirectory: currentLibraryDir
-                        }),
-                        contentType: 'application/json',
-                        dataType: 'json'
-                    }).then(function(result) {
-                        Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
-                        
+                                // Proceed with data deletion
+                                Dashboard.showLoadingMsg();
+                                
+                                ApiClient.ajax({
+                                    url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
+                                    type: 'POST',
+                                    data: JSON.stringify({
+                                        libraryDirectory: currentLibraryDir
+                                    }),
+                                    contentType: 'application/json',
+                                    dataType: 'json'
+                                }).then(function(result) {
+                                    Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
+                                    
                         // Reload the page to show updated values
-                        window.location.reload();
-                    }).catch(function(error) {
-                        Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
-                    }).finally(function() {
-                        Dashboard.hideLoadingMsg();
-                    });
-                }
-            });
-        }
-    });
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
+                                }).finally(function() {
+                                    Dashboard.hideLoadingMsg();
+                                });
+                            }
+                        });
+                    }
+                });
 }
 
 // ==========================================
@@ -1066,7 +1066,7 @@ function savePluginConfiguration(view) {
     if (!validateField('RequestTimeout', validators.int, 'Request Timeout must be an integer between 1 and 2147483647').isValid) return;
     if (!validateField('RetryAttempts', validators.int, 'Retry Attempts must be an integer between 0 and 2147483647').isValid) return;
     if (!validateField('MaxDiscoverPages', validators.int, 'Max Discover Pages must be an integer between 0 and 2147483647').isValid) return;
-    if (!validateField('MaxCollectionDays', validators.int, 'Max Collection Days must be an integer between 1 and 2147483647').isValid) return;
+    if (!validateField('MaxRetentionDays', validators.int, 'Max Retention Days must be an integer between 1 and 2147483647').isValid) return;
     if (!validateField('StartupDelaySeconds', validators.int, 'Startup Delay must be an integer between 0 and 2147483647').isValid) return;
     if (!validateField('PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be an integer between 1 and 2147483647').isValid) return;
     
@@ -1094,7 +1094,7 @@ function savePluginConfiguration(view) {
             config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
             config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
             config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
-            config.MaxCollectionDays = safeParseInt(form.querySelector('#MaxCollectionDays'));
+            config.MaxRetentionDays = safeParseInt(form.querySelector('#MaxRetentionDays'));
             config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
             config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
             config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
@@ -1114,8 +1114,8 @@ function savePluginConfiguration(view) {
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
-            }
-        });
+        }
+    });
 }
 
 // ==========================================

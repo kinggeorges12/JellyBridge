@@ -807,6 +807,7 @@ public class JellyseerrApiService
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
+                item.NetworkId = network.Id;
                 allItems.Add(item);
             }
             

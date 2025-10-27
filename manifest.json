@@ -9,21 +9,21 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "0F3C6A354E6EAD7E45CA0BD7A7C44D2A",
+        "timestamp": "2025-10-27T03:20:28.760Z",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.301.0.0 - Renamed MaxCollectionDays to MaxRetentionDays throughout frontend and backend. Cleanup logic now validates NetworkId before deleting items older than retention period.",
+        "version": "0.301.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.301.0.0/JellyseerrBridge-0.301.0.0-DLL.zip"
+      },
+      {
         "changelog": "v0.300.0.0 - Moved CSS styles back to inline HTML to match Jellyfin plugin conventions",
         "timestamp": "2025-10-27T02:43:50.022Z",
         "targetAbi": "10.10.7.0",
         "checksum": "1B04E84AB1B04C19D9846D0CE7525973",
         "dependencies": [],
         "version": "0.300.0.0",
-        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.300.0.0/JellyseerrBridge-0.300.0.0-DLL.zip"
-      },
-      {
-        "timestamp": "2025-10-27T00:00:00Z",
-        "dependencies": [],
-        "changelog": "v0.300.0.0 - Moved CSS styles back to inline HTML to match Jellyfin plugin conventions",
-        "version": "0.300.0.0",
-        "targetAbi": "10.10.7.0",
-        "checksum": "PLACEHOLDER",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.300.0.0/JellyseerrBridge-0.300.0.0-DLL.zip"
       },
       {

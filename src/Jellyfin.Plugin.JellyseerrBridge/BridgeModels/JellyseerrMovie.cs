@@ -108,7 +108,13 @@ public class JellyseerrMovie
     /// The network tag for the media item.
     /// </summary>
     [JsonPropertyName("networkTag")]
-    public string NetworkTag { get; set; } = string.Empty;
+    public string? NetworkTag { get; set; }
+
+    /// <summary>
+    /// The network ID for the media item.
+    /// </summary>
+    [JsonPropertyName("networkId")]
+    public int? NetworkId { get; set; }
 
     /// <summary>
     /// Equality comparison with a Jellyfin Movie item.

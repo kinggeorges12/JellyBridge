@@ -471,6 +471,23 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
+    /// Validates that the NetworkId exists in the NetworkMap configuration.
+    /// </summary>
+    private bool ValidateNetworkId(IJellyseerrItem item)
+    {
+        // If no NetworkId is set, validation passes (item not network-specific)
+        if (!item.NetworkId.HasValue)
+        {
+            return false;
+        }
+
+        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
+        
+        // Check if the NetworkId exists in the NetworkMap
+        return networkMap.Any(network => network.Id == item.NetworkId.Value);
+    }
+
+    /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
     private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
@@ -732,32 +749,41 @@ public class JellyseerrBridgeService
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var deletedItems = new List<TJellyseerr>();
-        var maxCollectionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxCollectionDays));
-        var cutoffDate = DateTime.Now.AddDays(-maxCollectionDays);
+        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
+        var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
         var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
         
-        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxCollectionDays} days, before {CutoffDate})", 
-            items.Count, itemType, maxCollectionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
+            items.Count, itemType, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
         
         try
         {
             foreach (var item in items)
             {
+                string deletionReason = "";
+
+                // Validate NetworkId exists in NetworkMap configuration
+                if (!ValidateNetworkId(item))
+                {
+                    deletionReason = $"NetworkId {item.NetworkId} not found in NetworkMap configuration";
+                }
                 // Check if the item's CreatedDate is older than the cutoff date
                 // Treat null CreatedDate as very old (past cutoff date)
-                if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
+                else if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
                 {
-                    _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Marking {ItemType} for removal - {ItemName} (Created: {CreatedDate})", 
-                        itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
-                    
+                    deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
+                }
+
+                if (!string.IsNullOrEmpty(deletionReason))
+                {
                     var itemDirectory = GetJellyseerrItemDirectory(item);
                     
                     if (Directory.Exists(itemDirectory))
                     {
                         Directory.Delete(itemDirectory, true);
                         deletedItems.Add(item);
-                        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed old {ItemType} '{ItemName}' (Created: {CreatedDate})", 
-                            itemType, item.MediaName, item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss"));
+                        _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: ✅ Removed {ItemType} '{ItemName}' - {Reason}", 
+                            itemType, item.MediaName, deletionReason);
                     }
                 }
             }
@@ -825,8 +851,8 @@ public class JellyseerrBridgeService
     /// </summary>
     public async Task<(List<JellyseerrMovie> deletedMovies, List<JellyseerrShow> deletedShows)> CleanupMetadataAsync()
     {
-        var maxCollectionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxCollectionDays));
-        var cutoffDate = DateTime.Now.AddDays(-maxCollectionDays);
+        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
+        var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
 
         try
         {
