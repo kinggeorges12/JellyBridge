@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "v0.307.0.0 - Fixed git push authentication issue in build-release script by configuring remote URL with token before push",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-27T09:12:24.236Z",
+        "checksum": "53B3A295A1CD206161D169D959C2C304",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.307.0.0/JellyBridge-0.307.0.0-DLL.zip",
+        "version": "0.307.0.0"
+      },
+      {
         "timestamp": "2025-10-27T09:10:26.201Z",
         "targetAbi": "10.10.7.0",
         "version": "0.306.0.0",
