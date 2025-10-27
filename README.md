@@ -1,11 +1,12 @@
 # JellyBridge Plugin
 
-A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discovery and download requests.
+A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
 **⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and Jellyseerr 2.7.3. It may not be compatible with Jellyfin 10.11.* or different Jellyseerr versions.
 
 ## Features
 
+- **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible even from mobile apps!
 - **Automated Content Listing**: Automatically lists movies and series from various networks (Netflix, Prime Video, etc.) within Jellyfin as placeholders
 - **Easy Downloads**: Sends download requests to Jellyseerr when you mark movies or series as favorites in Jellyfin
 - **Customizable**: Allows selection of networks to fetch and display in Jellyfin
