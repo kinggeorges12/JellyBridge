@@ -139,6 +139,13 @@ Write-Host "[~] Committed changes" -ForegroundColor Green
 
 # Step 8: Push changes to GitHub
 Write-Host "Step 8: Pushing changes to GitHub..." -ForegroundColor Yellow
+
+# Configure git remote with token for authentication
+$token = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
+if ($token) {
+    git remote set-url origin "https://kinggeorges12:$token@github.com/kinggeorges12/JellyBridge.git"
+}
+
 git push
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Git push failed!"
