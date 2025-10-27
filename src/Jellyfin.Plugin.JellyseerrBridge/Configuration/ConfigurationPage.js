@@ -1050,6 +1050,9 @@ function performRecycleLibraryData(page) {
                     Dashboard.alert('✅ All Jellyseerr library data has been deleted successfully.');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
+                }).finally(function() {
+                    Dashboard.hideLoadingMsg();
+                    recycleLibraryButton.disabled = false;
                 });
             });
         }).catch(function(error) {
