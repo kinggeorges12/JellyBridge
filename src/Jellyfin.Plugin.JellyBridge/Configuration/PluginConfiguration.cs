@@ -170,12 +170,6 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? ManageJellyseerrLibrary { get; set; }
 
     /// <summary>
-    /// Hidden property: tracks when the plugin was last loaded (for calculating next run time).
-    /// Not exposed in UI.
-    /// </summary>
-    public DateTime? LastPluginLoad { get; set; }
-
-    /// <summary>
     /// Returns a JSON representation of the configuration with API key masked.
     /// </summary>
     public override string ToString()
