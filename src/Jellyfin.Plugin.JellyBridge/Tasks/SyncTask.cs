@@ -40,47 +40,26 @@ public class SyncTask : IScheduledTask
         {
             _logger.LogInformation("Starting scheduled sync task");
             
-            // Determine if this is a startup trigger by checking the last run time
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+            var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             
-            bool isStartupTrigger = false;
-            try
+            // Determine if this is the first run by checking if the task has ever completed before
+            bool isFirstRun = false;
+            var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == Key);
+            if (task?.LastExecutionResult == null || task.LastExecutionResult.StartTimeUtc == DateTime.MinValue)
             {
-                // Look up this task's execution state (Key is "JellyBridgeSync", the unique identifier for this task)
-                // This works because ExecuteAsync is being called BY this task, so we're looking up our own execution state
-                var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == Key);
-                if (task != null)
-                {
-                    // Check if there are any triggers configured
-                    // If no triggers exist, it's likely a startup trigger
-                    if (task.Triggers == null || task.Triggers.Count == 0)
-                    {
-                        isStartupTrigger = true;
-                        _logger.LogTrace("[SyncTask] No triggers found - this is a startup trigger");
-                    }
-                    else
-                    {
-                        _logger.LogTrace("[SyncTask] Triggers configured - not a startup trigger");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking task status to determine trigger type");
+                isFirstRun = true;
+                _logger.LogInformation("[SyncTask] This appears to be the first run - no previous execution result found");
             }
             
-            _logger.LogDebug("[SyncTask] IsStartupTrigger: {IsStartupTrigger}, AutoSyncOnStartup: {AutoSyncOnStartup}", 
-                isStartupTrigger, autoSyncOnStartup);
+            _logger.LogInformation("[SyncTask] IsFirstRun: {IsFirstRun}, AutoSyncOnStartup: {AutoSyncOnStartup}, StartupDelaySeconds: {StartupDelaySeconds}", 
+                isFirstRun, autoSyncOnStartup, startupDelaySeconds);
             
-            // Only apply startup delay if this is the startup trigger
-            if (isStartupTrigger && autoSyncOnStartup)
+            // Only apply startup delay on first run and if auto-sync on startup is enabled
+            if (isFirstRun && autoSyncOnStartup && startupDelaySeconds > 0)
             {
-                var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
-                if (startupDelaySeconds > 0)
-                {
-                    _logger.LogInformation("[SyncTask] Startup trigger detected - waiting {StartupDelaySeconds} seconds before startup sync", startupDelaySeconds);
-                    await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
-                }
+                _logger.LogInformation("[SyncTask] First run detected with startup sync enabled - waiting {StartupDelaySeconds} seconds before sync", startupDelaySeconds);
+                await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
             }
             
             // Use Jellyfin-style locking that pauses instead of canceling
