@@ -158,6 +158,10 @@ public class JellyseerrLibraryService
 
             // Return immediately - background task continues running
             _logger.LogDebug("[JellyseerrLibraryService] Full scan of all libraries started successfully");
+            
+            // Set RanFirstTime to true after successful scan
+            Plugin.SetRanFirstTime(true);
+            
             return true;
         }
         catch (Exception ex)

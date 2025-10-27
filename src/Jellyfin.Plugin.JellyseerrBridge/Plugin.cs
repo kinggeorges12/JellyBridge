@@ -119,6 +119,16 @@ namespace Jellyfin.Plugin.JellyseerrBridge
         }
 
         /// <summary>
+        /// Sets the RanFirstTime flag in the configuration.
+        /// </summary>
+        public static void SetRanFirstTime(bool value)
+        {
+            var config = GetConfiguration();
+            config.RanFirstTime = value;
+            Instance.UpdateConfiguration(config);
+        }
+
+        /// <summary>
         /// Gets the plugin pages. Required for Jellyfin plugin system.
         /// </summary>
         public IEnumerable<PluginPageInfo> GetPages()

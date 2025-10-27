@@ -472,23 +472,6 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
-    /// Validates that the NetworkId exists in the NetworkMap configuration.
-    /// </summary>
-    private bool ValidateNetworkId(IJellyseerrItem item)
-    {
-        // If no NetworkId is set, validation passes (item not network-specific)
-        if (!item.NetworkId.HasValue)
-        {
-            return true;
-        }
-
-        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
-        
-        // Check if the NetworkId exists in the NetworkMap
-        return networkMap.Any(network => network.Id == item.NetworkId.Value);
-    }
-
-    /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
     private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
@@ -743,6 +726,23 @@ public class JellyseerrBridgeService
     }
 
     /// <summary>
+    /// Validates that the NetworkId exists in the NetworkMap configuration.
+    /// </summary>
+    private bool ValidateNetworkId(IJellyseerrItem item)
+    {
+        // If no NetworkId is set, delete the item
+        if (!item.NetworkId.HasValue)
+        {
+            return false;
+        }
+
+        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
+        
+        // Check if the NetworkId exists in the NetworkMap
+        return networkMap.Any(network => network.Id == item.NetworkId.Value);
+    }
+
+    /// <summary>
     /// Helper method to process items for cleanup.
     /// </summary>
     private List<TJellyseerr> ProcessItemsForCleanup<TJellyseerr>(
@@ -751,7 +751,7 @@ public class JellyseerrBridgeService
     {
         var deletedItems = new List<TJellyseerr>();
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
-        var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
+        var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
         var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
         
         _logger.LogTrace("[JellyseerrBridge] ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
@@ -770,7 +770,7 @@ public class JellyseerrBridgeService
                 }
                 // Check if the item's CreatedDate is older than the cutoff date
                 // Treat null CreatedDate as very old (past cutoff date)
-                if (string.IsNullOrEmpty(deletionReason) && (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null))
+                else if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
                 {
                     deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
                 }
