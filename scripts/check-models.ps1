@@ -2,7 +2,7 @@
 # Validates all generated C# files for missing classes, enums, and conversion issues
 
 param(
-    [string]$ModelDir = "src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrModel"
+    [string]$ModelDir = "src\Jellyfin.Plugin.JellyBridge\JellyseerrModel"
 )
 
 Write-Host "=== COMPREHENSIVE VALIDATION OF GENERATED C# FILES ===" -ForegroundColor Green
@@ -81,7 +81,7 @@ foreach ($file in $files) {
     
     # Extract namespace from file
     $namespaceMatch = [regex]::Match($content, 'namespace\s+([^;{]+)')
-    $namespace = if ($namespaceMatch.Success) { $namespaceMatch.Groups[1].Value.Trim() } else { "Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel" }
+    $namespace = if ($namespaceMatch.Success) { $namespaceMatch.Groups[1].Value.Trim() } else { "Jellyfin.Plugin.JellyBridge.JellyseerrModel" }
     $fileNamespaces[$file.FullName] = $namespace
     
     # Extract all class/enum definitions in this file

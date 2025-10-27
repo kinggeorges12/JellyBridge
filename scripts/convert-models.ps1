@@ -102,7 +102,7 @@ try {
     directoryPairs = inputData.directoryPairs || [];
     blockedClasses = inputData.blockedClasses || [];
     numberToDoublePattern = inputData.numberToDoublePattern || '';
-    baseNamespace = inputData.baseNamespace || 'Jellyfin.Plugin.JellyseerrBridge.JellyseerrModel';
+    baseNamespace = inputData.baseNamespace || 'Jellyfin.Plugin.JellyBridge.JellyseerrModel';
     jsonPropertyNaming = inputData.jsonPropertyNaming || null;
     
     // Set up the double property function using the PowerShell config

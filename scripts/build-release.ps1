@@ -47,7 +47,7 @@ Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 
 # Step 1: Update version numbers in project file
 Write-Host "Step 1: Updating version numbers in project file..." -ForegroundColor Yellow
-$csprojPath = "src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj"
+$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
 $csprojContent = Get-Content $csprojPath -Raw
 
 # Update AssemblyVersion and FileVersion
@@ -59,8 +59,8 @@ Write-Host "[~] Updated version to $Version in project file" -ForegroundColor Gr
 
 # Step 2: Build the project
 Write-Host "Step 2: Building the project..." -ForegroundColor Yellow
-Write-Host "Running: dotnet build src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj --configuration Release --warnaserror" -ForegroundColor Cyan
-$buildOutput = dotnet build src\Jellyfin.Plugin.JellyseerrBridge\JellyseerrBridge.csproj --configuration Release --warnaserror 2>&1
+Write-Host "Running: dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror" -ForegroundColor Cyan
+$buildOutput = dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror 2>&1
 Write-Host "Build output: $buildOutput" -ForegroundColor Yellow
 Write-Host "Exit code: $LASTEXITCODE" -ForegroundColor Yellow
 if ($LASTEXITCODE -ne 0) {
@@ -71,11 +71,11 @@ Write-Host "[~] Build successful" -ForegroundColor Green
 
 # Step 3: Create ZIP file
 Write-Host "Step 3: Creating release ZIP file..." -ForegroundColor Yellow
-$zipPath = Join-Path $BaseDir "release\JellyseerrBridge-$Version-DLL.zip"
+$zipPath = Join-Path $BaseDir "release\JellyBridge-$Version-DLL.zip"
 if (Test-Path $zipPath) {
     Remove-Item $zipPath
 }
-Compress-Archive -Path "src\Jellyfin.Plugin.JellyseerrBridge\bin\Release\net8.0\JellyseerrBridge.dll" -DestinationPath $zipPath -Force
+Compress-Archive -Path "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\JellyBridge.dll" -DestinationPath $zipPath -Force
 # Wait until the file is no longer locked
 [GC]::Collect()
 [GC]::WaitForPendingFinalizers()
@@ -107,7 +107,7 @@ $newVersion = @{
     version = $Version
     changelog = $ChangelogText
     targetAbi = "10.10.7.0"
-    sourceUrl = "https://github.com/$GitHubUsername/Jellyseerr-Bridge/releases/download/v$Version/JellyseerrBridge-$Version-DLL.zip"
+    sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/JellyBridge-$Version-DLL.zip"
     checksum = $checksum
     timestamp = $timestamp
     dependencies = @()
@@ -153,7 +153,7 @@ $headers = @{
     "Accept" = "application/vnd.github.v3+json"
 }
 
-$releaseBody = "## v$Version - Release`n`n$ChangelogText`n`n### Changes:`n- Updated version to $Version`n- Built and packaged DLL`n- Updated manifest.json with new version entry`n- Generated checksum and timestamp`n`n### Installation:`n1. Download the JellyseerrBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
+$releaseBody = "## v$Version - Release`n`n$ChangelogText`n`n### Changes:`n- Updated version to $Version`n- Built and packaged DLL`n- Updated manifest.json with new version entry`n- Generated checksum and timestamp`n`n### Installation:`n1. Download the JellyBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
 
 $body = @{
     tag_name = "v$Version"
@@ -165,7 +165,7 @@ $body = @{
 } | ConvertTo-Json
 
 try {
-    $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$GitHubUsername/Jellyseerr-Bridge/releases" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+    $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$GitHubUsername/JellyBridge/releases" -Method Post -Headers $headers -Body $body -ContentType "application/json"
     Write-Host "[~] Created GitHub release: $($response.html_url)" -ForegroundColor Green
     $releaseId = $response.id
 } catch {
@@ -180,7 +180,7 @@ $uploadHeaders = @{
     "Content-Type" = "application/zip"
 }
 
-$uploadUrl = "https://uploads.github.com/repos/$GitHubUsername/Jellyseerr-Bridge/releases/$releaseId/assets?name=JellyseerrBridge-$Version-DLL.zip"
+$uploadUrl = "https://uploads.github.com/repos/$GitHubUsername/JellyBridge/releases/$releaseId/assets?name=JellyBridge-$Version-DLL.zip"
 
 try {
     # Read the file as binary data
@@ -195,8 +195,8 @@ try {
 }
 
 Write-Host "[!] Release v$Version completed successfully!" -ForegroundColor Green
-$downloadUrl = "https://github.com/$GitHubUsername/Jellyseerr-Bridge/releases/download/v$Version/JellyseerrBridge-$Version-DLL.zip"
-$releaseUrl = "https://github.com/$GitHubUsername/Jellyseerr-Bridge/releases/tag/v$Version"
+$downloadUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/JellyBridge-$Version-DLL.zip"
+$releaseUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/tag/v$Version"
 Write-Host "[~] Download URL: $downloadUrl" -ForegroundColor Cyan
 Write-Host "[~] Release URL: $releaseUrl" -ForegroundColor Cyan
 

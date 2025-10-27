@@ -1,0 +1,902 @@
+using Jellyfin.Plugin.JellyBridge.Configuration;
+using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
+using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Server;
+using Jellyfin.Plugin.JellyBridge.Utils;
+using Microsoft.Extensions.Logging;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
+using Jellyfin.Data.Enums;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Controller.Dto;
+using System.Text.Json;
+using JellyfinUser = Jellyfin.Data.Entities.User;
+
+namespace Jellyfin.Plugin.JellyBridge.Services;
+
+/// <summary>
+/// Service for managing bridge folders and metadata.
+/// </summary>
+public class BridgeService
+{
+    private readonly DebugLogger<BridgeService> _logger;
+    private readonly ILibraryManager _libraryManager;
+    private readonly IDtoService _dtoService;
+    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
+    private readonly IUserManager _userManager;
+    private readonly IUserDataManager _userDataManager;
+    private readonly ApiService _apiService;
+
+    public BridgeService(ILogger<BridgeService> logger, ILibraryManager libraryManager, IDtoService dtoService, PlaceholderVideoGenerator placeholderVideoGenerator, IUserManager userManager, IUserDataManager userDataManager, ApiService apiService)
+    {
+        _logger = new DebugLogger<BridgeService>(logger);
+        _libraryManager = libraryManager;
+        _dtoService = dtoService;
+        _placeholderVideoGenerator = placeholderVideoGenerator;
+        _userManager = userManager;
+        _userDataManager = userDataManager;
+        _apiService = apiService;
+    }
+
+    #region Testing/Deprecated Methods
+
+    /// <summary>
+    /// Create season folders for all TV shows.
+    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
+    /// </summary>
+    [Obsolete("This method is no longer needed after default nfo files are added to movies and shows.")]
+    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
+    {
+        _logger.LogDebug("CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
+        
+        foreach (var show in shows)
+        {
+            try
+            {
+                var showFolderPath = GetJellyseerrItemDirectory(show);
+                
+                _logger.LogTrace("CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                    show.MediaName, showFolderPath);
+                
+                var seasonFolderName = "Season 01";
+                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
+                
+                try
+                {
+                    // Create season folder if it doesn't exist
+                    if (!Directory.Exists(seasonFolderPath))
+                    {
+                        Directory.CreateDirectory(seasonFolderPath);
+                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    // Generate season placeholder video
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    if (placeholderSuccess)
+                    {
+                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    _logger.LogTrace("CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
+        }
+        catch (Exception ex)
+        {
+                    _logger.LogError(ex, "CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
+            }
+        }
+        
+        _logger.LogDebug("CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
+    }
+
+    #endregion
+
+    #region FromJellyseerr
+
+    #region Created
+
+    /// <summary>
+    /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
+    /// </summary>
+    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        var addedItems = new List<TJellyseerr>();
+        var updatedItems = new List<TJellyseerr>();
+        
+        // Get configuration values using centralized helper
+        var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        
+        _logger.LogDebug("CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+            typeof(TJellyseerr).Name, baseDirectory, items.Count);
+        
+        for (int i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            try
+            {
+                _logger.LogTrace("CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
+                    i + 1, items.Count, item.MediaName, item.Id, item.Year);
+                
+                // Generate folder name and get directory path
+                var folderName = GetJellyseerrItemDirectory(item);
+                var folderExists = Directory.Exists(folderName);
+
+                _logger.LogTrace("CreateFoldersAsync: Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
+                    folderName, folderExists);
+
+                // Write metadata using folder manager
+                var success = await WriteMetadataAsync(item);
+                
+                if (success)
+                {
+                    if (folderExists)
+                    {
+                        updatedItems.Add(item);
+                        _logger.LogTrace("CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
+                            typeof(TJellyseerr).Name, folderName);
+                    }
+                    else
+                    {
+                        addedItems.Add(item);
+                        _logger.LogTrace("CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
+                            typeof(TJellyseerr).Name, folderName);
+                    }
+                }
+                else
+                {
+                    _logger.LogError("CreateFoldersAsync: ❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                        item, item.MediaName, item.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateFoldersAsync: ❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                    item, item.MediaName, item.Id);
+            }
+        }
+        
+        _logger.LogDebug("CreateFoldersAsync: Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
+            typeof(TJellyseerr).Name, addedItems.Count, updatedItems.Count);
+        
+        return (addedItems, updatedItems);
+    }
+    
+    /// <summary>
+    /// Creates placeholder videos for the provided unmatched items.
+    /// </summary>
+    public async Task<List<TJellyseerr>> CreatePlaceholderVideosAsync<TJellyseerr>(
+        List<TJellyseerr> unmatchedItems) 
+        where TJellyseerr : IJellyseerrItem
+    {
+        var processedItems = new List<TJellyseerr>();
+        var tasks = new List<Task>();
+        
+        _logger.LogDebug("CreatePlaceholderVideosAsync: Processing {UnmatchedCount} unmatched items for placeholder creation", 
+            unmatchedItems.Count);
+        
+        foreach (var item in unmatchedItems)
+        {
+            try
+            {
+                // Get the folder path for this item
+                var folderPath = GetJellyseerrItemDirectory(item);
+                
+                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                {
+                    throw new InvalidOperationException($"Folder does not exist for item: {item.MediaName}");
+                }
+                
+                // Create placeholder video based on media type
+                if (item is JellyseerrMovie)
+                {
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath));
+                }
+                else if (item is JellyseerrShow)
+                {
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
+                }
+                
+                processedItems.Add(item);
+                _logger.LogTrace("CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreatePlaceholderVideosAsync: ❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
+            }
+        }
+        
+        // Await all placeholder video tasks
+        await Task.WhenAll(tasks);
+        
+        _logger.LogDebug("CreatePlaceholderVideosAsync: Completed - Processed {ProcessedCount} items", 
+            processedItems.Count);
+        
+        return processedItems;
+    }
+
+    /// <summary>
+    /// Write metadata for a single item to the appropriate folder.
+    /// </summary>
+    private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        try
+        {
+            var targetDirectory = GetJellyseerrItemDirectory(item);
+
+            // Create directory if it doesn't exist
+            if (!Directory.Exists(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+                _logger.LogDebug("Created directory: {TargetDirectory}", targetDirectory);
+            }
+
+            // Set CreatedDate to current time when writing
+            item.CreatedDate = DateTimeOffset.Now;
+            
+            // Write JSON metadata - serialize as concrete type to preserve JSON attributes
+            var json = JellyBridgeJsonSerializer.Serialize(item);
+            
+            var metadataFile = Path.Combine(targetDirectory, IJellyseerrItem.GetMetadataFilename());
+            await File.WriteAllTextAsync(metadataFile, json);
+            _logger.LogDebug("Wrote metadata to {MetadataFile}", metadataFile);
+            
+            // Write XML metadata only if NFO file doesn't exist
+            var xmlFile = Path.Combine(targetDirectory, IJellyseerrItem.GetNfoFilename(item));
+            if (!File.Exists(xmlFile))
+            {
+                var xmlText = item.ToXmlString();
+                await File.WriteAllTextAsync(xmlFile, xmlText);
+                _logger.LogDebug("Wrote XML to {XmlFile}", xmlFile);
+            }
+            else
+            {
+                _logger.LogTrace("Skipped writing XML to {XmlFile} - file already exists", xmlFile);
+            }
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error writing metadata for {ItemMediaName}", item.MediaName);
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region Deleted
+
+    /// <summary>
+    /// Cleans up metadata by removing items older than the specified number of days.
+    /// </summary>
+    public async Task<(List<JellyseerrMovie> deletedMovies, List<JellyseerrShow> deletedShows)> CleanupMetadataAsync()
+    {
+        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
+        var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
+
+        try
+        {
+            // Read all bridge folder metadata
+            var (movies, shows) = await ReadMetadataAsync();
+            
+            _logger.LogDebug("CleanupMetadataAsync: Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
+                movies.Count, shows.Count);
+
+            // Process movies and shows using the same logic
+            var deletedMovies = ProcessItemsForCleanup(movies);
+            var deletedShows = ProcessItemsForCleanup(shows);
+
+            _logger.LogDebug("CleanupMetadataAsync: Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
+                deletedMovies.Count, deletedShows.Count);
+            
+            return (deletedMovies, deletedShows);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CleanupMetadataAsync: Error during cleanup process");
+            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
+        }
+    }
+
+    /// <summary>
+    /// Validates that the NetworkId exists in the NetworkMap configuration.
+    /// </summary>
+    private bool ValidateNetworkId(IJellyseerrItem item)
+    {
+        // If no NetworkId is set, delete the item
+        if (!item.NetworkId.HasValue)
+        {
+            return false;
+        }
+
+        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
+        
+        // Check if the NetworkId exists in the NetworkMap
+        return networkMap.Any(network => network.Id == item.NetworkId.Value);
+    }
+
+    /// <summary>
+    /// Helper method to process items for cleanup.
+    /// </summary>
+    private List<TJellyseerr> ProcessItemsForCleanup<TJellyseerr>(
+        List<TJellyseerr> items) 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        var deletedItems = new List<TJellyseerr>();
+        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
+        var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
+        var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
+        
+        _logger.LogTrace("ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
+            items.Count, itemType, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
+        
+        try
+        {
+            foreach (var item in items)
+            {
+                string deletionReason = "";
+
+                // Validate NetworkId exists in NetworkMap configuration
+                if (!ValidateNetworkId(item))
+                {
+                    deletionReason = $"NetworkId {item.NetworkId} not found in NetworkMap configuration";
+                }
+                // Check if the item's CreatedDate is older than the cutoff date
+                // Treat null CreatedDate as very old (past cutoff date)
+                else if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
+                {
+                    deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
+                }
+
+                if (!string.IsNullOrEmpty(deletionReason))
+                {
+                    var itemDirectory = GetJellyseerrItemDirectory(item);
+                    
+                    if (Directory.Exists(itemDirectory))
+                    {
+                        Directory.Delete(itemDirectory, true);
+                        deletedItems.Add(item);
+                        _logger.LogTrace("ProcessItemsForCleanup: ✅ Removed {ItemType} '{ItemName}' - {Reason}", 
+                            itemType, item.MediaName, deletionReason);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ProcessItemsForCleanup: Error processing {ItemType}", itemType);
+        }
+        
+        return deletedItems;
+    }
+
+    /// <summary>
+    /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
+    /// </summary>
+    private Task<int> DeleteAllIgnoreFilesAsync()
+    {
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        
+        try
+        {
+            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            {
+                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
+                return Task.FromResult(0);
+            }
+
+            _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
+            
+            var deletedCount = 0;
+            var ignoreFiles = Directory.GetFiles(syncDirectory, ".ignore", SearchOption.AllDirectories);
+            
+            foreach (var ignoreFile in ignoreFiles)
+            {
+                try
+                {
+                    File.Delete(ignoreFile);
+                    deletedCount++;
+                    _logger.LogDebug("Deleted .ignore file: {IgnoreFile}", ignoreFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete .ignore file: {IgnoreFile}", ignoreFile);
+                }
+            }
+
+            _logger.LogTrace("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
+                deletedCount, ignoreFiles.Length);
+            
+            return Task.FromResult(deletedCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during .ignore file deletion");
+            return Task.FromResult(0);
+        }
+    }
+
+    #endregion
+
+    #endregion
+
+    #region ToJellyseerr
+
+    #region Created
+
+    /// <summary>
+    /// Create requests for favorited bridge-only items.
+    /// These are items that exist only in the Jellyseerr bridge folder and are favorited by users.
+    /// </summary>
+    public async Task<List<JellyseerrMediaRequest>> RequestFavorites(
+        List<(BaseItem item, JellyseerrUser firstUser)> uniqueItemsWithFirstUser)
+    {
+        var requestResults = new List<JellyseerrMediaRequest>();
+        
+        // Step 5 & 6: Process unique bridge-only items with their first favorited user
+        
+        foreach (var (item, firstUser) in uniqueItemsWithFirstUser)
+        {
+            try
+            {
+                var tmdbId = JellyfinHelper.GetTmdbId(item);
+                if (!tmdbId.HasValue)
+                {
+                    _logger.LogError("Skipping item {ItemName} - no TMDB ID found", item.Name);
+                    continue;
+                }
+                
+                var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
+                
+                // Create request for the user who favorited this item
+                try
+                {
+                    var requestParams = new Dictionary<string, object>
+                    {
+                        ["mediaType"] = mediaType,
+                        ["mediaId"] = tmdbId.Value,
+                        ["userId"] = firstUser.Id,
+                        ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
+                    };
+                    
+                    _logger.LogTrace("Processing Jellyseerr bridge item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
+                        item.Name, tmdbId.Value, firstUser.JellyfinUsername);
+                    
+                    var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
+                    var request = requestResult as JellyseerrMediaRequest;
+                    if (request != null)
+                    {
+                        requestResults.Add(request);
+                        _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
+                            item.Name, firstUser.JellyfinUsername);
+                    }
+                    else
+                    {
+                        _logger.LogError("Received no response from Jellyseerr for item request {ItemName} on behalf of {UserName}", 
+                            item.Name, firstUser.JellyfinUsername);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create request for {ItemName} on behalf of {UserName}", 
+                        item.Name, firstUser.JellyfinUsername);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process Jellyseerr bridge item: {ItemName}", item.Name);
+            }
+        }
+        
+        if (requestResults.Count == 0)
+        {
+            _logger.LogDebug("No favorited Jellyseerr bridge items found");
+        }
+        else
+        {
+            _logger.LogDebug("Found {FavoritedCount} favorited Jellyseerr bridge items and created requests", requestResults.Count);
+        }
+        
+        return requestResults;
+    }
+
+    #endregion
+
+    #region Found
+
+    /// <summary>
+    /// Group bridge-only items by TMDB ID and find first Jellyseerr user who favorited each.
+    /// These are items that exist only in the Jellyseerr bridge folder (not in main Jellyfin library).
+    /// </summary>
+    public List<(BaseItem item, JellyseerrUser firstUser)> EnsureFirstJellyseerrUser(
+        List<BaseItem> bridgeOnlyItems, 
+        Dictionary<JellyfinUser, List<BaseItem>> allFavorites, 
+        List<JellyseerrUser> jellyseerrUsers)
+    {
+        var uniqueItemsWithFirstUser = new List<(BaseItem item, JellyseerrUser firstUser)>();
+        var processedItemIds = new HashSet<Guid>(); // Track which items we've already processed by ID
+        
+        // Create a lookup for Jellyseerr users by their Jellyfin user ID for quick access
+        var jellyseerrUserLookup = jellyseerrUsers
+            .Where(u => !string.IsNullOrEmpty(u.JellyfinUserGuid))
+            .ToDictionary(u => u.JellyfinUserGuid!, u => u);
+        
+        _logger.LogTrace("Jellyseerr user lookup created with {Count} users: {UserLookup}", 
+            jellyseerrUserLookup.Count, 
+            string.Join(", ", jellyseerrUserLookup.Select(kvp => $"{kvp.Key}->{kvp.Value.JellyfinUsername}")));
+        
+        // Loop through favorites to find matching bridge-only items
+        foreach (var (jellyfinUser, favoriteItems) in allFavorites)
+        {
+            // Check if this Jellyfin user has a corresponding Jellyseerr account
+            if (!jellyseerrUserLookup.TryGetValue(jellyfinUser.Id.ToString(), out var jellyseerrUser))
+            {
+                _logger.LogWarning("Jellyfin user '{JellyfinUsername}' (ID: {JellyfinUserId}) does not have a corresponding Jellyseerr account - skipping favorites", 
+                    jellyfinUser.Username, jellyfinUser.Id);
+                continue; // Skip users without Jellyseerr accounts
+            }
+            
+            // Check each favorited item to see if it matches a bridge-only item
+            foreach (var favoriteItem in favoriteItems)
+            {
+                // Find bridge-only items that match this favorited item
+                foreach (var bridgeItem in bridgeOnlyItems)
+                {
+                    if (!JellyfinHelper.ItemsMatch(favoriteItem, bridgeItem)) continue;
+                    
+                    // Only process each unique item once (by ID)
+                    if (processedItemIds.Contains(bridgeItem.Id))
+                    {
+                        _logger.LogDebug("Item {ItemName} was already favorited by another user - skipping favorite for user {UserName}", 
+                            bridgeItem.Name, jellyseerrUser.JellyfinUsername);
+                        continue;
+                    }
+                    
+                    // Found the first Jellyseerr user for this bridge-only item
+                    processedItemIds.Add(bridgeItem.Id);
+                    uniqueItemsWithFirstUser.Add((bridgeItem, jellyseerrUser));
+                    
+                    _logger.LogTrace("Found first Jellyseerr user {UserName} (Jellyfin: {JellyfinUser}) for item {ItemName}", 
+                        jellyseerrUser.JellyfinUsername, jellyfinUser.Username, bridgeItem.Name);
+                    break; // Move to next favorite item
+                }
+            }
+        }
+        
+        return uniqueItemsWithFirstUser;
+    }
+
+    #endregion
+
+    #region Processed
+
+    /// <summary>
+    /// Find matches between existing Jellyfin items and bridge metadata.
+    /// </summary>
+    private List<JellyMatch> FindMatches<TJellyfin, TJellyseerr>(
+        List<TJellyfin> existingItems, 
+        List<TJellyseerr> bridgeMetadata) 
+        where TJellyfin : BaseItem 
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        var matches = new List<JellyMatch>();
+
+        foreach (var existingItem in existingItems)
+        {
+            _logger.LogDebug("Checking existing item: {ItemName} (Id: {ItemId})", 
+                existingItem.Name, existingItem.Id);
+            
+            // Safety check: Skip items that are already in the Jellyseerr library directory
+            if (string.IsNullOrEmpty(existingItem.Path) || 
+                FolderUtils.IsPathInSyncDirectory(existingItem.Path))
+            {
+                _logger.LogDebug("Skipping item {ItemName} - already in Jellyseerr library directory: {ItemPath}", 
+                    existingItem.Name, existingItem.Path);
+                continue;
+            }
+            
+            // Use the custom EqualsItem implementation rather than Equals cause I don't trust compile-time resolution.
+            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => bm.EqualsItem(existingItem));
+
+            if (bridgeMatch != null)
+            {
+                _logger.LogTrace("Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
+                    bridgeMatch.MediaName, bridgeMatch.Id, existingItem.Name, existingItem.Id);
+                
+                matches.Add(new JellyMatch(bridgeMatch, existingItem));
+            }
+        }
+
+        _logger.LogDebug("Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
+        return matches;
+    }
+
+    /// <summary>
+    /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
+    /// Returns matched items as JellyMatch objects and unmatched items as IJellyseerrItem lists.
+    /// </summary>
+    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> LibraryScanAsync(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
+    {
+        // Combine all items for processing
+        var allItems = new List<IJellyseerrItem>();
+        allItems.AddRange(movies.Cast<IJellyseerrItem>());
+        allItems.AddRange(shows.Cast<IJellyseerrItem>());
+        
+        _logger.LogDebug("Excluding main libraries from JellyBridge");
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
+
+        if (excludeFromMainLibraries) {
+            try
+            {
+                if (!Directory.Exists(syncDirectory))
+                {
+                    throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
+                }
+
+                _logger.LogTrace("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
+
+                // Get existing Jellyfin items
+                var existingMovies = JellyfinHelper.GetExistingItems<Movie>(_libraryManager);
+                var existingShows = JellyfinHelper.GetExistingItems<Series>(_libraryManager);
+
+                // Find matches between Jellyfin items and bridge metadata
+                var movieMatches = FindMatches(existingMovies, movies);
+                var showMatches = FindMatches(existingShows, shows);
+
+                // Combine all matches into a single list
+                var allMatches = new List<JellyMatch>();
+                allMatches.AddRange(movieMatches);
+                allMatches.AddRange(showMatches);
+
+                // Filter unmatched items by excluding matched ones
+                var matchedIds = allMatches.Select(m => m.JellyseerrItem.Id).ToHashSet();
+                var unmatchedItems = allItems.Where(item => !matchedIds.Contains(item.Id)).ToList();
+
+                _logger.LogDebug("Library scan completed. Matched {MatchedMovieCount}/{MovieCount} movies + {MatchedShowCount}/{ShowCount} shows = {TotalCount} total. Unmatched: {UnmatchedCount} items", 
+                    movieMatches.Count, movies.Count, showMatches.Count, shows.Count, allMatches.Count, unmatchedItems.Count);
+
+                return (allMatches, unmatchedItems);
+        }
+        catch (Exception ex)
+        {
+                _logger.LogError(ex, "Error during library scan test");
+            }
+        } else {
+            _logger.LogDebug("Including main libraries in JellyBridge");
+            
+            // Delete all existing .ignore files when including main libraries
+            var deletedCount = await DeleteAllIgnoreFilesAsync();
+            _logger.LogTrace("Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
+        } 
+        return (new List<JellyMatch>(), allItems);
+    }
+
+    /// <summary>
+    /// Read all metadata files from the bridge folder, detecting movie vs show based on NFO files.
+    /// </summary>
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    {
+        var movies = new List<JellyseerrMovie>();
+        var shows = new List<JellyseerrShow>();
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+
+        try
+        {
+            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            {
+                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
+            }
+
+            // Get all subdirectories that contain metadata files
+            var metadataFiles = Directory.GetFiles(syncDirectory, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
+            
+            foreach (var metadataFile in metadataFiles)
+            {
+                var directory = Path.GetDirectoryName(metadataFile);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    try
+                    {
+                        var json = await File.ReadAllTextAsync(metadataFile);
+                        _logger.LogDebug("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        
+                        // Check for movie.nfo to identify movie folders
+                        var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
+                        var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
+                        
+                        if (File.Exists(movieNfoFile))
+                        {
+                            // This is a movie folder
+                            var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
+                            if (movie != null)
+                            {
+                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                    movie.MediaName, movie.Id, movie.MediaType, movie.Year);
+                                movies.Add(movie);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
+                            }
+                        }
+                        else if (File.Exists(showNfoFile))
+                        {
+                            // This is a show folder
+                            var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
+                            if (show != null)
+                            {
+                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                    show.MediaName, show.Id, show.MediaType, show.Year);
+                                shows.Add(show);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No NFO file found in directory {Directory} - skipping", directory);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error reading metadata file: {MetadataFile}", metadataFile);
+                    }
+                }
+            }
+
+            _logger.LogDebug("Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
+                movies.Count, shows.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reading metadata from {SyncDirectory}", syncDirectory);
+        }
+
+        return (movies, shows);
+    }
+
+    /// <summary>
+    /// Create ignore files for matched items.
+    /// </summary>
+    public async Task CreateIgnoreFilesAsync(List<JellyMatch> matches)
+    {
+        var ignoreFileTasks = new List<Task>();
+
+        foreach (var match in matches)
+        {
+            var bridgeFolderPath = GetJellyseerrItemDirectory(match.JellyseerrItem);
+            var item = match.JellyfinItem;
+        try
+        {
+            var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
+            
+            _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
+                item.Name, item.Id, ignoreFilePath);
+            
+            // Use DtoService to get a proper BaseItemDto with all metadata
+            var dtoOptions = new DtoOptions(); // Default constructor includes all fields
+            var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
+            
+            _logger.LogTrace("Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
+                item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
+            
+            var itemJson = JsonSerializer.Serialize(itemDto!, new JsonSerializerOptions {
+                WriteIndented = true
+            });
+            
+            _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
+                item.Name, itemJson?.Length ?? 0);
+
+            await File.WriteAllTextAsync(ignoreFilePath, itemJson);
+            _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.Name);
+        }
+    }
+
+        // Await all ignore file creation tasks
+        await Task.WhenAll(ignoreFileTasks);
+    }
+
+    /// <summary>
+    /// Get all Jellyseerr users to map with Jellyfin users.
+    /// </summary>
+    public async Task<List<JellyseerrUser>> GetJellyseerrUsersAsync()
+    {
+        try
+        {
+            var usersResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList);
+            if (usersResult is List<JellyseerrUser> users)
+            {
+                _logger.LogDebug("Fetched {UserCount} users from Jellyseerr", users.Count);
+                return users;
+            }
+            else
+            {
+                _logger.LogWarning("Failed to fetch users from Jellyseerr - unexpected result type");
+                return new List<JellyseerrUser>();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch users from Jellyseerr");
+            return new List<JellyseerrUser>();
+        }
+    }
+
+    /// <summary>
+    /// Get existing requests from Jellyseerr to avoid duplicates.
+    /// </summary>
+    private async Task<List<JellyseerrMediaRequest>> GetExistingRequestsAsync()
+    {
+            try
+            {
+                var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
+                if (requestsResult is List<JellyseerrMediaRequest> requests)
+                {
+                _logger.LogDebug("Fetched {RequestCount} existing requests from Jellyseerr", requests.Count);
+                return requests;
+            }
+            else
+            {
+                    _logger.LogWarning("Failed to fetch requests from Jellyseerr - unexpected result type");
+                return new List<JellyseerrMediaRequest>();
+            }
+                }
+                catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
+            return new List<JellyseerrMediaRequest>();
+        }
+    }
+
+    #endregion
+
+    #endregion
+
+    #region Helpers
+
+    /// <summary>
+    /// Get the directory path for a specific item.
+    /// </summary>
+    private string GetJellyseerrItemDirectory(IJellyseerrItem? item = null)
+    {
+        if (item == null)
+        {
+            return FolderUtils.GetBaseDirectory();
+        }
+        var itemString = item.ToString();
+        if (string.IsNullOrEmpty(itemString))
+        {
+            throw new ArgumentException($"Item {item.GetType().Name} returned null or empty string from ToString()", nameof(item));
+        }
+        var itemFolder = FolderUtils.SanitizeFileName(itemString);
+        if(Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries)) && !string.IsNullOrEmpty(item.NetworkTag))
+        {
+            var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+            var networkFolder = FolderUtils.SanitizeFileName(networkPrefix + item.NetworkTag);
+            return Path.Combine(FolderUtils.GetBaseDirectory(), networkFolder, itemFolder);
+        }
+        // If not using network prefix, just store in the base directory with the folder name
+        return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);
+    }
+
+    #endregion
+
+}
