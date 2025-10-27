@@ -23,6 +23,9 @@ namespace Jellyfin.Plugin.JellyBridge
         
         public ILoggerFactory LoggerFactory => _loggerFactory;
         
+        // Track when the plugin was loaded (for calculating next run time)
+        public static DateTime LastPluginLoad { get; private set; }
+        
         // Jellyfin-style locking for operations that should be mutually exclusive
         private static readonly object _operationSyncLock = new object();
         private static bool _isOperationRunning = false;
@@ -34,9 +37,14 @@ namespace Jellyfin.Plugin.JellyBridge
             _logger = loggerFactory.CreateLogger<Plugin>();
             _taskManager = taskManager;
             Instance = this;
+            
+            // Set plugin load time
+            LastPluginLoad = DateTime.UtcNow;
+            
             _logger.LogInformation("Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
             _logger.LogInformation("Plugin ID: {PluginId}", Id);
             _logger.LogInformation("Plugin Name: {PluginName}", Name);
+            _logger.LogDebug("Plugin loaded at {LoadTime}", LastPluginLoad);
         }
 
         /// <summary>
