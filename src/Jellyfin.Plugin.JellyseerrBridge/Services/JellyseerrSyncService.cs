@@ -170,15 +170,6 @@ public partial class JellyseerrSyncService
                 // First time running - scan all libraries
                 _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 First-time initialization - scanning all Jellyfin libraries for cleanup...");
                 refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
-                
-                // Set RanFirstTime to true after successful scan
-                if (refreshSuccess == true)
-                {
-                    var config = (PluginConfiguration)Plugin.GetConfiguration();
-                    config.RanFirstTime = true;
-                    Plugin.Instance.UpdateConfiguration(config);
-                    _logger.LogDebug("[JellyseerrSyncService] Set RanFirstTime to true");
-                }
             }
             if (refreshSuccess == true)
             {

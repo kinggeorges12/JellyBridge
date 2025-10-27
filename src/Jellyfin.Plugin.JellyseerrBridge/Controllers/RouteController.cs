@@ -23,15 +23,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
     private readonly JellyseerrSyncService _syncService;
     private readonly JellyseerrApiService _apiService;
     private readonly JellyseerrBridgeService _bridgeService;
+    private readonly JellyseerrLibraryService _libraryService;
     private readonly IUserManager _userManager;
     private readonly ITaskManager _taskManager;
 
-    public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService, IUserManager userManager, ITaskManager taskManager)
+    public RouteController(ILoggerFactory loggerFactory, JellyseerrSyncService syncService, JellyseerrApiService apiService, JellyseerrBridgeService bridgeService, JellyseerrLibraryService libraryService, IUserManager userManager, ITaskManager taskManager)
     {
         _logger = new JellyseerrLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
         _syncService = syncService;
         _apiService = apiService;
         _bridgeService = bridgeService;
+        _libraryService = libraryService;
         _userManager = userManager;
         _taskManager = taskManager;
         _logger.LogDebug("[JellyseerrBridge] RouteController initialized");
@@ -609,19 +611,13 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                     _logger.LogDebug("[JellyseerrBridge] Data deletion completed successfully");
                     
                     // Reset RanFirstTime flag so next sync will do full refresh
-                    var config = (PluginConfiguration)Plugin.GetConfiguration();
-                    config.RanFirstTime = false;
-                    Plugin.Instance.UpdateConfiguration(config);
-                    _logger.LogDebug("[JellyseerrBridge] Reset RanFirstTime to false");
+                    Plugin.SetRanFirstTime(false);
                     
                     // Refresh the Jellyseerr library after data deletion
                     _logger.LogDebug("[JellyseerrBridge] Starting Jellyseerr library refresh after data deletion...");
                     
-                    // Get the library service from dependency injection
-                    var libraryService = HttpContext.RequestServices.GetRequiredService<JellyseerrLibraryService>();
-                    
                     // Call the refresh method
-                    var refreshSuccess = libraryService.RefreshJellyseerrLibrary();
+                    var refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
                     
                     if (refreshSuccess == true)
                     {
