@@ -2,7 +2,7 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discovery and download requests.
 
-**⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and may not be compatible with Jellyfin 10.11 or later versions.
+**⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and Jellyseerr 2.7.3. It may not be compatible with Jellyfin 10.11.* or different Jellyseerr versions.
 
 ## Features
 
