@@ -1,4 +1,4 @@
-# Jellyseerr Bridge Plugin
+# JellyBridge Plugin
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discovery and download requests.
 
@@ -8,7 +8,6 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 - **Easy Downloads**: Sends download requests to Jellyseerr when you mark a show as a favorite in Jellyfin
 - **Customizable**: Allows selection of streaming service shows to fetch and display in Jellyfin
 - **Scheduled Sync**: Automatically syncs shows on a configurable schedule
-- **Webhook Integration**: Handles Jellyfin webhook events for favorite shows
 - **Library Management**: Prevents placeholder shows from appearing in main libraries
 - **Separate Libraries**: Option to create dedicated libraries for each streaming service
 - **Placeholder Protection**: Uses `.nomedia` files to prevent Jellyfin from scanning incomplete shows
@@ -21,12 +20,12 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
    - Go to Jellyfin Admin Dashboard → Plugins → Catalog
    - Click "Settings" (gear icon)
    - Click "Add Repository"
-   - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/Jellyseerr-Bridge/refs/heads/main/manifest.json`
+   - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`
    - Click "Add"
 
 2. **Install Plugin:**
    - Go to Plugins → Catalog
-   - Find "Jellyseerr Bridge"
+   - Find "JellyBridge"
    - Click "Install"
    - Restart Jellyfin when prompted
 
@@ -41,34 +40,43 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 
 ## Configuration
 
-Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyseerrBridge/ConfigurationPage`
+Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
 
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
-### 🔗 Jellyseerr Connection Settings
-- **Jellyseerr URL**: The base URL of your Jellyseerr instance (e.g., `http://localhost:5055`)
+### 🔗 Connection Settings
+- **Jellyseerr URL**: The base URL of your Jellyseerr instance (default: `http://localhost:5055`)
 - **API Key**: Your Jellyseerr API key (found in Settings → General)
-- **Email**: Your Jellyseerr login email
-- **Password**: Your Jellyseerr login password
 - **Test Connection**: Button to validate your Jellyseerr connection
 
 ### 📁 Library Configuration
-- **Library Directory**: Path to Jellyseerr's library directory (default: `/data/Jellyseerr`)
+- **Library Directory**: Path to JellyBridge's library directory (default: `/data/JellyBridge`)
+- **Manage JellyBridge Library**: Automatically manage library folders (default: enabled)
 - **Create Separate Libraries**: Creates dedicated libraries for each streaming service (default: disabled)
-- **Library Prefix**: Prefix for streaming service libraries (default: `Streaming - `)
-- **Exclude from Main Libraries**: Prevents placeholder shows from appearing in main libraries
+- **Library Prefix**: Prefix for streaming service libraries (default: empty)
+- **Exclude from Main Libraries**: Prevents placeholder shows from appearing in main libraries (default: enabled)
 
-### ⚙️ Plugin Settings
-- **Enable Plugin**: Enable or disable the plugin
-- **Sync Interval**: How often to sync shows (1-168 hours, default: 24)
-- **Webhook Port**: Port for webhook events (1024-65535, default: 5000)
-- **Jellyseerr User ID**: Jellyseerr user ID for making requests (found in Jellyseerr user management)
+### ⚙️ Sync Settings
+- **Enable Plugin**: Enable or disable the plugin (default: disabled)
+- **Sync Interval**: How often to sync shows in hours (default: 24)
+- **Auto Sync on Startup**: Automatically sync when Jellyfin starts (default: enabled)
+- **Startup Delay**: Seconds to wait before startup sync (default: 60)
+- **Max Discover Pages**: Maximum pages to fetch from discover endpoint per network (default: 1)
+- **Max Retention Days**: Days to retain content before cleanup (default: 30)
+- **Region**: Watch network region ISO 3166-1 country code (default: US)
+
+### 🌐 Network Configuration
+Configure which streaming services to sync:
+- **Available Networks**: Netflix, Disney Plus, Amazon Prime Video, Apple TV+, Hulu, HBO Max, and many more
+- **Network Mapping**: Automatically maps service names to directories
+- Select networks from the multi-select interface
 
 ### 🎮 Interactive Controls
 - **💾 Save Configuration**: Saves all settings
 - **🔍 Test Connection**: Validates Jellyseerr connection
 - **🔄 Trigger Sync**: Manual sync trigger
-- **Real-time Status**: Success/error messages with auto-dismiss
+- **📊 Sync Status**: Real-time status showing what's being synced
+- **🧹 Recycle Library**: Delete all library data and refresh
 
 ### 🔧 Advanced Features
 
@@ -111,13 +119,10 @@ Example service configuration:
 ### Advanced Settings
 
 - **Sync Interval**: How often to sync shows (in hours)
-- **Webhook Port**: Port for webhook handling
-- **User ID**: Jellyseerr user ID for requests
-- **Root Folder**: Download destination folder
-- **Request 4K**: Whether to request 4K content
-- **Create Separate Libraries**: Create dedicated libraries for each streaming service
-- **Library Prefix**: Prefix for streaming service library names (e.g., "Streaming - ")
-- **Exclude from Main Libraries**: Prevent placeholder shows from appearing in main Movies/TV libraries
+- **Request Timeout**: Timeout for API requests in seconds (default: 60)
+- **Retry Attempts**: Number of retry attempts for failed requests (default: 3)
+- **Enable Debug Logging**: Enable detailed debug logging (default: disabled)
+- **Placeholder Duration**: Duration of placeholder videos in seconds (default: 10)
 
 ## Usage
 
@@ -131,7 +136,7 @@ Example service configuration:
 ## Web Interface
 
 The plugin includes a modern, responsive web interface accessible at:
-`http://your-jellyfin-server/Plugins/JellyseerrBridge/ConfigurationPage`
+`http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
 
 ### Features:
 - **Real-time Configuration**: Update settings without restarting Jellyfin
@@ -153,15 +158,6 @@ For the best experience, it's recommended to create separate libraries for strea
 
 3. **Use Library Validation**: The plugin provides library validation to check for conflicts and accessibility issues
 
-## Webhook Setup
-
-To enable automatic download requests when marking shows as favorites:
-
-1. Go to Jellyfin Admin Dashboard
-2. Navigate to "Notifications" → "Webhooks"
-3. Add a new webhook with URL: `http://your-jellyfin-server:5000/Plugins/JellyseerrBridge/Webhook`
-4. Select "Item Added to Favorites" as the notification type
-
 ## Logging
 
 The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for debugging information:
@@ -169,7 +165,7 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 - Plugin initialization and configuration
 - API calls to Jellyseerr
 - Show sync operations
-- Webhook event handling
+- Library management
 - Error messages and warnings
 
 ## Troubleshooting
@@ -178,8 +174,8 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 1. **Configuration validation fails**: Ensure all required fields are filled
 2. **Authentication errors**: Verify Jellyseerr credentials and URL
-3. **No shows appearing**: Check service IDs and directory paths
-4. **Webhook not working**: Verify webhook URL and Jellyfin webhook configuration
+3. **No shows appearing**: Check network configuration and directory paths
+4. **Library not updating**: Check that library management is enabled and directories are accessible
 
 ### Debug Steps
 
@@ -200,8 +196,8 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Jellyseerr-Bridge.git
-   cd Jellyseerr-Bridge
+   git clone https://github.com/kinggeorges12/JellyBridge.git
+   cd JellyBridge
    ```
 
 2. **Restore dependencies**
@@ -215,141 +211,143 @@ The plugin integrates with Jellyfin's logging system. Check Jellyfin logs for de
    ```
 
 4. **Create release package**
+
+   Use the provided PowerShell script to create a release:
    ```powershell
-   # Create release directory (if it doesn't exist)
-   if (-not (Test-Path release\JellyseerrBridge)) { mkdir release\JellyseerrBridge }
-   
-   # Copy built files
-   copy bin\Release\net8.0\JellyseerrBridge.dll release\JellyseerrBridge\
-   copy bin\Release\net8.0\JellyseerrBridge.deps.json release\JellyseerrBridge\
-   copy manifest.json release\JellyseerrBridge\
-   
-   # Create ZIP package (overwrites existing)
-   Compress-Archive -Path release\JellyseerrBridge\* -DestinationPath release\JellyseerrBridge-0.2.zip -Force
+   pwsh -File scripts/build-release.ps1 -Version "0.1.0.0" -Changelog "Your release description"
    ```
 
-### Publishing to GitHub Packages
+   This script will:
+   - Update version numbers in the project file
+   - Build the project in Release configuration
+   - Create a ZIP file in the `release` directory
+   - Generate an MD5 checksum
+   - Update manifest.json with the new version
+   - Commit changes to Git and push to GitHub
+   - Create a GitHub release
+   - Upload the ZIP file as a release asset
 
-1. **Create a GitHub Personal Access Token (Classic)**
-   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Generate a token with `write:packages` and `read:packages` permissions
-   - Copy the token for use in configuration
+### GitHub Token Setup
 
-2. **Configure nuget.config**
-   Copy the template and add your credentials:
-   ```bash
-   # Copy the template
-   copy nuget.config.template nuget.config
-   ```
-   
-   Then edit `nuget.config` with your details:
-   ```xml
-   <?xml version="1.0" encoding="utf-8"?>
-   <configuration>
-       <packageSources>
-           <clear />
-           <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-           <add key="github" value="https://nuget.pkg.github.com/NAMESPACE/index.json" />
-       </packageSources>
-       <packageSourceCredentials>
-           <github>
-               <add key="Username" value="USERNAME" />
-               <add key="ClearTextPassword" value="TOKEN" />
-           </github>
-       </packageSourceCredentials>
-   </configuration>
-   ```
-   
-   Replace:
-   - `NAMESPACE` with your GitHub username or organization name
-   - `USERNAME` with your GitHub username
-   - `TOKEN` with your personal access token
-   
-   **⚠️ Security Note:** The `nuget.config` file is ignored by git to protect your credentials. Only the template (`nuget.config.template`) is committed.
+The release script requires a GitHub token:
 
-3. **Pack the plugin**
-   ```bash
-   dotnet pack --configuration Release
-   ```
+1. Create a file named `github-token.txt` in the project root
+2. Add your GitHub Personal Access Token to the file (with `repo` scope)
+3. The file is git-ignored to protect your credentials
 
-4. **Publish to GitHub Packages**
-   ```bash
-   dotnet nuget push bin\Release\JellyseerrBridge.0.1.0.nupkg --source github
-   ```
+**Get a GitHub Token:**
+- Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+- Generate a token with `repo` permissions
+- Copy the token into `github-token.txt`
 
-### Installing from GitHub Packages
+### Scripts
 
-#### For Jellyfin Users (Automatic Installation)
-Add the plugin repository to Jellyfin:
-1. **Jellyfin Admin Dashboard** → **Plugins** → **Catalog** → **Settings** (gear icon)
-2. **Add Repository URL:** `https://raw.githubusercontent.com/kinggeorges12/Jellyseerr-Bridge/refs/heads/main/manifest.json`
-3. **Install** "Jellyseerr Bridge" from the catalog
+The project includes several useful PowerShell scripts in the `scripts` directory:
 
-#### For Developers (Manual Installation)
-Configure your `nuget.config` for development:
+#### `build-release.ps1` - Automated Release Script
+**Purpose**: Creates a complete release including building, packaging, and publishing to GitHub.
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-    <packageSources>
-        <clear />
-        <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-        <add key="github" value="https://nuget.pkg.github.com/kinggeorges12/index.json" />
-    </packageSources>
-    <packageSourceCredentials>
-        <github>
-            <add key="Username" value="kinggeorges12" />
-            <add key="ClearTextPassword" value="YOUR_GITHUB_TOKEN" />
-        </github>
-    </packageSourceCredentials>
-</configuration>
+**Usage**:
+```powershell
+pwsh -File scripts/build-release.ps1 -Version "0.1.0.0" -Changelog "Release description"
 ```
 
-Then install the package:
-```bash
-dotnet add package JellyseerrBridge.Plugin --source github
+**What it does**:
+- Updates version numbers in the project file
+- Builds the project in Release configuration
+- Creates a ZIP package in the `release` directory
+- Generates MD5 checksum
+- Updates manifest.json with the new version
+- Commits and pushes changes to Git
+- Creates a GitHub release
+- Uploads the ZIP file as a release asset
+
+**Requirements**: Requires `github-token.txt` file with a GitHub Personal Access Token.
+
+---
+
+#### `check-models.ps1` - Model Validation Script
+**Purpose**: Validates all generated C# files for missing classes, enums, and conversion issues.
+
+**Usage**:
+```powershell
+pwsh -File scripts/check-models.ps1
 ```
 
-### GitHub Actions Integration
+**What it checks**:
+- Empty or very small files
+- Missing using statements
+- Unresolved class references
+- Type mismatches
+- Missing required enums
+- Duplicate class declarations
+- Duplicate properties within classes
+- Invalid property names
 
-For automated publishing in GitHub Actions, use the `GITHUB_TOKEN`:
+**When to use**: After running `convert-models.ps1` to ensure the conversion was successful.
 
-```yaml
-- name: Setup .NET
-  uses: actions/setup-dotnet@v3
-  with:
-    dotnet-version: '8.0.x'
+---
 
-- name: Add GitHub Packages source
-  run: |
-    dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+#### `convert-models.ps1` - TypeScript to C# Conversion Script
+**Purpose**: Converts TypeScript models from the Jellyseerr source code to C# classes.
 
-- name: Pack
-  run: dotnet pack --configuration Release
-
-- name: Push to GitHub Packages
-  run: dotnet nuget push bin/Release/*.nupkg --source github
+**Usage**:
+```powershell
+pwsh -File scripts/convert-models.ps1
 ```
+
+**What it does**:
+- Reads TypeScript files from `codebase/seerr-main`
+- Converts them to C# classes
+- Applies naming conventions and type mappings
+- Outputs to `src/Jellyfin.Plugin.JellyseerrBridge/JellyseerrModel/`
+- Uses configuration from `convert-config.psd1`
+
+**When to use**: When you need to update the Jellyseerr models (e.g., after Jellyseerr releases a new version with API changes).
+
+---
+
+#### `convert-config.psd1` - Model Conversion Configuration
+**Purpose**: Configuration file for the model conversion script.
+
+**Contents**:
+- Input/output directory mappings
+- Type conversion rules (e.g., number to double patterns)
+- Blocked classes (classes that shouldn't be converted)
+- Namespace settings
+- JSON property naming conventions
+
+**Note**: Edit this file when you need to adjust how TypeScript models are converted to C#.
+
+### Version Numbering
+
+Releases use a 4-part version format: `X.Y.Z.W`
+- Increment `X` for major releases
+- Increment `Y` for minor releases  
+- Increment `Z` for patch releases
+- Increment `W` for build numbers
 
 ### Project Structure
 
 ```
-Jellyseerr-Bridge/
-├── Api/                          # REST API controllers
-│   ├── ConfigurationController.cs
-│   ├── ConfigurationPageController.cs
-│   └── WebhookController.cs
-├── Configuration/                 # Configuration classes
-│   └── PluginConfiguration.cs
-├── Services/                      # Business logic services
-│   ├── ConfigurationService.cs
-│   ├── JellyseerrApiService.cs
-│   ├── LibraryManagementService.cs
-│   ├── ShowSyncService.cs
-│   └── WebhookHandlerService.cs
+JellyBridge/
+├── Controllers/                  # REST API controllers
+│   └── RouteController.cs
+├── Configuration/                # Configuration classes
+│   ├── PluginConfiguration.cs
+│   ├── ConfigurationPage.html
+│   └── ConfigurationPage.js
+├── Services/                     # Business logic services
+│   ├── SyncService.cs
+│   ├── LibraryService.cs
+│   ├── BridgeService.cs
+│   └── ApiService.cs
 ├── Tasks/                        # Scheduled tasks
-│   └── ShowSyncTask.cs
-├── JellyseerrBridgePlugin.cs     # Main plugin class
+│   └── SyncTask.cs
+├── BridgeModels/                 # Data models
+│   ├── JellyseerrMovie.cs
+│   └── JellyseerrShow.cs
+├── Plugin.cs                     # Main plugin class
 ├── JellyseerrBridge.csproj       # Project file
 ├── manifest.json                 # Plugin manifest
 ├── nuget.config                 # NuGet configuration
