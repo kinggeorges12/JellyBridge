@@ -19,7 +19,7 @@ public class PlaceholderVideoGenerator
     
     // Asset file names for different media types
     private const string MovieAsset = "movie.png";
-    private const string ShowAsset = "show.png";
+    private const string ShowAsset = "S00E00.png";
     private const string SeasonAsset = "S00E00.png";
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)

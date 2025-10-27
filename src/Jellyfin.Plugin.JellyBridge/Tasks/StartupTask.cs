@@ -40,7 +40,7 @@ public class StartupTask : IScheduledTask
             
             if (autoSyncOnStartup && startupDelaySeconds > 0)
             {
-                _logger.LogInformation("[StartupTask] Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
+                _logger.LogDebug("[StartupTask] Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
                 await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
             }
             

@@ -53,7 +53,6 @@ public class SyncTask : IScheduledTask
                 try
                 {
                     syncToResult = await _syncService.SyncToJellyseerr();
-                    progress.Report(50);
                     _logger.LogDebug("Step 1 completed: {Success} - {Message}", syncToResult.Success, syncToResult.Message);
                     _logger.LogDebug("Step 1 details: {Details}", syncToResult.Details);
                 }
@@ -66,6 +65,7 @@ public class SyncTask : IScheduledTask
                         Message = $"❌ Sync to Jellyseerr failed: {ex.Message}",
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
+                } finally {
                     progress.Report(50);
                 }
                 
@@ -75,7 +75,6 @@ public class SyncTask : IScheduledTask
                 try
                 {
                     syncFromResult = await _syncService.SyncFromJellyseerr();
-                    progress.Report(100);
                     _logger.LogDebug("Step 2 completed: {Success} - {Message}", syncFromResult.Success, syncFromResult.Message);
                 }
                 catch (Exception ex)
@@ -87,6 +86,7 @@ public class SyncTask : IScheduledTask
                         Message = $"❌ Sync from Jellyseerr failed: {ex.Message}",
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
+                } finally {
                     progress.Report(100);
                 }
                 
