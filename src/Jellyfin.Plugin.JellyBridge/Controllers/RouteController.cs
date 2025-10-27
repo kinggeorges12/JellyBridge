@@ -486,39 +486,34 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 
                 if (task != null)
                 {
-                    // Log all available properties on the task object to see what's available
-                    _logger.LogDebug("Task State type: {StateType}", task.State.GetType().Name);
-                    
                     // Get last run time from last execution result
-                    // Use EndTimeUtc to match how Jellyfin's IntervalTrigger calculates next run
                     if (task.LastExecutionResult != null && task.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
                     {
                         lastRun = task.LastExecutionResult.EndTimeUtc;
                     }
                     
-                    // Calculate next run time based on triggers (only for interval triggers, not startup)
+                    // Calculate next run time based on the sync interval
                     if (task.Triggers != null && task.Triggers.Count > 0)
                     {
-                        _logger.LogDebug("Found {Count} triggers", task.Triggers.Count);
-                        
                         foreach (var trigger in task.Triggers)
                         {
                             if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
                             {
                                 var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
-                                _logger.LogDebug("Trigger interval: {Interval} hours", interval.TotalHours);
                                 
-                                // Calculate next run time
                                 if (lastRun.HasValue)
                                 {
+                                    // Task has run before: next run = last run + interval
                                     nextRun = lastRun.Value.Add(interval);
+                                    _logger.LogDebug("Calculated next run time from last run: {NextRun}", nextRun);
                                 }
                                 else
                                 {
-                                    // Task hasn't run yet, calculate from current time
-                                    nextRun = DateTime.UtcNow.Add(interval);
+                                    // Task hasn't run yet: use plugin load time + interval
+                                    nextRun = Plugin.LastPluginLoad.Add(interval);
+                                    _logger.LogDebug("Task hasn't run yet, calculated next run from plugin load time: {NextRun}", nextRun);
                                 }
-                                break; // Only use the first interval trigger
+                                break;
                             }
                         }
                     }

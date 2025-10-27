@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.308.0.0/JellyBridge-0.308.0.0-DLL.zip",
+        "checksum": "2E6C684460F3964D2D684F1040BA535C",
+        "timestamp": "2025-10-27T09:46:59.325Z",
+        "version": "0.308.0.0",
+        "targetAbi": "10.10.7.0",
+        "changelog": "v0.308.0.0 - Fixed next run time calculation for tasks that haven't run yet - now uses plugin load time with static property - prevents next run time from advancing on page refresh",
+        "dependencies": []
+      },
+      {
         "changelog": "v0.307.0.0 - Fixed git push authentication issue in build-release script by configuring remote URL with token before push",
         "targetAbi": "10.10.7.0",
         "timestamp": "2025-10-27T09:12:24.236Z",

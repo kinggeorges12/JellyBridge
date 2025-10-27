@@ -149,7 +149,7 @@ function updateTaskStatusDisplay(page, taskData) {
             if (runInfo) runInfo += ' • ';
             runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
     } else {
-            runInfo = 'No previous runs';
+            runInfo += 'No previous runs';
         }
         if (taskData.nextRun) {
             if (runInfo) runInfo += ' • ';

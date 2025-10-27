@@ -14,6 +14,17 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 - **Separate Libraries**: Option to create dedicated libraries for each network
 - **Smart Exclusion**: Uses `.ignore` files to exclude movies and shows that already exist in your main Jellyfin libraries
 
+## Usage
+
+The plugin includes a modern, responsive web interface accessible at:
+`http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
+
+1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
+2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
+3. **Test the connection** to ensure Jellyseerr is accessible
+4. **Enable the plugin** and trigger an initial sync
+5. **Mark shows as favorites** in Jellyfin to automatically request downloads
+
 ## Installation
 
 ### Method 1: Automatic Installation (Recommended)
@@ -90,46 +101,11 @@ The plugin intelligently detects and filters placeholder shows (shows that are r
 
 ### Advanced Settings
 
-- **Sync Interval**: How often to sync shows (in hours)
+- **Sync Interval**: How often to sync movies and shows (in hours)
 - **Request Timeout**: Timeout for API requests in seconds (default: 60)
 - **Retry Attempts**: Number of retry attempts for failed requests (default: 3)
 - **Enable Debug Logging**: Enable detailed debug logging (default: disabled)
 - **Placeholder Duration**: Duration of placeholder videos in seconds (default: 10)
-
-## Usage
-
-1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
-2. **Test the connection** to ensure Jellyseerr is accessible
-3. **Enable the plugin** and trigger an initial sync
-4. **Create separate libraries** (recommended) for each network to avoid confusion
-5. **Scan your Jellyfin library** to see the placeholder shows
-6. **Mark shows as favorites** in Jellyfin to automatically request downloads
-
-## Web Interface
-
-The plugin includes a modern, responsive web interface accessible at:
-`http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
-
-### Features:
-- **Connection Testing**: Test Connection button to validate Jellyseerr API access
-- **Manual Sync Options**: 
-  - Sync favorites from Jellyfin library to Jellyseerr
-  - Sync discover content from Jellyseerr to Jellyfin library
-- **Task Status Monitoring**: View scheduled sync status, last run, and next run times
-- **Configuration Management**: Save button to update settings without restarting Jellyfin
-
-### Library Setup Recommendations
-
-Before enabling this plugin, we recommend that you create an empty library with the following settings:
-
-- **Content type**: Mixed Movies and Shows
-- **Display name**: Anything you'd like! (e.g., "Streaming")
-- **Folders**: Use the default folder `/data/JellyBridge` OR specify the same root folder as found under Library Settings > Library Directory
-- **Metadata savers**: Nfo
-- **Save artwork into media folders**: Enabled
-- **Subtitle downloaders**: Open Subtitles
-
-If you enable "Create separate libraries", you can use different libraries for each network provider by adding network subdirectories to the Jellyfin Folders rather than the base Library Directory.
 
 ## Logging
 
