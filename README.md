@@ -41,6 +41,14 @@ The plugin generates placeholder videos for movies and series that aren't yet av
 - **Retry Logic**: Includes retry attempts to ensure FFmpeg availability before generating placeholders
 - **Efficient Caching**: Cached placeholder videos are reused to minimize generation overhead
 
+### Jellyseerr Integration
+
+The plugin seamlessly integrates with Jellyseerr to manage download requests and track availability of movies and series.
+
+![Jellyseerr Requests](Screenshots/Requests.png)
+
+When users mark movies or series as favorites in Jellyfin, the plugin automatically sends download requests to Jellyseerr for processing. The user who requested the content is shown in Jellyseerr as the requestor, all you have to do is import the Jellyfin users. Any integrations with Jellyseerr like Radarr and Sonarr will manage the content creation in Jellyfin. After content is found in other Jellyfin libraries, the movie or series is hidden from the JellyBridge library.
+
 ## Installation
 
 ### Method 1: Automatic Installation (Recommended)
