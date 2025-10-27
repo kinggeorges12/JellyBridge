@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2025-10-27T10:30:03.949Z",
+        "targetAbi": "10.10.7.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.311.0.0/JellyBridge-0.311.0.0-DLL.zip",
+        "checksum": "A8B496DA6288F30B932DEBB1CAC2AFF7",
+        "version": "0.311.0.0",
+        "changelog": "v0.311.0.0 - Fixed filename sanitization to replace invalid characters with underscores instead of removing them - added filtering for invisible Unicode characters that could cause display issues - brackets and international characters are preserved correctly"
+      },
+      {
         "checksum": "4D5DC186B8C65C6733967771ED99A338",
         "dependencies": [],
         "targetAbi": "10.10.7.0",
