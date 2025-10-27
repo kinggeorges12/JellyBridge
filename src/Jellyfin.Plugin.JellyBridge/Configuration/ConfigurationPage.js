@@ -121,7 +121,7 @@ function updateTaskStatusDisplay(page, taskData) {
     }
     
     let runInfo = '';
-    runInfo += `Last update: ${new Date().toLocaleString()}`;
+    runInfo += `Refreshed at: ${new Date().toLocaleString()}`;
     if (taskData.isRunning) {
         statusText.textContent = '🔄 Running';
         statusText.style.color = '#00a4d6';
