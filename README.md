@@ -6,24 +6,13 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless show discov
 
 ## Features
 
-- **Automated Content Listing**: Automatically lists movies and TV shows from various networks (Netflix, Prime Video, etc.) within Jellyfin as placeholders
-- **Easy Downloads**: Sends download requests to Jellyseerr when you mark movies or shows as favorites in Jellyfin
+- **Automated Content Listing**: Automatically lists movies and series from various networks (Netflix, Prime Video, etc.) within Jellyfin as placeholders
+- **Easy Downloads**: Sends download requests to Jellyseerr when you mark movies or series as favorites in Jellyfin
 - **Customizable**: Allows selection of networks to fetch and display in Jellyfin
-- **Scheduled Sync**: Automatically syncs movies and shows on a configurable schedule and on Jellyfin startup
-- **Library Management**: Prevents placeholder movies and shows from appearing in main libraries
+- **Scheduled Sync**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup
+- **Library Management**: Prevents placeholder movies and series from appearing in main libraries
 - **Separate Libraries**: Option to create dedicated libraries for each network
-- **Smart Exclusion**: Uses `.ignore` files to exclude movies and shows that already exist in your main Jellyfin libraries
-
-## Usage
-
-The plugin includes a modern, responsive web interface accessible at:
-`http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
-
-1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
-2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
-3. **Test the connection** to ensure Jellyseerr is accessible
-4. **Enable the plugin** and trigger an initial sync
-5. **Mark shows as favorites** in Jellyfin to automatically request downloads
+- **Smart Exclusion**: Uses `.ignore` files to exclude movies and series that already exist in your main Jellyfin libraries
 
 ## Jellyfin Integration
 
@@ -37,16 +26,16 @@ The plugin manages libraries and folders in Jellyfin, creating structure for dis
 ### Items View
 ![Jellyfin Items with Placeholders](Screenshots/Items.png)
 
-Browse all discovered movies and TV shows from Jellyseerr networks with thumbnails and metadata.
+Browse all discovered movies and series from Jellyseerr networks with thumbnails and metadata.
 
 ### Placeholder Videos
 
-The plugin generates placeholder videos for movies and shows that aren't yet available in your Jellyfin libraries. These placeholder videos are created using FFmpeg with configurable duration settings.
+The plugin generates placeholder videos for movies and series that aren't yet available in your Jellyfin libraries. These placeholder videos are created using FFmpeg with configurable duration settings.
 
 ![Placeholder Videos](Screenshots/Placeholder.png)
 
 - **Smart Detection**: Jellyfin automatically identifies and displays placeholder videos
-- **Automatic Generation**: Creates placeholder videos for movies and TV shows not yet in your Jellyfin library
+- **Automatic Generation**: Creates placeholder videos for movies and series not yet in your Jellyfin library
 - **Configurable Duration**: Control the length of placeholder videos
 - **Retry Logic**: Includes retry attempts to ensure FFmpeg availability before generating placeholders
 - **Efficient Caching**: Cached placeholder videos are reused to minimize generation overhead
@@ -83,6 +72,16 @@ The plugin generates placeholder videos for movies and shows that aren't yet ava
 
 Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
 
+### Usage
+
+The plugin includes a modern, responsive web interface for configuration. Follow these steps to get started:
+
+1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
+2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
+3. **Test the connection** to ensure Jellyseerr is accessible
+4. **Enable the plugin** and trigger an initial sync
+5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads
+
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
 ### Main Configuration
@@ -101,7 +100,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 - **Library Directory**: Path to JellyBridge's library directory - *Note*: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
 - **Manage JellyBridge Library**: After syncing, refreshes libraries containing the Library Directory path
-- **Exclude from Main Libraries**: Excludes streaming movies/shows that appear in Jellyfin libraries via .ignore files
+- **Exclude from Main Libraries**: Excludes streaming movies/series that appear in Jellyfin libraries via .ignore files
 - **Create Separate Libraries**: Creates dedicated libraries for each network
 - **Library Prefix**: Prefix for network library names
 
@@ -130,7 +129,7 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 
 - Plugin initialization and configuration
 - API calls to Jellyseerr
-- Show sync operations
+- Series sync operations
 - Library management
 - Error messages and warnings
 
