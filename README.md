@@ -58,56 +58,71 @@ Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyBr
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
 ### Main Configuration
+
+![Plugin Configuration - General Settings](Screenshots/General.png)
+
 - **Enable Plugin**: Enable or disable the automated sync task (default: disabled)
 - **Sync Interval**: How often to sync in hours, allowing partial hours (default: 24)
 - **Jellyseerr URL**: The base URL of your Jellyseerr instance (default: `http://localhost:5055`)
 - **API Key**: Your Jellyseerr API key (found in Settings → General)
 - **Test Connection**: Button to validate your Jellyseerr connection
 
-### 📁 Library Settings (Collapsible)
+### 📁 Favorite Settings
+
+![Jellyfin Favorites](Screenshots/Favorites.png)
+
 - **Library Directory**: Path to JellyBridge's library directory (default: `/data/JellyBridge`) - *Note*: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
 - **Manage JellyBridge Library**: After syncing, refreshes libraries containing the Library Directory path
 - **Exclude from Main Libraries**: Excludes streaming movies/shows that appear in Jellyfin libraries via .ignore files
 - **Create Separate Libraries**: Creates dedicated libraries for each network (default: disabled)
 - **Library Prefix**: Prefix for network library names (default: empty)
 
-### 🔍 Discover Settings (Collapsible)
+### 🔍 Discover Settings
+
+![Discover Settings](Screenshots/Discover.png)
+
 - **Max Discover Pages**: Maximum pages to fetch from discover endpoint per network (default: 10, set to 0 for unlimited)
 - **Max Retention Days**: Days to retain items before cleanup (default: 30)
 - **Region**: Watch network region for determining available networks (default: US)
 - **Network Services**: Multi-select interface to choose which networks to sync
 
-### ⚙️ Advanced (Collapsible)
+### ⚙️ Advanced Settings
+
+![Advanced Settings](Screenshots/Advanced.png)
 - **Auto Sync on Startup**: Automatically perform sync when plugin starts (default: enabled)
 - **Startup Delay**: Seconds to wait before auto-sync on startup (default: 60)
 - **Request Timeout**: Timeout for API requests in seconds (default: 60)
 - **Retry Attempts**: Number of retry attempts for failed requests (default: 3)
 - **Enable Debug Logging**: Enable detailed debug logging (default: disabled)
-
-
-#### Placeholder Show Filtering
-The plugin intelligently detects and filters placeholder shows (shows that are requested but don't have actual media files yet):
-
-- **Automatic Detection**: Identifies shows with no media files (only .nfo, .txt, etc.)
-- **Smart Filtering**: Excludes placeholders from main libraries when enabled
-- **Streaming Libraries**: Always includes placeholders in dedicated streaming libraries
-- **Configurable**: Enable/disable exclusion via the configuration interface
-
-#### Library Management
-- **Separate Libraries**: Creates dedicated libraries for each network
-- **Library Prefixing**: Customizable prefix for network libraries
-- **Path Detection**: Automatically detects library types based on directory structure
-- **Content Filtering**: Filters content based on actual media file presence
-
-### Advanced Settings
-
-- **Sync Interval**: How often to sync movies and shows (in hours)
-- **Request Timeout**: Timeout for API requests in seconds (default: 60)
-- **Retry Attempts**: Number of retry attempts for failed requests (default: 3)
-- **Enable Debug Logging**: Enable detailed debug logging (default: disabled)
 - **Placeholder Duration**: Duration of placeholder videos in seconds (default: 10)
 
-## Logging
+## Jellyfin Integration
+
+The plugin integrates seamlessly with Jellyfin, displaying discovered content as placeholder videos that users can browse and mark as favorites to request downloads.
+
+### Library View
+![Jellyfin Library](Screenshots/Library.png)
+
+The plugin manages libraries and folders in Jellyfin, creating structure for discovered content.
+
+### Items View
+![Jellyfin Items with Placeholders](Screenshots/Items.png)
+
+Browse all discovered movies and TV shows from Jellyseerr networks with thumbnails and metadata.
+
+### Placeholder Videos
+
+The plugin generates placeholder videos for movies and shows that aren't yet available in your Jellyfin libraries. These placeholder videos are created using FFmpeg with configurable duration settings.
+
+![Placeholder Videos](Screenshots/Placeholder.png)
+
+- **Smart Detection**: Jellyfin automatically identifies and displays placeholder videos
+- **Automatic Generation**: Creates placeholder videos for movies and TV shows not yet in your Jellyfin library
+- **Configurable Duration**: Control the length of placeholder videos (default: 10 seconds)
+- **Retry Logic**: Includes retry attempts to ensure FFmpeg availability before generating placeholders
+- **Efficient Caching**: Cached placeholder videos are reused to minimize generation overhead
+
+## Logging & Troubleshooting
 
 The plugin integrates with Jellyfin's logging system. Enable debug logging from the advanced options to record detailed logs. Check Jellyfin logs for debugging information:
 
@@ -116,8 +131,6 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 - Show sync operations
 - Library management
 - Error messages and warnings
-
-## Troubleshooting
 
 If you encounter any issues with the plugin, please leave a comment in the [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
 
