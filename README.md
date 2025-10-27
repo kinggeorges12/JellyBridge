@@ -65,7 +65,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Test Connection**: Button to validate your Jellyseerr connection
 
 ### 📁 Library Settings (Collapsible)
-- **Library Directory**: Path to JellyBridge's library directory (default: `/data/JellyBridge`)
+- **Library Directory**: Path to JellyBridge's library directory (default: `/data/JellyBridge`) - *Note*: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
 - **Manage JellyBridge Library**: After syncing, refreshes libraries containing the Library Directory path
 - **Exclude from Main Libraries**: Excludes streaming movies/shows that appear in Jellyfin libraries via .ignore files
 - **Create Separate Libraries**: Creates dedicated libraries for each network (default: disabled)

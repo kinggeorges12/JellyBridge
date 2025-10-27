@@ -154,6 +154,15 @@ function updateTaskStatusDisplay(page, taskData) {
         if (taskData.nextRun) {
             if (runInfo) runInfo += ' • ';
             runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
+            
+            // Add tooltip explaining next run time calculation
+            if (!taskData.lastRun) {
+                taskStatusTimes.setAttribute('title', 'When there is no previous run, the next run is scheduled 1 hour after plugin load time. After the first run, it follows the configured sync interval.');
+            } else {
+                taskStatusTimes.removeAttribute('title');
+            }
+        } else {
+            taskStatusTimes.removeAttribute('title');
         }
         taskStatusTimes.textContent = runInfo;
     }
