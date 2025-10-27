@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.312.0.0/JellyBridge-0.312.0.0-DLL.zip",
+        "changelog": "v0.312.0.0 - Fixed filename sanitization by using FormD normalization instead of FormKC to avoid creating invisible characters - removed redundant Unicode category filtering that could cause issues - asterisks and other symbols are now properly converted to underscores without leaving invisible characters",
+        "timestamp": "2025-10-27T10:45:11.794Z",
+        "dependencies": [],
+        "checksum": "66982FB40CA75E8888A2BDCAD2E10B6E",
+        "version": "0.312.0.0",
+        "targetAbi": "10.10.7.0"
+      },
+      {
         "dependencies": [],
         "timestamp": "2025-10-27T10:30:03.949Z",
         "targetAbi": "10.10.7.0",

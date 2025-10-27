@@ -55,8 +55,11 @@ public static class FolderUtils
         if (string.IsNullOrEmpty(fileName))
             return string.Empty;
 
-        // Normalize to reduce compatibility forms (e.g., fullwidth characters)
-        var normalized = fileName.Normalize(NormalizationForm.FormKC);
+        // Normalize using FormD (canonical decomposition) to safely decompose composite characters
+        // FormD decomposes characters without recomposing them, avoiding issues where symbols
+        // like asterisks could be unexpectedly normalized or combined, which can cause
+        // invisible/private use characters to appear in filenames
+        var normalized = fileName.Normalize(NormalizationForm.FormD);
 
         // Map common lookalikes to ASCII equivalents (colon, slashes, quotes, etc.)
         var charReplacements = new Dictionary<char, char>
@@ -106,29 +109,27 @@ public static class FolderUtils
         foreach (var ch in mappedString)
         {
             var category = char.GetUnicodeCategory(ch);
-            // Skip invisible characters and private use characters
+            // Skip invisible characters and private use characters that could cause display issues
             if (category == System.Globalization.UnicodeCategory.PrivateUse || 
                 category == System.Globalization.UnicodeCategory.Control ||
                 (ch >= 0x200B && ch <= 0x200D) || // Zero-width space, zero-width non-joiner, zero-width joiner
                 (ch >= 0xFEFF && ch <= 0xFEFF))  // Zero-width no-break space
             {
-                // Skip these invisible characters
+                // Skip these invisible characters completely
                 continue;
             }
-            replaced.Append(invalidChars.Contains(ch) ? '_' : ch);
+            
+            // Replace invalid characters with underscore
+            if (invalidChars.Contains(ch))
+            {
+                replaced.Append('_');
+            }
+            else
+            {
+                replaced.Append(ch);
+            }
         }
-        var withoutInvalids = replaced.ToString();
-
-        // Replace only unsafe unicode categories; allow all other symbols (#, +, !, etc.)
-        sb = new StringBuilder(withoutInvalids.Length);
-        foreach (var ch in withoutInvalids)
-        {
-            var category = char.GetUnicodeCategory(ch);
-            var isSafeCategory = category != System.Globalization.UnicodeCategory.Control && category != System.Globalization.UnicodeCategory.PrivateUse;
-            sb.Append(isSafeCategory ? ch : '_');
-        }
-
-        var cleaned = sb.ToString();
+        var cleaned = replaced.ToString();
 
         // Normalize whitespace
         cleaned = Regex.Replace(cleaned, "\\s{2,}", " ");             // collapse multiple spaces
