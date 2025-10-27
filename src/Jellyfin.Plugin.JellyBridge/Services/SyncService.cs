@@ -100,15 +100,15 @@ public partial class SyncService
                 return result;
             }
 
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: Processing {MovieCount} movies and {ShowCount} shows from Jellyseerr", 
+            _logger.LogDebug("SyncFromJellyseerr: Processing {MovieCount} movies and {ShowCount} shows from Jellyseerr", 
                 discoverMovies.Count, discoverShows.Count);
 
             // Process movies
-            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating Jellyfin folders for movies from Jellyseerr...");
+            _logger.LogTrace("SyncFromJellyseerr: 🎬 Creating Jellyfin folders for movies from Jellyseerr...");
             var movieTask = _bridgeService.CreateFoldersAsync(discoverMovies);
 
             // Process TV shows
-            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating Jellyfin folders for TV shows from Jellyseerr...");
+            _logger.LogTrace("SyncFromJellyseerr: 📺 Creating Jellyfin folders for TV shows from Jellyseerr...");
             var showTask = _bridgeService.CreateFoldersAsync(discoverShows);
 
             // Wait for both to complete
@@ -126,25 +126,25 @@ public partial class SyncService
             var (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
 
             // Create ignore files for matched items
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
+            _logger.LogDebug("SyncFromJellyseerr: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
                 matchedItems.Count);
             var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
             var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
             var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
             // Create placeholder videos for unmatched movies only
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies not in Jellyfin library...", 
+            _logger.LogDebug("SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies not in Jellyfin library...", 
                 unmatchedMovies.Count);
             var placeholderMovieTask = _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
 
             // Create season folders for unmatched TV shows only
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
+            _logger.LogDebug("SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
             var placeholderShowTask = _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
             
             await Task.WhenAll(ignoreTask, placeholderMovieTask, placeholderShowTask);
 
             // Clean up old metadata before refreshing library
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
+            _logger.LogDebug("SyncFromJellyseerr: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
             var (deletedMovies, deletedShows) = await _bridgeService.CleanupMetadataAsync();
             result.DeletedMovies = deletedMovies;
             result.DeletedShows = deletedShows;
@@ -153,7 +153,7 @@ public partial class SyncService
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
             result.Details = $"Movies: {addedMovies.Count} added, {updatedMovies.Count} updated, {deletedMovies.Count} deleted | Shows: {addedShows.Count} added, {updatedShows.Count} updated, {deletedShows.Count} deleted";
 
-            _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated | Shows: {ShowAdded} added, {ShowUpdated} updated", 
+            _logger.LogTrace("SyncFromJellyseerr: ✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated | Shows: {ShowAdded} added, {ShowUpdated} updated", 
                 addedMovies.Count, updatedMovies.Count, addedShows.Count, updatedShows.Count);
 
             // Check if library management is enabled
@@ -164,24 +164,24 @@ public partial class SyncService
             if (ranFirstTime)
             {
                 // Normal operation - only refresh Jellyseerr libraries
-                _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
+                _logger.LogDebug("SyncFromJellyseerr: 🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
                 refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted);
             }
             else
             {
                 // First time running - scan all libraries
-                _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 First-time initialization - scanning all Jellyfin libraries for cleanup...");
+                _logger.LogDebug("SyncFromJellyseerr: 🔄 First-time initialization - scanning all Jellyfin libraries for cleanup...");
                 refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
             }
             if (refreshSuccess == true)
             {
-                _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
+                _logger.LogTrace("SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
                 var refreshType = !ranFirstTime ? "first-time full scan" : (itemsDeleted ? "full" : "partial");
                 result.Message += $" and started {refreshType} library refresh";
             }
             else if (refreshSuccess == false)
             {
-                _logger.LogWarning("[JellyseerrSyncService] SyncFromJellyseerr: ⚠️ Jellyfin library refresh failed");
+                _logger.LogWarning("SyncFromJellyseerr: ⚠️ Jellyfin library refresh failed");
                 result.Message += " (library management failed)";
             }
             // refresh success is null if library management is disabled

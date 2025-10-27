@@ -31,7 +31,7 @@ public class PlaceholderVideoGenerator
         _assetsPath = Path.Combine(Path.GetTempPath(), "JellyBridge", "assets");
         Directory.CreateDirectory(_assetsPath);
         
-        _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
+        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
             _mediaEncoder.EncoderPath, _assetsPath);
     }
 
@@ -78,12 +78,12 @@ public class PlaceholderVideoGenerator
 
             if (!File.Exists(cachePath))
             {
-                _logger.LogTrace("[PlaceholderVideoGenerator] Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
+                _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
                 
-                // Check if FFmpeg is available before attempting to generate
+                // Check if FFmpeg is available before attempting to generate (with retry logic)
                 if (!await IsFFmpegAvailableAsync())
                 {
-                    _logger.LogError("[PlaceholderVideoGenerator] FFmpeg is not available, cannot generate placeholder for {Asset}", assetName);
+                    _logger.LogError("FFmpeg is not available, cannot generate placeholder for {Asset}", assetName);
                     return null;
                 }
                 
@@ -98,7 +98,7 @@ public class PlaceholderVideoGenerator
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PlaceholderVideoGenerator] Failed ensuring cached placeholder for {Asset}", assetName);
+            _logger.LogError(ex, "Failed ensuring cached placeholder for {Asset}", assetName);
             return null;
         }
     }
@@ -137,12 +137,12 @@ public class PlaceholderVideoGenerator
 
             // Copy cached file to target directory
             File.Copy(cachedPath, targetPath, overwrite: true);
-            _logger.LogTrace("[PlaceholderVideoGenerator] Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
+            _logger.LogTrace("Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PlaceholderVideoGenerator] Error generating placeholder video: {AssetName} -> {TargetDirectory}", 
+            _logger.LogError(ex, "Error generating placeholder video: {AssetName} -> {TargetDirectory}", 
                 assetName, targetDirectory);
             return false;
         }
@@ -166,45 +166,45 @@ public class PlaceholderVideoGenerator
             
             // Extract embedded resource
             var resourceName = $"Jellyfin.Plugin.JellyBridge.Assets.{assetName}";
-            _logger.LogTrace("[PlaceholderVideoGenerator] Looking for embedded resource: {ResourceName}", resourceName);
+            _logger.LogTrace("Looking for embedded resource: {ResourceName}", resourceName);
             
             // List all available resources for debugging
             var allResources = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceNames();
-            _logger.LogTrace("[PlaceholderVideoGenerator] Available resources: {Resources}", string.Join(", ", allResources));
+            _logger.LogTrace("Available resources: {Resources}", string.Join(", ", allResources));
             
             using var stream = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceStream(resourceName);
             
             if (stream == null)
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Embedded asset not found: {ResourceName}", resourceName);
+                _logger.LogError("Embedded asset not found: {ResourceName}", resourceName);
                 return null;
             }
             
             using var fileStream = File.Create(assetPath);
             await stream.CopyToAsync(fileStream);
             
-            _logger.LogTrace("[PlaceholderVideoGenerator] Extracted embedded asset: {AssetPath}", assetPath);
+            _logger.LogTrace("Extracted embedded asset: {AssetPath}", assetPath);
             
             // Verify the extracted file exists and has content
             if (!File.Exists(assetPath))
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file does not exist: {AssetPath}", assetPath);
+                _logger.LogError("Extracted asset file does not exist: {AssetPath}", assetPath);
                 return null;
             }
             
             var fileInfo = new FileInfo(assetPath);
             if (fileInfo.Length == 0)
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Extracted asset file is empty: {AssetPath}", assetPath);
+                _logger.LogError("Extracted asset file is empty: {AssetPath}", assetPath);
                 return null;
             }
             
-            _logger.LogTrace("[PlaceholderVideoGenerator] Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
+            _logger.LogTrace("Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
             return assetPath;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PlaceholderVideoGenerator] Failed to extract asset: {AssetName}", assetName);
+            _logger.LogError(ex, "Failed to extract asset: {AssetName}", assetName);
             return null;
         }
     }
@@ -223,7 +223,7 @@ public class PlaceholderVideoGenerator
             
             if (string.IsNullOrEmpty(assetPath))
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Asset file not found: {AssetName}", assetName);
+                _logger.LogError("Asset file not found: {AssetName}", assetName);
                 return false;
             }
 
@@ -239,18 +239,18 @@ public class PlaceholderVideoGenerator
             
             if (videoDuration <= 0)
             {
-                _logger.LogError("[PlaceholderVideoGenerator] Invalid duration: {Duration}. Must be greater than 0.", videoDuration);
+                _logger.LogError("Invalid duration: {Duration}. Must be greater than 0.", videoDuration);
                 return false;
             }
 
             // Build FFmpeg command
             var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
-            _logger.LogTrace("[PlaceholderVideoGenerator] Generating placeholder video: {AssetName} -> {OutputPath}", 
+            _logger.LogTrace("Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
-            _logger.LogTrace("[PlaceholderVideoGenerator] Asset path: {AssetPath}, Duration: {Duration}", 
+            _logger.LogTrace("Asset path: {AssetPath}, Duration: {Duration}", 
                 assetPath, videoDuration);
-            _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg command: {FFmpegPath} {Arguments}", 
+            _logger.LogTrace("FFmpeg command: {FFmpegPath} {Arguments}", 
                 _mediaEncoder.EncoderPath, arguments);
 
             var processInfo = new ProcessStartInfo
@@ -295,67 +295,34 @@ public class PlaceholderVideoGenerator
                 // Verify the output file was created and has content
                 if (!File.Exists(outputPath))
                 {
-                    _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
+                    _logger.LogError("FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
                     return false;
                 }
                 
                 var outputFileInfo = new FileInfo(outputPath);
                 if (outputFileInfo.Length == 0)
                 {
-                    _logger.LogError("[PlaceholderVideoGenerator] FFmpeg succeeded but output file is empty: {OutputPath}", outputPath);
+                    _logger.LogError("FFmpeg succeeded but output file is empty: {OutputPath}", outputPath);
                     return false;
                 }
                 
-                _logger.LogDebug("[PlaceholderVideoGenerator] Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
+                _logger.LogDebug("Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
                     outputPath, outputFileInfo.Length);
-                _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
+                _logger.LogTrace("FFmpeg output: {Output}", outputBuilder.ToString());
                 return true;
             }
             else
             {
-                _logger.LogError("[PlaceholderVideoGenerator] FFmpeg failed with exit code {ExitCode}. Error output: {ErrorOutput}", 
+                _logger.LogError("FFmpeg failed with exit code {ExitCode}. Error output: {ErrorOutput}", 
                     process.ExitCode, errorBuilder.ToString());
-                _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg output: {Output}", outputBuilder.ToString());
+                _logger.LogTrace("FFmpeg output: {Output}", outputBuilder.ToString());
                 return false;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PlaceholderVideoGenerator] Error generating placeholder video: {AssetName} -> {OutputPath}", 
+            _logger.LogError(ex, "Error generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Check if FFmpeg is available and working.
-    /// </summary>
-    /// <returns>True if FFmpeg is available, false otherwise</returns>
-    public async Task<bool> IsFFmpegAvailableAsync()
-    {
-        try
-        {
-            var processInfo = new ProcessStartInfo
-            {
-                FileName = _mediaEncoder.EncoderPath,
-                Arguments = "-version",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using var process = new Process { StartInfo = processInfo };
-            process.Start();
-            await process.WaitForExitAsync();
-
-            var isAvailable = process.ExitCode == 0;
-            _logger.LogTrace("[PlaceholderVideoGenerator] FFmpeg availability check: {IsAvailable}", isAvailable);
-            return isAvailable;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "[PlaceholderVideoGenerator] FFmpeg availability check failed");
             return false;
         }
     }
@@ -381,7 +348,7 @@ public class PlaceholderVideoGenerator
                 throw new InvalidOperationException($"Bridge folder does not exist: {bridgeFolderPath}");
             }
 
-            _logger.LogDebug("[PlaceholderVideoGenerator] Cleaning up placeholder videos in: {BridgeFolderPath}", bridgeFolderPath);
+            _logger.LogDebug("Cleaning up placeholder videos in: {BridgeFolderPath}", bridgeFolderPath);
 
             // Delete placeholder files in current directory and all subdirectories
             foreach (var placeholderFile in placeholderFiles)
@@ -394,27 +361,85 @@ public class PlaceholderVideoGenerator
                     try
                     {
                         await Task.Run(() => File.Delete(filePath));
-                        _logger.LogTrace("[PlaceholderVideoGenerator] Deleted placeholder file: {FilePath}", filePath);
+                        _logger.LogTrace("Deleted placeholder file: {FilePath}", filePath);
                         deletedCount++;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "[PlaceholderVideoGenerator] Failed to delete placeholder file: {FilePath}", filePath);
+                        _logger.LogWarning(ex, "Failed to delete placeholder file: {FilePath}", filePath);
                     }
                 }
             }
 
             if (deletedCount > 0)
             {
-                _logger.LogDebug("[PlaceholderVideoGenerator] Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
+                _logger.LogDebug("Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
                     deletedCount, bridgeFolderPath);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PlaceholderVideoGenerator] Error cleaning up placeholder videos in {BridgeFolderPath}", bridgeFolderPath);
+            _logger.LogError(ex, "Error cleaning up placeholder videos in {BridgeFolderPath}", bridgeFolderPath);
         }
 
         return deletedCount;
+    }
+
+    /// <summary>
+    /// Check if FFmpeg is available and working, with retry logic.
+    /// </summary>
+    /// <returns>True if FFmpeg is available, false otherwise</returns>
+    public async Task<bool> IsFFmpegAvailableAsync()
+    {
+        try
+        {
+            var requestTimeout = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout));
+            var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
+            
+            for (int attempt = 1; attempt <= retryAttempts; attempt++)
+            {
+                _logger.LogTrace("FFmpeg availability check attempt {Attempt}/{TotalAttempts}", attempt, retryAttempts);
+                
+                var attemptStartTime = DateTime.UtcNow;
+                var maxWaitTime = TimeSpan.FromSeconds(requestTimeout);
+                
+                // Keep trying until the timeout period expires for this attempt
+                while (DateTime.UtcNow - attemptStartTime < maxWaitTime)
+                {
+                    var processInfo = new ProcessStartInfo
+                    {
+                        FileName = _mediaEncoder.EncoderPath,
+                        Arguments = "-version",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new Process { StartInfo = processInfo };
+                    process.Start();
+                    await process.WaitForExitAsync();
+
+                    if (process.ExitCode == 0)
+                    {
+                        _logger.LogInformation("FFmpeg is now available (attempt {Attempt}/{TotalAttempts})", attempt, retryAttempts);
+                        return true;
+                    }
+                    
+                    // Wait a bit before retrying within this attempt
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+                
+                _logger.LogDebug("Attempt {Attempt}/{TotalAttempts} timed out after {RequestTimeout} seconds", attempt, retryAttempts, requestTimeout);
+            }
+            
+            _logger.LogWarning("FFmpeg availability check failed after {RetryAttempts} attempts", retryAttempts);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "FFmpeg availability check failed");
+            return false;
+        }
     }
 }

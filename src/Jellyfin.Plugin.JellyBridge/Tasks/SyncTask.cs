@@ -16,16 +16,19 @@ public class SyncTask : IScheduledTask
     private readonly ILogger<SyncTask> _logger;
     private readonly SyncService _syncService;
     private readonly ITaskManager _taskManager;
+    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
 
 
     public SyncTask(
         ILogger<SyncTask> logger,
         SyncService syncService,
-        ITaskManager taskManager)
+        ITaskManager taskManager,
+        PlaceholderVideoGenerator placeholderVideoGenerator)
     {
         _logger = logger;
         _syncService = syncService;
         _taskManager = taskManager;
+        _placeholderVideoGenerator = placeholderVideoGenerator;
         _logger.LogInformation("SyncTask constructor called - task initialized");
     }
 
@@ -113,11 +116,11 @@ public class SyncTask : IScheduledTask
         
         if (!isEnabled)
         {
-            _logger.LogDebug("[SyncTask] Plugin is disabled, returning empty triggers");
+            _logger.LogDebug("Plugin is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 
-        _logger.LogDebug("[SyncTask] Added interval trigger with {IntervalHours} hours", intervalHours);
+        _logger.LogDebug("Added interval trigger with {IntervalHours} hours", intervalHours);
         
         return new List<TaskTriggerInfo>
         {

@@ -40,7 +40,7 @@ public class StartupTask : IScheduledTask
             
             if (autoSyncOnStartup && startupDelaySeconds > 0)
             {
-                _logger.LogDebug("[StartupTask] Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
+                _logger.LogDebug("Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
                 await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
             }
             
@@ -52,7 +52,7 @@ public class StartupTask : IScheduledTask
             }
             else
             {
-                _logger.LogWarning("[StartupTask] Could not find SyncTask to execute");
+                _logger.LogWarning("Could not find SyncTask to execute");
             }
         }
         catch (Exception ex)
@@ -69,11 +69,11 @@ public class StartupTask : IScheduledTask
         
         if (!isEnabled || !autoSyncOnStartup)
         {
-            _logger.LogDebug("[StartupTask] Plugin disabled or startup sync disabled, returning empty triggers");
+            _logger.LogDebug("Plugin disabled or startup sync disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 
-        _logger.LogDebug("[StartupTask] Added startup trigger");
+        _logger.LogDebug("Added startup trigger");
         
         return new List<TaskTriggerInfo>
         {
