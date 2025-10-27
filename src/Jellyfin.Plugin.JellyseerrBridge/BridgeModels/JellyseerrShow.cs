@@ -210,7 +210,7 @@ public class JellyseerrShow
     /// Gets the NFO filename for the TV show.
     /// </summary>
     /// <returns>NFO filename string</returns>
-    public string GetNfoFilename()
+    public static string GetNfoFilename()
     {
         return "tvshow.nfo"; // Static value for TV shows
     }

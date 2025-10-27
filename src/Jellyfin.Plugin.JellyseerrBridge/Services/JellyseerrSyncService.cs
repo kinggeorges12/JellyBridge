@@ -31,11 +31,6 @@ public partial class JellyseerrSyncService
     private readonly JellyseerrBridgeService _bridgeService;
     private readonly JellyseerrLibraryService _libraryService;
     
-    /// <summary>
-    /// Tracks if the sync has run at least once (for startup delay logic)
-    /// </summary>
-    public static bool HasRunOnce { get; set; }
-    
 
     public JellyseerrSyncService(
         ILogger<JellyseerrSyncService> logger,
@@ -276,10 +271,10 @@ public partial class JellyseerrSyncService
                     string.Join(", ", favorites.Select(f => f.Name)));
             }
             
-            // Add all favorited items to updated lists (these are items that were favorited by users)
+            // Add all favorited items to found lists (these are items that were favorited by users)
             var allFavoritedItems = allFavorites.Values.SelectMany(favs => favs).ToList();
-            result.MoviesResult.ItemsUpdated.AddRange(allFavoritedItems.OfType<Movie>());
-            result.ShowsResult.ItemsUpdated.AddRange(allFavoritedItems.OfType<Series>());
+            result.MoviesResult.ItemsFound.AddRange(allFavoritedItems.OfType<Movie>());
+            result.ShowsResult.ItemsFound.AddRange(allFavoritedItems.OfType<Series>());
             
             // Step 3: Get all Jellyseerr users for request creation
             var jellyseerrUsers = await _bridgeService.GetJellyseerrUsersAsync();
@@ -305,7 +300,7 @@ public partial class JellyseerrSyncService
             
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, updated (scanned) {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items";
+            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, found {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }

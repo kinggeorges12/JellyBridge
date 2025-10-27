@@ -401,12 +401,13 @@ public class JellyseerrBridgeService
                 throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
             }
 
-            var directories = Directory.GetDirectories(syncDirectory, "*", SearchOption.TopDirectoryOnly);
+            // Get all subdirectories that contain metadata files
+            var metadataFiles = Directory.GetFiles(syncDirectory, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
             
-            foreach (var directory in directories)
+            foreach (var metadataFile in metadataFiles)
             {
-                var metadataFile = Path.Combine(directory, "metadata.json");
-                if (File.Exists(metadataFile))
+                var directory = Path.GetDirectoryName(metadataFile);
+                if (!string.IsNullOrEmpty(directory))
                 {
                     try
                     {
@@ -414,8 +415,8 @@ public class JellyseerrBridgeService
                         _logger.LogDebug("[JellyseerrBridge] Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                         
                         // Check for movie.nfo to identify movie folders
-                        var movieNfoFile = Path.Combine(directory, "movie.nfo");
-                        var showNfoFile = Path.Combine(directory, "tvshow.nfo");
+                        var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
+                        var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
                         
                         if (File.Exists(movieNfoFile))
                         {
@@ -478,7 +479,7 @@ public class JellyseerrBridgeService
         // If no NetworkId is set, validation passes (item not network-specific)
         if (!item.NetworkId.HasValue)
         {
-            return false;
+            return true;
         }
 
         var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
@@ -509,12 +510,12 @@ public class JellyseerrBridgeService
             // Write JSON metadata - serialize as concrete type to preserve JSON attributes
             var json = JellyseerrJsonSerializer.Serialize(item);
             
-            var metadataFile = Path.Combine(targetDirectory, "metadata.json");
+            var metadataFile = Path.Combine(targetDirectory, IJellyseerrItem.GetMetadataFilename());
             await File.WriteAllTextAsync(metadataFile, json);
             _logger.LogDebug("[JellyseerrBridge] Wrote metadata to {MetadataFile}", metadataFile);
             
             // Write XML metadata only if NFO file doesn't exist
-            var xmlFile = Path.Combine(targetDirectory, item.GetNfoFilename());
+            var xmlFile = Path.Combine(targetDirectory, IJellyseerrItem.GetNfoFilename(item));
             if (!File.Exists(xmlFile))
             {
                 var xmlText = item.ToXmlString();
@@ -527,9 +528,9 @@ public class JellyseerrBridgeService
             }
             
             return true;
-                }
-                catch (Exception ex)
-                {
+        }
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "[JellyseerrBridge] Error writing metadata for {ItemMediaName}", item.MediaName);
             return false;
         }
@@ -769,7 +770,7 @@ public class JellyseerrBridgeService
                 }
                 // Check if the item's CreatedDate is older than the cutoff date
                 // Treat null CreatedDate as very old (past cutoff date)
-                else if (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null)
+                if (string.IsNullOrEmpty(deletionReason) && (item.CreatedDate?.DateTime < cutoffDate || item.CreatedDate == null))
                 {
                     deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
                 }

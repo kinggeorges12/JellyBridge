@@ -123,7 +123,7 @@ public class SyncJellyfinResult
 
     public override string ToString()
     {
-        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Updated} updated, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Updated} updated, {ShowsResult.Created} created";
+        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Found} found, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Found} found, {ShowsResult.Created} created";
     }
 }
 
@@ -133,16 +133,21 @@ public class SyncJellyfinResult
 public class ProcessJellyfinResult
 {
     public List<BaseItem> ItemsProcessed { get; set; } = new();
-    public List<BaseItem> ItemsUpdated { get; set; } = new();
+    public List<BaseItem> ItemsFound { get; set; } = new();
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
 
     public int Processed => ItemsProcessed.Count;
-    public int Updated => ItemsUpdated.Count;
+    public int Found => ItemsFound.Count;
     public int Created => ItemsCreated.Count;
 
     public override string ToString()
     {
-        return $"Processed: {Processed}, Updated: {Updated}, Created: {Created}";
+        var parts = new List<string>();
+        if (Processed > 0) parts.Add($"Processed: {Processed}");
+        if (Found > 0) parts.Add($"Found: {Found}");
+        if (Created > 0) parts.Add($"Created: {Created}");
+        
+        return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
     }
 }
 
