@@ -9,9 +9,18 @@
     "repositoryUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge",
     "versions": [
       {
+        "checksum": "67B449136B251E52666A879B547FFDCC",
+        "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.304.0.0/JellyseerrBridge-0.304.0.0-DLL.zip",
+        "changelog": "v0.304.0.0 - Fixed loading message not hiding properly in recycle library function - improved promise chain handling",
+        "targetAbi": "10.10.7.0",
+        "timestamp": "2025-10-27T06:09:14.916Z",
+        "version": "0.304.0.0",
+        "dependencies": []
+      },
+      {
         "version": "0.303.0.0",
         "checksum": "8B8276EC12A0225408AE02A2613AC6F3",
-        "timestamp": "2025-10-27T05:41:07.010Z",
+        "timestamp": "2025-10-27T05:41:07.01Z",
         "changelog": "v0.303.0.0 - Added SetRanFirstTime helper method to Plugin class. Updated RecycleLibrary to call ScanAllLibrariesForFirstTime instead of RefreshJellyseerrLibrary. Fixed cleanup logic to properly delete items from removed networks. Updated cleanup to use DateTimeOffset for proper date comparison.",
         "sourceUrl": "https://github.com/kinggeorges12/Jellyseerr-Bridge/releases/download/v0.303.0.0/JellyseerrBridge-0.303.0.0-DLL.zip",
         "targetAbi": "10.10.7.0",
