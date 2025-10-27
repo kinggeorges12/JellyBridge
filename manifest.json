@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.0.1.0/JellyBridge-1.0.1.0-DLL.zip",
+        "timestamp": "2025-10-27T16:54:29.056Z",
+        "checksum": "64F1B2B6F210E865AAF19D19BE213D34",
+        "changelog": "v1.0.1.0 - Add meta.json with image to release ZIP for proper manifest reconciliation",
+        "targetAbi": "10.10.7.0",
+        "version": "1.0.1.0"
+      },
+      {
         "version": "1.0.0.0",
         "timestamp": "2025-10-27T16:43:22.239Z",
         "changelog": "v1.0.0.0 - Ready for primetime!",

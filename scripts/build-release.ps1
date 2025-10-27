@@ -69,13 +69,43 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[~] Build successful" -ForegroundColor Green
 
-# Step 3: Create ZIP file
-Write-Host "Step 3: Creating release ZIP file..." -ForegroundColor Yellow
+# Get GMT timestamp (needed for meta.json)
+$timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+
+# Step 3: Create meta.json file
+# Read manifest to get plugin metadata
+$manifestPath = "manifest.json"
+$manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
+$pluginInfo = $manifestArray[0]
+
+Write-Host "Step 3: Creating meta.json..." -ForegroundColor Yellow
+$metaJson = @{
+    guid = $pluginInfo.guid
+    name = $pluginInfo.name
+    description = $pluginInfo.description
+    owner = $pluginInfo.owner
+    category = $pluginInfo.category
+    version = $Version
+    changelog = $ChangelogText
+    targetAbi = "10.10.7.0"
+    timestamp = $timestamp
+    status = "Active"
+    autoUpdate = $true
+    imagePath = $pluginInfo.imageUrl
+    assemblies = @("JellyBridge.dll")
+} | ConvertTo-Json -Compress
+
+$metaPath = "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\meta.json"
+Set-Content -Path $metaPath -Value $metaJson -NoNewline
+Write-Host "[~] Created meta.json" -ForegroundColor Green
+
+# Step 4: Create ZIP file
+Write-Host "Step 4: Creating release ZIP file..." -ForegroundColor Yellow
 $zipPath = Join-Path $BaseDir "release\JellyBridge-$Version-DLL.zip"
 if (Test-Path $zipPath) {
     Remove-Item $zipPath
 }
-Compress-Archive -Path "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\JellyBridge.dll" -DestinationPath $zipPath -Force
+Compress-Archive -Path "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\JellyBridge.dll","src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\meta.json" -DestinationPath $zipPath -Force
 # Wait until the file is no longer locked
 [GC]::Collect()
 [GC]::WaitForPendingFinalizers()
@@ -87,15 +117,10 @@ do {
 Start-Sleep -Seconds 1
 Write-Host "[~] Created ZIP: $zipPath" -ForegroundColor Green
 
-# Step 4: Calculate MD5 checksum
-Write-Host "Step 4: Calculating MD5 checksum for ZIP file..." -ForegroundColor Yellow
+# Step 5: Calculate MD5 checksum
+Write-Host "Step 5: Calculating MD5 checksum for ZIP file..." -ForegroundColor Yellow
 $checksum = (Get-FileHash -Path $zipPath -Algorithm MD5).Hash
 Write-Host "[~] Checksum: $checksum" -ForegroundColor Green
-
-# Step 5: Get GMT timestamp
-Write-Host "Step 5: Generating GMT timestamp..." -ForegroundColor Yellow
-$timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-Write-Host "[~] Timestamp: $timestamp" -ForegroundColor Green
 
 # Step 6: Update manifest.json with checksum and timestamp
 Write-Host "Step 6: Updating manifest.json with new version entry..." -ForegroundColor Yellow
@@ -120,8 +145,8 @@ $manifestArray[0].versions = @($newVersion) + $manifestArray[0].versions
 $manifestArray | ConvertTo-Json -Depth 10 -AsArray | Set-Content $manifestPath -NoNewline
 Write-Host "[~] Updated manifest.json with new version entry" -ForegroundColor Green
 
-# Step 7: Commit changes to Git
-Write-Host "Step 7: Committing changes to Git..." -ForegroundColor Yellow
+# Step 8: Commit changes to Git
+Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
 git add .
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Git add failed!"
@@ -137,8 +162,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[~] Committed changes" -ForegroundColor Green
 
-# Step 8: Push changes to GitHub
-Write-Host "Step 8: Pushing changes to GitHub..." -ForegroundColor Yellow
+# Step 9: Push changes to GitHub
+Write-Host "Step 9: Pushing changes to GitHub..." -ForegroundColor Yellow
 
 # Configure git remote with token for authentication
 $token = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
@@ -153,8 +178,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[~] Pushed to GitHub" -ForegroundColor Green
 
-# Step 9: Create GitHub release
-Write-Host "Step 9: Creating GitHub release..." -ForegroundColor Yellow
+# Step 10: Create GitHub release
+Write-Host "Step 10: Creating GitHub release..." -ForegroundColor Yellow
 $headers = @{
     "Authorization" = "token $GitHubToken"
     "Accept" = "application/vnd.github.v3+json"
@@ -180,8 +205,8 @@ try {
     exit 1
 }
 
-# Step 10: Upload ZIP file as release asset
-Write-Host "Step 10: Uploading ZIP file as release asset..." -ForegroundColor Yellow
+# Step 11: Upload ZIP file as release asset
+Write-Host "Step 11: Uploading ZIP file as release asset..." -ForegroundColor Yellow
 $uploadHeaders = @{
     "Authorization" = "token $GitHubToken"
     "Content-Type" = "application/zip"
