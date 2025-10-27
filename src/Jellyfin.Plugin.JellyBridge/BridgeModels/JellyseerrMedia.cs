@@ -23,15 +23,19 @@ public class JellyseerrMedia : Media
     /// Download status as array (TypeScript: downloadStatus?: DownloadingItem[] = [])
     /// Override: Remove nullable from base class
     /// </summary>
-    //[JsonPropertyName("downloadStatus")]
-    //public new List<DownloadingItem> DownloadStatus { get; set; } = new();
+    [JsonIgnore]
+    public new List<DownloadingItem> DownloadStatus { get; set; } = new();
+    [JsonPropertyName("downloadStatus")]
+    public List<JellyseerrDownloadingItem> DownloadStatusList { get; set; } = new();
 
     /// <summary>
     /// Download status for 4K as array (TypeScript: downloadStatus4k?: DownloadingItem[] = [])
     /// Override: Remove nullable from base class
     /// </summary>
-    //[JsonPropertyName("downloadStatus4k")]
-    //public new List<DownloadingItem> DownloadStatus4k { get; set; } = new();
+    [JsonIgnore]
+    public new List<DownloadingItem> DownloadStatus4k { get; set; } = new();
+    [JsonPropertyName("downloadStatus4k")]
+    public List<JellyseerrDownloadingItem> DownloadStatus4kList { get; set; } = new();
 
     /// <summary>
     /// Watchlists as array (TypeScript: watchlists: null | Watchlist[])
