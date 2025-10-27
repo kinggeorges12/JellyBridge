@@ -69,23 +69,23 @@ namespace Jellyfin.Plugin.JellyseerrBridge
                 var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyseerrBridgeSync");
                 if (task != null && task.ScheduledTask is Tasks.JellyseerrSyncTask syncTask)
                 {
-                    _logger.LogInformation("[JellyseerrBridge] Reloading task triggers for new configuration");
+                    _logger.LogDebug("[JellyseerrBridge] Reloading task triggers for new configuration");
                     
                     // Log current configuration values
                     var newSyncInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours));
                     var newAutoSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-                    _logger.LogInformation("[JellyseerrBridge] New config - SyncInterval: {Interval} hours, AutoSync: {AutoSync}", newSyncInterval, newAutoSync);
+                    _logger.LogDebug("[JellyseerrBridge] New config - SyncInterval: {Interval} hours, AutoSync: {AutoSync}", newSyncInterval, newAutoSync);
                     
                     // Get new triggers from GetDefaultTriggers
                     var newTriggers = syncTask.GetDefaultTriggers();
-                    _logger.LogInformation("[JellyseerrBridge] New triggers count: {Count}", newTriggers.Count());
+                    _logger.LogDebug("[JellyseerrBridge] New triggers count: {Count}", newTriggers.Count());
                     
                     // Set the new triggers
                     task.Triggers = newTriggers.ToList();
                     
                     // Reload trigger events
                     task.ReloadTriggerEvents();
-                    _logger.LogInformation("[JellyseerrBridge] Task triggers reloaded successfully");
+                    _logger.LogDebug("[JellyseerrBridge] Task triggers reloaded successfully");
                 }
             }
             catch (Exception ex)
@@ -188,101 +188,5 @@ namespace Jellyfin.Plugin.JellyseerrBridge
             }
         }
 
-        /// <summary>
-        /// Executes an operation with Jellyfin-style locking that pauses instead of canceling (no return value).
-        /// </summary>
-        public static async Task ExecuteWithLockAsync(Func<Task> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
-        {
-            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
-            var startTime = DateTime.UtcNow;
-            
-            // Wait for any running operation to complete (pausing, not canceling)
-            while (DateTime.UtcNow - startTime < timeout.Value)
-            {
-                lock (_operationSyncLock)
-                {
-                    if (!_isOperationRunning)
-                    {
-                        _isOperationRunning = true;
-                        logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
-                        break;
-                    }
-                }
-                
-                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                await Task.Delay(100); // Small delay to prevent busy waiting
-            }
-            
-            // Check if we timed out
-            if (DateTime.UtcNow - startTime >= timeout.Value)
-            {
-                throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
-            }
-            
-            try
-            {
-                await operation();
-            }
-            finally
-            {
-                lock (_operationSyncLock)
-                {
-                    _isOperationRunning = false;
-                    logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Executes a synchronous operation with Jellyfin-style locking that pauses instead of canceling.
-        /// </summary>
-        public static void ExecuteWithLock(Action operation, ILogger logger, string operationName, TimeSpan? timeout = null)
-        {
-            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
-            var startTime = DateTime.UtcNow;
-            bool lockAcquired = false;
-            
-            try
-            {
-                // Wait for any running operation to complete (pausing, not canceling)
-                while (DateTime.UtcNow - startTime < timeout.Value)
-                {
-                    lock (_operationSyncLock)
-                    {
-                        if (!_isOperationRunning)
-                        {
-                            _isOperationRunning = true;
-                            lockAcquired = true;
-                            logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
-                            break;
-                        }
-                    }
-                    
-                    logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                    Thread.Sleep(1000); // 1 second delay to reduce log spam
-                }
-                
-                // Check if we timed out
-                if (!lockAcquired)
-                {
-                    throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
-                }
-                
-                // Execute the operation
-                operation();
-            }
-            finally
-            {
-                // Always release the lock if we acquired it
-                if (lockAcquired)
-                {
-                    lock (_operationSyncLock)
-                    {
-                        _isOperationRunning = false;
-                        logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
-                    }
-                }
-            }
-        }
     }
 }

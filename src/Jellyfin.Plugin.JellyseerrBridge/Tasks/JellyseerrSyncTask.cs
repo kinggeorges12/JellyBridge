@@ -52,7 +52,7 @@ public class JellyseerrSyncTask : IScheduledTask
             }
             
             // Use Jellyfin-style locking that pauses instead of canceling
-            await Plugin.ExecuteWithLockAsync(async () =>
+            await Plugin.ExecuteWithLockAsync<(SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
             {
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
@@ -106,6 +106,8 @@ public class JellyseerrSyncTask : IScheduledTask
                 
                 _logger.LogInformation("Scheduled Jellyseerr sync task completed - To Jellyseerr: {ToSuccess}, From Jellyseerr: {FromSuccess}", 
                     syncToResult?.Success, syncFromResult?.Success);
+                
+                return (syncToResult, syncFromResult);
             }, _logger, "Scheduled Sync");
         }
         catch (Exception ex)

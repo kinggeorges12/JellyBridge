@@ -25,6 +25,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(AutoSyncOnStartup), true },
         { nameof(StartupDelaySeconds), 60 },
+        { nameof(RanFirstTime), false },
         { nameof(MaxDiscoverPages), 1 },
         { nameof(MaxCollectionDays), 30 },
         { nameof(RequestTimeout), 60 },
@@ -114,6 +115,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the delay in seconds before running the auto-sync on startup task.
     /// </summary>
     public int? StartupDelaySeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the plugin has run for the first time (determines if full library refresh is needed).
+    /// </summary>
+    public bool? RanFirstTime { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).

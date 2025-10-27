@@ -137,6 +137,18 @@
                     align-items: center;
                 }
                 
+                .cautionText {
+                    color: #ff9800;
+                    font-size: 0.85em;
+                    margin-top: 8px;
+                }
+                
+                .criticalText {
+                    color: #ff6b6b;
+                    font-size: 0.85em;
+                    margin-top: 8px;
+                }
+                
                 .setupInstructions {
                     border-radius: 4px;
                     padding: 0px;
@@ -379,7 +391,10 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, separate libraries will be created for each streaming service (Netflix, Hulu, etc.)</div>
+                            <div class="fieldDescription">When enabled, separate libraries will be created for each streaming service, e.g., Netflix, Hulu, FOX.</div>
+                            <div id="separateLibrariesWarning" class="fieldDescription cautionText" style="display: none;">
+                                ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Alternatively, you can use different libraries for each network provider.
+                            </div>
                         </div>
 
                         <div class="inputContainer" id="LibraryPrefixContainer">
@@ -533,14 +548,14 @@
                         </div>
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
-                            <button is="emby-button" type="button" id="resetPlugin" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
-                                <span>Reset Jellyseerr Bridge plugin & delete Jellyfin library data</span>
+                            <button is="emby-button" type="button" id="deleteLibraryData" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
+                                <span>Delete Jellyfin Library Data</span>
                             </button>
-                            <div class="fieldDescription" style="color: #ff6b6b; font-size: 0.85em; margin-top: 5px;">
-                                <strong>☠️ WARNING:</strong> This will permanently delete all library data and reset all settings to defaults. The prompt will ask for confirmation first to reset the Plugin configuration and twice again to delete the library data.
+                            <div class="fieldDescription criticalText">
+                                <strong>☠️ CRITICAL:</strong> This will permanently delete all library data from the library directory. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
-                            <div class="fieldDescription" style="color: #ffa726; font-size: 0.85em; margin-top: 8px; font-weight: bold;">
-                                <strong>⚠️ IMPORTANT:</strong> After resetting, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page. After creating the Jellyfin library, click the "Scan All Libraries" button to remove any old metadata (this will take a while but I promise it is worth it).
+                            <div class="fieldDescription cautionText">
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page.
                             </div>
                         </div>
 
@@ -551,6 +566,12 @@
                     <div>
                         <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block emby-button">
                             <span>Save</span>
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 10px;">
+                        <button is="emby-button" type="button" id="resetPluginConfig" class="raised button block emby-button" style="background-color: #757575; border: 1px solid #bbb; color: white;">
+                            <span>Reset Configuration</span>
                         </button>
                     </div>
                 </fieldset>

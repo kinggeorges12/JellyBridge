@@ -160,20 +160,43 @@ public partial class JellyseerrSyncService
                 addedMovies.Count, updatedMovies.Count, addedShows.Count, updatedShows.Count);
 
             // Check if library management is enabled
-            // Only perform full refresh if items were deleted (cleanup result)
+            var ranFirstTime = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
             var itemsDeleted = deletedMovies.Count > 0 || deletedShows.Count > 0;
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Refreshing Jellyfin library with synced content... (FullRefresh: {FullRefresh})", itemsDeleted);
-            var refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted);
-            if (refreshSuccess)
+            bool? refreshSuccess = false;
+            
+            if (ranFirstTime)
             {
-                _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
-                result.Message += $" and started {(itemsDeleted ? "full" : "partial")} library refresh";
+                // Normal operation - only refresh Jellyseerr libraries
+                _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
+                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted);
             }
             else
+            {
+                // First time running - scan all libraries
+                _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🔄 First-time initialization - scanning all Jellyfin libraries for cleanup...");
+                refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
+                
+                // Set RanFirstTime to true after successful scan
+                if (refreshSuccess == true)
+                {
+                    var config = (PluginConfiguration)Plugin.GetConfiguration();
+                    config.RanFirstTime = true;
+                    Plugin.Instance.UpdateConfiguration(config);
+                    _logger.LogDebug("[JellyseerrSyncService] Set RanFirstTime to true");
+                }
+            }
+            if (refreshSuccess == true)
+            {
+                _logger.LogTrace("[JellyseerrSyncService] SyncFromJellyseerr: ✅ Jellyfin library refresh started successfully");
+                var refreshType = !ranFirstTime ? "first-time full scan" : (itemsDeleted ? "full" : "partial");
+                result.Message += $" and started {refreshType} library refresh";
+            }
+            else if (refreshSuccess == false)
             {
                 _logger.LogWarning("[JellyseerrSyncService] SyncFromJellyseerr: ⚠️ Jellyfin library refresh failed");
                 result.Message += " (library management failed)";
             }
+            // refresh success is null if library management is disabled
         }
         catch (DirectoryNotFoundException ex)
         {
