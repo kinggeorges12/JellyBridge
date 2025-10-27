@@ -99,9 +99,25 @@ public static class FolderUtils
             mappedString = mappedString.Replace(from, to);
         }
 
-        // Remove invalid file name characters
+        // Remove invalid file name characters and replace with underscores
         var invalidChars = Path.GetInvalidFileNameChars();
-        var withoutInvalids = string.Join("_", mappedString.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        // Also filter out invisible/private use characters that might cause display issues
+        var replaced = new StringBuilder(mappedString.Length);
+        foreach (var ch in mappedString)
+        {
+            var category = char.GetUnicodeCategory(ch);
+            // Skip invisible characters and private use characters
+            if (category == System.Globalization.UnicodeCategory.PrivateUse || 
+                category == System.Globalization.UnicodeCategory.Control ||
+                (ch >= 0x200B && ch <= 0x200D) || // Zero-width space, zero-width non-joiner, zero-width joiner
+                (ch >= 0xFEFF && ch <= 0xFEFF))  // Zero-width no-break space
+            {
+                // Skip these invisible characters
+                continue;
+            }
+            replaced.Append(invalidChars.Contains(ch) ? '_' : ch);
+        }
+        var withoutInvalids = replaced.ToString();
 
         // Replace only unsafe unicode categories; allow all other symbols (#, +, !, etc.)
         sb = new StringBuilder(withoutInvalids.Length);

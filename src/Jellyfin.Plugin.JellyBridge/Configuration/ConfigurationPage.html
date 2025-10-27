@@ -309,7 +309,7 @@
                             </span>
                         </label>
                         <div class="helpButton">
-                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction.">?</span>
+                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">?</span>
                         </div>
                     </div>
                     
@@ -326,9 +326,9 @@
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles</li>
                         </ul>
                         
-                        <h3>🆘 Troubleshooting</h3>
+                        <h5>🆘 Troubleshooting</h5>
                         <div class="fieldDescription" style="margin-bottom: 20px;">
-                            <p><strong>Jellyfin library is not showing images or media in Jellyfin, or Jellyfin library is out of sync with the JellyBridge folder contents:</strong></p>
+                            <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                             <ol>
                                 <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
                                 <li>If content is still not updating, open the <strong>Metadata Manager</strong> and refresh metadata for the entry matching the name of your Jellyfin library</li>
@@ -431,12 +431,12 @@
 
                         <div class="inputContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (unlimited). Default is 10.</div>
+                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
                             <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Max Retention Days"/>
-                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. Items older than this will be removed during sync operations. Default is 30 days.</div>
+                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. Items older than this will be removed during sync operations.</div>
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
