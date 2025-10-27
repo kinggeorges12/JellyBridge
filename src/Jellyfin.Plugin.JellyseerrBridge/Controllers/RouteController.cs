@@ -296,13 +296,11 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
                         moviesResult = new
                         {
                             moviesProcessed = syncResult.MoviesResult.Processed,
-                            moviesUpdated = syncResult.MoviesResult.Updated,
                             moviesCreated = syncResult.MoviesResult.Created
                         },
                         showsResult = new
                         {
                             showsProcessed = syncResult.ShowsResult.Processed,
-                            showsUpdated = syncResult.ShowsResult.Updated,
                             showsCreated = syncResult.ShowsResult.Created
                         }
                     };
@@ -552,24 +550,17 @@ namespace Jellyfin.Plugin.JellyseerrBridge.Controllers
         }
         
         /// <summary>
-        /// Delete all Jellyseerr library data.
+        /// Recycle all Jellyseerr library data.
         /// </summary>
-        [HttpPost("ResetPlugin")]
-        public async Task<IActionResult> ResetPlugin([FromBody] JsonElement requestData)
+        [HttpPost("RecycleLibrary")]
+        public async Task<IActionResult> RecycleLibrary()
         {
-            _logger.LogDebug("[JellyseerrBridge] ResetPlugin endpoint called - deleting library data");
+            _logger.LogDebug("[JellyseerrBridge] RecycleLibrary endpoint called - recycling library data");
             
             try
             {
-                // Extract library directory from request
-                string? libraryDir = null;
-                if (requestData.TryGetProperty("libraryDirectory", out var libraryDirElement))
-                {
-                    libraryDir = libraryDirElement.GetString();
-                }
-                
-                // Fallback to default configuration if not provided
-                libraryDir ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                // Get library directory from saved configuration
+                var libraryDir = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
                 
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var success = await Plugin.ExecuteWithLockAsync<bool>(() =>

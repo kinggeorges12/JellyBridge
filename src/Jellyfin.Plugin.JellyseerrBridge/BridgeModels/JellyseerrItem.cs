@@ -141,7 +141,25 @@ public interface IJellyseerrItem
     /// Gets the NFO filename for the media item.
     /// </summary>
     /// <returns>NFO filename string</returns>
-    string GetNfoFilename();
+    static string GetNfoFilename() => throw new NotImplementedException();
+
+    /// <summary>
+    /// Gets the NFO filename for the media item.
+    /// </summary>
+    /// <param name="type">The type of the media item</param>
+    /// <returns>NFO filename string</returns>
+    static string GetNfoFilename(IJellyseerrItem item) => item switch
+    {
+        JellyseerrMovie => JellyseerrMovie.GetNfoFilename(),
+        JellyseerrShow => JellyseerrShow.GetNfoFilename(),
+        _ => throw new NotSupportedException($"Unsupported type: {item.GetType().Name}")
+    };
+
+    /// <summary>
+    /// Gets the metadata filename for the media item.
+    /// </summary>
+    /// <returns>Metadata filename string</returns>
+    static string GetMetadataFilename() => "metadata.json";
     
     /// <summary>
     /// The network tag for the media item.

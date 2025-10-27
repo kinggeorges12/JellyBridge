@@ -527,10 +527,10 @@ function initializeSyncSettings(page) {
         performPluginReset(page);
     });
 
-    // Add delete library data button functionality
-    const deleteLibraryDataButton = page.querySelector('#deleteLibraryData');
-    deleteLibraryDataButton.addEventListener('click', function () {
-        performDeleteLibraryData(page);
+    // Add recycle library data button functionality
+    const recycleLibraryButton = page.querySelector('#recycleLibraryData');
+    recycleLibraryButton.addEventListener('click', function () {
+        performRecycleLibraryData(page);
     });
 
     // Add refresh networks button functionality
@@ -947,7 +947,7 @@ function performPluginReset(page) {
     // Single confirmation for configuration reset
     Dashboard.confirm({
         title: '⚠️ Reset Plugin Configuration',
-        text: 'This will reset ALL plugin settings to their default values. This does not delete library data. Are you sure you want to continue?',
+        text: 'This will reset ALL plugin settings to their default values. Jellyfin library data will be left unchanged. Are you sure you want to continue?',
         confirmText: 'Yes, Reset Settings',
         cancelText: 'Cancel',
         primary: "cancel"
@@ -997,54 +997,70 @@ function performPluginReset(page) {
     });
 }
 
-function performDeleteLibraryData(page) {
+function performRecycleLibraryData(page) {
     // Get current library directory, fallback to default if empty
     const config = window.configJellyseerrBridge || {};
     const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
+    // Get the button
+    const recycleLibraryButton = page.querySelector('#recycleLibraryData');
     
-    // First confirmation with warning emoji
-                Dashboard.confirm({
-                    title: '❗ Delete Library Data',
-                    text: `Are you sure you want to delete the data? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-                    confirmText: 'Yes! Proceed to final confirmation...',
-                    cancelText: 'Cancel',
-                    primary: "cancel"
+    // First confirmation: save configuration
+    Dashboard.confirm({
+        title: '❗ Save Configuration',
+        text: `This will save your current configuration settings, then confirm again to delete Jellyseerr library data. Library Directory: ${currentLibraryDir}`,
+        confirmText: 'Save & Continue',
+        cancelText: 'Cancel',
+        primary: "cancel"
     }, 'Title', (confirmed1) => {
-        if (confirmed1) {
-            // Second confirmation with emergency emoji for final data deletion
-                        Dashboard.confirm({
-                            title: '🚨 FINAL CONFIRMATION - DELETE DATA',
-                            text: `LAST WARNING: This is your final chance to cancel! Are you absolutely certain you want to proceed? This will permanently delete ALL Jellyseerr library data, including library folders and generated content. This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
-                            confirmText: '🚩 YES, DELETE EVERYTHING',
-                            cancelText: 'Cancel',
-                            primary: "cancel"
+        if (!confirmed1) {
+            return;
+        }
+        
+        // Save configuration first
+        Dashboard.showLoadingMsg();
+        
+        // Disable button to prevent multiple clicks
+        recycleLibraryButton.disabled = true;
+        
+        savePluginConfiguration(page).then(function(result) {
+            Dashboard.processPluginConfigurationUpdateResult(result);
+            
+            // After saving, show second confirmation
+            Dashboard.confirm({
+                title: '🚨 FINAL CONFIRMATION - DELETE LIBRARY',
+                text: `This next step will delete ALL Jellyseerr library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                confirmText: '🚩 YES, DELETE EVERYTHING',
+                cancelText: 'Cancel',
+                primary: "cancel"
             }, 'Title', (confirmed2) => {
-                if (confirmed2) {
-                                // Proceed with data deletion
-                                Dashboard.showLoadingMsg();
-                                
-                                ApiClient.ajax({
-                                    url: ApiClient.getUrl('JellyseerrBridge/ResetPlugin'),
-                                    type: 'POST',
-                                    data: JSON.stringify({
-                                        libraryDirectory: currentLibraryDir
-                                    }),
-                                    contentType: 'application/json',
-                                    dataType: 'json'
-                                }).then(function(result) {
-                                    Dashboard.alert('✅ All Jellyseerr data has been deleted successfully! Please refresh the page to see the changes.');
-                                    
-                        // Reload the page to show updated values
-                                    window.location.reload();
-                                }).catch(function(error) {
-                                    Dashboard.alert('❌ Failed to delete data: ' + (error?.message || 'Unknown error'));
-                                }).finally(function() {
-                                    Dashboard.hideLoadingMsg();
-                                });
-                            }
-                        });
-                    }
+                if (!confirmed2) {
+                    // User cancelled, the finally block will handle re-enabling the button
+                    return Promise.resolve();
+                }
+                
+                Dashboard.showLoadingMsg();
+                
+                // Proceed with library data deletion
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyseerrBridge/RecycleLibrary'),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(result) {
+                    Dashboard.alert('✅ All Jellyseerr library data has been deleted successfully.');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
                 });
+            });
+        }).catch(function(error) {
+            Dashboard.hideLoadingMsg();
+            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            scrollToElement('jellyseerrBridgeConfigurationForm');
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
+            recycleLibraryButton.disabled = false;
+        });
+    });
 }
 
 // ==========================================

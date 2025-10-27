@@ -37,10 +37,9 @@ public class JellyseerrSyncTask : IScheduledTask
         {
             _logger.LogInformation("Starting scheduled Jellyseerr sync task");
             
-            // Add startup delay if this is the first run and AutoSyncOnStartup is enabled
-            var isFirstRun = !JellyseerrSyncService.HasRunOnce;
+            // Add startup delay if AutoSyncOnStartup is enabled
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-            if (isFirstRun && autoSyncOnStartup)
+            if (autoSyncOnStartup)
             {
                 var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
                 if (startupDelaySeconds > 0)
@@ -48,7 +47,6 @@ public class JellyseerrSyncTask : IScheduledTask
                     _logger.LogInformation("[JellyseerrSyncTask] First run, waiting {StartupDelaySeconds} seconds before startup sync", startupDelaySeconds);
                     await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
                 }
-                JellyseerrSyncService.HasRunOnce = true;
             }
             
             // Use Jellyfin-style locking that pauses instead of canceling
