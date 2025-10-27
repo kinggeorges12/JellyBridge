@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "4D5DC186B8C65C6733967771ED99A338",
+        "dependencies": [],
+        "targetAbi": "10.10.7.0",
+        "version": "0.310.0.0",
+        "timestamp": "2025-10-27T10:17:27.413Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.310.0.0/JellyBridge-0.310.0.0-DLL.zip",
+        "changelog": "v0.310.0.0 - Fixed next run time calculation to only add 1 hour for unscheduled tasks to match Jellyfin's IntervalTrigger behavior - added tooltip explaining scheduling behavior when no previous run exists - added brief storage recommendation for SSD/NVMe in Library Settings"
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v0.309.0.0/JellyBridge-0.309.0.0-DLL.zip",
         "timestamp": "2025-10-27T10:05:53.349Z",
         "changelog": "v0.309.0.0 - Added troubleshooting section to configuration page - improved library sync instructions with better formatting - fixed typo 'dashbaord' to 'dashboard'",

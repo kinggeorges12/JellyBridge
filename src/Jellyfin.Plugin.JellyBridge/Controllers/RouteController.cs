@@ -509,9 +509,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                                 }
                                 else
                                 {
-                                    // Task hasn't run yet: use plugin load time + interval
-                                    nextRun = Plugin.LastPluginLoad.Add(interval);
-                                    _logger.LogDebug("Task hasn't run yet, calculated next run from plugin load time: {NextRun}", nextRun);
+                                    // Task hasn't run yet: use plugin load time + 1 hour only
+                                    // This matches IntervalTrigger behavior: now.AddHours(1) when lastResult is null
+                                    nextRun = Plugin.LastPluginLoad.AddHours(1);
+                                    _logger.LogDebug("Task hasn't run yet, calculated next run from plugin load time + 1 hour: {NextRun}", nextRun);
                                 }
                                 break;
                             }
