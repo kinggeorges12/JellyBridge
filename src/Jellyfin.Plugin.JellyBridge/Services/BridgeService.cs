@@ -39,68 +39,7 @@ public class BridgeService
         _userDataManager = userDataManager;
         _apiService = apiService;
     }
-
-    #region Testing/Deprecated Methods
-
-    /// <summary>
-    /// Create season folders for all TV shows.
-    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
-    /// </summary>
-    [Obsolete("This method is no longer needed after default nfo files are added to movies and shows.")]
-    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
-    {
-        _logger.LogDebug("CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
-        
-        foreach (var show in shows)
-        {
-            try
-            {
-                var showFolderPath = GetJellyseerrItemDirectory(show);
-                
-                _logger.LogTrace("CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
-                    show.MediaName, showFolderPath);
-                
-                var seasonFolderName = "Season 01";
-                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
-                
-                try
-                {
-                    // Create season folder if it doesn't exist
-                    if (!Directory.Exists(seasonFolderPath))
-                    {
-                        Directory.CreateDirectory(seasonFolderPath);
-                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    // Generate season placeholder video
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
-                    if (placeholderSuccess)
-                    {
-                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    _logger.LogTrace("CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
-        }
-        catch (Exception ex)
-        {
-                    _logger.LogError(ex, "CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
-            }
-        }
-        
-        _logger.LogDebug("CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
-    }
-
-    #endregion
-
+    
     #region FromJellyseerr
 
     #region Created
@@ -895,6 +834,62 @@ public class BridgeService
         }
         // If not using network prefix, just store in the base directory with the folder name
         return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);
+    }
+
+    /// <summary>
+    /// Create season folders for all TV shows.
+    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
+    /// </summary>
+    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
+    {
+        _logger.LogDebug("CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
+        
+        foreach (var show in shows)
+        {
+            try
+            {
+                var showFolderPath = GetJellyseerrItemDirectory(show);
+                
+                _logger.LogTrace("CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                    show.MediaName, showFolderPath);
+                
+                var seasonFolderName = "Season 00";
+                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
+                
+                try
+                {
+                    // Create season folder if it doesn't exist
+                    if (!Directory.Exists(seasonFolderPath))
+                    {
+                        Directory.CreateDirectory(seasonFolderPath);
+                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    // Generate season placeholder video
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    if (placeholderSuccess)
+                    {
+                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                    }
+                    
+                    _logger.LogTrace("CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
+            }
+        }
+        
+        _logger.LogDebug("CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
     }
 
     #endregion
