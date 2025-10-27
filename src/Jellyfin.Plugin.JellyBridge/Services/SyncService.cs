@@ -130,16 +130,18 @@ public partial class SyncService
                 matchedItems.Count);
             var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
-            // Create placeholder videos only for unmatched items
-            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedCount} unmatched items not in Jellyfin library...", 
-                unmatchedItems.Count);
-            var placeholderTask = _bridgeService.CreatePlaceholderVideosAsync(unmatchedItems);
-            await Task.WhenAll(ignoreTask, placeholderTask);
+            var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
+            var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
+            // Create placeholder videos for unmatched movies only
+            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies not in Jellyfin library...", 
+                unmatchedMovies.Count);
+            var placeholderMovieTask = _bridgeService.CreatePlaceholderVideosAsync(unmatchedMovies);
 
             // Create season folders for unmatched TV shows only
-            //_logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
-            //TODO: Uncomment this if nfo files don't work
-            //await _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
+            _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
+            var placeholderShowTask = _bridgeService.CreateSeasonFoldersForShows(unmatchedShows);
+            
+            await Task.WhenAll(ignoreTask, placeholderMovieTask, placeholderShowTask);
 
             // Clean up old metadata before refreshing library
             _logger.LogDebug("[JellyseerrSyncService] SyncFromJellyseerr: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
