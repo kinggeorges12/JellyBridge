@@ -6,13 +6,14 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and s
 
 ## Features
 
-- **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible from mobile apps, Android TV, and even Kodi Sync Queue! Wherever you sync videos and favorites with Jellyfin, this plugin has you covered.
+- **Native Jellyfin Support**: Whatever app you use to sync videos and favorites with Jellyfin, this plugin has you covered
+- **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible from mobile apps, Android TV, and even Kodi Sync Queue!
 - **Automated Content Listing**: Automatically lists movies and series from various networks (Netflix, Prime Video, etc.) within Jellyfin as placeholders
-- **Easy Downloads**: Sends download requests to Jellyseerr when you mark movies or series as favorites in Jellyfin
-- **Customizable**: Allows selection of networks to fetch and display in Jellyfin
-- **Scheduled Sync**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup
+- **Easy Downloads**: Sends downloads to Arr apps through Jellyseerr media requests when you mark movies or series as favorites in Jellyfin
+- **Configure Network Discovery**: Allows selection of networks to fetch and display in Jellyfin
+- **Scheduled Tasks**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup
 - **Library Management**: Prevents placeholder movies and series from appearing in main libraries
-- **Separate Libraries**: Option to create dedicated libraries for each network
+- **Fine-grained Libraries**: Option to create separate directories for each network allowing you to group them into libraries
 - **Smart Exclusion**: Uses `.ignore` files to exclude movies and series that already exist in your main Jellyfin libraries
 
 ## Jellyfin Integration
