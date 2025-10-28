@@ -87,10 +87,15 @@ public static class JellyfinHelper
             
             return filteredItems.ToList();
         }
-        catch
+        catch (MissingMethodException)
         {
-            return new List<T>();
+            //_logger.LogDebug(ex, "Using incompatible Jellyfin version. Returning empty list for {ItemType}", typeof(T).Name);
         }
+        catch (Exception)
+        {
+            //_logger.LogError(ex, "Error getting existing items for {ItemType}", typeof(T).Name);
+        }
+        return new List<T>();
     }
     
     /// <summary>

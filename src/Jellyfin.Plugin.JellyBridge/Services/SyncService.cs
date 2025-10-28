@@ -297,6 +297,13 @@ public partial class SyncService
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }
+        catch (MissingMethodException ex)
+        {
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping sync to Jellyseerr");
+            result.Success = false;
+            result.Message = "❌ Using incompatible Jellyfin version. Skipping sync to Jellyseerr";
+            return result;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during sync to Jellyseerr");
