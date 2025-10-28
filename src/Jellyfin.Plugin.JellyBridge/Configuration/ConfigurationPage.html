@@ -334,6 +334,10 @@
                                 <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> &gt; <strong>Import Jellyfin Users</strong>.</li>
                                 <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
                             </ol>
+                            <p><i>The plugin connects to Jellyseerr, but I am seeing error messages when running the sync.</i></p>
+                            <ol>
+                                <li>This plugin is only tested for Jellyfin 10.10.7 and Jellyseerr 2.7.3. If you are using Jellyfin 10.11.*, the Jellyfin items are not compatible with this plugin. That means these functions are unavailable: <i>Sync favorites from Jellyfin library to Jellyseerr</i> button, and <i>Exclude Jellyfin library media from streaming libraries</i> checkbox.</li>
+                            </ol>
                             <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                             <ol>
                                 <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>

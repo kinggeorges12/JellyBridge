@@ -607,10 +607,15 @@ public class BridgeService
                     movieMatches.Count, movies.Count, showMatches.Count, shows.Count, allMatches.Count, unmatchedItems.Count);
 
                 return (allMatches, unmatchedItems);
-        }
-        catch (Exception ex)
-        {
-                _logger.LogError(ex, "Error during library scan test");
+            }
+            catch (MissingMethodException ex)
+            {
+                _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping library scan");
+                return (new List<JellyMatch>(), allItems);
+            }
+            catch (Exception ex)
+            {
+                    _logger.LogError(ex, "Error during library scan test");
             }
         } else {
             _logger.LogDebug("Including main libraries in JellyBridge");
@@ -719,35 +724,40 @@ public class BridgeService
         {
             var bridgeFolderPath = GetJellyseerrItemDirectory(match.JellyseerrItem);
             var item = match.JellyfinItem;
-        try
-        {
             var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
             
-            _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
-                item.Name, item.Id, ignoreFilePath);
-            
-            // Use DtoService to get a proper BaseItemDto with all metadata
-            var dtoOptions = new DtoOptions(); // Default constructor includes all fields
-            var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
-            
-            _logger.LogTrace("Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
-                item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
-            
-            var itemJson = JsonSerializer.Serialize(itemDto!, new JsonSerializerOptions {
-                WriteIndented = true
-            });
-            
-            _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
-                item.Name, itemJson?.Length ?? 0);
+            try
+            {
+                _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
+                    item.Name, item.Id, ignoreFilePath);
+                
+                // Use DtoService to get a proper BaseItemDto with all metadata
+                var dtoOptions = new DtoOptions(); // Default constructor includes all fields
+                var itemDto = _dtoService.GetBaseItemDto(item, dtoOptions);
+                
+                _logger.LogTrace("Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
+                    item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
+                
+                var itemJson = JsonSerializer.Serialize(itemDto!, new JsonSerializerOptions {
+                    WriteIndented = true
+                });
+                
+                _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
+                    item.Name, itemJson?.Length ?? 0);
 
-            await File.WriteAllTextAsync(ignoreFilePath, itemJson);
-            _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+                await File.WriteAllTextAsync(ignoreFilePath, itemJson);
+                _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+            }
+            catch (MissingMethodException ex)
+            {
+                _logger.LogDebug(ex, "Using incompatible Jellyfin version. Writing empty ignore file for {ItemName}", item.Name);
+                await File.WriteAllTextAsync(ignoreFilePath, "");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.Name);
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.Name);
-        }
-    }
 
         // Await all ignore file creation tasks
         await Task.WhenAll(ignoreFileTasks);
