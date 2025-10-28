@@ -5,7 +5,9 @@
     [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()]
     [string]$Changelog,
     
-    [string]$GitHubUsername = "kinggeorges12"
+    [string]$GitHubUsername = "kinggeorges12",
+    
+    [switch]$MajorRelease
 )
 
 # Check PowerShell version - require PowerShell 7 or greater
@@ -193,7 +195,7 @@ $body = @{
     name = "Jellyseerr Bridge v$Version"
     body = $releaseBody
     draft = $false
-    prerelease = $false
+    prerelease = -not $MajorRelease
 } | ConvertTo-Json
 
 try {

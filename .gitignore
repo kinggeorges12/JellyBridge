@@ -356,6 +356,7 @@ FodyWeavers.xsd
 # Ignore all dot folders (IDE and tool specific)
 .*/
 !.git/
+!.github/
 
 # Local History for Visual Studio Code
 .history/
