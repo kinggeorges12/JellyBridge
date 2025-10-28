@@ -328,6 +328,12 @@
                         
                         <h5>🤖 Troubleshooting</h5>
                         <div class="fieldDescription" style="margin-bottom: 20px;">
+                            <p><i>The <strong>Test Connection</strong> button is not working, and I am seeing an error message.</i></p>
+                            <ol>
+                                <li>Make sure you have <a href="https://docs.seerr.dev/" target="_blank">Jellyseerr</a> installed and running. The <strong>Jellyseerr URL</strong> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
+                                <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> &gt; <strong>Import Jellyfin Users</strong>.</li>
+                                <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
+                            </ol>
                             <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                             <ol>
                                 <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
@@ -349,7 +355,7 @@
 
                     <div class="inputContainer">
                         <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="off" data-lpignore="true" data-form-type="other" />
-                        <div class="fieldDescription">Your Jellyseerr API key</div>
+                        <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a href="http://localhost:5055/settings">localhost</a>.</div>
                     </div>
 
                     <div>
