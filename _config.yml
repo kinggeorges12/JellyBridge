@@ -11,10 +11,13 @@ author:
 # Build settings
 plugins:
   - jekyll-remote-theme
+  - jekyll-github-metadata
 
 # Repository settings
 repository: kinggeorges12/JellyBridge
-github: [owner: kinggeorges12, repo: JellyBridge]
+
+# GitHub metadata (jekyll-github-metadata will auto-populate from repository)
+github: [metadata]
 
 # Theme settings
 show_downloads: true
