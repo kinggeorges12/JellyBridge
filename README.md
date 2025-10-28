@@ -2,7 +2,7 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
-**⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and Jellyseerr 2.7.3. It may not be compatible with Jellyfin 10.11.* or different Jellyseerr versions.
+**⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and Jellyseerr 2.7.3. GitHub user [@TheOnlyChappell confirmed](https://github.com/kinggeorges12/JellyBridge/issues/1) that this is not compatible with Jellyfin 10.11. Unknown compatibility with other Jellyseerr versions.
 
 ## Features
 
