@@ -3,15 +3,19 @@ title: JellyBridge
 tagline: A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 description: A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
+# Author information
+author: kinggeorges12
+
 # Build settings
 plugins:
   - jekyll-remote-theme
 
 # Repository settings
 repository: kinggeorges12/JellyBridge
-github: [metadata]
+github: [owner: kinggeorges12, repo: JellyBridge]
 
 # Theme settings
+show_downloads: true
 google_analytics:
 
 # Navigation
