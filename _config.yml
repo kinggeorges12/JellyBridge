@@ -16,8 +16,11 @@ plugins:
 # Repository settings
 repository: kinggeorges12/JellyBridge
 
-# GitHub metadata (jekyll-github-metadata will auto-populate from repository)
-github: [metadata]
+# Override GitHub URLs for the theme
+github:
+  owner_url: https://github.com/kinggeorges12
+  owner_name: kinggeorges12
+  repository_url: https://github.com/kinggeorges12/JellyBridge
 
 # Theme settings
 show_downloads: true
