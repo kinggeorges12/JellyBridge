@@ -53,14 +53,14 @@ When users mark movies or series as favorites in Jellyfin, the plugin automatica
 
 ### Method 1: Automatic Installation (Recommended)
 
+![Jellyfin Catalog](Screenshots/Catalog.png)
+
 1. **Add Plugin Repository to Jellyfin:**
    - Go to Jellyfin Admin Dashboard → Plugins → Catalog
    - Click "Settings" (gear icon)
    - Click "Add Repository"
    - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`
    - Click "Add"
-
-![Jellyfin Catalog](Screenshots/Catalog.png)
 
 2. **Install Plugin:**
    - Go to Plugins → Catalog

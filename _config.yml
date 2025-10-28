@@ -1,0 +1,25 @@
+remote_theme: pages-themes/midnight@v0.2.0
+title: JellyBridge
+tagline: A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
+description: A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
+
+# Build settings
+plugins:
+  - jekyll-remote-theme
+
+# Repository settings
+repository: kinggeorges12/JellyBridge
+github: [metadata]
+
+# Theme settings
+google_analytics:
+
+# Navigation
+nav:
+  - title: Home
+    url: /
+  - title: GitHub Repository
+    url: https://github.com/kinggeorges12/JellyBridge
+  - title: Latest Release
+    url: https://github.com/kinggeorges12/JellyBridge/releases/latest
+
