@@ -1,5 +1,11 @@
 # Development Guide
 
+## Planned Features
+
+1. Change sort order based on user preference or implement a random sort order plugin.
+2. Allow users to upload a custom picture or video for placeholder videos.
+3. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
+
 ## Contributing
 
 We welcome contributions! Here's how to get started:
@@ -103,9 +109,9 @@ git clone https://github.com/jellyseerr/jellyseerr.git codebase/seerr-main
 **Contents**:
 - Input/output directory mappings (`codebase/seerr-main/server/*` → `JellyseerrModel/*`)
 - Type conversion rules (e.g., number to double patterns)
-- Blocked classes (classes that shouldn't be converted)
-- Namespace settings
-- JSON property naming conventions
+- Blocked classes (classes that are too complex to convert)
+- Namespace mapping
+- JSON property generation for serialization
 
 **Note**: Edit this file when you need to adjust how TypeScript models are converted to C#.
 
