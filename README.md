@@ -58,12 +58,12 @@ Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official
 
 Browse with Kodi and request content from Jellyfin via the JellyCon add-on. Incompatible with Jellyfin for Kodi.
 
+![JellyCon](Screenshots/JellyCon.png)
+
 - **Native integration**: Favorite items directly from the Kodi interface
 - **Discover Recommended**: Use the "Recommended Items" or "Random Items" links to discover content
  
 For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/).
-
-![JellyCon](Screenshots/JellyCon.png)
 
 
 ## Installation
