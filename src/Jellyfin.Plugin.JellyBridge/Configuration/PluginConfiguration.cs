@@ -160,9 +160,9 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>
     /// Gets or sets the mapping of network IDs to their names (populated after API communication).
-    /// This is stored as a list of key-value pairs for XML serialization compatibility.
+    /// Nullable to distinguish between "no value saved yet" and an empty list.
     /// </summary>
-    public List<JellyseerrNetwork> NetworkMap { get; set; } = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)DefaultValues[nameof(NetworkMap)]);
+    public List<JellyseerrNetwork>? NetworkMap { get; set; }
 
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyBridge.

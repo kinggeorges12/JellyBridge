@@ -332,6 +332,76 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
         }
 
+        [HttpPost("SyncDiscover")]
+        public async Task<IActionResult> SyncDiscover()
+        {
+            _logger.LogTrace("Sync discover requested");
+            
+            try
+            {
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
+                {
+                    return await _syncService.SyncFromJellyseerr();
+                }, _logger, "Sync Discover");
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Sync discover completed successfully");
+                    return Ok(new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("Sync discover failed: {Message}", result.Message);
+                    return StatusCode(500, new { 
+                        message = result.Message, 
+                        details = result.Details 
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sync discover failed");
+                return StatusCode(500, new { 
+                    message = $"Sync failed: {ex.Message}", 
+                    details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
+                });
+            }
+        }
+
+        /// <summary>
+        /// Run the JellyBridge sync task now and wait for completion. Returns success only after task finishes.
+        /// </summary>
+        [HttpPost("RunSync")] 
+        public async Task<IActionResult> RunSync()
+        {
+            _logger.LogInformation("RunSync requested - executing JellyBridgeSync now");
+            try
+            {
+                var taskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
+                if (taskWrapper == null)
+                {
+                    _logger.LogWarning("RunSync: Could not find JellyBridgeSync task");
+                    return NotFound(new { success = false, message = "JellyBridgeSync task not found" });
+                }
+
+                // Execute the scheduled task synchronously and wait for completion
+                var progress = new Progress<double>(_ => { });
+                await taskWrapper.ScheduledTask.ExecuteAsync(progress, HttpContext.RequestAborted);
+                _logger.LogInformation("RunSync: JellyBridgeSync completed");
+
+                return Ok(new { success = true, message = "Sync completed" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RunSync execution failed");
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+        
         [HttpGet("Regions")]
         public async Task<IActionResult> GetRegions()
         {
@@ -426,46 +496,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
         }
 
-        [HttpPost("SyncDiscover")]
-        public async Task<IActionResult> SyncDiscover()
-        {
-            _logger.LogTrace("Sync discover requested");
-            
-            try
-            {
-                // Use Jellyfin-style locking that pauses instead of canceling
-                var result = await Plugin.ExecuteWithLockAsync(async () =>
-                {
-                    return await _syncService.SyncFromJellyseerr();
-                }, _logger, "Sync Discover");
-                
-                if (result.Success)
-                {
-                    _logger.LogInformation("Sync discover completed successfully");
-                    return Ok(new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
-                else
-                {
-                    _logger.LogWarning("Sync discover failed: {Message}", result.Message);
-                    return StatusCode(500, new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Sync discover failed");
-                return StatusCode(500, new { 
-                    message = $"Sync failed: {ex.Message}", 
-                    details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
-                });
-            }
-        }
-
         /// <summary>
         /// Get the current status of the scheduled sync task.
         /// </summary>
@@ -479,43 +509,50 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Check if any operation is currently running
                 var isRunning = Plugin.IsOperationRunning;
                 
-                // Try to get the scheduled task worker
-                var task = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
+                // Try to get the scheduled task workers
+                var syncTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
+                var startupTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
                 DateTime? lastRun = null;
                 DateTime? nextRun = null;
-                
-                if (task != null)
+                string? lastRunSource = null; // "Scheduled" or "Startup"
+
+                // Compute lastRun as the latest of Sync and Startup task last end times
+                if (syncTaskWrapper?.LastExecutionResult != null && syncTaskWrapper.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
                 {
-                    // Get last run time from last execution result
-                    if (task.LastExecutionResult != null && task.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
+                    lastRun = syncTaskWrapper.LastExecutionResult.EndTimeUtc;
+                    lastRunSource = "Scheduled";
+                }
+                if (startupTaskWrapper?.LastExecutionResult != null && startupTaskWrapper.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
+                {
+                    if (!lastRun.HasValue || startupTaskWrapper.LastExecutionResult.EndTimeUtc > lastRun.Value)
                     {
-                        lastRun = task.LastExecutionResult.EndTimeUtc;
+                        lastRun = startupTaskWrapper.LastExecutionResult.EndTimeUtc;
+                        lastRunSource = "Startup";
                     }
-                    
-                    // Calculate next run time based on the sync interval
-                    if (task.Triggers != null && task.Triggers.Count > 0)
+                }
+
+                // Calculate next run time based on the interval triggers from the Sync task
+                if (syncTaskWrapper != null && syncTaskWrapper.Triggers != null && syncTaskWrapper.Triggers.Count > 0)
+                {
+                    foreach (var trigger in syncTaskWrapper.Triggers)
                     {
-                        foreach (var trigger in task.Triggers)
+                        if (JellyfinTaskTrigger.IsInterval(trigger) && trigger.IntervalTicks.HasValue)
                         {
-                            if (JellyfinTaskTrigger.IsInterval(trigger) && trigger.IntervalTicks.HasValue)
+                            var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
+
+                            if (lastRun.HasValue)
                             {
-                                var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
-                                
-                                if (lastRun.HasValue)
-                                {
-                                    // Task has run before: next run = last run + interval
-                                    nextRun = lastRun.Value.Add(interval);
-                                    _logger.LogDebug("Calculated next run time from last run: {NextRun}", nextRun);
-                                }
-                                else
-                                {
-                                    // Task hasn't run yet: use plugin load time + 1 hour only
-                                    // This matches IntervalTrigger behavior: now.AddHours(1) when lastResult is null
-                                    nextRun = Plugin.LastPluginLoad.AddHours(1);
-                                    _logger.LogDebug("Task hasn't run yet, calculated next run from plugin load time + 1 hour: {NextRun}", nextRun);
-                                }
-                                break;
+                                // Task has run before: next run = last run + interval
+                                nextRun = lastRun.Value.Add(interval);
+                                _logger.LogDebug("Calculated next run time from last run: {NextRun}", nextRun);
                             }
+                            else
+                            {
+                                // No previous runs recorded: estimate next from plugin load time + interval (fallback)
+                                nextRun = Plugin.LastPluginLoad.Add(interval);
+                                _logger.LogDebug("No previous runs, estimated next run from plugin load + interval: {NextRun}", nextRun);
+                            }
+                            break;
                         }
                     }
                 }
@@ -525,10 +562,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     isRunning = isRunning,
                     status = isRunning ? "Running" : "Idle",
-                    progress = task?.CurrentProgress,
+                    progress = syncTaskWrapper?.CurrentProgress,
                     message = isRunning ? "Sync operation in progress..." : "No active sync operation",
                     lastRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(lastRun),
-                    nextRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(nextRun)
+                    nextRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(nextRun),
+                    lastRunSource = lastRunSource
                 };
                 
                 _logger.LogDebug("Task status: {Status}, LastRun: {LastRun}, NextRun: {NextRun}", result.status, lastRun, nextRun);

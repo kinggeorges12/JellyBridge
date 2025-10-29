@@ -119,9 +119,8 @@ function updateTaskStatusDisplay(page, taskData) {
     if (!statusText || !progressContainer || !progressBar || !progressText || !taskStatusTimes) {
         return;
     }
-    
-    let runInfo = '';
-    runInfo += `Refreshed at: ${new Date().toLocaleString()}`;
+
+    // Set status bar
     if (taskData.isRunning) {
         statusText.textContent = '🔄 Running';
         statusText.style.color = '#00a4d6';
@@ -130,43 +129,39 @@ function updateTaskStatusDisplay(page, taskData) {
         const progress = taskData.progress !== null && taskData.progress !== undefined ? Math.round(taskData.progress) : 0;
         progressBar.style.width = progress + '%';
         progressText.textContent = `${progress}% - ${taskData.message || 'Syncing...'}`;
-        
-        if (taskData.lastRun) {
-            if (runInfo) runInfo += ' • ';
-            runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-        }
-        if (taskData.nextRun) {
-            if (runInfo) runInfo += ' • ';
-            runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
-        }
-        taskStatusTimes.textContent = runInfo || 'No run information available';
     } else {
         statusText.textContent = taskData.status === 'Error' ? '❌ Error' : '✅ Idle';
         statusText.style.color = taskData.status === 'Error' ? '#ff6b6b' : '#00d4aa';
         progressContainer.style.display = 'none';
+    }
+    
+    // Set status times
+    let runInfo = '';
+    runInfo += `Refreshed at: ${new Date().toLocaleString()}`;
+
+    if (taskData.lastRun) {
+        if (runInfo) runInfo += ' • ';
+        const src = taskData.lastRunSource ? ` (${taskData.lastRunSource.toLowerCase()})` : '';
+        runInfo += `Last run${src}: ${new Date(taskData.lastRun).toLocaleString()}`;
+    } else {
+        if (runInfo) runInfo += ' • ';
+        runInfo += 'No previous runs';
+    }
+    if (taskData.nextRun) {
+        if (runInfo) runInfo += ' • ';
+        runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
         
-        if (taskData.lastRun) {
-            if (runInfo) runInfo += ' • ';
-            runInfo += `Last run: ${new Date(taskData.lastRun).toLocaleString()}`;
-        } else {
-            if (runInfo) runInfo += ' • ';
-            runInfo += 'No previous runs';
-        }
-        if (taskData.nextRun) {
-            if (runInfo) runInfo += ' • ';
-            runInfo += `Next run: ${new Date(taskData.nextRun).toLocaleString()}`;
-            
-            // Add tooltip explaining next run time calculation
-            if (!taskData.lastRun) {
-                taskStatusTimes.setAttribute('title', 'When there is no previous run, the next run is scheduled 1 hour after plugin load time. After the first run, it follows the configured sync interval.');
-            } else {
-                taskStatusTimes.removeAttribute('title');
-            }
+        // Add tooltip explaining next run time calculation
+        if (!taskData.lastRun) {
+            taskStatusTimes.setAttribute('title', 'When there is no previous run, the next run is scheduled 1 hour after plugin load time. After the first run, it follows the configured sync interval.');
         } else {
             taskStatusTimes.removeAttribute('title');
         }
-        taskStatusTimes.textContent = runInfo;
+    } else {
+        taskStatusTimes.removeAttribute('title');
     }
+
+    taskStatusTimes.textContent = runInfo || 'No run information available';
 }
 
 // ==========================================
@@ -454,10 +449,9 @@ function initializeSyncSettings(page) {
     populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
-	// Use either saved NetworkMap (if present and non-empty) OR defaults, but not both
-	const savedNetworkMap = Array.isArray(config.NetworkMap) ? config.NetworkMap : [];
+	// If NetworkMap is null/undefined, fall back to defaults; if it's an empty array, keep it empty
 	const defaultNetworkMap = (config.DefaultValues && Array.isArray(config.DefaultValues.NetworkMap)) ? config.DefaultValues.NetworkMap : [];
-	const activeNetworksSource = (savedNetworkMap.length > 0) ? savedNetworkMap : defaultNetworkMap;
+	const activeNetworksSource = Array.isArray(config.NetworkMap) ? config.NetworkMap : defaultNetworkMap;
 	populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
     sortSelectOptions(activeNetworksSelect);
     
@@ -529,6 +523,57 @@ function initializeSyncSettings(page) {
         });
     }
     
+    // Add Run full sync button functionality (matches scheduled task behavior)
+    const runButton = page.querySelector('#runSyncTask');
+    if (runButton) {
+        runButton.addEventListener('click', function () {
+            // Prompt to save config before running
+            Dashboard.confirm({
+                title: 'Confirm Save',
+                text: 'Settings will be saved before starting full sync.',
+                confirmText: 'Save & Run',
+                cancelText: 'Cancel',
+                primary: 'confirm'
+            }, 'Title', (confirmed) => {
+                if (!confirmed) return;
+
+                runButton.disabled = true;
+                Dashboard.showLoadingMsg();
+
+                // Save settings first
+                savePluginConfiguration(page)
+                    .then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        // Then run full sync
+                        return ApiClient.ajax({
+                            url: ApiClient.getUrl('JellyBridge/RunSync'),
+                            type: 'POST',
+                            data: '{}',
+                            contentType: 'application/json',
+                            dataType: 'json'
+                        });
+                    })
+                    .then(function (data) {
+                        const ok = !!(data && data.success === true);
+                        const msg = data?.message || (ok ? 'Full sync completed successfully' : 'Full sync completed');
+                        Dashboard.alert((ok ? '✅ ' : '⚠️ ') + msg);
+                        // Refresh task status after run
+                        const refreshBtn = page.querySelector('#refreshTaskStatus');
+                        if (refreshBtn) refreshBtn.click();
+                        if (ok) {
+                            runButton.disabled = false;
+                        }
+                    })
+                    .catch(function (error) {
+                        Dashboard.alert('❌ Full sync failed: ' + (error?.message || 'Unknown error'));
+                    })
+                    .finally(function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+            });
+        });
+    }
+
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
     syncButton.addEventListener('click', function () {
