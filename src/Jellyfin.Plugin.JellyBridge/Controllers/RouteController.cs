@@ -493,12 +493,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 DateTime? syncStart = (syncTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime ss && ss > DateTime.MinValue) ? ss : (DateTime?)null;
                 DateTime? startupEnd = (startupTaskWrapper?.LastExecutionResult?.EndTimeUtc is DateTime ste && ste > DateTime.MinValue) ? ste : (DateTime?)null;
                 DateTime? startupStart = (startupTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime sts && sts > DateTime.MinValue) ? sts : (DateTime?)null;
+
+                // Respect setting: startup completion shouldn't count as a last run if AutoSyncOnStartup is disabled
+                var autoSyncOnStartupEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
                 
 
                 // Choose most recent completed run: sync end and startup end
                 var candidates = new List<(DateTime time, string source)>();
                 if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
-                if (startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
+                if (autoSyncOnStartupEnabled && startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
 
                 if (candidates.Count > 0)
                 {
