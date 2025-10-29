@@ -28,12 +28,6 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<JellyfinIUserDataManager>(provider => 
                 new JellyfinIUserDataManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserDataManager>()));
             
-            // Register direct Jellyfin types (no version differences)
-            serviceCollection.AddScoped<MediaBrowser.Controller.Providers.IDirectoryService>();
-            serviceCollection.AddScoped<MediaBrowser.Controller.Dto.IDtoService>();
-            serviceCollection.AddScoped<MediaBrowser.Controller.MediaEncoding.IMediaEncoder>();
-            serviceCollection.AddScoped<MediaBrowser.Controller.Library.IUserManager>();
-            
             // Register the base services
             serviceCollection.AddScoped<ApiService>();
             serviceCollection.AddScoped<SyncService>();

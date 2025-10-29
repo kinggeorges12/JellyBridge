@@ -7,7 +7,9 @@
     
     [string]$GitHubUsername = "kinggeorges12",
     
-    [switch]$IsPrerelease
+    [switch]$Beta,
+
+    [switch]$Release
 )
 
 # Check PowerShell version - require PowerShell 7 or greater
@@ -33,6 +35,11 @@ $Version = $Version.ToString()
 # Validate version format (should be like 0.69.0)
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     Write-Error '[X] Version must be in format X.Y.Z (e.g., 1.2.3)'
+    exit 1
+}
+
+if(-not $Beta -and -not $Release) {
+    Write-Error '[X] Must specify either Beta or Release switch'
     exit 1
 }
 
@@ -218,7 +225,7 @@ $body = @{
     name = "JellyBridge v$Version"
     body = $releaseBody
     draft = $false
-    prerelease = [bool]$IsPrerelease
+    prerelease = [bool]$Beta -or -not [bool]$Release
 } | ConvertTo-Json
 
 try {
