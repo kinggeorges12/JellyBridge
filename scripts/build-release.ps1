@@ -153,7 +153,7 @@ foreach ($t in $targets) {
     # Prepare manifest entry for this ABI
     $entry = @{
         version = $Version
-        changelog = $ChangelogText
+        changelog = "Jellyfin $($t.JellyfinVersion): $ChangelogText"
         targetAbi = $minAbi
         sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/$zipName"
         checksum = $checksum
