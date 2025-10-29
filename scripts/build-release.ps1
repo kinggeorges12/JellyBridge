@@ -7,7 +7,7 @@
     
     [string]$GitHubUsername = "kinggeorges12",
     
-    [switch]$MajorRelease
+    [switch]$IsPrerelease
 )
 
 # Check PowerShell version - require PowerShell 7 or greater
@@ -59,93 +59,112 @@ $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<F
 Set-Content $csprojPath -Value $csprojContent -NoNewline
 Write-Host "[~] Updated version to $Version in project file" -ForegroundColor Green
 
-# Step 2: Build the project
-Write-Host "Step 2: Building the project..." -ForegroundColor Yellow
-Write-Host "Running: dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror" -ForegroundColor Cyan
-$buildOutput = dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror 2>&1
-Write-Host "Build output: $buildOutput" -ForegroundColor Yellow
-Write-Host "Exit code: $LASTEXITCODE" -ForegroundColor Yellow
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "[X] Build failed!"
-    exit 1
-}
-Write-Host "[~] Build successful" -ForegroundColor Green
+## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)
+Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -ForegroundColor Yellow
 
-# Get GMT timestamp (needed for meta.json)
+# Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-
-# Step 3: Create meta.json file
-
-# Read manifest to get plugin metadata
 $manifestPath = "manifest.json"
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
-Write-Host "Step 3: Creating meta.json..." -ForegroundColor Yellow
-$metaJson = @{
-    guid = $pluginInfo.guid
-    name = $pluginInfo.name
-    description = $pluginInfo.description
-    owner = $pluginInfo.owner
-    category = $pluginInfo.category
-    version = $Version
-    changelog = $ChangelogText
-    targetAbi = "10.10.7.0"
-    timestamp = $timestamp
-    status = "Active"
-    autoUpdate = $true
-    assemblies = @("JellyBridge.dll")
-} | ConvertTo-Json -Compress
-
-$metaPath = "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\meta.json"
-Set-Content -Path $metaPath -Value $metaJson -NoNewline
-Write-Host "[~] Created meta.json" -ForegroundColor Green
-
-# Step 4: Create ZIP file
-Write-Host "Step 4: Creating release ZIP file..." -ForegroundColor Yellow
-$zipPath = Join-Path $BaseDir "release\JellyBridge-$Version-DLL.zip"
-if (Test-Path $zipPath) {
-    Remove-Item $zipPath
-}
-Compress-Archive -Path "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\JellyBridge.dll","src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\meta.json" -DestinationPath $zipPath -Force
-# Wait until the file is no longer locked
-[GC]::Collect()
-[GC]::WaitForPendingFinalizers()
-$prevSize = 0
-do {
-    $newSize = (Get-Item $zipPath).Length
-    Start-Sleep -Milliseconds 100
-} while ($newSize -ne $prevSize -and ($prevSize = $newSize))
-Start-Sleep -Seconds 1
-Write-Host "[~] Created ZIP: $zipPath" -ForegroundColor Green
-
-# Step 5: Calculate MD5 checksum
-Write-Host "Step 5: Calculating MD5 checksum for ZIP file..." -ForegroundColor Yellow
-$checksum = (Get-FileHash -Path $zipPath -Algorithm MD5).Hash
-Write-Host "[~] Checksum: $checksum" -ForegroundColor Green
-
-# Step 6: Update manifest.json with checksum and timestamp
-Write-Host "Step 6: Updating manifest.json with new version entry..." -ForegroundColor Yellow
-$manifestPath = "manifest.json"
-$manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
-
-# Create new version entry with proper field ordering
-$newVersion = @{
-    version = $Version
-    changelog = $ChangelogText
-    targetAbi = "10.10.7.0"
-    sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/JellyBridge-$Version-DLL.zip"
-    checksum = $checksum
-    timestamp = $timestamp
-    dependencies = @()
+# Ensure release directory exists
+$releaseDir = Join-Path $BaseDir "release"
+if (-not (Test-Path $releaseDir)) {
+    New-Item -ItemType Directory -Path $releaseDir | Out-Null
 }
 
-# Insert new version at the beginning of versions array
-$manifestArray[0].versions = @($newVersion) + $manifestArray[0].versions
+# Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
+$targets = @(
+    @{ JellyfinVersion = "10.10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; Suffix = "JF-10.10" },
+    @{ JellyfinVersion = "10.11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; Suffix = "JF-10.11" }
+)
 
-# Save manifest back to file with proper formatting (force array wrapper)
+$createdZips = @()
+$newManifestEntries = @()
+
+foreach ($t in $targets) {
+    $jf = $t.JellyfinVersion
+    $fw = $t.Framework
+    $suffix = $t.Suffix
+    $minAbi = $t.MinTargetAbi
+
+    Write-Host "\n[~] Building for Jellyfin $jf ($fw)" -ForegroundColor Cyan
+    $buildArgs = @(
+        "build",
+        "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj",
+        "--configuration", "Release",
+        "--warnaserror",
+        "-p:JellyfinVersion=$jf"
+    )
+    $buildOutput = dotnet @buildArgs 2>&1
+    Write-Host "Build output: $buildOutput" -ForegroundColor DarkGray
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "[X] Build failed for Jellyfin $jf"
+        exit 1
+    }
+    Write-Host "[~] Build successful for $jf" -ForegroundColor Green
+
+    # Paths
+    $outDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\$fw"
+    $dllPath = Join-Path $outDir "JellyBridge.dll"
+    if (-not (Test-Path $dllPath)) {
+        Write-Error "[X] Expected DLL not found: $dllPath"
+        exit 1
+    }
+
+    # Create meta.json with correct MINIMUM targetAbi
+    Write-Host "[~] Creating meta.json for $jf (targetAbi=$minAbi)" -ForegroundColor Yellow
+    $metaJson = @{
+        guid = $pluginInfo.guid
+        name = $pluginInfo.name
+        description = $pluginInfo.description
+        owner = $pluginInfo.owner
+        category = $pluginInfo.category
+        version = $Version
+        changelog = $ChangelogText
+        targetAbi = $minAbi
+        timestamp = $timestamp
+        status = "Active"
+        autoUpdate = $true
+        assemblies = @("JellyBridge.dll")
+    } | ConvertTo-Json -Compress
+
+    $metaPath = Join-Path $outDir "meta.json"
+    Set-Content -Path $metaPath -Value $metaJson -NoNewline
+    Write-Host "[~] Created meta.json at $metaPath" -ForegroundColor Green
+
+    # Zip artifact (suffix by ABI)
+    $zipName = "JellyBridge-$Version-DLL-$suffix.zip"
+    $zipPath = Join-Path $releaseDir $zipName
+    if (Test-Path $zipPath) { Remove-Item $zipPath }
+    Write-Host "[~] Creating ZIP: $zipName" -ForegroundColor Yellow
+    Compress-Archive -Path $dllPath, $metaPath -DestinationPath $zipPath -Force
+    [GC]::Collect(); [GC]::WaitForPendingFinalizers(); Start-Sleep -Milliseconds 200
+    $createdZips += $zipPath
+
+    # MD5 checksum
+    $checksum = (Get-FileHash -Path $zipPath -Algorithm MD5).Hash
+    Write-Host "[~] Checksum ($suffix): $checksum" -ForegroundColor Green
+
+    # Prepare manifest entry for this ABI
+    $entry = @{
+        version = $Version
+        changelog = $ChangelogText
+        targetAbi = $minAbi
+        sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/$zipName"
+        checksum = $checksum
+        timestamp = $timestamp
+        dependencies = @()
+    }
+    $newManifestEntries += $entry
+}
+
+# Update manifest.json: prepend both entries
+Write-Host "\nStep 3: Updating manifest.json with both ABI entries..." -ForegroundColor Yellow
+$manifestArray[0].versions = @($newManifestEntries) + $manifestArray[0].versions
 $manifestArray | ConvertTo-Json -Depth 10 -AsArray | Set-Content $manifestPath -NoNewline
-Write-Host "[~] Updated manifest.json with new version entry" -ForegroundColor Green
+Write-Host "[~] Updated manifest.json with multi-ABI entries" -ForegroundColor Green
 
 # Step 8: Commit changes to Git
 Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
@@ -195,7 +214,7 @@ $body = @{
     name = "Jellyseerr Bridge v$Version"
     body = $releaseBody
     draft = $false
-    prerelease = -not $MajorRelease
+    prerelease = $IsPrerelease
 } | ConvertTo-Json
 
 try {
@@ -207,25 +226,24 @@ try {
     exit 1
 }
 
-# Step 11: Upload ZIP file as release asset
-Write-Host "Step 11: Uploading ZIP file as release asset..." -ForegroundColor Yellow
+# Step 11: Upload both ZIP files as release assets
+Write-Host "Step 11: Uploading ZIP files as release assets..." -ForegroundColor Yellow
 $uploadHeaders = @{
     "Authorization" = "token $GitHubToken"
     "Content-Type" = "application/zip"
 }
 
-$uploadUrl = "https://uploads.github.com/repos/$GitHubUsername/JellyBridge/releases/$releaseId/assets?name=JellyBridge-$Version-DLL.zip"
-
-try {
-    # Read the file as binary data
-    $fileBytes = [System.IO.File]::ReadAllBytes($zipPath)
-    
-    # Upload as binary data
-    $uploadResponse = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $fileBytes
-    Write-Host "[~] Uploaded ZIP file: $($uploadResponse.browser_download_url)" -ForegroundColor Green
-} catch {
-    Write-Error "[X] Failed to upload ZIP file: $($_.Exception.Message)"
-    exit 1
+foreach ($zip in $createdZips) {
+    $name = [System.IO.Path]::GetFileName($zip)
+    $uploadUrl = "https://uploads.github.com/repos/$GitHubUsername/JellyBridge/releases/$releaseId/assets?name=$name"
+    try {
+        $fileBytes = [System.IO.File]::ReadAllBytes($zip)
+        $uploadResponse = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $fileBytes
+        Write-Host "[~] Uploaded ZIP file: ${name}: $($uploadResponse | ConvertTo-Json -Depth 10)" -ForegroundColor Green
+    } catch {
+        Write-Error "[X] Failed to upload ZIP file '$name': $($_.Exception.Message)"
+        exit 1
+    }
 }
 
 Write-Host "[!] Release v$Version completed successfully!" -ForegroundColor Green
