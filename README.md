@@ -2,7 +2,7 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
-**⚠️ Compatibility Note**: This plugin has been tested with Jellyfin 10.10.7 and Jellyseerr 2.7.3. GitHub users [@TheOnlyChappell and @xorgx3 confirmed](https://github.com/kinggeorges12/JellyBridge/issues/1) that this is not compatible with Jellyfin 10.11. Unknown compatibility with other Jellyseerr versions.
+**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.1* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.2.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
 
 ## Features
 
@@ -85,6 +85,11 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    - Find "JellyBridge" under Metadata (Jellyfin 11: Other)
    - Click "Install"
    - Restart Jellyfin from the Dashboard
+
+   Note on versions:
+   ![Versioning guide](Screenshots/Versioning.png)
+   - For Jellyfin 10.11.* users only, install the version ending in `.11` from the plugin page.
+   - Versions ending in `.10` or `.0` are for Jellyfin 10.10.* only, although the wonky Jellyfin plugin versioning does not let me change the visibility.
 
 3. **Configure the plugin** through the admin interface
 
