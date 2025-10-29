@@ -211,10 +211,10 @@ $releaseBody = "## v$Version - Release`n`n$ChangelogText`n`n### Changes:`n- Upda
 $body = @{
     tag_name = "v$Version"
     target_commitish = "main"
-    name = "Jellyseerr Bridge v$Version"
+    name = "JellyBridge v$Version"
     body = $releaseBody
     draft = $false
-    prerelease = $IsPrerelease
+    prerelease = [bool]$IsPrerelease
 } | ConvertTo-Json
 
 try {
