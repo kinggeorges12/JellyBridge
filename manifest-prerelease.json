@@ -8,24 +8,42 @@
     "imageUrl": "https://raw.githubusercontent.com/seerr-team/seerr/refs/heads/develop/public/logo_full.svg",
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
-        {
-          "version": "1.1.5.11",
-          "targetAbi": "10.11.0.0",
-          "checksum": "30C998F2C1607176BFFB0CF7F5D9358B",
-          "timestamp": "2025-10-29T07:38:51.090Z",
-          "dependencies": [],
-          "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.5/JellyBridge-1.1.5.11.zip",
-          "changelog": "Jellyfin 10.11.0: v1.1.5 - prerelease"
-        },
-        {
-          "version": "1.1.5.10",
-          "targetAbi": "10.10.0.0",
-          "checksum": "E8EA38E96BB8DBAFA40BFABB2175E122",
-          "timestamp": "2025-10-29T07:38:51.090Z",
-          "dependencies": [],
-          "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.5/JellyBridge-1.1.5.10.zip",
-          "changelog": "Jellyfin 10.10.7: v1.1.5 - prerelease"
-        }
+      {
+        "checksum": "DF375D674E0F5CC90D9C08F47B0AE365",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-10-29T07:49:40.764Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.6/JellyBridge-1.1.6.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.1.6 - Prerelease: automated PR build",
+        "version": "1.1.6.11"
+      },
+      {
+        "checksum": "B4A649235F947414258C7B188E4968F4",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-10-29T07:49:40.764Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.6/JellyBridge-1.1.6.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.1.6 - Prerelease: automated PR build",
+        "version": "1.1.6.10"
+      },
+      {
+        "version": "1.1.5.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "30C998F2C1607176BFFB0CF7F5D9358B",
+        "timestamp": "2025-10-29T07:38:51.09Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.5/JellyBridge-1.1.5.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.1.5 - prerelease"
+      },
+      {
+        "version": "1.1.5.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "E8EA38E96BB8DBAFA40BFABB2175E122",
+        "timestamp": "2025-10-29T07:38:51.09Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.5/JellyBridge-1.1.5.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.1.5 - prerelease"
+      }
     ]
   }
 ]

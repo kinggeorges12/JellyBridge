@@ -31,6 +31,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             // Register the base services
             serviceCollection.AddScoped<ApiService>();
             serviceCollection.AddScoped<SyncService>();
+            serviceCollection.AddScoped<MetadataService>();
             
             // Register the bridge service
             serviceCollection.AddScoped<NewBridgeService>();
