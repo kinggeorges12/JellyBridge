@@ -521,42 +521,39 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         var interval = TimeSpan.FromTicks(intervalTicks.Value);
 
                         // Decision tree:
-                        // 1) If there is a completed/recorded last run, next = lastRun + interval
-                        // 2) Else if Scheduled Sync has NOT run since startup, next = startupStart + 1 hour
+                        // 1) If Scheduled Sync has NOT run since startup, next = startupStart + 1 hour
+                        // 2) Else if there is a completed/recorded last run, next = lastRun + interval
                         // 3) Else if we have a sync start, next = syncStart + interval
                         // 4) Else no estimate
-                        if (lastRun.HasValue)
+                        bool syncRanSinceStartup = false;
+                        if (startupStart.HasValue)
+                        {
+                            if ((syncEnd.HasValue && syncEnd.Value > startupStart.Value) ||
+                                (syncStart.HasValue && syncStart.Value > startupStart.Value))
+                            {
+                                syncRanSinceStartup = true;
+                            }
+                        }
+
+                        if (!syncRanSinceStartup && startupStart.HasValue)
+                        {
+                            nextRun = startupStart.Value.AddHours(1);
+                            _logger.LogTrace("Scheduled sync has not run since startup; next run = startup start + 1h: {NextRun}", nextRun);
+                        }
+                        else if (lastRun.HasValue)
                         {
                             nextRun = lastRun.Value.Add(interval);
                             _logger.LogTrace("Calculated next run time from last run: {NextRun}", nextRun);
                         }
+                        else if (syncStart.HasValue)
+                        {
+                            nextRun = syncStart.Value.Add(interval);
+                            _logger.LogTrace("Projected next run from sync start + interval: {NextRun}", nextRun);
+                        }
                         else
                         {
-                            bool syncRanSinceStartup = false;
-                            if (startupStart.HasValue)
-                            {
-                                if ((syncEnd.HasValue && syncEnd.Value > startupStart.Value) ||
-                                    (syncStart.HasValue && syncStart.Value > startupStart.Value))
-                                {
-                                    syncRanSinceStartup = true;
-                                }
-                            }
-
-                            if (!syncRanSinceStartup && startupStart.HasValue)
-                            {
-                                nextRun = startupStart.Value.AddHours(1);
-                                _logger.LogTrace("Scheduled sync has not run since startup; next run = startup start + 1h: {NextRun}", nextRun);
-                            }
-                            else if (syncStart.HasValue)
-                            {
-                                nextRun = syncStart.Value.Add(interval);
-                                _logger.LogTrace("Projected next run from sync start + interval: {NextRun}", nextRun);
-                            }
-                            else
-                            {
-                                nextRun = null;
-                                _logger.LogTrace("No previous runs recorded; next run not estimated");
-                            }
+                            nextRun = null;
+                            _logger.LogTrace("No previous runs recorded; next run not estimated");
                         }
                     }
                 }
