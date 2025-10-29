@@ -62,6 +62,13 @@ namespace Jellyfin.Plugin.JellyBridge
             _logger.LogTrace("Configuration update method called - this means the save button was clicked!");
             
             var pluginConfig = (PluginConfiguration)configuration;
+            // Preserve persisted values for fields not present in the submitted payload
+            // Specifically ensure RanFirstTime isn't reset to null when saving
+            if (pluginConfig.RanFirstTime == null)
+            {
+                pluginConfig.RanFirstTime = GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
+                _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
+            }
             _logger.LogDebug("Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
                 pluginConfig.IsEnabled, 
                 pluginConfig.JellyseerrUrl, 
