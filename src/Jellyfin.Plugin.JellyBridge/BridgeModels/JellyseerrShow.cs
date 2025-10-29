@@ -178,15 +178,19 @@ public class JellyseerrShow
     public string ToXmlString()
     {
         var xml = new System.Text.StringBuilder();
+#if JELLYFIN_10_11
+        xml.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+#endif
         xml.AppendLine("<tvshow>");
-        xml.AppendLine($"  <title>{Name}</title>");
+        xml.AppendLine($"  <title>{System.Security.SecurityElement.Escape(Name)}</title>");
         
         // Add TVDB ID if available
         if (!string.IsNullOrEmpty(ExtraId))
         {
-            xml.AppendLine($"  <id>{ExtraId}</id>");
-            xml.AppendLine($"  <uniqueid type=\"{ExtraIdName}\" default=\"true\">{ExtraId}</uniqueid>");
-            xml.AppendLine($"  <tvdbid>{ExtraId}</tvdbid>");
+            var escapedExtraId = System.Security.SecurityElement.Escape(ExtraId);
+            xml.AppendLine($"  <id>{escapedExtraId}</id>");
+            xml.AppendLine($"  <uniqueid type=\"{ExtraIdName}\" default=\"true\">{escapedExtraId}</uniqueid>");
+            xml.AppendLine($"  <tvdbid>{escapedExtraId}</tvdbid>");
             //<imdb_id>tt1305826</imdb_id>
             //<tvrageid>2638</tvrageid>
         }
@@ -197,7 +201,7 @@ public class JellyseerrShow
         // Add network tag if available
         if (!string.IsNullOrEmpty(NetworkTag))
         {
-            xml.AppendLine($"  <tag>{NetworkTag}</tag>");
+            xml.AppendLine($"  <tag>{System.Security.SecurityElement.Escape(NetworkTag)}</tag>");
         }
         
         xml.AppendLine("</tvshow>");
