@@ -73,7 +73,7 @@ Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -For
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
 # Choose manifest file based on prerelease flag
-$manifestPath = if ($IsPrerelease) { "manifest-prerelease.json" } else { "manifest.json" }
+$manifestPath = if ($Beta -or -not $Release) { "manifest-prerelease.json" } else { "manifest.json" }
 
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
