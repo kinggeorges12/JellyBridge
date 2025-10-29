@@ -454,7 +454,11 @@ function initializeSyncSettings(page) {
     populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
-    populateSelectWithNetworks(activeNetworksSelect, config.NetworkMap || []);
+	// Use either saved NetworkMap (if present and non-empty) OR defaults, but not both
+	const savedNetworkMap = Array.isArray(config.NetworkMap) ? config.NetworkMap : [];
+	const defaultNetworkMap = (config.DefaultValues && Array.isArray(config.DefaultValues.NetworkMap)) ? config.DefaultValues.NetworkMap : [];
+	const activeNetworksSource = (savedNetworkMap.length > 0) ? savedNetworkMap : defaultNetworkMap;
+	populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
     sortSelectOptions(activeNetworksSelect);
     
     // Update available networks with default networks that aren't already active
