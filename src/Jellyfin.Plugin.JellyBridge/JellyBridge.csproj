@@ -2,13 +2,24 @@
 
   <PropertyGroup>
     <JellyfinVersion>10.10.7</JellyfinVersion>
-    <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.11'))">net9.0</TargetFramework>
-    <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.10'))">net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
     <AssemblyVersion>1.1.0.0</AssemblyVersion>
     <FileVersion>1.1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <!-- Normalize JellyfinVersion to specific NuGet versions -->
+  <PropertyGroup>
+    <NormalizedJellyfinVersion Condition="$(JellyfinVersion.StartsWith('10.10'))">10.10.7</NormalizedJellyfinVersion>
+    <NormalizedJellyfinVersion Condition="$(JellyfinVersion.StartsWith('10.11'))">10.11.0</NormalizedJellyfinVersion>
+    <NormalizedJellyfinVersion Condition="'$(NormalizedJellyfinVersion)' == ''">$(JellyfinVersion)</NormalizedJellyfinVersion>
+  </PropertyGroup>
+
+  <!-- Set TargetFramework based on normalized JellyfinVersion -->
+  <PropertyGroup>
+    <TargetFramework Condition="$(NormalizedJellyfinVersion.StartsWith('10.11'))">net9.0</TargetFramework>
+    <TargetFramework Condition="$(NormalizedJellyfinVersion.StartsWith('10.10'))">net8.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -18,12 +29,21 @@
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
-  <!-- Package references for Jellyfin 10.10.7 (using NuGet) -->
-  <ItemGroup Condition="$(JellyfinVersion.StartsWith('10.10'))">
-    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinVersion)" />
-    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinVersion)" />
-    <PackageReference Include="Jellyfin.Common" Version="$(JellyfinVersion)" />
-    <PackageReference Include="Jellyfin.Data" Version="$(JellyfinVersion)" />
+  <!-- Define conditional compilation symbols based on Jellyfin version -->
+  <PropertyGroup Condition="$(NormalizedJellyfinVersion.StartsWith('10.11'))">
+    <DefineConstants>$(DefineConstants);JELLYFIN_10_11</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Package references for Jellyfin packages (using NuGet) -->
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Model" Version="$(NormalizedJellyfinVersion)" />
+    <PackageReference Include="Jellyfin.Controller" Version="$(NormalizedJellyfinVersion)" />
+    <PackageReference Include="Jellyfin.Common" Version="$(NormalizedJellyfinVersion)" />
+    <PackageReference Include="Jellyfin.Data" Version="$(NormalizedJellyfinVersion)" />
+  </ItemGroup>
+
+  <!-- Microsoft.Extensions packages for .NET 8.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
@@ -31,19 +51,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
-  <!-- Project references for Jellyfin 10.11.1 (using local codebase) -->
-  <ItemGroup Condition="$(JellyfinVersion.StartsWith('10.11'))">
-    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Model\MediaBrowser.Model.csproj" />
-    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Controller\MediaBrowser.Controller.csproj" />
-    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Common\MediaBrowser.Common.csproj" />
-    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\Jellyfin.Data\Jellyfin.Data.csproj" />
-    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\src\Jellyfin.Database\Jellyfin.Database.Implementations\Jellyfin.Database.Implementations.csproj" />
+  <!-- Microsoft.Extensions packages for .NET 9.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
   </ItemGroup>
+
 
   <!-- Common package references -->
   <ItemGroup>

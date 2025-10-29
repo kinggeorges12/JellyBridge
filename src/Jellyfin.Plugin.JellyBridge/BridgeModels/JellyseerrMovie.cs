@@ -1,9 +1,8 @@
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
-using MediaBrowser.Controller.Entities;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
@@ -117,9 +116,9 @@ public class JellyseerrMovie
     public int? NetworkId { get; set; }
 
     /// <summary>
-    /// Equality comparison with a Jellyfin Movie item.
+    /// Equality comparison with a JellyfinMovie item.
     /// </summary>
-    public bool EqualsMovie(Movie? other)
+    public bool EqualsMovie(JellyfinMovie? other)
     {
         if (other is null) return false;
         
@@ -141,14 +140,14 @@ public class JellyseerrMovie
     }
 
     /// <summary>
-    /// Equality comparison with a Jellyfin BaseItem (Movie).
+    /// Equality comparison with an IJellyfinItem (Movie).
     /// </summary>
-    public bool EqualsItem(BaseItem? other)
+    public bool EqualsItem(IJellyfinItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Movie items
-        if (other is not Movie movie) return false;
+        if (other is not JellyfinMovie movie) return false;
         
         return EqualsMovie(movie);
     }

@@ -2,9 +2,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using MediaBrowser.Controller.MediaEncoding;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using MediaBrowser.Controller.MediaEncoding;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Services;
 using MediaBrowser.Model.Tasks;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
 
@@ -77,11 +78,7 @@ public class StartupTask : IScheduledTask
         
         return new List<TaskTriggerInfo>
         {
-            new TaskTriggerInfo
-            {
-                Type = TaskTriggerInfo.TriggerStartup
-            }
+            JellyfinTaskTrigger.Startup()
         };
     }
 }
-

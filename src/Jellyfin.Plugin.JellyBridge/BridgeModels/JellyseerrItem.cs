@@ -2,10 +2,7 @@ using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
-using MediaBrowser.Model.Entities;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using System;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
@@ -22,16 +19,16 @@ public interface IJellyseerrItem
     static virtual string LibraryType => throw new NotImplementedException();
 
     /// <summary>
-    /// Get the Jellyseerr media type for a BaseItem.
+    /// Get the Jellyseerr media type for an IJellyfinItem.
     /// </summary>
-    /// <param name="item">The BaseItem to get the media type for</param>
+    /// <param name="item">The IJellyfinItem to get the media type for</param>
     /// <returns>The Jellyseerr media type enum</returns>
-    static JellyseerrModel.MediaType GetMediaType(BaseItem item)
+    static JellyseerrModel.MediaType GetMediaType(IJellyfinItem item)
     {
         return item switch
         {
-            Movie => JellyseerrModel.MediaType.MOVIE,
-            Series => JellyseerrModel.MediaType.TV,
+            JellyfinMovie => JellyseerrModel.MediaType.MOVIE,
+            JellyfinSeries => JellyseerrModel.MediaType.TV,
             _ => throw new NotSupportedException($"Unsupported item type: {item.GetType().Name}")
         };
     }
@@ -124,7 +121,7 @@ public interface IJellyseerrItem
         return string.Join(" ", parts);
     }
 
-    public abstract bool EqualsItem(BaseItem? other);
+    public abstract bool EqualsItem(IJellyfinItem? other);
     
     /// <summary>
     /// Returns a hash code for the item that can be used for matching.

@@ -1,52 +1,33 @@
-using Jellyfin.Data.Entities;
+using System;
+
+#if JELLYFIN_10_11
+// Jellyfin version 10.11.*
+using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
+#else
+// Jellyfin version 10.10.*
+using JellyfinUserEntity = Jellyfin.Data.Entities.User;
+#endif
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
 /// Wrapper around Jellyfin's User class.
-/// Version-specific implementation for Jellyfin 10.10.7 with conditional compilation for 10.11+.
+/// Version-specific implementation with conditional compilation for User type namespace changes.
 /// </summary>
-public class JellyfinUser : WrapperBase<User>
+public class JellyfinUser : WrapperBase<JellyfinUserEntity>
 {
-    public JellyfinUser(User user) : base(user) 
+    public JellyfinUser(JellyfinUserEntity user) : base(user) 
     {
         InitializeVersionSpecific();
     }
 
     /// <summary>
-    /// Version-specific user operations.
+    /// Get the username of this user.
     /// </summary>
-    public void PerformUserOperation()
-    {
-#if JELLYFIN_V10_11
-        // Jellyfin 10.11+ specific user operations
-        PerformV10_11UserOperation();
-#else
-        // Jellyfin 10.10.7 specific user operations
-        PerformV10_10_7UserOperation();
-#endif
-    }
+    public string Username => Inner.Username;
 
-#if JELLYFIN_V10_11
     /// <summary>
-    /// Jellyfin 10.11+ specific user operations.
+    /// Get the ID of this user.
     /// </summary>
-    private void PerformV10_11UserOperation()
-    {
-        // Future implementation for 10.11+
-        // Example: Use new user API
-    }
-#else
-    /// <summary>
-    /// Jellyfin 10.10.7 specific user operations.
-    /// </summary>
-    private void PerformV10_10_7UserOperation()
-    {
-        // Current implementation for 10.10.7
-        // Example: Use legacy user API
-    }
-#endif
-
-    // Custom helper methods can be added here
-    // Example: public void SyncUserData() { /* custom logic */ }
+    public Guid Id => Inner.Id;
 }

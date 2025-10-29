@@ -1,4 +1,4 @@
-using MediaBrowser.Controller.Entities;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
@@ -16,14 +16,14 @@ public class JellyMatch
     /// <summary>
     /// The Jellyfin item that matches the Jellyseerr item.
     /// </summary>
-    public BaseItem JellyfinItem { get; set; }
+    public IJellyfinItem JellyfinItem { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the JellyMatch class.
     /// </summary>
     /// <param name="jellyseerrItem">The Jellyseerr item</param>
     /// <param name="jellyfinItem">The Jellyfin item</param>
-    public JellyMatch(IJellyseerrItem jellyseerrItem, BaseItem jellyfinItem)
+    public JellyMatch(IJellyseerrItem jellyseerrItem, IJellyfinItem jellyfinItem)
     {
         JellyseerrItem = jellyseerrItem ?? throw new ArgumentNullException(nameof(jellyseerrItem));
         JellyfinItem = jellyfinItem ?? throw new ArgumentNullException(nameof(jellyfinItem));
@@ -34,7 +34,7 @@ public class JellyMatch
     /// </summary>
     /// <param name="match">The tuple containing the Jellyseerr and Jellyfin items</param>
     /// <returns>A new JellyMatch instance</returns>
-    public static JellyMatch FromTuple((IJellyseerrItem bridgeItem, BaseItem jellyfinItem) match)
+    public static JellyMatch FromTuple((IJellyseerrItem bridgeItem, IJellyfinItem jellyfinItem) match)
     {
         return new JellyMatch(match.bridgeItem, match.jellyfinItem);
     }
@@ -43,7 +43,7 @@ public class JellyMatch
     /// Converts the JellyMatch to a tuple.
     /// </summary>
     /// <returns>A tuple containing the Jellyseerr and Jellyfin items</returns>
-    public (IJellyseerrItem bridgeItem, BaseItem jellyfinItem) ToTuple()
+    public (IJellyseerrItem bridgeItem, IJellyfinItem jellyfinItem) ToTuple()
     {
         return (JellyseerrItem, JellyfinItem);
     }

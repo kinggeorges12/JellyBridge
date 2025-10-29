@@ -116,7 +116,7 @@ public class MetadataService
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
-        _logger.LogDebug("CreateFoldersAsync: Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+        _logger.LogDebug("Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
             typeof(TJellyseerr).Name, baseDirectory, items.Count);
         
         for (int i = 0; i < items.Count; i++)
@@ -124,14 +124,14 @@ public class MetadataService
             var item = items[i];
             try
             {
-                _logger.LogTrace("CreateFoldersAsync: Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
+                _logger.LogTrace("Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
                     i + 1, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
                 var folderName = GetJellyseerrItemDirectory(item);
                 var folderExists = Directory.Exists(folderName);
 
-                _logger.LogTrace("CreateFoldersAsync: Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
+                _logger.LogTrace("Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
                     folderName, folderExists);
 
                 // Write metadata using folder manager
@@ -142,30 +142,30 @@ public class MetadataService
                     if (folderExists)
                     {
                         updatedItems.Add(item);
-                        _logger.LogTrace("CreateFoldersAsync: ✅ UPDATED {Type} folder: '{FolderName}'", 
+                        _logger.LogTrace("✅ UPDATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
                     else
                     {
                         addedItems.Add(item);
-                        _logger.LogTrace("CreateFoldersAsync: ✅ CREATED {Type} folder: '{FolderName}'", 
+                        _logger.LogTrace("✅ CREATED {Type} folder: '{FolderName}'", 
                             typeof(TJellyseerr).Name, folderName);
                     }
                 }
                 else
                 {
-                    _logger.LogError("CreateFoldersAsync: ❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                    _logger.LogError("❌ FAILED to create folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
                         item, item.MediaName, item.Id);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CreateFoldersAsync: ❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                _logger.LogError(ex, "❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
                     item, item.MediaName, item.Id);
             }
         }
         
-        _logger.LogDebug("CreateFoldersAsync: Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
+        _logger.LogDebug("Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
             typeof(TJellyseerr).Name, addedItems.Count, updatedItems.Count);
         
         return (addedItems, updatedItems);

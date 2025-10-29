@@ -1,10 +1,22 @@
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.Entities;
+
+#if JELLYFIN_10_11
+// Jellyfin version 10.11.*
+using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
+#else
+// Jellyfin version 10.10.*
+using JellyfinUserEntity = Jellyfin.Data.Entities.User;
+#endif
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
 /// Wrapper around Jellyfin's IUserDataManager interface.
-/// Version-specific implementation for Jellyfin 10.10.7 with conditional compilation for 10.11+.
+/// Version-specific implementation with conditional compilation for User type namespace changes.
 /// </summary>
 public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
 {
@@ -14,39 +26,57 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     }
 
     /// <summary>
-    /// Version-specific user data manager operations.
+    /// Get all favorites for all users from Jellyfin.
     /// </summary>
-    public void PerformUserDataOperation()
+    /// <typeparam name="T">The type of Jellyfin wrapper items to return (JellyfinMovie, JellyfinSeries, IJellyfinItem)</typeparam>
+    /// <param name="userManager">The user manager</param>
+    /// <param name="libraryManager">The library manager</param>
+    /// <returns>Dictionary mapping users to their favorite items</returns>
+    public Dictionary<JellyfinUser, List<T>> GetUserFavorites<T>(IUserManager userManager, ILibraryManager libraryManager) where T : class
     {
-#if JELLYFIN_V10_11
-        // Jellyfin 10.11+ specific user data operations
-        PerformV10_11UserDataOperation();
-#else
-        // Jellyfin 10.10.7 specific user data operations
-        PerformV10_10_7UserDataOperation();
-#endif
+        var userFavorites = new Dictionary<JellyfinUser, List<T>>();
+        
+        // Get all users from user manager
+        var users = userManager.Users.ToList();
+        
+        // Get favorites for each user directly
+        foreach (var user in users)
+        {
+            var userFavs = libraryManager.GetItemList(new InternalItemsQuery(user)
+            {
+                IncludeItemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Movie, Jellyfin.Data.Enums.BaseItemKind.Series },
+                IsFavorite = true,
+                Recursive = true
+            });
+            
+            // Convert to the requested Jellyfin wrapper type
+            var convertedFavs = userFavs.Select<BaseItem, T?>(item => 
+            {
+                if (typeof(T) == typeof(JellyfinMovie) && item is Movie movie)
+                {
+                    return (T)(object)JellyfinMovie.FromMovie(movie);
+                }
+                else if (typeof(T) == typeof(JellyfinSeries) && item is Series series)
+                {
+                    return (T)(object)JellyfinSeries.FromSeries(series);
+                }
+                else if (typeof(T) == typeof(IJellyfinItem))
+                {
+                    if (item is Movie movieForBase)
+                        return (T)(object)JellyfinMovie.FromMovie(movieForBase);
+                    else if (item is Series seriesForBase)
+                        return (T)(object)JellyfinSeries.FromSeries(seriesForBase);
+                }
+                
+                return null;
+            }).Where(item => item != null).Cast<T>().ToList();
+            
+            // Convert user to JellyfinUser wrapper
+            var jellyfinUser = new JellyfinUser((dynamic)user);
+            userFavorites[jellyfinUser] = convertedFavs;
+        }
+        
+        return userFavorites;
     }
 
-#if JELLYFIN_V10_11
-    /// <summary>
-    /// Jellyfin 10.11+ specific user data operations.
-    /// </summary>
-    private void PerformV10_11UserDataOperation()
-    {
-        // Future implementation for 10.11+
-        // Example: Use new user data API
-    }
-#else
-    /// <summary>
-    /// Jellyfin 10.10.7 specific user data operations.
-    /// </summary>
-    private void PerformV10_10_7UserDataOperation()
-    {
-        // Current implementation for 10.10.7
-        // Example: Use legacy user data API
-    }
-#endif
-
-    // Custom helper methods can be added here
-    // Example: public void CustomUserDataOperation() { /* custom logic */ }
 }

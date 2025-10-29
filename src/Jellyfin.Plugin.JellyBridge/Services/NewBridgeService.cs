@@ -4,12 +4,9 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
-using MediaBrowser.Controller.Dto;
 using System.Text.Json;
+using MediaBrowser.Controller.Dto;
+ 
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -20,11 +17,11 @@ public class NewBridgeService
 {
     private readonly DebugLogger<NewBridgeService> _logger;
     private readonly JellyfinILibraryManager _libraryManager;
-    private readonly JellyfinIDtoService _dtoService;
+    private readonly IDtoService _dtoService;
     private readonly MetadataService _metadataService;
     private readonly DiscoverService _discoverService;
 
-    public NewBridgeService(ILogger<NewBridgeService> logger, JellyfinILibraryManager libraryManager, JellyfinIDtoService dtoService, MetadataService metadataService, DiscoverService discoverService)
+    public NewBridgeService(ILogger<NewBridgeService> logger, JellyfinILibraryManager libraryManager, IDtoService dtoService, MetadataService metadataService, DiscoverService discoverService)
     {
         _logger = new DebugLogger<NewBridgeService>(logger);
         _libraryManager = libraryManager;
@@ -59,8 +56,8 @@ public class NewBridgeService
                 _logger.LogTrace("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
 
                 // Get existing Jellyfin items
-                var existingMovies = JellyfinHelper.GetExistingItems<Movie>(_libraryManager.Inner);
-                var existingShows = JellyfinHelper.GetExistingItems<Series>(_libraryManager.Inner);
+                var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>();
+                var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>();
 
                 // Find matches between Jellyfin items and bridge metadata
                 var movieMatches = FindMatches(existingMovies, movies);
@@ -105,7 +102,7 @@ public class NewBridgeService
     private List<JellyMatch> FindMatches<TJellyfin, TJellyseerr>(
         List<TJellyfin> existingItems, 
         List<TJellyseerr> bridgeMetadata) 
-        where TJellyfin : BaseItem 
+        where TJellyfin : IJellyfinItem 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var matches = new List<JellyMatch>();
@@ -158,16 +155,8 @@ public class NewBridgeService
                 _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
                     item.Name, item.Id, ignoreFilePath);
                 
-                // Use DtoService to get a proper BaseItemDto with all metadata
-                var dtoOptions = new DtoOptions(); // Default constructor includes all fields
-                var itemDto = _dtoService.Inner.GetBaseItemDto(item, dtoOptions);
-                
-                _logger.LogTrace("Successfully created BaseItemDto for {ItemName} - DTO has {PropertyCount} properties", 
-                    item.Name, itemDto?.GetType().GetProperties().Length ?? 0);
-                
-                var itemJson = JsonSerializer.Serialize(itemDto!, new JsonSerializerOptions {
-                    WriteIndented = true
-                });
+                // Use the item's built-in serialization method
+                var itemJson = item.ToJson(_dtoService);
                 
                 _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
                     item.Name, itemJson?.Length ?? 0);

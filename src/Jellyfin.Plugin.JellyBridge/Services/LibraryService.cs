@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Logging;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.IO;
-using MediaBrowser.Controller.Providers;
-using MediaBrowser.Controller.Entities;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Library;
+ 
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -14,10 +14,10 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 public class LibraryService
 {
     private readonly DebugLogger<LibraryService> _logger;
-    private readonly ILibraryManager _libraryManager;
+    private readonly JellyfinILibraryManager _libraryManager;
     private readonly IDirectoryService _directoryService;
 
-    public LibraryService(ILogger<LibraryService> logger, ILibraryManager libraryManager, IDirectoryService directoryService)
+    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService)
     {
         _logger = new DebugLogger<LibraryService>(logger);
         _libraryManager = libraryManager;
@@ -48,7 +48,7 @@ public class LibraryService
             _logger.LogDebug("Starting Jellyseerr library refresh (FullRefresh: {FullRefresh})...", fullRefresh);
 
             // Find all libraries that contain Jellyseerr folders
-            var libraries = _libraryManager.GetVirtualFolders();
+            var libraries = _libraryManager.Inner.GetVirtualFolders();
             var jellyseerrLibraries = libraries.Where(lib => 
                 lib.Locations?.Any(location => FolderUtils.IsPathInSyncDirectory(location)) == true).ToList();
 
@@ -81,8 +81,8 @@ public class LibraryService
             
             foreach (var jellyseerrLibrary in jellyseerrLibraries)
             {
-                var libraryFolder = _libraryManager.GetItemById(jellyseerrLibrary.ItemId);
-                if (libraryFolder is Folder folder)
+                var libraryFolder = _libraryManager.Inner.GetItemById(Guid.Parse(jellyseerrLibrary.ItemId));
+                if (libraryFolder != null)
                 {
                     _logger.LogTrace("Starting background scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
                     // Start the complete scan and refresh process in the background (don't await)
@@ -92,11 +92,11 @@ public class LibraryService
                         {
                             // First validate children to scan for new/changed files
                             _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
-                            await folder.ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
+                            await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
                             
                             // Then refresh metadata with the refresh options
                             _logger.LogTrace("Refreshing metadata for library: {LibraryName}", jellyseerrLibrary.Name);
-                            await folder.RefreshMetadata(refreshOptions, CancellationToken.None);
+                            await ((dynamic)libraryFolder).RefreshMetadata(refreshOptions, CancellationToken.None);
                             
                             _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
                         }
@@ -146,7 +146,7 @@ public class LibraryService
             {
                 try
                 {
-                    await _libraryManager.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+                    await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
                     _logger.LogDebug("Full scan of all libraries completed");
                 }
                 catch (Exception ex)
