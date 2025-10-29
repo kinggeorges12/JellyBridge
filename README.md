@@ -74,16 +74,17 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 
 1. **Add Plugin Repository to Jellyfin:**
    - Go to Jellyfin Admin Dashboard → Plugins → Catalog
-   - Click "Settings" (gear icon)
-   - Click "Add Repository"
+   - Click ⚙️ icon (Jellyfin 11: "Manage Repositories" button)
+   - Click "Add Repository" button (Jellyfin 11: "New Repository" button)
+   - Enter Repository Name: JellyBridge
    - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`
    - Click "Add"
 
 2. **Install Plugin:**
-   - Go to Plugins → Catalog
-   - Find "JellyBridge"
+   - Go to Plugins → Catalog (Jellyfin 11: Plugins → Available)
+   - Find "JellyBridge" under Metadata (Jellyfin 11: Other)
    - Click "Install"
-   - Restart Jellyfin when prompted
+   - Restart Jellyfin from the Dashboard
 
 3. **Configure the plugin** through the admin interface
 

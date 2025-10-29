@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <JellyfinVersion>10.10.7</JellyfinVersion>
-    <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.11.0'))">net9.0</TargetFramework>
-    <TargetFramework Condition="'$(JellyfinVersion)' == '10.10.7'">net8.0</TargetFramework>
+    <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.11'))">net9.0</TargetFramework>
+    <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.10'))">net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
@@ -18,19 +18,41 @@
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- Package references for Jellyfin 10.10.7 (using NuGet) -->
+  <ItemGroup Condition="$(JellyfinVersion.StartsWith('10.10'))">
     <PackageReference Include="Jellyfin.Model" Version="$(JellyfinVersion)" />
     <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinVersion)" />
     <PackageReference Include="Jellyfin.Common" Version="$(JellyfinVersion)" />
     <PackageReference Include="Jellyfin.Data" Version="$(JellyfinVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <!-- Project references for Jellyfin 10.11.1 (using local codebase) -->
+  <ItemGroup Condition="$(JellyfinVersion.StartsWith('10.11'))">
+    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Model\MediaBrowser.Model.csproj" />
+    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Controller\MediaBrowser.Controller.csproj" />
+    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\MediaBrowser.Common\MediaBrowser.Common.csproj" />
+    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\Jellyfin.Data\Jellyfin.Data.csproj" />
+    <ProjectReference Include="..\..\codebase\jellyfin-10.11.1\src\Jellyfin.Database\Jellyfin.Database.Implementations\Jellyfin.Database.Implementations.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+  </ItemGroup>
+
+  <!-- Common package references -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    
+  </ItemGroup>
+
+  <!-- Embedded resources -->
+  <ItemGroup>
     <None Remove="Configuration\ConfigurationPage.html" />
     <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
     <None Remove="Configuration\ConfigurationPage.js" />

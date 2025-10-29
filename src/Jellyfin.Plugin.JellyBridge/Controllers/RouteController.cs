@@ -22,12 +22,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     private readonly DebugLogger<RouteController> _logger;
     private readonly SyncService _syncService;
     private readonly ApiService _apiService;
-    private readonly BridgeService _bridgeService;
+    private readonly NewBridgeService _bridgeService;
     private readonly LibraryService _libraryService;
     private readonly IUserManager _userManager;
     private readonly ITaskManager _taskManager;
 
-    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, BridgeService bridgeService, LibraryService libraryService, IUserManager userManager, ITaskManager taskManager)
+    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, NewBridgeService bridgeService, LibraryService libraryService, IUserManager userManager, ITaskManager taskManager)
     {
         _logger = new DebugLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
         _syncService = syncService;

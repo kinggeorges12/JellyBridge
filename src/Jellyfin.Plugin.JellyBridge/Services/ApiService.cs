@@ -1,7 +1,6 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Linq;
 using System.Collections;
 using Microsoft.Extensions.Logging;
@@ -10,10 +9,6 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
-using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -746,79 +741,6 @@ public class ApiService
         }
         
         return Activator.CreateInstance(returnModelType) ?? new object();
-    }
-
-    /// <summary>
-    /// Generic method to fetch discover data for all networks using the specified endpoint.
-    /// </summary>
-    /// <typeparam name="T">The Jellyseerr type (JellyseerrMovie or JellyseerrShow)</typeparam>
-    /// <returns>List of items fetched from all networks</returns>
-    public async Task<List<T>> FetchDiscoverMediaAsync<T>() where T : TmdbMediaResult, IJellyseerrItem
-    {
-        var config = Plugin.GetConfiguration();
-        var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
-        var allItems = new HashSet<T>();
-        
-        foreach (var network in networkMap)
-        {
-            _logger.LogDebug("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", T.LibraryType, network.Name, network.Id, network.Country, network.DisplayPriority);
-            
-            // Add network Id and Country parameters to query parameters
-            var networkParameters = new Dictionary<string, object> {
-                ["watchRegion"] = network.Country,
-                ["watchProviders"] = network.Id
-            };
-            JellyseerrEndpoint? endpoint = null;  
-            if (typeof(T) == typeof(JellyseerrMovie)) {
-                endpoint = JellyseerrEndpoint.DiscoverMovies;
-            } else if (typeof(T) == typeof(JellyseerrShow)) {
-                endpoint = JellyseerrEndpoint.DiscoverTv;
-            }
-            if (endpoint == null) {
-                _logger.LogError("Unsupported type: {Type}", typeof(T));
-                throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
-            }
-
-            // Debug: Log the parameters being used
-            _logger.LogTrace("Calling {Endpoint} with parameters: {Parameters}", 
-                endpoint.Value, 
-                string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
-            
-            var networkData = await CallEndpointAsync(endpoint.Value, config, parameters: networkParameters);
-            
-            if (networkData == null)
-            {
-                _logger.LogWarning("API call returned null for {MediaType} endpoint for network: {NetworkName}", T.LibraryType, network.Name);
-                continue;
-            }
-            
-            var items = (List<T>)networkData;
-            
-            // Debug: Log the response data
-            _logger.LogTrace("API call returned {ItemCount} items for {NetworkName}", items.Count, network.Name);
-            
-            if (items.Count == 0)
-            {
-                _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
-            }
-            
-            // Add items to HashSet (automatically handles duplicates)
-            foreach (var item in items)
-            {
-                // Set the network tag for this item
-                item.NetworkTag = network.Name;
-                item.NetworkId = network.Id;
-                allItems.Add(item);
-            }
-            
-            _logger.LogTrace("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
-        }
-        
-        // Convert HashSet to List for return
-        var result = allItems.ToList();
-        _logger.LogDebug("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
-        
-        return result;
     }
 
     #endregion
