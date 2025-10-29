@@ -64,7 +64,10 @@ Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -For
 
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-$manifestPath = "manifest.json"
+
+# Choose manifest file based on prerelease flag
+$manifestPath = if ($IsPrerelease) { "manifest-prerelease.json" } else { "manifest.json" }
+
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
@@ -160,11 +163,11 @@ foreach ($t in $targets) {
     $newManifestEntries += $entry
 }
 
-# Update manifest.json: prepend both entries
-Write-Host "\nStep 3: Updating manifest.json with both ABI entries..." -ForegroundColor Yellow
+# Update manifest file: prepend both entries
+Write-Host "\nStep 3: Updating $manifestPath with both ABI entries..." -ForegroundColor Yellow
 $manifestArray[0].versions = @($newManifestEntries) + $manifestArray[0].versions
 $manifestArray | ConvertTo-Json -Depth 10 -AsArray | Set-Content $manifestPath -NoNewline
-Write-Host "[~] Updated manifest.json with multi-ABI entries" -ForegroundColor Green
+Write-Host "[~] Updated $manifestPath with multi-ABI entries" -ForegroundColor Green
 
 # Step 8: Commit changes to Git
 Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
