@@ -87,9 +87,9 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    - Restart Jellyfin from the Dashboard
 
    Note on versions:
-   ![Versioning guide](Screenshots/Versioning.png)
    - For Jellyfin 10.11.* users only, install the version ending in `.11` from the plugin page.
    - Versions ending in `.10` or `.0` are for Jellyfin 10.10.* only, although the wonky Jellyfin plugin versioning does not let me change the visibility.
+   ![Versioning guide](Screenshots/Versioning.png)
 
 3. **Configure the plugin** through the admin interface
 
