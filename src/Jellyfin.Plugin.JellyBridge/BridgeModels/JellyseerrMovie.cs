@@ -184,18 +184,18 @@ public class JellyseerrMovie
         // Add IMDB ID if available
         if (!string.IsNullOrEmpty(ExtraId))
         {
-            xml.AppendLine($"  <{ExtraIdName}>{ExtraId}</{ExtraIdName}>");
+            xml.AppendLine($"  <{ExtraIdName}>{System.Security.SecurityElement.Escape(ExtraId)}</{ExtraIdName}>");
             //<imdbid>tt21821260</imdbid>
             //<tvdbid>342663</tvdbid>
         }
         
-        xml.AppendLine($"  <title>{Title}</title>");
-        xml.AppendLine($"  <originaltitle>{OriginalTitle}</originaltitle>");
+        xml.AppendLine($"  <title>{System.Security.SecurityElement.Escape(Title)}</title>");
+        xml.AppendLine($"  <originaltitle>{System.Security.SecurityElement.Escape(OriginalTitle)}</originaltitle>");
         
         // Add network tag if available
         if (!string.IsNullOrEmpty(NetworkTag))
         {
-            xml.AppendLine($"  <tag>{NetworkTag}</tag>");
+            xml.AppendLine($"  <tag>{System.Security.SecurityElement.Escape(NetworkTag)}</tag>");
         }
         
         xml.AppendLine("  <watched>false</watched>");
