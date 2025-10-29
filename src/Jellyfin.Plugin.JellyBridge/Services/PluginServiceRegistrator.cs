@@ -29,7 +29,13 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<SyncService>();
             
             // Register the bridge service
-            serviceCollection.AddScoped<BridgeService>();
+            serviceCollection.AddScoped<NewBridgeService>();
+            
+            // Register the discover service
+            serviceCollection.AddScoped<DiscoverService>();
+            
+            // Register the favorite service
+            serviceCollection.AddScoped<FavoriteService>();
             
             // Register the library service
             serviceCollection.AddScoped<LibraryService>();

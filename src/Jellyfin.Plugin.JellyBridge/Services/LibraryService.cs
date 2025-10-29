@@ -4,7 +4,6 @@ using MediaBrowser.Controller.IO;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Entities;
 using Jellyfin.Plugin.JellyBridge.Configuration;
-using Jellyfin.Plugin.JellyBridge.Services;
 using Jellyfin.Plugin.JellyBridge.Utils;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
