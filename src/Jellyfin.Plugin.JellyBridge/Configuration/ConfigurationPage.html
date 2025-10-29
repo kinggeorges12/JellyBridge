@@ -286,7 +286,7 @@
                     <div id="taskStatusContainer" class="taskStatusContainer">
                         <div class="taskStatusHeader">
                             <h3>
-                                <button type="button" id="refreshTaskStatus" is="emby-button" class="refreshButton" title="Refresh status">🔄</button> Scheduled Sync Status
+                                <button type="button" id="refreshTaskStatus" is="emby-button" class="refreshButton" title="Refresh status">🔄</button> Automated Sync Status
                             </h3>
                             <span id="taskStatusText" class="taskStatusText">Checking...</span>
                         </div>
@@ -297,6 +297,9 @@
                             <div id="taskProgressText" class="taskProgressText"></div>
                         </div>
                         <div id="taskStatusTimes" class="taskStatusTimes"></div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button type="button" id="runSyncTask" is="emby-button" class="raised button emby-button" title="Run full sync now">Run</button>
+                        </div>
                     </div>
                     
                     <div class="checkboxContainer">
