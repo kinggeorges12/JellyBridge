@@ -328,15 +328,17 @@
                         
                         <h5>🤖 Troubleshooting</h5>
                         <div class="fieldDescription" style="margin-bottom: 20px;">
+                            <p><i>The plugin connects to Jellyseerr, but I am seeing error messages when running the sync or other issues.</i></p>
+                            <ol>
+                                <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
+                                <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
+                                <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
+                            </ol>
                             <p><i>The <strong>Test Connection</strong> button is not working, and I am seeing an error message.</i></p>
                             <ol>
                                 <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <strong>Jellyseerr URL</strong> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
-                                <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> &gt; <strong>Import Jellyfin Users</strong>.</li>
+                                <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> → <strong>Import Jellyfin Users</strong>.</li>
                                 <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
-                            </ol>
-                            <p><i>The plugin connects to Jellyseerr, but I am seeing error messages when running the sync.</i></p>
-                            <ol>
-                                <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
                             </ol>
                             <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                             <ol>
