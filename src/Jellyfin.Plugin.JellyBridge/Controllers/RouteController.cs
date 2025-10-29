@@ -371,36 +371,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 });
             }
         }
-
-        /// <summary>
-        /// Run the JellyBridge sync task now and wait for completion. Returns success only after task finishes.
-        /// </summary>
-        [HttpPost("RunSync")] 
-        public async Task<IActionResult> RunSync()
-        {
-            _logger.LogInformation("RunSync requested - executing JellyBridgeSync now");
-            try
-            {
-                var taskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
-                if (taskWrapper == null)
-                {
-                    _logger.LogWarning("RunSync: Could not find JellyBridgeSync task");
-                    return NotFound(new { success = false, message = "JellyBridgeSync task not found" });
-                }
-
-                // Execute the scheduled task synchronously and wait for completion
-                var progress = new Progress<double>(_ => { });
-                await taskWrapper.ScheduledTask.ExecuteAsync(progress, HttpContext.RequestAborted);
-                _logger.LogInformation("RunSync: JellyBridgeSync completed");
-
-                return Ok(new { success = true, message = "Sync completed" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "RunSync execution failed");
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
         
         [HttpGet("Regions")]
         public async Task<IActionResult> GetRegions()
@@ -509,50 +479,85 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Check if any operation is currently running
                 var isRunning = Plugin.IsOperationRunning;
                 
-                // Try to get the scheduled task workers
+                // Try to get the scheduled task workers (used only for progress and nextRun interval)
                 var syncTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
-                var startupTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
                 DateTime? lastRun = null;
                 DateTime? nextRun = null;
                 string? lastRunSource = null; // "Scheduled" or "Startup"
 
-                // Compute lastRun as the latest of Sync and Startup task last end times
-                if (syncTaskWrapper?.LastExecutionResult != null && syncTaskWrapper.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
+                // Determine last run from TaskManager: consider both scheduled and startup tasks
+                var startupTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
+
+                // Prefer EndTimeUtc if available; otherwise fall back to StartTimeUtc (e.g., currently running or startup trigger without sync)
+                DateTime? syncEnd = (syncTaskWrapper?.LastExecutionResult?.EndTimeUtc is DateTime se && se > DateTime.MinValue) ? se : (DateTime?)null;
+                DateTime? syncStart = (syncTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime ss && ss > DateTime.MinValue) ? ss : (DateTime?)null;
+                DateTime? startupEnd = (startupTaskWrapper?.LastExecutionResult?.EndTimeUtc is DateTime ste && ste > DateTime.MinValue) ? ste : (DateTime?)null;
+                DateTime? startupStart = (startupTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime sts && sts > DateTime.MinValue) ? sts : (DateTime?)null;
+
+                // Respect AutoSyncOnStartup: if disabled, do not count startup as a valid last run
+                var autoSyncOnStartupEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+
+                // Choose the most recent among available timestamps
+                var candidates = new List<(DateTime time, string source)>();
+                if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
+                if (autoSyncOnStartupEnabled && startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
+                if (syncStart.HasValue) candidates.Add((syncStart.Value, "Scheduled"));
+                if (autoSyncOnStartupEnabled && startupStart.HasValue) candidates.Add((startupStart.Value, "Startup"));
+
+                if (candidates.Count > 0)
                 {
-                    lastRun = syncTaskWrapper.LastExecutionResult.EndTimeUtc;
-                    lastRunSource = "Scheduled";
-                }
-                if (startupTaskWrapper?.LastExecutionResult != null && startupTaskWrapper.LastExecutionResult.EndTimeUtc > DateTime.MinValue)
-                {
-                    if (!lastRun.HasValue || startupTaskWrapper.LastExecutionResult.EndTimeUtc > lastRun.Value)
-                    {
-                        lastRun = startupTaskWrapper.LastExecutionResult.EndTimeUtc;
-                        lastRunSource = "Startup";
-                    }
+                    var latest = candidates.OrderByDescending(c => c.time).First();
+                    lastRun = latest.time;
+                    lastRunSource = latest.source;
                 }
 
-                // Calculate next run time based on the interval triggers from the Sync task
-                if (syncTaskWrapper != null && syncTaskWrapper.Triggers != null && syncTaskWrapper.Triggers.Count > 0)
+                // Calculate next run time based on the interval trigger from the Sync task
+                if (syncTaskWrapper?.Triggers != null)
                 {
-                    foreach (var trigger in syncTaskWrapper.Triggers)
+                    var intervalTicks = syncTaskWrapper.Triggers
+                        .Where(t => JellyfinTaskTrigger.IsInterval(t) && t.IntervalTicks.HasValue)
+                        .Select(t => t.IntervalTicks!.Value)
+                        .Cast<long?>()
+                        .FirstOrDefault();
+
+                    if (intervalTicks.HasValue)
                     {
-                        if (JellyfinTaskTrigger.IsInterval(trigger) && trigger.IntervalTicks.HasValue)
+                        var interval = TimeSpan.FromTicks(intervalTicks.Value);
+
+                        // Decision tree:
+                        // 1) If there is a completed run (scheduled or startup), next = lastRun + interval
+                        // 2) Else if startup fired (and enabled), project from startupStart + delay
+                        // 3) Else if we have a sync start, project from syncStart
+                        // 4) Else no estimate
+                        if (lastRun.HasValue)
                         {
-                            var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
-
-                            if (lastRun.HasValue)
+                            nextRun = lastRun.Value.Add(interval);
+                            _logger.LogTrace("Calculated next run time from last run: {NextRun}", nextRun);
+                        }
+                        else
+                        {
+                            DateTime? projectionBase = null;
+                            if (autoSyncOnStartupEnabled && startupStart.HasValue)
                             {
-                                // Task has run before: next run = last run + interval
-                                nextRun = lastRun.Value.Add(interval);
-                                _logger.LogDebug("Calculated next run time from last run: {NextRun}", nextRun);
+                                var delaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
+                                projectionBase = startupStart.Value.AddSeconds(delaySeconds);
+                                _logger.LogTrace("Startup start: {Start}, delay(s): {Delay}", startupStart, delaySeconds);
+                            }
+                            else if (syncStart.HasValue)
+                            {
+                                projectionBase = syncStart.Value;
+                            }
+
+                            if (projectionBase.HasValue)
+                            {
+                                nextRun = projectionBase.Value.Add(interval);
+                                _logger.LogTrace("Projected next run from base {Base} + interval: {NextRun}", projectionBase, nextRun);
                             }
                             else
                             {
-                                // No previous runs recorded: estimate next from plugin load time + interval (fallback)
-                                nextRun = Plugin.LastPluginLoad.Add(interval);
-                                _logger.LogDebug("No previous runs, estimated next run from plugin load + interval: {NextRun}", nextRun);
+                                nextRun = null;
+                                _logger.LogTrace("No previous runs recorded; next run not estimated");
                             }
-                            break;
                         }
                     }
                 }
@@ -569,7 +574,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     lastRunSource = lastRunSource
                 };
                 
-                _logger.LogDebug("Task status: {Status}, LastRun: {LastRun}, NextRun: {NextRun}", result.status, lastRun, nextRun);
+                _logger.LogTrace("Task status: {Status}, LastRun: {LastRun}, NextRun: {NextRun}", result.status, lastRun, nextRun);
                 return Ok(result);
             }
             catch (Exception ex)
