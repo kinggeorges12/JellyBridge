@@ -1,9 +1,8 @@
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
-using MediaBrowser.Controller.Entities;
-using JellyfinUser = Jellyfin.Data.Entities.User;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -29,7 +28,7 @@ public class FavoriteService
     /// These are items that exist only in the Jellyseerr bridge folder and are favorited by users.
     /// </summary>
     public async Task<List<JellyseerrMediaRequest>> RequestFavorites(
-        List<(BaseItem item, JellyseerrUser firstUser)> uniqueItemsWithFirstUser)
+        List<(IJellyfinItem item, JellyseerrUser firstUser)> uniqueItemsWithFirstUser)
     {
         var requestResults = new List<JellyseerrMediaRequest>();
         
@@ -39,7 +38,7 @@ public class FavoriteService
         {
             try
             {
-                var tmdbId = JellyfinHelper.GetTmdbId(item);
+                var tmdbId = item.GetTmdbId();
                 if (!tmdbId.HasValue)
                 {
                     _logger.LogError("Skipping item {ItemName} - no TMDB ID found", item.Name);
@@ -108,12 +107,12 @@ public class FavoriteService
     /// Group bridge-only items by TMDB ID and find first Jellyseerr user who favorited each.
     /// These are items that exist only in the Jellyseerr bridge folder (not in main Jellyfin library).
     /// </summary>
-    public List<(BaseItem item, JellyseerrUser firstUser)> EnsureFirstJellyseerrUser(
-        List<BaseItem> bridgeOnlyItems, 
-        Dictionary<JellyfinUser, List<BaseItem>> allFavorites, 
+    public List<(IJellyfinItem item, JellyseerrUser firstUser)> EnsureFirstJellyseerrUser(
+        List<IJellyfinItem> bridgeOnlyItems, 
+        Dictionary<JellyfinUser, List<IJellyfinItem>> allFavorites, 
         List<JellyseerrUser> jellyseerrUsers)
     {
-        var uniqueItemsWithFirstUser = new List<(BaseItem item, JellyseerrUser firstUser)>();
+        var uniqueItemsWithFirstUser = new List<(IJellyfinItem item, JellyseerrUser firstUser)>();
         var processedItemIds = new HashSet<Guid>(); // Track which items we've already processed by ID
         
         // Create a lookup for Jellyseerr users by their Jellyfin user ID for quick access
@@ -142,7 +141,7 @@ public class FavoriteService
                 // Find bridge-only items that match this favorited item
                 foreach (var bridgeItem in bridgeOnlyItems)
                 {
-                    if (!JellyfinHelper.ItemsMatch(favoriteItem, bridgeItem)) continue;
+                    if (!bridgeItem.ItemsMatch(favoriteItem)) continue;
                     
                     // Only process each unique item once (by ID)
                     if (processedItemIds.Contains(bridgeItem.Id))

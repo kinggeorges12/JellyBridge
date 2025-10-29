@@ -2,7 +2,7 @@ namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
 /// Base wrapper class for Jellyfin objects using composition pattern.
-/// Version-specific implementation for Jellyfin 10.10.7 with conditional compilation for 10.11+.
+/// Version-specific implementation for Jellyfin 10.10.* with conditional compilation for 10.11.*.
 /// </summary>
 /// <typeparam name="T">The wrapped Jellyfin type</typeparam>
 public abstract class WrapperBase<T> where T : class
@@ -21,16 +21,16 @@ public abstract class WrapperBase<T> where T : class
     /// </summary>
     protected virtual void InitializeVersionSpecific()
     {
-#if JELLYFIN_V10_11
+#if JELLYFIN_10_11
         // Jellyfin 10.11+ specific initialization
         InitializeV10_11();
 #else
-        // Jellyfin 10.10.7 specific initialization
+        // Jellyfin 10.10.* specific initialization
         InitializeV10_10_7();
 #endif
     }
 
-#if JELLYFIN_V10_11
+#if JELLYFIN_10_11
     /// <summary>
     /// Jellyfin 10.11+ specific initialization.
     /// </summary>
@@ -40,11 +40,11 @@ public abstract class WrapperBase<T> where T : class
     }
 #else
     /// <summary>
-    /// Jellyfin 10.10.7 specific initialization.
+    /// Jellyfin 10.10.* specific initialization.
     /// </summary>
     protected virtual void InitializeV10_10_7()
     {
-        // Current implementation for 10.10.7
+        // Current implementation for 10.10.*
     }
 #endif
 }

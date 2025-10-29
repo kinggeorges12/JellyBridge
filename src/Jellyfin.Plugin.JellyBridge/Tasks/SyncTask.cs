@@ -5,6 +5,7 @@ using Jellyfin.Plugin.JellyBridge.Services;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge;
 using MediaBrowser.Model.Tasks;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
 
@@ -124,11 +125,7 @@ public class SyncTask : IScheduledTask
         
         return new List<TaskTriggerInfo>
         {
-            new TaskTriggerInfo
-            {
-                Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(intervalHours).Ticks
-            }
+            JellyfinTaskTrigger.Interval(TimeSpan.FromHours(intervalHours))
         };
     }
 }

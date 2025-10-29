@@ -1,9 +1,8 @@
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Api;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
-using MediaBrowser.Controller.Entities;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using MediaBrowser.Controller.Entities.TV;
-using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
@@ -120,9 +119,9 @@ public class JellyseerrShow
     public int? NetworkId { get; set; }
 
     /// <summary>
-    /// Equality comparison with a Jellyfin Series item.
+    /// Equality comparison with a JellyfinSeries item.
     /// </summary>
-    public bool EqualsSeries(Series? other)
+    public bool EqualsSeries(JellyfinSeries? other)
     {
         if (other is null) return false;
         
@@ -144,14 +143,14 @@ public class JellyseerrShow
     }
 
     /// <summary>
-    /// Equality comparison with a Jellyfin BaseItem (Series).
+    /// Equality comparison with an IJellyfinItem (Series).
     /// </summary>
-    public bool EqualsItem(BaseItem? other)
+    public bool EqualsItem(IJellyfinItem? other)
     {
         if (other is null) return false;
         
         // Only compare with Series items
-        if (other is not Series series) return false;
+        if (other is not JellyfinSeries series) return false;
         
         return EqualsSeries(series);
     }

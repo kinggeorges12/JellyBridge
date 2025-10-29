@@ -8,10 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
-using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Tasks;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
@@ -24,17 +22,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     private readonly ApiService _apiService;
     private readonly NewBridgeService _bridgeService;
     private readonly LibraryService _libraryService;
-    private readonly IUserManager _userManager;
     private readonly ITaskManager _taskManager;
 
-    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, NewBridgeService bridgeService, LibraryService libraryService, IUserManager userManager, ITaskManager taskManager)
+    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, NewBridgeService bridgeService, LibraryService libraryService, ITaskManager taskManager)
     {
         _logger = new DebugLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
         _syncService = syncService;
         _apiService = apiService;
         _bridgeService = bridgeService;
         _libraryService = libraryService;
-        _userManager = userManager;
         _taskManager = taskManager;
         _logger.LogDebug("RouteController initialized");
     }
@@ -497,7 +493,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     {
                         foreach (var trigger in task.Triggers)
                         {
-                            if (trigger.Type == TaskTriggerInfo.TriggerInterval && trigger.IntervalTicks.HasValue)
+                            if (JellyfinTaskTrigger.IsInterval(trigger) && trigger.IntervalTicks.HasValue)
                             {
                                 var interval = TimeSpan.FromTicks(trigger.IntervalTicks.Value);
                                 

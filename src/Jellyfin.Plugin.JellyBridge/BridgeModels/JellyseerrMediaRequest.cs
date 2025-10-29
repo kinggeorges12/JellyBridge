@@ -1,8 +1,6 @@
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
@@ -33,11 +31,11 @@ public class JellyseerrMediaRequest : MediaRequest
     // All other properties inherit from base class with correct types and JSON names
     
     /// <summary>
-    /// Tests if this request matches a Jellyfin BaseItem by comparing TMDB IDs and media types.
+    /// Tests if this request matches an IJellyfinItem by comparing TMDB IDs and media types.
     /// </summary>
-    /// <param name="jellyfinItem">The Jellyfin item to compare against</param>
-    /// <returns>True if the request matches the Jellyfin item, false otherwise</returns>
-    public bool EqualsItem(BaseItem jellyfinItem)
+    /// <param name="jellyfinItem">The IJellyfinItem to compare against</param>
+    /// <returns>True if the request matches the IJellyfinItem, false otherwise</returns>
+    public bool EqualsItem(IJellyfinItem jellyfinItem)
     {
         if (jellyfinItem == null || Media == null)
             return false;
@@ -45,8 +43,8 @@ public class JellyseerrMediaRequest : MediaRequest
         // Compare media types first
         var jellyfinType = jellyfinItem switch
         {
-            Movie => MediaType.MOVIE,
-            Series => MediaType.TV,
+            JellyfinMovie => MediaType.MOVIE,
+            JellyfinSeries => MediaType.TV,
             _ => throw new NotSupportedException($"Unsupported item type: {jellyfinItem.GetType().Name}")
         };
         if (Type != jellyfinType)

@@ -1,8 +1,7 @@
-using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MediaBrowser.Controller.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
@@ -128,12 +127,12 @@ public class SyncJellyfinResult
 }
 
 /// <summary>
-/// Result of processing Jellyfin items with lists of BaseItem for processed, updated items and JellyseerrMediaRequest for created items.
+/// Result of processing Jellyfin items with lists of IJellyfinItem for processed, updated items and JellyseerrMediaRequest for created items.
 /// </summary>
 public class ProcessJellyfinResult
 {
-    public List<BaseItem> ItemsProcessed { get; set; } = new();
-    public List<BaseItem> ItemsFound { get; set; } = new();
+    public List<IJellyfinItem> ItemsProcessed { get; set; } = new();
+    public List<IJellyfinItem> ItemsFound { get; set; } = new();
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
 
     public int Processed => ItemsProcessed.Count;

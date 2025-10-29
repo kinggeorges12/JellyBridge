@@ -4,9 +4,9 @@ namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
 /// Wrapper around Jellyfin's Movie class.
-/// Version-specific implementation for Jellyfin 10.10.7 with conditional compilation for 10.11+.
+/// Provides additional functionality for Jellyseerr bridge operations.
 /// </summary>
-public class JellyfinMovie : WrapperBase<Movie>
+public class JellyfinMovie : WrapperBase<Movie>, IJellyfinItem
 {
     public JellyfinMovie(Movie movie) : base(movie) 
     {
@@ -14,39 +14,117 @@ public class JellyfinMovie : WrapperBase<Movie>
     }
 
     /// <summary>
-    /// Version-specific movie operations.
+    /// Create a JellyfinMovie from a MediaBrowser Movie.
     /// </summary>
-    public void PerformMovieOperation()
+    /// <param name="movie">The MediaBrowser Movie to wrap</param>
+    /// <returns>A new JellyfinMovie instance</returns>
+    public static JellyfinMovie FromMovie(Movie movie)
     {
-#if JELLYFIN_V10_11
-        // Jellyfin 10.11+ specific movie operations
-        PerformV10_11MovieOperation();
-#else
-        // Jellyfin 10.10.7 specific movie operations
-        PerformV10_10_7MovieOperation();
-#endif
+        return new JellyfinMovie(movie);
     }
 
-#if JELLYFIN_V10_11
     /// <summary>
-    /// Jellyfin 10.11+ specific movie operations.
+    /// Get the underlying Movie instance.
     /// </summary>
-    private void PerformV10_11MovieOperation()
+    /// <returns>The Movie instance or null if not available</returns>
+    public Movie? GetMovie()
     {
-        // Future implementation for 10.11+
-        // Example: Use new movie API
+        return Inner;
     }
-#else
-    /// <summary>
-    /// Jellyfin 10.10.7 specific movie operations.
-    /// </summary>
-    private void PerformV10_10_7MovieOperation()
-    {
-        // Current implementation for 10.10.7
-        // Example: Use legacy movie API
-    }
-#endif
 
-    // Custom helper methods can be added here
-    // Example: public void SyncMovieMetadata() { /* custom logic */ }
+    /// <summary>
+    /// Get the ID of this movie.
+    /// </summary>
+    public Guid Id => Inner.Id;
+
+    /// <summary>
+    /// Get the name of this movie.
+    /// </summary>
+    public string Name => Inner.Name;
+
+    /// <summary>
+    /// Get the path of this movie.
+    /// </summary>
+    public string Path => Inner.Path;
+
+    /// <summary>
+    /// Get the provider IDs for this movie.
+    /// </summary>
+    public Dictionary<string, string> ProviderIds => Inner.ProviderIds;
+
+    /// <summary>
+    /// Extract TMDB ID from movie metadata.
+    /// </summary>
+    /// <returns>TMDB ID if found, null otherwise</returns>
+    public int? GetTmdbId()
+    {
+        try
+        {
+            if (ProviderIds.TryGetValue("Tmdb", out var providerId) && !string.IsNullOrEmpty(providerId))
+            {
+                if (int.TryParse(providerId, out var id))
+                {
+                    return id;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore errors and return null
+        }
+        
+        return null;
+    }
+
+    /// <summary>
+    /// Get a provider ID by name.
+    /// </summary>
+    /// <param name="name">The provider name</param>
+    /// <returns>The provider ID if found, null otherwise</returns>
+    public string? GetProviderId(string name)
+    {
+        try
+        {
+            if (ProviderIds.TryGetValue(name, out var providerId))
+            {
+                return providerId;
+            }
+        }
+        catch
+        {
+            // Ignore errors and return null
+        }
+        
+        return null;
+    }
+
+    /// <summary>
+    /// Check if two JellyfinMovie objects match by comparing IDs.
+    /// </summary>
+    /// <param name="other">Other JellyfinMovie to compare</param>
+    /// <returns>True if the movies match, false otherwise</returns>
+    public bool ItemsMatch(IJellyfinItem other)
+    {
+        if (other == null) return false;
+        return Id == other.Id;
+    }
+
+    /// <summary>
+    /// Serialize the item to JSON using the provided DTO service.
+    /// </summary>
+    /// <param name="dtoService">The DTO service to use for serialization</param>
+    /// <returns>JSON representation of the item</returns>
+    public string? ToJson(MediaBrowser.Controller.Dto.IDtoService dtoService)
+    {
+        try
+        {
+            var dtoOptions = new MediaBrowser.Controller.Dto.DtoOptions();
+            var baseItemDto = dtoService.GetBaseItemDto(Inner, dtoOptions);
+            return System.Text.Json.JsonSerializer.Serialize(baseItemDto);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 }

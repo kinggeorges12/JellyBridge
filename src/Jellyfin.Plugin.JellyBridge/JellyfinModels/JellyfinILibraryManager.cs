@@ -1,10 +1,14 @@
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
 /// Wrapper around Jellyfin's ILibraryManager interface.
-/// Version-specific implementation for Jellyfin 10.10.7 with conditional compilation for 10.11+.
+/// Version-specific implementation with conditional compilation for namespace changes.
 /// </summary>
 public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
 {
@@ -14,39 +18,92 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
     }
 
     /// <summary>
-    /// Version-specific library manager operations.
+    /// Get existing items of a specific type from the library.
     /// </summary>
-    public void PerformLibraryOperation()
+    /// <typeparam name="T">The type of Jellyfin wrapper to retrieve (JellyfinMovie, JellyfinSeries)</typeparam>
+    /// <param name="libraryPath">Optional library path to filter by</param>
+    /// <returns>List of existing items</returns>
+    public List<T> GetExistingItems<T>(string? libraryPath = null) where T : class, IJellyfinItem
     {
-#if JELLYFIN_V10_11
-        // Jellyfin 10.11+ specific library operations
-        PerformV10_11LibraryOperation();
-#else
-        // Jellyfin 10.10.7 specific library operations
-        PerformV10_10_7LibraryOperation();
-#endif
+        try
+        {
+            // Get the appropriate BaseItemKind for the type
+            if (typeof(T) == typeof(JellyfinMovie))
+            {
+                var itemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Movie };
+                var items = Inner.GetItemList(new InternalItemsQuery
+                {
+                    IncludeItemTypes = itemTypes,
+                    Recursive = true
+                });
+                
+                // Convert BaseItem results to Jellyfin wrapper using factory methods
+                var jellyfinItems = items.Select<BaseItem, T?>(item => 
+                {
+                    if (item is Movie movie)
+                    {
+                        return (T)(object)JellyfinMovie.FromMovie(movie);
+                    }
+                    return null;
+                }).Where(item => item != null).Cast<T>();
+                
+                var filteredItems = jellyfinItems;
+                
+                // Filter by library path if provided
+                if (!string.IsNullOrEmpty(libraryPath))
+                {
+                    filteredItems = filteredItems.Where(item => 
+                        !string.IsNullOrEmpty(item.Path) && 
+                        item.Path.StartsWith(libraryPath, StringComparison.OrdinalIgnoreCase));
+                }
+                
+                return filteredItems.ToList();
+            }
+            else if (typeof(T) == typeof(JellyfinSeries))
+            {
+                var itemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Series };
+                var items = Inner.GetItemList(new InternalItemsQuery
+                {
+                    IncludeItemTypes = itemTypes,
+                    Recursive = true
+                });
+                
+                // Convert BaseItem results to Jellyfin wrapper using factory methods
+                var jellyfinItems = items.Select<BaseItem, T?>(item => 
+                {
+                    if (item is Series series)
+                    {
+                        return (T)(object)JellyfinSeries.FromSeries(series);
+                    }
+                    return null;
+                }).Where(item => item != null).Cast<T>();
+                
+                var filteredItems = jellyfinItems;
+                
+                // Filter by library path if provided
+                if (!string.IsNullOrEmpty(libraryPath))
+                {
+                    filteredItems = filteredItems.Where(item => 
+                        !string.IsNullOrEmpty(item.Path) && 
+                        item.Path.StartsWith(libraryPath, StringComparison.OrdinalIgnoreCase));
+                }
+                
+                return filteredItems.ToList();
+            }
+            else
+            {
+                return new List<T>();
+            }
+        }
+        catch (MissingMethodException)
+        {
+            // Using incompatible Jellyfin version
+        }
+        catch (Exception)
+        {
+            // Error getting existing items
+        }
+        return new List<T>();
     }
 
-#if JELLYFIN_V10_11
-    /// <summary>
-    /// Jellyfin 10.11+ specific library operations.
-    /// </summary>
-    private void PerformV10_11LibraryOperation()
-    {
-        // Future implementation for 10.11+
-        // Example: Use new client API
-    }
-#else
-    /// <summary>
-    /// Jellyfin 10.10.7 specific library operations.
-    /// </summary>
-    private void PerformV10_10_7LibraryOperation()
-    {
-        // Current implementation for 10.10.7
-        // Example: Use legacy client API
-    }
-#endif
-
-    // Custom helper methods can be added here
-    // Example: public void CustomLibraryOperation() { /* custom logic */ }
 }

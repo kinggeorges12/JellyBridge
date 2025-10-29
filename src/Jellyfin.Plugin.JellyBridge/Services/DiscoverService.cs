@@ -117,7 +117,7 @@ public class DiscoverService
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
         
-        _logger.LogDebug("CreatePlaceholderVideosAsync: Processing {UnmatchedCount} unmatched items for placeholder creation", 
+        _logger.LogDebug("Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
         
         foreach (var item in unmatchedItems)
@@ -143,18 +143,18 @@ public class DiscoverService
                 }
                 
                 processedItems.Add(item);
-                _logger.LogTrace("CreatePlaceholderVideosAsync: ✅ Created placeholder video for {ItemName}", item.MediaName);
+                _logger.LogTrace("✅ Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CreatePlaceholderVideosAsync: ❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
+                _logger.LogError(ex, "❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
             }
         }
         
         // Await all placeholder video tasks
         await Task.WhenAll(tasks);
         
-        _logger.LogDebug("CreatePlaceholderVideosAsync: Completed - Processed {ProcessedCount} items", 
+        _logger.LogDebug("Completed - Processed {ProcessedCount} items", 
             processedItems.Count);
         
         return processedItems;
@@ -166,7 +166,7 @@ public class DiscoverService
     /// </summary>
     public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
     {
-        _logger.LogDebug("CreateSeasonFoldersForShows: Starting season folder creation for {ShowCount} shows", shows.Count);
+        _logger.LogDebug("Starting season folder creation for {ShowCount} shows", shows.Count);
         
         foreach (var show in shows)
         {
@@ -174,7 +174,7 @@ public class DiscoverService
             {
                 var showFolderPath = _metadataService.GetJellyseerrItemDirectory(show);
                 
-                _logger.LogTrace("CreateSeasonFoldersForShows: Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
+                _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
                     show.MediaName, showFolderPath);
                 
                 var seasonFolderName = "Season 00";
@@ -186,34 +186,34 @@ public class DiscoverService
                     if (!Directory.Exists(seasonFolderPath))
                     {
                         Directory.CreateDirectory(seasonFolderPath);
-                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+                        _logger.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     
                     // Generate season placeholder video
                     var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
                     if (placeholderSuccess)
                     {
-                        _logger.LogDebug("CreateSeasonFoldersForShows: Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                        _logger.LogDebug("Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     else
                     {
-                        _logger.LogWarning("CreateSeasonFoldersForShows: Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
+                        _logger.LogWarning("Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     
-                    _logger.LogTrace("CreateSeasonFoldersForShows: ✅ Created season folder for show '{MediaName}'", show.MediaName);
+                    _logger.LogTrace("✅ Created season folder for show '{MediaName}'", show.MediaName);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "CreateSeasonFoldersForShows: Error creating season folder for show '{MediaName}'", show.MediaName);
+                    _logger.LogError(ex, "Error creating season folder for show '{MediaName}'", show.MediaName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CreateSeasonFoldersForShows: ❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
+                _logger.LogError(ex, "❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
             }
         }
         
-        _logger.LogDebug("CreateSeasonFoldersForShows: Completed season folder creation for {ShowCount} shows", shows.Count);
+        _logger.LogDebug("Completed season folder creation for {ShowCount} shows", shows.Count);
     }
 
 
@@ -234,21 +234,21 @@ public class DiscoverService
             // Read all bridge folder metadata
             var (movies, shows) = await _metadataService.ReadMetadataAsync();
             
-            _logger.LogDebug("CleanupMetadataAsync: Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
+            _logger.LogDebug("Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
                 movies.Count, shows.Count);
 
             // Process movies and shows using the same logic
             var deletedMovies = ProcessItemsForCleanup(movies);
             var deletedShows = ProcessItemsForCleanup(shows);
 
-            _logger.LogDebug("CleanupMetadataAsync: Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
+            _logger.LogDebug("Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
                 deletedMovies.Count, deletedShows.Count);
             
             return (deletedMovies, deletedShows);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "CleanupMetadataAsync: Error during cleanup process");
+            _logger.LogError(ex, "Error during cleanup process");
             return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
         }
     }
@@ -282,7 +282,7 @@ public class DiscoverService
         var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
         var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
         
-        _logger.LogTrace("ProcessItemsForCleanup: Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
+        _logger.LogTrace("Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
             items.Count, itemType, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
         
         try
@@ -311,7 +311,7 @@ public class DiscoverService
                     {
                         Directory.Delete(itemDirectory, true);
                         deletedItems.Add(item);
-                        _logger.LogTrace("ProcessItemsForCleanup: ✅ Removed {ItemType} '{ItemName}' - {Reason}", 
+                        _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
                             itemType, item.MediaName, deletionReason);
                     }
                 }
@@ -319,7 +319,7 @@ public class DiscoverService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ProcessItemsForCleanup: Error processing {ItemType}", itemType);
+            _logger.LogError(ex, "Error processing {ItemType}", itemType);
         }
         
         return deletedItems;

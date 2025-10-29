@@ -1,28 +1,38 @@
-using MediaBrowser.Controller;
-using MediaBrowser.Controller.Plugins;
-using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Tasks;
 using Jellyfin.Plugin.JellyBridge.Services;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services
 {
     /// <summary>
     /// Register Jellyseerr Bridge services.
     /// </summary>
-    public class PluginServiceRegistrator : IPluginServiceRegistrator
+    public class PluginServiceRegistrator : MediaBrowser.Controller.Plugins.IPluginServiceRegistrator
     {
         /// <inheritdoc />
-        public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
+        public void RegisterServices(IServiceCollection serviceCollection, MediaBrowser.Controller.IServerApplicationHost applicationHost)
         {
             // Register logging services for the plugin
             serviceCollection.AddLogging();
             
             // Register HTTP client for Jellyseerr API
             serviceCollection.AddHttpClient<ApiService>();
+            
+            // Register Jellyfin wrapper classes (only those with version differences)
+            serviceCollection.AddScoped<JellyfinILibraryManager>(provider => 
+                new JellyfinILibraryManager(provider.GetRequiredService<MediaBrowser.Controller.Library.ILibraryManager>()));
+            serviceCollection.AddScoped<JellyfinIUserDataManager>(provider => 
+                new JellyfinIUserDataManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserDataManager>()));
+            
+            // Register direct Jellyfin types (no version differences)
+            serviceCollection.AddScoped<MediaBrowser.Controller.Providers.IDirectoryService>();
+            serviceCollection.AddScoped<MediaBrowser.Controller.Dto.IDtoService>();
+            serviceCollection.AddScoped<MediaBrowser.Controller.MediaEncoding.IMediaEncoder>();
+            serviceCollection.AddScoped<MediaBrowser.Controller.Library.IUserManager>();
             
             // Register the base services
             serviceCollection.AddScoped<ApiService>();
