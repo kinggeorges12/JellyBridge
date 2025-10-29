@@ -27,24 +27,6 @@
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.3.0/JellyBridge-1.1.3.0-DLL-JF-10.11.zip"
       },
       {
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.1.0/JellyBridge-1.1.1.0-DLL-JF-10.10.zip",
-        "checksum": "1BA4ED2D768CB39B7C294747D884E9AE",
-        "version": "1.1.1.0",
-        "changelog": "v1.1.1.0 - testing Jellyfin compatibility for 10.11",
-        "timestamp": "2025-10-29T06:08:48.973Z",
-        "dependencies": []
-      },
-      {
-        "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.1.0/JellyBridge-1.1.1.0-DLL-JF-10.11.zip",
-        "checksum": "CC59AEC6BE920190D295C3A3287B7CC3",
-        "version": "1.1.1.0",
-        "changelog": "v1.1.1.0 - testing Jellyfin compatibility for 10.11",
-        "timestamp": "2025-10-29T06:08:48.973Z",
-        "dependencies": []
-      },
-      {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.1.0.0/JellyBridge-1.1.0.0-DLL.zip",
         "timestamp": "2025-10-28T15:39:08.835Z",
         "version": "1.1.0.0",
