@@ -30,9 +30,9 @@ $GitHubToken = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() 
 # Ensure Version is treated as string
 $Version = $Version.ToString()
 
-# Validate version format (should be like 0.69.0.0)
-if ($Version -notmatch '^\d+\.\d+\.\d+\.\d+$') {
-    Write-Error '[X] Version must be in format X.Y.Z.W (e.g., 0.69.0.0)'
+# Validate version format (should be like 0.69.0)
+if ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    Write-Error '[X] Version must be in format X.Y.Z (e.g., 1.2.3)'
     exit 1
 }
 
@@ -80,8 +80,8 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
-    @{ JellyfinVersion = "10.11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; Suffix = "JF-10.11" },
-    @{ JellyfinVersion = "10.10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; Suffix = "JF-10.10" }
+    @{ JellyfinVersion = "10.11.0"; SubVersion = "11"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.10.7"; SubVersion = "10"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
 )
 
 $createdZips = @()
@@ -90,8 +90,8 @@ $newManifestEntries = @()
 foreach ($t in $targets) {
     $jf = $t.JellyfinVersion
     $fw = $t.Framework
-    $suffix = $t.Suffix
     $minAbi = $t.MinTargetAbi
+    $ver_sub = $Version + $t.SubVersion
 
     Write-Host "\n[~] Building for Jellyfin $jf ($fw)" -ForegroundColor Cyan
     $buildArgs = @(
@@ -125,7 +125,7 @@ foreach ($t in $targets) {
         description = $pluginInfo.description
         owner = $pluginInfo.owner
         category = $pluginInfo.category
-        version = $Version
+        version = $ver_sub
         changelog = $ChangelogText
         targetAbi = $minAbi
         timestamp = $timestamp
@@ -139,7 +139,7 @@ foreach ($t in $targets) {
     Write-Host "[~] Created meta.json at $metaPath" -ForegroundColor Green
 
     # Zip artifact (suffix by ABI)
-    $zipName = "JellyBridge-$Version-DLL-$suffix.zip"
+    $zipName = "JellyBridge-$ver_sub.zip"
     $zipPath = Join-Path $releaseDir $zipName
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     Write-Host "[~] Creating ZIP: $zipName" -ForegroundColor Yellow
@@ -149,11 +149,11 @@ foreach ($t in $targets) {
 
     # MD5 checksum
     $checksum = (Get-FileHash -Path $zipPath -Algorithm MD5).Hash
-    Write-Host "[~] Checksum ($suffix): $checksum" -ForegroundColor Green
+    Write-Host "[~] Checksum ($ver_sub): $checksum" -ForegroundColor Green
 
     # Prepare manifest entry for this ABI
     $entry = @{
-        version = $Version
+        version = $ver_sub
         changelog = "Jellyfin $($t.JellyfinVersion): $ChangelogText"
         targetAbi = $minAbi
         sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/$zipName"
