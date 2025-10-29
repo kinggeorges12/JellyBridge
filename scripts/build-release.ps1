@@ -91,7 +91,7 @@ foreach ($t in $targets) {
     $jf = $t.JellyfinVersion
     $fw = $t.Framework
     $minAbi = $t.MinTargetAbi
-    $ver_sub = $Version + $t.SubVersion
+    $ver_sub = $Version + "." + $t.SubVersion
 
     Write-Host "\n[~] Building for Jellyfin $jf ($fw)" -ForegroundColor Cyan
     $buildArgs = @(
