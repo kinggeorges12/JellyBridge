@@ -45,6 +45,13 @@ public class StartupTask : IScheduledTask
                 await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
             }
             
+            if (!autoSyncOnStartup)
+            {
+                _logger.LogTrace("AutoSyncOnStartup disabled - startup task will not execute sync");
+                progress.Report(100);
+                return;
+            }
+
             // Get the SyncTask and execute it
             var syncTask = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
             if (syncTask?.ScheduledTask is SyncTask task)
@@ -65,17 +72,8 @@ public class StartupTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
-        var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-        
-        if (!isEnabled || !autoSyncOnStartup)
-        {
-            _logger.LogDebug("Plugin disabled or startup sync disabled, returning empty triggers");
-            return Array.Empty<TaskTriggerInfo>();
-        }
-
-        _logger.LogDebug("Added startup trigger");
-        
+        // Always register a startup trigger. ExecuteAsync will decide whether to run sync based on configuration.
+        _logger.LogTrace("Registering startup trigger for StartupTask");
         return new List<TaskTriggerInfo>
         {
             JellyfinTaskTrigger.Startup()
