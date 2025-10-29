@@ -520,30 +520,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     {
                         var interval = TimeSpan.FromTicks(intervalTicks.Value);
 
-                        // Decision tree:
-                        // 1) If Scheduled Sync has NOT run since startup, next = startupStart + 1 hour
-                        // 2) Else if there is a completed/recorded last run, next = lastRun + interval
-                        // 3) Else if we have a sync start, next = syncStart + interval
+                        // Decision tree per spec:
+                        // 1) If scheduled sync has a completed run: next = syncEnd + interval
+                        // 2) Else if we have a startup timestamp: next = startupStart + 1 hour
+                        // 3) Else if we have a sync start: next = syncStart + interval
                         // 4) Else no estimate
-                        bool syncRanSinceStartup = false;
-                        if (startupStart.HasValue)
+                        if (syncEnd.HasValue)
                         {
-                            if ((syncEnd.HasValue && syncEnd.Value > startupStart.Value) ||
-                                (syncStart.HasValue && syncStart.Value > startupStart.Value))
-                            {
-                                syncRanSinceStartup = true;
-                            }
+                            nextRun = syncEnd.Value.Add(interval);
+                            _logger.LogTrace("Next run from scheduled last end + interval: {NextRun}", nextRun);
                         }
-
-                        if (!syncRanSinceStartup && startupStart.HasValue)
+                        else if (startupStart.HasValue)
                         {
                             nextRun = startupStart.Value.AddHours(1);
-                            _logger.LogTrace("Scheduled sync has not run since startup; next run = startup start + 1h: {NextRun}", nextRun);
-                        }
-                        else if (lastRun.HasValue)
-                        {
-                            nextRun = lastRun.Value.Add(interval);
-                            _logger.LogTrace("Calculated next run time from last run: {NextRun}", nextRun);
+                            _logger.LogTrace("No scheduled runs yet; next run = startup start + 1h: {NextRun}", nextRun);
                         }
                         else if (syncStart.HasValue)
                         {
