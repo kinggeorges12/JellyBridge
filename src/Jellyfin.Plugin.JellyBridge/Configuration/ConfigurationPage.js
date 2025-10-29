@@ -145,7 +145,7 @@ function updateTaskStatusDisplay(page, taskData) {
         runInfo += `Last run${src}: ${new Date(taskData.lastRun).toLocaleString()}`;
     } else {
         if (runInfo) runInfo += ' • ';
-        runInfo += 'No previous runs';
+        runInfo += 'No previous runs since startup';
     }
     if (taskData.nextRun) {
         if (runInfo) runInfo += ' • ';
