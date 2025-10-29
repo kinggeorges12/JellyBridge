@@ -196,28 +196,78 @@ public class FavoriteService
     }
 
     /// <summary>
-    /// Get existing requests from Jellyseerr to avoid duplicates.
+    /// Filter favorites by removing items that already have Jellyseerr requests.
+    /// Returns a dictionary of user to favorites that do NOT have existing requests.
     /// </summary>
-    private async Task<List<JellyseerrMediaRequest>> GetExistingRequestsAsync()
+    public async Task<Dictionary<JellyfinUser, List<IJellyfinItem>>> FilterRequestsFromFavorites(
+        Dictionary<JellyfinUser, List<IJellyfinItem>> allFavorites)
     {
-            try
+        try
+        {
+            var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
+            if (requestsResult == null)
             {
-                var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
-                if (requestsResult is List<JellyseerrMediaRequest> requests)
+                _logger.LogError("Jellyseerr requests endpoint returned null response");
+                return allFavorites; // Fail-safe: don't drop any favorites if API response is null
+            }
+
+            var jellyseerrRequests = (List<JellyseerrMediaRequest>)requestsResult;
+
+            _logger.LogDebug("Fetched {RequestCount} existing requests from Jellyseerr", jellyseerrRequests.Count);
+
+            // Build a lookup of existing requests by (MediaType, TmdbId) for O(1) checks
+            var requestedLookup = new HashSet<(JellyseerrModel.MediaType type, int tmdbId)>(
+                jellyseerrRequests
+                    .Select(r => r.Media)
+                    .Select(m => (m.MediaType, m.TmdbId)));
+
+            var filtered = new Dictionary<JellyfinUser, List<IJellyfinItem>>();
+
+            foreach (var (user, favorites) in allFavorites)
+            {
+                var kept = new List<IJellyfinItem>();
+                var removedLog = new List<string>();
+
+                foreach (var f in favorites)
                 {
-                _logger.LogDebug("Fetched {RequestCount} existing requests from Jellyseerr", requests.Count);
-                return requests;
-            }
-            else
-            {
-                    _logger.LogWarning("Failed to fetch requests from Jellyseerr - unexpected result type");
-                return new List<JellyseerrMediaRequest>();
-            }
+                    var tmdb = f.GetTmdbId();
+                    var type = IJellyseerrItem.GetMediaType(f);
+
+                    var isRequested = tmdb.HasValue && requestedLookup.Contains((type, tmdb.Value));
+
+                    if (isRequested)
+                    {
+                        removedLog.Add(tmdb.HasValue
+                            ? $"{f.Name} (TMDB {tmdb.Value}, {type})"
+                            : $"{f.Name} ({type})");
+                        continue;
+                    }
+
+                    kept.Add(f);
                 }
-                catch (Exception ex)
+
+                if (removedLog.Count > 0)
                 {
-                _logger.LogError(ex, "Failed to fetch requests from Jellyseerr");
-            return new List<JellyseerrMediaRequest>();
+                    _logger.LogTrace("Filtered {Count} requested favorites for user {User}: {Items}",
+                        removedLog.Count,
+                        user.Username,
+                        string.Join(", ", removedLog));
+                }
+
+                filtered[user] = kept;
+            }
+
+            _logger.LogDebug(
+                "Found {UnrequestedCount} unrequested favorite items, filtered from {TotalCount} total",
+                filtered.Values.Sum(v => v.Count), allFavorites.Values.Sum(v => v.Count));
+
+            return filtered;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to filter favorites using Jellyseerr requests");
+            // On failure, return the original list to avoid dropping user selections
+            return allFavorites;
         }
     }
 

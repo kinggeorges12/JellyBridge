@@ -280,13 +280,16 @@ public partial class SyncService
                 result.Message = "👥 No Jellyseerr users found";
                 return result;
             }
-            
-            // Step 4: Group bridge-only items by TMDB ID and find first user who favorited each
-            var uniqueItemsWithJellyseerrUser = _favoriteService.EnsureFirstJellyseerrUser(bridgeOnlyItems, allFavorites, jellyseerrUsers);
+
+            // Step 4: Filter out items that already have requests in Jellyseerr
+            var unrequestedFavoriteItems = await _favoriteService.FilterRequestsFromFavorites(allFavorites);
+
+            // Step 5: Group bridge-only items by TMDB ID and find first user who favorited each
+            var uniqueItemsWithJellyseerrUser = _favoriteService.EnsureFirstJellyseerrUser(bridgeOnlyItems, unrequestedFavoriteItems, jellyseerrUsers);
             _logger.LogDebug("Found {UniqueCount} unique Jellyseerr bridge items from Jellyseerr user favorites (from {TotalCount} total)", 
                 uniqueItemsWithJellyseerrUser.Count, bridgeOnlyItems.Count);
             
-            // Step 5 & 6: Create requests for favorited bridge-only items
+            // Step 6: Create requests for favorited bridge-only items
             var requestResults = await _favoriteService.RequestFavorites(uniqueItemsWithJellyseerrUser);
             
             // Add the successful requests directly to the created lists
