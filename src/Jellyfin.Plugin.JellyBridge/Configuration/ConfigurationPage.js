@@ -153,7 +153,7 @@ function updateTaskStatusDisplay(page, taskData) {
         
         // Add tooltip explaining next run time calculation
         if (!taskData.lastRun || taskData.lastRunSource === 'Startup') {
-            taskStatusTimes.setAttribute('title', 'When there is no previous scheduled run, the next run is scheduled 1 hour after plugin load time. After the first run, it follows the configured sync interval.');
+            taskStatusTimes.setAttribute('title', 'When the scheduled sync has not run since installing this plugin, the next run is always 1 hour later. After that, it follows the Sync Interval setting.');
         } else {
             taskStatusTimes.removeAttribute('title');
         }
