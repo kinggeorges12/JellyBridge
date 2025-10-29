@@ -79,17 +79,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
         }
 
-        [HttpPost("PluginConfiguration")]
-        public IActionResult UpdatePluginConfiguration([FromBody] JsonElement configData)
+		[HttpPost("PluginConfiguration")]
+		public IActionResult UpdatePluginConfiguration([FromBody] JsonElement configData)
         {
             _logger.LogTrace("PluginConfiguration POST endpoint called");
             
             try
             {
                 // Use Jellyfin-style locking that pauses instead of canceling
-                var result = Plugin.ExecuteWithLockAsync<bool>(() =>
+				var result = Plugin.ExecuteWithLockAsync<bool>(() =>
                 {
-                    var config = new PluginConfiguration();
+					// Start from existing configuration so unspecified fields are preserved
+					var config = Plugin.GetConfiguration();
                     
                     // Update configuration properties using simplified helper
                     SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
@@ -107,26 +108,29 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetValueOrDefault<string>(configData, nameof(config.Region), config);
-                    // Handle NetworkMap as array of JellyseerrNetwork objects
-                    if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
-                        networkMapElement.ValueKind == JsonValueKind.Array)
-                    {
-                        try
-                        {
-                            config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
-                            _logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("NetworkMap is not an array or not found. ValueKind: {ValueKind}, JSON: {Json}", 
-                            networkMapElement.ValueKind, config.NetworkMap);
-                        config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
-                    }
+					// Handle NetworkMap as array of JellyseerrNetwork objects
+					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
+						networkMapElement.ValueKind == JsonValueKind.Array)
+					{
+						try
+						{
+							config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
+							_logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+						}
+						catch (Exception ex)
+						{
+							_logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+						}
+					}
+					else
+					{
+						// If NetworkMap wasn't provided, preserve existing value; only fall back to defaults if null/empty
+						if (config.NetworkMap == null || config.NetworkMap.Count == 0)
+						{
+							_logger.LogWarning("NetworkMap not provided in payload and existing value is empty. Using defaults.");
+							config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
+						}
+					}
                     
                     // Save the configuration
                     Plugin.Instance.UpdateConfiguration(config);
@@ -516,14 +520,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     }
                 }
                 
+                // Normalize times to consistent UTC ISO strings for cross-version compatibility (10.10 vs 10.11)
                 var result = new
                 {
                     isRunning = isRunning,
                     status = isRunning ? "Running" : "Idle",
                     progress = task?.CurrentProgress,
                     message = isRunning ? "Sync operation in progress..." : "No active sync operation",
-                    lastRun = lastRun,
-                    nextRun = nextRun
+                    lastRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(lastRun),
+                    nextRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(nextRun)
                 };
                 
                 _logger.LogDebug("Task status: {Status}, LastRun: {LastRun}, NextRun: {NextRun}", result.status, lastRun, nextRun);
