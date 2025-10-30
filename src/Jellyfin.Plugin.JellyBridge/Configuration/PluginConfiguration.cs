@@ -10,6 +10,8 @@ namespace Jellyfin.Plugin.JellyBridge.Configuration;
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
+    // Library Settings
+    public bool CreateAllUserFavorites { get; set; }
     /// <summary>
     /// Dictionary containing default values for all configuration properties.
     /// </summary>
@@ -27,6 +29,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(LibraryDirectory), "/data/JellyBridge" },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(CreateAllUserFavorites), false },
         { nameof(CreateSeparateLibraries), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ManageJellyseerrLibrary), true },

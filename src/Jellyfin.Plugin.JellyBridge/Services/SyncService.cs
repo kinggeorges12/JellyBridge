@@ -124,8 +124,23 @@ public partial class SyncService
             result.AddedShows = addedShows;
             result.UpdatedShows = updatedShows;
 
-            // Run library scan to find matches and get unmatched items
-            var (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMovies, discoverShows);
+            List<JellyMatch> matchedItems = new List<JellyMatch>();
+            List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
+            var discoverMedia = new List<IJellyseerrItem>();
+            discoverMedia.AddRange(discoverMovies.Cast<IJellyseerrItem>());
+            discoverMedia.AddRange(discoverShows.Cast<IJellyseerrItem>());
+            var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
+            if (excludeFromMainLibraries) {
+                // Run library scan to find matches and get unmatched items
+                (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMedia);
+            } else {
+                unmatchedItems = discoverMedia;
+                _logger.LogDebug("Including main libraries in JellyBridge");
+                
+                // Delete all existing .ignore files when including main libraries
+                var deletedCount = await _discoverService.DeleteAllIgnoreFilesAsync();
+                _logger.LogTrace("Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
+            } 
 
             // Create ignore files for matched items
             _logger.LogDebug("🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
@@ -255,21 +270,17 @@ public partial class SyncService
             result.ShowsResult.ItemsProcessed.AddRange(bridgeShows);
             
             // Step 2: Get all Jellyfin users and their favorites
-            var allFavorites = _userDataManager.GetUserFavorites<IJellyfinItem>(_userManager, _libraryManager.Inner);
-            _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavorites.Count);
-            
-            // Log all favorites for debugging
-            foreach (var (user, favorites) in allFavorites)
+            var allFavoritesDict = _userDataManager.GetUserFavorites<IJellyfinItem>(_userManager, _libraryManager.Inner);
+            _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavoritesDict.Count);
+            foreach (var (user, favorites) in allFavoritesDict)
             {
                 _logger.LogTrace("User '{UserName}' has {FavoriteCount} favorites: {FavoriteNames}", 
                     user.Username, favorites.Count, 
                     string.Join(", ", favorites.Select(f => f.Name)));
             }
-            
-            // Add all favorited items to found lists (these are items that were favorited by users)
-            var allFavoritedItems = allFavorites.Values.SelectMany(favs => favs).ToList();
-            result.MoviesResult.ItemsFound.AddRange(allFavoritedItems.OfType<JellyfinMovie>());
-            result.ShowsResult.ItemsFound.AddRange(allFavoritedItems.OfType<JellyfinSeries>());
+            var allFavoritedItems = allFavoritesDict.SelectMany(kv => kv.Value.Select(item => (kv.Key, item))).ToList();
+            result.MoviesResult.ItemsFound.AddRange(allFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
+            result.ShowsResult.ItemsFound.AddRange(allFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
             
             // Step 3: Get all Jellyseerr users for request creation
             var jellyseerrUsers = await _favoriteService.GetJellyseerrUsersAsync();
@@ -282,15 +293,13 @@ public partial class SyncService
             }
 
             // Step 4: Filter out items that already have requests in Jellyseerr
-            var unrequestedFavoriteItems = await _favoriteService.FilterRequestsFromFavorites(allFavorites);
+            var unrequestedFavorites = await _favoriteService.FilterRequestsFromFavorites(allFavoritedItems);
 
             // Step 5: Group bridge-only items by TMDB ID and find first user who favorited each
-            var uniqueItemsWithJellyseerrUser = _favoriteService.EnsureFirstJellyseerrUser(bridgeOnlyItems, unrequestedFavoriteItems, jellyseerrUsers);
-            _logger.LogDebug("Found {UniqueCount} unique Jellyseerr bridge items from Jellyseerr user favorites (from {TotalCount} total)", 
-                uniqueItemsWithJellyseerrUser.Count, bridgeOnlyItems.Count);
-            
+            var unrequestedFavoritesWithJellyseerrUser = _favoriteService.EnsureJellyseerrUser(unrequestedFavorites, jellyseerrUsers);
+
             // Step 6: Create requests for favorited bridge-only items
-            List<(IJellyfinItem item, JellyseerrMediaRequest request)> requestResults = await _favoriteService.RequestFavorites(uniqueItemsWithJellyseerrUser);
+            var requestResults = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
             // Add the successful requests directly to the created lists (from tuple)
             result.MoviesResult.ItemsCreated.AddRange(
@@ -301,7 +310,12 @@ public partial class SyncService
                               .Select(r => r.request));
             
             // Step 7: Mark requested items by creating an .ignore file in each bridge item directory
-            var removedItems = await _favoriteService.IgnoreRequestedAsync(requestResults);
+            var allFavoritedJellyfinItems = new List<IJellyfinItem>();
+            allFavoritedJellyfinItems.AddRange(unrequestedFavoritesWithJellyseerrUser.Select(fav => fav.item));
+            allFavoritedJellyfinItems.AddRange(allFavoritedItems.Select(fav => fav.item));
+
+            // Delegate to FavoriteService to scan and write ignore files for matched favorites
+            var removedItems = await _favoriteService.IgnoreRequestedAsync(allFavoritedJellyfinItems);
 
             // Save results
             result.Success = true;
