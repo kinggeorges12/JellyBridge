@@ -53,68 +53,8 @@ namespace Jellyfin.Plugin.JellyBridge
         {
             _logger.LogTrace("Configuration update requested");
             _logger.LogTrace("Configuration update method called - this means the save button was clicked!");
-            
+
             var pluginConfig = (PluginConfiguration)configuration;
-            var oldConfig = GetConfiguration();
-            
-            // Compute effective old vs new values
-            var oldEnabled = GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), oldConfig);
-            var newEnabled = GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), pluginConfig);
-            var oldInterval = GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), oldConfig);
-            var newInterval = GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), pluginConfig);
-            var oldAutoStartup = GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), oldConfig);
-            var newAutoStartup = GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), pluginConfig);
-
-            // If the scheduled sync configuration changed, stamp when triggers will be reloaded
-            var scheduledChanged = oldEnabled != newEnabled || Math.Abs(oldInterval - newInterval) > double.Epsilon;
-            if (scheduledChanged)
-            {
-                pluginConfig.ScheduledTaskTimestamp = DateTimeOffset.UtcNow;
-                _logger.LogDebug("ScheduledTaskTimestamp set pre-save: {Timestamp}", pluginConfig.ScheduledTaskTimestamp);
-            }
-
-            // Reload triggers selectively based on changed properties
-            try
-            {
-                // Locate our task workers by their keys so we can update triggers precisely without affecting other tasks.
-                // We intentionally avoid reloading all tasks because Jellyfin defers interval tasks until after the trigger reload time + sync interval.
-                // To prevent unnecessary deferrals, we only touch:
-                // - the scheduled sync task when Enabled/Interval changes
-                // - the startup task when AutoSyncOnStartup changes
-                var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
-                var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
-
-                // Update scheduled sync task triggers only if IsEnabled or SyncInterval changed
-                if (scheduledChanged &&
-                    syncWorker != null && syncWorker.ScheduledTask is Tasks.SyncTask syncTask)
-                {
-                    _logger.LogDebug("Reloading sync task triggers due to config change (Enabled/Interval). Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldEnabled, oldInterval, newEnabled, newInterval);
-                    
-                    var newTriggers = syncTask.GetDefaultTriggers();
-                    syncWorker.Triggers = newTriggers.ToList();
-                    syncWorker.ReloadTriggerEvents();
-                    _logger.LogDebug("Sync task triggers reloaded.");
-                }
-
-                // Update startup task triggers only if AutoSyncOnStartup changed
-                if (oldAutoStartup != newAutoStartup && startupWorker != null)
-                {
-                    _logger.LogDebug("Reloading startup task triggers due to AutoSyncOnStartup change. Old={Old}, New={New}", oldAutoStartup, newAutoStartup);
-                    // Startup task exposes default triggers; always a startup trigger
-                    if (startupWorker.ScheduledTask is Tasks.StartupTask startupTask)
-                    {
-                        var triggers = startupTask.GetDefaultTriggers();
-                        startupWorker.Triggers = triggers.ToList();
-                        startupWorker.ReloadTriggerEvents();
-                        _logger.LogDebug("Startup task triggers reloaded successfully");
-                    }
-                }
-            
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to reload task triggers");
-            }
             
             // Preserve persisted values for fields not present in the submitted payload
             // Specifically ensure RanFirstTime isn't reset to null when saving
@@ -123,6 +63,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 pluginConfig.RanFirstTime = GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
                 _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
             }
+            
             _logger.LogDebug("Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
                 pluginConfig.IsEnabled, 
                 pluginConfig.JellyseerrUrl, 
@@ -134,6 +75,16 @@ namespace Jellyfin.Plugin.JellyBridge
             base.UpdateConfiguration(pluginConfig);
             _logger.LogInformation("Configuration updated successfully");
             
+        }
+
+        /// <summary>
+        /// Sets the RanFirstTime flag in the configuration.
+        /// </summary>
+        public static void SetRanFirstTime(bool value)
+        {
+            var config = GetConfiguration();
+            config.RanFirstTime = value;
+            Instance.UpdateConfiguration(config);
         }
 
         /// <summary>
@@ -158,16 +109,6 @@ namespace Jellyfin.Plugin.JellyBridge
             
             // Return default value for the type
             throw new InvalidOperationException($"Cannot provide default value for type {typeof(T)}");
-        }
-
-        /// <summary>
-        /// Sets the RanFirstTime flag in the configuration.
-        /// </summary>
-        public static void SetRanFirstTime(bool value)
-        {
-            var config = GetConfiguration();
-            config.RanFirstTime = value;
-            Instance.UpdateConfiguration(config);
         }
 
         /// <summary>
