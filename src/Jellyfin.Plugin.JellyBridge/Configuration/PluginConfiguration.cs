@@ -170,6 +170,12 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? ManageJellyseerrLibrary { get; set; }
 
     /// <summary>
+    /// Gets or sets the timestamp when scheduled task triggers were last updated due to config change.
+    /// Used to calculate next run time when triggers are reloaded.
+    /// </summary>
+    public DateTimeOffset? ScheduledTaskTimestamp { get; set; }
+
+    /// <summary>
     /// Returns a JSON representation of the configuration with API key masked.
     /// </summary>
     public override string ToString()
