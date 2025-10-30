@@ -392,9 +392,9 @@ public class DiscoverService
             {
                 if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
                 {
-                    synced.Add(match.JellyseerrItem);
-                } else {
                     filtered.Add(match);
+                } else {
+                    synced.Add(match.JellyseerrItem);
                 }
             }
         }
