@@ -55,9 +55,8 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
-function cacheBuster() {
+function cacheBuster(config) {
     try {
-        const config = window.configJellyBridge;    
         const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
         const target = Dashboard.getPluginUrl('JellyBridge') + `&nocache=${encodeURIComponent(version)}`;
         return Dashboard.navigate(target);
@@ -65,8 +64,10 @@ function cacheBuster() {
 }
 
 function initializePluginHeader(page) {
+    const config = window.configJellyBridge;
+    
     // Navigate to the page with a cache-busting parameter
-    cacheBuster();
+    cacheBuster(config);
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
