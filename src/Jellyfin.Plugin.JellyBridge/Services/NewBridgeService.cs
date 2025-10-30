@@ -108,36 +108,24 @@ public class NewBridgeService
     /// Find matches between existing Jellyfin items and bridge metadata.
     /// </summary>
     private List<JellyMatch> FindMatches<TJellyfin, TJellyseerr>(
-        List<TJellyfin> existingItems, 
-        List<TJellyseerr> bridgeMetadata) 
+        List<TJellyfin> jellyfinItems, 
+        List<TJellyseerr> jellyseerrItems) 
         where TJellyfin : IJellyfinItem 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var matches = new List<JellyMatch>();
 
-        foreach (var existingItem in existingItems)
+        foreach (var jellyfinItem in jellyfinItems)
         {
-            _logger.LogDebug("Checking existing item: {ItemName} (Id: {ItemId})", 
-                existingItem.Name, existingItem.Id);
-            
-            // Safety check: Skip items that are already in the Jellyseerr library directory
-            if (string.IsNullOrEmpty(existingItem.Path) || 
-                FolderUtils.IsPathInSyncDirectory(existingItem.Path))
-            {
-                _logger.LogDebug("Skipping item {ItemName} - already in Jellyseerr library directory: {ItemPath}", 
-                    existingItem.Name, existingItem.Path);
-                continue;
-            }
-            
             // Use the custom EqualsItem implementation rather than Equals cause I don't trust compile-time resolution.
-            var bridgeMatch = bridgeMetadata.FirstOrDefault(bm => bm.EqualsItem(existingItem));
+            var jellyseerrItem = jellyseerrItems.FirstOrDefault(bm => bm.EqualsItem(jellyfinItem));
 
-            if (bridgeMatch != null)
+            if (jellyseerrItem != null)
             {
-                _logger.LogTrace("Found match: '{BridgeMediaName}' (Id: {BridgeId}) matches '{ExistingName}' (Id: {ExistingId})", 
-                    bridgeMatch.MediaName, bridgeMatch.Id, existingItem.Name, existingItem.Id);
+                _logger.LogTrace("Found match: '{JellyfinItemName}' (Id: {JellyfinItemId}) matches '{JellyseerrItemName}' (Id: {JellyseerrItemId})", 
+                    jellyseerrItem.MediaName, jellyseerrItem.Id, jellyfinItem.Name, jellyfinItem.Id);
                 
-                matches.Add(new JellyMatch(bridgeMatch, existingItem));
+                matches.Add(new JellyMatch(jellyseerrItem, jellyfinItem));
             }
         }
 
