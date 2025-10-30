@@ -21,6 +21,8 @@ public class NewBridgeService
     private readonly MetadataService _metadataService;
     private readonly DiscoverService _discoverService;
 
+    public readonly static string IgnoreFileName = "ignore";
+
     public NewBridgeService(ILogger<NewBridgeService> logger, JellyfinILibraryManager libraryManager, IDtoService dtoService, MetadataService metadataService, DiscoverService discoverService)
     {
         _logger = new DebugLogger<NewBridgeService>(logger);
@@ -144,7 +146,7 @@ public class NewBridgeService
         {
             var bridgeFolderPath = _metadataService.GetJellyseerrItemDirectory(match.JellyseerrItem);
             var item = match.JellyfinItem;
-            var ignoreFilePath = Path.Combine(bridgeFolderPath, ".ignore");
+            var ignoreFilePath = Path.Combine(bridgeFolderPath, IgnoreFileName);
             
             try
             {
