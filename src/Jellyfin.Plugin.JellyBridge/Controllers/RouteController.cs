@@ -89,6 +89,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
 				var result = Plugin.ExecuteWithLockAsync<bool>(() =>
                 {
+
 					// Start from existing configuration so unspecified fields are preserved
 					var config = Plugin.GetConfiguration();
                     
@@ -131,6 +132,68 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 							config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
 						}
 					}
+
+                    // Compare values from existing configuration to new configuration
+                    var oldConfig = Plugin.GetConfiguration();
+                    
+                    // Compute effective old vs new values
+                    var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), oldConfig);
+                    var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
+                    var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), oldConfig);
+                    var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
+                    var oldAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), oldConfig);
+                    var newAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config);
+            
+                    // If the scheduled sync configuration changed, stamp when triggers will be reloaded
+                    var scheduledChanged = oldEnabled != newEnabled || Math.Abs(oldInterval - newInterval) > double.Epsilon;
+                    if (scheduledChanged)
+                    {
+                        config.ScheduledTaskTimestamp = DateTimeOffset.UtcNow;
+                        _logger.LogDebug("ScheduledTaskTimestamp set pre-save: {Timestamp}", config.ScheduledTaskTimestamp);
+                    }
+
+                    // Reload triggers selectively based on changed properties
+                    try
+                    {
+                        // Locate our task workers by their keys so we can update triggers precisely without affecting other tasks.
+                        // We intentionally avoid reloading all tasks because Jellyfin defers interval tasks until after the trigger reload time + sync interval.
+                        // To prevent unnecessary deferrals, we only touch:
+                        // - the scheduled sync task when Enabled/Interval changes
+                        // - the startup task when AutoSyncOnStartup changes
+                        var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
+                        var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
+
+                        // Update scheduled sync task triggers only if IsEnabled or SyncInterval changed
+                        if (scheduledChanged &&
+                            syncWorker != null && syncWorker.ScheduledTask is Tasks.SyncTask syncTask)
+                        {
+                            _logger.LogDebug("Reloading sync task triggers due to config change (Enabled/Interval). Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldEnabled, oldInterval, newEnabled, newInterval);
+                            
+                            var newTriggers = syncTask.GetDefaultTriggers();
+                            syncWorker.Triggers = newTriggers.ToList();
+                            syncWorker.ReloadTriggerEvents();
+                            _logger.LogDebug("Sync task triggers reloaded.");
+                        }
+
+                        // Update startup task triggers only if AutoSyncOnStartup changed
+                        if (oldAutoStartup != newAutoStartup && startupWorker != null)
+                        {
+                            _logger.LogDebug("Reloading startup task triggers due to AutoSyncOnStartup change. Old={Old}, New={New}", oldAutoStartup, newAutoStartup);
+                            // Startup task exposes default triggers; always a startup trigger
+                            if (startupWorker.ScheduledTask is Tasks.StartupTask startupTask)
+                            {
+                                var triggers = startupTask.GetDefaultTriggers();
+                                startupWorker.Triggers = triggers.ToList();
+                                startupWorker.ReloadTriggerEvents();
+                                _logger.LogDebug("Startup task triggers reloaded successfully");
+                            }
+                        }
+                    
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to reload task triggers");
+                    }
                     
                     // Save the configuration
                     Plugin.Instance.UpdateConfiguration(config);
