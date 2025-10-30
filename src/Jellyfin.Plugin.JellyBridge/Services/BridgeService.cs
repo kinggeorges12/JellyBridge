@@ -20,7 +20,7 @@ public class BridgeService
     private readonly IDtoService _dtoService;
     private readonly MetadataService _metadataService;
 
-    public readonly static string IgnoreFileName = "ignore";
+    public readonly static string IgnoreFileName = ".ignore";
 
     public BridgeService(ILogger<BridgeService> logger, JellyfinILibraryManager libraryManager, IDtoService dtoService, MetadataService metadataService)
     {
