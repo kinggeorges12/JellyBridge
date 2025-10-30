@@ -28,7 +28,7 @@ public class LibraryService
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
     /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
-    public bool? RefreshJellyseerrLibrary(bool fullRefresh = true, bool refreshImages = true)
+    public bool? RefreshJellyseerrLibrary(bool fullRefresh, bool refreshImages = true)
     {
         try
         {
@@ -63,14 +63,14 @@ public class LibraryService
             // Create refresh options based on fullRefresh parameter
             var refreshOptions = new MetadataRefreshOptions(_directoryService)
             {
-                MetadataRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
-                ImageRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
+                MetadataRefreshMode = MetadataRefreshMode.Default,
+                ImageRefreshMode = MetadataRefreshMode.Default,
                 ReplaceAllMetadata = fullRefresh,
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
-                IsAutomated = false,
-                RemoveOldMetadata = false
+                IsAutomated = true,
+                RemoveOldMetadata = fullRefresh
             };
             
             _logger.LogTrace("Refresh options - MetadataRefreshMode: {MetadataRefreshMode}, ImageRefreshMode: {ImageRefreshMode}, ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
@@ -147,7 +147,7 @@ public class LibraryService
                 try
                 {
                     await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
-                    _logger.LogDebug("Full scan of all libraries completed");
+                    _ = RefreshJellyseerrLibrary(fullRefresh: true, refreshImages: true);
                 }
                 catch (Exception ex)
                 {
