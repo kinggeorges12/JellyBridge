@@ -195,7 +195,7 @@ public class MetadataService
             
             var metadataFile = Path.Combine(targetDirectory, IJellyseerrItem.GetMetadataFilename());
             await File.WriteAllTextAsync(metadataFile, json);
-            _logger.LogDebug("Wrote metadata to {MetadataFile}", metadataFile);
+            _logger.LogTrace("Wrote metadata to {MetadataFile}", metadataFile);
             
             // Write XML metadata only if NFO file doesn't exist
             var xmlFile = Path.Combine(targetDirectory, IJellyseerrItem.GetNfoFilename(item));
@@ -203,7 +203,7 @@ public class MetadataService
             {
                 var xmlText = item.ToXmlString();
                 await File.WriteAllTextAsync(xmlFile, xmlText);
-                _logger.LogDebug("Wrote XML to {XmlFile}", xmlFile);
+                _logger.LogTrace("Wrote XML to {XmlFile}", xmlFile);
             }
             else
             {

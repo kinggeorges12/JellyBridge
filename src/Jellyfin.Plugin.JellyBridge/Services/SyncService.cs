@@ -134,7 +134,9 @@ public partial class SyncService
                 // Run library scan to find matches and get unmatched items
                 (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMedia);
                 // Remove matches that point to items already inside the JellyBridge sync directory
+                (matchedItems, var syncedItems) = _discoverService.FilterSyncedItems(allMatchedItems);
                 // Remove any unmatched items that already have an ignore file in their folder
+                unmatchedItems.AddRange(syncedItems);
                 unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
             } else {
                 unmatchedItems = discoverMedia;
