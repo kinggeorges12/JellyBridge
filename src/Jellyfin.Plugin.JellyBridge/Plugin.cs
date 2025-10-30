@@ -4,6 +4,7 @@ using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using Jellyfin.Plugin.JellyBridge.Utils;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Jellyfin.Plugin.JellyBridge
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        private readonly ILogger<Plugin> _logger;
+        private readonly DebugLogger<Plugin> _logger;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ITaskManager _taskManager;
 
@@ -32,7 +33,7 @@ namespace Jellyfin.Plugin.JellyBridge
             : base(applicationPaths, xmlSerializer)
         {
             _loggerFactory = loggerFactory;
-            _logger = loggerFactory.CreateLogger<Plugin>();
+            _logger = new DebugLogger<Plugin>(loggerFactory.CreateLogger<Plugin>());
             _taskManager = taskManager;
             Instance = this;
             

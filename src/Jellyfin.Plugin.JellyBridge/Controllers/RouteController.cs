@@ -32,7 +32,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         _bridgeService = bridgeService;
         _libraryService = libraryService;
         _taskManager = taskManager;
-        _logger.LogDebug("RouteController initialized");
     }
 
         [HttpGet("PluginConfiguration")]
@@ -90,9 +89,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 				var result = Plugin.ExecuteWithLockAsync<bool>(() =>
                 {
 
-					// Start from existing configuration so unspecified fields are preserved
-					var config = Plugin.GetConfiguration();
-                    
+                    // Start from existing configuration so unspecified fields are preserved
+                    var config = Plugin.GetConfiguration();
+
+                    // Capture old values BEFORE mutating config
+                    var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
+                    var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
+                    var oldAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config);
+
                     // Update configuration properties using simplified helper
                     SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
                     SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
@@ -133,16 +137,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 						}
 					}
 
-                    // Compare values from existing configuration to new configuration
-                    var oldConfig = Plugin.GetConfiguration();
-                    
-                    // Compute effective old vs new values
-                    var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), oldConfig);
+                    // Compute effective old vs new values (new values AFTER edits)
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
-                    var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), oldConfig);
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
-                    var oldAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), oldConfig);
                     var newAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config);
+
+                    // Debug snapshot of old vs new
+                    _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldAutoStartup}", oldEnabled, oldInterval, oldAutoStartup);
+                    _logger.LogDebug("Config snapshot (new): enabled={NewEnabled}, interval={NewInterval}, autoStartup={NewAutoStartup}", newEnabled, newInterval, newAutoStartup);
             
                     // If the scheduled sync configuration changed, stamp when triggers will be reloaded
                     var scheduledChanged = oldEnabled != newEnabled || Math.Abs(oldInterval - newInterval) > double.Epsilon;

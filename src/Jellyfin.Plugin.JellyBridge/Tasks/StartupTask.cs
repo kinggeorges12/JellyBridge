@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Services;
 using MediaBrowser.Model.Tasks;
+using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
@@ -11,7 +12,7 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 /// </summary>
 public class StartupTask : IScheduledTask
 {
-    private readonly ILogger<StartupTask> _logger;
+    private readonly DebugLogger<StartupTask> _logger;
     private readonly SyncService _syncService;
     private readonly ITaskManager _taskManager;
 
@@ -20,7 +21,7 @@ public class StartupTask : IScheduledTask
         SyncService syncService,
         ITaskManager taskManager)
     {
-        _logger = logger;
+        _logger = new DebugLogger<StartupTask>(logger);
         _syncService = syncService;
         _taskManager = taskManager;
     }
