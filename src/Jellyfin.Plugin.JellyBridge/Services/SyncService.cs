@@ -333,8 +333,8 @@ public partial class SyncService
                 result.ShowsResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinSeries>());
 
                 // Normal operation - only refresh Jellyseerr libraries
-                _logger.LogDebug("🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
-                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted, refreshImages: false);
+                _logger.LogDebug("🔄 Refreshing Jellyseerr library with synced content... (fullRefresh: false, refreshImages: false)");
+                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: false, refreshImages: false);
 
                 if (refreshSuccess == true)
                 {

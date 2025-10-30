@@ -45,7 +45,7 @@ public class MetadataService
                     try
                     {
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogDebug("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                         
                         // Check for movie.nfo to identify movie folders
                         var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());

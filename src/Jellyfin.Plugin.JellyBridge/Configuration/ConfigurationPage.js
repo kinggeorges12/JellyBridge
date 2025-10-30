@@ -24,6 +24,11 @@ export default function (view) {
             .then(function (config) {
                 // Store configuration globally for other functions to use
                 window.configJellyBridge = config;
+
+                // Update header legend with plugin version
+                if (config.PluginVersion) {
+                    view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+                }
                 
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
