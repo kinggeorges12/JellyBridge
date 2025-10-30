@@ -375,26 +375,32 @@ public class DiscoverService
     /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
     /// This prevents re-processing items that were created by the plugin itself.
     /// </summary>
-    public List<JellyMatch> FilterSyncedItems(List<JellyMatch> matches)
+    public (List<JellyMatch> filtered, List<IJellyseerrItem> synced) FilterSyncedItems(List<JellyMatch> matches)
     {
         if (matches == null || matches.Count == 0)
         {
-            return new List<JellyMatch>();
+            return (new List<JellyMatch>(), new List<IJellyseerrItem>());
         }
 
-        var filtered = new List<JellyMatch>(matches.Count);
+        var filtered = new List<JellyMatch>();
+        var synced = new List<IJellyseerrItem>();
         foreach (var match in matches)
         {
             var path = match?.JellyfinItem?.Path;
             // Keep the match only if it's not in the sync directory
-            if (match != null && (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path)))
+            if (match != null)
             {
-                filtered.Add(match);
+                if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
+                {
+                    synced.Add(match.JellyseerrItem);
+                } else {
+                    filtered.Add(match);
+                }
             }
         }
 
-        _logger.LogTrace("Filtered synced items: {Kept}/{Total}", filtered.Count, matches.Count);
-        return filtered;
+        _logger.LogTrace("FilterSyncedItems: filtered={Filtered}, synced={Synced}, total={Total}", filtered.Count, synced.Count, matches.Count);
+        return (filtered, synced);
     }
 
     /// <summary>
