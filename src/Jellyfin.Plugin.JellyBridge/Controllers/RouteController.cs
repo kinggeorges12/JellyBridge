@@ -807,27 +807,21 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         // Returning true here causes the caller to skip setting the value, preserving the
         // previously stored config or its default. We only treat values as non-empty when
         // they are meaningful and parseable for the expected type parameter T.
+        // Basically, empty values could be unparseable.
         private static bool IsEmptyValue<T>(JsonElement element)
         {
-            if (element.ValueKind == JsonValueKind.Undefined)
-                return true;
-
-            // For nullable integers, doubles, and booleans, null is a valid value (means "use default")
-            if (element.ValueKind == JsonValueKind.Null && (typeof(T) == typeof(int?) || typeof(T) == typeof(double?) || typeof(T) == typeof(bool?)))
+            // Null JSON value: treat as valid value for all types
+            if (element.ValueKind == JsonValueKind.Null)
                 return false;
 
-            // Null JSON value: treat as "empty" for all types except ones explicitly allowed above
-            if (element.ValueKind == JsonValueKind.Null)
+            // Undefined JSON value: treat as invalid value, doesn't change the config
+            if (element.ValueKind == JsonValueKind.Undefined)
                 return true;
 
             // String JSON value: apply additional validation rules
             if (element.ValueKind == JsonValueKind.String)
             {
                 var stringValue = element.GetString();
-                // Empty/whitespace-only strings are considered "empty"
-                if (string.IsNullOrWhiteSpace(stringValue))
-                    return true;
-
                 // For nullable integers, only accept strings that parse as integers; otherwise treat as "empty"
                 if (typeof(T) == typeof(int?) && !int.TryParse(stringValue, out _))
                     return true;
