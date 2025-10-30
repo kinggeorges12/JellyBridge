@@ -98,21 +98,21 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
 
                     // Update configuration properties using simplified helper
-                    SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
-                    SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
-                    SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
-                    SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
-                    SetValueOrDefault<double?>(configData, nameof(config.SyncIntervalHours), config);
-                    SetValueOrDefault<string>(configData, nameof(config.LibraryPrefix), config);
-                    SetValueOrDefault<int?>(configData, nameof(config.RequestTimeout), config);
-                    SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
-                    SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
-                    SetValueOrDefault<int?>(configData, nameof(config.MaxRetentionDays), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.EnableStartupSync), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
-                    SetValueOrDefault<string>(configData, nameof(config.Region), config);
+                    SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
+                    SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
+                    SetJsonValue<string>(configData, nameof(config.ApiKey), config);
+                    SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
+                    SetJsonValue<double?>(configData, nameof(config.SyncIntervalHours), config);
+                    SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
+                    SetJsonValue<int?>(configData, nameof(config.RequestTimeout), config);
+                    SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
+                    SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
+                    SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
+                    SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
+                    SetJsonValue<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap as array of JellyseerrNetwork objects
 					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
 						networkMapElement.ValueKind == JsonValueKind.Array)
@@ -715,18 +715,19 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Gets a value from JsonElement and applies default if null/empty.
+        /// Sets a value from JsonElement directly onto the config object.
+        /// If a string is null/empty, sets it to string.Empty. Nullable primitives accept null.
         /// </summary>
         /// <typeparam name="T">The type of the property.</typeparam>
         /// <param name="configData">The JSON data.</param>
         /// <param name="propertyName">The name of the property.</param>
         /// <param name="config">The configuration object.</param>
-        private static void SetValueOrDefault<T>(JsonElement configData, string propertyName, object config)
+        private static void SetJsonValue<T>(JsonElement configData, string propertyName, object config)
         {
             if (!configData.TryGetProperty(propertyName, out var element))
                 return;
 
-            if (IsEmptyValue<T>(element))
+            if (IsInvalidValue<T>(element))
                 return;
 
             var property = config.GetType().GetProperty(propertyName);
@@ -737,7 +738,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
             if (typeof(T) == typeof(string))
             {
-                value = element.GetString()!;
+                var s = element.ValueKind == JsonValueKind.Null ? null : element.GetString();
+                value = string.IsNullOrEmpty(s) ? string.Empty : s;
             }
             else if (typeof(T) == typeof(int?))
             {
@@ -751,15 +753,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
-                    var stringValue = element.GetString();
-                    if (string.IsNullOrWhiteSpace(stringValue))
-                    {
-                        value = (int?)null;
-                    }
-                    else if (int.TryParse(stringValue, out var intValue))
-                    {
-                        value = intValue;
-                    }
+                    var str = element.GetString();
+                    value = string.IsNullOrWhiteSpace(str) ? (int?)null : (int.TryParse(str, out var iv) ? iv : (int?)null);
                 }
             }
             else if (typeof(T) == typeof(double?))
@@ -774,15 +769,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
                 else if (element.ValueKind == JsonValueKind.String)
                 {
-                    var stringValue = element.GetString();
-                    if (string.IsNullOrWhiteSpace(stringValue))
-                    {
-                        value = (double?)null;
-                    }
-                    else if (double.TryParse(stringValue, out var doubleValue))
-                    {
-                        value = doubleValue;
-                    }
+                    var str = element.GetString();
+                    value = string.IsNullOrWhiteSpace(str) ? (double?)null : (double.TryParse(str, out var dv) ? dv : (double?)null);
                 }
             }
             else if (typeof(T) == typeof(bool?))
@@ -791,24 +779,25 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     value = (bool?)null;
                 }
-                else
+                else if (element.ValueKind == JsonValueKind.True || element.ValueKind == JsonValueKind.False)
                 {
                     value = element.GetBoolean();
                 }
+                else if (element.ValueKind == JsonValueKind.String)
+                {
+                    var str = element.GetString();
+                    value = bool.TryParse(str, out var bv) ? bv : (bool?)null;
+                }
             }
-
-            if (value != null)
-            {
-                property.SetValue(config, value);
-            }
+            // Always set the property when provided, even if null for nullable types
+            property.SetValue(config, value);
         }
 
-        // "Empty" means: do not update the target config property with this JSON token.
         // Returning true here causes the caller to skip setting the value, preserving the
         // previously stored config or its default. We only treat values as non-empty when
         // they are meaningful and parseable for the expected type parameter T.
         // Basically, empty values could be unparseable.
-        private static bool IsEmptyValue<T>(JsonElement element)
+        private static bool IsInvalidValue<T>(JsonElement element)
         {
             // Null JSON value: treat as valid value for all types
             if (element.ValueKind == JsonValueKind.Null)

@@ -5,7 +5,7 @@
     "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
     "owner": "kinggeorges12",
     "category": "Metadata",
-    "imageUrl": "https://raw.githubusercontent.com/seerr-team/seerr/refs/heads/develop/public/logo_full.svg",
+    "imageUrl": "https://raw.githubusercontent.com/seerr-team/seerr/refs/heads/develop/public/logo_stacked.svg",
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {

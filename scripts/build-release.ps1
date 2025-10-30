@@ -54,21 +54,6 @@ if ([string]::IsNullOrWhiteSpace($Changelog)) {
 
 Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 
-# Step 1: Update version numbers in project file
-Write-Host "Step 1: Updating version numbers in project file..." -ForegroundColor Yellow
-$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
-$csprojContent = Get-Content $csprojPath -Raw
-
-# Update AssemblyVersion and FileVersion
-$csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$Version</AssemblyVersion>"
-$csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$Version</FileVersion>"
-
-Set-Content $csprojPath -Value $csprojContent -NoNewline
-Write-Host "[~] Updated version to $Version in project file" -ForegroundColor Green
-
-## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)
-Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -ForegroundColor Yellow
-
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
@@ -99,6 +84,21 @@ foreach ($t in $targets) {
     $fw = $t.Framework
     $minAbi = $t.MinTargetAbi
     $ver_sub = $Version + "." + $t.SubVersion
+
+    # Step 1: Update version numbers in project file
+    Write-Host "Step 1: Updating version numbers in project file..." -ForegroundColor Yellow
+    $csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
+    $csprojContent = Get-Content $csprojPath -Raw
+
+    # Update AssemblyVersion and FileVersion
+    $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$ver_sub</AssemblyVersion>"
+    $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$ver_sub</FileVersion>"
+
+    Set-Content $csprojPath -Value $csprojContent -NoNewline
+    Write-Host "[~] Updated version to $ver_sub in project file" -ForegroundColor Green
+
+    ## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)
+    Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -ForegroundColor Yellow
 
     Write-Host "\n[~] Building for Jellyfin $jf ($fw)" -ForegroundColor Cyan
     $buildArgs = @(
@@ -136,7 +136,6 @@ foreach ($t in $targets) {
         changelog = $ChangelogText
         targetAbi = $minAbi
         timestamp = $timestamp
-        imagePath = "logo_full.svg"
         status = "Active"
         autoUpdate = $true
         assemblies = @("JellyBridge.dll")
