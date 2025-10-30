@@ -16,13 +16,15 @@ public class DiscoverService
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
+    private readonly NewBridgeService _newBridgeService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService)
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, NewBridgeService newBridgeService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
+        _newBridgeService = newBridgeService;
     }
     
     #region FromJellyseerr
@@ -343,7 +345,7 @@ public class DiscoverService
             _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
             
             var deletedCount = 0;
-            var ignoreFiles = Directory.GetFiles(syncDirectory, ".ignore", SearchOption.AllDirectories);
+            var ignoreFiles = Directory.GetFiles(syncDirectory, NewBridgeService.IgnoreFileName, SearchOption.AllDirectories);
             
             foreach (var ignoreFile in ignoreFiles)
             {
@@ -395,6 +397,39 @@ public class DiscoverService
 
         _logger.LogTrace("Filtered synced items: {Kept}/{Total}", filtered.Count, matches.Count);
         return filtered;
+    }
+
+    /// <summary>
+    /// Filters Jellyseerr items that have an ignore file in their target directory.
+    /// Returns only items that do NOT have the ignore file present.
+    /// </summary>
+    public List<IJellyseerrItem> FilterIgnoredItems(List<IJellyseerrItem> items)
+    {
+        if (items == null || items.Count == 0)
+        {
+            return new List<IJellyseerrItem>();
+        }
+
+        var kept = new List<IJellyseerrItem>(items.Count);
+        foreach (var item in items)
+        {
+            try
+            {
+                var dir = _metadataService.GetJellyseerrItemDirectory(item);
+                var ignorePath = Path.Combine(dir, NewBridgeService.IgnoreFileName);
+                if (!File.Exists(ignorePath))
+                {
+                    kept.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FilterIgnoredItems failed for {Name}", item?.MediaName);
+            }
+        }
+
+        _logger.LogTrace("FilterIgnoredItems kept {Kept}/{Total}", kept.Count, items.Count);
+        return kept;
     }
 
     #endregion
