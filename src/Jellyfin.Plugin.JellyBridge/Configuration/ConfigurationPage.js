@@ -58,14 +58,15 @@ export default function (view) {
 function cacheBuster(config) {
     try {
         const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
-        const target = Dashboard.getPluginUrl('JellyBridge') + `&nocache=${encodeURIComponent(version)}`;
-        return Dashboard.navigate(target);
+        const target = new URL(window.location.href);
+        target.searchParams.add('nocache', version);
+        return Dashboard.navigate(target.toString());
     } catch (e) { /* ignore */ }
 }
 
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
-    
+
     // Navigate to the page with a cache-busting parameter
     cacheBuster(config);
 
