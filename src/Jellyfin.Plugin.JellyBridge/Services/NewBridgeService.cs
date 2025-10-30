@@ -10,9 +10,9 @@ using MediaBrowser.Controller.Dto;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
-/// <summary>
-/// Service for managing bridge folders and metadata (refactored version with only helper methods).
-/// </summary>
+    /// <summary>
+    /// Service for managing bridge folders and metadata (refactored version with only helper methods).
+    /// </summary>
 public class NewBridgeService
 {
     private readonly DebugLogger<NewBridgeService> _logger;
@@ -30,70 +30,78 @@ public class NewBridgeService
         _discoverService = discoverService;
     }
 
+    
+
     /// <summary>
-    /// Test method to verify Jellyfin library scanning functionality by comparing existing items against bridge folder metadata.
-    /// Returns matched items as JellyMatch objects and unmatched items as IJellyseerrItem lists.
+    /// Overload: Scan providing a flat list of Jellyseerr items. Fetch Jellyfin items from the library.
     /// </summary>
-    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> LibraryScanAsync(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
+    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> LibraryScanAsync(List<IJellyseerrItem> jellyseerrItems)
     {
-        // Combine all items for processing
-        var allItems = new List<IJellyseerrItem>();
-        allItems.AddRange(movies.Cast<IJellyseerrItem>());
-        allItems.AddRange(shows.Cast<IJellyseerrItem>());
-        
-        _logger.LogDebug("Excluding main libraries from JellyBridge");
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-        var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
+        var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>();
+        var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>();
+        var jellyfinItems = new List<IJellyfinItem>();
+        jellyfinItems.AddRange(existingMovies);
+        jellyfinItems.AddRange(existingShows);
+        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
+        var matchedIds = matches.Select(m => m.JellyseerrItem.Id).ToHashSet();
+        var unmatched = jellyseerrItems.Where(item => !matchedIds.Contains(item.Id)).ToList();
+        return (matches, unmatched);
+    }
 
-        if (excludeFromMainLibraries) {
-            try
-            {
-                if (!Directory.Exists(syncDirectory))
-                {
-                    throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
-                }
+    /// <summary>
+    /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
+    /// </summary>
+    public async Task<(List<JellyMatch> matched, List<IJellyfinItem> unmatched)> LibraryScanAsync(List<IJellyfinItem> jellyfinItems)
+    {
+        var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
+        var jellyseerrItems = new List<IJellyseerrItem>();
+        jellyseerrItems.AddRange(moviesMeta.Cast<IJellyseerrItem>());
+        jellyseerrItems.AddRange(showsMeta.Cast<IJellyseerrItem>());
+        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
+        var matchedJfIds = matches.Select(m => m.JellyfinItem.Id).ToHashSet();
+        var unmatchedJellyfin = jellyfinItems.Where(jf => !matchedJfIds.Contains(jf.Id)).ToList();
+        return (matches, unmatchedJellyfin);
+    }
 
-                _logger.LogTrace("Scanning Jellyfin library for {MovieCount} movies and {ShowCount} shows", movies.Count, shows.Count);
+    /// <summary>
+    /// Core scan: compare provided Jellyfin items against provided Jellyseerr metadata and return matches/unmatched.
+    /// </summary>
+    private Task<List<JellyMatch>> LibraryScanAsync(List<IJellyfinItem> jellyfinItems, List<IJellyseerrItem> jellyseerrItems)
+    {
 
-                // Get existing Jellyfin items
-                var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>();
-                var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>();
+        _logger.LogDebug("Running library scan for {ItemCount} Jellyseerr items against {JfCount} Jellyfin items", jellyseerrItems.Count, jellyfinItems.Count);
 
-                // Find matches between Jellyfin items and bridge metadata
-                var movieMatches = FindMatches(existingMovies, movies);
-                var showMatches = FindMatches(existingShows, shows);
+        try
+        {
+            // Split Jellyseerr items into movies and shows for existing matcher
+            var jellyseerrMovies = jellyseerrItems.OfType<JellyseerrMovie>().ToList();
+            var jellyseerrShows = jellyseerrItems.OfType<JellyseerrShow>().ToList();
 
-                // Combine all matches into a single list
-                var allMatches = new List<JellyMatch>();
-                allMatches.AddRange(movieMatches);
-                allMatches.AddRange(showMatches);
+            // Partition Jellyfin items
+            var jellyfinMovies = jellyfinItems.OfType<JellyfinMovie>().ToList();
+            var jellyfinShows = jellyfinItems.OfType<JellyfinSeries>().ToList();
 
-                // Filter unmatched items by excluding matched ones
-                var matchedIds = allMatches.Select(m => m.JellyseerrItem.Id).ToHashSet();
-                var unmatchedItems = allItems.Where(item => !matchedIds.Contains(item.Id)).ToList();
+            // Find matches
+            var movieMatches = FindMatches(jellyfinMovies, jellyseerrMovies);
+            var showMatches = FindMatches(jellyfinShows, jellyseerrShows);
 
-                _logger.LogDebug("Library scan completed. Matched {MatchedMovieCount}/{MovieCount} movies + {MatchedShowCount}/{ShowCount} shows = {TotalCount} total. Unmatched: {UnmatchedCount} items", 
-                    movieMatches.Count, movies.Count, showMatches.Count, shows.Count, allMatches.Count, unmatchedItems.Count);
+            var allMatches = new List<JellyMatch>();
+            allMatches.AddRange(movieMatches);
+            allMatches.AddRange(showMatches);
 
-                return (allMatches, unmatchedItems);
-            }
-            catch (MissingMethodException ex)
-            {
-                _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping library scan");
-                return (new List<JellyMatch>(), allItems);
-            }
-            catch (Exception ex)
-            {
-                    _logger.LogError(ex, "Error during library scan test");
-            }
-        } else {
-            _logger.LogDebug("Including main libraries in JellyBridge");
-            
-            // Delete all existing .ignore files when including main libraries
-            var deletedCount = await _discoverService.DeleteAllIgnoreFilesAsync();
-            _logger.LogTrace("Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
-        } 
-        return (new List<JellyMatch>(), allItems);
+            _logger.LogDebug("Library scan completed. Matches: {MatchCount}", allMatches.Count);
+            return Task.FromResult(allMatches);
+        }
+        catch (MissingMethodException ex)
+        {
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping library scan");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during library scan");
+        }
+
+        return Task.FromResult(new List<JellyMatch>());
     }
 
     /// <summary>
