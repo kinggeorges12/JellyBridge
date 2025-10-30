@@ -15,14 +15,12 @@ public class FavoriteService
 {
     private readonly DebugLogger<FavoriteService> _logger;
     private readonly ApiService _apiService;
-    private readonly MetadataService _metadataService;
-    private readonly NewBridgeService _bridgeService;
+    private readonly BridgeService _bridgeService;
 
-    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, MetadataService metadataService, NewBridgeService bridgeService)
+    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<FavoriteService>(logger);
         _apiService = apiService;
-        _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
     #region ToJellyseerr

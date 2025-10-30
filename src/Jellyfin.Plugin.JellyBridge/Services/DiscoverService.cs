@@ -16,15 +16,13 @@ public class DiscoverService
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
-    private readonly NewBridgeService _newBridgeService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, NewBridgeService newBridgeService)
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
-        _newBridgeService = newBridgeService;
     }
     
     #region FromJellyseerr
@@ -345,7 +343,7 @@ public class DiscoverService
             _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
             
             var deletedCount = 0;
-            var ignoreFiles = Directory.GetFiles(syncDirectory, NewBridgeService.IgnoreFileName, SearchOption.AllDirectories);
+            var ignoreFiles = Directory.GetFiles(syncDirectory, BridgeService.IgnoreFileName, SearchOption.AllDirectories);
             
             foreach (var ignoreFile in ignoreFiles)
             {
@@ -416,7 +414,7 @@ public class DiscoverService
             try
             {
                 var dir = _metadataService.GetJellyseerrItemDirectory(item);
-                var ignorePath = Path.Combine(dir, NewBridgeService.IgnoreFileName);
+                var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
                 if (!File.Exists(ignorePath))
                 {
                     kept.Add(item);
