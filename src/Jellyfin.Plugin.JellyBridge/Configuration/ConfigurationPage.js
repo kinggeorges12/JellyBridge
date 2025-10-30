@@ -121,7 +121,11 @@ function updateTaskStatusDisplay(page, taskData) {
     }
 
     // Set status bar
-    if (taskData.isRunning) {
+    if (taskData.status === 'Disabled') {
+        statusText.textContent = '⏸️ Disabled';
+        statusText.style.color = '#888888';
+        progressContainer.style.display = 'none';
+    } else if (taskData.isRunning) {
         statusText.textContent = '🔄 Running';
         statusText.style.color = '#00a4d6';
         progressContainer.style.display = 'block';

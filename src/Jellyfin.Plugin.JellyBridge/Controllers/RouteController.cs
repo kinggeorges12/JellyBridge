@@ -481,85 +481,57 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 
                 // Try to get the scheduled task workers (used only for progress and nextRun interval)
                 var syncTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
-                DateTime? lastRun = null;
-                DateTime? nextRun = null;
-                string? lastRunSource = null; // "Scheduled" or "Startup"
+                DateTimeOffset? lastRun;
+                DateTimeOffset? nextRun;
+                string? lastRunSource; // "Scheduled" or "Startup"
 
                 // Determine last run from TaskManager: consider scheduled and startup tasks
                 var startupTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
 
-                // Prefer EndTimeUtc if available; otherwise fall back to StartTimeUtc (e.g., currently running or startup trigger without sync)
-                DateTime? syncEnd = (syncTaskWrapper?.LastExecutionResult?.EndTimeUtc is DateTime se && se > DateTime.MinValue) ? se : (DateTime?)null;
-                DateTime? syncStart = (syncTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime ss && ss > DateTime.MinValue) ? ss : (DateTime?)null;
-                DateTime? startupEnd = (startupTaskWrapper?.LastExecutionResult?.EndTimeUtc is DateTime ste && ste > DateTime.MinValue) ? ste : (DateTime?)null;
-                DateTime? startupStart = (startupTaskWrapper?.LastExecutionResult?.StartTimeUtc is DateTime sts && sts > DateTime.MinValue) ? sts : (DateTime?)null;
-
-                // Respect setting: startup completion shouldn't count as a last run if AutoSyncOnStartup is disabled
+                // Config flags
                 var autoSyncOnStartupEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
-                
+                var isPluginEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
+                // Read nullable timestamp directly from configuration as it is nullable
+                var scheduledTaskTimestamp = Plugin.GetConfiguration().ScheduledTaskTimestamp;
 
-                // Choose most recent completed run: sync end and startup end
-                var candidates = new List<(DateTime time, string source)>();
-                if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
-                if (autoSyncOnStartupEnabled && startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
-
-                if (candidates.Count > 0)
-                {
-                    var latest = candidates.OrderByDescending(c => c.time).First();
-                    lastRun = latest.time;
-                    lastRunSource = latest.source;
-                }
-
-                // Calculate next run time based on the interval trigger from the Sync task
-                if (syncTaskWrapper?.Triggers != null)
-                {
-                    var intervalTicks = syncTaskWrapper.Triggers
-                        .Where(t => JellyfinTaskTrigger.IsInterval(t) && t.IntervalTicks.HasValue)
-                        .Select(t => t.IntervalTicks!.Value)
-                        .Cast<long?>()
-                        .FirstOrDefault();
-
-                    if (intervalTicks.HasValue)
-                    {
-                        var interval = TimeSpan.FromTicks(intervalTicks.Value);
-
-                        // Decision tree per spec:
-                        // 1) If scheduled sync has a completed run: next = syncEnd + interval
-                        // 2) Else if we have a startup timestamp: next = startupStart + 1 hour
-                        // 3) Else if we have a sync start: next = syncStart + interval
-                        // 4) Else no estimate
-                        if (syncEnd.HasValue)
-                        {
-                            nextRun = syncEnd.Value.Add(interval);
-                            _logger.LogTrace("Next run from scheduled last end + interval: {NextRun}", nextRun);
-                        }
-                        else if (startupStart.HasValue)
-                        {
-                            nextRun = startupStart.Value.AddHours(1);
-                            _logger.LogTrace("No scheduled runs yet; next run = startup start + 1h: {NextRun}", nextRun);
-                        }
-                        else if (syncStart.HasValue)
-                        {
-                            nextRun = syncStart.Value.Add(interval);
-                            _logger.LogTrace("Projected next run from sync start + interval: {NextRun}", nextRun);
-                        }
-                        else
-                        {
-                            nextRun = null;
-                            _logger.LogTrace("No previous runs recorded; next run not estimated");
-                        }
-                    }
-                }
+                // Delegate timestamp calculation to JellyfinModels helper
+                (lastRun, lastRunSource, nextRun) = JellyfinTaskTrigger.CalculateTimestamps(
+                    syncTaskWrapper,
+                    startupTaskWrapper,
+                    isPluginEnabled,
+                    autoSyncOnStartupEnabled,
+                    scheduledTaskTimestamp
+                );
                 
                 // Normalize times to consistent UTC ISO strings for cross-version compatibility (10.10 vs 10.11)
+                // Determine status: Disabled takes precedence, then Running, then Idle
+                string status;
+                string message;
+                if (!isPluginEnabled)
+                {
+                    status = "Disabled";
+                    message = "Plugin is disabled";
+                }
+                else if (isRunning)
+                {
+                    status = "Running";
+                    message = "Sync operation in progress...";
+                }
+                else
+                {
+                    status = "Idle";
+                    message = "No active sync operation";
+                }
+                
                 var result = new
                 {
                     isRunning = isRunning,
-                    status = isRunning ? "Running" : "Idle",
+                    status = status,
                     progress = syncTaskWrapper?.CurrentProgress,
-                    message = isRunning ? "Sync operation in progress..." : "No active sync operation",
-                    lastRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(lastRun),
-                    nextRun = Jellyfin.Plugin.JellyBridge.JellyfinModels.DateTimeSerialization.ToIso8601UtcString(nextRun),
+                    message = message,
+                    // Return UTC offsets; frontend will localize
+                    lastRun = lastRun,
+                    nextRun = nextRun,
                     lastRunSource = lastRunSource
                 };
                 
