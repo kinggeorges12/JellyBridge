@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "version": "1.2.25.11",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.25/JellyBridge-1.2.25.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.2.25 - beta",
+        "checksum": "CFA60E4CC5EE84CD2224EF6BF76A7F60",
+        "timestamp": "2025-10-30T18:01:45.409Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "version": "1.2.25.10",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.25/JellyBridge-1.2.25.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.2.25 - beta",
+        "checksum": "5C367482C0D07F813E65F37AB3C39029",
+        "timestamp": "2025-10-30T18:01:45.409Z"
+      },
+      {
         "checksum": "85441739D282F0D53DCC4295B6B11775",
         "version": "1.2.24.11",
         "changelog": "Jellyfin 10.11.0: v1.2.24 - beta",

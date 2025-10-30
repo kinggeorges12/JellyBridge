@@ -371,6 +371,32 @@ public class DiscoverService
         }
     }
 
+    /// <summary>
+    /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
+    /// This prevents re-processing items that were created by the plugin itself.
+    /// </summary>
+    public List<JellyMatch> FilterSyncedItems(List<JellyMatch> matches)
+    {
+        if (matches == null || matches.Count == 0)
+        {
+            return new List<JellyMatch>();
+        }
+
+        var filtered = new List<JellyMatch>(matches.Count);
+        foreach (var match in matches)
+        {
+            var path = match?.JellyfinItem?.Path;
+            // Keep the match only if it's not in the sync directory
+            if (match != null && (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path)))
+            {
+                filtered.Add(match);
+            }
+        }
+
+        _logger.LogTrace("Filtered synced items: {Kept}/{Total}", filtered.Count, matches.Count);
+        return filtered;
+    }
+
     #endregion
 
     #endregion

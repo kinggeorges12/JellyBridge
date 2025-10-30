@@ -132,7 +132,9 @@ public partial class SyncService
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
                 // Run library scan to find matches and get unmatched items
-                (matchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMedia);
+                (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMedia);
+                // Remove matches that point to items already inside the JellyBridge sync directory
+                matchedItems = _discoverService.FilterSyncedItems(allMatchedItems);
             } else {
                 unmatchedItems = discoverMedia;
                 _logger.LogDebug("Including main libraries in JellyBridge");
