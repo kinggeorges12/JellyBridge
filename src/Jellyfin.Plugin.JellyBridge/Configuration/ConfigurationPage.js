@@ -41,7 +41,6 @@ export default function (view) {
                 isInitialized = true;
             })
             .catch(function (error) {
-                cacheBuster();
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
                 scrollToElement('jellyBridgeConfigurationPage');
             }).finally(function() {
@@ -66,9 +65,6 @@ function cacheBuster(config) {
 
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
-
-    // Navigate to the page with a cache-busting parameter
-    cacheBuster(config);
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
