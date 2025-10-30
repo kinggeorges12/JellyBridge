@@ -15,25 +15,24 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public static readonly Dictionary<string, object> DefaultValues = new()
     {
+        // General
+        { nameof(IsEnabled), false },
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
-        { nameof(LibraryDirectory), "/data/JellyBridge" },
-        { nameof(IsEnabled), false },
         { nameof(SyncIntervalHours), 24.0 },
-        { nameof(CreateSeparateLibraries), false },
-        { nameof(LibraryPrefix), string.Empty },
-        { nameof(ExcludeFromMainLibraries), true },
         { nameof(EnableStartupSync), true },
         { nameof(StartupDelaySeconds), 60 },
-        { nameof(RanFirstTime), false },
-        { nameof(MaxDiscoverPages), 1 },
-        { nameof(MaxRetentionDays), 30 },
-        { nameof(RequestTimeout), 60 },
-        { nameof(RetryAttempts), 3 },
-        { nameof(EnableDebugLogging), false },
-        { nameof(PlaceholderDurationSeconds), 10 },
-        { nameof(Region), "US" },
+
+        // Library Settings
+        { nameof(LibraryDirectory), "/data/JellyBridge" },
+        { nameof(ExcludeFromMainLibraries), true },
+        { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(CreateSeparateLibraries), false },
+        { nameof(LibraryPrefix), string.Empty },
         { nameof(ManageJellyseerrLibrary), true },
+
+        // Discover / Sync Settings
+        { nameof(Region), "US" },
         { nameof(NetworkMap), new List<JellyseerrNetwork>
             { // Network Names and IDs in comments
                 new JellyseerrNetwork { Country = "US", Name = "Netflix", Id = 8, DisplayPriority = 4 }, // Netflix: 213
@@ -59,8 +58,25 @@ public class PluginConfiguration : BasePluginConfiguration
                 //new JellyseerrNetwork { Name = "Nickelodeon", Id = 13 }, // Not available on show providers
                 new JellyseerrNetwork { Country = "US", Name = "Peacock Premium Plus", Id = 387, DisplayPriority = 219 }, // Peacock: 3353
             }
-        }
+        },
+        { nameof(MaxDiscoverPages), 1 },
+
+        // Advanced Settings
+        { nameof(RequestTimeout), 60 },
+        { nameof(RetryAttempts), 3 },
+        { nameof(MaxRetentionDays), 30 },
+        { nameof(PlaceholderDurationSeconds), 10 },
+        { nameof(EnableDebugLogging), false },
+
+        // Internal flags
+        { nameof(RanFirstTime), false }
     };
+
+    // ===== General =====
+    /// <summary>
+    /// Gets or sets whether the plugin is enabled.
+    /// </summary>
+    public bool? IsEnabled { get; set; }
 
     /// <summary>
     /// Gets or sets the Jellyseerr base URL.
@@ -75,21 +91,36 @@ public class PluginConfiguration : BasePluginConfiguration
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the sync interval in hours.
+    /// </summary>
+    public double? SyncIntervalHours { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to auto-sync on startup.
+    /// </summary>
+    public bool? EnableStartupSync { get; set; }
+
+    /// <summary>
+    /// Gets or sets the delay in seconds before running the auto-sync on startup task.
+    /// </summary>
+    public int? StartupDelaySeconds { get; set; }
+
+    // ===== Library Settings =====
+    /// <summary>
     /// Gets or sets the library directory.
     /// </summary>
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets whether to exclude placeholder shows from main libraries.
+    /// </summary>
+    public bool? ExcludeFromMainLibraries { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the plugin is enabled.
+    /// When enabled, remove items from all users' favorites after creating a request in Jellyseerr.
     /// </summary>
-    public bool? IsEnabled { get; set; }
-
-    /// <summary>
-    /// Gets or sets the sync interval in hours.
-    /// </summary>
-    public double? SyncIntervalHours { get; set; }
+    public bool? RemoveRequestedFromFavorites { get; set; }
 
     /// <summary>
     /// Gets or sets whether to create separate libraries for streaming services.
@@ -102,57 +133,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public string LibraryPrefix { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets whether to exclude placeholder shows from main libraries.
+    /// Gets or sets whether to manage libraries with JellyBridge.
     /// </summary>
-    public bool? ExcludeFromMainLibraries { get; set; }
+    public bool? ManageJellyseerrLibrary { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether to auto-sync on startup.
-    /// </summary>
-    public bool? EnableStartupSync { get; set; }
-
-    /// <summary>
-    /// Gets or sets the delay in seconds before running the auto-sync on startup task.
-    /// </summary>
-    public int? StartupDelaySeconds { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether the plugin has run for the first time (determines if full library refresh is needed).
-    /// </summary>
-    public bool? RanFirstTime { get; set; }
-
-    /// <summary>
-    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
-    /// This applies to both movies and TV shows discovery.
-    /// </summary>
-    public int? MaxDiscoverPages { get; set; }
-
-    /// <summary>
-    /// Gets or sets the maximum number of days to retain items in the collection before cleanup.
-    /// Items older than this will be removed during sync operations.
-    /// </summary>
-    public int? MaxRetentionDays { get; set; }
-
-    /// <summary>
-    /// Gets or sets the request timeout in seconds.
-    /// </summary>
-    public int? RequestTimeout { get; set; }
-
-    /// <summary>
-    /// Gets or sets the number of retry attempts.
-    /// </summary>
-    public int? RetryAttempts { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether to enable debug logging.
-    /// </summary>
-    public bool? EnableDebugLogging { get; set; }
-
-    /// <summary>
-    /// Gets or sets the default duration (in seconds) for generated placeholder videos.
-    /// </summary>
-    public int? PlaceholderDurationSeconds { get; set; }
-
+    // ===== Discover / Sync Settings =====
     /// <summary>
     /// Gets or sets the watch network region (ISO 3166-1 country code).
     /// </summary>
@@ -165,9 +150,43 @@ public class PluginConfiguration : BasePluginConfiguration
     public List<JellyseerrNetwork>? NetworkMap { get; set; }
 
     /// <summary>
-    /// Gets or sets whether to manage libraries with JellyBridge.
+    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
+    /// This applies to both movies and TV shows discovery.
     /// </summary>
-    public bool? ManageJellyseerrLibrary { get; set; }
+    public int? MaxDiscoverPages { get; set; }
+
+    // ===== Advanced Settings =====
+    /// <summary>
+    /// Gets or sets the request timeout in seconds.
+    /// </summary>
+    public int? RequestTimeout { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of retry attempts.
+    /// </summary>
+    public int? RetryAttempts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of days to retain items in the collection before cleanup.
+    /// Items older than this will be removed during sync operations.
+    /// </summary>
+    public int? MaxRetentionDays { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default duration (in seconds) for generated placeholder videos.
+    /// </summary>
+    public int? PlaceholderDurationSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to enable debug logging.
+    /// </summary>
+    public bool? EnableDebugLogging { get; set; }
+
+    // ===== Internal =====
+    /// <summary>
+    /// Gets or sets whether the plugin has run for the first time (determines if full library refresh is needed).
+    /// </summary>
+    public bool? RanFirstTime { get; set; }
 
     /// <summary>
     /// Gets or sets the timestamp when scheduled task triggers were last updated due to config change.

@@ -316,6 +316,7 @@ function initializeLibrarySettings(page) {
     // Set library settings form values with null handling
     setInputField(page, 'LibraryDirectory');
     setInputField(page, 'ExcludeFromMainLibraries', true);
+    setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'CreateSeparateLibraries', true);
     setInputField(page, 'LibraryPrefix');
     setInputField(page, 'ManageJellyseerrLibrary', true);
@@ -1162,6 +1163,7 @@ function savePluginConfiguration(page) {
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.DefaultValues.RemoveRequestedFromFavorites);
     form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);

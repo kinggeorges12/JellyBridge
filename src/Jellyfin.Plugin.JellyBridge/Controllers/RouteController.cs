@@ -54,6 +54,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     CreateSeparateLibraries = config.CreateSeparateLibraries,
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
+                    RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     EnableStartupSync = config.EnableStartupSync,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
@@ -110,6 +111,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
