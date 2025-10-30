@@ -178,7 +178,7 @@ function initializeGeneralSettings(page) {
     setInputField(page, 'JellyseerrUrl');
     setInputField(page, 'ApiKey');
     setInputField(page, 'SyncIntervalHours');
-    setInputField(page, 'AutoSyncOnStartup', true);
+    setInputField(page, 'EnableStartupSync', true);
     
     // Test connection button functionality
     const testButton = page.querySelector('#testConnection');
@@ -950,7 +950,7 @@ function initializeAdvancedSettings(page) {
             }
         });
     }
-    setInputField(page, 'AutoSyncOnStartup', true);
+    setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'EnableDebugLogging', true);
     
@@ -958,7 +958,7 @@ function initializeAdvancedSettings(page) {
     updateStartupDelayState();
     
     // Add event listener for AutoSyncOnStartup checkbox
-    const autoSyncOnStartupCheckbox = page.querySelector('#AutoSyncOnStartup');
+    const autoSyncOnStartupCheckbox = page.querySelector('#EnableStartupSync');
     if (autoSyncOnStartupCheckbox) {
         autoSyncOnStartupCheckbox.addEventListener('change', function() {
             updateStartupDelayState();
@@ -983,7 +983,7 @@ function initializeAdvancedSettings(page) {
 }
 
 function updateStartupDelayState() {
-    const autoSyncOnStartupCheckbox = document.querySelector('#AutoSyncOnStartup');
+    const autoSyncOnStartupCheckbox = document.querySelector('#EnableStartupSync');
     const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
     const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
     
@@ -1033,7 +1033,7 @@ function performPluginReset(page) {
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
                 ExcludeFromMainLibraries: null,
-                AutoSyncOnStartup: null,
+                EnableStartupSync: null,
                 EnableDebugLogging: null,
                 Region: '',
                 NetworkMap: null
@@ -1133,12 +1133,12 @@ function performRecycleLibraryData(page) {
 // SAVE CONFIGURATION FUNCTION
 // ==========================================
 
-function savePluginConfiguration(view) {
-    const form = view.querySelector('#jellyBridgeConfigurationForm');
+function savePluginConfiguration(page) {
+    // Get current library directory, fallback to default if empty
+    const config = {};
     
-    // Validate URL format if provided
-    const url = form.querySelector('#JellyseerrUrl').value;
-    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    // Validate URL format
+    if (!validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
     if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
@@ -1155,40 +1155,35 @@ function savePluginConfiguration(view) {
     // Validate Library Prefix for Windows filename compatibility
     if (!validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
     
-    // Use our custom endpoint to get the current configuration
-    return fetch('/JellyBridge/PluginConfiguration')
-        .then(response => response.json())
-        .then(function (config) {
-            // Update config with current form values
-            // Only include checkbox values if they differ from defaults
-            config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-            config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-            config.ApiKey = form.querySelector('#ApiKey').value.trim();
-            config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
-            config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
-            config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-            config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-            config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
-            config.AutoSyncOnStartup = nullIfDefault(form.querySelector('#AutoSyncOnStartup').checked, config.DefaultValues.AutoSyncOnStartup);
-            config.StartupDelaySeconds = safeParseInt(form.querySelector('#StartupDelaySeconds'));
-            config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
-            config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
-            config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
-            config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
-            config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
-            config.MaxRetentionDays = safeParseInt(form.querySelector('#MaxRetentionDays'));
-            config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
-            config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-            config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
-            
-            // Save the configuration using our custom endpoint
-            return fetch('/JellyBridge/PluginConfiguration', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(config)
-            });
+    // Update config with current form values
+    // Only include checkbox values if they differ from defaults
+    config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+    config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
+    config.ApiKey = form.querySelector('#ApiKey').value.trim();
+    config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+    config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
+    config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+    config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
+    config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+    config.EnableStartupSync = nullIfDefault(form.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
+    config.StartupDelaySeconds = safeParseInt(form.querySelector('#StartupDelaySeconds'));
+    config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+    config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
+    config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
+    config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
+    config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
+    config.MaxRetentionDays = safeParseInt(form.querySelector('#MaxRetentionDays'));
+    config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
+    config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+    config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+    
+    // Save the configuration using our custom endpoint
+    return fetch('/JellyBridge/PluginConfiguration', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
         })
         .then(async response => {
             const result = await response.json();
@@ -1196,8 +1191,8 @@ function savePluginConfiguration(view) {
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
-        }
-    });
+            }
+        });
 }
 
 // ==========================================
@@ -1228,7 +1223,7 @@ function scrollToElement(elementId, offset = 20) {
 
 // Global validators object
 const validators = {
-    notNull: (value) => !!value,
+    notNull: (value) => !!value && value.trim() !== '',
     url: (value) => /^https?:\/\/.+/.test(value),
     int: (value) => {
         if (!value) return true; // Allow empty values

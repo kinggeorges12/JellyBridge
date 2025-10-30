@@ -23,7 +23,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(CreateSeparateLibraries), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ExcludeFromMainLibraries), true },
-        { nameof(AutoSyncOnStartup), true },
+        { nameof(EnableStartupSync), true },
         { nameof(StartupDelaySeconds), 60 },
         { nameof(RanFirstTime), false },
         { nameof(MaxDiscoverPages), 1 },
@@ -109,7 +109,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to auto-sync on startup.
     /// </summary>
-    public bool? AutoSyncOnStartup { get; set; }
+    public bool? EnableStartupSync { get; set; }
 
     /// <summary>
     /// Gets or sets the delay in seconds before running the auto-sync on startup task.

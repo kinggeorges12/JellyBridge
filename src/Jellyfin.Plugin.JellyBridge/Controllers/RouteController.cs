@@ -54,7 +54,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     CreateSeparateLibraries = config.CreateSeparateLibraries,
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
-                    AutoSyncOnStartup = config.AutoSyncOnStartup,
+                    EnableStartupSync = config.EnableStartupSync,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
@@ -95,9 +95,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Capture old values BEFORE mutating config
                     var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
-                    var oldAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config);
+                    var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
 
                     // Update configuration properties using simplified helper
+                    SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
                     SetValueOrDefault<string>(configData, nameof(config.JellyseerrUrl), config);
                     SetValueOrDefault<string>(configData, nameof(config.ApiKey), config);
                     SetValueOrDefault<string>(configData, nameof(config.LibraryDirectory), config);
@@ -107,10 +108,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetValueOrDefault<int?>(configData, nameof(config.RetryAttempts), config);
                     SetValueOrDefault<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetValueOrDefault<int?>(configData, nameof(config.MaxRetentionDays), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.IsEnabled), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
-                    SetValueOrDefault<bool?>(configData, nameof(config.AutoSyncOnStartup), config);
+                    SetValueOrDefault<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetValueOrDefault<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetValueOrDefault<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap as array of JellyseerrNetwork objects
@@ -140,11 +140,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Compute effective old vs new values (new values AFTER edits)
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
-                    var newAutoStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup), config);
+                    var newStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
 
                     // Debug snapshot of old vs new
-                    _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldAutoStartup}", oldEnabled, oldInterval, oldAutoStartup);
-                    _logger.LogDebug("Config snapshot (new): enabled={NewEnabled}, interval={NewInterval}, autoStartup={NewAutoStartup}", newEnabled, newInterval, newAutoStartup);
+                    _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldStartupSync}", oldEnabled, oldInterval, oldStartupSync);
+                    _logger.LogDebug("Config snapshot (new): enabled={NewEnabled}, interval={NewInterval}, autoStartup={NewStartupSync}", newEnabled, newInterval, newStartupSync);
             
                     // If the scheduled sync configuration changed, stamp when triggers will be reloaded
                     var scheduledChanged = oldEnabled != newEnabled || Math.Abs(oldInterval - newInterval) > double.Epsilon;
@@ -161,7 +161,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // We intentionally avoid reloading all tasks because Jellyfin defers interval tasks until after the trigger reload time + sync interval.
                         // To prevent unnecessary deferrals, we only touch:
                         // - the scheduled sync task when Enabled/Interval changes
-                        // - the startup task when AutoSyncOnStartup changes
+                        // - the startup task when EnableStartupSync changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
 
@@ -177,10 +177,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             _logger.LogDebug("Sync task triggers reloaded.");
                         }
 
-                        // Update startup task triggers only if AutoSyncOnStartup changed
-                        if (oldAutoStartup != newAutoStartup && startupWorker != null)
+                        // Update startup task triggers only if EnableStartupSync changed
+                        if (oldStartupSync != newStartupSync && startupWorker != null)
                         {
-                            _logger.LogDebug("Reloading startup task triggers due to AutoSyncOnStartup change. Old={Old}, New={New}", oldAutoStartup, newAutoStartup);
+                            _logger.LogDebug("Reloading startup task triggers due to EnableStartupSync change. Old={Old}, New={New}", oldStartupSync, newStartupSync);
                             // Startup task exposes default triggers; always a startup trigger
                             if (startupWorker.ScheduledTask is Tasks.StartupTask startupTask)
                             {
@@ -554,7 +554,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var startupTaskWrapper = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
 
                 // Config flags
-                var autoSyncOnStartupEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+                var autoSyncOnStartupEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync));
                 var isPluginEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
                 // Read nullable timestamp directly from configuration as it is nullable
                 var scheduledTaskTimestamp = Plugin.GetConfiguration().ScheduledTaskTimestamp;
@@ -785,9 +785,16 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     }
                 }
             }
-            else if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
+            else if (typeof(T) == typeof(bool?))
             {
-                value = element.GetBoolean();
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    value = (bool?)null;
+                }
+                else
+                {
+                    value = element.GetBoolean();
+                }
             }
 
             if (value != null)
@@ -796,29 +803,36 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
         }
 
+        // "Empty" means: do not update the target config property with this JSON token.
+        // Returning true here causes the caller to skip setting the value, preserving the
+        // previously stored config or its default. We only treat values as non-empty when
+        // they are meaningful and parseable for the expected type parameter T.
         private static bool IsEmptyValue<T>(JsonElement element)
         {
             if (element.ValueKind == JsonValueKind.Undefined)
                 return true;
 
-            // For nullable integers and doubles, null is a valid value (means "use default")
-            if (element.ValueKind == JsonValueKind.Null && (typeof(T) == typeof(int?) || typeof(T) == typeof(double?)))
+            // For nullable integers, doubles, and booleans, null is a valid value (means "use default")
+            if (element.ValueKind == JsonValueKind.Null && (typeof(T) == typeof(int?) || typeof(T) == typeof(double?) || typeof(T) == typeof(bool?)))
                 return false;
 
+            // Null JSON value: treat as "empty" for all types except ones explicitly allowed above
             if (element.ValueKind == JsonValueKind.Null)
                 return true;
 
+            // String JSON value: apply additional validation rules
             if (element.ValueKind == JsonValueKind.String)
             {
                 var stringValue = element.GetString();
+                // Empty/whitespace-only strings are considered "empty"
                 if (string.IsNullOrWhiteSpace(stringValue))
                     return true;
 
-                // For integer types, check if the string can be parsed as an integer
+                // For nullable integers, only accept strings that parse as integers; otherwise treat as "empty"
                 if (typeof(T) == typeof(int?) && !int.TryParse(stringValue, out _))
                     return true;
                 
-                // For double types, check if the string can be parsed as a double
+                // For nullable doubles, only accept strings that parse as doubles; otherwise treat as "empty"
                 if (typeof(T) == typeof(double?) && !double.TryParse(stringValue, out _))
                     return true;
             }

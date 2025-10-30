@@ -37,10 +37,10 @@ public class StartupTask : IScheduledTask
         {
             _logger.LogInformation("Starting startup sync task");
             
-            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
+            var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync));
             var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
-            _logger.LogTrace("Startup config - AutoSyncOnStartup={Auto}, StartupDelaySeconds={Delay}, IsEnabled={Enabled}", autoSyncOnStartup, startupDelaySeconds, isEnabled);
+            _logger.LogTrace("Startup config - EnableStartupSync={Auto}, StartupDelaySeconds={Delay}, IsEnabled={Enabled}", autoSyncOnStartup, startupDelaySeconds, isEnabled);
             
             // Indicate start
             progress.Report(0);
@@ -53,7 +53,7 @@ public class StartupTask : IScheduledTask
             
             if (!autoSyncOnStartup)
             {
-                _logger.LogTrace("AutoSyncOnStartup disabled - startup task will not execute sync");
+                _logger.LogTrace("EnableStartupSync disabled - startup task will not execute sync");
                 progress.Report(100);
                 return;
             }
