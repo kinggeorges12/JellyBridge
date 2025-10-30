@@ -21,7 +21,7 @@ public partial class SyncService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly IUserManager _userManager;
     private readonly JellyfinIUserDataManager _userDataManager;
-    private readonly NewBridgeService _bridgeService;
+    private readonly BridgeService _bridgeService;
     private readonly LibraryService _libraryService;
     private readonly DiscoverService _discoverService;
     private readonly FavoriteService _favoriteService;
@@ -34,7 +34,7 @@ public partial class SyncService
         JellyfinILibraryManager libraryManager,
         IUserManager userManager,
         JellyfinIUserDataManager userDataManager,
-        NewBridgeService bridgeService,
+        BridgeService bridgeService,
         LibraryService libraryService,
         DiscoverService discoverService,
         FavoriteService favoriteService,
