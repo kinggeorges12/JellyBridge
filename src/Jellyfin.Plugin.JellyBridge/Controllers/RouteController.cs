@@ -135,7 +135,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Save the configuration
                     Plugin.Instance.UpdateConfiguration(config);
                     
-                    _logger.LogInformation("Configuration updated successfully");
+                    _logger.LogDebug("Configuration updated successfully");
                     
                     return Task.FromResult(true);
                 }, _logger, "Update Plugin Configuration").GetAwaiter().GetResult();

@@ -38,7 +38,12 @@ public class StartupTask : IScheduledTask
             
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AutoSyncOnStartup));
             var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
+            var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
+            _logger.LogTrace("Startup config - AutoSyncOnStartup={Auto}, StartupDelaySeconds={Delay}, IsEnabled={Enabled}", autoSyncOnStartup, startupDelaySeconds, isEnabled);
             
+            // Indicate start
+            progress.Report(0);
+
             if (autoSyncOnStartup && startupDelaySeconds > 0)
             {
                 _logger.LogDebug("Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
@@ -56,11 +61,14 @@ public class StartupTask : IScheduledTask
             var syncTask = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
             if (syncTask?.ScheduledTask is SyncTask task)
             {
+                _logger.LogTrace("Found SyncTask; executing from startup task");
                 await task.ExecuteAsync(progress, cancellationToken);
             }
             else
             {
-                _logger.LogWarning("Could not find SyncTask to execute");
+                var available = string.Join(", ", _taskManager.ScheduledTasks.Select(t => t.ScheduledTask.Key));
+                _logger.LogWarning("Could not find SyncTask to execute. Available tasks: {Tasks}", available);
+                progress.Report(100);
             }
         }
         catch (Exception ex)
