@@ -404,6 +404,18 @@
                             <div class="fieldDescription">When enabled, the Jellyseerr library will exclude streaming movies and shows that appear in your Jellyfin libraries. To enable this feature, the scheduled sync task creates an .ignore file in the movie or show directory. The .ignore file contains Jellyfin metadata for reference.</div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Remove requested items from favorites</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users.</div>
+                        </div>
+
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
