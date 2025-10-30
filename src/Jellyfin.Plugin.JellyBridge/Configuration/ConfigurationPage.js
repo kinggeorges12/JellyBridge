@@ -1133,7 +1133,8 @@ function performRecycleLibraryData(page) {
 
 function savePluginConfiguration(page) {
     // Get current library directory, fallback to default if empty
-    const config = {};
+    const config = window.configJellyBridge || {};
+    const form = {};
     
     // Validate URL format
     if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
@@ -1155,25 +1156,25 @@ function savePluginConfiguration(page) {
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    config.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-    config.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
-    config.ApiKey = safeParseString(page.querySelector('#ApiKey'));
-    config.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
-    config.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
-    config.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-    config.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-    config.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
-    config.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
-    config.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
-    config.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
-    config.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
-    config.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
-    config.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
-    config.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
-    config.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
-    config.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-    config.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-    config.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+    form.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
+    form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
+    form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
+    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+    form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
+    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
+    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
+    form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
+    form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+    form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
+    form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
+    form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
+    form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
     
     // Save the configuration using our custom endpoint
     return fetch('/JellyBridge/PluginConfiguration', {
@@ -1181,7 +1182,7 @@ function savePluginConfiguration(page) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config)
+        body: JSON.stringify(form)
         })
         .then(async response => {
             const result = await response.json();
