@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
-                    PluginVersion = typeof(Plugin).Assembly.GetName().Version?.ToString(),
+                    PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
                     CreateAllUserFavorites = config.CreateAllUserFavorites,
                     EnableStartupSync = config.EnableStartupSync,
                     RequestTimeout = config.RequestTimeout,
