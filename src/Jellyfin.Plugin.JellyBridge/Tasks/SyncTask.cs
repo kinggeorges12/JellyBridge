@@ -6,6 +6,7 @@ using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using Jellyfin.Plugin.JellyBridge.Utils;
 
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
 
@@ -14,7 +15,7 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 /// </summary>
 public class SyncTask : IScheduledTask
 {
-    private readonly ILogger<SyncTask> _logger;
+    private readonly DebugLogger<SyncTask> _logger;
     private readonly SyncService _syncService;
     private readonly ITaskManager _taskManager;
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
@@ -26,7 +27,7 @@ public class SyncTask : IScheduledTask
         ITaskManager taskManager,
         PlaceholderVideoGenerator placeholderVideoGenerator)
     {
-        _logger = logger;
+        _logger = new DebugLogger<SyncTask>(logger);
         _syncService = syncService;
         _taskManager = taskManager;
         _placeholderVideoGenerator = placeholderVideoGenerator;
