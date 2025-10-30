@@ -41,6 +41,7 @@ export default function (view) {
                 isInitialized = true;
             })
             .catch(function (error) {
+                cacheBuster();
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
                 scrollToElement('jellyBridgeConfigurationPage');
             }).finally(function() {
@@ -54,16 +55,28 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
+function cacheBuster(config) {
+    try {
+        const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
+        const target = new URL(window.location.href);
+        target.searchParams.add('nocache', version);
+        return Dashboard.navigate(target.toString());
+    } catch (e) { /* ignore */ }
+}
+
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
 
+    // Navigate to the page with a cache-busting parameter
+    cacheBuster(config);
+
     // Update header legend with plugin version
     if (config.PluginVersion) {
-        view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
     }
     // Update header legend with plugin version
     if (config.PluginVersion) {
-        view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
     }
 
     // Start task status polling
