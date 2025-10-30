@@ -62,6 +62,18 @@ public static class JellyfinTaskTrigger
 
     /// <summary>
     /// Calculate last run and next run timestamps for status display, based on task wrappers and configuration.
+    ///
+    /// Next Run logic:
+    /// 1) If the plugin is enabled and the sync task has been run before, add the sync interval to this value:
+    ///    the most recent timestamp from ScheduledTaskTimestamp, sync task last run, plugin start task.
+    /// 2) Else if the plugin is enabled and sync has not been run before, use plugin startup time + 1 hour.
+    /// 3) Else the plugin is not enabled, return null.
+    ///
+    /// Last run logic:
+    /// 1) If the plugin is enabled and the autosync on startup is disabled, only use last run time for scheduled sync.
+    /// 2) Else if the plugin is enabled and autosync on startup is enabled, choose the most recent last run time between startup and scheduled tasks.
+    /// 3) Else the plugin is disabled, only return last runtime of scheduled sync.
+    ///
     /// Returns UTC DateTimeOffset values for frontend localization.
     /// </summary>
     public static (DateTimeOffset? lastRun, string? lastRunSource, DateTimeOffset? nextRun) CalculateTimestamps(
@@ -80,24 +92,44 @@ public static class JellyfinTaskTrigger
         DateTime? startupEnd = (startupTask?.LastExecutionResult?.EndTimeUtc is DateTime ste && ste > DateTime.MinValue) ? ste : (DateTime?)null;
         DateTime? startupStart = (startupTask?.LastExecutionResult?.StartTimeUtc is DateTime sts && sts > DateTime.MinValue) ? sts : (DateTime?)null;
 
-        // Determine last run source
-        var candidates = new System.Collections.Generic.List<(DateTime time, string source)>();
-        if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
-        if (autoOnStartup && startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
-        if (candidates.Count > 0)
+		// LAST RUN LOGIC BRANCHES (see summary above):
+		// 1) Plugin enabled + autosync on startup disabled -> only scheduled sync last run counts
+		// 2) Plugin enabled + autosync on startup enabled -> use most recent of startup vs scheduled
+		// 3) Plugin disabled -> only scheduled sync last run counts
+		if (!isEnabled)
         {
-            var latest = candidates.OrderByDescending(c => c.time).First();
-            lastRun = latest.time;
-            lastRunSource = latest.source;
+            if (syncEnd.HasValue)
+            {
+                lastRun = syncEnd.Value;
+				lastRunSource = "Scheduled"; // (3) plugin disabled -> scheduled only
+            }
+        }
+        else if (!autoOnStartup)
+        {
+            if (syncEnd.HasValue)
+            {
+                lastRun = syncEnd.Value;
+				lastRunSource = "Scheduled"; // (1) enabled + auto-startup disabled -> scheduled only
+            }
+        }
+        else
+        {
+            var candidates = new System.Collections.Generic.List<(DateTime time, string source)>();
+            if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
+            if (startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
+            if (candidates.Count > 0)
+            {
+                var latest = candidates.OrderByDescending(c => c.time).First();
+				lastRun = latest.time; // (2) enabled + auto-startup enabled -> pick most recent
+				lastRunSource = latest.source;
+            }
         }
 
-        // Next run
-        if (!isEnabled)
-        {
-            return (null, lastRunSource, null);
-        }
-
-        if (syncTask?.Triggers != null)
+		// NEXT RUN LOGIC BRANCHES (see summary above):
+		// 1) Enabled + sync has run before -> add interval to most recent baseline (config timestamp, sync last run, startup last run)
+		// 2) Enabled + sync has not run before -> startup time + 1 hour
+		// 3) Disabled -> nextRun stays null (handled by not entering this block)
+		if (isEnabled && syncTask?.Triggers != null)
         {
             var intervalTicks = syncTask.Triggers
                 .Where(t => IsInterval(t) && t.IntervalTicks.HasValue)
@@ -105,38 +137,34 @@ public static class JellyfinTaskTrigger
                 .Cast<long?>()
                 .FirstOrDefault();
 
-            if (intervalTicks.HasValue)
+			if (intervalTicks.HasValue)
             {
                 var interval = TimeSpan.FromTicks(intervalTicks.Value);
 
-                // If the scheduled task was just updated and that time is after the last completed scheduled run,
-                // Jellyfin will effectively defer the next run based on the update (behaves like a fresh start).
-                if (scheduledTaskTimestamp.HasValue)
+                // Determine whether sync has ever run before
+                bool syncHasRunBefore = syncEnd.HasValue || syncStart.HasValue;
+
+                if (syncHasRunBefore)
                 {
-                    var timestampUtc = scheduledTaskTimestamp.Value.UtcDateTime;
-                    if (!syncEnd.HasValue || timestampUtc > syncEnd.Value)
+                    // Baseline: most recent among ScheduledTaskTimestamp, sync last run, startup completion
+                    var baselineCandidates = new System.Collections.Generic.List<DateTime>();
+                    if (scheduledTaskTimestamp.HasValue) baselineCandidates.Add(scheduledTaskTimestamp.Value.UtcDateTime);
+                    if (syncEnd.HasValue) baselineCandidates.Add(syncEnd.Value);
+                    if (startupEnd.HasValue) baselineCandidates.Add(startupEnd.Value);
+
+                    if (baselineCandidates.Count > 0)
                     {
-                        nextRun = timestampUtc.AddHours(1);
-                    }
+                        var baseline = baselineCandidates.Max();
+                        nextRun = baseline.Add(interval);
+			}
                 }
-                
-                if (!nextRun.HasValue)
+                else
                 {
-                    if (syncEnd.HasValue)
+                    // No prior syncs: next run is startup + 1 hour, if we have startup times
+                    var startupBaseline = startupEnd ?? startupStart;
+                    if (startupBaseline.HasValue)
                     {
-                        nextRun = syncEnd.Value.Add(interval);
-                    }
-                    else if (startupStart.HasValue)
-                    {
-                        nextRun = startupStart.Value.AddHours(1);
-                    }
-                    else if (syncStart.HasValue)
-                    {
-                        nextRun = syncStart.Value.Add(interval);
-                    }
-                    else
-                    {
-                        nextRun = null;
+                        nextRun = startupBaseline.Value.AddHours(1);
                     }
                 }
             }
