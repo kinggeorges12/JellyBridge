@@ -3,6 +3,32 @@ const JellyBridgeConfigurationPage = {
 };
 
 export default function (view) {
+    // Cache-busting: ensure URL has v=pluginVersion; if missing, redirect with it
+    try {
+        const url = new URL(window.location.href);
+        const hasV = url.searchParams.has('v');
+        if (!hasV) {
+            // Fetch plugin version then reload with v param
+            fetch('/JellyBridge/PluginConfiguration')
+                .then(r => r.json())
+                .then(cfg => {
+                    const version = (cfg && cfg.PluginVersion) ? cfg.PluginVersion : Date.now().toString();
+                    if (!url.searchParams.has('name')) {
+                        url.searchParams.set('name', 'JellyBridge');
+                    }
+                    url.searchParams.set('v', version);
+                    window.location.replace(url.toString());
+                })
+                .catch(() => {
+                    // Fallback to timestamp to force reload
+                    url.searchParams.set('v', Date.now().toString());
+                    window.location.replace(url.toString());
+                });
+            return; // stop initializing until reload
+        }
+    } catch (e) {
+        // Ignore and continue if URL parsing fails
+    }
     if (!view) {
         Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
         return;
