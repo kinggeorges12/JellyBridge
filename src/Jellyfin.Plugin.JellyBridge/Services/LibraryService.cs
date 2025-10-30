@@ -70,7 +70,7 @@ public class LibraryService
                 RegenerateTrickplay = false,
                 ForceSave = true,
                 IsAutomated = true,
-                RemoveOldMetadata = fullRefresh
+                RemoveOldMetadata = false
             };
             
             _logger.LogTrace("Refresh options - MetadataRefreshMode: {MetadataRefreshMode}, ImageRefreshMode: {ImageRefreshMode}, ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
