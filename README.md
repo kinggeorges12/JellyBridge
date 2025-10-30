@@ -32,6 +32,9 @@ The plugin manages libraries and folders in Jellyfin, creating structure for dis
 
 Browse all discovered movies and series from Jellyseerr networks with thumbnails and metadata.
 
+Note: By default, Jellyfin uses *Sort by Folders* ↑ which appears to show only Series in the Discover library. This is not the case! Recommended setting: *Community rating* (descending) or *Critics rating* (descending).
+![Jellyfin Library Sorting](Screenshots/Sorting.png)
+
 ### Placeholder Videos
 
 The plugin generates placeholder videos for movies and series that aren't yet available in your Jellyfin libraries. These placeholder videos are created using FFmpeg with configurable duration settings.
