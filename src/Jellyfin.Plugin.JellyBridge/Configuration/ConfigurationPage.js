@@ -221,14 +221,14 @@ function initializeGeneralSettings(page) {
 
 function performTestConnection(page) {
     const testButton = page.querySelector('#testConnection');
-    const url = page.querySelector('#JellyseerrUrl').value;
+    const url = page.querySelector('#JellyseerrUrl').value.trim();
     const apiKey = page.querySelector('#ApiKey').value.trim();
     
     // Validate URL format if provided
-    if (url && !validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
-    if (!validateField('ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
+    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
     
     testButton.disabled = true;
     Dashboard.showLoadingMsg();
@@ -977,7 +977,7 @@ function initializeAdvancedSettings(page) {
     const libraryPrefixInput = page.querySelector('#LibraryPrefix');
     if (libraryPrefixInput) {
         libraryPrefixInput.addEventListener('input', function() {
-            validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
+            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
         });
     }
 }
@@ -1136,35 +1136,36 @@ function performRecycleLibraryData(page) {
 function savePluginConfiguration(page) {
     // Get current library directory, fallback to default if empty
     const config = {};
+    const form = page.querySelector('#jellyBridgeConfigurationForm');
     
     // Validate URL format
-    if (!validateField('JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    if (!validateField(form, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
-    if (!validateField('ApiKey', validators.notNull, 'API Key is required').isValid) return;
+    if (!validateField(form, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
     
     // Validate number fields with appropriate types
-    if (!validateField('SyncIntervalHours', validators.double, 'Sync Interval must be a valid number between 0 and 17976931348623157').isValid) return;
-    if (!validateField('RequestTimeout', validators.int, 'Request Timeout must be an integer between 1 and 2147483647').isValid) return;
-    if (!validateField('RetryAttempts', validators.int, 'Retry Attempts must be an integer between 0 and 2147483647').isValid) return;
-    if (!validateField('MaxDiscoverPages', validators.int, 'Max Discover Pages must be an integer between 0 and 2147483647').isValid) return;
-    if (!validateField('MaxRetentionDays', validators.int, 'Max Retention Days must be an integer between 1 and 2147483647').isValid) return;
-    if (!validateField('StartupDelaySeconds', validators.int, 'Startup Delay must be an integer between 0 and 2147483647').isValid) return;
-    if (!validateField('PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be an integer between 1 and 2147483647').isValid) return;
+    if (!validateField(form, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
+    if (!validateField(form, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
+    if (!validateField(form, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
+    if (!validateField(form, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
+    if (!validateField(form, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+    if (!validateField(form, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
+    if (!validateField(form, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
     
     // Validate Library Prefix for Windows filename compatibility
-    if (!validateField('LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
+    if (!validateField(form, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
     config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-    config.JellyseerrUrl = form.querySelector('#JellyseerrUrl').value;
-    config.ApiKey = form.querySelector('#ApiKey').value.trim();
-    config.LibraryDirectory = form.querySelector('#LibraryDirectory').value;
+    config.JellyseerrUrl = safeParseString(form.querySelector('#JellyseerrUrl'));
+    config.ApiKey = safeParseString(form.querySelector('#ApiKey'));
+    config.LibraryDirectory = safeParseString(form.querySelector('#LibraryDirectory'));
     config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
     config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
     config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-    config.LibraryPrefix = form.querySelector('#LibraryPrefix').value;
+    config.LibraryPrefix = safeParseString(form.querySelector('#LibraryPrefix'));
     config.EnableStartupSync = nullIfDefault(form.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
     config.StartupDelaySeconds = safeParseInt(form.querySelector('#StartupDelaySeconds'));
     config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
@@ -1224,7 +1225,7 @@ function scrollToElement(elementId, offset = 20) {
 // Global validators object
 const validators = {
     notNull: (value) => !!value && value.trim() !== '',
-    url: (value) => /^https?:\/\/.+/.test(value),
+    url: (value) => !value || /^https?:\/\/.+/.test(value),
     int: (value) => {
         if (!value) return true; // Allow empty values
         const num = parseInt(value);
@@ -1244,8 +1245,8 @@ const validators = {
 };
 
 // Central field validation function
-function validateField(fieldId, validator = null, errorMessage = null) {
-    const field = document.querySelector(`#${fieldId}`);
+function validateField(form, fieldId, validator = null, errorMessage = null) {
+    const field = form.querySelector(`#${fieldId}`);
     if (!field) {
         console.warn(`Field with ID "${fieldId}" not found`);
         return { isValid: false, error: `Field "${fieldId}" not found` };
@@ -1299,6 +1300,14 @@ function safeParseInt(element) {
         return null;
     }
     return parseInt(value);
+}
+
+function safeParseString(element) {
+    const value = element.value;
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return value.trim();
 }
 
 function safeParseDouble(element) {
