@@ -200,23 +200,21 @@ function initializeGeneralSettings(page) {
     
     // Add form submit event listener
     const form = page.querySelector('#jellyBridgeConfigurationForm');
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            Dashboard.showLoadingMsg();
-            // Use the reusable function to save configuration
-            savePluginConfiguration(page).then(function (result) {
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                checkTaskStatus(page);
-            }).catch(function (error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-            });
-            e.preventDefault();
-            return false;
+    form.addEventListener('submit', function (e) {
+        Dashboard.showLoadingMsg();
+        // Use the reusable function to save configuration
+        savePluginConfiguration(page).then(function (result) {
+            Dashboard.processPluginConfigurationUpdateResult(result);
+            checkTaskStatus(page);
+        }).catch(function (error) {
+            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            scrollToElement('jellyBridgeConfigurationForm');
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
         });
-    }
+        e.preventDefault();
+        return false;
+    });
 }
 
 function performTestConnection(page) {
@@ -1136,47 +1134,46 @@ function performRecycleLibraryData(page) {
 function savePluginConfiguration(page) {
     // Get current library directory, fallback to default if empty
     const config = {};
-    const form = page.querySelector('#jellyBridgeConfigurationForm');
     
     // Validate URL format
-    if (!validateField(form, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
-    if (!validateField(form, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
+    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
     
     // Validate number fields with appropriate types
-    if (!validateField(form, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
-    if (!validateField(form, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
-    if (!validateField(form, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
-    if (!validateField(form, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
-    if (!validateField(form, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
-    if (!validateField(form, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
-    if (!validateField(form, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
+    if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
+    if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
+    if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
+    if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
+    if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+    if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
+    if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
     
     // Validate Library Prefix for Windows filename compatibility
-    if (!validateField(form, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
+    if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    config.IsEnabled = nullIfDefault(form.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
-    config.JellyseerrUrl = safeParseString(form.querySelector('#JellyseerrUrl'));
-    config.ApiKey = safeParseString(form.querySelector('#ApiKey'));
-    config.LibraryDirectory = safeParseString(form.querySelector('#LibraryDirectory'));
-    config.SyncIntervalHours = safeParseDouble(form.querySelector('#SyncIntervalHours'));
-    config.ExcludeFromMainLibraries = nullIfDefault(form.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-    config.CreateSeparateLibraries = nullIfDefault(form.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-    config.LibraryPrefix = safeParseString(form.querySelector('#LibraryPrefix'));
-    config.EnableStartupSync = nullIfDefault(form.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
-    config.StartupDelaySeconds = safeParseInt(form.querySelector('#StartupDelaySeconds'));
-    config.Region = nullIfDefault(form.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
-    config.NetworkMap = parseNetworkOptions(form.querySelector('#activeNetworks').options);
-    config.RequestTimeout = safeParseInt(form.querySelector('#RequestTimeout'));
-    config.RetryAttempts = safeParseInt(form.querySelector('#RetryAttempts'));
-    config.MaxDiscoverPages = safeParseInt(form.querySelector('#MaxDiscoverPages'));
-    config.MaxRetentionDays = safeParseInt(form.querySelector('#MaxRetentionDays'));
-    config.PlaceholderDurationSeconds = safeParseInt(form.querySelector('#PlaceholderDurationSeconds'));
-    config.EnableDebugLogging = nullIfDefault(form.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-    config.ManageJellyseerrLibrary = nullIfDefault(form.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+    config.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+    config.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
+    config.ApiKey = safeParseString(page.querySelector('#ApiKey'));
+    config.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    config.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
+    config.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
+    config.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
+    config.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
+    config.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
+    config.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
+    config.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+    config.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    config.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
+    config.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
+    config.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
+    config.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    config.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+    config.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+    config.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
     
     // Save the configuration using our custom endpoint
     return fetch('/JellyBridge/PluginConfiguration', {

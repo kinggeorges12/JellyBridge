@@ -136,6 +136,7 @@ foreach ($t in $targets) {
         changelog = $ChangelogText
         targetAbi = $minAbi
         timestamp = $timestamp
+        imagePath = "logo_full.svg"
         status = "Active"
         autoUpdate = $true
         assemblies = @("JellyBridge.dll")
