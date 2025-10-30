@@ -3,37 +3,6 @@ const JellyBridgeConfigurationPage = {
 };
 
 export default function (view) {
-    // Cache-busting: ensure URL has v=pluginVersion; if missing, redirect with it
-    try {
-        const url = new URL(window.location.href);
-        const hasV = url.searchParams.has('v');
-        if (!hasV) {
-            // Fetch plugin version then reload with v param
-            fetch('/JellyBridge/PluginConfiguration')
-                .then(r => r.json())
-                .then(cfg => {
-                    const version = (cfg && cfg.PluginVersion) ? cfg.PluginVersion : Date.now().toString();
-                    if (!url.searchParams.has('name')) {
-                        url.searchParams.set('name', 'JellyBridge');
-                    }
-                    url.searchParams.set('v', version);
-                    window.location.replace(url.toString());
-                })
-                .catch(() => {
-                    // Fallback to timestamp to force reload
-                    url.searchParams.set('v', Date.now().toString());
-                    window.location.replace(url.toString());
-                });
-            return; // stop initializing until reload
-        }
-    } catch (e) {
-        // Ignore and continue if URL parsing fails
-    }
-    if (!view) {
-        Dashboard.alert('❌ Jellyseerr Bridge: View parameter is undefined');
-        return;
-    }
-    
     let isInitialized = false;
     
     view.addEventListener('viewshow', function () {
@@ -51,10 +20,8 @@ export default function (view) {
                 // Store configuration globally for other functions to use
                 window.configJellyBridge = config;
 
-                // Update header legend with plugin version
-                if (config.PluginVersion) {
-                    view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
-                }
+                // Initialize header
+                initializePluginHeader(page);
                 
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
@@ -71,12 +38,10 @@ export default function (view) {
                 // Scroll to top of page after successful initialization
                 scrollToElement('jellyBridgeConfigurationPage');
                 
-                // Start task status polling
-                startTaskStatusPolling(page);
-                
                 isInitialized = true;
             })
             .catch(function (error) {
+                cacheBuster();
                 Dashboard.alert('❌ Failed to load configuration: ' + error.message);
                 scrollToElement('jellyBridgeConfigurationPage');
             }).finally(function() {
@@ -87,9 +52,34 @@ export default function (view) {
 }
 
 // ==========================================
-// TASK STATUS FUNCTIONS
+// PLUGIN HEADER FUNCTIONS
 // ==========================================
 
+function cacheBuster() {
+    try {
+        const config = window.configJellyBridge;    
+        const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
+        const target = Dashboard.getPluginUrl('JellyBridge') + `&nocache=${encodeURIComponent(version)}`;
+        return Dashboard.navigate(target);
+    } catch (e) { /* ignore */ }
+}
+
+function initializePluginHeader(page) {
+    // Navigate to the page with a cache-busting parameter
+    cacheBuster();
+
+    // Update header legend with plugin version
+    if (config.PluginVersion) {
+        view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+    }
+    // Update header legend with plugin version
+    if (config.PluginVersion) {
+        view.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+    }
+
+    // Start task status polling
+    startTaskStatusPolling(page);
+}
 let taskStatusInterval = null;
 
 function startTaskStatusPolling(page) {
