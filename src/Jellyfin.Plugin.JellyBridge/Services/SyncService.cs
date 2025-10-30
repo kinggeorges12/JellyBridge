@@ -290,11 +290,23 @@ public partial class SyncService
                 uniqueItemsWithJellyseerrUser.Count, bridgeOnlyItems.Count);
             
             // Step 6: Create requests for favorited bridge-only items
-            var requestResults = await _favoriteService.RequestFavorites(uniqueItemsWithJellyseerrUser);
+            List<(IJellyfinItem item, JellyseerrMediaRequest request)> requestResults = await _favoriteService.RequestFavorites(uniqueItemsWithJellyseerrUser);
+
+            // Add the successful requests directly to the created lists (from tuple)
+            result.MoviesResult.ItemsCreated.AddRange(
+                requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.MOVIE)
+                              .Select(r => r.request));
+            result.ShowsResult.ItemsCreated.AddRange(
+                requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.TV)
+                              .Select(r => r.request));
             
-            // Add the successful requests directly to the created lists
-            result.MoviesResult.ItemsCreated.AddRange(requestResults.Where(r => r.Type == JellyseerrModel.MediaType.MOVIE));
-            result.ShowsResult.ItemsCreated.AddRange(requestResults.Where(r => r.Type == JellyseerrModel.MediaType.TV));
+            // Step 7: Mark requested items by creating an .ignore file in each bridge item directory
+            var removedItems = await _favoriteService.IgnoreRequestedAsync(requestResults);
+            if (removedItems != null && removedItems.Count > 0)
+            {
+                result.MoviesResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinMovie>());
+                result.ShowsResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinSeries>());
+            }
             
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";

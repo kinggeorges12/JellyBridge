@@ -3,6 +3,8 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
+using System.IO;
+using Jellyfin.Plugin.JellyBridge.Configuration;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -13,11 +15,13 @@ public class FavoriteService
 {
     private readonly DebugLogger<FavoriteService> _logger;
     private readonly ApiService _apiService;
+    private readonly MetadataService _metadataService;
 
-    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService)
+    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, MetadataService metadataService)
     {
         _logger = new DebugLogger<FavoriteService>(logger);
         _apiService = apiService;
+        _metadataService = metadataService;
     }
     #region ToJellyseerr
 
@@ -27,10 +31,10 @@ public class FavoriteService
     /// Create requests for favorited bridge-only items.
     /// These are items that exist only in the Jellyseerr bridge folder and are favorited by users.
     /// </summary>
-    public async Task<List<JellyseerrMediaRequest>> RequestFavorites(
+    public async Task<List<(IJellyfinItem item, JellyseerrMediaRequest request)>> RequestFavorites(
         List<(IJellyfinItem item, JellyseerrUser firstUser)> uniqueItemsWithFirstUser)
     {
-        var requestResults = new List<JellyseerrMediaRequest>();
+        var requestResults = new List<(IJellyfinItem, JellyseerrMediaRequest)>();
         
         // Step 5 & 6: Process unique bridge-only items with their first favorited user
         
@@ -65,7 +69,7 @@ public class FavoriteService
                     var request = requestResult as JellyseerrMediaRequest;
                     if (request != null)
                     {
-                        requestResults.Add(request);
+                        requestResults.Add((item, request));
                         _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
                             item.Name, firstUser.JellyfinUsername);
                     }
@@ -269,6 +273,58 @@ public class FavoriteService
             // On failure, return the original list to avoid dropping user selections
             return allFavorites;
         }
+    }
+
+    #endregion
+
+    // Removed legacy user-data removal code in favor of .ignore marker approach
+
+    #region Removed
+
+    /// <summary>
+    /// Create .ignore files in the bridge item directories that were successfully requested.
+    /// </summary>
+    public async Task<List<IJellyfinItem>> IgnoreRequestedAsync(
+        IEnumerable<(IJellyfinItem item, JellyseerrMediaRequest request)> requestedTuples)
+    {
+        var writtenItems = new List<IJellyfinItem>();
+
+        // Respect configuration flag
+        var enabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
+        if (!enabled)
+        {
+            _logger.LogTrace("IgnoreRequestedAsync skipped - RemoveRequestedFromFavorites disabled");
+            return writtenItems;
+        }
+
+        foreach (var (item, request) in (requestedTuples ?? Array.Empty<(IJellyfinItem, JellyseerrMediaRequest)>()))
+        {
+            try
+            {
+                var jItem = request?.Media as IJellyseerrItem;
+                if (jItem == null)
+                {
+                    _logger.LogTrace("Skip ignore creation - missing Jellyseerr media for {Name}", item?.Name);
+                    continue;
+                }
+                var dir = _metadataService.GetJellyseerrItemDirectory(jItem);
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                {
+                    _logger.LogTrace("Skip ignore creation - directory missing for {Name}", item.Name);
+                    continue;
+                }
+                var ignorePath = Path.Combine(dir, ".ignore");
+                await File.WriteAllTextAsync(ignorePath, "requested");
+                writtenItems.Add(item);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to write .ignore for requested item {Name}", item.Name);
+            }
+        }
+
+        _logger.LogDebug("Created .ignore files for {Count} requested items", writtenItems.Count);
+        return writtenItems;
     }
 
     #endregion
