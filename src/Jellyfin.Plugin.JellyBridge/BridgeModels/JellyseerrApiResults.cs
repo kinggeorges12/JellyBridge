@@ -134,10 +134,12 @@ public class ProcessJellyfinResult
     public List<IJellyfinItem> ItemsProcessed { get; set; } = new();
     public List<IJellyfinItem> ItemsFound { get; set; } = new();
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
+    public List<IJellyfinItem> ItemsRemoved { get; set; } = new();
 
     public int Processed => ItemsProcessed.Count;
     public int Found => ItemsFound.Count;
     public int Created => ItemsCreated.Count;
+    public int Removed => ItemsRemoved.Count;
 
     public override string ToString()
     {
@@ -145,6 +147,7 @@ public class ProcessJellyfinResult
         if (Processed > 0) parts.Add($"Processed: {Processed}");
         if (Found > 0) parts.Add($"Found: {Found}");
         if (Created > 0) parts.Add($"Created: {Created}");
+        if (Removed > 0) parts.Add($"Removed: {Removed}");
         
         return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
     }
