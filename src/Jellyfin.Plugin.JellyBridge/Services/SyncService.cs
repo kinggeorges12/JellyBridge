@@ -302,15 +302,35 @@ public partial class SyncService
             
             // Step 7: Mark requested items by creating an .ignore file in each bridge item directory
             var removedItems = await _favoriteService.IgnoreRequestedAsync(requestResults);
-            if (removedItems != null && removedItems.Count > 0)
+
+            // Save results
+            result.Success = true;
+            result.Message = "✅ Sync to Jellyseerr completed successfully";
+            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, found {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items, removed {removedItems.Count} requested items";
+
+            // Step 8: Refresh Jellyseerr libraries with synced content
+            var itemsDeleted = removedItems.Count > 0;
+            bool? refreshSuccess = false;
+            if (itemsDeleted)
             {
                 result.MoviesResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinMovie>());
                 result.ShowsResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinSeries>());
+
+                // Normal operation - only refresh Jellyseerr libraries
+                _logger.LogDebug("🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
+                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted, refreshImages: false);
+
+                if (refreshSuccess == true)
+                {
+                    _logger.LogTrace("✅ Full metadata refresh without images started successfully");
+                    result.Message += $" and started full metadata refresh";
+                }
+                else if (refreshSuccess == false)
+                {
+                    _logger.LogWarning("⚠️ Full metadata refresh without images failed");
+                    result.Message += " (metadata refresh failed)";
+                }
             }
-            
-            result.Success = true;
-            result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, found {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }

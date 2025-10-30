@@ -28,7 +28,7 @@ public class LibraryService
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
     /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
-    public bool? RefreshJellyseerrLibrary(bool fullRefresh = true)
+    public bool? RefreshJellyseerrLibrary(bool fullRefresh = true, bool refreshImages = true)
     {
         try
         {
@@ -66,7 +66,7 @@ public class LibraryService
                 MetadataRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
                 ImageRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
                 ReplaceAllMetadata = fullRefresh,
-                ReplaceAllImages = fullRefresh,
+                ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
                 IsAutomated = false,
