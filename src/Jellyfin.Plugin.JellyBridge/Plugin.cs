@@ -142,7 +142,7 @@ namespace Jellyfin.Plugin.JellyBridge
         /// </summary>
         public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
         {
-            timeout ??= TimeSpan.FromMinutes(1); // Default 1 minute timeout
+            timeout ??= TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes))); // Use configured task timeout
             var startTime = DateTime.UtcNow;
             
             // Wait for any running operation to complete (pausing, not canceling)
@@ -159,7 +159,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 }
                 
                 logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                await Task.Delay(100); // Small delay to prevent busy waiting
+                await Task.Delay(1000); // Small delay to prevent busy waiting
             }
             
             // Check if we timed out

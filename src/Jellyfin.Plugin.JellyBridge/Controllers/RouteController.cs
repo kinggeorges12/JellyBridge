@@ -22,15 +22,17 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     private readonly ApiService _apiService;
     private readonly BridgeService _bridgeService;
     private readonly LibraryService _libraryService;
+    private readonly MetadataService _metadataService;
     private readonly ITaskManager _taskManager;
 
-    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, BridgeService bridgeService, LibraryService libraryService, ITaskManager taskManager)
+    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, BridgeService bridgeService, LibraryService libraryService, MetadataService metadataService, ITaskManager taskManager)
     {
         _logger = new DebugLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
         _syncService = syncService;
         _apiService = apiService;
         _bridgeService = bridgeService;
         _libraryService = libraryService;
+        _metadataService = metadataService;
         _taskManager = taskManager;
     }
 
@@ -57,6 +59,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
                     EnableStartupSync = config.EnableStartupSync,
+                    StartupDelaySeconds = config.StartupDelaySeconds,
+                    TaskTimeoutMinutes = config.TaskTimeoutMinutes,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
@@ -99,6 +103,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
+                    var oldRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
+                    var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.RandomizeSortIntervalHours), config);
 
                     // Update configuration properties using simplified helper
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
@@ -115,8 +121,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
+                    SetJsonValue<int?>(configData, nameof(config.StartupDelaySeconds), config);
+                    SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
+                    SetJsonValue<bool?>(configData, nameof(config.RandomizeDiscoverSortOrder), config);
+                    SetJsonValue<double?>(configData, nameof(config.RandomizeSortIntervalHours), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
 					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
@@ -154,6 +164,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var newStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
+                    var newRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
+                    var newRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.RandomizeSortIntervalHours), config);
 
                     // Debug snapshot of old vs new
                     _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldStartupSync}", oldEnabled, oldInterval, oldStartupSync);
@@ -175,8 +187,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // To prevent unnecessary deferrals, we only touch:
                         // - the scheduled sync task when Enabled/Interval changes
                         // - the startup task when EnableStartupSync changes
+                        // - the randomize sort task when RandomizeDiscoverSortOrder/RandomizeSortIntervalHours changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
+                        var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeRandomizeSort");
 
                         // Update scheduled sync task triggers only if IsEnabled or SyncInterval changed
                         if (scheduledChanged &&
@@ -202,6 +216,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                                 startupWorker.ReloadTriggerEvents();
                                 _logger.LogDebug("Startup task triggers reloaded successfully");
                             }
+                        }
+
+                        // Update randomize sort task triggers only if RandomizeDiscoverSortOrder or RandomizeSortIntervalHours changed
+                        var randomizeSortChanged = oldRandomizeSort != newRandomizeSort || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
+                        if (randomizeSortChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.RandomizeSortTask randomizeSortTask)
+                        {
+                            _logger.LogDebug("Reloading randomize sort task triggers due to config change. Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldRandomizeSort, oldRandomizeSortInterval, newRandomizeSort, newRandomizeSortInterval);
+                            
+                            var newTriggers = randomizeSortTask.GetDefaultTriggers();
+                            randomizeSortWorker.Triggers = newTriggers.ToList();
+                            randomizeSortWorker.ReloadTriggerEvents();
+                            _logger.LogDebug("Randomize sort task triggers reloaded.");
                         }
                     
                     }
@@ -391,14 +417,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 
                 return Ok(result);
             }
-            catch (OperationCanceledException)
+            catch (TimeoutException)
             {
-                _logger.LogWarning("Favorites sync timed out after 2 minutes");
+                var taskTimeoutMinutes = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes));
+                _logger.LogWarning("Favorites sync timed out after {TimeoutMinutes} minutes waiting for lock", taskTimeoutMinutes);
                 return StatusCode(408, new { 
                     success = false,
                     error = "Request timeout",
-                    message = "Favorites sync took too long and was cancelled. This might indicate a very large library or many users.",
-                    details = "Operation timed out after 2 minutes"
+                    message = "Favorites sync operation timed out while waiting for lock.",
+                    details = $"Operation timed out after {taskTimeoutMinutes} minutes waiting for another operation to complete"
                 });
             }
             catch (Exception ex)
@@ -449,14 +476,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogInformation("Sync discover completed");
                 return Ok(result);
             }
-            catch (OperationCanceledException)
+            catch (TimeoutException)
             {
-                _logger.LogWarning("Sync discover timed out after 2 minutes");
+                var taskTimeoutMinutes = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes));
+                _logger.LogWarning("Sync discover timed out after {TimeoutMinutes} minutes waiting for lock", taskTimeoutMinutes);
                 return StatusCode(408, new { 
                     success = false,
                     error = "Request timeout",
-                    message = "Discover sync took too long and was cancelled. This might indicate a very large result set.",
-                    details = "Operation timed out after 2 minutes"
+                    message = "Discover sync operation timed out while waiting for lock.",
+                    details = $"Operation timed out after {taskTimeoutMinutes} minutes waiting for another operation to complete"
                 });
             }
             catch (Exception ex)
@@ -465,6 +493,58 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 return StatusCode(500, new { 
                     message = $"Sync failed: {ex.Message}", 
                     details = $"Sync operation exception: {ex.GetType().Name} - {ex.Message}" 
+                });
+            }
+        }
+
+        [HttpPost("SortLibrary")]
+        public async Task<IActionResult> SortLibrary()
+        {
+            _logger.LogTrace("Sort library requested");
+            
+            try
+            {
+                // Use Jellyfin-style locking that pauses instead of canceling
+                var result = await Plugin.ExecuteWithLockAsync(async () =>
+                {
+                    // Randomize NFO dateadded fields
+                    await _metadataService.RandomizeNfoDateAddedAsync();
+                    
+                    // Refresh library metadata to pick up the changes
+                    await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
+
+                    _logger.LogTrace("Sort library completed successfully");
+
+                    return new
+                    {
+                        success = true,
+                        message = "Sort library randomization completed successfully",
+                        details = "NFO dateadded fields have been randomized and library metadata has been refreshed."
+                    };
+                }, _logger, "Sort Library");
+
+                _logger.LogInformation("Sort library completed");
+                return Ok(result);
+            }
+            catch (TimeoutException)
+            {
+                var taskTimeoutMinutes = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes));
+                _logger.LogWarning("Sort library timed out after {TimeoutMinutes} minutes waiting for lock", taskTimeoutMinutes);
+                return StatusCode(408, new { 
+                    success = false,
+                    error = "Request timeout",
+                    message = "Sort library operation timed out while waiting for lock.",
+                    details = $"Operation timed out after {taskTimeoutMinutes} minutes waiting for another operation to complete"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sort library failed");
+                return StatusCode(500, new { 
+                    success = false,
+                    error = "Sort library failed",
+                    message = $"Sort library operation failed: {ex.Message}", 
+                    details = $"Exception: {ex.GetType().Name} - {ex.Message}" 
                 });
             }
         }

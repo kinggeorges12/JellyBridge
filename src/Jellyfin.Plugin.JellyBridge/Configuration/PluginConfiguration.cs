@@ -61,7 +61,12 @@ public class PluginConfiguration : BasePluginConfiguration
         },
         { nameof(MaxDiscoverPages), 1 },
 
+        // Sort Discover Content
+        { nameof(RandomizeDiscoverSortOrder), false },
+        { nameof(RandomizeSortIntervalHours), 8.0 },
+
         // Advanced Settings
+        { nameof(TaskTimeoutMinutes), 10 },
         { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
         { nameof(MaxRetentionDays), 30 },
@@ -105,6 +110,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the delay in seconds before running the auto-sync on startup task.
     /// </summary>
     public int? StartupDelaySeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout in minutes for plugin tasks before cancelling.
+    /// </summary>
+    public int? TaskTimeoutMinutes { get; set; }
 
     // ===== Library Settings =====
     /// <summary>
@@ -155,6 +165,17 @@ public class PluginConfiguration : BasePluginConfiguration
     /// This applies to both movies and TV shows discovery.
     /// </summary>
     public int? MaxDiscoverPages { get; set; }
+
+    // ===== Sort Discover Content =====
+    /// <summary>
+    /// Gets or sets whether to randomize the discover library sort order by randomizing the Date Added metadata.
+    /// </summary>
+    public bool? RandomizeDiscoverSortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the interval in hours for the randomize sort order task.
+    /// </summary>
+    public double? RandomizeSortIntervalHours { get; set; }
 
     // ===== Advanced Settings =====
     /// <summary>
