@@ -296,11 +296,16 @@ public class MetadataService
     }
 
     /// <summary>
-    /// Updates the dateadded field in all NFO files with a random date from yesterday.
+    /// Updates the dateadded field in all NFO files with unique dates distributed over the last X days (where X = number of items).
+    /// Dates start from yesterday and go backwards, with time set to 00:00:00.
     /// Uses ReadMetadataInternal to discover movie and show directories.
     /// </summary>
-    public async Task RandomizeNfoDateAddedAsync()
+    /// <returns>A tuple containing a list of successful updates (name, type, dateAdded) and a list of failed file paths.</returns>
+    public async Task<(List<(string name, string type, DateTimeOffset dateAdded)> successes, List<string> failures)> RandomizeNfoDateAddedAsync()
     {
+        var successes = new List<(string name, string type, DateTimeOffset dateAdded)>();
+        var failures = new List<string>();
+        
         try
         {
             // Get categorized directories
@@ -311,16 +316,46 @@ public class MetadataService
             xmlFiles.AddRange(movieDirectories.Select(d => Path.Combine(d, JellyseerrMovie.GetNfoFilename())));
             xmlFiles.AddRange(showDirectories.Select(d => Path.Combine(d, JellyseerrShow.GetNfoFilename())));
 
-            // Process all XML files
+            // Only process files that actually exist
+            xmlFiles = xmlFiles.Where(f => File.Exists(f)).ToList();
+
+            if (xmlFiles.Count == 0)
+            {
+                _logger.LogDebug("No NFO files found to update");
+                return (successes, failures);
+            }
+
+            // Shuffle the files randomly to get random sort order
+            var random = System.Random.Shared;
+            xmlFiles = xmlFiles.OrderBy(_ => random.Next()).ToList();
+
+            // Assign unique dates starting from yesterday going backwards
+            // Each item gets a unique date with time set to 00:00:00
+            var dateMap = new Dictionary<string, DateTimeOffset>();
+            var yesterday = DateTimeOffset.Now.AddDays(-1).Date;
+            
+            for (int i = 0; i < xmlFiles.Count; i++)
+            {
+                // Start from yesterday (i=0) and go backwards
+                var assignedDate = yesterday.AddDays(-i);
+                // Set time to midnight (00:00:00)
+                var dateWithTime = new DateTimeOffset(assignedDate, TimeSpan.Zero);
+                dateMap[xmlFiles[i]] = dateWithTime;
+            }
+
+            // Process all XML files with their assigned dates
             foreach (var xmlFile in xmlFiles)
             {
                 try
                 {
-                    await UpdateDateAddedInNfoFile(xmlFile);
+                    var assignedDate = dateMap[xmlFile];
+                    var result = await UpdateDateAddedInNfoFile(xmlFile, assignedDate);
+                    successes.Add(result);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to update dateadded in NFO file: {XmlFile}", xmlFile);
+                    failures.Add(xmlFile);
                 }
             }
         }
@@ -328,51 +363,60 @@ public class MetadataService
         {
             _logger.LogError(ex, "Error updating dateadded in NFO files");
         }
+        
+        return (successes, failures);
     }
 
     /// <summary>
     /// Helper method to update the dateadded field in a single NFO file.
     /// </summary>
     /// <param name="xmlFile">Path to the NFO file to update</param>
-    private async Task UpdateDateAddedInNfoFile(string xmlFile)
+    /// <param name="dateAdded">The DateTimeOffset to set (should have time set to 00:00:00)</param>
+    /// <returns>A tuple containing (name, type, dateAdded)</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the NFO file cannot be parsed (root element is null)</exception>
+    private async Task<(string name, string type, DateTimeOffset dateAdded)> UpdateDateAddedInNfoFile(string xmlFile, DateTimeOffset dateAdded)
     {
         var xmlContent = await File.ReadAllTextAsync(xmlFile);
         var xmlDoc = XDocument.Parse(xmlContent);
         var root = xmlDoc.Root;
-        if (root != null)
+        
+        if (root == null)
         {
-            // Generate random time from yesterday
-            var random = System.Random.Shared;
-            var yesterday = DateTime.Now.Date.AddDays(-1);
-            var randomHours = random.Next(0, 24);
-            var randomMinutes = random.Next(0, 60);
-            var randomSeconds = random.Next(0, 60);
-            var dateAdded = yesterday.AddHours(randomHours).AddMinutes(randomMinutes).AddSeconds(randomSeconds);
-            var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
-            
-            // Remove existing dateadded if present
-            var existingDateAdded = root.Element("dateadded");
-            if (existingDateAdded != null)
-            {
-                existingDateAdded.Remove();
-            }
-            
-            // Add new dateadded element (insert after the first element for better formatting)
-            var firstElement = root.Elements().FirstOrDefault();
-            var newDateAdded = new XElement("dateadded", dateAddedString);
-            if (firstElement != null)
-            {
-                firstElement.AddAfterSelf(newDateAdded);
-            }
-            else
-            {
-                root.Add(newDateAdded);
-            }
-            
-            // Write the updated XML back
-            await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
-            _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
+            throw new InvalidOperationException($"Failed to parse NFO file: {xmlFile} - root element is null");
         }
+        
+        // Extract type from root element name and title from XML
+        string type = root.Name.LocalName;
+        var titleElement = root.Element("title");
+        string name = titleElement?.Value ?? Path.GetFileName(Path.GetDirectoryName(xmlFile)) ?? $"Unknown {type}";
+        
+        // Format date with time set to 00:00:00
+        var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
+        
+        // Remove existing dateadded if present
+        var existingDateAdded = root.Element("dateadded");
+        if (existingDateAdded != null)
+        {
+            existingDateAdded.Remove();
+        }
+        
+        // Add new dateadded element (insert after the first element for better formatting)
+        var firstElement = root.Elements().FirstOrDefault();
+        var newDateAdded = new XElement("dateadded", dateAddedString);
+        if (firstElement != null)
+        {
+            firstElement.AddAfterSelf(newDateAdded);
+        }
+        else
+        {
+            root.Add(newDateAdded);
+        }
+        
+        // Write the updated XML back
+        await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
+        _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
+        
+        return (name, type, dateAdded);
     }
 
     #endregion
