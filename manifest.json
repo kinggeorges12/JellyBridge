@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-10-31T23:44:26.899Z",
+        "targetAbi": "10.11.0.0",
+        "checksum": "66AC263E40C2FC06BF6DE5C2E55E183B",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.9.11.zip",
+        "dependencies": [],
+        "version": "1.3.9.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.9 - Refactored sort randomization from dateadded to play counts and moved MediaBrowser dependencies to JellyfinModels wrappers: Replaced NFO dateadded field manipulation with play count randomization for all users. Removed UpdateDateAddedInNfoFile method entirely. Updated RandomizeNfoDateAddedAsync to randomize play counts (0 to itemCount-1) for all discover library items across all users, enabling random sorting by play count. Created JellyfinIUserManager wrapper class and added TryUpdatePlayCount method to JellyfinIUserDataManager. Moved all MediaBrowser.Controller dependencies out of MetadataService into JellyfinModels wrappers. Updated RouteController to display play count information instead of dateAdded in sort results. Registered JellyfinIUserManager in dependency injection. Removed RefreshBridgeLibrary call as play count updates don't require metadata refresh."
+      },
+      {
+        "timestamp": "2025-10-31T23:44:26.899Z",
+        "targetAbi": "10.10.0.0",
+        "checksum": "1A43F5FCE48612CAD6D63D49829EEE93",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.9.10.zip",
+        "dependencies": [],
+        "version": "1.3.9.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.9 - Refactored sort randomization from dateadded to play counts and moved MediaBrowser dependencies to JellyfinModels wrappers: Replaced NFO dateadded field manipulation with play count randomization for all users. Removed UpdateDateAddedInNfoFile method entirely. Updated RandomizeNfoDateAddedAsync to randomize play counts (0 to itemCount-1) for all discover library items across all users, enabling random sorting by play count. Created JellyfinIUserManager wrapper class and added TryUpdatePlayCount method to JellyfinIUserDataManager. Moved all MediaBrowser.Controller dependencies out of MetadataService into JellyfinModels wrappers. Updated RouteController to display play count information instead of dateAdded in sort results. Registered JellyfinIUserManager in dependency injection. Removed RefreshBridgeLibrary call as play count updates don't require metadata refresh."
+      },
+      {
         "version": "1.3.8.11",
         "timestamp": "2025-10-31T23:12:29.188Z",
         "checksum": "C47C4D14E1549E55DC3826198EA9BABD",

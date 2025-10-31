@@ -27,6 +27,8 @@ namespace Jellyfin.Plugin.JellyBridge.Services
                 new JellyfinILibraryManager(provider.GetRequiredService<MediaBrowser.Controller.Library.ILibraryManager>()));
             serviceCollection.AddScoped<JellyfinIUserDataManager>(provider => 
                 new JellyfinIUserDataManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserDataManager>()));
+            serviceCollection.AddScoped<JellyfinIUserManager>(provider =>
+                new JellyfinIUserManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserManager>()));
             serviceCollection.AddScoped<JellyfinIProviderManager>(provider =>
                 new JellyfinIProviderManager(provider.GetRequiredService<MediaBrowser.Controller.Providers.IProviderManager>()));
             
