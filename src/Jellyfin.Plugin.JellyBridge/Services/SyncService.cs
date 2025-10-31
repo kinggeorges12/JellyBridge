@@ -279,13 +279,10 @@ public partial class SyncService
                 requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.TV)
                               .Select(r => r.request));
             
-            // Step 7: Mark requested items by creating an .ignore file in each bridge item directory
-            var allFavoritedJellyfinItems = bridgeFavoritedItems.Select(fav => fav.item).ToList();
+            // Step 7: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
+            var removedItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync(bridgeFavoritedItems);
 
-            // Delegate to FavoriteService to scan and write ignore files for matched favorites
-            var removedItems = await _favoriteService.IgnoreRequestedAsync(allFavoritedJellyfinItems);
-
-            //Step 8: remove .ignore files for items that are no longer in the requested items in Jellyseerr
+            //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();
 
             // Step 9: Provide refresh plan to caller based on removals

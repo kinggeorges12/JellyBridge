@@ -3,6 +3,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
+using System.Threading;
 
 #if JELLYFIN_10_11
 // Jellyfin version 10.11.*
@@ -77,6 +78,28 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         }
         
         return userFavorites;
+    }
+
+    /// <summary>
+    /// Set or unset the favorite flag for the given user and item using wrappers.
+    /// </summary>
+    public bool TrySetFavorite(JellyfinUser user, IJellyfinItem item, bool isFavorite, JellyfinILibraryManager libraryManager)
+    {
+        var userEntity = user.Inner;
+        var baseItem = libraryManager.Inner.GetItemById<BaseItem>(item.Id, userEntity);
+        if (baseItem is null)
+        {
+            return false;
+        }
+
+        var data = Inner.GetUserData(userEntity, baseItem);
+        if (data is null)
+        {
+            return false;
+        }
+        data.IsFavorite = isFavorite;
+        Inner.SaveUserData(userEntity, baseItem, data, UserDataSaveReason.UpdateUserRating, CancellationToken.None);
+        return true;
     }
 
 }
