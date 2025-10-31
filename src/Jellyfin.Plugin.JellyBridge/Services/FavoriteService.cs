@@ -16,12 +16,14 @@ public class FavoriteService
     private readonly DebugLogger<FavoriteService> _logger;
     private readonly ApiService _apiService;
     private readonly BridgeService _bridgeService;
+    private readonly MetadataService _metadataService;
 
-    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService)
+    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService, MetadataService metadataService)
     {
         _logger = new DebugLogger<FavoriteService>(logger);
         _apiService = apiService;
         _bridgeService = bridgeService;
+        _metadataService = metadataService;
     }
     #region ToJellyseerr
 
@@ -218,8 +220,8 @@ public class FavoriteService
     }
 
     /// <summary>
-    /// Filter favorites by removing items that already have Jellyseerr requests.
-    /// Returns: flat list of (user, item) pairs (removes favorites that have already been requested in Jellyseerr).
+    /// Filter favorites by removing items that already have active (non-declined) Jellyseerr requests.
+    /// Declined requests do NOT count as existing and are treated as unrequested.
     /// </summary>
     public async Task<List<(JellyfinUser user, IJellyfinItem item)>> FilterRequestsFromFavorites(
         List<(JellyfinUser user, IJellyfinItem item)> allFavorites)
@@ -237,11 +239,11 @@ public class FavoriteService
 
             _logger.LogDebug("Fetched {RequestCount} existing requests from Jellyseerr", jellyseerrRequests.Count);
 
-            // Build a lookup of existing requests by (MediaType, TmdbId) for O(1) checks
+            // Build lookups by (MediaType, TmdbId)
             var requestedLookup = new HashSet<(JellyseerrModel.MediaType type, int tmdbId)>(
                 jellyseerrRequests
-                    .Select(r => r.Media)
-                    .Select(m => (m.MediaType, m.TmdbId)));
+                    .Where(r => r != null && r.Status != JellyseerrModel.MediaRequestStatus.DECLINED && r.Media != null)
+                    .Select(r => (r.Media.MediaType, r.Media.TmdbId)));
 
             var removedLogList = new List<string>();
             // Only retain pairs whose item is NOT already requested
@@ -279,6 +281,64 @@ public class FavoriteService
     #region Removed
 
     /// <summary>
+    /// Remove .ignore markers for Jellyseerr requests that have been declined.
+    /// Uses FindJellyseerrFavorite to resolve the matching metadata item for each request.
+    /// </summary>
+    public async Task<List<IJellyseerrItem>> UnignoreDeclinedRequests()
+    {
+        var removedIgnoreCount = 0;
+        var declinedItems = new List<IJellyseerrItem>();
+        try
+        {
+            var requestsObj = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
+            var allRequests = requestsObj as List<JellyseerrMediaRequest> ?? new List<JellyseerrMediaRequest>();
+
+            var declined = allRequests.Where(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED).ToList();
+            if (declined.Count == 0)
+            {
+                return declinedItems;
+            }
+
+            _logger.LogDebug("Found {DeclinedCount} declined Jellyseerr requests; removing .ignore markers", declined.Count);
+
+            var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
+            var allMeta = new List<IJellyseerrItem>();
+            allMeta.AddRange(moviesMeta);
+            allMeta.AddRange(showsMeta);
+
+            declinedItems = FindJellyseerrFavorites(allMeta, declined);
+            foreach (var item in declinedItems)
+            {
+                try
+                {
+                    var dir = _metadataService.GetJellyseerrItemDirectory(item);
+                    var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
+                    if (File.Exists(ignorePath))
+                    {
+                        File.Delete(ignorePath);
+                        removedIgnoreCount++;
+                        _logger.LogTrace("Removed .ignore for declined request: {Dir}", dir);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed removing .ignore for declined favorite {Name}", item?.MediaName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing .ignore files for declined Jellyseerr requests");
+        }
+
+        if (removedIgnoreCount > 0)
+        {
+            _logger.LogDebug("Removed {RemovedCount} .ignore files for declined requests", removedIgnoreCount);
+        }
+        return declinedItems;
+    }
+
+    /// <summary>
     /// Create .ignore files in the bridge item directories that were successfully requested.
     /// </summary>
     public async Task<List<IJellyfinItem>> IgnoreRequestedAsync(List<IJellyfinItem> jellyfinItems)
@@ -306,54 +366,50 @@ public class FavoriteService
     /// using the request's TMDB ID and media type. The request's Media object may be unpopulated,
     /// so we rely on request.Type and request.Media.TmdbId when available.
     /// </summary>
-    /// <param name="movies">All discovered Jellyseerr movies metadata</param>
-    /// <param name="shows">All discovered Jellyseerr shows metadata</param>
-    /// <param name="request">The Jellyseerr media request</param>
-    /// <returns>The matching Jellyseerr item, or null if not found</returns>
-    private IJellyseerrItem? FindJellyseerrFavorite(
-        List<JellyseerrMovie> movies,
-        List<JellyseerrShow> shows,
-        JellyseerrMediaRequest? request)
+    /// <param name="items">All discovered Jellyseerr metadata items</param>
+    /// <param name="requests">Jellyseerr media requests to resolve</param>
+    /// <returns>List of matching Jellyseerr items</returns>
+    private List<IJellyseerrItem> FindJellyseerrFavorites(
+        List<IJellyseerrItem> items,
+        List<JellyseerrMediaRequest> requests)
     {
-        if (request is null)
+        var results = new List<IJellyseerrItem>();
+        if (items == null || items.Count == 0 || requests == null || requests.Count == 0)
         {
-            _logger.LogTrace("FindJellyseerrFavorite: request is null");
-            return null;
-        }
-
-        var tmdbId = request.Media?.TmdbId;
-        var mediaType = request.Type;
-
-        if (!tmdbId.HasValue || tmdbId.Value <= 0)
-        {
-            _logger.LogTrace("FindJellyseerrFavorite: missing TMDB id on request (Type={Type})", mediaType);
-            return null;
+            return results;
         }
 
         try
         {
-            if (mediaType == JellyseerrModel.MediaType.MOVIE)
+            // Build lookups for faster matching
+            var moviesByTmdb = items.OfType<JellyseerrMovie>().ToDictionary(m => m.Id, m => (IJellyseerrItem)m);
+            var showsByTmdb = items.OfType<JellyseerrShow>().ToDictionary(s => s.Id, s => (IJellyseerrItem)s);
+
+            foreach (var req in requests)
             {
-                var match = movies.FirstOrDefault(m => m.Id == tmdbId.Value);
-                if (match != null) return match;
-            }
-            else if (mediaType == JellyseerrModel.MediaType.TV)
-            {
-                var match = shows.FirstOrDefault(s => s.Id == tmdbId.Value);
-                if (match != null) return match;
-            }
-            else
-            {
-                _logger.LogTrace("FindJellyseerrFavorite: unsupported media type {Type}", mediaType);
+                var tmdbId = req?.Media?.TmdbId;
+                var mediaType = req?.Type;
+                if (!tmdbId.HasValue || tmdbId.Value <= 0 || mediaType == null)
+                {
+                    continue;
+                }
+
+                if (mediaType == JellyseerrModel.MediaType.MOVIE && moviesByTmdb.TryGetValue(tmdbId.Value, out var movie))
+                {
+                    results.Add(movie);
+                }
+                else if (mediaType == JellyseerrModel.MediaType.TV && showsByTmdb.TryGetValue(tmdbId.Value, out var show))
+                {
+                    results.Add(show);
+                }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "FindJellyseerrFavorite failed for TMDB {TmdbId} ({Type})", tmdbId, mediaType);
+            _logger.LogError(ex, "FindJellyseerrFavorite failed for batch of {Count} requests", requests.Count);
         }
 
-        _logger.LogTrace("FindJellyseerrFavorite: no match for TMDB {TmdbId} ({Type})", tmdbId, mediaType);
-        return null;
+        return results;
     }
 
     #endregion

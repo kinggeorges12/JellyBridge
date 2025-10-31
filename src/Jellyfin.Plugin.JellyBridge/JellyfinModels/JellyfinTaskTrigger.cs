@@ -1,5 +1,5 @@
-using System;
 using MediaBrowser.Model.Tasks;
+using System.Collections.Generic;
 using System.Linq;
 #if JELLYFIN_10_11
 using TaskTriggerInfoType = MediaBrowser.Model.Tasks.TaskTriggerInfoType;
@@ -114,7 +114,7 @@ public static class JellyfinTaskTrigger
         }
         else
         {
-            var candidates = new System.Collections.Generic.List<(DateTime time, string source)>();
+            var candidates = new List<(DateTime time, string source)>();
             if (syncEnd.HasValue) candidates.Add((syncEnd.Value, "Scheduled"));
             if (startupEnd.HasValue) candidates.Add((startupEnd.Value, "Startup"));
             if (candidates.Count > 0)
@@ -126,7 +126,7 @@ public static class JellyfinTaskTrigger
         }
 
 		// NEXT RUN LOGIC BRANCHES (see summary above):
-		// 1) Enabled + sync has run before -> add interval to most recent baseline (config timestamp, sync last run, startup last run)
+		// 1) Enabled + sync has run before -> add interval to most recent baseline (config timestamp, sync last run (start or end time), startup last run + 1 minute)
 		// 2) Enabled + sync has not run before -> startup time + 1 hour
 		// 3) Disabled -> nextRun stays null (handled by not entering this block)
 		if (isEnabled && syncTask?.Triggers != null)
@@ -146,26 +146,24 @@ public static class JellyfinTaskTrigger
 
                 if (syncHasRunBefore)
                 {
-                    // Baseline: most recent among ScheduledTaskTimestamp, sync last run, startup completion
-                    var baselineCandidates = new System.Collections.Generic.List<DateTime>();
+                    // Baseline: most recent among ScheduledTaskTimestamp, sync last run (start or end), startup completion + 1 minute
+                    var baselineCandidates = new List<DateTime>();
                     if (scheduledTaskTimestamp.HasValue) baselineCandidates.Add(scheduledTaskTimestamp.Value.UtcDateTime);
                     if (syncEnd.HasValue) baselineCandidates.Add(syncEnd.Value);
-                    if (startupEnd.HasValue) baselineCandidates.Add(startupEnd.Value);
+                    if (syncStart.HasValue) baselineCandidates.Add(syncStart.Value);
+                    if (startupEnd.HasValue) baselineCandidates.Add(startupEnd.Value.AddMinutes(1));
 
                     if (baselineCandidates.Count > 0)
                     {
                         var baseline = baselineCandidates.Max();
                         nextRun = baseline.Add(interval);
-			}
+                    }
                 }
                 else
                 {
-                    // No prior syncs: next run is startup + 1 hour, if we have startup times
+                    // No prior syncs: next run is startup + 1 hour; if no startup timestamps, use now + 1 hour
                     var startupBaseline = startupEnd ?? startupStart;
-                    if (startupBaseline.HasValue)
-                    {
-                        nextRun = startupBaseline.Value.AddHours(1);
-                    }
+                    nextRun = (startupBaseline ?? DateTime.UtcNow).AddHours(1);
                 }
             }
         }

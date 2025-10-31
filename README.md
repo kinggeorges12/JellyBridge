@@ -32,7 +32,7 @@ The plugin manages libraries and folders in Jellyfin, creating structure for dis
 
 Browse all discovered movies and series from Jellyseerr networks with thumbnails and metadata.
 
-Note: By default, Jellyfin uses *Sort by Folders* ↑ which appears to show only Series in the Discover library. This is not the case! Recommended setting: *Community rating* (descending) or *Critics rating* (descending).
+Note: By default, Jellyfin uses *Sort by Folders* ↑ which appears to show only Series in the Discover library. This is not the case! The recommended setting is to use *Critics rating* (descending).
 ![Jellyfin Library Sorting](Screenshots/Sorting.png)
 
 ### Placeholder Videos
@@ -108,7 +108,7 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 
 ## Configuration
 
-Access the plugin configuration at: `http://your-jellyfin-server/Plugins/JellyBridge/ConfigurationPage`
+Access the plugin configuration from the host machine at: `http://localhost:8096/web/#/configurationpage?name=JellyBridge`
 
 ### Usage
 
