@@ -28,7 +28,7 @@ public class LibraryService
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
     /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
-    public bool? RefreshJellyseerrLibrary(bool fullRefresh, bool refreshImages = true)
+    public async Task RefreshJellyseerrLibrary(bool fullRefresh, bool refreshImages = true)
     {
         try
         {
@@ -38,7 +38,7 @@ public class LibraryService
 
             if (!manageJellyseerrLibrary) {
                 _logger.LogDebug("Jellyseerr library management is disabled");
-                return null;
+                return;
             }
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
@@ -63,8 +63,8 @@ public class LibraryService
             // Create refresh options based on fullRefresh parameter
             var refreshOptions = new MetadataRefreshOptions(_directoryService)
             {
-                MetadataRefreshMode = MetadataRefreshMode.Default,
-                ImageRefreshMode = MetadataRefreshMode.Default,
+                MetadataRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
+                ImageRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
                 ReplaceAllMetadata = fullRefresh,
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
@@ -76,35 +76,26 @@ public class LibraryService
             _logger.LogTrace("Refresh options - MetadataRefreshMode: {MetadataRefreshMode}, ImageRefreshMode: {ImageRefreshMode}, ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
                 refreshOptions.MetadataRefreshMode, refreshOptions.ImageRefreshMode, refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
 
-            // Scan and refresh each Jellyseerr library individually in background
-            var backgroundTasks = new List<Task>();
+            // Scan and refresh each Jellyseerr library as foreground tasks the caller can await
+            var tasks = new List<Task>();
             
             foreach (var jellyseerrLibrary in jellyseerrLibraries)
             {
                 var libraryFolder = _libraryManager.Inner.GetItemById(Guid.Parse(jellyseerrLibrary.ItemId));
                 if (libraryFolder != null)
                 {
-                    _logger.LogTrace("Starting background scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
-                    // Start the complete scan and refresh process in the background (don't await)
-                    backgroundTasks.Add(Task.Run(async () =>
+                    tasks.Add(((Func<Task>)(async () =>
                     {
-                        try
-                        {
-                            // First validate children to scan for new/changed files
-                            _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
-                            await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
-                            
-                            // Then refresh metadata with the refresh options
-                            _logger.LogTrace("Refreshing metadata for library: {LibraryName}", jellyseerrLibrary.Name);
-                            await ((dynamic)libraryFolder).RefreshMetadata(refreshOptions, CancellationToken.None);
-                            
-                            _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error during background scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
-                        }
-                    }));
+                        _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                        // First validate children to scan for new/changed files
+                        _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
+                        await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
+
+                        // ValidateChildren already refreshes child metadata when recursive=true.
+                        // If needed in future, we could call RefreshMetadata here.
+
+                        _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                    }))());
                 }
                 else
                 {
@@ -112,14 +103,13 @@ public class LibraryService
                 }
             }
 
-            // Return immediately - background tasks continue running
-            _logger.LogDebug("Jellyseerr library refresh started successfully. Background scan and refresh tasks are running for {TaskCount} libraries", backgroundTasks.Count);
-            return true;
+            await Task.WhenAll(tasks);
+            _logger.LogDebug("Jellyseerr library refresh completed for {TaskCount} libraries", tasks.Count);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error refreshing Jellyseerr library");
-            return false;
+            throw;
         }
     }
 
@@ -127,6 +117,7 @@ public class LibraryService
     /// Scans all Jellyfin libraries for first-time plugin initialization.
     /// Uses the same functionality as the "Scan All Libraries" button.
     /// </summary>
+    [Obsolete("ScanAllLibrariesForFirstTime is deprecated and will be removed in a future version.")]
     public bool? ScanAllLibrariesForFirstTime()
     {
         try
@@ -157,9 +148,6 @@ public class LibraryService
 
             // Return immediately - background task continues running
             _logger.LogDebug("Full scan of all libraries started successfully");
-            
-            // Set RanFirstTime to true after successful scan
-            Plugin.SetRanFirstTime(true);
             
             return true;
         }

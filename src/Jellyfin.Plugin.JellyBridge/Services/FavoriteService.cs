@@ -25,6 +25,35 @@ public class FavoriteService
     }
     #region ToJellyseerr
 
+    /// <summary>
+    /// Filter favorites by removing items that are not in the JellyBridge folder.
+    /// </summary>
+    /// <param name="favoritesByUser">The favorites by user</param>
+    /// <returns>The filtered favorites in a flat list of (user, item) pairs</returns>
+    public List<(JellyfinUser user, IJellyfinItem item)> PreprocessFavorites(
+        Dictionary<JellyfinUser, List<IJellyfinItem>> favoritesByUser)
+    {
+        if (favoritesByUser == null || favoritesByUser.Count == 0)
+        {
+            return new List<(JellyfinUser, IJellyfinItem)>();
+        }
+
+        var flattened = favoritesByUser
+            .SelectMany(kv => kv.Value.Select(item => (kv.Key, item)))
+            .ToList();
+
+        var filtered = flattened.Where(fav =>
+        {
+            var path = fav.item?.Path;
+            return !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
+        }).ToList();
+
+        _logger.LogDebug("Filtered favorites to {Count} items in JellyBridge folder (from {Total})",
+            filtered.Count, flattened.Count);
+
+        return filtered;
+    }
+
     #region Created
 
     /// <summary>

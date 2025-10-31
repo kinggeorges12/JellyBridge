@@ -59,11 +59,11 @@ namespace Jellyfin.Plugin.JellyBridge
             
             // Preserve persisted values for fields not present in the submitted payload
             // Specifically ensure RanFirstTime isn't reset to null when saving
-            if (pluginConfig.RanFirstTime == null)
-            {
-                pluginConfig.RanFirstTime = GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
-                _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
-            }
+            // if (pluginConfig.RanFirstTime == null)
+            // {
+            //     pluginConfig.RanFirstTime = GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
+            //     _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
+            // }
             
             _logger.LogDebug("Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
                 pluginConfig.IsEnabled, 
@@ -81,12 +81,12 @@ namespace Jellyfin.Plugin.JellyBridge
         /// <summary>
         /// Sets the RanFirstTime flag in the configuration.
         /// </summary>
-        public static void SetRanFirstTime(bool value)
-        {
-            var config = GetConfiguration();
-            config.RanFirstTime = value;
-            Instance.UpdateConfiguration(config);
-        }
+        // public static void SetRanFirstTime(bool value)
+        // {
+        //     var config = GetConfiguration();
+        //     config.RanFirstTime = value;
+        //     Instance.UpdateConfiguration(config);
+        // }
 
         /// <summary>
         /// Gets a configuration value or its default value.

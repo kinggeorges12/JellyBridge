@@ -356,6 +356,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogTrace("Starting favorites sync to Jellyseerr...");
                     
                     var syncResult = await _syncService.SyncToJellyseerr();
+                    await _syncService.ApplyRefreshAsync(syncToResult: syncResult);
                     
                     _logger.LogTrace("Favorites sync completed successfully");
                     _logger.LogDebug("Favorites sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
@@ -368,12 +369,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         moviesResult = new
                         {
                             moviesProcessed = syncResult.MoviesResult.Processed,
-                            moviesCreated = syncResult.MoviesResult.Created
+                            moviesCreated = syncResult.MoviesResult.Created,
+                            moviesDeleted = syncResult.MoviesResult.Removed
                         },
                         showsResult = new
                         {
                             showsProcessed = syncResult.ShowsResult.Processed,
-                            showsCreated = syncResult.ShowsResult.Created
+                            showsCreated = syncResult.ShowsResult.Created,
+                            showsDeleted = syncResult.ShowsResult.Removed
                         }
                     };
                 }, _logger, "Sync to Jellyseerr");
@@ -412,25 +415,41 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    return await _syncService.SyncFromJellyseerr();
+                    var syncResult = await _syncService.SyncFromJellyseerr();
+                    await _syncService.ApplyRefreshAsync(syncToResult: null, syncFromResult: syncResult);
+
+                    _logger.LogTrace("Discover sync completed successfully");
+                    _logger.LogDebug("Discover sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
+
+                    return new
+                    {
+                        message = syncResult.Message,
+                        details = syncResult.Details,
+                        moviesResult = new {
+                            moviesAdded = syncResult.AddedMovies.Count,
+                            moviesUpdated = syncResult.UpdatedMovies.Count,
+                            moviesDeleted = syncResult.DeletedMovies.Count
+                        },
+                        showsResult = new {
+                            showsAdded = syncResult.AddedShows.Count,
+                            showsUpdated = syncResult.UpdatedShows.Count,
+                            showsDeleted = syncResult.DeletedShows.Count
+                        }
+                    };
                 }, _logger, "Sync Discover");
-                
-                if (result.Success)
-                {
-                    _logger.LogInformation("Sync discover completed successfully");
-                    return Ok(new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
-                else
-                {
-                    _logger.LogWarning("Sync discover failed: {Message}", result.Message);
-                    return StatusCode(500, new { 
-                        message = result.Message, 
-                        details = result.Details 
-                    });
-                }
+
+                _logger.LogInformation("Sync discover completed");
+                return Ok(result);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Sync discover timed out after 2 minutes");
+                return StatusCode(408, new { 
+                    success = false,
+                    error = "Request timeout",
+                    message = "Discover sync took too long and was cancelled. This might indicate a very large result set.",
+                    details = "Operation timed out after 2 minutes"
+                });
             }
             catch (Exception ex)
             {
@@ -636,7 +655,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var libraryDir = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
                 
                 // Use Jellyfin-style locking that pauses instead of canceling
-                var success = await Plugin.ExecuteWithLockAsync<bool>(() =>
+                var success = await Plugin.ExecuteWithLockAsync<bool>(async () =>
                 {
                     _logger.LogInformation("Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
@@ -681,26 +700,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     _logger.LogDebug("Data deletion completed successfully");
                     
-                    // Reset RanFirstTime flag so next sync will do full refresh
-                    Plugin.SetRanFirstTime(false);
-                    
                     // Refresh the Jellyseerr library after data deletion
                     _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
                     
-                    // Call the refresh method
-                    var refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
-                    
-                    if (refreshSuccess == true)
-                    {
-                        _logger.LogInformation("Jellyseerr library refresh started successfully");
-                    }
-                    else if (refreshSuccess == false)
-                    {
-                        _logger.LogWarning("Jellyseerr library refresh failed");
-                    }
-                    // refreshSuccess is null if library management is disabled
-                    
-                    return Task.FromResult(true);
+                    // Call the refresh method (fire-and-await, no return value)
+                    await _libraryService.RefreshJellyseerrLibrary(fullRefresh: true, refreshImages: true);
+
+                    _logger.LogInformation("Jellyseerr library refresh initiated");
+
+                    return true;
                 }, _logger, "Delete Library Data");
                 
                 return Ok(new { 

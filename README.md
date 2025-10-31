@@ -57,6 +57,9 @@ When users mark movies or series as favorites in Jellyfin, the plugin automatica
 
 Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official [installation guide](https://docs.seerr.dev/getting-started).
 
+After installing Jellyseerr, disable the JellyBridge library to prevent requests from being marked as Available.
+![Jellyseerr Requests](Screenshots/Jellyseerr.png)
+
 ### Kodi Sync Plugin for Jellyfin
 
 Browse with Kodi and request content from Jellyfin via the JellyCon add-on. Incompatible with Jellyfin for Kodi.
