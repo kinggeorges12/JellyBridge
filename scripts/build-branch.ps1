@@ -42,7 +42,7 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     
     # Find latest version from release folder
     $releaseFiles = Get-ChildItem ".\release\*.zip" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
-    $latestVersion = "1.3.2"
+    $latestVersion = "1.0.0"
     
     if ($releaseFiles.Count -gt 0) {
         # Extract version from filename (format: JellyBridge-X.Y.Z.10.zip or JellyBridge-X.Y.Z.11.zip)
@@ -240,7 +240,7 @@ foreach ($t in $targets) {
         version = $ver_sub
         changelog = "Jellyfin $($t.JellyfinVersion): $ChangelogText"
         targetAbi = $minAbi
-        sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/$zipName"
+        sourceUrl = "https://raw.githubusercontent.com/$GitHubUsername/JellyBridge/$Branch/release/$zipName"
         checksum = $checksum
         timestamp = $timestamp
         dependencies = @()
@@ -256,10 +256,21 @@ Write-Host "[~] Updated $manifestPath with multi-ABI entries" -ForegroundColor G
 
 # Step 8: Commit changes to Git
 Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
+
+# Explicitly add all changes including release files
 git add .
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Git add failed!"
     exit 1
+}
+
+# Verify release files are staged
+$stagedReleaseFiles = git diff --cached --name-only -- "release/*.zip"
+if ($stagedReleaseFiles) {
+    Write-Host "[~] Staged release files:" -ForegroundColor Green
+    $stagedReleaseFiles | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
+} else {
+    Write-Host "[~] No new release files to commit (may already be committed)" -ForegroundColor Yellow
 }
 
 $commitMessage = "Release $ChangelogText"
@@ -272,19 +283,21 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[~] Committed changes" -ForegroundColor Green
 
 # Step 9: Push changes to GitHub
-Write-Host "Step 9: Pushing changes to GitHub..." -ForegroundColor Yellow
+Write-Host "Step 9: Pushing changes to GitHub branch '$Branch'..." -ForegroundColor Yellow
 
 # Configure git remote with token for authentication
 if ($GitHubToken) {
     git remote set-url origin "https://kinggeorges12:$GitHubToken@github.com/kinggeorges12/JellyBridge.git"
 }
 
-git push
+# Push to the specified branch, set upstream if needed
+Write-Host "[~] Pushing to origin/$Branch..." -ForegroundColor Cyan
+git push --set-upstream origin $Branch
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Git push failed!"
     exit 1
 }
-Write-Host "[~] Pushed to GitHub" -ForegroundColor Green
+Write-Host "[~] Successfully pushed to GitHub branch '$Branch'" -ForegroundColor Green
 
 # Pop back to original directory
 Pop-Location
