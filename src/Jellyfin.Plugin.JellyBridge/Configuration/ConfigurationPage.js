@@ -26,11 +26,14 @@ export default function (view) {
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
                 
-                // Initialize favorite settings
-                initializeFavoriteSettings(page);
+                // Initialize import discover content settings including network interface and sync buttons
+                initializeImportContent(page);
                 
-                // Initialize sync settings including network interface and sync buttons
-                initializeSyncSettings(page);
+                // Initialize sort content settings
+                initializeSortContent(page);
+                
+                // Initialize manage discover library settings
+                initializeManageLibrary(page);
                 
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
@@ -339,132 +342,10 @@ function performTestConnection(page) {
 }
 
 // ==========================================
-// LIBRARY SETTINGS FUNCTIONS
+// IMPORT DISCOVER CONTENT FUNCTIONS
 // ==========================================
 
-function initializeFavoriteSettings(page) {
-    // Set library settings form values with null handling
-    setInputField(page, 'ExcludeFromMainLibraries', true);
-    setInputField(page, 'RemoveRequestedFromFavorites', true);
-    setInputField(page, 'CreateSeparateLibraries', true);
-    setInputField(page, 'LibraryPrefix');
-    setInputField(page, 'ManageJellyseerrLibrary', true);
-    
-    updateLibraryPrefixState();
-    
-    // Sync Favorites button functionality
-    const syncFavoritesButton = page.querySelector('#syncFavorites');
-    syncFavoritesButton.addEventListener('click', function() {
-        performSyncFavorites(page);
-    });
-}
-
-function updateLibraryPrefixState() {
-    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
-    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
-    const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
-    
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
-    
-    // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Show/hide warning message
-    if (separateLibrariesWarning) {
-        separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
-    }
-    
-    // Add/remove disabled styling to both input and container
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.remove('disabled');
-        }
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.add('disabled');
-        }
-    }
-}
-
-function performSyncFavorites(page) {
-    const syncFavoritesButton = page.querySelector('#syncFavorites');
-    
-    // Show confirmation dialog for saving settings before sync
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before starting favorites sync.',
-        confirmText: 'Save & Sync',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            syncFavoritesButton.disabled = true;
-            // Save settings first, then sync
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the sync result textbox
-                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
-                syncFavoritesResult.style.display = 'block';
-                
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed
-                Dashboard.showLoadingMsg();
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyBridge/SyncFavorites'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(syncResult) {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `${syncResult.message || 'No message'}\n`;
-                    
-                    if (syncResult.details) {
-                        resultText += `\nDetails: ${syncResult.details}\n`;
-                    }
-                    
-                    resultText += `\nMovies Result:\n`;
-                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
-                    
-                    resultText += `\nShows Result:\n`;
-                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
-                    
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-                syncFavoritesButton.disabled = false;
-            });
-        }
-    });
-}
-
-// ==========================================
-// DISCOVER SETTINGS FUNCTIONS
-// ==========================================
-
-function initializeSyncSettings(page) {
+function initializeImportContent(page) {
     const config = window.configJellyBridge || {};
     
     const activeNetworksSelect = page.querySelector('#activeNetworks');
@@ -606,10 +487,14 @@ function initializeSyncSettings(page) {
         });
     }
 
+    // Set Max Discover Pages and Max Retention Days
+    setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'MaxRetentionDays');
+
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
     syncButton.addEventListener('click', function () {
-        performSyncDiscover(page);
+        performSyncImportContent(page);
     });
 
     // Add reset plugin config button functionality
@@ -642,7 +527,7 @@ function initializeSyncSettings(page) {
     }
 }
 
-function performSyncDiscover(page) {
+function performSyncImportContent(page) {
     const syncButton = page.querySelector('#syncDiscover');
     
     // Show confirmation dialog for saving settings before sync
@@ -707,7 +592,7 @@ function performSyncDiscover(page) {
     });
 }
 
-// Helper functions for Discover Settings
+// Helper functions for Import Discover Content
 function parseNetworkOptions(options) {
     return Array.from(options).map(option => {
         const networkObj = {};
@@ -960,6 +845,207 @@ function loadRegions(page) {
 }
 
 // ==========================================
+// SORT CONTENT FUNCTIONS
+// ==========================================
+
+function initializeSortContent(page) {
+    const config = window.configJellyBridge || {};
+    
+    // Set sort content form values with null handling
+    setInputField(page, 'RandomizeDiscoverSortOrder', true);
+    setInputField(page, 'RandomizeSortIntervalHours');
+
+    // Add sort content button functionality
+    const sortButton = page.querySelector('#sortContent');
+    sortButton.addEventListener('click', function () {
+        performSortContent(page);
+    });
+}
+
+function performSortContent(page) {
+    const sortButton = page.querySelector('#sortContent');
+    
+    // Show confirmation dialog for saving settings before sort
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting sort content randomization.',
+        confirmText: 'Save & Randomize',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            sortButton.disabled = true;
+            // Save settings first, then sort
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sort result textbox
+                const sortContentResult = page.querySelector('#sortContentResult');
+                sortContentResult.textContent = '🔄 Randomizing content sort order...';
+                sortContentResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Sort if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/SortLibrary'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(sortResult) {
+                    let resultText = `Sort Content Results:\n`;
+                    resultText += `${sortResult.message || 'No message'}\n`;
+                    
+                    if (sortResult.details) {
+                        resultText += `\nDetails: ${sortResult.details}\n`;
+                    }
+                    
+                    sortContentResult.textContent = resultText;
+                    scrollToElement('sortContentResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Sort Content Results:\n`;
+                    resultText += `❌ Sort failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    sortContentResult.textContent = resultText;
+                    scrollToElement('sortContentResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                sortButton.disabled = false;
+            });
+        }
+    });
+}
+
+// ==========================================
+// MANAGE DISCOVER LIBRARY FUNCTIONS
+// ==========================================
+
+function initializeManageLibrary(page) {
+    // Set library settings form values with null handling
+    setInputField(page, 'ExcludeFromMainLibraries', true);
+    setInputField(page, 'RemoveRequestedFromFavorites', true);
+    setInputField(page, 'CreateSeparateLibraries', true);
+    setInputField(page, 'LibraryPrefix');
+    setInputField(page, 'ManageJellyseerrLibrary', true);
+    
+    updateLibraryPrefixState();
+    
+    // Sync Favorites button functionality
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    syncFavoritesButton.addEventListener('click', function() {
+        performSyncManageLibrary(page);
+    });
+}
+
+function updateLibraryPrefixState() {
+    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
+    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
+    const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
+    
+    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    
+    // Enable/disable the input
+    libraryPrefixInput.disabled = !isEnabled;
+    
+    // Show/hide warning message
+    if (separateLibrariesWarning) {
+        separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
+    }
+    
+    // Add/remove disabled styling to both input and container
+    if (isEnabled) {
+        libraryPrefixInput.classList.remove('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.remove('disabled');
+        }
+    } else {
+        libraryPrefixInput.classList.add('disabled');
+        if (libraryPrefixContainer) {
+            libraryPrefixContainer.classList.add('disabled');
+        }
+    }
+}
+
+function performSyncManageLibrary(page) {
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    
+    // Show confirmation dialog for saving settings before sync
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting favorites sync.',
+        confirmText: 'Save & Sync',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            syncFavoritesButton.disabled = true;
+            // Save settings first, then sync
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sync result textbox
+                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
+                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
+                syncFavoritesResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // sync if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/SyncFavorites'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncResult) {
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `${syncResult.message || 'No message'}\n`;
+                    
+                    if (syncResult.details) {
+                        resultText += `\nDetails: ${syncResult.details}\n`;
+                    }
+                    
+                    resultText += `\nMovies Result:\n`;
+                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
+                    
+                    resultText += `\nShows Result:\n`;
+                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
+                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
+                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    syncFavoritesResult.textContent = resultText;
+                    scrollToElement('syncFavoritesResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                syncFavoritesButton.disabled = false;
+            });
+        }
+    });
+}
+
+// ==========================================
 // ADVANCED SETTINGS FUNCTIONS
 // ==========================================
 
@@ -967,8 +1053,6 @@ function initializeAdvancedSettings(page) {
     // Set advanced settings form values with null handling
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
-    setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'MaxRetentionDays');
     setInputField(page, 'PlaceholderDurationSeconds');
     const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
     if (placeholderDurationInput) {
@@ -980,6 +1064,7 @@ function initializeAdvancedSettings(page) {
     }
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
+    setInputField(page, 'TaskTimeoutMinutes');
     setInputField(page, 'EnableDebugLogging', true);
     setInputField(page, 'EnableTraceLogging', true);
     
@@ -1114,10 +1199,14 @@ function performPluginReset(page) {
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
+                RandomizeDiscoverSortOrder: null,
+                RandomizeSortIntervalHours: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
                 ExcludeFromMainLibraries: null,
                 EnableStartupSync: null,
+                StartupDelaySeconds: null,
+                TaskTimeoutMinutes: null,
                 EnableDebugLogging: null,
                 EnableTraceLogging: null,
                 Region: '',
@@ -1231,11 +1320,13 @@ function savePluginConfiguration(page) {
     
     // Validate number fields with appropriate types
     if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
+    if (!validateField(page, 'RandomizeSortIntervalHours', validators.double, 'Sort Randomization Interval must be a positive decimal number').isValid) return;
     if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
     if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
     if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
     if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
     if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
+    if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
     if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
     
     // Validate Library Prefix for Windows filename compatibility
@@ -1254,12 +1345,15 @@ function savePluginConfiguration(page) {
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
     form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
+    form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
     form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
     form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.RandomizeDiscoverSortOrder = nullIfDefault(page.querySelector('#RandomizeDiscoverSortOrder').checked, config.DefaultValues.RandomizeDiscoverSortOrder);
+    form.RandomizeSortIntervalHours = safeParseDouble(page.querySelector('#RandomizeSortIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.DefaultValues.EnableTraceLogging);

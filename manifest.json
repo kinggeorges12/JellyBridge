@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.6.11.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.6.11",
+        "checksum": "8C7B9045A775B4377998C4507387939D",
+        "changelog": "Jellyfin 10.11.0: v1.3.6 - Reorganized UI sections and added sort randomization features: Renamed Discover Settings to Import Discover Content and Favorite Settings to Manage Discover Library throughout UI, JavaScript, and documentation. Added Sort Discover Content section with Randomize Discover Sort Order checkbox and configurable interval. Created RandomizeSortTask scheduled task to randomize NFO dateadded fields and refresh library metadata. Added manual Sort Library button and endpoint for on-demand sort randomization. Added TaskTimeoutMinutes configuration (default 10 minutes) to control plugin task timeouts. Updated ExecuteWithLockAsync to use configured task timeout as default. Refactored JavaScript function names to match new naming conventions (initializeImportContent, initializeManageLibrary, initializeSortContent, etc.). Updated all timeout error messages to reflect actual configured timeout values. Reorganized configuration files and README to match new UI layout.",
+        "dependencies": [],
+        "timestamp": "2025-10-31T22:12:41.886Z"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.6.10.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.6.10",
+        "checksum": "3AF27FD2FB6974E7FB85FAC4F3316E60",
+        "changelog": "Jellyfin 10.10.7: v1.3.6 - Reorganized UI sections and added sort randomization features: Renamed Discover Settings to Import Discover Content and Favorite Settings to Manage Discover Library throughout UI, JavaScript, and documentation. Added Sort Discover Content section with Randomize Discover Sort Order checkbox and configurable interval. Created RandomizeSortTask scheduled task to randomize NFO dateadded fields and refresh library metadata. Added manual Sort Library button and endpoint for on-demand sort randomization. Added TaskTimeoutMinutes configuration (default 10 minutes) to control plugin task timeouts. Updated ExecuteWithLockAsync to use configured task timeout as default. Refactored JavaScript function names to match new naming conventions (initializeImportContent, initializeManageLibrary, initializeSortContent, etc.). Updated all timeout error messages to reflect actual configured timeout values. Reorganized configuration files and README to match new UI layout.",
+        "dependencies": [],
+        "timestamp": "2025-10-31T22:12:41.886Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.5.11.zip",
         "dependencies": [],
         "version": "1.3.5.11",

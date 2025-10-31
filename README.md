@@ -136,9 +136,23 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Sync Interval**: How often the plugin automatically syncs content, measured in hours.
 - **Test Connection**: Verifies that the plugin can successfully connect to your Jellyseerr instance
 
-### 📁 Favorite Settings
+### 🔍 Import Discover Content
 
-![Favorite Settings](Screenshots/Favorite.png)
+![Import Discover Content](Screenshots/Discover.png)
+
+- **Region**: Which geographic region to use for discovering streaming content. Different regions show different available networks.
+- **Network Services**: Choose which streaming networks to pull content from and include in your library.
+- **Max Discover Pages**: Controls how much discover content is pulled from each network during sync. Discover content includes available movies and shows from streaming networks. Each page contains 20 items. Applies to both movies and TV shows.
+- **Max Retention Days**: How long to keep discover content in the library before automatically removing it. Older items are cleaned up during sync.
+
+### 🔀 Sort Discover Content
+
+- **Randomize Discover Sort Order**: Enables random sorting in the discover library by randomizing the Date Added metadata and refreshing library metadata. This allows users to see content in a different order each time.
+- **Sort Randomization Interval**: How often to run the sort randomization task, measured in hours. Set to 0 to disable automatic sort randomization.
+
+### 📁 Manage Discover Library
+
+![Manage Discover Library](Screenshots/Favorite.png)
 
 - **Manage Jellyseerr Library**: Automatically refreshes your JellyBridge library in Jellyfin after each sync to show newly added or updated content. Performs a quick refresh for new items, or a full refresh if content was removed from Jellyseerr.
 - **Exclude from Main Libraries**: Prevents duplicate content by hiding movies and shows in the JellyBridge library if they already exist in your other Jellyfin libraries.
@@ -146,20 +160,12 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Create Separate Libraries**: Creates individual libraries for each streaming service instead of one combined library.
 - **Library Prefix**: Text added to the beginning of library names when creating separate libraries for each streaming service.
 
-### 🔍 Discover Settings
-
-![Discover Settings](Screenshots/Discover.png)
-
-- **Max Discover Pages**: Controls how much discover content is pulled from each network during sync. Discover content includes available movies and shows from streaming networks. Each page contains 20 items. Applies to both movies and TV shows.
-- **Max Retention Days**: How long to keep discover content in the library before automatically removing it. Older items are cleaned up during sync.
-- **Region**: Which geographic region to use for discovering streaming content. Different regions show different available networks.
-- **Network Services**: Choose which streaming networks to pull content from and include in your library.
-
 ### ⚙️ Advanced Settings
 
 ![Advanced Settings](Screenshots/Advanced.png)
 - **Auto Sync on Startup**: Automatically runs a sync when the plugin starts or when Jellyfin restarts.
 - **Startup Delay**: How many seconds to wait before running the startup sync, in addition to Jellyfin's built-in 1-minute delay.
+- **Task Timeout**: How long to wait for plugin tasks (sync, sort, etc.) to finish before cancelling. This timeout applies after acquiring the task lock. Default is 10 minutes.
 - **Request Timeout**: How long to wait for responses from Jellyseerr before considering the request failed.
 - **Retry Attempts**: How many times to retry failed requests to Jellyseerr before giving up.
 - **Placeholder Duration**: How long the placeholder videos should be, in seconds. Placeholder videos are short video files created for movies and shows that aren't yet available in your library, allowing them to appear in Jellyfin.

@@ -26,6 +26,85 @@ public class MetadataService
     {
         var movies = new List<JellyseerrMovie>();
         var shows = new List<JellyseerrShow>();
+
+        try
+        {
+            // Get categorized directories
+            var (movieDirectories, showDirectories) = ReadMetadataInternal();
+
+            // Parse all movie directories
+            foreach (var directory in movieDirectories)
+            {
+                try
+                {
+                    var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
+                    var json = await File.ReadAllTextAsync(metadataFile);
+                    _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                    
+                    var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
+                    if (movie != null)
+                    {
+                        _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                            movie.MediaName, movie.Id, movie.MediaType, movie.Year);
+                        movies.Add(movie);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
+                }
+            }
+
+            // Parse all show directories
+            foreach (var directory in showDirectories)
+            {
+                try
+                {
+                    var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
+                    var json = await File.ReadAllTextAsync(metadataFile);
+                    _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                    
+                    var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
+                    if (show != null)
+                    {
+                        _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                            show.MediaName, show.Id, show.MediaType, show.Year);
+                        shows.Add(show);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
+                }
+            }
+
+            _logger.LogDebug("Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
+                movies.Count, shows.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reading metadata from bridge folders");
+        }
+
+        return (movies, shows);
+    }
+
+    /// <summary>
+    /// Internal method to discover and categorize directories containing metadata files.
+    /// </summary>
+    /// <returns>Tuple containing lists of movie directories and show directories</returns>
+    private (List<string> movieDirectories, List<string> showDirectories) ReadMetadataInternal()
+    {
+        var movieDirectories = new List<string>();
+        var showDirectories = new List<string>();
         var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
         try
@@ -43,66 +122,34 @@ public class MetadataService
                 var directory = Path.GetDirectoryName(metadataFile);
                 if (!string.IsNullOrEmpty(directory))
                 {
-                    try
+                    // Check for movie.nfo to identify movie folders
+                    var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
+                    var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
+                    
+                    if (File.Exists(movieNfoFile))
                     {
-                        var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
-                        
-                        // Check for movie.nfo to identify movie folders
-                        var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
-                        var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
-                        
-                        if (File.Exists(movieNfoFile))
-                        {
-                            // This is a movie folder
-                            var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
-                            if (movie != null)
-                            {
-                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                                    movie.MediaName, movie.Id, movie.MediaType, movie.Year);
-                                movies.Add(movie);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
-                            }
-                        }
-                        else if (File.Exists(showNfoFile))
-                        {
-                            // This is a show folder
-                            var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
-                            if (show != null)
-                            {
-                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                                    show.MediaName, show.Id, show.MediaType, show.Year);
-                                shows.Add(show);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("No NFO file found in directory {Directory} - skipping", directory);
-                        }
+                        movieDirectories.Add(directory);
                     }
-                    catch (Exception ex)
+                    else if (File.Exists(showNfoFile))
                     {
-                        _logger.LogWarning(ex, "Error reading metadata file: {MetadataFile}", metadataFile);
+                        showDirectories.Add(directory);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No NFO file found in directory {Directory} - skipping", directory);
                     }
                 }
             }
 
-            _logger.LogDebug("Read {MovieCount} movies and {ShowCount} shows from bridge folders", 
-                movies.Count, shows.Count);
+            _logger.LogDebug("Found {MovieCount} movie directories and {ShowCount} show directories", 
+                movieDirectories.Count, showDirectories.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error reading metadata from {SyncDirectory}", syncDirectory);
+            _logger.LogError(ex, "Error discovering metadata directories from {SyncDirectory}", syncDirectory);
         }
 
-        return (movies, shows);
+        return (movieDirectories, showDirectories);
     }
 
     /// <summary>
@@ -211,9 +258,6 @@ public class MetadataService
                 _logger.LogTrace("Skipped writing XML to {XmlFile} - file already exists", xmlFile);
             }
             
-            // Always update the dateadded field with a random date from yesterday
-            await WriteRandomDateAddedToNfo(xmlFile);
-            
             return true;
         }
         catch (Exception ex)
@@ -252,59 +296,82 @@ public class MetadataService
     }
 
     /// <summary>
-    /// Updates the dateadded field in an NFO file with a random date from yesterday.
+    /// Updates the dateadded field in all NFO files with a random date from yesterday.
+    /// Uses ReadMetadataInternal to discover movie and show directories.
     /// </summary>
-    /// <param name="xmlFile">Path to the NFO file to update</param>
-    private async Task WriteRandomDateAddedToNfo(string xmlFile)
+    public async Task RandomizeNfoDateAddedAsync()
     {
-        if (!File.Exists(xmlFile))
-        {
-            return;
-        }
-
         try
         {
-            var xmlContent = await File.ReadAllTextAsync(xmlFile);
-            var xmlDoc = XDocument.Parse(xmlContent);
-            var root = xmlDoc.Root;
-            if (root != null)
+            // Get categorized directories
+            var (movieDirectories, showDirectories) = ReadMetadataInternal();
+
+            // Combine all directories with their appropriate NFO filenames into a single list
+            var xmlFiles = new List<string>();
+            xmlFiles.AddRange(movieDirectories.Select(d => Path.Combine(d, JellyseerrMovie.GetNfoFilename())));
+            xmlFiles.AddRange(showDirectories.Select(d => Path.Combine(d, JellyseerrShow.GetNfoFilename())));
+
+            // Process all XML files
+            foreach (var xmlFile in xmlFiles)
             {
-                // Generate random time from yesterday
-                var random = System.Random.Shared;
-                var yesterday = DateTime.Now.Date.AddDays(-1);
-                var randomHours = random.Next(0, 24);
-                var randomMinutes = random.Next(0, 60);
-                var randomSeconds = random.Next(0, 60);
-                var dateAdded = yesterday.AddHours(randomHours).AddMinutes(randomMinutes).AddSeconds(randomSeconds);
-                var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
-                
-                // Remove existing dateadded if present
-                var existingDateAdded = root.Element("dateadded");
-                if (existingDateAdded != null)
+                try
                 {
-                    existingDateAdded.Remove();
+                    await UpdateDateAddedInNfoFile(xmlFile);
                 }
-                
-                // Add new dateadded element (insert after the first element for better formatting)
-                var firstElement = root.Elements().FirstOrDefault();
-                var newDateAdded = new XElement("dateadded", dateAddedString);
-                if (firstElement != null)
+                catch (Exception ex)
                 {
-                    firstElement.AddAfterSelf(newDateAdded);
+                    _logger.LogWarning(ex, "Failed to update dateadded in NFO file: {XmlFile}", xmlFile);
                 }
-                else
-                {
-                    root.Add(newDateAdded);
-                }
-                
-                // Write the updated XML back
-                await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
-                _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to update dateadded in {XmlFile}", xmlFile);
+            _logger.LogError(ex, "Error updating dateadded in NFO files");
+        }
+    }
+
+    /// <summary>
+    /// Helper method to update the dateadded field in a single NFO file.
+    /// </summary>
+    /// <param name="xmlFile">Path to the NFO file to update</param>
+    private async Task UpdateDateAddedInNfoFile(string xmlFile)
+    {
+        var xmlContent = await File.ReadAllTextAsync(xmlFile);
+        var xmlDoc = XDocument.Parse(xmlContent);
+        var root = xmlDoc.Root;
+        if (root != null)
+        {
+            // Generate random time from yesterday
+            var random = System.Random.Shared;
+            var yesterday = DateTime.Now.Date.AddDays(-1);
+            var randomHours = random.Next(0, 24);
+            var randomMinutes = random.Next(0, 60);
+            var randomSeconds = random.Next(0, 60);
+            var dateAdded = yesterday.AddHours(randomHours).AddMinutes(randomMinutes).AddSeconds(randomSeconds);
+            var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
+            
+            // Remove existing dateadded if present
+            var existingDateAdded = root.Element("dateadded");
+            if (existingDateAdded != null)
+            {
+                existingDateAdded.Remove();
+            }
+            
+            // Add new dateadded element (insert after the first element for better formatting)
+            var firstElement = root.Elements().FirstOrDefault();
+            var newDateAdded = new XElement("dateadded", dateAddedString);
+            if (firstElement != null)
+            {
+                firstElement.AddAfterSelf(newDateAdded);
+            }
+            else
+            {
+                root.Add(newDateAdded);
+            }
+            
+            // Write the updated XML back
+            await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
+            _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
         }
     }
 
