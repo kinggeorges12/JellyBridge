@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.8.11",
+        "timestamp": "2025-10-31T23:12:29.188Z",
+        "checksum": "C47C4D14E1549E55DC3826198EA9BABD",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.8.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.8 - Code formatting cleanup: Normalized whitespace and line endings in MetadataService.cs for consistent code style.",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "version": "1.3.8.10",
+        "timestamp": "2025-10-31T23:12:29.188Z",
+        "checksum": "116FE7EF9495A5AA5947B5C878CFCD4F",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.8.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.8 - Code formatting cleanup: Normalized whitespace and line endings in MetadataService.cs for consistent code style.",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.11.0.0",
         "checksum": "463646A729ED89192F91C619DBA43E09",
         "version": "1.3.7.11",
