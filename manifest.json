@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.0 - Minor release: UI refinements (Favorite Settings section; Library Directory moved to General; Enable Plugin and Sync Interval positioned above Test Connection; dependent controls disabled when plugin disabled). Reset flow restores default networks. Backend supports NetworkMap=null to reset. README/screenshots updated to match UI.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.0/JellyBridge-1.3.0.11.zip",
+        "timestamp": "2025-10-31T09:04:18.277Z",
+        "checksum": "A6A0F88DC68544486BE974C0A2C81FBA",
+        "version": "1.3.0.11"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.0 - Minor release: UI refinements (Favorite Settings section; Library Directory moved to General; Enable Plugin and Sync Interval positioned above Test Connection; dependent controls disabled when plugin disabled). Reset flow restores default networks. Backend supports NetworkMap=null to reset. README/screenshots updated to match UI.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.0/JellyBridge-1.3.0.10.zip",
+        "timestamp": "2025-10-31T09:04:18.277Z",
+        "checksum": "CC5426C5CBC9CE02FAD7BA87301DDFC7",
+        "version": "1.3.0.10"
+      },
+      {
         "version": "1.2.4.11",
         "checksum": "7913B9D1A748CBA5938C440016C72E88",
         "changelog": "Jellyfin 10.11.0: v1.2.4 - Bug fixes and improvements",
