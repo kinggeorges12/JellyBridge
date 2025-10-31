@@ -9,22 +9,22 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.1/JellyBridge-1.3.1.11.zip",
-        "dependencies": [],
+        "checksum": "4C3DC0C00C8A8822494580BCCCB5082B",
+        "version": "1.3.2.11",
         "targetAbi": "10.11.0.0",
-        "timestamp": "2025-10-31T15:57:36.970Z",
-        "checksum": "A8F66F909109AD39D81D21CAE08E2D00",
-        "changelog": "Jellyfin 10.11.0: v1.3.1 - Added a note about functional issues with Create separate libraries for streaming services option",
-        "version": "1.3.1.11"
+        "timestamp": "2025-10-31T16:00:31.414Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.2/JellyBridge-1.3.2.11.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.2 - Added a note about functional issues with Create separate libraries for streaming services option"
       },
       {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.1/JellyBridge-1.3.1.10.zip",
-        "dependencies": [],
+        "checksum": "60D19232C2D850766E1D7CDD7DECE579",
+        "version": "1.3.2.10",
         "targetAbi": "10.10.0.0",
-        "timestamp": "2025-10-31T15:57:36.970Z",
-        "checksum": "B35F090DCE42668EA4D0D416585DB8C2",
-        "changelog": "Jellyfin 10.10.7: v1.3.1 - Added a note about functional issues with Create separate libraries for streaming services option",
-        "version": "1.3.1.10"
+        "timestamp": "2025-10-31T16:00:31.414Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.2/JellyBridge-1.3.2.10.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.2 - Added a note about functional issues with Create separate libraries for streaming services option"
       },
       {
         "targetAbi": "10.11.0.0",
