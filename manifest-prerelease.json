@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "A16F55CD8BE5B2462B614347DC7D679F",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.44/JellyBridge-1.2.44.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.2.44 - Fix Favorites declination/grouping; improve library scanning and path filtering; stabilize background Sync scheduling; enhance RouteController endpoints and error handling; update configuration UI and defaults; performance and logging improvements.",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-10-31T08:27:24.716Z",
+        "version": "1.2.44.11"
+      },
+      {
+        "checksum": "4FF8D491F0503D131153BA58EF535DD0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.44/JellyBridge-1.2.44.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.2.44 - Fix Favorites declination/grouping; improve library scanning and path filtering; stabilize background Sync scheduling; enhance RouteController endpoints and error handling; update configuration UI and defaults; performance and logging improvements.",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-10-31T08:27:24.716Z",
+        "version": "1.2.44.10"
+      },
+      {
         "dependencies": [],
         "version": "1.2.43.11",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.43/JellyBridge-1.2.43.11.zip",
