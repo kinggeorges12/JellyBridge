@@ -17,13 +17,17 @@ public class FavoriteService
     private readonly ApiService _apiService;
     private readonly BridgeService _bridgeService;
     private readonly MetadataService _metadataService;
+    private readonly JellyfinIUserDataManager _userDataManager;
+    private readonly JellyfinILibraryManager _libraryManager;
 
-    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService, MetadataService metadataService)
+    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService, MetadataService metadataService, JellyfinIUserDataManager userDataManager, JellyfinILibraryManager libraryManager)
     {
         _logger = new DebugLogger<FavoriteService>(logger);
         _apiService = apiService;
         _bridgeService = bridgeService;
         _metadataService = metadataService;
+        _userDataManager = userDataManager;
+        _libraryManager = libraryManager;
     }
     #region ToJellyseerr
 
@@ -339,25 +343,71 @@ public class FavoriteService
     }
 
     /// <summary>
-    /// Create .ignore files in the bridge item directories that were successfully requested.
+    /// For each favorited item that was requested in Jellyseerr, create an .ignore marker and unmark it as favorite for the user.
     /// </summary>
-    public async Task<List<IJellyfinItem>> IgnoreRequestedAsync(List<IJellyfinItem> jellyfinItems)
+    public async Task<List<IJellyfinItem>> UnmarkAndIgnoreRequestedAsync(List<(JellyfinUser user, IJellyfinItem item)> favorites)
     {
-        var writtenItems = new List<IJellyfinItem>();
+        var affectedItems = new List<IJellyfinItem>();
+
+        // Respect configuration: if removal from favorites is disabled, do nothing
+        var removeRequested = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
+        if (!removeRequested)
+        {
+            _logger.LogTrace("RemoveRequestedFromFavorites disabled; skipping unfavorite and ignore creation.");
+            return affectedItems;
+        }
+
         try
         {
+
+            // Build lookup of itemId -> users who favorited it
+            var itemIdToUsers = favorites
+                .GroupBy(f => f.item.Id)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.user).ToList());
+
             // Use LibraryScanAsync to find matches between provided Jellyfin items and Jellyseerr metadata
+            var jellyfinItems = favorites.Select(f => f.item).ToList();
             var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
 
             // Create ignore files for those matches
             await _bridgeService.CreateIgnoreFilesAsync(matches);
-            writtenItems = matches.Select(m => (IJellyfinItem)m.JellyfinItem).ToList();
+
+            // Unfavorite for each user that had this item favorited (via wrappers only)
+            foreach (var match in matches)
+            {
+                var jfItem = match.JellyfinItem;
+                affectedItems.Add(jfItem);
+
+                if (!itemIdToUsers.TryGetValue(jfItem.Id, out var users))
+                {
+                    continue;
+                }
+
+                foreach (var jfUser in users)
+                {
+                    try
+                    {
+                        if (jfItem == null)
+                        {
+                            continue;
+                        }
+                        var updated = _userDataManager.TrySetFavorite(jfUser, jfItem, false, _libraryManager);
+                        if (updated){
+                            _logger.LogTrace("Unfavorited '{ItemName}' for user '{UserName}'", jfItem.Name, jfUser.Username);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to unfavorite '{ItemName}' for a user", jfItem?.Name);
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to process favorited items for .ignore creation via scan");
+            _logger.LogError(ex, "Failed processing favorited items for unmark-and-ignore");
         }
-        return writtenItems;
+        return affectedItems;
     }
 
 

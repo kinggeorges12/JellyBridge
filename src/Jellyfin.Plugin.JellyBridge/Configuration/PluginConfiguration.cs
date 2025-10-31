@@ -23,7 +23,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ApiKey), string.Empty },
         { nameof(SyncIntervalHours), 24.0 },
         { nameof(EnableStartupSync), true },
-        { nameof(StartupDelaySeconds), 60 },
+        { nameof(StartupDelaySeconds), 30 },
 
         // Library Settings
         { nameof(LibraryDirectory), "/data/JellyBridge" },

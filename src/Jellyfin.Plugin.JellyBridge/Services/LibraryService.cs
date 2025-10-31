@@ -69,7 +69,7 @@ public class LibraryService
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
-                IsAutomated = true,
+                IsAutomated = false,
                 RemoveOldMetadata = false
             };
             
