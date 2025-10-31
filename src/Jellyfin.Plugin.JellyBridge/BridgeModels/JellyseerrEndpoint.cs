@@ -34,5 +34,8 @@ public enum JellyseerrEndpoint
     WatchProvidersTv,
     
     // Additional endpoints that might be useful
-    UserList
+    UserList,
+
+    // User quota endpoint (from server/routes/user/index.ts)
+    UserQuota
 }
