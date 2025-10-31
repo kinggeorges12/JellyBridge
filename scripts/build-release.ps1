@@ -6,8 +6,6 @@
     [string]$Changelog,
     
     [string]$GitHubUsername = "kinggeorges12",
-    
-    [switch]$Beta,
 
     [switch]$Release
 )
@@ -23,6 +21,9 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 # Set base directory (project root) - fully resolved path
 $BaseDir = Split-Path $PSScriptRoot -Parent
 
+# Where to save zip files
+$releaseDir = Join-Path $BaseDir "temp"
+
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
 
@@ -35,11 +36,6 @@ $Version = $Version.ToString()
 # Validate version format (should be like 0.69.0)
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     Write-Error '[X] Version must be in format X.Y.Z (e.g., 1.2.3)'
-    exit 1
-}
-
-if(-not $Beta -and -not $Release) {
-    Write-Error '[X] Must specify either Beta or Release switch'
     exit 1
 }
 
@@ -57,14 +53,13 @@ Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
-# Choose manifest file based on prerelease flag
-$manifestPath = if ($Beta -or -not $Release) { "manifest-prerelease.json" } else { "manifest.json" }
+# Set manifest file 
+$manifestPath = "manifest.json"
 
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
 # Ensure release directory exists
-$releaseDir = Join-Path $BaseDir "release"
 if (-not (Test-Path $releaseDir)) {
     New-Item -ItemType Directory -Path $releaseDir | Out-Null
 }
@@ -198,9 +193,8 @@ Write-Host "[~] Committed changes" -ForegroundColor Green
 Write-Host "Step 9: Pushing changes to GitHub..." -ForegroundColor Yellow
 
 # Configure git remote with token for authentication
-$token = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
-if ($token) {
-    git remote set-url origin "https://kinggeorges12:$token@github.com/kinggeorges12/JellyBridge.git"
+if ($GitHubToken) {
+    git remote set-url origin "https://kinggeorges12:$GitHubToken@github.com/kinggeorges12/JellyBridge.git"
 }
 
 git push
@@ -225,7 +219,7 @@ $body = @{
     name = "JellyBridge v$Version"
     body = $releaseBody
     draft = $false
-    prerelease = [bool]$Beta -or -not [bool]$Release
+    prerelease = -not [bool]$Release
 } | ConvertTo-Json
 
 try {
