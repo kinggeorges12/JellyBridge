@@ -299,19 +299,6 @@
                         <div id="taskStatusTimes" class="taskStatusTimes"></div>
                     </div>
                     
-                    <div class="checkboxContainer">
-                        <label class="emby-checkbox-label" id="IsEnabledContainer">
-                            <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                            <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
-                            <span class="checkboxOutline">
-                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                            </span>
-                        </label>
-                        <div class="helpButton">
-                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">?</span>
-                        </div>
-                    </div>
                     
                     <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
                         <h4>Library Setup Instructions</h4>
@@ -349,10 +336,7 @@
                         </div>
                     </div>
                     
-                    <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" max="168" step="0.1"/>
-                        <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
-                    </div>
+                    
 
                     <div class="inputContainer">
                         <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL"/>
@@ -364,6 +348,30 @@
                         <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost</a>.</div>
                     </div>
 
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
+                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library.</div>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label" id="IsEnabledContainer">
+                            <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                            <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
+                            <span class="checkboxOutline">
+                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                            </span>
+                        </label>
+                        <div class="helpButton">
+                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">?</span>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" max="168" step="0.1"/>
+                        <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
                             <span>Test Connection</span>
@@ -372,13 +380,9 @@
 
                     <br>
 
-                    <details id="librarySettings">
-                        <summary>Library Settings</summary>
+                    <details id="favoriteSettings">
+                        <summary>Favorite Settings</summary>
                         <br>
-                        <div class="inputContainer">
-                            <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
-                            <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library.</div>
-                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
