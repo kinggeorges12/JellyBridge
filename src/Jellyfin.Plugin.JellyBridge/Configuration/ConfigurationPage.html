@@ -461,7 +461,7 @@
 
                         <div class="inputContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
+                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
@@ -553,7 +553,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
+                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts. Requires the <i>Enable the automated task to sync Jellyseerr and Jellyfin</i> option to be checked.</div>
                         </div>
 
                         <div class="inputContainer" id="StartupDelaySecondsContainer">
@@ -585,7 +585,19 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This redirects the Debug and Trace logging to the Information log level to workaround the clunky logging system in Jellyfin.</div>
+                            <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This redirects the lower log levels to the Information log level to workaround the clunky logging system in Jellyfin.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="EnableTraceLoggingContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableTraceLogging" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Enable Trace Logging</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Enable trace-level logging for even more detailed information. This is the most verbose logging level and creates a lot of log entries.</div>
                         </div>
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">

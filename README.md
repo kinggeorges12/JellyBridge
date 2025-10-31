@@ -129,42 +129,41 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
-- **Jellyseerr URL**: The base URL of your Jellyseerr instance
-- **API Key**: Your Jellyseerr API key (found in Settings → General)
-- **Library Directory**: Path to JellyBridge's library directory - Note: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
-- **Test Connection**: Button to validate your Jellyseerr connection
-- **Enable Plugin**: Enable or disable the automated sync task
-- **Sync Interval**: How often to sync in hours, allowing partial hours
-- **Test Connection**: Button to validate your Jellyseerr connection
+- **Jellyseerr URL**: The web address where your Jellyseerr instance is running
+- **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr
+- **Library Directory**: Where JellyBridge stores placeholder videos and metadata files on your system. Placeholder videos are short video files that represent content not yet downloaded. Metadata files contain information about movies and shows.
+- **Enable Plugin**: Turns on automatic syncing on a schedule. Syncing transfers content information between Jellyseerr and Jellyfin.
+- **Sync Interval**: How often the plugin automatically syncs content, measured in hours.
+- **Test Connection**: Verifies that the plugin can successfully connect to your Jellyseerr instance
 
 ### 📁 Favorite Settings
 
 ![Favorite Settings](Screenshots/Favorite.png)
 
-- **Manage Jellyseerr Library**: After syncing, refreshes libraries containing the Library Directory path (partial refresh when adding/updating; full refresh when items are deleted by Jellyseerr actions)
-- **Exclude from Main Libraries**: Excludes streaming movies/series that appear in Jellyfin libraries via .ignore files
-- **Remove requested items from favorites**: After a Jellyseerr request is created for a favorited item, remove it from all users' favorites and hide it from the JellyBridge library until denied or available
-- **Create Separate Libraries**: Creates dedicated libraries for each network
-- **Library Prefix**: Prefix for network library names
+- **Manage Jellyseerr Library**: Automatically refreshes your JellyBridge library in Jellyfin after each sync to show newly added or updated content. Performs a quick refresh for new items, or a full refresh if content was removed from Jellyseerr.
+- **Exclude from Main Libraries**: Prevents duplicate content by hiding movies and shows in the JellyBridge library if they already exist in your other Jellyfin libraries.
+- **Remove requested items from favorites**: Automatically removes items from everyone's favorites list once they've been successfully requested in Jellyseerr, and hides them from the library. This prevents conflicts with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. If the request is denied in Jellyseerr, the item will reappear on the next sync.
+- **Create Separate Libraries**: Creates individual libraries for each streaming service instead of one combined library.
+- **Library Prefix**: Text added to the beginning of library names when creating separate libraries for each streaming service.
 
 ### 🔍 Discover Settings
 
 ![Discover Settings](Screenshots/Discover.png)
 
-- **Max Discover Pages**: Maximum pages to fetch from discover endpoint per network
-- **Max Retention Days**: Days to retain items before cleanup
-- **Region**: Watch network region for determining available networks
-- **Network Services**: Multi-select interface to choose which networks to sync
+- **Max Discover Pages**: Controls how much discover content is pulled from each network during sync. Discover content includes available movies and shows from streaming networks. Each page contains 20 items. Applies to both movies and TV shows.
+- **Max Retention Days**: How long to keep discover content in the library before automatically removing it. Older items are cleaned up during sync.
+- **Region**: Which geographic region to use for discovering streaming content. Different regions show different available networks.
+- **Network Services**: Choose which streaming networks to pull content from and include in your library.
 
 ### ⚙️ Advanced Settings
 
 ![Advanced Settings](Screenshots/Advanced.png)
-- **Auto Sync on Startup**: Automatically perform sync when plugin starts
-- **Startup Delay**: Seconds to wait before auto-sync on startup
-- **Request Timeout**: Timeout for API requests in seconds
-- **Retry Attempts**: Number of retry attempts for failed requests
-- **Placeholder Duration**: Duration of placeholder videos in seconds
-- **Enable Debug Logging**: Enable detailed debug logging
+- **Auto Sync on Startup**: Automatically runs a sync when the plugin starts or when Jellyfin restarts.
+- **Startup Delay**: How many seconds to wait before running the startup sync, in addition to Jellyfin's built-in 1-minute delay.
+- **Request Timeout**: How long to wait for responses from Jellyseerr before considering the request failed.
+- **Retry Attempts**: How many times to retry failed requests to Jellyseerr before giving up.
+- **Placeholder Duration**: How long the placeholder videos should be, in seconds. Placeholder videos are short video files created for movies and shows that aren't yet available in your library, allowing them to appear in Jellyfin.
+- **Enable Debug Logging**: Provides more detailed information in the logs to help troubleshoot issues.
 
 Note: The Advanced section also includes a destructive action "Recycle Jellyfin Library Data" to purge all generated JellyBridge data from the configured library directory. Use with extreme caution and recreate the Jellyfin library afterward as instructed in the UI.
 
@@ -180,7 +179,7 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 
 If you encounter any issues with the plugin, please leave a comment in the [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
 
-**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.1* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.2.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
+**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.1* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
 
 ## Development
 

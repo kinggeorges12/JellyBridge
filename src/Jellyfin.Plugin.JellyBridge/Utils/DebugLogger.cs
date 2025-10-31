@@ -49,8 +49,7 @@ public class DebugLogger<T> : ILogger<T>
     }
 
     /// <summary>
-    /// Logs a trace message. If debug logging is enabled in config, logs as Information, otherwise logs as Trace.
-    /// Limits output to 100 characters maximum.
+    /// Logs a trace message. If trace logging is enabled in config, logs as Information, otherwise logs as Trace.
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
@@ -61,7 +60,6 @@ public class DebugLogger<T> : ILogger<T>
 
     /// <summary>
     /// Logs a trace message with exception details.
-    /// Limits output to 100 characters maximum.
     /// </summary>
     /// <param name="exception">The exception to log</param>
     /// <param name="message">The message to log</param>
@@ -120,80 +118,27 @@ public class DebugLogger<T> : ILogger<T>
     private void LogTraceInternal(Exception? exception, string message, object?[] args)
     {
         var config = Plugin.GetConfiguration();
+        var enableTraceLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableTraceLogging), config);
         var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
-        if (enableDebugLogging)
+        // Trace logging requires debug logging to be enabled (enforced by UI, but check here too)
+        if (enableTraceLogging && enableDebugLogging)
         {
-            try
-            {
-                // When debug logging is enabled, try to format first, then limit and prefix
-                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+            // When trace logging is enabled, we need to add the prefix and log as info
+            var prefixedMessage = "[TRACE] " + message;
             
-                var limitedMessage = LimitMessageToLinesAndCharacters(formattedMessage, 10, 100);
-                var prefixedMessage = "[TRACE] " + limitedMessage;
-                
-                if (exception != null)
-                    _innerLogger.LogInformation(exception, prefixedMessage);
-                else
-                    _innerLogger.LogInformation(prefixedMessage);
-            }
-            catch (FormatException)
-            {
-                // If formatting fails, let the logger handle it with the original message and args
-                var prefixedMessage = "[TRACE] " + message;
-                
-                if (exception != null)
-                    _innerLogger.LogInformation(exception, prefixedMessage, args);
-                else
-                    _innerLogger.LogInformation(prefixedMessage, args);
-                return;
-            }
+            if (exception != null)
+                _innerLogger.LogInformation(exception, prefixedMessage, args);
+            else
+                _innerLogger.LogInformation(prefixedMessage, args);
         }
         else
         {
-            // When debug logging is disabled, use full structured logging without limiting
             if (exception != null)
                 _innerLogger.LogTrace(exception, message, args);
             else
                 _innerLogger.LogTrace(message, args);
         }
-    }
-
-    /// <summary>
-    /// Limits a message to the specified number of lines and characters per line by truncating if necessary.
-    /// If maxLines or maxCharactersPerLine is 0, that limit is considered unlimited.
-    /// </summary>
-    /// <param name="message">The message to limit</param>
-    /// <param name="maxLines">Maximum number of lines to keep (0 = unlimited)</param>
-    /// <param name="maxCharactersPerLine">Maximum number of characters per line (0 = unlimited)</param>
-    /// <returns>The limited message</returns>
-    private static string LimitMessageToLinesAndCharacters(string message, int maxLines, int maxCharactersPerLine)
-    {
-        if (string.IsNullOrEmpty(message))
-            return message;
-
-        var lines = message.Split('\n');
-        
-        // Apply line limit if maxLines > 0
-        var linesToProcess = maxLines > 0 ? lines.Take(maxLines) : lines;
-        
-        // Apply character limit per line if maxCharactersPerLine > 0
-        var limitedLines = linesToProcess.Select(line => 
-        {
-            if (maxCharactersPerLine > 0 && line.Length > maxCharactersPerLine)
-                return line.Substring(0, maxCharactersPerLine) + "...";
-            return line;
-        }).ToArray();
-
-        var result = string.Join("\n", limitedLines);
-        
-        // Add truncation notice if lines were removed
-        if (maxLines > 0 && lines.Length > maxLines)
-        {
-            result += $"\n... [TRUNCATED] {lines.Length - maxLines} lines";
-        }
-
-        return result;
     }
 
 }

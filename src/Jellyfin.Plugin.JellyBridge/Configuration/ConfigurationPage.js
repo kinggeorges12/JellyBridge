@@ -981,15 +981,27 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'EnableDebugLogging', true);
+    setInputField(page, 'EnableTraceLogging', true);
     
     // Initialize startup delay state
     updateStartupDelayState();
+    
+    // Initialize trace logging state
+    updateTraceLoggingState();
     
     // Add event listener for AutoSyncOnStartup checkbox
     const autoSyncOnStartupCheckbox = page.querySelector('#EnableStartupSync');
     if (autoSyncOnStartupCheckbox) {
         autoSyncOnStartupCheckbox.addEventListener('change', function() {
             updateStartupDelayState();
+        });
+    }
+    
+    // Add event listener for EnableDebugLogging checkbox
+    const enableDebugLoggingCheckbox = page.querySelector('#EnableDebugLogging');
+    if (enableDebugLoggingCheckbox) {
+        enableDebugLoggingCheckbox.addEventListener('change', function() {
+            updateTraceLoggingState();
         });
     }
     
@@ -1033,6 +1045,28 @@ function updateStartupDelayState() {
         startupDelaySecondsInput.classList.add('disabled');
         if (startupDelaySecondsContainer) {
             startupDelaySecondsContainer.classList.add('disabled');
+        }
+    }
+}
+
+function updateTraceLoggingState() {
+    const enableDebugLoggingCheckbox = document.querySelector('#EnableDebugLogging');
+    const enableTraceLoggingCheckbox = document.querySelector('#EnableTraceLogging');
+    const enableTraceLoggingContainer = document.querySelector('#EnableTraceLoggingContainer');
+    
+    const isDebugLoggingEnabled = enableDebugLoggingCheckbox && enableDebugLoggingCheckbox.checked;
+    
+    // Enable/disable the trace logging checkbox
+    if (enableTraceLoggingCheckbox) {
+        enableTraceLoggingCheckbox.disabled = !isDebugLoggingEnabled;
+    }
+    
+    // Add/remove disabled styling
+    if (enableTraceLoggingContainer) {
+        if (isDebugLoggingEnabled) {
+            enableTraceLoggingContainer.classList.remove('disabled');
+        } else {
+            enableTraceLoggingContainer.classList.add('disabled');
         }
     }
 }
@@ -1085,6 +1119,7 @@ function performPluginReset(page) {
                 ExcludeFromMainLibraries: null,
                 EnableStartupSync: null,
                 EnableDebugLogging: null,
+                EnableTraceLogging: null,
                 Region: '',
                 NetworkMap: null
             };
@@ -1227,6 +1262,7 @@ function savePluginConfiguration(page) {
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
+    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.DefaultValues.EnableTraceLogging);
     form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
     
     // Save the configuration using our custom endpoint
