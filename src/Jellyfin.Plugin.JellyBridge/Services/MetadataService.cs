@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Xml.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -107,7 +108,7 @@ public class MetadataService
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
+    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFolderMetadataAsync<TJellyseerr>(List<TJellyseerr> items) 
         where TJellyseerr : TmdbMediaResult, IJellyseerrItem
     {
         var addedItems = new List<TJellyseerr>();
@@ -210,6 +211,9 @@ public class MetadataService
                 _logger.LogTrace("Skipped writing XML to {XmlFile} - file already exists", xmlFile);
             }
             
+            // Always update the dateadded field with a random date from yesterday
+            await WriteRandomDateAddedToNfo(xmlFile);
+            
             return true;
         }
         catch (Exception ex)
@@ -245,6 +249,63 @@ public class MetadataService
         }
         // If not using network prefix, just store in the base directory with the folder name
         return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);
+    }
+
+    /// <summary>
+    /// Updates the dateadded field in an NFO file with a random date from yesterday.
+    /// </summary>
+    /// <param name="xmlFile">Path to the NFO file to update</param>
+    private async Task WriteRandomDateAddedToNfo(string xmlFile)
+    {
+        if (!File.Exists(xmlFile))
+        {
+            return;
+        }
+
+        try
+        {
+            var xmlContent = await File.ReadAllTextAsync(xmlFile);
+            var xmlDoc = XDocument.Parse(xmlContent);
+            var root = xmlDoc.Root;
+            if (root != null)
+            {
+                // Generate random time from yesterday
+                var random = System.Random.Shared;
+                var yesterday = DateTime.Now.Date.AddDays(-1);
+                var randomHours = random.Next(0, 24);
+                var randomMinutes = random.Next(0, 60);
+                var randomSeconds = random.Next(0, 60);
+                var dateAdded = yesterday.AddHours(randomHours).AddMinutes(randomMinutes).AddSeconds(randomSeconds);
+                var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
+                
+                // Remove existing dateadded if present
+                var existingDateAdded = root.Element("dateadded");
+                if (existingDateAdded != null)
+                {
+                    existingDateAdded.Remove();
+                }
+                
+                // Add new dateadded element (insert after the first element for better formatting)
+                var firstElement = root.Elements().FirstOrDefault();
+                var newDateAdded = new XElement("dateadded", dateAddedString);
+                if (firstElement != null)
+                {
+                    firstElement.AddAfterSelf(newDateAdded);
+                }
+                else
+                {
+                    root.Add(newDateAdded);
+                }
+                
+                // Write the updated XML back
+                await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
+                _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update dateadded in {XmlFile}", xmlFile);
+        }
     }
 
     #endregion
