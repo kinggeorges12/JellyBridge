@@ -136,7 +136,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ### 📁 Favorite Settings
 
-![Jellyfin Favorites](Screenshots/Favorites.png)
+![Favorite Settings](Screenshots/Favorite.png)
 
 - **Manage Jellyseerr Library**: After syncing, refreshes libraries containing the Library Directory path (partial refresh when adding/updating; full refresh when items are deleted by Jellyseerr actions)
 - **Exclude from Main Libraries**: Excludes streaming movies/series that appear in Jellyfin libraries via .ignore files

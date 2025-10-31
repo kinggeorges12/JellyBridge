@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "version": "1.2.46.11",
+        "checksum": "A1118E22394F8C335F660BC9BB4082E1",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.2.46 - UI: Rename Library→Favorite Settings, moved Library Directory to General, placed Enable Plugin and Sync Interval above Test Connection, disabled Sync Interval and Auto-sync when plugin disabled. Reset: restore default networks on reset; Backend: accept NetworkMap=null to reset. Docs: README updated to match UI.",
+        "timestamp": "2025-10-31T08:55:58.873Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.46/JellyBridge-1.2.46.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "version": "1.2.46.10",
+        "checksum": "D8801634B1D22674DC0E297C6DDBA173",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.2.46 - UI: Rename Library→Favorite Settings, moved Library Directory to General, placed Enable Plugin and Sync Interval above Test Connection, disabled Sync Interval and Auto-sync when plugin disabled. Reset: restore default networks on reset; Backend: accept NetworkMap=null to reset. Docs: README updated to match UI.",
+        "timestamp": "2025-10-31T08:55:58.873Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.46/JellyBridge-1.2.46.10.zip"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.2.45 - Patch: improve favorites sync reliability, speed up library scans, tighten route validation, polish configuration page UX, and general stability fixes.",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-10-31T08:42:17.082Z",
