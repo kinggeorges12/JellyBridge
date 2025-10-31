@@ -106,4 +106,43 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
         return new List<T>();
     }
 
+    /// <summary>
+    /// Finds an item by its directory path. Tries FindByPath first, then searches by ContainingFolderPath.
+    /// </summary>
+    /// <param name="directoryPath">The directory path to search for</param>
+    /// <returns>The BaseItem if found, null otherwise</returns>
+    public BaseItem? FindItemByDirectoryPath(string directoryPath)
+    {
+        // First try FindByPath as folder (for shows)
+        var item = Inner.FindByPath(directoryPath, isFolder: true);
+        if (item != null)
+        {
+            return item;
+        }
+
+        // Try FindByPath as non-folder (for movies)
+        item = Inner.FindByPath(directoryPath, isFolder: false);
+        if (item != null)
+        {
+            return item;
+        }
+
+        // If FindByPath doesn't work, search for items whose ContainingFolderPath matches
+        // This is useful for movies where the Path is the video file, not the directory
+        var normalizedPath = directoryPath.Replace('\\', '/').TrimEnd('/');
+        var allItems = Inner.GetItemList(new InternalItemsQuery
+        {
+            Recursive = true
+        });
+
+        item = allItems.FirstOrDefault(i => 
+        {
+            var containingPath = i.ContainingFolderPath?.Replace('\\', '/')?.TrimEnd('/');
+            return !string.IsNullOrEmpty(containingPath) && 
+                   containingPath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase);
+        });
+
+        return item;
+    }
+
 }
