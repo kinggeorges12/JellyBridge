@@ -507,35 +507,32 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
-                    // Randomize NFO dateadded fields
+                    // Randomize play counts for all users to enable random sorting
                     var (successes, failures) = await _metadataService.RandomizeNfoDateAddedAsync();
-                    
-                    // Refresh library metadata to pick up the changes
-                    await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
 
                     _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures", successes.Count, failures.Count);
 
                     // Build detailed message
                     var detailsBuilder = new System.Text.StringBuilder();
-                    detailsBuilder.AppendLine($"Files randomized: {successes.Count}");
+                    detailsBuilder.AppendLine($"Items randomized: {successes.Count}");
                     
-                    // Sort successes by dateAdded (ascending - earliest first, which will appear first in sort order)
-                    var sortedSuccesses = successes.OrderBy(s => s.dateAdded).Take(10).ToList();
+                    // Sort successes by playCount (ascending - lowest play count first, which will appear first in sort order)
+                    var sortedSuccesses = successes.OrderBy(s => s.playCount).Take(10).ToList();
                     
                     if (sortedSuccesses.Count > 0)
                     {
-                        detailsBuilder.AppendLine("\nTop 10 by sort order (earliest dateAdded first):");
+                        detailsBuilder.AppendLine("\nTop 10 by sort order (lowest play count first):");
                         for (int i = 0; i < sortedSuccesses.Count; i++)
                         {
                             var item = sortedSuccesses[i];
-                            detailsBuilder.AppendLine($"  {i + 1}. {item.name} ({item.type}) - {item.dateAdded:yyyy-MM-dd HH:mm:ss}");
+                            detailsBuilder.AppendLine($"  {i + 1}. {item.name} ({item.type}) - Play Count: {item.playCount}");
                         }
                     }
                     
                     if (failures.Count > 0)
                     {
                         detailsBuilder.AppendLine($"\nFailures: {failures.Count}");
-                        detailsBuilder.AppendLine("Failed files:");
+                        detailsBuilder.AppendLine("Failed items:");
                         foreach (var failure in failures.Take(10))
                         {
                             detailsBuilder.AppendLine($"  - {failure}");

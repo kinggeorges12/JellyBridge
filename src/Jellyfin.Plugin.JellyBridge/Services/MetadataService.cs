@@ -2,6 +2,7 @@ using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
 using System.Xml.Linq;
 
@@ -13,10 +14,16 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 public class MetadataService
 {
     private readonly DebugLogger<MetadataService> _logger;
+    private readonly JellyfinILibraryManager _libraryManager;
+    private readonly JellyfinIUserDataManager _userDataManager;
+    private readonly JellyfinIUserManager _userManager;
 
-    public MetadataService(ILogger<MetadataService> logger)
+    public MetadataService(ILogger<MetadataService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager)
     {
         _logger = new DebugLogger<MetadataService>(logger);
+        _libraryManager = libraryManager;
+        _userDataManager = userDataManager;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -296,127 +303,102 @@ public class MetadataService
     }
 
     /// <summary>
-    /// Updates the dateadded field in all NFO files with unique dates distributed over the last X days (where X = number of items).
-    /// Dates start from yesterday and go backwards, with time set to 00:00:00.
+    /// Randomizes play counts for all discover library items across all users.
+    /// This enables random sorting by play count in Jellyfin.
     /// Uses ReadMetadataInternal to discover movie and show directories.
     /// </summary>
-    /// <returns>A tuple containing a list of successful updates (name, type, dateAdded) and a list of failed file paths.</returns>
-    public async Task<(List<(string name, string type, DateTimeOffset dateAdded)> successes, List<string> failures)> RandomizeNfoDateAddedAsync()
+    /// <returns>A tuple containing a list of successful updates (name, type, playCount) and a list of failed item paths.</returns>
+    public Task<(List<(string name, string type, int playCount)> successes, List<string> failures)> RandomizeNfoDateAddedAsync()
     {
-        var successes = new List<(string name, string type, DateTimeOffset dateAdded)>();
+        var successes = new List<(string name, string type, int playCount)>();
         var failures = new List<string>();
         
         try
         {
             // Get categorized directories
             var (movieDirectories, showDirectories) = ReadMetadataInternal();
+            var allDirectories = new List<string>();
+            allDirectories.AddRange(movieDirectories);
+            allDirectories.AddRange(showDirectories);
 
-            // Combine all directories with their appropriate NFO filenames into a single list
-            var xmlFiles = new List<string>();
-            xmlFiles.AddRange(movieDirectories.Select(d => Path.Combine(d, JellyseerrMovie.GetNfoFilename())));
-            xmlFiles.AddRange(showDirectories.Select(d => Path.Combine(d, JellyseerrShow.GetNfoFilename())));
-
-            // Only process files that actually exist
-            xmlFiles = xmlFiles.Where(f => File.Exists(f)).ToList();
-
-            if (xmlFiles.Count == 0)
+            if (allDirectories.Count == 0)
             {
-                _logger.LogDebug("No NFO files found to update");
-                return (successes, failures);
+                _logger.LogDebug("No directories found to update");
+                return Task.FromResult((successes, failures));
             }
 
-            // Shuffle the files randomly to get random sort order
+            // Shuffle directories randomly to get random sort order
             var random = System.Random.Shared;
-            xmlFiles = xmlFiles.OrderBy(_ => random.Next()).ToList();
+            allDirectories = allDirectories.OrderBy(_ => random.Next()).ToList();
 
-            // Assign unique dates starting from yesterday going backwards
-            // Each item gets a unique date with time set to 00:00:00
-            var dateMap = new Dictionary<string, DateTimeOffset>();
-            var yesterday = DateTimeOffset.Now.AddDays(-1).Date;
-            
-            for (int i = 0; i < xmlFiles.Count; i++)
+            // Assign unique play counts (0 to itemCount-1) to ensure unique sort order
+            var playCountMap = new Dictionary<string, int>();
+            for (int i = 0; i < allDirectories.Count; i++)
             {
-                // Start from yesterday (i=0) and go backwards
-                var assignedDate = yesterday.AddDays(-i);
-                // Set time to midnight (00:00:00)
-                var dateWithTime = new DateTimeOffset(assignedDate, TimeSpan.Zero);
-                dateMap[xmlFiles[i]] = dateWithTime;
+                playCountMap[allDirectories[i]] = i;
             }
 
-            // Process all XML files with their assigned dates
-            foreach (var xmlFile in xmlFiles)
+            // Get all users
+            var users = _userManager.GetAllUsers().ToList();
+            if (users.Count == 0)
+            {
+                _logger.LogWarning("No users found - cannot update play counts");
+                return Task.FromResult((successes, failures));
+            }
+
+            // Update play count for each item across all users
+            foreach (var directory in allDirectories)
             {
                 try
                 {
-                    var assignedDate = dateMap[xmlFile];
-                    var result = await UpdateDateAddedInNfoFile(xmlFile, assignedDate);
-                    successes.Add(result);
+                    var item = _libraryManager.Inner.FindByPath(directory, isFolder: true);
+                    if (item == null)
+                    {
+                        _logger.LogDebug("Item not found for path: {Path}", directory);
+                        failures.Add(directory);
+                        continue;
+                    }
+
+                    var assignedPlayCount = playCountMap[directory];
+                    string itemName = item.Name;
+                    string itemType = item.GetType().Name;
+
+                    // Update play count for each user
+                    foreach (var user in users)
+                    {
+                        try
+                        {
+                            if (_userDataManager.TryUpdatePlayCount(user, item, assignedPlayCount))
+                            {
+                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}", 
+                                    user.Username, itemName, directory, assignedPlayCount);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
+                        }
+                    }
+
+                    successes.Add((itemName, itemType, assignedPlayCount));
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to update dateadded in NFO file: {XmlFile}", xmlFile);
-                    failures.Add(xmlFile);
+                    _logger.LogWarning(ex, "Failed to update play count for directory: {Directory}", directory);
+                    failures.Add(directory);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating dateadded in NFO files");
+            _logger.LogError(ex, "Error updating play counts");
         }
         
-        return (successes, failures);
-    }
-
-    /// <summary>
-    /// Helper method to update the dateadded field in a single NFO file.
-    /// </summary>
-    /// <param name="xmlFile">Path to the NFO file to update</param>
-    /// <param name="dateAdded">The DateTimeOffset to set (should have time set to 00:00:00)</param>
-    /// <returns>A tuple containing (name, type, dateAdded)</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the NFO file cannot be parsed (root element is null)</exception>
-    private async Task<(string name, string type, DateTimeOffset dateAdded)> UpdateDateAddedInNfoFile(string xmlFile, DateTimeOffset dateAdded)
-    {
-        var xmlContent = await File.ReadAllTextAsync(xmlFile);
-        var xmlDoc = XDocument.Parse(xmlContent);
-        var root = xmlDoc.Root;
-        
-        if (root == null)
-        {
-            throw new InvalidOperationException($"Failed to parse NFO file: {xmlFile} - root element is null");
-        }
-        
-        // Extract type from root element name and title from XML
-        string type = root.Name.LocalName;
-        var titleElement = root.Element("title");
-        string name = titleElement?.Value ?? Path.GetFileName(Path.GetDirectoryName(xmlFile)) ?? $"Unknown {type}";
-        
-        // Format date with time set to 00:00:00
-        var dateAddedString = dateAdded.ToString("yyyy-MM-dd HH:mm:ss");
-        
-        // Remove existing dateadded if present
-        var existingDateAdded = root.Element("dateadded");
-        if (existingDateAdded != null)
-        {
-            existingDateAdded.Remove();
-        }
-        
-        // Add new dateadded element (insert after the first element for better formatting)
-        var firstElement = root.Elements().FirstOrDefault();
-        var newDateAdded = new XElement("dateadded", dateAddedString);
-        if (firstElement != null)
-        {
-            firstElement.AddAfterSelf(newDateAdded);
-        }
-        else
-        {
-            root.Add(newDateAdded);
-        }
-        
-        // Write the updated XML back
-        await File.WriteAllTextAsync(xmlFile, xmlDoc.ToString());
-        _logger.LogTrace("Updated dateadded in {XmlFile} to {DateAdded}", xmlFile, dateAddedString);
-        
-        return (name, type, dateAdded);
+        return Task.FromResult((successes, failures));
     }
 
     #endregion

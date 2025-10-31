@@ -102,4 +102,36 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         return true;
     }
 
+    /// <summary>
+    /// Updates play count for a user and item. Creates user data if it doesn't exist.
+    /// </summary>
+    public bool TryUpdatePlayCount(JellyfinUser user, BaseItem item, int playCount)
+    {
+        var userEntity = user.Inner;
+        var userData = Inner.GetUserData(userEntity, item);
+        
+        if (userData != null)
+        {
+            userData.PlayCount = playCount;
+        }
+        else
+        {
+            // Create new user data if it doesn't exist
+            var keys = item.GetUserDataKeys();
+            if (keys.Count == 0)
+            {
+                return false;
+            }
+            
+            userData = new UserItemData
+            {
+                Key = keys[0],
+                PlayCount = playCount
+            };
+        }
+        
+        Inner.SaveUserData(userEntity, item, userData, UserDataSaveReason.Import, CancellationToken.None);
+        return true;
+    }
+
 }
