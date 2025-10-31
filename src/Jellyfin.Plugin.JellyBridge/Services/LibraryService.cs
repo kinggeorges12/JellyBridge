@@ -90,7 +90,7 @@ public class LibraryService
                     _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
                     // First validate children to scan for new/changed files
                     _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
-                    // await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
+                    //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
 
                     _providerManager.QueueRefresh(libraryFolder.Id, refreshOptions, RefreshPriority.High);
                     // ValidateChildren already refreshes child metadata when recursive=true.
