@@ -7,7 +7,6 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using System.Linq;
-using MediaBrowser.Controller.Library;
 using System.IO;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -20,8 +19,6 @@ public partial class SyncService
     private readonly DebugLogger<SyncService> _logger;
     private readonly ApiService _apiService;
     private readonly JellyfinILibraryManager _libraryManager;
-    private readonly IUserManager _userManager;
-    private readonly JellyfinIUserDataManager _userDataManager;
     private readonly BridgeService _bridgeService;
     private readonly LibraryService _libraryService;
     private readonly DiscoverService _discoverService;
@@ -33,8 +30,6 @@ public partial class SyncService
         ILogger<SyncService> logger,
         ApiService apiService,
         JellyfinILibraryManager libraryManager,
-        IUserManager userManager,
-        JellyfinIUserDataManager userDataManager,
         BridgeService bridgeService,
         LibraryService libraryService,
         DiscoverService discoverService,
@@ -44,8 +39,6 @@ public partial class SyncService
         _logger = new DebugLogger<SyncService>(logger);
         _apiService = apiService;
         _libraryManager = libraryManager;
-        _userManager = userManager;
-        _userDataManager = userDataManager;
         _bridgeService = bridgeService;
         _libraryService = libraryService;
         _discoverService = discoverService;
@@ -105,11 +98,11 @@ public partial class SyncService
                 discoverMovies.Count, discoverShows.Count);
 
             // Step 3: Process movies and TV shows
-            _logger.LogTrace("🎬 Creating Jellyfin folders for movies from Jellyseerr...");
-            var movieTask = _metadataService.CreateFoldersAsync(discoverMovies);
+            _logger.LogTrace("🎬 Creating Jellyfin folders and metadata for movies from Jellyseerr...");
+            var movieTask = _metadataService.CreateFolderMetadataAsync(discoverMovies);
 
-            _logger.LogTrace("📺 Creating Jellyfin folders for TV shows from Jellyseerr...");
-            var showTask = _metadataService.CreateFoldersAsync(discoverShows);
+            _logger.LogTrace("📺 Creating Jellyfin folders and metadata for TV shows from Jellyseerr...");
+            var showTask = _metadataService.CreateFolderMetadataAsync(discoverShows);
 
             // Wait for both to complete
             await Task.WhenAll(movieTask, showTask);
@@ -238,19 +231,8 @@ public partial class SyncService
                 return result;
             }
             
-            // Step 2: Get all Jellyfin users and their favorites
-            var allFavoritesDict = _userDataManager.GetUserFavorites<IJellyfinItem>(_userManager, _libraryManager.Inner);
-            _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavoritesDict.Count);
-            foreach (var (user, favorites) in allFavoritesDict)
-            {
-                _logger.LogTrace("User '{UserName}' has {FavoriteCount} favorites: {FavoriteNames}", 
-                    user.Username, favorites.Count, 
-                    string.Join(", ", favorites.Select(f => f.Name)));
-            }
-            
-            // Filter on favorites from the JellyBridge folder
-            var bridgeFavoritedItems = _favoriteService.PreprocessFavorites(allFavoritesDict);
-            _logger.LogDebug("Filtered favorites to {BridgeFavoriteCount} items in JellyBridge folder", bridgeFavoritedItems.Count);
+            // Step 2: Get all Jellyfin users and their favorites from JellyBridge folder
+            var bridgeFavoritedItems = _favoriteService.GetUserFavorites();
             
             result.MoviesResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
             result.ShowsResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
@@ -280,7 +262,7 @@ public partial class SyncService
                               .Select(r => r.request));
             
             // Step 7: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
-            var removedItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync(bridgeFavoritedItems);
+            var removedItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
 
             //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();

@@ -31,9 +31,9 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     /// </summary>
     /// <typeparam name="T">The type of Jellyfin wrapper items to return (JellyfinMovie, JellyfinSeries, IJellyfinItem)</typeparam>
     /// <param name="userManager">The user manager</param>
-    /// <param name="libraryManager">The library manager</param>
+    /// <param name="libraryManager">The library manager wrapper</param>
     /// <returns>Dictionary mapping users to their favorite items</returns>
-    public Dictionary<JellyfinUser, List<T>> GetUserFavorites<T>(IUserManager userManager, ILibraryManager libraryManager) where T : class
+    public Dictionary<JellyfinUser, List<T>> GetUserFavorites<T>(IUserManager userManager, JellyfinILibraryManager libraryManager) where T : class
     {
         var userFavorites = new Dictionary<JellyfinUser, List<T>>();
         
@@ -43,7 +43,7 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         // Get favorites for each user directly
         foreach (var user in users)
         {
-            var userFavs = libraryManager.GetItemList(new InternalItemsQuery(user)
+            var userFavs = libraryManager.Inner.GetItemList(new InternalItemsQuery(user)
             {
                 IncludeItemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Movie, Jellyfin.Data.Enums.BaseItemKind.Series },
                 IsFavorite = true,
