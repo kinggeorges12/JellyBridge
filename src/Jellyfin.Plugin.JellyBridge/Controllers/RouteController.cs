@@ -62,6 +62,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
                     EnableDebugLogging = config.EnableDebugLogging,
+                    EnableTraceLogging = config.EnableTraceLogging,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
                     DefaultValues = PluginConfiguration.DefaultValues
@@ -115,6 +116,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
 					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))

@@ -67,6 +67,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MaxRetentionDays), 30 },
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(EnableDebugLogging), false },
+        { nameof(EnableTraceLogging), false },
 
         // Internal flags
         // { nameof(RanFirstTime), false }
@@ -181,6 +182,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to enable debug logging.
     /// </summary>
     public bool? EnableDebugLogging { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to enable trace logging.
+    /// </summary>
+    public bool? EnableTraceLogging { get; set; }
 
     // ===== Internal =====
     /// <summary>
