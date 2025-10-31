@@ -116,18 +116,26 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
-					// Handle NetworkMap as array of JellyseerrNetwork objects
-					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement) &&
-						networkMapElement.ValueKind == JsonValueKind.Array)
+					// Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
+					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
 					{
-						try
+						if (networkMapElement.ValueKind == JsonValueKind.Null)
 						{
-							config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
-							_logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+							// Explicit reset: set to null so defaults are applied on next GET/UI load
+							config.NetworkMap = null;
+							_logger.LogInformation("NetworkMap explicitly set to null by client (reset to defaults on next load).");
 						}
-						catch (Exception ex)
+						else if (networkMapElement.ValueKind == JsonValueKind.Array)
 						{
-							_logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+							try
+							{
+								config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
+								_logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+							}
+							catch (Exception ex)
+							{
+								_logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+							}
 						}
 					}
 					else
