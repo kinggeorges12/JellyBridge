@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.3.10 - Improved item discovery for play count randomization: Added FindItemByDirectoryPath method to JellyfinILibraryManager that tries multiple strategies to find items by directory path - first attempts FindByPath as folder (for shows), then as non-folder (for movies), and finally searches all items by ContainingFolderPath match as a fallback. This fixes issues where movies stored with video file paths instead of directory paths were not being found. Updated RandomizeNfoDateAddedAsync to use the new FindItemByDirectoryPath method, which should significantly reduce failures when updating play counts.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.10.11",
+        "dependencies": [],
+        "checksum": "A4CCA2A2BDB885342058641D90436F8A",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.10.11.zip",
+        "timestamp": "2025-10-31T23:59:14.498Z"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.3.10 - Improved item discovery for play count randomization: Added FindItemByDirectoryPath method to JellyfinILibraryManager that tries multiple strategies to find items by directory path - first attempts FindByPath as folder (for shows), then as non-folder (for movies), and finally searches all items by ContainingFolderPath match as a fallback. This fixes issues where movies stored with video file paths instead of directory paths were not being found. Updated RandomizeNfoDateAddedAsync to use the new FindItemByDirectoryPath method, which should significantly reduce failures when updating play counts.",
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.10.10",
+        "dependencies": [],
+        "checksum": "F566F9469EA012055B79A9F49B45092B",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.10.10.zip",
+        "timestamp": "2025-10-31T23:59:14.498Z"
+      },
+      {
         "timestamp": "2025-10-31T23:44:26.899Z",
         "targetAbi": "10.11.0.0",
         "checksum": "66AC263E40C2FC06BF6DE5C2E55E183B",

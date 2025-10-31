@@ -351,7 +351,9 @@ public class MetadataService
             {
                 try
                 {
-                    var item = _libraryManager.Inner.FindByPath(directory, isFolder: true);
+                    // Find item by directory path - handles both movies and shows
+                    var item = _libraryManager.FindItemByDirectoryPath(directory);
+                    
                     if (item == null)
                     {
                         _logger.LogDebug("Item not found for path: {Path}", directory);
