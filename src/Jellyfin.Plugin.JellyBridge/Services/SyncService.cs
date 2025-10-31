@@ -327,7 +327,7 @@ public partial class SyncService
 
     /// <summary>
     /// Applies the post-sync refresh operations based on the two sync results.
-    /// - Calls RefreshJellyseerrLibrary with computed parameters
+    /// - Calls RefreshBridgeLibrary with computed parameters
     /// - Then scans all libraries and awaits completion
     /// </summary>
     public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult, SyncJellyseerrResult? syncFromResult)
@@ -339,7 +339,7 @@ public partial class SyncService
 
             _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
             _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-            await _libraryService.RefreshJellyseerrLibrary(fullRefresh, refreshImages: refreshImages);
+            await _libraryService.RefreshBridgeLibrary(fullRefresh, refreshImages: refreshImages);
             _logger.LogDebug("Scan of all libraries completed");
         }
         catch (Exception ex)

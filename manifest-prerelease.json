@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.2.42 - Patch: improve library refresh endpoints; fix sync scheduling edge cases; enhance provider manager integration; minor stability improvements.",
+        "dependencies": [],
+        "checksum": "AFE6979503160A6E82C86A680157DDD8",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.42/JellyBridge-1.2.42.11.zip",
+        "timestamp": "2025-10-31T07:41:38.547Z",
+        "version": "1.2.42.11"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.2.42 - Patch: improve library refresh endpoints; fix sync scheduling edge cases; enhance provider manager integration; minor stability improvements.",
+        "dependencies": [],
+        "checksum": "640C11C6DCFF01636B96194E420810A0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.42/JellyBridge-1.2.42.10.zip",
+        "timestamp": "2025-10-31T07:41:38.547Z",
+        "version": "1.2.42.10"
+      },
+      {
         "version": "1.2.41.11",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.2.41 - Patch: stability improvements in SyncService; reduce duplicate favorites in FavoriteService; minor UI fixes in Configuration page; updated Jellyfin task trigger mapping; README refresh.",

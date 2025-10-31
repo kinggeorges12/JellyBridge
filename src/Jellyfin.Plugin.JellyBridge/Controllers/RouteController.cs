@@ -704,7 +704,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
                     
                     // Call the refresh method (fire-and-await, no return value)
-                    await _libraryService.RefreshJellyseerrLibrary(fullRefresh: true, refreshImages: true);
+                    await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
 
                     _logger.LogInformation("Jellyseerr library refresh initiated");
 
