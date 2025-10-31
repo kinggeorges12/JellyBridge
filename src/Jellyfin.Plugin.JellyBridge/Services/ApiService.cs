@@ -197,12 +197,20 @@ public class ApiService
             method: HttpMethod.Post,
             description: "Create a new request"
         ),
+
+        // User endpoints - use paginated response with JellyseerrUser model
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
             returnModel: typeof(List<JellyseerrUser>),
             isPaginated: true,
             description: "Get user list"
+        ),
+        [JellyseerrEndpoint.UserQuota] = new JellyseerrEndpointConfig(
+            "/api/v1/user/{userId}/quota",
+            typeof(QuotaResponse),
+            returnModel: typeof(QuotaResponse),
+            description: "Get quotas for a specific user"
         ),
         
         // Discover endpoints - use paginated response with bridge models
@@ -671,7 +679,7 @@ public class ApiService
                     ["mediaType"] = "", //REQUIRED
                     ["mediaId"] = -1, //REQUIRED
                     ["seasons"] = "all", // Accepts an array of season numbers or "all"
-                    ["userId"] = -1 //REQUIRED
+                    ["userId"] = 0 //REQUIRED
                 }, null
             ),
             // ReadRequests endpoint - no parameters needed for GET requests
@@ -720,6 +728,14 @@ public class ApiService
                     ["take"] = MAX_SAFE_INTEGER
                 },
                 null
+            ),
+            // User quota endpoint - provide default template parameter userId = 0
+            JellyseerrEndpoint.UserQuota => (
+                null,
+                new Dictionary<string, string>
+                {
+                    ["userId"] = "0"
+                }
             ),
             
             // All other endpoints don't need parameters
