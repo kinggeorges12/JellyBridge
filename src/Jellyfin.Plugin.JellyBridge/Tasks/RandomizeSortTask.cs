@@ -41,7 +41,7 @@ public class RandomizeSortTask : IScheduledTask
             progress.Report(10);
             
             // Randomize NFO dateadded fields
-            await _metadataService.RandomizeNfoDateAddedAsync();
+            var (successes, failures) = await _metadataService.RandomizeNfoDateAddedAsync();
             
             progress.Report(50);
             
@@ -50,7 +50,7 @@ public class RandomizeSortTask : IScheduledTask
             
             progress.Report(100);
             
-            _logger.LogInformation("Randomize sort task completed successfully");
+            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} files randomized, {FailureCount} failures", successes.Count, failures.Count);
         }
         catch (Exception ex)
         {

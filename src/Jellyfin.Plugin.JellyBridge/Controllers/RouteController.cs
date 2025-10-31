@@ -508,18 +508,49 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     // Randomize NFO dateadded fields
-                    await _metadataService.RandomizeNfoDateAddedAsync();
+                    var (successes, failures) = await _metadataService.RandomizeNfoDateAddedAsync();
                     
                     // Refresh library metadata to pick up the changes
                     await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
 
-                    _logger.LogTrace("Sort library completed successfully");
+                    _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures", successes.Count, failures.Count);
+
+                    // Build detailed message
+                    var detailsBuilder = new System.Text.StringBuilder();
+                    detailsBuilder.AppendLine($"Files randomized: {successes.Count}");
+                    
+                    // Sort successes by dateAdded (ascending - earliest first, which will appear first in sort order)
+                    var sortedSuccesses = successes.OrderBy(s => s.dateAdded).Take(10).ToList();
+                    
+                    if (sortedSuccesses.Count > 0)
+                    {
+                        detailsBuilder.AppendLine("\nTop 10 by sort order (earliest dateAdded first):");
+                        for (int i = 0; i < sortedSuccesses.Count; i++)
+                        {
+                            var item = sortedSuccesses[i];
+                            detailsBuilder.AppendLine($"  {i + 1}. {item.name} ({item.type}) - {item.dateAdded:yyyy-MM-dd HH:mm:ss}");
+                        }
+                    }
+                    
+                    if (failures.Count > 0)
+                    {
+                        detailsBuilder.AppendLine($"\nFailures: {failures.Count}");
+                        detailsBuilder.AppendLine("Failed files:");
+                        foreach (var failure in failures.Take(10))
+                        {
+                            detailsBuilder.AppendLine($"  - {failure}");
+                        }
+                        if (failures.Count > 10)
+                        {
+                            detailsBuilder.AppendLine($"  ... and {failures.Count - 10} more");
+                        }
+                    }
 
                     return new
                     {
                         success = true,
                         message = "Sort library randomization completed successfully",
-                        details = "NFO dateadded fields have been randomized and library metadata has been refreshed."
+                        details = detailsBuilder.ToString().TrimEnd()
                     };
                 }, _logger, "Sort Library");
 
