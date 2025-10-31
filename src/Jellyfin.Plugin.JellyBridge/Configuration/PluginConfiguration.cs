@@ -72,7 +72,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(EnableDebugLogging), false },
 
         // Internal flags
-        { nameof(RanFirstTime), false }
+        // { nameof(RanFirstTime), false }
     };
 
     // ===== General =====
@@ -189,7 +189,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether the plugin has run for the first time (determines if full library refresh is needed).
     /// </summary>
-    public bool? RanFirstTime { get; set; }
+    // public bool? RanFirstTime { get; set; }
 
     /// <summary>
     /// Gets or sets the timestamp when scheduled task triggers were last updated due to config change.

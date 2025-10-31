@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "0D2D03500C3A6761E536B9529EB987F2",
+        "changelog": "Jellyfin 10.11.0: v1.2.39 - Patch: stability improvements; library sync and favorites fixes; updated Jellyseerr API models; configuration and route updates; improved background sync reliability",
+        "version": "1.2.39.11",
+        "timestamp": "2025-10-31T04:54:03.798Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.39/JellyBridge-1.2.39.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "checksum": "AFC2B494BC7683EF68A422721DE637C5",
+        "changelog": "Jellyfin 10.10.7: v1.2.39 - Patch: stability improvements; library sync and favorites fixes; updated Jellyseerr API models; configuration and route updates; improved background sync reliability",
+        "version": "1.2.39.10",
+        "timestamp": "2025-10-31T04:54:03.798Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.39/JellyBridge-1.2.39.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "dependencies": [],
         "version": "1.2.38.11",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.38/JellyBridge-1.2.38.11.zip",

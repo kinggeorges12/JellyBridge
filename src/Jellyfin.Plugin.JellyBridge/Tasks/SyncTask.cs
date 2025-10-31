@@ -51,8 +51,8 @@ public class SyncTask : IScheduledTask
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
                 
-                // Step 1: Sync favorites to Jellyseerr (0-50%)
-                progress.Report(0);
+                // Step 1: Sync favorites to Jellyseerr
+                progress.Report(10);
                 _logger.LogDebug("Step 1: Syncing favorites to Jellyseerr...");
                 
                 try
@@ -71,10 +71,10 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(50);
+                    progress.Report(30);
                 }
                 
-                // Step 2: Sync discover from Jellyseerr (50-100%)
+                // Step 2: Sync discover from Jellyseerr
                 _logger.LogDebug("Step 2: Syncing discover from Jellyseerr...");
                 
                 try
@@ -92,15 +92,24 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
+                    progress.Report(60);
+                }
+
+                try {
+                    _logger.LogDebug("Sync details - To Jellyseerr: {ToDetails}, From Jellyseerr: {FromDetails}", 
+                        syncToResult?.Details, syncFromResult?.Details);
+                    
+                    _logger.LogInformation("Scheduled Jellyseerr sync task completed - To Jellyseerr: {ToSuccess}, From Jellyseerr: {FromSuccess}", 
+                        syncToResult?.Success, syncFromResult?.Success);
+
+                    // Apply refresh operations after both syncs are complete
+                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult);
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Error applying refresh operations");
+                } finally {
                     progress.Report(100);
                 }
-                
-                _logger.LogDebug("Sync details - To Jellyseerr: {ToDetails}, From Jellyseerr: {FromDetails}", 
-                    syncToResult?.Details, syncFromResult?.Details);
-                
-                _logger.LogInformation("Scheduled Jellyseerr sync task completed - To Jellyseerr: {ToSuccess}, From Jellyseerr: {FromSuccess}", 
-                    syncToResult?.Success, syncFromResult?.Success);
-                
+
                 return (syncToResult, syncFromResult);
             }, _logger, "Scheduled Sync");
         }

@@ -178,35 +178,13 @@ public partial class SyncService
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated | Shows: {ShowAdded} added, {ShowUpdated} updated", 
                 addedMovies.Count, updatedMovies.Count, addedShows.Count, updatedShows.Count);
 
-            // Check if library management is enabled
-            var ranFirstTime = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RanFirstTime));
+            // Provide refresh plan back to caller; orchestration occurs after both syncs complete
             var itemsDeleted = deletedMovies.Count > 0 || deletedShows.Count > 0;
-            bool? refreshSuccess = false;
-            
-            if (ranFirstTime)
+            result.Refresh = new RefreshPlan
             {
-                // Normal operation - only refresh Jellyseerr libraries
-                _logger.LogDebug("🔄 Refreshing Jellyseerr library with synced content... (FullRefresh: {FullRefresh}, ItemsDeleted: {Deleted})", itemsDeleted, itemsDeleted);
-                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: itemsDeleted);
-            }
-            else
-            {
-                // First time running - scan all libraries
-                _logger.LogDebug("🔄 First-time initialization - scanning all Jellyfin libraries for cleanup...");
-                refreshSuccess = _libraryService.ScanAllLibrariesForFirstTime();
-            }
-            if (refreshSuccess == true)
-            {
-                _logger.LogTrace("✅ Jellyfin library refresh started successfully");
-                var refreshType = !ranFirstTime ? "first-time full scan" : (itemsDeleted ? "full" : "partial");
-                result.Message += $" and started {refreshType} library refresh";
-            }
-            else if (refreshSuccess == false)
-            {
-                _logger.LogWarning("⚠️ Jellyfin library refresh failed");
-                result.Message += " (library management failed)";
-            }
-            // refresh success is null if library management is disabled
+                FullRefresh = itemsDeleted,
+                RefreshImages = true
+            };
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -249,31 +227,6 @@ public partial class SyncService
         {
             _logger.LogDebug("Starting sync to Jellyseerr...");
             
-            // Step 1: Get bridge folder items directly from Jellyfin
-            var bridgeLibraryPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
-            
-            // Get bridge-only items directly from Jellyfin
-            var bridgeMovies = _libraryManager.GetExistingItems<JellyfinMovie>(bridgeLibraryPath);
-            var bridgeShows = _libraryManager.GetExistingItems<JellyfinSeries>(bridgeLibraryPath);
-            
-            var bridgeOnlyItems = new List<IJellyfinItem>();
-            bridgeOnlyItems.AddRange(bridgeMovies);
-            bridgeOnlyItems.AddRange(bridgeShows);
-            
-            if (bridgeOnlyItems.Count == 0)
-            {
-                _logger.LogWarning("No Jellyseerr bridge items found in folder: {BridgePath}", bridgeLibraryPath);
-                result.Success = true;
-                result.Message = "📭 No Jellyseerr bridge items found to sync";
-                return result;
-            }
-            
-            _logger.LogDebug("Found {BridgeOnlyCount} Jellyseerr bridge items in folder: {BridgePath}", bridgeOnlyItems.Count, bridgeLibraryPath);
-            
-            // Add all bridge items to processed lists (these are all items we're working with)
-            result.MoviesResult.ItemsProcessed.AddRange(bridgeMovies);
-            result.ShowsResult.ItemsProcessed.AddRange(bridgeShows);
-            
             // Step 2: Get all Jellyfin users and their favorites
             var allFavoritesDict = _userDataManager.GetUserFavorites<IJellyfinItem>(_userManager, _libraryManager.Inner);
             _logger.LogDebug("Retrieved favorites for {UserCount} users", allFavoritesDict.Count);
@@ -283,9 +236,13 @@ public partial class SyncService
                     user.Username, favorites.Count, 
                     string.Join(", ", favorites.Select(f => f.Name)));
             }
-            var allFavoritedItems = allFavoritesDict.SelectMany(kv => kv.Value.Select(item => (kv.Key, item))).ToList();
-            result.MoviesResult.ItemsFound.AddRange(allFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
-            result.ShowsResult.ItemsFound.AddRange(allFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
+            
+            // Filter on favorites from the JellyBridge folder
+            var bridgeFavoritedItems = _favoriteService.PreprocessFavorites(allFavoritesDict);
+            _logger.LogDebug("Filtered favorites to {BridgeFavoriteCount} items in JellyBridge folder", bridgeFavoritedItems.Count);
+            
+            result.MoviesResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
+            result.ShowsResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
             
             // Step 3: Get all Jellyseerr users for request creation
             var jellyseerrUsers = await _favoriteService.GetJellyseerrUsersAsync();
@@ -298,7 +255,7 @@ public partial class SyncService
             }
 
             // Step 4: Filter out items that already have requests in Jellyseerr
-            var unrequestedFavorites = await _favoriteService.FilterRequestsFromFavorites(allFavoritedItems);
+            var unrequestedFavorites = await _favoriteService.FilterRequestsFromFavorites(bridgeFavoritedItems);
 
             // Step 5: Group bridge-only items by TMDB ID and find first user who favorited each
             var unrequestedFavoritesWithJellyseerrUser = _favoriteService.EnsureJellyseerrUser(unrequestedFavorites, jellyseerrUsers);
@@ -315,9 +272,7 @@ public partial class SyncService
                               .Select(r => r.request));
             
             // Step 7: Mark requested items by creating an .ignore file in each bridge item directory
-            var allFavoritedJellyfinItems = new List<IJellyfinItem>();
-            allFavoritedJellyfinItems.AddRange(unrequestedFavoritesWithJellyseerrUser.Select(fav => fav.item));
-            allFavoritedJellyfinItems.AddRange(allFavoritedItems.Select(fav => fav.item));
+            var allFavoritedJellyfinItems = bridgeFavoritedItems.Select(fav => fav.item).ToList();
 
             // Delegate to FavoriteService to scan and write ignore files for matched favorites
             var removedItems = await _favoriteService.IgnoreRequestedAsync(allFavoritedJellyfinItems);
@@ -325,30 +280,19 @@ public partial class SyncService
             // Save results
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Processed {bridgeOnlyItems.Count} Jellyseerr bridge items, found {allFavoritedItems.Count} favorited items, created {requestResults.Count} requests for favorited items, removed {removedItems.Count} requested items";
+            result.Details = $"Found {bridgeFavoritedItems.Count} favorited bridge items, created {requestResults.Count} requests for favorited items, removed {removedItems.Count} requested items";
 
-            // Step 8: Refresh Jellyseerr libraries with synced content
+            // Step 8: Provide refresh plan to caller based on removals
             var itemsDeleted = removedItems.Count > 0;
-            bool? refreshSuccess = false;
             if (itemsDeleted)
             {
                 result.MoviesResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinMovie>());
                 result.ShowsResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinSeries>());
-
-                // Normal operation - only refresh Jellyseerr libraries
-                _logger.LogDebug("🔄 Refreshing Jellyseerr library with synced content... (fullRefresh: false, refreshImages: false)");
-                refreshSuccess = _libraryService.RefreshJellyseerrLibrary(fullRefresh: false, refreshImages: false);
-
-                if (refreshSuccess == true)
+                result.Refresh = new RefreshPlan
                 {
-                    _logger.LogTrace("✅ Full metadata refresh without images started successfully");
-                    result.Message += $" and started full metadata refresh";
-                }
-                else if (refreshSuccess == false)
-                {
-                    _logger.LogWarning("⚠️ Full metadata refresh without images failed");
-                    result.Message += " (metadata refresh failed)";
-                }
+                    FullRefresh = true,
+                    RefreshImages = false
+                };
             }
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
@@ -370,5 +314,34 @@ public partial class SyncService
         
         return result;
     }
+
+    /// <summary>
+    /// Applies the post-sync refresh operations based on the two sync results.
+    /// - Calls RefreshJellyseerrLibrary with computed parameters
+    /// - Then scans all libraries and awaits completion
+    /// </summary>
+    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult, SyncJellyseerrResult? syncFromResult)
+    {
+        try
+        {
+            var fullRefresh = (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
+            var refreshImages = (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
+
+            _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
+            _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
+            await _libraryService.RefreshJellyseerrLibrary(fullRefresh, refreshImages: refreshImages);
+            _logger.LogDebug("Scan of all libraries completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error applying post-sync refresh operations");
+        }
+    }
+
+    public Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult)
+    {
+        return ApplyRefreshAsync(syncToResult, null);
+    }
+
 }
 

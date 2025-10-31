@@ -6,6 +6,15 @@ using System.Linq;
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
 /// <summary>
+/// Plan describing how to refresh Jellyfin libraries after a sync.
+/// </summary>
+public class RefreshPlan
+{
+    public bool FullRefresh { get; set; }
+    public bool RefreshImages { get; set; }
+}
+
+/// <summary>
 /// Result of processing Jellyseerr items with counts for created, updated, deleted items.
 /// </summary>
 public class ProcessJellyseerrResult
@@ -96,6 +105,7 @@ public class SyncJellyseerrResult
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
+    public RefreshPlan? Refresh { get; set; }
     public List<JellyseerrMovie> AddedMovies { get; set; } = new();
     public List<JellyseerrMovie> UpdatedMovies { get; set; } = new();
     public List<JellyseerrShow> AddedShows { get; set; } = new();
@@ -117,12 +127,13 @@ public class SyncJellyfinResult
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
+    public RefreshPlan? Refresh { get; set; }
     public ProcessJellyfinResult MoviesResult { get; set; } = new();
     public ProcessJellyfinResult ShowsResult { get; set; } = new();
 
     public override string ToString()
     {
-        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Found} found, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Found} found, {ShowsResult.Created} created";
+        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Created} created";
     }
 }
 
