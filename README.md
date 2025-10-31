@@ -126,19 +126,21 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
-- **Enable Plugin**: Enable or disable the automated sync task
-- **Sync Interval**: How often to sync in hours, allowing partial hours
 - **Jellyseerr URL**: The base URL of your Jellyseerr instance
 - **API Key**: Your Jellyseerr API key (found in Settings → General)
+- **Library Directory**: Path to JellyBridge's library directory - Note: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
+- **Test Connection**: Button to validate your Jellyseerr connection
+- **Enable Plugin**: Enable or disable the automated sync task
+- **Sync Interval**: How often to sync in hours, allowing partial hours
 - **Test Connection**: Button to validate your Jellyseerr connection
 
 ### 📁 Favorite Settings
 
 ![Jellyfin Favorites](Screenshots/Favorites.png)
 
-- **Library Directory**: Path to JellyBridge's library directory - *Note*: Due to frequent rewrites, consider using an SSD for the library location to minimize wear on HDDs
-- **Manage JellyBridge Library**: After syncing, refreshes libraries containing the Library Directory path
+- **Manage Jellyseerr Library**: After syncing, refreshes libraries containing the Library Directory path (partial refresh when adding/updating; full refresh when items are deleted by Jellyseerr actions)
 - **Exclude from Main Libraries**: Excludes streaming movies/series that appear in Jellyfin libraries via .ignore files
+- **Remove requested items from favorites**: After a Jellyseerr request is created for a favorited item, remove it from all users' favorites and hide it from the JellyBridge library until denied or available
 - **Create Separate Libraries**: Creates dedicated libraries for each network
 - **Library Prefix**: Prefix for network library names
 
@@ -158,8 +160,10 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Startup Delay**: Seconds to wait before auto-sync on startup
 - **Request Timeout**: Timeout for API requests in seconds
 - **Retry Attempts**: Number of retry attempts for failed requests
-- **Enable Debug Logging**: Enable detailed debug logging
 - **Placeholder Duration**: Duration of placeholder videos in seconds
+- **Enable Debug Logging**: Enable detailed debug logging
+
+Note: The Advanced section also includes a destructive action "Recycle Jellyfin Library Data" to purge all generated JellyBridge data from the configured library directory. Use with extreme caution and recreate the Jellyfin library afterward as instructed in the UI.
 
 ## Logging & Troubleshooting
 

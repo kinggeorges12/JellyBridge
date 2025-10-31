@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.2.45 - Patch: improve favorites sync reliability, speed up library scans, tighten route validation, polish configuration page UX, and general stability fixes.",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-10-31T08:42:17.082Z",
+        "checksum": "9A40E317B2F4B3D42623E12B86FE6E7F",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.45/JellyBridge-1.2.45.11.zip",
+        "dependencies": [],
+        "version": "1.2.45.11"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.2.45 - Patch: improve favorites sync reliability, speed up library scans, tighten route validation, polish configuration page UX, and general stability fixes.",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-10-31T08:42:17.082Z",
+        "checksum": "1061AA985BF809935BF348542BD87F5F",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.45/JellyBridge-1.2.45.10.zip",
+        "dependencies": [],
+        "version": "1.2.45.10"
+      },
+      {
         "checksum": "A16F55CD8BE5B2462B614347DC7D679F",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.2.44/JellyBridge-1.2.44.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.2.44 - Fix Favorites declination/grouping; improve library scanning and path filtering; stabilize background Sync scheduling; enhance RouteController endpoints and error handling; update configuration UI and defaults; performance and logging improvements.",

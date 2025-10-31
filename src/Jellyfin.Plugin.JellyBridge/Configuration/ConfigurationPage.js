@@ -26,8 +26,8 @@ export default function (view) {
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
                 
-                // Initialize library settings
-                initializeLibrarySettings(page);
+                // Initialize favorite settings
+                initializeFavoriteSettings(page);
                 
                 // Initialize sync settings including network interface and sync buttons
                 initializeSyncSettings(page);
@@ -196,6 +196,7 @@ function initializeGeneralSettings(page) {
     setInputField(page, 'IsEnabled', true);
     setInputField(page, 'JellyseerrUrl');
     setInputField(page, 'ApiKey');
+    setInputField(page, 'LibraryDirectory');
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'EnableStartupSync', true);
     
@@ -234,6 +235,16 @@ function initializeGeneralSettings(page) {
         e.preventDefault();
         return false;
     });
+
+    // Disable dependent fields when automated task is disabled
+    const isEnabledCheckbox = page.querySelector('#IsEnabled');
+    if (isEnabledCheckbox) {
+        isEnabledCheckbox.addEventListener('change', function() {
+            updateAutoTaskDependencies();
+        });
+    }
+    // Initialize dependency state on load
+    updateAutoTaskDependencies();
 }
 
 function performTestConnection(page) {
@@ -331,9 +342,8 @@ function performTestConnection(page) {
 // LIBRARY SETTINGS FUNCTIONS
 // ==========================================
 
-function initializeLibrarySettings(page) {
+function initializeFavoriteSettings(page) {
     // Set library settings form values with null handling
-    setInputField(page, 'LibraryDirectory');
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'CreateSeparateLibraries', true);
@@ -1002,10 +1012,13 @@ function initializeAdvancedSettings(page) {
 
 function updateStartupDelayState() {
     const autoSyncOnStartupCheckbox = document.querySelector('#EnableStartupSync');
+    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
     const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
     
-    const isEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
+    const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
+    const isAutoSyncEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
+    const isEnabled = isPluginEnabled && isAutoSyncEnabled;
     
     // Enable/disable the input
     startupDelaySecondsInput.disabled = !isEnabled;
@@ -1022,6 +1035,25 @@ function updateStartupDelayState() {
             startupDelaySecondsContainer.classList.add('disabled');
         }
     }
+}
+
+// Update controls that depend on the automated task being enabled
+function updateAutoTaskDependencies() {
+    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
+    const syncIntervalInput = document.querySelector('#SyncIntervalHours');
+    const enableStartupSyncCheckbox = document.querySelector('#EnableStartupSync');
+
+    const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
+
+    if (syncIntervalInput) {
+        syncIntervalInput.disabled = !isPluginEnabled;
+    }
+    if (enableStartupSyncCheckbox) {
+        enableStartupSyncCheckbox.disabled = !isPluginEnabled;
+    }
+
+    // Update startup delay to reflect current combined state
+    updateStartupDelayState();
 }
 
 function performPluginReset(page) {
