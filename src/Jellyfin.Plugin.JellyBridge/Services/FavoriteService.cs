@@ -70,24 +70,23 @@ public class FavoriteService
         List<(JellyseerrUser user, IJellyfinItem item)> favoritesWithUser)
     {
         var requestResults = new List<(IJellyfinItem item, JellyseerrMediaRequest request)>();
-        var createAllFavorites = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateAllUserFavorites));
 
-        // Default: use all tuples; if setting is false, reduce to first user per unique item
+        // Reduce to first user per unique item to avoid duplicate requests
         List<(JellyseerrUser user, IJellyfinItem item)> allFavorites = new List<(JellyseerrUser, IJellyfinItem)>();
-        if (createAllFavorites)
+
+        // TODO: Add back in later when we have a way to create requests for all users
+        // var createAllFavorites = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateAllUserFavorites));
+        // if (createAllFavorites)
+        // {
+        //     allFavorites = favoritesWithUser;
+        // }
+        var seen = new HashSet<Guid>();
+        foreach (var (jUser, jItem) in favoritesWithUser)
         {
-            allFavorites = favoritesWithUser;
-        }
-        else
-        {
-            var seen = new HashSet<Guid>();
-            foreach (var (jUser, jItem) in favoritesWithUser)
-            {
-                if (jItem == null) continue;
-                if (seen.Contains(jItem.Id)) continue;
-                seen.Add(jItem.Id);
-                allFavorites.Add((jUser, jItem));
-            }
+            if (jItem == null) continue;
+            if (seen.Contains(jItem.Id)) continue;
+            seen.Add(jItem.Id);
+            allFavorites.Add((jUser, jItem));
         }
 
         foreach (var (user, item) in allFavorites)
@@ -297,20 +296,34 @@ public class FavoriteService
             var requestsObj = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
             var allRequests = requestsObj as List<JellyseerrMediaRequest> ?? new List<JellyseerrMediaRequest>();
 
-            var declined = allRequests.Where(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED).ToList();
-            if (declined.Count == 0)
+            // Group all requests by media identity (Type + TMDB id)
+            var requestsByMedia = allRequests
+                .Where(r => r != null && r.Media != null && r.Media.TmdbId > 0)
+                .GroupBy(r => (Type: r.Type!, TmdbId: r.Media!.TmdbId))
+                .ToList();
+
+            // Only consider media where ALL requests are declined
+            var fullyDeclinedGroups = requestsByMedia
+                .Where(g => g.All(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED))
+                .ToList();
+
+            if (fullyDeclinedGroups.Count == 0)
             {
                 return declinedItems;
             }
 
-            _logger.LogDebug("Found {DeclinedCount} declined Jellyseerr requests; removing .ignore markers", declined.Count);
+            var representativeDeclinedRequests = fullyDeclinedGroups.Select(g => g.First()).ToList();
+
+            _logger.LogDebug(
+                "Found {DeclinedMediaCount} media with all requests declined; removing .ignore markers",
+                representativeDeclinedRequests.Count);
 
             var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
             var allMeta = new List<IJellyseerrItem>();
             allMeta.AddRange(moviesMeta);
             allMeta.AddRange(showsMeta);
 
-            declinedItems = FindJellyseerrFavorites(allMeta, declined);
+            declinedItems = FindJellyseerrFavorites(allMeta, representativeDeclinedRequests);
             foreach (var item in declinedItems)
             {
                 try

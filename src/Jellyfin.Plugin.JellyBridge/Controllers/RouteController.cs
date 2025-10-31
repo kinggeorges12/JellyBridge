@@ -56,7 +56,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
-                    CreateAllUserFavorites = config.CreateAllUserFavorites,
                     EnableStartupSync = config.EnableStartupSync,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
@@ -114,7 +113,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
-                    SetJsonValue<bool?>(configData, nameof(config.CreateAllUserFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);

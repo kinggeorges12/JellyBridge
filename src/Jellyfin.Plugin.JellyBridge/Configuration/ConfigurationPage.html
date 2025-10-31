@@ -413,20 +413,10 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show from  by creating an .ignore file in the directory.</div>
+                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show from by creating an .ignore file in the directory. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="CreateAllUserFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Create request for all user favorites</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">make a jellyseerr request for any users that favorite a jellyfin item. Leaving this unchecked only creates one request using the first user requesting each movie or series. Use this option to determine whether you want to see all user requests (checked) or just unique ones (unchecked)</div>
-                        </div>
+                        
 
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

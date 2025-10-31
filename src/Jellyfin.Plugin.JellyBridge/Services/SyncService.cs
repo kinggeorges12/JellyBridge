@@ -330,7 +330,7 @@ public partial class SyncService
     /// - Calls RefreshBridgeLibrary with computed parameters
     /// - Then scans all libraries and awaits completion
     /// </summary>
-    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult, SyncJellyseerrResult? syncFromResult)
+    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null)
     {
         try
         {
@@ -346,11 +346,6 @@ public partial class SyncService
         {
             _logger.LogError(ex, "Error applying post-sync refresh operations");
         }
-    }
-
-    public Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult)
-    {
-        return ApplyRefreshAsync(syncToResult, null);
     }
 
 }

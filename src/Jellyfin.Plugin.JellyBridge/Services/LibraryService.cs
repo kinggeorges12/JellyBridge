@@ -65,12 +65,25 @@ public class LibraryService
             _logger.LogTrace("Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
-            // Create refresh options based on fullRefresh parameter
-            var refreshOptions = new MetadataRefreshOptions(_directoryService)
+            // Create refresh options for creating or updating items
+            var refreshOptionsCreate = new MetadataRefreshOptions(_directoryService)
             {
-                MetadataRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
-                ImageRefreshMode = fullRefresh ? MetadataRefreshMode.FullRefresh : MetadataRefreshMode.Default,
-                ReplaceAllMetadata = fullRefresh,
+                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+                ReplaceAllMetadata = true,
+                ReplaceAllImages = refreshImages,
+                RegenerateTrickplay = false,
+                ForceSave = true,
+                IsAutomated = false,
+                RemoveOldMetadata = false
+            };
+
+            // Create refresh options for refreshing removed items
+            var refreshOptionsRemove = new MetadataRefreshOptions(_directoryService)
+            {
+                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+                ReplaceAllMetadata = true,
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
@@ -78,8 +91,9 @@ public class LibraryService
                 RemoveOldMetadata = false
             };
             
-            _logger.LogTrace("Refresh options - MetadataRefreshMode: {MetadataRefreshMode}, ImageRefreshMode: {ImageRefreshMode}, ReplaceAllMetadata: {ReplaceAllMetadata}, ReplaceAllImages: {ReplaceAllImages}, RegenerateTrickplay: {RegenerateTrickplay}", 
-                refreshOptions.MetadataRefreshMode, refreshOptions.ImageRefreshMode, refreshOptions.ReplaceAllMetadata, refreshOptions.ReplaceAllImages, refreshOptions.RegenerateTrickplay);
+            _logger.LogTrace("Refresh options - Create: Metadata={CreateMeta}, Images={CreateImages}, ReplaceAllMetadata={CreateReplaceMeta}, ReplaceAllImages={CreateReplaceImages}, RegenerateTrickplay={CreateTrick}; Remove: Metadata={RemoveMeta}, Images={RemoveImages}, ReplaceAllMetadata={RemoveReplaceMeta}, ReplaceAllImages={RemoveReplaceImages}, RegenerateTrickplay={RemoveTrick}",
+                refreshOptionsCreate.MetadataRefreshMode, refreshOptionsCreate.ImageRefreshMode, refreshOptionsCreate.ReplaceAllMetadata, refreshOptionsCreate.ReplaceAllImages, refreshOptionsCreate.RegenerateTrickplay,
+                refreshOptionsRemove.MetadataRefreshMode, refreshOptionsRemove.ImageRefreshMode, refreshOptionsRemove.ReplaceAllMetadata, refreshOptionsRemove.ReplaceAllImages, refreshOptionsRemove.RegenerateTrickplay);
 
             // Queue provider refresh for each Jellyseerr library via ProviderManager (same as API behavior)
             foreach (var jellyseerrLibrary in jellyseerrLibraries)
@@ -92,7 +106,11 @@ public class LibraryService
                     _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
                     //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
 
-                    _providerManager.QueueRefresh(libraryFolder.Id, refreshOptions, RefreshPriority.High);
+                    _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
+                    if(fullRefresh)
+                    {
+                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                    }
                     // ValidateChildren already refreshes child metadata when recursive=true.
                     // If needed in future, we could call RefreshMetadata here.
 
