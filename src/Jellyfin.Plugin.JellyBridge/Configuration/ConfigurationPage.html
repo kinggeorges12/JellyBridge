@@ -350,7 +350,7 @@
                     </div>
                     
                     <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" step="0.1"/>
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" max="168" step="0.1"/>
                         <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
                     </div>
 
