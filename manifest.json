@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "329C76ACAF014FDAE9DCA683A033A9AB",
+        "timestamp": "2025-11-01T21:16:17.997Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.21.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.21 - Fixed placeholder episode play status by setting Played=true when play count > 0. Jellyfin uses the Played flag (not just PlayCount) to determine if episodes are played, which affects the series unplayed badge. Updated TryUpdatePlayCount to set both PlayCount and Played flag appropriately.",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.21.11"
+      },
+      {
+        "checksum": "67C1ACF61ED3FD74AC337A138CCB8761",
+        "timestamp": "2025-11-01T21:16:17.997Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.21.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.21 - Fixed placeholder episode play status by setting Played=true when play count > 0. Jellyfin uses the Played flag (not just PlayCount) to determine if episodes are played, which affects the series unplayed badge. Updated TryUpdatePlayCount to set both PlayCount and Played flag appropriately.",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.21.10"
+      },
+      {
         "checksum": "846B490ED235ECEFB9A3663368F288F2",
         "changelog": "Jellyfin 10.11.0: v1.3.20 - Enhanced placeholder episode play count logic to return detailed result objects with success status and descriptive messages instead of nullable bool. Added comprehensive logging to identify why placeholder episode play counts fail (episode not found, userData null, play count already > 0, or update failure). Sorted directories by play count before processing to ensure lower play counts are handled first.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.20.11.zip",

@@ -158,6 +158,9 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         
         // GetUserData automatically creates user data if it doesn't exist, so we just set the play count
         userData.PlayCount = playCount;
+        // Also set Played flag - Jellyfin uses this to determine if items are played (not just PlayCount)
+        // The series badge is based on checking if all episodes have Played = true
+        userData.Played = playCount > 0;
         Inner.SaveUserData(userEntity, item, userData, UserDataSaveReason.Import, CancellationToken.None);
         return true;
     }
