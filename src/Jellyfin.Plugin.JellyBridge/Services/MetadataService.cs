@@ -350,7 +350,8 @@ public class MetadataService
                 .ToDictionary(x => x.dir, x => (x.playCount, x.isShow));
 
             // Update play count for each item across all users - parallelize by item
-            var updateTasks = directoryInfoMap.Select(async kvp =>
+            // Sort by play count (ascending) before updating to ensure lower play counts are processed first
+            var updateTasks = directoryInfoMap.OrderBy(kvp => kvp.Value.playCount).Select(async kvp =>
             {
                 var directory = kvp.Key;
                 var (assignedPlayCount, isShowDirectory) = kvp.Value;
@@ -396,20 +397,16 @@ public class MetadataService
                                             seriesWrapper.Name, user.Username);
                                         
                                         var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager);
-                                        if (result == true)
+                                        
+                                        if (result.Success)
                                         {
-                                            _logger.LogTrace("Set play count to 1 for placeholder episode (S00E00) in series '{SeriesName}' for user {UserName}", 
-                                                seriesWrapper.Name, user.Username);
+                                            _logger.LogTrace("Placeholder episode play count updated for series '{SeriesName}' for user {UserName}: {Message}", 
+                                                seriesWrapper.Name, user.Username, result.Message);
                                         }
-                                        else if (result == false)
+                                        else
                                         {
-                                            _logger.LogTrace("Placeholder episode play count not set for series '{SeriesName}' for user {UserName} (episode may not exist or play count already > 0)", 
-                                                seriesWrapper.Name, user.Username);
-                                        }
-                                        else // result == null
-                                        {
-                                            _logger.LogTrace("UserData is null for placeholder episode in series '{SeriesName}' for user {UserName}", 
-                                                seriesWrapper.Name, user.Username);
+                                            _logger.LogTrace("Placeholder episode play count not set for series '{SeriesName}' for user {UserName}: {Message}", 
+                                                seriesWrapper.Name, user.Username, result.Message);
                                         }
                                     }
                                     catch (ArgumentException ex)
