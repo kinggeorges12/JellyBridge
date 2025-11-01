@@ -314,6 +314,9 @@ public class MetadataService
         var failures = new List<string>();
         var skipped = new List<string>();
         
+        // Get configuration setting for marking shows as played
+        var markShowsPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkShowsPlayed));
+        
         try
         {
             // Get categorized directories
@@ -388,7 +391,8 @@ public class MetadataService
                                     user.Username, itemName, directory, assignedPlayCount, isShowDirectory);
                                 
                                 // For shows, also mark placeholder episode (S00E00 special) as played if it exists and is not already marked
-                                if (isShowDirectory)
+                                // Only do this if MarkShowsPlayed is enabled
+                                if (markShowsPlayed && isShowDirectory)
                                 {
                                     try
                                     {

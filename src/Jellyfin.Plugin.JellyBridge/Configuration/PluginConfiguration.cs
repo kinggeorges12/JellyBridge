@@ -63,6 +63,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
         // Sort Discover Content
         { nameof(RandomizeDiscoverSortOrder), false },
+        { nameof(MarkShowsPlayed), false },
         { nameof(SortTaskIntervalHours), 5.0 },
 
         // Advanced Settings
@@ -171,6 +172,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to randomize the discover library sort order by randomizing play counts for all users.
     /// </summary>
     public bool? RandomizeDiscoverSortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to mark shows as played (changes unplayed count badge to checkmark badge).
+    /// This only applies to shows.
+    /// </summary>
+    public bool? MarkShowsPlayed { get; set; }
 
     /// <summary>
     /// Gets or sets the interval in hours for the sort task.

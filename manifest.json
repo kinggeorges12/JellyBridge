@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "440ED47C83E31CC82CC389E4B98C7C9F",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.23.11.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.23.11",
+        "timestamp": "2025-11-01T22:07:18.984Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.23 - Added Mark Shows Played checkbox to change unplayed badge from 1 to checkmark. Created refreshOptionsUpdate for user data refresh and reordered RefreshBridgeLibrary parameters. Updated SortTask to skip library refresh after play count updates since UI updates automatically when items are viewed."
+      },
+      {
+        "checksum": "4E62B0AB0F44982B22D75D3899FB328B",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.23.10.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.23.10",
+        "timestamp": "2025-11-01T22:07:18.984Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.23 - Added Mark Shows Played checkbox to change unplayed badge from 1 to checkmark. Created refreshOptionsUpdate for user data refresh and reordered RefreshBridgeLibrary parameters. Updated SortTask to skip library refresh after play count updates since UI updates automatically when items are viewed."
+      },
+      {
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-01T21:30:07.984Z",
         "version": "1.3.22.11",

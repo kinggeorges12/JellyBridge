@@ -38,6 +38,9 @@ export default function (view) {
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
                 
+                // Initialize global settings (including detail tab scroll functionality)
+                initializeGlobalSettings(page);
+                
                 // Scroll to top of page after successful initialization
                 scrollToElement('jellyBridgeConfigurationPage');
                 
@@ -853,6 +856,7 @@ function initializeSortContent(page) {
     
     // Set sort content form values with null handling
     setInputField(page, 'RandomizeDiscoverSortOrder', true);
+    setInputField(page, 'MarkShowsPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
 
     // Add sort content button functionality
@@ -1200,6 +1204,7 @@ function performPluginReset(page) {
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
                 RandomizeDiscoverSortOrder: null,
+                MarkShowsPlayed: null,
                 SortTaskIntervalHours: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
@@ -1353,6 +1358,7 @@ function savePluginConfiguration(page) {
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
     form.RandomizeDiscoverSortOrder = nullIfDefault(page.querySelector('#RandomizeDiscoverSortOrder').checked, config.DefaultValues.RandomizeDiscoverSortOrder);
+    form.MarkShowsPlayed = nullIfDefault(page.querySelector('#MarkShowsPlayed').checked, config.DefaultValues.MarkShowsPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
@@ -1375,6 +1381,37 @@ function savePluginConfiguration(page) {
                 throw new Error(result.error || 'Failed to save configuration');
             }
         });
+}
+
+// ==========================================
+// GLOBAL SETTINGS FUNCTIONS
+// ==========================================
+
+// Initialize global settings for the configuration page
+function initializeGlobalSettings(page) {
+    // Initialize detail tab scroll functionality
+    initializeDetailTabScroll(page);
+}
+
+// Initialize scroll-to functionality for detail tabs
+function initializeDetailTabScroll(page) {
+    // List of detail section IDs
+    const detailIds = ['syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'advancedSettings'];
+    
+    detailIds.forEach(detailId => {
+        const detailsElement = page.querySelector(`#${detailId}`);
+        if (detailsElement) {
+            const summaryElement = detailsElement.querySelector('summary');
+            if (summaryElement) {
+                summaryElement.addEventListener('click', function(e) {
+                    // Wait a brief moment for the details to open/close, then scroll
+                    setTimeout(() => {
+                        scrollToElement(detailId);
+                    }, 50);
+                });
+            }
+        }
+    });
 }
 
 // ==========================================
