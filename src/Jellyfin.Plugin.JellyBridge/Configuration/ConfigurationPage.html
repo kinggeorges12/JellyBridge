@@ -470,11 +470,13 @@
                     <details id="sortContentSettings">
                         <summary>Sort Discover Content</summary>
                         <br>
-                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                        <div class="fieldDescription">
                             Control the sort order of items in the discover library by setting a generated play count in JellyBridge media for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
                         </div>
-                        <div class="fieldDescription cautionText">
-                            ⚠️ Warning: this may interfere with other plugins or features in Jellyfin that use play count.
+                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                            To enable this feature, you must enable the <i>Randomize Discover Sort Order</i> option.
+                            <br>
+                            ⚠️ Warning: This option is untested in Android TV and Kodi. This may interfere with other plugins or features in Jellyfin that use play count.
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
