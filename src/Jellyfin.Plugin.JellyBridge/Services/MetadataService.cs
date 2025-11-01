@@ -392,15 +392,34 @@ public class MetadataService
                                     try
                                     {
                                         var seriesWrapper = JellyfinSeries.FromItem(item);
-                                        if (seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager))
+                                        _logger.LogTrace("Attempting to set placeholder episode play count for series '{SeriesName}' for user {UserName}", 
+                                            seriesWrapper.Name, user.Username);
+                                        
+                                        var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager);
+                                        if (result == true)
                                         {
                                             _logger.LogTrace("Set play count to 1 for placeholder episode (S00E00) in series '{SeriesName}' for user {UserName}", 
                                                 seriesWrapper.Name, user.Username);
                                         }
+                                        else if (result == false)
+                                        {
+                                            _logger.LogTrace("Placeholder episode play count not set for series '{SeriesName}' for user {UserName} (episode may not exist or play count already > 0)", 
+                                                seriesWrapper.Name, user.Username);
+                                        }
+                                        else // result == null
+                                        {
+                                            _logger.LogTrace("UserData is null for placeholder episode in series '{SeriesName}' for user {UserName}", 
+                                                seriesWrapper.Name, user.Username);
+                                        }
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        // Item is not a Series - this is expected for some items
+                                        _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play count update", itemName);
                                     }
                                     catch (Exception ex)
                                     {
-                                        // Silently handle errors - item might not be a series or episode might not exist
+                                        // Handle other errors
                                         _logger.LogTrace(ex, "Could not set placeholder episode play count for user {UserName}, item: {ItemName}", user.Username, itemName);
                                     }
                                 }
