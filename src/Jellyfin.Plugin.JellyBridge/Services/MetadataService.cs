@@ -308,7 +308,7 @@ public class MetadataService
     /// Uses ReadMetadataInternal to discover movie and show directories.
     /// </summary>
     /// <returns>A tuple containing a list of successful updates (name, type, playCount) and a list of failed item paths.</returns>
-    public Task<(List<(string name, string type, int playCount)> successes, List<string> failures)> RandomizeNfoDateAddedAsync()
+    public Task<(List<(string name, string type, int playCount)> successes, List<string> failures)> RandomizePlayCountAsync()
     {
         var successes = new List<(string name, string type, int playCount)>();
         var failures = new List<string>();
@@ -327,17 +327,6 @@ public class MetadataService
                 return Task.FromResult((successes, failures));
             }
 
-            // Shuffle directories randomly to get random sort order
-            var random = System.Random.Shared;
-            allDirectories = allDirectories.OrderBy(_ => random.Next()).ToList();
-
-            // Assign unique play counts (0 to itemCount-1) to ensure unique sort order
-            var playCountMap = new Dictionary<string, int>();
-            for (int i = 0; i < allDirectories.Count; i++)
-            {
-                playCountMap[allDirectories[i]] = i;
-            }
-
             // Get all users
             var users = _userManager.GetAllUsers().ToList();
             if (users.Count == 0)
@@ -346,11 +335,31 @@ public class MetadataService
                 return Task.FromResult((successes, failures));
             }
 
+            // Shuffle directories randomly to get random sort order
+            var random = System.Random.Shared;
+            allDirectories = allDirectories.OrderBy(_ => random.Next()).ToList();
+
+            // Assign unique play counts (1000 to 1000+itemCount-1) to ensure unique sort order
+            var playCountMap = new Dictionary<string, int>();
+            for (int i = 0; i < allDirectories.Count; i++)
+            {
+                playCountMap[allDirectories[i]] = 1000 + i;
+            }
+
             // Update play count for each item across all users
             foreach (var directory in allDirectories)
             {
                 try
                 {
+                    // Check if directory is ignored (has .ignore file)
+                    var ignoreFile = Path.Combine(directory, ".ignore");
+                    if (File.Exists(ignoreFile))
+                    {
+                        _logger.LogDebug("Item ignored (has .ignore file) for path: {Path}", directory);
+                        failures.Add(directory);
+                        continue;
+                    }
+
                     // Find item by directory path - handles both movies and shows
                     var item = _libraryManager.FindItemByDirectoryPath(directory);
                     

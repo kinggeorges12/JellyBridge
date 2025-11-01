@@ -8,7 +8,7 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
 
 /// <summary>
-/// Scheduled task for randomizing discover library sort order by updating NFO dateadded fields.
+/// Scheduled task for randomizing discover library sort order by updating play counts for all users.
 /// </summary>
 public class RandomizeSortTask : IScheduledTask
 {
@@ -29,7 +29,7 @@ public class RandomizeSortTask : IScheduledTask
 
     public string Name => "JellyBridge Randomize Sort";
     public string Key => "JellyBridgeRandomizeSort";
-    public string Description => "Randomizes discover library sort order by updating Date Added metadata in NFO files";
+    public string Description => "Randomizes discover library sort order by updating play counts for all users";
     public string Category => "JellyBridge";
 
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
@@ -40,17 +40,17 @@ public class RandomizeSortTask : IScheduledTask
             
             progress.Report(10);
             
-            // Randomize NFO dateadded fields
-            var (successes, failures) = await _metadataService.RandomizeNfoDateAddedAsync();
+            // Randomize play counts for all users to enable random sorting
+            var (successes, failures) = await _metadataService.RandomizePlayCountAsync();
             
             progress.Report(50);
             
             // Refresh library metadata to pick up the changes
-            await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
+            //await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
             
             progress.Report(100);
             
-            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} files randomized, {FailureCount} failures", successes.Count, failures.Count);
+            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} items randomized, {FailureCount} failures", successes.Count, failures.Count);
         }
         catch (Exception ex)
         {

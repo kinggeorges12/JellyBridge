@@ -82,6 +82,7 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
 
     /// <summary>
     /// Set or unset the favorite flag for the given user and item using wrappers.
+    /// GetUserData automatically creates user data if it doesn't exist in both 10.10 and 10.11.
     /// </summary>
     public bool TrySetFavorite(JellyfinUser user, IJellyfinItem item, bool isFavorite, JellyfinILibraryManager libraryManager)
     {
@@ -92,44 +93,47 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
             return false;
         }
 
+#if JELLYFIN_10_11
+        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
         var data = Inner.GetUserData(userEntity, baseItem);
         if (data is null)
         {
+            // Should never happen per implementation, but handle nullable signature defensively
             return false;
         }
+#else
+        // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+        var data = Inner.GetUserData(userEntity, baseItem);
+#endif
+        
+        // GetUserData automatically creates user data if it doesn't exist, so we just set the favorite flag
         data.IsFavorite = isFavorite;
         Inner.SaveUserData(userEntity, baseItem, data, UserDataSaveReason.UpdateUserRating, CancellationToken.None);
         return true;
     }
 
     /// <summary>
-    /// Updates play count for a user and item. Creates user data if it doesn't exist.
+    /// Updates play count for a user and item. GetUserData automatically creates user data if it doesn't exist.
     /// </summary>
     public bool TryUpdatePlayCount(JellyfinUser user, BaseItem item, int playCount)
     {
         var userEntity = user.Inner;
+        
+#if JELLYFIN_10_11
+        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
         var userData = Inner.GetUserData(userEntity, item);
-        
-        if (userData != null)
+        if (userData is null)
         {
-            userData.PlayCount = playCount;
+            // Should never happen per implementation, but handle nullable signature defensively
+            return false;
         }
-        else
-        {
-            // Create new user data if it doesn't exist
-            var keys = item.GetUserDataKeys();
-            if (keys.Count == 0)
-            {
-                return false;
-            }
-            
-            userData = new UserItemData
-            {
-                Key = keys[0],
-                PlayCount = playCount
-            };
-        }
+#else
+        // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+        var userData = Inner.GetUserData(userEntity, item);
+#endif
         
+        // GetUserData automatically creates user data if it doesn't exist, so we just set the play count
+        userData.PlayCount = playCount;
         Inner.SaveUserData(userEntity, item, userData, UserDataSaveReason.Import, CancellationToken.None);
         return true;
     }

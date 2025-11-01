@@ -508,7 +508,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     // Randomize play counts for all users to enable random sorting
-                    var (successes, failures) = await _metadataService.RandomizeNfoDateAddedAsync();
+                    var (successes, failures) = await _metadataService.RandomizePlayCountAsync();
 
                     _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures", successes.Count, failures.Count);
 
