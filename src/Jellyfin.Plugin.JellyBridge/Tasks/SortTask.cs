@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JellyBridge.Services;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge;
 
 namespace Jellyfin.Plugin.JellyBridge.Tasks;
 
@@ -38,19 +39,25 @@ public class SortTask : IScheduledTask
         {
             _logger.LogInformation("Starting randomize sort task");
             
-            progress.Report(10);
-            
-            // Randomize play counts for all users to enable random sorting
-            var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
-            
-            progress.Report(50);
-            
-            // Refresh library metadata to pick up the changes
-            //await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
-            
-            progress.Report(100);
-            
-            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} items randomized, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
+            // Use Jellyfin-style locking that pauses instead of canceling
+            await Plugin.ExecuteWithLockAsync<object?>(async () =>
+            {
+                progress.Report(10);
+                
+                // Randomize play counts for all users to enable random sorting
+                var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
+                
+                progress.Report(50);
+                
+                // Refresh library metadata to pick up the changes
+                //await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
+                
+                progress.Report(100);
+                
+                _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} items randomized, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
+                
+                return null;
+            }, _logger, "Sort Task");
         }
         catch (Exception ex)
         {

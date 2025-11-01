@@ -9,13 +9,31 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-01T19:25:13.654Z",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.16.11.zip",
+        "dependencies": [],
+        "checksum": "53FC65BC69CE9E9C10D5D61EE19861D9",
+        "changelog": "Jellyfin 10.11.0: v1.3.16 - Changed play count randomization to use increments of 100 instead of 1 to ensure sort order remains stable when users play items. Updated SortTask to use ExecuteWithLockAsync for consistency with other plugin operations. Moved play count warning to a separate styled div on the configuration page.",
+        "version": "1.3.16.11"
+      },
+      {
+        "timestamp": "2025-11-01T19:25:13.654Z",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.16.10.zip",
+        "dependencies": [],
+        "checksum": "C70BCA28E559DEA36B85F8D1350F922B",
+        "changelog": "Jellyfin 10.10.7: v1.3.16 - Changed play count randomization to use increments of 100 instead of 1 to ensure sort order remains stable when users play items. Updated SortTask to use ExecuteWithLockAsync for consistency with other plugin operations. Moved play count warning to a separate styled div on the configuration page.",
+        "version": "1.3.16.10"
+      },
+      {
         "version": "1.3.15.11",
         "checksum": "BA07B884C6467CF5CFC63F14879E0C06",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.15.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.15 - Added descriptive text under each configuration section header to improve user understanding. Renamed Sort Randomization Interval to Sort Task Interval across all files for clearer naming. Refactored play count randomization to use dictionary iteration for better efficiency and moved season folder creation logic to PlaceholderVideoGenerator static methods.",
         "dependencies": [],
-        "timestamp": "2025-11-01T19:04:44.400Z"
+        "timestamp": "2025-11-01T19:04:44.4Z"
       },
       {
         "version": "1.3.15.10",
@@ -24,7 +42,7 @@
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.15.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.15 - Added descriptive text under each configuration section header to improve user understanding. Renamed Sort Randomization Interval to Sort Task Interval across all files for clearer naming. Refactored play count randomization to use dictionary iteration for better efficiency and moved season folder creation logic to PlaceholderVideoGenerator static methods.",
         "dependencies": [],
-        "timestamp": "2025-11-01T19:04:44.400Z"
+        "timestamp": "2025-11-01T19:04:44.4Z"
       },
       {
         "checksum": "600703943D3365A9F059E2843DE57C40",
