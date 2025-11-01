@@ -62,7 +62,7 @@ public class SortTask : IScheduledTask
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
         var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder));
-        var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.RandomizeSortIntervalHours));
+        var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours));
         
         if (!isEnabled)
         {
