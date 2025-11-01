@@ -198,6 +198,7 @@ public class FavoriteService
 
     /// <summary>
     /// Get all Jellyseerr users to map with Jellyfin users.
+    /// Filters out duplicate JellyfinUserGuid values, keeping only the first occurrence.
     /// </summary>
     public async Task<List<JellyseerrUser>> GetJellyseerrUsersAsync()
     {
@@ -207,7 +208,26 @@ public class FavoriteService
             if (usersResult is List<JellyseerrUser> users)
             {
                 _logger.LogDebug("Fetched {UserCount} users from Jellyseerr", users.Count);
-                return users;
+                
+                // Filter out duplicate JellyfinUserGuid values, keeping only the first occurrence
+                var uniqueUsers = users
+                    .Where(u => !string.IsNullOrEmpty(u.JellyfinUserGuid))
+                    .GroupBy(u => u.JellyfinUserGuid!)
+                    .Select(g => 
+                    {
+                        if (g.Count() > 1)
+                        {
+                            _logger.LogWarning("Found {Count} Jellyseerr users with duplicate JellyfinUserGuid '{Guid}': {Usernames}. Using the first one.",
+                                g.Count(), 
+                                g.Key,
+                                string.Join(", ", g.Select(u => u.JellyfinUsername)));
+                        }
+                        return g.First();
+                    })
+                    .ToList();
+                
+                _logger.LogDebug("Filtered to {UniqueCount} unique users with JellyfinUserGuid", uniqueUsers.Count);
+                return uniqueUsers;
             }
             else
             {
