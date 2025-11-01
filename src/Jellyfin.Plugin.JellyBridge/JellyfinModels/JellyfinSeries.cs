@@ -186,32 +186,31 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     /// </summary>
     /// <param name="user">The user to set the play count for</param>
     /// <param name="userDataManager">The user data manager to update play counts</param>
-    /// <returns>True if the play count was set, false otherwise</returns>
-    public bool TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
+    /// <returns>True if the play count was set, false if play count was already > 0 or episode doesn't exist, null if userData is null</returns>
+    public bool? TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
     {
-        try
-        {
-            // Get the placeholder episode (S00E00)
-            var placeholderEpisode = GetPlaceholderEpisode();
-            
-            if (placeholderEpisode == null)
-            {
-                return false;
-            }
-            
-            // Check current play count
-            var userData = userDataManager.GetUserData(user, placeholderEpisode);
-            if (userData != null && userData.PlayCount == 0)
-            {
-                // Set play count to 1
-                return userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
-            }
-            
-            return false;
-        }
-        catch (Exception)
+        // Get the placeholder episode (S00E00)
+        var placeholderEpisode = GetPlaceholderEpisode();
+        
+        if (placeholderEpisode == null)
         {
             return false;
         }
+        
+        // Check current play count
+        var userData = userDataManager.GetUserData(user, placeholderEpisode);
+        if (userData == null)
+        {
+            return null;
+        }
+        
+        if (userData.PlayCount == 0)
+        {
+            // Set play count to 1
+            return userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
+        }
+        
+        // Play count is already > 0, no need to update
+        return false;
     }
 }

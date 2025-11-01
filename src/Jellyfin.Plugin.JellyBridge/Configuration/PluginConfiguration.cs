@@ -63,7 +63,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
         // Sort Discover Content
         { nameof(RandomizeDiscoverSortOrder), false },
-        { nameof(SortTaskIntervalHours), 8.0 },
+        { nameof(SortTaskIntervalHours), 5.0 },
 
         // Advanced Settings
         { nameof(TaskTimeoutMinutes), 10 },
