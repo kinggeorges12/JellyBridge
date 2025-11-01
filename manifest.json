@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-01T21:30:07.984Z",
+        "version": "1.3.22.11",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.22 - Removed TryMarkPlayed method from JellyfinIUserDataManager and inlined the Played=true logic directly in JellyfinSeries.TrySetEpisodePlayCount to ensure only the placeholder episode is marked as played, not all BaseItems. This prevents accidental marking of other items while maintaining the fix for series unplayed badges.",
+        "checksum": "CDFD1B1482F63794923CC6B2AE7872A7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.22.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-01T21:30:07.984Z",
+        "version": "1.3.22.10",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.22 - Removed TryMarkPlayed method from JellyfinIUserDataManager and inlined the Played=true logic directly in JellyfinSeries.TrySetEpisodePlayCount to ensure only the placeholder episode is marked as played, not all BaseItems. This prevents accidental marking of other items while maintaining the fix for series unplayed badges.",
+        "checksum": "7B43784016F7CB7A993D9EC8100B216E",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.22.10.zip"
+      },
+      {
         "checksum": "329C76ACAF014FDAE9DCA683A033A9AB",
         "timestamp": "2025-11-01T21:16:17.997Z",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.21.11.zip",

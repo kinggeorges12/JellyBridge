@@ -1,5 +1,7 @@
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Model.Entities;
+using System.Threading;
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
@@ -191,10 +193,10 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     }
 
     /// <summary>
-    /// Try to set the placeholder episode (S00E00) play count to 1 for a user if the current play count is 0.
+    /// Try to mark the placeholder episode (S00E00) as played for a user if it's not already marked.
     /// </summary>
-    /// <param name="user">The user to set the play count for</param>
-    /// <param name="userDataManager">The user data manager to update play counts</param>
+    /// <param name="user">The user to mark the episode as played for</param>
+    /// <param name="userDataManager">The user data manager to update play status</param>
     /// <returns>Result object containing success status and detailed information about the operation</returns>
     public PlaceholderEpisodePlayCountResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
     {
@@ -210,7 +212,8 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             };
         }
         
-        // Check current play count
+        // Check current play status and mark as played if needed
+        // This prevents the placeholder episode from appearing in unplayed counts (series badge shows "1")
         var userData = userDataManager.GetUserData(user, placeholderEpisode);
         if (userData == null)
         {
@@ -221,33 +224,26 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             };
         }
         
-        if (userData.PlayCount == 0)
+        if (!userData.Played)
         {
-            // Set play count to 1
-            var updateResult = userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
-            if (updateResult)
+            // Mark as played - this prevents it from appearing in unplayed counts (series badge)
+            // Use the inner UserDataManager directly to set Played = true for this specific episode only
+            var userEntity = user.Inner;
+            userData.Played = true;
+            userDataManager.Inner.SaveUserData(userEntity, placeholderEpisode, userData, MediaBrowser.Model.Entities.UserDataSaveReason.Import, System.Threading.CancellationToken.None);
+            
+            return new PlaceholderEpisodePlayCountResult
             {
-                return new PlaceholderEpisodePlayCountResult
-                {
-                    Success = true,
-                    Message = $"Play count set to 1 for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
-                };
-            }
-            else
-            {
-                return new PlaceholderEpisodePlayCountResult
-                {
-                    Success = false,
-                    Message = $"TryUpdatePlayCount returned false for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
-                };
-            }
+                Success = true,
+                Message = $"Marked placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) as played"
+            };
         }
         
-        // Play count is already > 0, no need to update
+        // Already marked as played, no need to update
         return new PlaceholderEpisodePlayCountResult
         {
             Success = false,
-            Message = $"Play count is already {userData.PlayCount} (not 0) for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
+            Message = $"Placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) is already marked as played"
         };
     }
 }
