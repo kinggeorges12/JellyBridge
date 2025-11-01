@@ -168,7 +168,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
     // ===== Sort Discover Content =====
     /// <summary>
-    /// Gets or sets whether to randomize the discover library sort order by randomizing the Date Added metadata.
+    /// Gets or sets whether to randomize the discover library sort order by randomizing play counts for all users.
     /// </summary>
     public bool? RandomizeDiscoverSortOrder { get; set; }
 

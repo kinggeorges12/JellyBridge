@@ -147,7 +147,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ### 🔀 Sort Discover Content
 
-- **Randomize Discover Sort Order**: Enables random sorting in the discover library by randomizing the Date Added metadata and refreshing library metadata. This allows users to see content in a different order each time.
+- **Randomize Discover Sort Order**: Enables random sorting in the discover library by randomizing play counts for all users. This allows users to see content in a different order each time.
 - **Sort Randomization Interval**: How often to run the sort randomization task, measured in hours. Set to 0 to disable automatic sort randomization.
 
 ### 📁 Manage Discover Library
