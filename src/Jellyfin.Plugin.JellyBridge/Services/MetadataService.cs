@@ -41,25 +41,25 @@ public class MetadataService
 
             // Parse all movie directories
             foreach (var directory in movieDirectories)
-            {
-                try
                 {
+                    try
+                    {
                     var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
-                    var json = await File.ReadAllTextAsync(metadataFile);
-                    _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
-                    
-                    var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
-                    if (movie != null)
-                    {
-                        _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                            movie.MediaName, movie.Id, movie.MediaType, movie.Year);
-                        movies.Add(movie);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
-                    }
-                }
+                        var json = await File.ReadAllTextAsync(metadataFile);
+                        _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        
+                            var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
+                            if (movie != null)
+                            {
+                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                    movie.MediaName, movie.Id, movie.MediaType, movie.Year);
+                                movies.Add(movie);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
+                            }
+                        }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
@@ -75,20 +75,20 @@ public class MetadataService
                     var json = await File.ReadAllTextAsync(metadataFile);
                     _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                     
-                    var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
-                    if (show != null)
-                    {
-                        _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
-                            show.MediaName, show.Id, show.MediaType, show.Year);
-                        shows.Add(show);
+                            var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
+                            if (show != null)
+                            {
+                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                    show.MediaName, show.Id, show.MediaType, show.Year);
+                                shows.Add(show);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
-                    }
-                }
-                catch (Exception ex)
-                {
                     _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
                 }
             }
@@ -334,9 +334,13 @@ public class MetadataService
                 return (successes, failures, skipped);
             }
 
-            // Create a list of play count values (1000 to 1000+count-1) and shuffle them
+            // Create a list of play count values (1000, 1100, 1200, etc. with increments of 100) and shuffle them
+            // Using increments of 100 ensures that when users play items (incrementing by 1), the sort order remains stable
             var random = System.Random.Shared;
-            var playCounts = Enumerable.Range(1000, totalCount).OrderBy(_ => random.Next()).ToList();
+            var playCounts = Enumerable.Range(0, totalCount)
+                .Select(i => 1000 + (i * 100))
+                .OrderBy(_ => random.Next())
+                .ToList();
 
             // Create directory info map with play count and isShow flag (for efficient lookup)
             // Combine movies and shows, then map each to (playCount, isShow) tuple
