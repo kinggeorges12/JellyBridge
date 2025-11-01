@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-01T00:49:53.501Z",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.12.11.zip",
+        "checksum": "BA63D1A504806856ADC905EB83ACC03B",
+        "version": "1.3.12.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.12 - Enhanced movie discovery in FindItemByDirectoryPath: Added fallback logic to search for video files (mkv, mp4, avi, m4v, mov, wmv, flv, webm, mpg, mpeg, m2ts, ts, mts) within the directory and attempt FindByPath on those file paths. This helps locate movies where Jellyfin stores the item path as the video file path rather than the directory path, significantly improving success rate for movie item discovery without using the problematic GetItemList method."
+      },
+      {
+        "timestamp": "2025-11-01T00:49:53.501Z",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.12.10.zip",
+        "checksum": "61BC0C68A002CB5E92B5F6DE1A6EE616",
+        "version": "1.3.12.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.12 - Enhanced movie discovery in FindItemByDirectoryPath: Added fallback logic to search for video files (mkv, mp4, avi, m4v, mov, wmv, flv, webm, mpg, mpeg, m2ts, ts, mts) within the directory and attempt FindByPath on those file paths. This helps locate movies where Jellyfin stores the item path as the video file path rather than the directory path, significantly improving success rate for movie item discovery without using the problematic GetItemList method."
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.11.11.zip",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
