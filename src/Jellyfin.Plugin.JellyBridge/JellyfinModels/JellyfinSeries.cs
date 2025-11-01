@@ -1,4 +1,5 @@
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Entities;
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
@@ -24,12 +25,31 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     }
 
     /// <summary>
-    /// Get the underlying Series instance.
+    /// Create a JellyfinSeries from a BaseItem. Throws ArgumentException if the item is not a Series.
     /// </summary>
-    /// <returns>The Series instance or null if not available</returns>
-    public Series? GetSeries()
+    /// <param name="item">The BaseItem to wrap (must be a Series)</param>
+    /// <returns>A new JellyfinSeries instance</returns>
+    /// <exception cref="ArgumentException">Thrown if the item is not a Series</exception>
+    public static JellyfinSeries FromItem(BaseItem item)
     {
-        return Inner;
+        if (item is Series series)
+        {
+            return new JellyfinSeries(series);
+        }
+        throw new ArgumentException($"Item is not a Series. Type: {item?.GetType().Name}", nameof(item));
+    }
+
+    /// <summary>
+    /// Explicit cast from BaseItem to JellyfinSeries.
+    /// Returns null if the item is not a Series.
+    /// </summary>
+    public static explicit operator JellyfinSeries?(BaseItem? item)
+    {
+        if (item is Series series)
+        {
+            return new JellyfinSeries(series);
+        }
+        return null;
     }
 
     /// <summary>
@@ -125,6 +145,73 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Get the placeholder episode (S00E00 special) for this series.
+    /// </summary>
+    /// <returns>The placeholder episode if found, null otherwise</returns>
+    public Episode? GetPlaceholderEpisode()
+    {
+        try
+        {
+            // Get all episodes for the series by querying children recursively
+            // Episodes are children of seasons, which are children of the series
+#if JELLYFIN_10_11
+            // Jellyfin 10.11+ returns IReadOnlyList<BaseItem>
+            var allEpisodes = Inner.GetRecursiveChildren()
+                .OfType<Episode>()
+                .ToList();
+#else
+            // Jellyfin 10.10.7 returns IList<BaseItem>
+            var allEpisodes = Inner.GetRecursiveChildren()
+                .OfType<Episode>()
+                .ToList();
+#endif
+            
+            // Find the episode with ParentIndexNumber = 0 (season 0/specials) and IndexNumber = 0 (episode 0)
+            return allEpisodes.FirstOrDefault(e => 
+                e.ParentIndexNumber == 0 && 
+                e.IndexNumber == 0);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Try to set the placeholder episode (S00E00) play count to 1 for a user if the current play count is 0.
+    /// </summary>
+    /// <param name="user">The user to set the play count for</param>
+    /// <param name="userDataManager">The user data manager to update play counts</param>
+    /// <returns>True if the play count was set, false otherwise</returns>
+    public bool TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
+    {
+        try
+        {
+            // Get the placeholder episode (S00E00)
+            var placeholderEpisode = GetPlaceholderEpisode();
+            
+            if (placeholderEpisode == null)
+            {
+                return false;
+            }
+            
+            // Check current play count
+            var userData = userDataManager.GetUserData(user, placeholderEpisode);
+            if (userData != null && userData.PlayCount == 0)
+            {
+                // Set play count to 1
+                return userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
+            }
+            
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

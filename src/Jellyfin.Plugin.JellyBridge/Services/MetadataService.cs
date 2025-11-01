@@ -386,32 +386,22 @@ public class MetadataService
                                 _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}", 
                                     user.Username, itemName, directory, assignedPlayCount);
                                 
-                                // For shows, also set play count to 1 for placeholder episode if it exists and has play count 0
+                                // For shows, also set play count to 1 for placeholder episode (S00E00 special) if it exists and has play count 0
                                 if (isShowDirectory)
                                 {
                                     try
                                     {
-                                        var placeholderPath = PlaceholderVideoGenerator.GetSeasonPlaceholderPath(directory);
-                                        if (File.Exists(placeholderPath))
+                                        var seriesWrapper = JellyfinSeries.FromItem(item);
+                                        if (seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager))
                                         {
-                                            var episode = _libraryManager.Inner.FindByPath(placeholderPath, isFolder: false);
-                                            if (episode != null)
-                                            {
-                                                var userData = _userDataManager.GetUserData(user, episode);
-                                                if (userData != null && userData.PlayCount == 0)
-                                                {
-                                                    if (_userDataManager.TryUpdatePlayCount(user, episode, 1))
-                                                    {
-                                                        _logger.LogTrace("Set play count to 1 for placeholder episode '{EpisodeName}' for user {UserName}", 
-                                                            episode.Name, user.Username);
-                                                    }
-                                                }
-                                            }
+                                            _logger.LogTrace("Set play count to 1 for placeholder episode (S00E00) in series '{SeriesName}' for user {UserName}", 
+                                                seriesWrapper.Name, user.Username);
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        _logger.LogWarning(ex, "Failed to set placeholder episode play count for user {UserName}, show: {Directory}", user.Username, directory);
+                                        // Silently handle errors - item might not be a series or episode might not exist
+                                        _logger.LogTrace(ex, "Could not set placeholder episode play count for user {UserName}, item: {ItemName}", user.Username, itemName);
                                     }
                                 }
                             }
