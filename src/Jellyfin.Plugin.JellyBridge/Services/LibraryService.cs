@@ -65,12 +65,17 @@ public class LibraryService
             _logger.LogTrace("Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
                 jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
 
-            // Create refresh options for creating or updating items
+            // Scan for new and updated files
+            // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
+
+            // Search for missing metadata
+            // Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
+            // Create refresh options for creating or updating items - replace all metadata
             var refreshOptionsCreate = new MetadataRefreshOptions(_directoryService)
             {
                 MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                 ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                ReplaceAllMetadata = true,
+                ReplaceAllMetadata = false,
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
@@ -78,7 +83,9 @@ public class LibraryService
                 RemoveOldMetadata = false
             };
 
-            // Create refresh options for refreshing removed items
+            // Replace all metadata
+            // Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&RegenerateTrickplay=false&ReplaceAllMetadata=true
+            // Create refresh options for refreshing removed items - search for missing metadata only
             var refreshOptionsRemove = new MetadataRefreshOptions(_directoryService)
             {
                 MetadataRefreshMode = MetadataRefreshMode.FullRefresh,

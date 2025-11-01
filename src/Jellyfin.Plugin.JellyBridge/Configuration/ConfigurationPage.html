@@ -474,7 +474,7 @@
                             Control the sort order of items in the discover library by setting a generated play count in JellyBridge media for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            To enable this feature, you must enable the <i>Randomize Discover Sort Order</i> option.
+                            ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Play Count</i>.
                             <br>
                             ⚠️ Warning: This option is untested in Android TV and Kodi. This may interfere with other plugins or features in Jellyfin that use play count.
                         </div>
@@ -523,7 +523,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the <i>Library Directory</i> path. Runs a partial refresh "Search for missing metadata" (this should finish quickly), or a full refresh "Replace all metadata" if items are deleted from Jellyseerr (this takes a while). Uses default refresh settings: Replace all images, Keep existing trickplay images.</div>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the <i>Library Directory</i> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are deleted from Jellyseerr (this takes less time).</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

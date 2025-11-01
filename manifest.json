@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "80528A7CEFC0DB0813F386F82A1C03AA",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.3.18 - Updated library refresh options to differentiate between create and remove operations. Create operations now use ReplaceAllMetadata=false to search for missing metadata only, while remove operations use ReplaceAllMetadata=true to replace all metadata. This preserves existing metadata when refreshing newly added items while ensuring complete refresh for removed items.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.18.11.zip",
+        "timestamp": "2025-11-01T20:49:01.245Z",
+        "version": "1.3.18.11"
+      },
+      {
+        "dependencies": [],
+        "checksum": "0C32223279667BCE6577466CA7B50A3E",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.3.18 - Updated library refresh options to differentiate between create and remove operations. Create operations now use ReplaceAllMetadata=false to search for missing metadata only, while remove operations use ReplaceAllMetadata=true to replace all metadata. This preserves existing metadata when refreshing newly added items while ensuring complete refresh for removed items.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.18.10.zip",
+        "timestamp": "2025-11-01T20:49:01.245Z",
+        "version": "1.3.18.10"
+      },
+      {
         "timestamp": "2025-11-01T19:56:20.529Z",
         "checksum": "A29B242CA32185F3F3773ABA7046CD4E",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.17.11.zip",
