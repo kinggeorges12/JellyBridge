@@ -32,7 +32,9 @@ public class LibraryService
     /// Refreshes the Jellyseerr library with the configured refresh options.
     /// </summary>
     /// <param name="fullRefresh">If true, performs a full metadata and image refresh. If false, only refreshes missing metadata.</param>
-    public async Task<int> RefreshBridgeLibrary(bool fullRefresh, bool refreshImages = true)
+    /// <param name="refreshUserData">If true, performs a light refresh to reload user data (play counts). If false, uses standard refresh.</param>
+    /// <param name="refreshImages">If true, refreshes images. If false, skips image refresh.</param>
+    public async Task<int> RefreshBridgeLibrary(bool fullRefresh = true, bool refreshUserData = true, bool refreshImages = true)
     {
         var queuedCount = 0;
         try
@@ -67,6 +69,18 @@ public class LibraryService
 
             // Scan for new and updated files
             // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
+            // Create refresh options for refreshing user data - minimal refresh to reload user data like play counts
+            var refreshOptionsUpdate = new MetadataRefreshOptions(_directoryService)
+            {
+                MetadataRefreshMode = MetadataRefreshMode.Default,
+                ImageRefreshMode = MetadataRefreshMode.Default,
+                ReplaceAllMetadata = false,
+                ReplaceAllImages = false,
+                RegenerateTrickplay = false,
+                ForceSave = true,
+                IsAutomated = false,
+                RemoveOldMetadata = false
+            };
 
             // Search for missing metadata
             // Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
@@ -98,9 +112,10 @@ public class LibraryService
                 RemoveOldMetadata = false
             };
             
-            _logger.LogTrace("Refresh options - Create: Metadata={CreateMeta}, Images={CreateImages}, ReplaceAllMetadata={CreateReplaceMeta}, ReplaceAllImages={CreateReplaceImages}, RegenerateTrickplay={CreateTrick}; Remove: Metadata={RemoveMeta}, Images={RemoveImages}, ReplaceAllMetadata={RemoveReplaceMeta}, ReplaceAllImages={RemoveReplaceImages}, RegenerateTrickplay={RemoveTrick}",
+            _logger.LogTrace("Refresh options - Create: Metadata={CreateMeta}, Images={CreateImages}, ReplaceAllMetadata={CreateReplaceMeta}, ReplaceAllImages={CreateReplaceImages}, RegenerateTrickplay={CreateTrick}; Remove: Metadata={RemoveMeta}, Images={RemoveImages}, ReplaceAllMetadata={RemoveReplaceMeta}, ReplaceAllImages={RemoveReplaceImages}, RegenerateTrickplay={RemoveTrick}; Update: Metadata={UpdateMeta}, Images={UpdateImages}, ReplaceAllMetadata={UpdateReplaceMeta}, ReplaceAllImages={UpdateReplaceImages}, RegenerateTrickplay={UpdateTrick}",
                 refreshOptionsCreate.MetadataRefreshMode, refreshOptionsCreate.ImageRefreshMode, refreshOptionsCreate.ReplaceAllMetadata, refreshOptionsCreate.ReplaceAllImages, refreshOptionsCreate.RegenerateTrickplay,
-                refreshOptionsRemove.MetadataRefreshMode, refreshOptionsRemove.ImageRefreshMode, refreshOptionsRemove.ReplaceAllMetadata, refreshOptionsRemove.ReplaceAllImages, refreshOptionsRemove.RegenerateTrickplay);
+                refreshOptionsRemove.MetadataRefreshMode, refreshOptionsRemove.ImageRefreshMode, refreshOptionsRemove.ReplaceAllMetadata, refreshOptionsRemove.ReplaceAllImages, refreshOptionsRemove.RegenerateTrickplay,
+                refreshOptionsUpdate.MetadataRefreshMode, refreshOptionsUpdate.ImageRefreshMode, refreshOptionsUpdate.ReplaceAllMetadata, refreshOptionsUpdate.ReplaceAllImages, refreshOptionsUpdate.RegenerateTrickplay);
 
             // Queue provider refresh for each Jellyseerr library via ProviderManager (same as API behavior)
             foreach (var jellyseerrLibrary in jellyseerrLibraries)
@@ -113,10 +128,20 @@ public class LibraryService
                     _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
                     //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
 
-                    _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
-                    if(fullRefresh)
+                    if (refreshUserData)
                     {
-                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                        // Standard refresh for metadata/image updates
+                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
+                        if(fullRefresh)
+                        {
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                        }
+                    }
+                    else
+                    {
+                        // Light refresh for user data updates (play counts)
+                        _logger.LogTrace("Using update refresh options for library: {LibraryName}", jellyseerrLibrary.Name);
+                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.High);
                     }
                     // ValidateChildren already refreshes child metadata when recursive=true.
                     // If needed in future, we could call RefreshMetadata here.
@@ -169,6 +194,7 @@ public class LibraryService
                 try
                 {
                     await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+                    // refreshUserData defaults to true - will perform light refresh to reload user data
                     _ = await RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
                 }
                 catch (Exception ex)

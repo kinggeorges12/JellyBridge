@@ -65,9 +65,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     RetryAttempts = config.RetryAttempts,
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
+                    PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
                     RandomizeDiscoverSortOrder = config.RandomizeDiscoverSortOrder,
+                    MarkShowsPlayed = config.MarkShowsPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
@@ -119,6 +121,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
+                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
                     SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
@@ -128,6 +131,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.RandomizeDiscoverSortOrder), config);
+                    SetJsonValue<bool?>(configData, nameof(config.MarkShowsPlayed), config);
                     SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
@@ -827,6 +831,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
                     
                     // Call the refresh method (fire-and-await, no return value)
+                    // refreshUserData defaults to true - will perform light refresh to reload user data
                     await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
 
                     _logger.LogInformation("Jellyseerr library refresh initiated");

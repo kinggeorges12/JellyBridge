@@ -491,6 +491,18 @@
                             <div class="fieldDescription">Allows users to get random sorting in the discover library by randomizing play counts of movies and shows for all users.</div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="MarkShowsPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Mark Shows Played</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">This feature changes the little 🔵1 badge in the upper right corner to a 🔵✓ checkmark badge. This setting only applies to shows.</div>
+                        </div>
+
                         <div class="inputContainer">
                             <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
                             <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>

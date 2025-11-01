@@ -321,7 +321,8 @@ public partial class SyncService
 
             _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
             _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-            await _libraryService.RefreshBridgeLibrary(fullRefresh, refreshImages: refreshImages);
+            // refreshUserData defaults to true - will perform light refresh to reload user data
+            await _libraryService.RefreshBridgeLibrary(fullRefresh: fullRefresh, refreshImages: refreshImages);
             _logger.LogDebug("Scan of all libraries completed");
         }
         catch (Exception ex)

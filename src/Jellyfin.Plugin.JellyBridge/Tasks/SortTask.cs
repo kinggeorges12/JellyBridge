@@ -49,8 +49,8 @@ public class SortTask : IScheduledTask
                 
                 progress.Report(50);
                 
-                // Refresh library metadata to pick up the changes
-                //await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: false);
+                // Don't refresh library - play count changes don't require a refresh, the UI will update when items are viewed
+                await _libraryService.RefreshBridgeLibrary(refreshUserData: false);
                 
                 progress.Report(100);
                 
