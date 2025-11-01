@@ -387,39 +387,39 @@ public class MetadataService
                                 _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (isShowDirectory: {IsShowDirectory})", 
                                     user.Username, itemName, directory, assignedPlayCount, isShowDirectory);
                                 
-                                // // For shows, also set play count to 1 for placeholder episode (S00E00 special) if it exists and has play count 0
-                                // if (isShowDirectory)
-                                // {
-                                //     try
-                                //     {
-                                //         var seriesWrapper = JellyfinSeries.FromItem(item);
-                                //         _logger.LogTrace("Attempting to set placeholder episode play count for series '{SeriesName}' for user {UserName}", 
-                                //             seriesWrapper.Name, user.Username);
+                                // For shows, also mark placeholder episode (S00E00 special) as played if it exists and is not already marked
+                                if (isShowDirectory)
+                                {
+                                    try
+                                    {
+                                        var seriesWrapper = JellyfinSeries.FromItem(item);
+                                        _logger.LogTrace("Attempting to mark placeholder episode as played for series '{SeriesName}' for user {UserName}", 
+                                            seriesWrapper.Name, user.Username);
                                         
-                                //         var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager);
+                                        var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager);
                                         
-                                //         if (result.Success)
-                                //         {
-                                //             _logger.LogTrace("Placeholder episode play count updated for series '{SeriesName}' for user {UserName}: {Message}", 
-                                //                 seriesWrapper.Name, user.Username, result.Message);
-                                //         }
-                                //         else
-                                //         {
-                                //             _logger.LogTrace("Placeholder episode play count not set for series '{SeriesName}' for user {UserName}: {Message}", 
-                                //                 seriesWrapper.Name, user.Username, result.Message);
-                                //         }
-                                //     }
-                                //     catch (ArgumentException ex)
-                                //     {
-                                //         // Item is not a Series - this is expected for some items
-                                //         _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play count update", itemName);
-                                //     }
-                                //     catch (Exception ex)
-                                //     {
-                                //         // Handle other errors
-                                //         _logger.LogTrace(ex, "Could not set placeholder episode play count for user {UserName}, item: {ItemName}", user.Username, itemName);
-                                //     }
-                                // }
+                                        if (result.Success)
+                                        {
+                                            _logger.LogTrace("Placeholder episode marked as played for series '{SeriesName}' for user {UserName}: {Message}", 
+                                                seriesWrapper.Name, user.Username, result.Message);
+                                        }
+                                        else
+                                        {
+                                            _logger.LogTrace("Placeholder episode not marked as played for series '{SeriesName}' for user {UserName}: {Message}", 
+                                                seriesWrapper.Name, user.Username, result.Message);
+                                        }
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        // Item is not a Series - this is expected for some items
+                                        _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play status update", itemName);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        // Handle other errors
+                                        _logger.LogTrace(ex, "Could not mark placeholder episode as played for user {UserName}, item: {ItemName}", user.Username, itemName);
+                                    }
+                                }
                             }
                             else
                             {
