@@ -307,11 +307,12 @@ public class MetadataService
     /// This enables random sorting by play count in Jellyfin.
     /// Uses ReadMetadataInternal to discover movie and show directories.
     /// </summary>
-    /// <returns>A tuple containing a list of successful updates (name, type, playCount) and a list of failed item paths.</returns>
-    public Task<(List<(string name, string type, int playCount)> successes, List<string> failures)> RandomizePlayCountAsync()
+    /// <returns>A tuple containing a list of successful updates (name, type, playCount), a list of failed item paths, and a list of skipped item paths (ignored files).</returns>
+    public async Task<(List<(string name, string type, int playCount)> successes, List<string> failures, List<string> skipped)> RandomizePlayCountAsync()
     {
         var successes = new List<(string name, string type, int playCount)>();
         var failures = new List<string>();
+        var skipped = new List<string>();
         
         try
         {
@@ -324,7 +325,7 @@ public class MetadataService
             if (allDirectories.Count == 0)
             {
                 _logger.LogDebug("No directories found to update");
-                return Task.FromResult((successes, failures));
+                return (successes, failures, skipped);
             }
 
             // Get all users
@@ -332,7 +333,7 @@ public class MetadataService
             if (users.Count == 0)
             {
                 _logger.LogWarning("No users found - cannot update play counts");
-                return Task.FromResult((successes, failures));
+                return (successes, failures, skipped);
             }
 
             // Shuffle directories randomly to get random sort order
@@ -346,8 +347,8 @@ public class MetadataService
                 playCountMap[allDirectories[i]] = 1000 + i;
             }
 
-            // Update play count for each item across all users
-            foreach (var directory in allDirectories)
+            // Update play count for each item across all users - parallelize by item
+            var updateTasks = allDirectories.Select(async directory =>
             {
                 try
                 {
@@ -356,8 +357,7 @@ public class MetadataService
                     if (File.Exists(ignoreFile))
                     {
                         _logger.LogDebug("Item ignored (has .ignore file) for path: {Path}", directory);
-                        failures.Add(directory);
-                        continue;
+                        return (success: ((string name, string type, int playCount)?)null, failure: (string?)null, skipped: directory);
                     }
 
                     // Find item by directory path - handles both movies and shows
@@ -366,16 +366,15 @@ public class MetadataService
                     if (item == null)
                     {
                         _logger.LogDebug("Item not found for path: {Path}", directory);
-                        failures.Add(directory);
-                        continue;
+                        return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
                     }
 
                     var assignedPlayCount = playCountMap[directory];
                     string itemName = item.Name;
                     string itemType = item.GetType().Name;
 
-                    // Update play count for each user
-                    foreach (var user in users)
+                    // Update play count for each user - parallelize user updates for this item
+                    var userUpdateTasks = users.Select(user => Task.Run(() =>
                     {
                         try
                         {
@@ -389,18 +388,49 @@ public class MetadataService
                                 _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
                             }
                         }
+                        catch (OperationCanceledException)
+                        {
+                            _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, directory);
+                        }
                         catch (Exception ex)
                         {
                             _logger.LogWarning(ex, "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
                         }
-                    }
+                    }));
 
-                    successes.Add((itemName, itemType, assignedPlayCount));
+                    // Wait for all user updates for this item to complete
+                    await Task.WhenAll(userUpdateTasks);
+
+                    return (success: ((string name, string type, int playCount)?)(itemName, itemType, assignedPlayCount), failure: (string?)null, skipped: (string?)null);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogWarning("Operation canceled while processing directory: {Directory}", directory);
+                    return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to update play count for directory: {Directory}", directory);
-                    failures.Add(directory);
+                    return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
+                }
+            });
+
+            // Wait for all item updates to complete and collect results
+            var results = await Task.WhenAll(updateTasks);
+            
+            foreach (var (success, failure, skippedItem) in results)
+            {
+                if (success.HasValue)
+                {
+                    successes.Add((success.Value.name, success.Value.type, success.Value.playCount));
+                }
+                else if (failure != null)
+                {
+                    failures.Add(failure);
+                }
+                else if (skippedItem != null)
+                {
+                    skipped.Add(skippedItem);
                 }
             }
         }
@@ -409,7 +439,7 @@ public class MetadataService
             _logger.LogError(ex, "Error updating play counts");
         }
         
-        return Task.FromResult((successes, failures));
+        return (successes, failures, skipped);
     }
 
     #endregion

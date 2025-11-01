@@ -190,7 +190,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // - the randomize sort task when RandomizeDiscoverSortOrder/RandomizeSortIntervalHours changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
-                        var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeRandomizeSort");
+                        var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSort");
 
                         // Update scheduled sync task triggers only if IsEnabled or SyncInterval changed
                         if (scheduledChanged &&
@@ -220,7 +220,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                         // Update randomize sort task triggers only if RandomizeDiscoverSortOrder or RandomizeSortIntervalHours changed
                         var randomizeSortChanged = oldRandomizeSort != newRandomizeSort || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
-                        if (randomizeSortChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.RandomizeSortTask randomizeSortTask)
+                        if (randomizeSortChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.SortTask randomizeSortTask)
                         {
                             _logger.LogDebug("Reloading randomize sort task triggers due to config change. Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldRandomizeSort, oldRandomizeSortInterval, newRandomizeSort, newRandomizeSortInterval);
                             
@@ -508,13 +508,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     // Randomize play counts for all users to enable random sorting
-                    var (successes, failures) = await _metadataService.RandomizePlayCountAsync();
+                    var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
 
-                    _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures", successes.Count, failures.Count);
+                    _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
 
                     // Build detailed message
                     var detailsBuilder = new System.Text.StringBuilder();
                     detailsBuilder.AppendLine($"Items randomized: {successes.Count}");
+                    
+                    if (skipped.Count > 0)
+                    {
+                        detailsBuilder.AppendLine($"Items skipped (ignored): {skipped.Count}");
+                    }
                     
                     // Sort successes by playCount (ascending - lowest play count first, which will appear first in sort order)
                     var sortedSuccesses = successes.OrderBy(s => s.playCount).Take(10).ToList();

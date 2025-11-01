@@ -53,7 +53,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddTransient<PlaceholderVideoGenerator>();
             
             // Register scheduled tasks
-            serviceCollection.AddSingleton<Tasks.RandomizeSortTask>();
+            serviceCollection.AddSingleton<Tasks.SortTask>();
             
             // Register the route controller
             serviceCollection.AddScoped<Controllers.RouteController>();

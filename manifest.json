@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "600703943D3365A9F059E2843DE57C40",
+        "dependencies": [],
+        "version": "1.3.14.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.14.11.zip",
+        "timestamp": "2025-11-01T17:14:40.031Z",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.3.14 - Renamed RandomizeSortTask to SortTask and restored parallel processing: Renamed RandomizeSortTask class and file to SortTask for clearer naming, updating task key from JellyBridgeRandomizeSort to JellyBridgeSort. Restored parallel processing in RandomizePlayCountAsync using Task.WhenAll for both item and user updates to improve performance. Added skipped items list to separate ignored files (.ignore) from actual failures in return values. Enhanced error handling with OperationCanceledException catching during parallel operations. Updated RouteController and SortTask to handle the new skipped items list in results."
+      },
+      {
+        "checksum": "40F5B3604976AD274CDDFFC2D688C9AD",
+        "dependencies": [],
+        "version": "1.3.14.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.14.10.zip",
+        "timestamp": "2025-11-01T17:14:40.031Z",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.3.14 - Renamed RandomizeSortTask to SortTask and restored parallel processing: Renamed RandomizeSortTask class and file to SortTask for clearer naming, updating task key from JellyBridgeRandomizeSort to JellyBridgeSort. Restored parallel processing in RandomizePlayCountAsync using Task.WhenAll for both item and user updates to improve performance. Added skipped items list to separate ignored files (.ignore) from actual failures in return values. Enhanced error handling with OperationCanceledException catching during parallel operations. Updated RouteController and SortTask to handle the new skipped items list in results."
+      },
+      {
         "version": "1.3.13.11",
         "checksum": "61CC1C506A7E30EFB094499EF1F0A184",
         "dependencies": [],

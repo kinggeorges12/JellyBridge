@@ -10,25 +10,25 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 /// <summary>
 /// Scheduled task for randomizing discover library sort order by updating play counts for all users.
 /// </summary>
-public class RandomizeSortTask : IScheduledTask
+public class SortTask : IScheduledTask
 {
-    private readonly DebugLogger<RandomizeSortTask> _logger;
+    private readonly DebugLogger<SortTask> _logger;
     private readonly MetadataService _metadataService;
     private readonly LibraryService _libraryService;
 
-    public RandomizeSortTask(
-        ILogger<RandomizeSortTask> logger,
+    public SortTask(
+        ILogger<SortTask> logger,
         MetadataService metadataService,
         LibraryService libraryService)
     {
-        _logger = new DebugLogger<RandomizeSortTask>(logger);
+        _logger = new DebugLogger<SortTask>(logger);
         _metadataService = metadataService;
         _libraryService = libraryService;
-        _logger.LogInformation("RandomizeSortTask constructor called - task initialized");
+        _logger.LogInformation("SortTask constructor called - task initialized");
     }
 
-    public string Name => "JellyBridge Randomize Sort";
-    public string Key => "JellyBridgeRandomizeSort";
+    public string Name => "JellyBridge Sort";
+    public string Key => "JellyBridgeSort";
     public string Description => "Randomizes discover library sort order by updating play counts for all users";
     public string Category => "JellyBridge";
 
@@ -41,7 +41,7 @@ public class RandomizeSortTask : IScheduledTask
             progress.Report(10);
             
             // Randomize play counts for all users to enable random sorting
-            var (successes, failures) = await _metadataService.RandomizePlayCountAsync();
+            var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
             
             progress.Report(50);
             
@@ -50,7 +50,7 @@ public class RandomizeSortTask : IScheduledTask
             
             progress.Report(100);
             
-            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} items randomized, {FailureCount} failures", successes.Count, failures.Count);
+            _logger.LogInformation("Randomize sort task completed successfully - {SuccessCount} items randomized, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
         }
         catch (Exception ex)
         {
