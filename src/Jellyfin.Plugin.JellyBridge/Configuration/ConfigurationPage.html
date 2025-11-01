@@ -383,6 +383,9 @@
                     <details id="syncSettings">
                         <summary>Import Discover Content</summary>
                         <br>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and streaming networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
+                        </div>
 
                         <div class="inputContainer" id="regionContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -467,6 +470,9 @@
                     <details id="sortContentSettings">
                         <summary>Sort Discover Content</summary>
                         <br>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Control the sort order of items in the discover library by randomizing play counts for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner. ⚠️ Warning: this may interfere with other plugins or features in Jellyfin that use play count.
+                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -477,12 +483,12 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Allows users to get random sorting in the discover library by randomizing play counts for all users. ⚠️ Warning: this may interfere with other plugins or features in Jellyfin that use play count.</div>
+                            <div class="fieldDescription">Allows users to get random sorting in the discover library by randomizing play counts of movies and shows for all users.</div>
                         </div>
 
                         <div class="inputContainer">
-                            <input is="emby-input" type="number" id="RandomizeSortIntervalHours" label="Sort Randomization Interval (Hours)" min="0" max="168" step="0.1"/>
-                            <div class="fieldDescription">Defines how often to run the sort randomization task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                            <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
+                            <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
                         </div>
 
                         <div>
@@ -499,6 +505,9 @@
                     <details id="manageLibrarySettings">
                         <summary>Manage Discover Library</summary>
                         <br>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, prevent duplicate content from appearing in multiple libraries, handle favorite removal for requested items, and optionally create separate libraries for each streaming service.
+                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -574,6 +583,9 @@
                     <details id="advancedSettings">
                         <summary>Advanced</summary>
                         <br>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Configure advanced options including startup behavior, timeout settings, placeholder video configuration, and logging levels. Use these settings to fine-tune plugin behavior and troubleshoot issues.
+                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">

@@ -853,7 +853,7 @@ function initializeSortContent(page) {
     
     // Set sort content form values with null handling
     setInputField(page, 'RandomizeDiscoverSortOrder', true);
-    setInputField(page, 'RandomizeSortIntervalHours');
+    setInputField(page, 'SortTaskIntervalHours');
 
     // Add sort content button functionality
     const sortButton = page.querySelector('#sortContent');
@@ -1200,7 +1200,7 @@ function performPluginReset(page) {
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
                 RandomizeDiscoverSortOrder: null,
-                RandomizeSortIntervalHours: null,
+                SortTaskIntervalHours: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
                 ExcludeFromMainLibraries: null,
@@ -1320,7 +1320,7 @@ function savePluginConfiguration(page) {
     
     // Validate number fields with appropriate types
     if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
-    if (!validateField(page, 'RandomizeSortIntervalHours', validators.double, 'Sort Randomization Interval must be a positive decimal number').isValid) return;
+    if (!validateField(page, 'SortTaskIntervalHours', validators.double, 'Sort Task Interval must be a positive decimal number').isValid) return;
     if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
     if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
     if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
@@ -1353,7 +1353,7 @@ function savePluginConfiguration(page) {
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
     form.RandomizeDiscoverSortOrder = nullIfDefault(page.querySelector('#RandomizeDiscoverSortOrder').checked, config.DefaultValues.RandomizeDiscoverSortOrder);
-    form.RandomizeSortIntervalHours = safeParseDouble(page.querySelector('#RandomizeSortIntervalHours'));
+    form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.DefaultValues.EnableTraceLogging);

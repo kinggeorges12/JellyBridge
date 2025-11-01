@@ -113,6 +113,30 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     }
 
     /// <summary>
+    /// Gets user data for a user and item. Returns null if no user data exists.
+    /// </summary>
+    public UserItemData? GetUserData(JellyfinUser user, BaseItem item)
+    {
+        var userEntity = user.Inner;
+        
+#if JELLYFIN_10_11
+        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable)
+        return Inner.GetUserData(userEntity, item);
+#else
+        // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) but might return new instance
+        var data = Inner.GetUserData(userEntity, item);
+        // Check if it's actually new/empty by checking if it has been saved (has a Key)
+        // If Key is empty or null, this is likely a new instance that was just created
+        if (data != null && string.IsNullOrEmpty(data.Key))
+        {
+            // This is a new instance, return null to indicate no existing data
+            return null;
+        }
+        return data;
+#endif
+    }
+
+    /// <summary>
     /// Updates play count for a user and item. GetUserData automatically creates user data if it doesn't exist.
     /// </summary>
     public bool TryUpdatePlayCount(JellyfinUser user, BaseItem item, int playCount)

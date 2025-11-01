@@ -63,7 +63,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
         // Sort Discover Content
         { nameof(RandomizeDiscoverSortOrder), false },
-        { nameof(RandomizeSortIntervalHours), 8.0 },
+        { nameof(SortTaskIntervalHours), 8.0 },
 
         // Advanced Settings
         { nameof(TaskTimeoutMinutes), 10 },
@@ -173,9 +173,9 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? RandomizeDiscoverSortOrder { get; set; }
 
     /// <summary>
-    /// Gets or sets the interval in hours for the randomize sort order task.
+    /// Gets or sets the interval in hours for the sort task.
     /// </summary>
-    public double? RandomizeSortIntervalHours { get; set; }
+    public double? SortTaskIntervalHours { get; set; }
 
     // ===== Advanced Settings =====
     /// <summary>

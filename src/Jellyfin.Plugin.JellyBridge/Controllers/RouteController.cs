@@ -67,6 +67,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     MaxRetentionDays = config.MaxRetentionDays,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
+                    RandomizeDiscoverSortOrder = config.RandomizeDiscoverSortOrder,
+                    SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
                     DefaultValues = PluginConfiguration.DefaultValues
@@ -104,7 +106,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
                     var oldRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
-                    var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.RandomizeSortIntervalHours), config);
+                    var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Update configuration properties using simplified helper
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
@@ -126,7 +128,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.RandomizeDiscoverSortOrder), config);
-                    SetJsonValue<double?>(configData, nameof(config.RandomizeSortIntervalHours), config);
+                    SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
 					// Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
 					if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
@@ -165,7 +167,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var newStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
                     var newRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
-                    var newRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.RandomizeSortIntervalHours), config);
+                    var newRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Debug snapshot of old vs new
                     _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldStartupSync}", oldEnabled, oldInterval, oldStartupSync);
@@ -187,7 +189,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // To prevent unnecessary deferrals, we only touch:
                         // - the scheduled sync task when Enabled/Interval changes
                         // - the startup task when EnableStartupSync changes
-                        // - the randomize sort task when RandomizeDiscoverSortOrder/RandomizeSortIntervalHours changes
+                        // - the sort task when RandomizeDiscoverSortOrder/SortTaskIntervalHours changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
                         var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSort");
@@ -218,7 +220,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             }
                         }
 
-                        // Update randomize sort task triggers only if RandomizeDiscoverSortOrder or RandomizeSortIntervalHours changed
+                        // Update sort task triggers only if RandomizeDiscoverSortOrder or SortTaskIntervalHours changed
                         var randomizeSortChanged = oldRandomizeSort != newRandomizeSort || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
                         if (randomizeSortChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.SortTask randomizeSortTask)
                         {

@@ -318,11 +318,9 @@ public class MetadataService
         {
             // Get categorized directories
             var (movieDirectories, showDirectories) = ReadMetadataInternal();
-            var allDirectories = new List<string>();
-            allDirectories.AddRange(movieDirectories);
-            allDirectories.AddRange(showDirectories);
+            var totalCount = movieDirectories.Count + showDirectories.Count;
 
-            if (allDirectories.Count == 0)
+            if (totalCount == 0)
             {
                 _logger.LogDebug("No directories found to update");
                 return (successes, failures, skipped);
@@ -336,20 +334,23 @@ public class MetadataService
                 return (successes, failures, skipped);
             }
 
-            // Shuffle directories randomly to get random sort order
+            // Create a list of play count values (1000 to 1000+count-1) and shuffle them
             var random = System.Random.Shared;
-            allDirectories = allDirectories.OrderBy(_ => random.Next()).ToList();
+            var playCounts = Enumerable.Range(1000, totalCount).OrderBy(_ => random.Next()).ToList();
 
-            // Assign unique play counts (1000 to 1000+itemCount-1) to ensure unique sort order
-            var playCountMap = new Dictionary<string, int>();
-            for (int i = 0; i < allDirectories.Count; i++)
-            {
-                playCountMap[allDirectories[i]] = 1000 + i;
-            }
+            // Create directory info map with play count and isShow flag (for efficient lookup)
+            // Combine movies and shows, then map each to (playCount, isShow) tuple
+            var directoryInfoMap = movieDirectories.Select(dir => (dir, isShow: false))
+                .Concat(showDirectories.Select(dir => (dir, isShow: true)))
+                .Select((item, index) => (item.dir, playCount: playCounts[index], item.isShow))
+                .ToDictionary(x => x.dir, x => (x.playCount, x.isShow));
 
             // Update play count for each item across all users - parallelize by item
-            var updateTasks = allDirectories.Select(async directory =>
+            var updateTasks = directoryInfoMap.Select(async kvp =>
             {
+                var directory = kvp.Key;
+                var (assignedPlayCount, isShowDirectory) = kvp.Value;
+                
                 try
                 {
                     // Check if directory is ignored (has .ignore file)
@@ -368,11 +369,9 @@ public class MetadataService
                         _logger.LogDebug("Item not found for path: {Path}", directory);
                         return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
                     }
-
-                    var assignedPlayCount = playCountMap[directory];
                     string itemName = item.Name;
                     string itemType = item.GetType().Name;
-
+                    
                     // Update play count for each user - parallelize user updates for this item
                     var userUpdateTasks = users.Select(user => Task.Run(() =>
                     {
@@ -382,6 +381,35 @@ public class MetadataService
                             {
                                 _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}", 
                                     user.Username, itemName, directory, assignedPlayCount);
+                                
+                                // For shows, also set play count to 1 for placeholder episode if it exists and has play count 0
+                                if (isShowDirectory)
+                                {
+                                    try
+                                    {
+                                        var placeholderPath = PlaceholderVideoGenerator.GetSeasonPlaceholderPath(directory);
+                                        if (File.Exists(placeholderPath))
+                                        {
+                                            var episode = _libraryManager.Inner.FindByPath(placeholderPath, isFolder: false);
+                                            if (episode != null)
+                                            {
+                                                var userData = _userDataManager.GetUserData(user, episode);
+                                                if (userData != null && userData.PlayCount == 0)
+                                                {
+                                                    if (_userDataManager.TryUpdatePlayCount(user, episode, 1))
+                                                    {
+                                                        _logger.LogTrace("Set play count to 1 for placeholder episode '{EpisodeName}' for user {UserName}", 
+                                                            episode.Name, user.Username);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "Failed to set placeholder episode play count for user {UserName}, show: {Directory}", user.Username, directory);
+                                    }
+                                }
                             }
                             else
                             {

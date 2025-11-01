@@ -19,9 +19,15 @@ public class PlaceholderVideoGenerator
     private readonly string _assetsPath;
     
     // Asset file names for different media types
-    private const string MovieAsset = "movie.png";
-    private const string ShowAsset = "S00E00.png";
-    private const string SeasonAsset = "S00E00.png";
+    private static readonly string MovieAsset = "movie.png";
+    private static readonly string ShowAsset = "show.png";
+    private static readonly string SeasonAsset = "S00E00.png";
+    
+    // Season folder name
+    private static readonly string SeasonFolderName = "Season 00";
+    
+    // Asset file extension
+    private static readonly string AssetExtension = ".mp4";
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
     {
@@ -47,17 +53,53 @@ public class PlaceholderVideoGenerator
     /// <summary>
     /// Generate a placeholder video for a TV show (asset: show.png).
     /// </summary>
-    public async Task<bool> GeneratePlaceholderShowAsync(string targetDirectory)
+    public Task<bool> GeneratePlaceholderShowAsync(string targetDirectory)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, ShowAsset);
+        throw new NotSupportedException("GeneratePlaceholderShowAsync is obsolete and no longer supported. Use GeneratePlaceholderSeasonAsync instead.");
+    }
+
+    /// <summary>
+    /// Get the season placeholder path for a show.
+    /// </summary>
+    /// <param name="showFolderPath">The path to the show folder.</param>
+    /// <returns>The path to the season placeholder video (in the season folder).</returns>
+    public static string GetSeasonPlaceholderPath(string showFolderPath)
+    {
+        var seasonFolderPath = GetSeasonFolder(showFolderPath);
+        var assetStem = Path.GetFileNameWithoutExtension(SeasonAsset);
+        var targetFile = assetStem + AssetExtension;
+        return Path.Combine(seasonFolderPath, targetFile);
+    }
+
+    /// <summary>
+    /// Get the season folder path for a show, creating it if it doesn't exist.
+    /// </summary>
+    /// <param name="showFolderPath">The path to the show folder.</param>
+    /// <param name="logger">Optional logger instance for logging folder creation.</param>
+    /// <returns>The path to the season folder.</returns>
+    public static string GetSeasonFolder(string showFolderPath, ILogger<PlaceholderVideoGenerator>? logger = null)
+    {
+        var seasonFolderPath = Path.Combine(showFolderPath, SeasonFolderName);
+        
+        // Create season folder if it doesn't exist
+        if (!Directory.Exists(seasonFolderPath))
+        {
+            Directory.CreateDirectory(seasonFolderPath);
+            logger?.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+        }
+        
+        return seasonFolderPath;
     }
 
     /// <summary>
     /// Generate a placeholder video for a season (asset: season.png).
+    /// Takes the show folder path and calculates the season folder internally.
     /// </summary>
-    public async Task<bool> GeneratePlaceholderSeasonAsync(string targetDirectory)
+    /// <param name="showFolderPath">The path to the show folder.</param>
+    public async Task<bool> GeneratePlaceholderSeasonAsync(string showFolderPath)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, SeasonAsset);
+        var seasonFolderPath = GetSeasonFolder(showFolderPath);
+        return await GeneratePlaceholderAsync(seasonFolderPath, SeasonAsset);
     }
 
     /// <summary>
@@ -75,7 +117,7 @@ public class PlaceholderVideoGenerator
             Directory.CreateDirectory(cacheDir);
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}.mp4");
+            var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}{AssetExtension}");
 
             if (!File.Exists(cachePath))
             {
@@ -133,7 +175,7 @@ public class PlaceholderVideoGenerator
 
             // Determine target file name based on asset
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var targetFile = assetStem + ".mp4";
+            var targetFile = assetStem + AssetExtension;
             var targetPath = Path.Combine(targetDirectory, targetFile);
 
             // Copy cached file to target directory
@@ -337,9 +379,9 @@ public class PlaceholderVideoGenerator
     {
         var deletedCount = 0;
         var placeholderFiles = new[] { 
-            Path.GetFileNameWithoutExtension(MovieAsset) + ".mp4",
-            Path.GetFileNameWithoutExtension(ShowAsset) + ".mp4", 
-            Path.GetFileNameWithoutExtension(SeasonAsset) + ".mp4"
+            Path.GetFileNameWithoutExtension(MovieAsset) + AssetExtension,
+            Path.GetFileNameWithoutExtension(ShowAsset) + AssetExtension, 
+            Path.GetFileNameWithoutExtension(SeasonAsset) + AssetExtension
         };
 
         try

@@ -177,26 +177,18 @@ public class DiscoverService
                 _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
                     show.MediaName, showFolderPath);
                 
-                var seasonFolderName = "Season 00";
-                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
-                
                 try
                 {
-                    // Create season folder if it doesn't exist
-                    if (!Directory.Exists(seasonFolderPath))
-                    {
-                        Directory.CreateDirectory(seasonFolderPath);
-                        _logger.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    // Generate season placeholder video
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    // Generate season placeholder video (calculates season folder path internally)
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(showFolderPath);
                     if (placeholderSuccess)
                     {
+                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
                         _logger.LogDebug("Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     else
                     {
+                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
                         _logger.LogWarning("Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     
