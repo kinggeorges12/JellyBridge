@@ -383,8 +383,8 @@ public class MetadataService
                         {
                             if (_userDataManager.TryUpdatePlayCount(user, item, assignedPlayCount))
                             {
-                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}", 
-                                    user.Username, itemName, directory, assignedPlayCount);
+                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (isShowDirectory: {IsShowDirectory})", 
+                                    user.Username, itemName, directory, assignedPlayCount, isShowDirectory);
                                 
                                 // For shows, also set play count to 1 for placeholder episode (S00E00 special) if it exists and has play count 0
                                 if (isShowDirectory)
