@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "846B490ED235ECEFB9A3663368F288F2",
+        "changelog": "Jellyfin 10.11.0: v1.3.20 - Enhanced placeholder episode play count logic to return detailed result objects with success status and descriptive messages instead of nullable bool. Added comprehensive logging to identify why placeholder episode play counts fail (episode not found, userData null, play count already > 0, or update failure). Sorted directories by play count before processing to ensure lower play counts are handled first.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.20.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "timestamp": "2025-11-01T21:09:47.013Z",
+        "version": "1.3.20.11"
+      },
+      {
+        "checksum": "4D67D881612569D62B623CD46BAC8878",
+        "changelog": "Jellyfin 10.10.7: v1.3.20 - Enhanced placeholder episode play count logic to return detailed result objects with success status and descriptive messages instead of nullable bool. Added comprehensive logging to identify why placeholder episode play counts fail (episode not found, userData null, play count already > 0, or update failure). Sorted directories by play count before processing to ensure lower play counts are handled first.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.20.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "timestamp": "2025-11-01T21:09:47.013Z",
+        "version": "1.3.20.10"
+      },
+      {
         "timestamp": "2025-11-01T21:03:19.922Z",
         "changelog": "Jellyfin 10.11.0: v1.3.19 - Enhanced placeholder episode play count logic with better error handling and logging. Changed TrySetEpisodePlayCount to return nullable bool (null when userData is null, false when episode not found or play count > 0, true when set). Removed exception catching to let errors cascade for better debugging and added detailed trace logging to identify why placeholder episode play counts aren't being set.",
         "targetAbi": "10.11.0.0",

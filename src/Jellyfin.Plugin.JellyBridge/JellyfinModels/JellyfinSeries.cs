@@ -4,6 +4,15 @@ using MediaBrowser.Controller.Entities;
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
+/// Result of attempting to set placeholder episode play count.
+/// </summary>
+public class PlaceholderEpisodePlayCountResult
+{
+    public bool Success { get; init; }
+    public string Message { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// Wrapper around Jellyfin's Series class.
 /// Provides additional functionality for Jellyseerr bridge operations.
 /// </summary>
@@ -186,31 +195,59 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     /// </summary>
     /// <param name="user">The user to set the play count for</param>
     /// <param name="userDataManager">The user data manager to update play counts</param>
-    /// <returns>True if the play count was set, false if play count was already > 0 or episode doesn't exist, null if userData is null</returns>
-    public bool? TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
+    /// <returns>Result object containing success status and detailed information about the operation</returns>
+    public PlaceholderEpisodePlayCountResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
     {
         // Get the placeholder episode (S00E00)
         var placeholderEpisode = GetPlaceholderEpisode();
         
         if (placeholderEpisode == null)
         {
-            return false;
+            return new PlaceholderEpisodePlayCountResult
+            {
+                Success = false,
+                Message = "Placeholder episode (S00E00) not found"
+            };
         }
         
         // Check current play count
         var userData = userDataManager.GetUserData(user, placeholderEpisode);
         if (userData == null)
         {
-            return null;
+            return new PlaceholderEpisodePlayCountResult
+            {
+                Success = false,
+                Message = $"UserData is null for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
+            };
         }
         
         if (userData.PlayCount == 0)
         {
             // Set play count to 1
-            return userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
+            var updateResult = userDataManager.TryUpdatePlayCount(user, placeholderEpisode, 1);
+            if (updateResult)
+            {
+                return new PlaceholderEpisodePlayCountResult
+                {
+                    Success = true,
+                    Message = $"Play count set to 1 for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
+                };
+            }
+            else
+            {
+                return new PlaceholderEpisodePlayCountResult
+                {
+                    Success = false,
+                    Message = $"TryUpdatePlayCount returned false for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
+                };
+            }
         }
         
         // Play count is already > 0, no need to update
-        return false;
+        return new PlaceholderEpisodePlayCountResult
+        {
+            Success = false,
+            Message = $"Play count is already {userData.PlayCount} (not 0) for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
+        };
     }
 }
