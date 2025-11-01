@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.3.11",
+        "timestamp": "2025-11-01T19:16:31.133Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.3/JellyBridge-1.3.3.11.zip",
+        "checksum": "A06D0D63EA5F28589920AE8867C81FAA",
+        "changelog": "Jellyfin 10.11.0: v1.3.3 - Fixed ArgumentException when duplicate JellyfinUserGuid values exist in Jellyseerr users: Added duplicate filtering logic to GetJellyseerrUsersAsync method to filter out duplicate JellyfinUserGuid values, keeping only the first occurrence and logging warnings when duplicates are found. This prevents errors when creating the user lookup dictionary in EnsureJellyseerrUser.",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "version": "1.3.3.10",
+        "timestamp": "2025-11-01T19:16:31.133Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.3/JellyBridge-1.3.3.10.zip",
+        "checksum": "80154562D7807F35F03367460707FDCC",
+        "changelog": "Jellyfin 10.10.7: v1.3.3 - Fixed ArgumentException when duplicate JellyfinUserGuid values exist in Jellyseerr users: Added duplicate filtering logic to GetJellyseerrUsersAsync method to filter out duplicate JellyfinUserGuid values, keeping only the first occurrence and logging warnings when duplicates are found. This prevents errors when creating the user lookup dictionary in EnsureJellyseerrUser.",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "checksum": "4C3DC0C00C8A8822494580BCCCB5082B",
         "version": "1.3.2.11",
         "targetAbi": "10.11.0.0",
