@@ -202,6 +202,15 @@
                 /* Disabled state for Library Prefix */
                 .disabled {
                     opacity: 0.6;
+                    cursor: not-allowed;
+                    /* Allow pointer events on container so scroll handlers work */
+                }
+                
+                /* Block pointer events only on form elements, not the container */
+                .disabled input,
+                .disabled select,
+                .disabled textarea,
+                .disabled button {
                     pointer-events: none;
                     cursor: not-allowed;
                 }
@@ -210,12 +219,6 @@
                 .disabled label,
                 .disabled .emby-input-label {
                     color: #999 !important;
-                    cursor: not-allowed;
-                }
-                
-                .disabled input,
-                .disabled select,
-                .disabled textarea {
                     cursor: not-allowed;
                 }
                 
@@ -348,15 +351,17 @@
                 /* Disabled state for details elements */
                 details.troubleshootingDetails.disabled {
                     opacity: 0.6;
+                    /* Allow pointer events so click handlers work */
                 }
                 
                 details.troubleshootingDetails.disabled summary {
-                    cursor: not-allowed;
+                    cursor: pointer; /* Keep pointer cursor to indicate it's clickable */
                     background-color: rgba(0, 0, 0, 0.02);
+                    pointer-events: auto; /* Ensure summary remains clickable */
                 }
                 
                 details.troubleshootingDetails.disabled summary:hover {
-                    background-color: rgba(0, 0, 0, 0.02);
+                    background-color: rgba(0, 0, 0, 0.05); /* Slightly darker on hover to show it's interactive */
                 }
             </style>
             <form id="jellyBridgeConfigurationForm">

@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "checksum": "5DE47CB6C248A157A09D912FBDC7B314",
+        "version": "1.3.34.11",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.34 - Fixed scroll-to-checkbox functionality for disabled fields by allowing pointer events on containers while blocking them only on form elements. Made Network Folder Options details appear disabled but remain clickable with proper cursor and hover feedback. Updated disabled state styling to ensure click handlers work correctly while maintaining visual disabled appearance.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.34.11.zip",
+        "timestamp": "2025-11-02T20:45:12.929Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "65D48619C49A4CE9CE0A28DE6FE2B494",
+        "version": "1.3.34.10",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.34 - Fixed scroll-to-checkbox functionality for disabled fields by allowing pointer events on containers while blocking them only on form elements. Made Network Folder Options details appear disabled but remain clickable with proper cursor and hover feedback. Updated disabled state styling to ensure click handlers work correctly while maintaining visual disabled appearance.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.34.10.zip",
+        "timestamp": "2025-11-02T20:45:12.929Z"
+      },
+      {
         "checksum": "F520E520C8E9D9D60F27F56AEEE9DFCC",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.33.11.zip",
