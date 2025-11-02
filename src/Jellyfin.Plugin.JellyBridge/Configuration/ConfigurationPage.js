@@ -1005,21 +1005,6 @@ function initializeManageLibrary(page) {
         });
     }
     
-    // Prevent details from opening when disabled
-    const networkFolderOptionsDetails = page.querySelector('#networkFolderOptionsDetails');
-    if (networkFolderOptionsDetails) {
-        const summary = networkFolderOptionsDetails.querySelector('summary');
-        if (summary) {
-            summary.addEventListener('click', function(e) {
-                const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
-                if (!useNetworkFoldersCheckbox || !useNetworkFoldersCheckbox.checked) {
-                    e.preventDefault();
-                    scrollToCheckboxAndHighlight('#UseNetworkFolders');
-                }
-            });
-        }
-    }
-    
     // Add event listener for AddDuplicateContent checkbox
     const addDuplicateContentCheckbox = page.querySelector('#AddDuplicateContent');
     if (addDuplicateContentCheckbox) {
@@ -1067,11 +1052,6 @@ function updateNetworkFolderOptionsState() {
         } else {
             networkFolderOptionsDetails.classList.add('disabled');
         }
-    }
-    
-    // Show/hide generate network folders container
-    if (generateNetworkFoldersContainer) {
-        generateNetworkFoldersContainer.style.display = isEnabled ? 'block' : 'none';
     }
     
     // Apply disabled state styling (this will handle the disabled property and styling)
@@ -1741,21 +1721,39 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
 function scrollToElement(elementId, offset = 20) {
     const element = document.getElementById(elementId);
     if (element) {
-        const elementPosition = element.getBoundingClientRect().top;
-        const pluginContainerHeight = 48; // Plugin container bar height
-        const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
+        // Find and open all parent details elements without triggering onclick events
+        let parent = element.parentElement;
+        const detailsToOpen = [];
+        while (parent) {
+            if (parent.tagName === 'DETAILS' && !parent.hasAttribute('open')) {
+                detailsToOpen.push(parent);
+            }
+            parent = parent.parentElement;
+        }
         
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
+        // Open all parent details elements (in reverse order to open outer ones first)
+        detailsToOpen.reverse().forEach(details => {
+            details.setAttribute('open', '');
         });
         
-        // Add a temporary highlight effect
-        element.style.transition = 'box-shadow 0.3s ease';
-        element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
+        // Wait a brief moment for details to open before scrolling
         setTimeout(() => {
-            element.style.boxShadow = '';
-    }, 2000);
+            const elementPosition = element.getBoundingClientRect().top;
+            const pluginContainerHeight = 48; // Plugin container bar height
+            const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+            
+            // Add a temporary highlight effect
+            element.style.transition = 'box-shadow 0.3s ease';
+            element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
+            setTimeout(() => {
+                element.style.boxShadow = '';
+            }, 2000);
+        }, detailsToOpen.length > 0 ? 100 : 0); // Small delay only if we opened details
     }
 }
 
