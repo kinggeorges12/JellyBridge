@@ -128,8 +128,9 @@ public class SortService
                     break;
                 
                 case SortOrderOptions.Smart:
-                    throw new NotImplementedException("Smart sort order is not yet implemented");
-                
+                    //throw new NotImplementedException("Smart sort order is not yet implemented");
+                    goto default; // Fall through to default case
+                    
                 default:
                     _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None", sortOrder);
                     directoryInfoMap = playCountZero();

@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.29.11.zip",
+        "checksum": "EFA237AAE5542B2643A9E9C58E1EFD76",
+        "timestamp": "2025-11-02T04:26:40.593Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.29 - Added AddDuplicateContent configuration option to allow duplicate media in network folders when separate libraries are enabled, with UI warning about proper usage. Updated FilterDuplicateMedia to use GetConfigOrDefault and skip filtering when both CreateSeparateLibraries and AddDuplicateContent are enabled. Added AddDuplicateContent to configuration endpoints and fixed Smart sort order case to explicitly fall through to default behavior.",
+        "version": "1.3.29.11",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.29.10.zip",
+        "checksum": "DCF7D8DCAA1BF2A21DFE4C5D0F3104CC",
+        "timestamp": "2025-11-02T04:26:40.593Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.29 - Added AddDuplicateContent configuration option to allow duplicate media in network folders when separate libraries are enabled, with UI warning about proper usage. Updated FilterDuplicateMedia to use GetConfigOrDefault and skip filtering when both CreateSeparateLibraries and AddDuplicateContent are enabled. Added AddDuplicateContent to configuration endpoints and fixed Smart sort order case to explicitly fall through to default behavior.",
+        "version": "1.3.29.10",
+        "dependencies": []
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.28.11.zip",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.28 - Added scroll-to-checkbox functionality when clicking disabled fields. Centralized disabled state styling and scroll handler logic into reusable utility functions. Removed beta tag and note from Create separate libraries option.",

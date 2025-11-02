@@ -39,7 +39,7 @@ public class DiscoverService
     {
         var config = Plugin.GetConfiguration();
         var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
-        var allItems = new HashSet<T>();
+        var allItems = new List<T>();
         
         foreach (var network in networkMap)
         {
@@ -84,7 +84,7 @@ public class DiscoverService
                 _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
             }
             
-            // Add items to HashSet (automatically handles duplicates)
+            // Add items to list (deduplication handled later by FilterDuplicateMedia)
             foreach (var item in items)
             {
                 // Set the network tag for this item
@@ -96,21 +96,30 @@ public class DiscoverService
             _logger.LogTrace("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
         }
         
-        // Convert HashSet to List for return
-        var result = allItems.ToList();
-        _logger.LogDebug("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
+        _logger.LogDebug("Total {MediaType} collected: {TotalCount}", T.LibraryType, allItems.Count);
         
-        return result;
+        return allItems;
     }
     
     /// <summary>
     /// Filters duplicate media items from a list using the GetItemHashCode method.
     /// Returns a list containing only unique items based on their hash code.
+    /// If CreateSeparateLibraries and AddDuplicateContent are both enabled, returns the original list without filtering.
     /// </summary>
     /// <param name="items">List of media items to filter</param>
-    /// <returns>List of unique media items</returns>
+    /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
     public List<IJellyseerrItem> FilterDuplicateMedia(List<IJellyseerrItem> items)
     {
+        // If both CreateSeparateLibraries and AddDuplicateContent are enabled, skip filtering
+        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        
+        if (createSeparateLibraries && addDuplicateContent)
+        {
+            _logger.LogDebug("Skipping duplicate filtering: CreateSeparateLibraries and AddDuplicateContent are both enabled");
+            return items;
+        }
+        
         var seenHashes = new HashSet<int>();
         var uniqueItems = new List<IJellyseerrItem>();
         

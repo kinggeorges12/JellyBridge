@@ -56,6 +56,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     IsEnabled = config.IsEnabled,
                     SyncIntervalHours = config.SyncIntervalHours,
                     CreateSeparateLibraries = config.CreateSeparateLibraries,
+                    AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
@@ -126,6 +127,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
                     SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);

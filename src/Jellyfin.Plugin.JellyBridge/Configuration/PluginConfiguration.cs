@@ -29,6 +29,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(RemoveRequestedFromFavorites), false },
         { nameof(CreateSeparateLibraries), false },
+        { nameof(AddDuplicateContent), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ManageJellyseerrLibrary), true },
 
@@ -140,6 +141,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to create separate libraries for streaming services.
     /// </summary>
     public bool? CreateSeparateLibraries { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to add duplicate content to network folders when separate libraries are enabled.
+    /// </summary>
+    public bool? AddDuplicateContent { get; set; }
 
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.

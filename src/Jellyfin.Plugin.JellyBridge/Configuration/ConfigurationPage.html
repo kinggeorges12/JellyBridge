@@ -399,7 +399,7 @@
                                     ↻
                                 </button>
                             </div>
-                            <div class="fieldDescription">Select your region for network services. This determines which streaming services are shown for movies and TV shows.</div>
+                            <div class="fieldDescription">Select your region for network services. This determines which watch providers are shown for movies and TV shows.</div>
                         </div>
 
                         <div class="inputContainer">
@@ -491,7 +491,7 @@
                             <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort discover library content.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="SortTaskIntervalHoursContainer">
                             <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
                             <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
                         </div>
@@ -537,7 +537,7 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Manage JellyBridge library</span>
+                                <span class="checkboxLabel">Manage JellyBridge Library</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
@@ -561,7 +561,7 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Remove requested items from favorites</span>
+                                <span class="checkboxLabel">Clean-up Requests from Favorites</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
@@ -576,7 +576,7 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="CreateSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Create separate libraries for streaming services</span>
+                                <span class="checkboxLabel">Create Separate Libraries for Network Services</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
@@ -586,6 +586,18 @@
                             <div id="separateLibrariesWarning" class="fieldDescription cautionText" style="display: none;">
                                 ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Additionally, you can use different libraries for each network provider.
                             </div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Add Duplicate Content</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, duplicate content will be added to their respective network folders instead of being filtered out. <strong>⚠️ Important:</strong> This option should only be used when individual networks are configured in separate libraries. If multiple networks are in the same library, this may cause duplicate content to appear from Jellyseerr. This setting only applies when "Create Separate Libraries for Network Services" is enabled.</div>
                         </div>
 
                         <div class="inputContainer" id="LibraryPrefixContainer">
