@@ -71,7 +71,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
-                    SortOrder = config.SortOrder,
+                    SortOrder = config.SortOrder.HasValue ? (int?)config.SortOrder.Value : null,
                     MarkShowsPlayed = config.MarkShowsPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
