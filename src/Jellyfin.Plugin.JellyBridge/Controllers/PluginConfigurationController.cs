@@ -42,7 +42,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     LibraryDirectory = config.LibraryDirectory,
                     IsEnabled = config.IsEnabled,
                     SyncIntervalHours = config.SyncIntervalHours,
-                    CreateSeparateLibraries = config.CreateSeparateLibraries,
+                    UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
-                    SetJsonValue<bool?>(configData, nameof(config.CreateSeparateLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);

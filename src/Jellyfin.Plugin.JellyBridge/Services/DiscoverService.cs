@@ -104,19 +104,19 @@ public class DiscoverService
     /// <summary>
     /// Filters duplicate media items from a list using the GetItemHashCode method.
     /// Returns a list containing only unique items based on their hash code.
-    /// If CreateSeparateLibraries and AddDuplicateContent are both enabled, returns the original list without filtering.
+    /// If UseNetworkFolders and AddDuplicateContent are both enabled, returns the original list without filtering.
     /// </summary>
     /// <param name="items">List of media items to filter</param>
     /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
     public List<IJellyseerrItem> FilterDuplicateMedia(List<IJellyseerrItem> items)
     {
-        // If both CreateSeparateLibraries and AddDuplicateContent are enabled, skip filtering
-        var createSeparateLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries));
+        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         
-        if (createSeparateLibraries && addDuplicateContent)
+        if (useNetworkFolders && addDuplicateContent)
         {
-            _logger.LogDebug("Skipping duplicate filtering: CreateSeparateLibraries and AddDuplicateContent are both enabled");
+            _logger.LogDebug("Skipping duplicate filtering: UseNetworkFolders and AddDuplicateContent are both enabled");
             return items;
         }
         
