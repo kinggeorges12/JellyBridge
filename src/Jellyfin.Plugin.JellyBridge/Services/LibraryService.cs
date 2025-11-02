@@ -4,6 +4,9 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Library;
+using System;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
  

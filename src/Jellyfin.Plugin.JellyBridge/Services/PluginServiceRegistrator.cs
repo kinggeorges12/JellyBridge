@@ -53,11 +53,14 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             // Register placeholder video generator as transient to avoid early initialization
             serviceCollection.AddTransient<PlaceholderVideoGenerator>();
             
-            // Register scheduled tasks
-            serviceCollection.AddSingleton<Tasks.SortTask>();
-            
-            // Register the route controller
-            serviceCollection.AddScoped<Controllers.RouteController>();
+            // Register controllers (organized by configuration page sections)
+            serviceCollection.AddScoped<Controllers.PluginConfigurationController>();
+            serviceCollection.AddScoped<Controllers.GeneralSettingsController>();
+            serviceCollection.AddScoped<Controllers.TaskStatusController>();
+            serviceCollection.AddScoped<Controllers.ImportDiscoverContentController>();
+            serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
+            serviceCollection.AddScoped<Controllers.ManageDiscoverLibraryController>();
+            serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
         }
     }
 }

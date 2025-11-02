@@ -1030,6 +1030,14 @@ function initializeManageLibrary(page) {
     syncFavoritesButton.addEventListener('click', function() {
         performSyncManageLibrary(page);
     });
+    
+    // Generate Network Folders button functionality
+    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
+    if (generateNetworkFoldersButton) {
+        generateNetworkFoldersButton.addEventListener('click', function() {
+            performGenerateNetworkFolders(page);
+        });
+    }
 }
 
 function updateLibraryPrefixState() {
@@ -1037,6 +1045,7 @@ function updateLibraryPrefixState() {
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
     const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
     const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
+    const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
     
     const isEnabled = createSeparateLibrariesCheckbox.checked;
     
@@ -1046,6 +1055,11 @@ function updateLibraryPrefixState() {
     // Show/hide warning message
     if (separateLibrariesWarning) {
         separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
+    }
+    
+    // Show/hide generate network folders container
+    if (generateNetworkFoldersContainer) {
+        generateNetworkFoldersContainer.style.display = isEnabled ? 'block' : 'none';
     }
     
     // Apply disabled state styling
@@ -1067,6 +1081,57 @@ function updateAddDuplicateContentState() {
     
     // Apply disabled state styling
     applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isSeparateLibrariesEnabled);
+}
+
+function performGenerateNetworkFolders(page) {
+    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
+    
+    // Show confirmation dialog for saving settings before generating folders
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before generating network folders.',
+        confirmText: 'Save & Generate',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            generateNetworkFoldersButton.disabled = true;
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                
+                // Call GenerateNetworkFolders endpoint
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/GenerateNetworkFolders'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(response) {
+                    const ok = !!(response && response.success === true);
+                    
+                    if (ok) {
+                        Dashboard.alert('✅ Network folders created successfully');
+                    } else {
+                        let message = response?.message || 'Network folder generation completed';
+                        Dashboard.alert('⚠️ ' + message);
+                    }
+                    
+                    generateNetworkFoldersButton.disabled = false;
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Failed to generate network folders: ' + (error?.message || 'Unknown error'));
+                    generateNetworkFoldersButton.disabled = false;
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+                generateNetworkFoldersButton.disabled = false;
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+            });
+        }
+    });
 }
 
 function performSyncManageLibrary(page) {

@@ -589,7 +589,7 @@ public class ApiService
                         var results = resultsProperty.GetValue(pageResponse);
                         _logger.LogTrace("Results value type: {ResultsType}, IsNull: {IsNull}", results?.GetType().Name ?? "null", results == null);
                         
-                        if (results is System.Collections.IEnumerable resultsEnumerable)
+                        if (results is IEnumerable resultsEnumerable)
                         {
                             var itemCount = 0;
                             foreach (var item in resultsEnumerable)

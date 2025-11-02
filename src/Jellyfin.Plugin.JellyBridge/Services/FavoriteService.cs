@@ -351,7 +351,7 @@ public class FavoriteService
             {
                 try
                 {
-                    var dir = _metadataService.GetJellyseerrItemDirectory(item);
+                    var dir = _metadataService.GetJellyBridgeItemDirectory(item);
                     var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
                     if (File.Exists(ignorePath))
                     {
