@@ -1720,7 +1720,16 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
     
     containerElement.setAttribute('data-scroll-handler', 'true');
     containerElement.addEventListener('click', function(e) {
-        if (containerElement.classList.contains('disabled')) {
+        // Check if the container is disabled or contains disabled form elements
+        const isDisabled = containerElement.classList.contains('disabled') || 
+                          containerElement.querySelector('input:disabled, select:disabled, textarea:disabled, button:disabled');
+        
+        if (isDisabled) {
+            // Don't trigger if clicking on a help icon (which should still work)
+            if (e.target.closest('.helpIcon')) {
+                return;
+            }
+            
             e.preventDefault();
             e.stopPropagation();
             scrollToCheckboxAndHighlight(targetCheckboxSelector);
