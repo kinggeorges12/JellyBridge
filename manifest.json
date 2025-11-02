@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.36.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.36 - Fixed scroll links to use span elements instead of anchor tags to avoid Jellyfin hashtag navigation conflicts. Increased scroll offset to 60px default and 100px for Network Services link to provide better visual spacing. Fixed Generate Network Folders to properly use Library Prefix through GetNetworkFolder and added early return if UseNetworkFolders is not enabled.",
+        "targetAbi": "10.11.0.0",
+        "checksum": "C02AA3AF320A8B1E75BD87C233461CC7",
+        "timestamp": "2025-11-02T21:39:00.299Z",
+        "dependencies": [],
+        "version": "1.3.36.11"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.36.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.36 - Fixed scroll links to use span elements instead of anchor tags to avoid Jellyfin hashtag navigation conflicts. Increased scroll offset to 60px default and 100px for Network Services link to provide better visual spacing. Fixed Generate Network Folders to properly use Library Prefix through GetNetworkFolder and added early return if UseNetworkFolders is not enabled.",
+        "targetAbi": "10.10.0.0",
+        "checksum": "AB071C3D276B8BCBC11F53455C5964CE",
+        "timestamp": "2025-11-02T21:39:00.299Z",
+        "dependencies": [],
+        "version": "1.3.36.10"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.35.11.zip",
         "version": "1.3.35.11",
         "timestamp": "2025-11-02T21:16:19.299Z",

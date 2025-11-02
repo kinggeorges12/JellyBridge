@@ -1028,7 +1028,13 @@ function initializeManageLibrary(page) {
     // Generate Network Folders button functionality
     const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
     if (generateNetworkFoldersButton) {
-        generateNetworkFoldersButton.addEventListener('click', function() {
+        generateNetworkFoldersButton.addEventListener('click', function(e) {
+            // If button is disabled, let the scroll handler take over
+            if (this.disabled) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             performGenerateNetworkFolders(page);
         });
     }
@@ -1040,6 +1046,7 @@ function updateNetworkFolderOptionsState() {
     const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
     const networkFolderOptionsDetails = document.querySelector('#networkFolderOptionsDetails');
     const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
+    const generateNetworkFoldersButton = document.querySelector('#generateNetworkFolders');
     const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
     const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
     
@@ -1051,6 +1058,19 @@ function updateNetworkFolderOptionsState() {
             networkFolderOptionsDetails.classList.remove('disabled');
         } else {
             networkFolderOptionsDetails.classList.add('disabled');
+        }
+    }
+    
+    // Disable/enable Generate Network Folders button
+    if (generateNetworkFoldersButton) {
+        generateNetworkFoldersButton.disabled = !isEnabled;
+        // Apply disabled styling to the container
+        if (generateNetworkFoldersContainer) {
+            if (isEnabled) {
+                generateNetworkFoldersContainer.classList.remove('disabled');
+            } else {
+                generateNetworkFoldersContainer.classList.add('disabled');
+            }
         }
     }
     
@@ -1066,6 +1086,11 @@ function updateNetworkFolderOptionsState() {
     // Add click handler for add duplicate content container
     if (addDuplicateContentContainer && useNetworkFoldersCheckbox) {
         addScrollToCheckboxHandler(addDuplicateContentContainer, useNetworkFoldersCheckbox);
+    }
+    
+    // Add click handler for generate network folders container/button
+    if (generateNetworkFoldersContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(generateNetworkFoldersContainer, useNetworkFoldersCheckbox);
     }
 }
 
@@ -1718,7 +1743,7 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
 }
 
 // Scroll to a specific element by ID with smooth scrolling
-function scrollToElement(elementId, offset = 20) {
+function scrollToElement(elementId, offset = 60) {
     const element = document.getElementById(elementId);
     if (element) {
         // Find and open all parent details elements without triggering onclick events
