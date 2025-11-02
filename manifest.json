@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.38.11.zip",
+        "timestamp": "2025-11-02T22:22:54.391Z",
+        "version": "1.3.38.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.38 - Refactored validator functions to handle trimming internally: notNull, url, int, and double validators now trim values before validation, while windowsFilename validator receives untrimmed values to properly detect leading space characters. Updated validateField function to pass raw field.value to all validators, allowing each validator to manage its own trimming logic.",
+        "targetAbi": "10.11.0.0",
+        "checksum": "7B33AD58CFED03F622BBD25158D1CEF1",
+        "dependencies": []
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.38.10.zip",
+        "timestamp": "2025-11-02T22:22:54.391Z",
+        "version": "1.3.38.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.38 - Refactored validator functions to handle trimming internally: notNull, url, int, and double validators now trim values before validation, while windowsFilename validator receives untrimmed values to properly detect leading space characters. Updated validateField function to pass raw field.value to all validators, allowing each validator to manage its own trimming logic.",
+        "targetAbi": "10.10.0.0",
+        "checksum": "CBC5BEB472F84C081BA958EEABD66B2D",
+        "dependencies": []
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.37 - Updated LibraryPrefix handling to preserve leading and trailing spaces by adding trim parameter to safeParseString and preventing trimming in validateField. Enhanced windowsFilename validator to reject values starting with a space character to comply with Windows filename restrictions.",
         "version": "1.3.37.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.37.11.zip",
