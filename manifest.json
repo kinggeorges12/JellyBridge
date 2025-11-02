@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.27.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.27.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.27 - Fixed SortOrder dropdown initialization to convert enum name strings (like 'Random') to integer values when populating from ConfigDefaults. Added enum name-to-value mapping to ensure dropdown correctly displays selected option when no explicit config value is set.",
+        "timestamp": "2025-11-02T02:20:26.005Z",
+        "checksum": "962774A09E7B4540AFB396F8C86AAB89",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "version": "1.3.27.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.27.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.27 - Fixed SortOrder dropdown initialization to convert enum name strings (like 'Random') to integer values when populating from ConfigDefaults. Added enum name-to-value mapping to ensure dropdown correctly displays selected option when no explicit config value is set.",
+        "timestamp": "2025-11-02T02:20:26.005Z",
+        "checksum": "1095204BA36C004288AC8A0E7DAF2FF1",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.26.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.26 - Refactored MetadataService and SyncService to process movies and shows in a unified list. Added FilterDuplicateMedia function to DiscoverService for duplicate removal using item hashing. Cleaned up unused dependencies and using statements across all services.",
