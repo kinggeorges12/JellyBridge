@@ -4,7 +4,6 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
-using System.Xml.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -156,25 +155,24 @@ public class MetadataService
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFolderMetadataAsync<TJellyseerr>(List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    public async Task<(List<IJellyseerrItem> added, List<IJellyseerrItem> updated)> CreateFolderMetadataAsync(List<IJellyseerrItem> items)
     {
-        var addedItems = new List<TJellyseerr>();
-        var updatedItems = new List<TJellyseerr>();
+        var addedItems = new List<IJellyseerrItem>();
+        var updatedItems = new List<IJellyseerrItem>();
         
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
-        _logger.LogDebug("Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
-            typeof(TJellyseerr).Name, baseDirectory, items.Count);
+        _logger.LogDebug("Starting folder creation for mixed media - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+            baseDirectory, items.Count);
         
-        for (int i = 0; i < items.Count; i++)
+        // Local async function to process a single item (write metadata and handle result)
+        async Task ProcessCreateFolderMetadataAsync(IJellyseerrItem item, int index)
         {
-            var item = items[i];
             try
             {
                 _logger.LogTrace("Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
-                    i + 1, items.Count, item.MediaName, item.Id, item.Year);
+                    index + 1, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
                 var folderName = GetJellyseerrItemDirectory(item);
@@ -183,7 +181,7 @@ public class MetadataService
                 _logger.LogTrace("Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
                     folderName, folderExists);
 
-                // Write metadata using folder manager
+                // Write metadata
                 var success = await WriteMetadataAsync(item);
                 
                 if (success)
@@ -192,13 +190,13 @@ public class MetadataService
                     {
                         updatedItems.Add(item);
                         _logger.LogTrace("✅ UPDATED {Type} folder: '{FolderName}'", 
-                            typeof(TJellyseerr).Name, folderName);
+                            item.GetType().Name, folderName);
                     }
                     else
                     {
                         addedItems.Add(item);
                         _logger.LogTrace("✅ CREATED {Type} folder: '{FolderName}'", 
-                            typeof(TJellyseerr).Name, folderName);
+                            item.GetType().Name, folderName);
                     }
                 }
                 else
@@ -209,13 +207,17 @@ public class MetadataService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                _logger.LogError(ex, "❌ ERROR processing item {Item} - MediaName: '{MediaName}', Id: {Id}", 
                     item, item.MediaName, item.Id);
             }
         }
         
-        _logger.LogDebug("Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
-            typeof(TJellyseerr).Name, addedItems.Count, updatedItems.Count);
+        // Create all tasks and await them in parallel
+        var tasks = items.Select((item, index) => ProcessCreateFolderMetadataAsync(item, index)).ToArray();
+        await Task.WhenAll(tasks);
+        
+        _logger.LogDebug("Completed folder creation for mixed media - Added: {Added}, Updated: {Updated}", 
+            addedItems.Count, updatedItems.Count);
         
         return (addedItems, updatedItems);
     }
@@ -223,7 +225,7 @@ public class MetadataService
     /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
-    private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    private async Task<bool> WriteMetadataAsync(IJellyseerrItem item)
     {
         try
         {

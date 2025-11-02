@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
-using System.Net.Http;
 using System.Text.Json;
 using Jellyfin.Plugin.JellyBridge.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,7 +70,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
-                    SortOrder = config.SortOrder.HasValue ? (int?)config.SortOrder.Value : null,
+                    SortOrder = config.SortOrder,
                     MarkShowsPlayed = config.MarkShowsPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,

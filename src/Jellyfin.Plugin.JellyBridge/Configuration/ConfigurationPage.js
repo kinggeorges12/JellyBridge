@@ -855,7 +855,7 @@ function initializeSortContent(page) {
     const config = window.configJellyBridge || {};
     
     // Populate SortOrder dropdown from enum values
-    const sortOrderSelect = page.querySelector('#SortOrder');
+    const sortOrderSelect = page.querySelector('#selectSortOrder');
     if (sortOrderSelect && config.ConfigOptions && config.ConfigOptions.SortOrderOptions && Array.isArray(config.ConfigOptions.SortOrderOptions)) {
         sortOrderSelect.innerHTML = '';
         config.ConfigOptions.SortOrderOptions.forEach(option => {
@@ -864,11 +864,16 @@ function initializeSortContent(page) {
             optionElement.textContent = option.Name;
             sortOrderSelect.appendChild(optionElement);
         });
+        
+        // Set the selected value using config value or default
+        const sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
+        if (sortOrderValue !== null && sortOrderValue !== undefined) {
+            sortOrderSelect.value = sortOrderValue.toString();
+        }
     }
     
     // Set sort content form values with null handling
     setInputField(page, 'EnableAutomatedSortTask', true);
-    setInputField(page, 'SortOrder');
     setInputField(page, 'MarkShowsPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
 
@@ -1372,7 +1377,7 @@ function savePluginConfiguration(page) {
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
-    form.SortOrder = nullIfDefault(safeParseInt(page.querySelector('#SortOrder').value), config.ConfigDefaults.SortOrder);
+    form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkShowsPlayed = nullIfDefault(page.querySelector('#MarkShowsPlayed').checked, config.ConfigDefaults.MarkShowsPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));

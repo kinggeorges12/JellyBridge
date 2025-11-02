@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.26.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.26 - Refactored MetadataService and SyncService to process movies and shows in a unified list. Added FilterDuplicateMedia function to DiscoverService for duplicate removal using item hashing. Cleaned up unused dependencies and using statements across all services.",
+        "timestamp": "2025-11-02T01:46:52.647Z",
+        "checksum": "E02DF3B413F909463F44D70B706DDA35",
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.26.11"
+      },
+      {
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.26.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.26 - Refactored MetadataService and SyncService to process movies and shows in a unified list. Added FilterDuplicateMedia function to DiscoverService for duplicate removal using item hashing. Cleaned up unused dependencies and using statements across all services.",
+        "timestamp": "2025-11-02T01:46:52.647Z",
+        "checksum": "0FB7971D16BE0B8DA3F2654E64CA84C8",
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.26.10"
+      },
+      {
         "version": "1.3.25.11",
         "timestamp": "2025-11-02T00:55:31.891Z",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.25.11.zip",
