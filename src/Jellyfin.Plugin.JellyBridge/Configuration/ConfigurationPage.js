@@ -909,6 +909,23 @@ function initializeSortContent(page) {
     setInputField(page, 'MarkShowsPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
 
+    // Initialize sort task dependency state
+    updateSortTaskDependencies();
+    
+    // Add event listener for EnableAutomatedSortTask checkbox
+    const enableAutomatedSortTaskCheckbox = page.querySelector('#EnableAutomatedSortTask');
+    if (enableAutomatedSortTaskCheckbox) {
+        enableAutomatedSortTaskCheckbox.addEventListener('change', function() {
+            updateSortTaskDependencies();
+        });
+    }
+    
+    // Add scroll handler for SortTaskIntervalHours
+    const sortTaskIntervalContainer = page.querySelector('#SortTaskIntervalHoursContainer');
+    if (sortTaskIntervalContainer) {
+        setupDisabledScrollHandlers('#EnableAutomatedSortTask', [sortTaskIntervalContainer]);
+    }
+
     // Add sort content button functionality
     const sortButton = page.querySelector('#sortContent');
     sortButton.addEventListener('click', function () {
@@ -986,10 +1003,27 @@ function initializeManageLibrary(page) {
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'CreateSeparateLibraries', true);
+    setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
     setInputField(page, 'ManageJellyseerrLibrary', true);
     
     updateLibraryPrefixState();
+    updateAddDuplicateContentState();
+    
+    // Add event listener for CreateSeparateLibraries checkbox
+    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
+    if (createSeparateLibrariesCheckbox) {
+        createSeparateLibrariesCheckbox.addEventListener('change', function() {
+            updateLibraryPrefixState();
+            updateAddDuplicateContentState();
+        });
+    }
+    
+    // Add scroll handler for AddDuplicateContent
+    const addDuplicateContentContainer = page.querySelector('#AddDuplicateContentContainer');
+    if (addDuplicateContentContainer) {
+        setupDisabledScrollHandlers('#CreateSeparateLibraries', [addDuplicateContentContainer]);
+    }
     
     // Sync Favorites button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
@@ -1021,6 +1055,18 @@ function updateLibraryPrefixState() {
     if (libraryPrefixContainer && createSeparateLibrariesCheckbox) {
         addScrollToCheckboxHandler(libraryPrefixContainer, createSeparateLibrariesCheckbox);
     }
+}
+
+// Update controls that depend on CreateSeparateLibraries being enabled
+function updateAddDuplicateContentState() {
+    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
+    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
+    
+    const isSeparateLibrariesEnabled = createSeparateLibrariesCheckbox ? !!createSeparateLibrariesCheckbox.checked : false;
+    
+    // Apply disabled state styling
+    applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isSeparateLibrariesEnabled);
 }
 
 function performSyncManageLibrary(page) {
@@ -1171,7 +1217,7 @@ function updateStartupDelayState() {
     
     // Add click handler to scroll to required checkbox when disabled field is clicked
     // This one is special because it needs to determine the target dynamically
-    if (startupDelaySecondsContainer) {
+        if (startupDelaySecondsContainer) {
         startupDelaySecondsContainer.addEventListener('click', function(e) {
             if (startupDelaySecondsContainer.classList.contains('disabled')) {
                 e.preventDefault();
@@ -1180,7 +1226,7 @@ function updateStartupDelayState() {
                 const targetCheckbox = !isPluginEnabled ? pluginEnabledCheckbox : autoSyncOnStartupCheckbox;
                 if (targetCheckbox) {
                     scrollToCheckboxAndHighlight(targetCheckbox);
-                }
+        }
             }
         });
     }
@@ -1200,6 +1246,18 @@ function updateTraceLoggingState() {
     if (enableTraceLoggingContainer && enableDebugLoggingCheckbox) {
         addScrollToCheckboxHandler(enableTraceLoggingContainer, enableDebugLoggingCheckbox);
     }
+}
+
+// Update controls that depend on the automated sort task being enabled
+function updateSortTaskDependencies() {
+    const enableAutomatedSortTaskCheckbox = document.querySelector('#EnableAutomatedSortTask');
+    const sortTaskIntervalInput = document.querySelector('#SortTaskIntervalHours');
+    const sortTaskIntervalContainer = document.querySelector('#SortTaskIntervalHoursContainer');
+    
+    const isSortTaskEnabled = enableAutomatedSortTaskCheckbox ? !!enableAutomatedSortTaskCheckbox.checked : true;
+    
+    // Apply disabled state styling
+    applyDisabledState(sortTaskIntervalInput, sortTaskIntervalContainer, isSortTaskEnabled);
 }
 
 // Update controls that depend on the automated task being enabled
@@ -1250,6 +1308,7 @@ function performPluginReset(page) {
                 SortTaskIntervalHours: null,
                 IsEnabled: null,
                 CreateSeparateLibraries: null,
+                AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
@@ -1389,6 +1448,7 @@ function savePluginConfiguration(page) {
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
     form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.ConfigDefaults.CreateSeparateLibraries);
+    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
@@ -1455,7 +1515,7 @@ function initializeDetailTabScroll(page) {
                     setTimeout(() => {
                         // Only scroll if the details was closed before (meaning it's being opened)
                         if (wasClosed && detailsElement.hasAttribute('open')) {
-                            scrollToElement(detailId);
+                        scrollToElement(detailId);
                         }
                     }, 50);
                 });

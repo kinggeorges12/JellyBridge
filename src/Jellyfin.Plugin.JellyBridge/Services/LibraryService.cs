@@ -188,7 +188,7 @@ public class LibraryService
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
 
             // Use the same method as the "Scan All Libraries" button
-            await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+                    await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
 
             _logger.LogDebug("Full scan of all libraries completed successfully");
             
