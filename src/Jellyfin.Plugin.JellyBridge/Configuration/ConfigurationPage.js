@@ -254,23 +254,9 @@ function initializeGeneralSettings(page) {
     
     // Add click handlers to scroll to the IsEnabled checkbox when disabled fields are clicked
     const syncIntervalContainer = page.querySelector('#SyncIntervalHoursContainer');
-    const enableStartupSyncContainer = page.querySelector('#EnableStartupSync')?.closest('.checkboxContainer');
     
     // Set up scroll handlers for containers that depend on IsEnabled
     const dependentContainers = [syncIntervalContainer].filter(Boolean);
-    if (enableStartupSyncContainer) {
-        // Special handling for EnableStartupSync - check for disabled checkbox instead of disabled class
-        const enableStartupSyncCheckbox = page.querySelector('#EnableStartupSync');
-        if (enableStartupSyncCheckbox) {
-            enableStartupSyncContainer.addEventListener('click', function(e) {
-                if (enableStartupSyncCheckbox.disabled) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollToCheckboxAndHighlight('#IsEnabled');
-                }
-            });
-        }
-    }
     
     setupDisabledScrollHandlers('#IsEnabled', dependentContainers);
 }
@@ -1019,6 +1005,21 @@ function initializeManageLibrary(page) {
         });
     }
     
+    // Prevent details from opening when disabled
+    const networkFolderOptionsDetails = page.querySelector('#networkFolderOptionsDetails');
+    if (networkFolderOptionsDetails) {
+        const summary = networkFolderOptionsDetails.querySelector('summary');
+        if (summary) {
+            summary.addEventListener('click', function(e) {
+                const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
+                if (!useNetworkFoldersCheckbox || !useNetworkFoldersCheckbox.checked) {
+                    e.preventDefault();
+                    scrollToCheckboxAndHighlight('#UseNetworkFolders');
+                }
+            });
+        }
+    }
+    
     // Add event listener for AddDuplicateContent checkbox
     const addDuplicateContentCheckbox = page.querySelector('#AddDuplicateContent');
     if (addDuplicateContentCheckbox) {
@@ -1033,7 +1034,7 @@ function initializeManageLibrary(page) {
         setupDisabledScrollHandlers('#UseNetworkFolders', [addDuplicateContentContainer]);
     }
     
-    // Sync Favorites button functionality
+    // Request JellyBridge Library Favorites in Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     syncFavoritesButton.addEventListener('click', function() {
         performSyncManageLibrary(page);
@@ -1054,23 +1055,18 @@ function updateNetworkFolderOptionsState() {
     const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
     const networkFolderOptionsDetails = document.querySelector('#networkFolderOptionsDetails');
     const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
+    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
+    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
     
     const isEnabled = useNetworkFoldersCheckbox.checked;
     
-    // Show/hide network folder options details
+    // Apply disabled state to the details element (makes it grayish)
     if (networkFolderOptionsDetails) {
-        networkFolderOptionsDetails.style.display = isEnabled ? 'block' : 'none';
-        // Open or close the details element
         if (isEnabled) {
-            networkFolderOptionsDetails.setAttribute('open', '');
+            networkFolderOptionsDetails.classList.remove('disabled');
         } else {
-            networkFolderOptionsDetails.removeAttribute('open');
+            networkFolderOptionsDetails.classList.add('disabled');
         }
-    }
-    
-    // Enable/disable the input
-    if (libraryPrefixInput) {
-        libraryPrefixInput.disabled = !isEnabled;
     }
     
     // Show/hide generate network folders container
@@ -1078,12 +1074,18 @@ function updateNetworkFolderOptionsState() {
         generateNetworkFoldersContainer.style.display = isEnabled ? 'block' : 'none';
     }
     
-    // Apply disabled state styling
+    // Apply disabled state styling (this will handle the disabled property and styling)
     applyDisabledState(libraryPrefixInput, libraryPrefixContainer, isEnabled);
+    // addDuplicateContent disabled state is handled by updateAddDuplicateContentState
     
     // Add click handler to scroll to required checkbox when disabled field is clicked
     if (libraryPrefixContainer && useNetworkFoldersCheckbox) {
         addScrollToCheckboxHandler(libraryPrefixContainer, useNetworkFoldersCheckbox);
+    }
+    
+    // Add click handler for add duplicate content container
+    if (addDuplicateContentContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(addDuplicateContentContainer, useNetworkFoldersCheckbox);
     }
 }
 
@@ -1160,27 +1162,27 @@ function performGenerateNetworkFolders(page) {
 function performSyncManageLibrary(page) {
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     
-    // Show confirmation dialog for saving settings before sync
+    // Show confirmation dialog for saving settings before requesting content
     Dashboard.confirm({
         title: 'Confirm Save',
-        text: 'Settings will be saved before starting favorites sync.',
-        confirmText: 'Save & Sync',
+        text: 'Settings will be saved before requesting JellyBridge Library favorites in Jellyseerr.',
+        confirmText: 'Save & Request',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
         if (confirmed) {
             syncFavoritesButton.disabled = true;
-            // Save settings first, then sync
+            // Save settings first, then request content
             Dashboard.showLoadingMsg();
             
             savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the sync result textbox
+                // Show loading message in the request result textbox
                 const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
+                syncFavoritesResult.textContent = '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...';
                 syncFavoritesResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed
+                // Request content if confirmed
                 Dashboard.showLoadingMsg();
                 return ApiClient.ajax({
                     url: ApiClient.getUrl('JellyBridge/SyncFavorites'),
@@ -1189,7 +1191,7 @@ function performSyncManageLibrary(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncResult) {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
+                    let resultText = `Request JellyBridge Library Favorites in Jellyseerr Results:\n`;
                     resultText += `${syncResult.message || 'No message'}\n`;
                     
                     if (syncResult.details) {
@@ -1209,10 +1211,10 @@ function performSyncManageLibrary(page) {
                     syncFavoritesResult.textContent = resultText;
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
+                    Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
+                    let resultText = `Request JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
                     
                     syncFavoritesResult.textContent = resultText;
                     scrollToElement('syncFavoritesResult');
@@ -1257,12 +1259,22 @@ function initializeAdvancedSettings(page) {
     // Initialize trace logging state
     updateTraceLoggingState();
     
+    // Initialize startup sync description
+    updateStartupSyncDescription();
+    
     // Add event listener for AutoSyncOnStartup checkbox
     const autoSyncOnStartupCheckbox = page.querySelector('#EnableStartupSync');
     if (autoSyncOnStartupCheckbox) {
         autoSyncOnStartupCheckbox.addEventListener('change', function() {
             updateStartupDelayState();
         });
+    }
+    
+    // Set up scroll handler for startup delay container
+    const startupDelaySecondsContainer = page.querySelector('#StartupDelaySecondsContainer');
+    const enableStartupSyncCheckboxForHandler = page.querySelector('#EnableStartupSync');
+    if (startupDelaySecondsContainer && enableStartupSyncCheckboxForHandler) {
+        addScrollToCheckboxHandler(startupDelaySecondsContainer, enableStartupSyncCheckboxForHandler);
     }
     
     // Add event listener for EnableDebugLogging checkbox
@@ -1292,32 +1304,13 @@ function initializeAdvancedSettings(page) {
 
 function updateStartupDelayState() {
     const autoSyncOnStartupCheckbox = document.querySelector('#EnableStartupSync');
-    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
     const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
     
-    const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
     const isAutoSyncEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
-    const isEnabled = isPluginEnabled && isAutoSyncEnabled;
     
     // Apply disabled state styling
-    applyDisabledState(startupDelaySecondsInput, startupDelaySecondsContainer, isEnabled);
-    
-    // Add click handler to scroll to required checkbox when disabled field is clicked
-    // This one is special because it needs to determine the target dynamically
-        if (startupDelaySecondsContainer) {
-        startupDelaySecondsContainer.addEventListener('click', function(e) {
-            if (startupDelaySecondsContainer.classList.contains('disabled')) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Scroll to the checkbox that needs to be enabled (either IsEnabled or EnableStartupSync)
-                const targetCheckbox = !isPluginEnabled ? pluginEnabledCheckbox : autoSyncOnStartupCheckbox;
-                if (targetCheckbox) {
-                    scrollToCheckboxAndHighlight(targetCheckbox);
-        }
-            }
-        });
-    }
+    applyDisabledState(startupDelaySecondsInput, startupDelaySecondsContainer, isAutoSyncEnabled);
 }
 
 function updateTraceLoggingState() {
@@ -1346,6 +1339,9 @@ function updateSortTaskDependencies() {
     
     // Apply disabled state styling
     applyDisabledState(sortTaskIntervalInput, sortTaskIntervalContainer, isSortTaskEnabled);
+    
+    // Update startup sync description to show enabled tasks
+    updateStartupSyncDescription();
 }
 
 // Update controls that depend on the automated task being enabled
@@ -1353,17 +1349,51 @@ function updateAutoTaskDependencies() {
     const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const syncIntervalInput = document.querySelector('#SyncIntervalHours');
     const syncIntervalContainer = document.querySelector('#SyncIntervalHoursContainer');
-    const enableStartupSyncCheckbox = document.querySelector('#EnableStartupSync');
-    const enableStartupSyncContainer = enableStartupSyncCheckbox ? enableStartupSyncCheckbox.closest('.checkboxContainer') : null;
 
     const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
 
     // Apply disabled state styling
     applyDisabledState(syncIntervalInput, syncIntervalContainer, isPluginEnabled);
-    applyDisabledState(enableStartupSyncCheckbox, enableStartupSyncContainer, isPluginEnabled);
 
-    // Update startup delay to reflect current combined state
+    // Update startup delay to reflect current state
     updateStartupDelayState();
+    
+    // Update startup sync description to show enabled tasks
+    updateStartupSyncDescription();
+}
+
+// Update the startup sync description to list only enabled tasks
+function updateStartupSyncDescription() {
+    const descriptionElement = document.querySelector('#enableStartupSyncDescription');
+    if (!descriptionElement) return;
+    
+    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
+    const sortTaskEnabledCheckbox = document.querySelector('#EnableAutomatedSortTask');
+    
+    const isSyncEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : false;
+    const isSortEnabled = sortTaskEnabledCheckbox ? !!sortTaskEnabledCheckbox.checked : false;
+    
+    const enabledTasks = [];
+    if (isSyncEnabled) {
+        enabledTasks.push('<i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i>');
+    }
+    if (isSortEnabled) {
+        enabledTasks.push('<i>Enable the Automated Task to Sort Discover Content</i>');
+    }
+    
+    let descriptionText = 'Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.';
+    
+    if (enabledTasks.length > 0) {
+        if (enabledTasks.length === 1) {
+            descriptionText += ' If the task option is enabled, the task runs at Jellyfin startup: ' + enabledTasks[0] + '.';
+        } else {
+            descriptionText += ' If the task options are enabled, the tasks run at Jellyfin startup: ' + enabledTasks.join(' and ') + '.';
+        }
+    } else {
+        descriptionText += ' No automated tasks are currently enabled.';
+    }
+    
+    descriptionElement.innerHTML = descriptionText;
 }
 
 function performPluginReset(page) {
@@ -1587,7 +1617,7 @@ function initializeGlobalSettings(page) {
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
     // List of detail section IDs
-    const detailIds = ['troubleshootingDetails', 'syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'advancedSettings'];
+    const detailIds = ['troubleshootingDetails', 'syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'networkFolderOptionsDetails', 'advancedSettings'];
     
     detailIds.forEach(detailId => {
         const detailsElement = page.querySelector(`#${detailId}`);
