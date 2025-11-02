@@ -135,6 +135,7 @@
                     height: 32px;
                     line-height: 32px;
                     align-items: center;
+                    justify-content: flex-end;
                 }
                 
                 .cautionText {
@@ -277,6 +278,48 @@
                     color: #888;
                     margin-top: 8px;
                 }
+                
+                /* Troubleshooting details styling - left-aligned and distinct */
+                details.troubleshootingDetails {
+                    margin-top: 16px;
+                }
+                
+                details.troubleshootingDetails summary {
+                    cursor: pointer;
+                    padding: 8px 12px;
+                    width: auto;
+                    margin: 0;
+                    margin-bottom: 12px;
+                    border: none;
+                    text-align: left;
+                    font-size: 1em;
+                    font-weight: bold;
+                    outline: 1px solid rgba(155, 155, 155, 0.3);
+                    border-radius: 4px;
+                    background-color: rgba(0, 0, 0, 0.05);
+                    display: inline-block;
+                    list-style: none;
+                }
+                
+                details.troubleshootingDetails summary::-webkit-details-marker {
+                    display: none;
+                }
+                
+                details.troubleshootingDetails summary::before {
+                    content: "▶";
+                    display: inline-block;
+                    margin-right: 8px;
+                    transition: transform 0.2s ease;
+                    font-size: 0.8em;
+                }
+                
+                details.troubleshootingDetails[open] summary::before {
+                    transform: rotate(90deg);
+                }
+                
+                details.troubleshootingDetails summary:hover {
+                    background-color: rgba(0, 0, 0, 0.1);
+                }
             </style>
             <form id="jellyBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -300,43 +343,6 @@
                     </div>
                     
                     
-                    <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
-                        <h4>Library Setup Instructions</h4>
-                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
-                        <ul>
-                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
-                            <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
-                            <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
-                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
-                            <li>☑️ <strong>Save artwork into media folders</strong></li>
-                            <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
-                        </ul>
-                        
-                        <h5>🤖 Troubleshooting</h5>
-                        <div class="fieldDescription" style="margin-bottom: 20px;">
-                            <p><i>The plugin connects to Jellyseerr, but I am seeing error messages when running the sync or other issues.</i></p>
-                            <ol>
-                                <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
-                                <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
-                                <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
-                            </ol>
-                            <p><i>The <strong>Test Connection</strong> button is not working, and I am seeing an error message.</i></p>
-                            <ol>
-                                <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <strong>Jellyseerr URL</strong> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
-                                <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> → <strong>Import Jellyfin Users</strong>.</li>
-                                <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
-                            </ol>
-                            <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
-                            <ol>
-                                <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
-                                <li>If content is still not updating, open the <strong>Metadata Manager</strong> and refresh metadata for the entry matching the name of your Jellyfin library</li>
-                                <li>As a last resort, click <strong>Recycle Library Data</strong> and recreate the Jellyfin library according to the setup instructions above</li>
-                            </ol>
-                        </div>
-                    </div>
-                    
-                    
 
                     <div class="inputContainer">
                         <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL"/>
@@ -350,7 +356,7 @@
 
                     <div class="inputContainer">
                         <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
-                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library.</div>
+                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. To enable </div>
                     </div>
 
                     <div class="checkboxContainer">
@@ -362,8 +368,9 @@
                                 <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                             </span>
                         </label>
-                        <div class="helpButton">
-                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">?</span>
+                        <div class="helpButton" id="librarySetupHelp">
+                            <span class="helpIcon" title="Click me! Show library setup instruction before enabling the task.">?</span>
+                            <span style="margin-left: 5px;">Setup</span>
                         </div>
                     </div>
 
@@ -372,9 +379,51 @@
                         <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
                     </div>
 
+                    <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
+                        <h4>Library Setup Instructions</h4>
+                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                        <ul>
+                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
+                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
+                            <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
+                            <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
+                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
+                            <li>☑️ <strong>Save artwork into media folders</strong></li>
+                            <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
+                        </ul>
+                        
+                        <details class="troubleshootingDetails">
+                            <summary>🤖 Troubleshooting</summary>
+                            <div class="fieldDescription" style="margin-bottom: 20px;">
+                                <p><i>General debugging tips.</i></p>
+                                <ol>
+                                    <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
+                                    <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
+                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
+                                </ol>
+                                <p><i>The <strong>Test Connection with Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
+                                <ol>
+                                    <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <i>Jellyseerr URL</i> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
+                                    <li>Import Jellyfin users from the Jellyseerr interface: <i>Users</i> → <i>Import Jellyfin Users</i>.</li>
+                                    <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
+                                </ol>
+                                <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
+                                <ol>
+                                    <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
+                                    <li>If content is still not updating, open the <strong>Metadata Manager</strong> and refresh metadata for the entry matching the name of your Jellyfin library</li>
+                                    <li>As a last resort, click <strong>Recycle Library Data</strong> and recreate the Jellyfin library according to the setup instructions above</li>
+                                </ol>
+                                <p><i>The <strong>Sync Favorites from Jellyfin library to Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
+                                <ol>
+                                    <li>Disable CSRF protection in your Jellyseerr instance to allow cross-origin (from outside the Jellyseerr interface) favorite requests: Settings → Network → Uncheck "Enable CSRF Protection".</li>
+                                </ol>
+                            </div>
+                        </details>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
-                            <span>Test Connection</span>
+                            <span>Test Connection with Jellyseerr</span>
                         </button>
                     </div>
 
@@ -458,7 +507,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="syncDiscover" class="raised button block emby-button">
-                                <span>Sync discover content from Jellyseerr to Jellyfin library</span>
+                                <span>Sync Discover Content from Jellyseerr to JellyBridge Library</span>
                             </button>
                             <div id="syncDiscoverResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
@@ -471,7 +520,7 @@
                         <summary>Sort Discover Content</summary>
                         <br>
                         <div class="fieldDescription">
-                            Control the sort order of items in the discover library by setting a generated play count in JellyBridge media for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
+                            Control the sort order of items in the JellyBridge library by setting a generated play count of media items for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Play Count</i>.
@@ -488,7 +537,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort discover library content.</div>
+                            <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort JellyBridge library content.</div>
                         </div>
 
                         <div class="inputContainer" id="SortTaskIntervalHoursContainer">
@@ -501,7 +550,7 @@
                             <select id="selectSortOrder" is="emby-input" class="emby-input emby-select">
                                 <!-- Options will be populated dynamically from enum -->
                             </select>
-                            <div class="fieldDescription">Selects the algorithm used to sort discover library content. None: sets play counts to zero. Random: randomizes play counts. Smart: intelligent sorting (not yet implemented).</div>
+                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. None: sets play counts to zero. Random: randomizes play counts. Smart: intelligent sorting (not yet implemented).</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -518,7 +567,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
-                                <span>Randomize discover library sort order</span>
+                                <span>Randomize Discover Library Sort Order</span>
                             </button>
                             <div id="sortContentResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
@@ -543,7 +592,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the <i>Library Directory</i> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are deleted from Jellyseerr (this takes less time).</div>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <i>Library Directory</i> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are deleted from Jellyseerr (this takes less time).</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -582,10 +631,17 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, separate libraries will be created for each streaming service, e.g., Netflix, Hulu, FOX.</div>
+                            <div class="fieldDescription">When enabled, separate libraries will be created for each network service, e.g., Netflix, Hulu, FOX.</div>
                             <div id="separateLibrariesWarning" class="fieldDescription cautionText" style="display: none;">
-                                ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Additionally, you can use different libraries for each network provider.
+                                ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Alternatively, you can use different libraries for each network provider. 📝 Note: all media items will be unique across all libraries, but will be patched in a later version to display unique items within each
                             </div>
+                        </div>
+
+                        <div id="generateNetworkFoldersContainer" class="fieldDescription" style="display: none;">
+                            Recommended to generate network folders before clicking <strong>Sync Discover Content from Jellyseerr to JellyBridge Library</strong> or running the <i>Automated Task to Sync Jellyseerr and Jellyfin</i>. This allows the sync task to refresh the libraries after importing discover content.
+                            <button is="emby-button" type="button" id="generateNetworkFolders" class="raised button block emby-button">
+                                <span>Generate Network Folders</span>
+                            </button>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
@@ -597,18 +653,18 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, duplicate content will be added to their respective network folders instead of being filtered out. <strong>⚠️ Important:</strong> This option should only be used when individual networks are configured in separate libraries. If multiple networks are in the same library, this may cause duplicate content to appear from Jellyseerr. This setting only applies when "Create Separate Libraries for Network Services" is enabled.</div>
+                            <div class="fieldDescription"><strong>Recommended only when creating separate Jellyfin libraries for each network service.</strong> When enabled, duplicate content will be added to their respective network folders instead of being filtered out. <strong>⚠️ Important:</strong> This option should only be used when individual networks are configured in separate libraries. If multiple networks are in the same library, this may cause duplicate content to appear from Jellyseerr. This setting only applies when "Create Separate Libraries for Network Services" is enabled.</div>
                         </div>
 
                         <div class="inputContainer" id="LibraryPrefixContainer">
                             <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                            <div class="fieldDescription">Prefix for streaming service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
+                            <div class="fieldDescription">Prefix for network service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
                         </div>
 
 
                         <div>
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
-                                <span>Sync favorites from Jellyfin library to Jellyseerr</span>
+                                <span>Sync Favorites from JellyBridge Library to Jellyseerr</span>
                             </button>
                             <div id="syncFavoritesResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
@@ -687,10 +743,10 @@
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
                             <button is="emby-button" type="button" id="recycleLibraryData" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
-                                <span>Recycle Jellyfin Library Data</span>
+                                <span>Recycle JellyBridge Library Data</span>
                             </button>
                             <div class="fieldDescription criticalText">
-                                <strong>☠️ CRITICAL:</strong> This will permanently delete all library data from the library directory. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
+                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <i>Library Directory</i>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
                                 <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the setup instructions at the top of this page. This should clean-up the Jellyfin metadata and prevent errors when adding new content.

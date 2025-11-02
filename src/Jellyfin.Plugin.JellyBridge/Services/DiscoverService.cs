@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
-/// Service for discovering and scanning library items between Jellyfin and Jellyseerr.
+/// Service for discovering and importing content between Jellyfin and Jellyseerr.
 /// </summary>
 public class DiscoverService
 {
@@ -167,7 +167,7 @@ public class DiscoverService
             try
             {
                 // Get the folder path for this item
-                var folderPath = _metadataService.GetJellyseerrItemDirectory(item);
+                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
                 
                 if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 {
@@ -214,7 +214,7 @@ public class DiscoverService
         {
             try
             {
-                var showFolderPath = _metadataService.GetJellyseerrItemDirectory(show);
+                var showFolderPath = _metadataService.GetJellyBridgeItemDirectory(show);
                 
                 _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
                     show.MediaName, showFolderPath);
@@ -339,7 +339,7 @@ public class DiscoverService
 
                 if (!string.IsNullOrEmpty(deletionReason))
                 {
-                    var itemDirectory = _metadataService.GetJellyseerrItemDirectory(item);
+                    var itemDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
                     
                     if (Directory.Exists(itemDirectory))
                     {
@@ -453,7 +453,7 @@ public class DiscoverService
         {
             try
             {
-                var dir = _metadataService.GetJellyseerrItemDirectory(item);
+                var dir = _metadataService.GetJellyBridgeItemDirectory(item);
                 var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
                 if (!File.Exists(ignorePath))
                 {

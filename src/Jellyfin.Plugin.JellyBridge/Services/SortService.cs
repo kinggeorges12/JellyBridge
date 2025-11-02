@@ -3,13 +3,17 @@ using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
-/// Service for managing sort operations and play count algorithms for Jellyseerr bridge items.
+/// Service for sorting and organizing content in the JellyBridge library.
 /// </summary>
 public class SortService
 {

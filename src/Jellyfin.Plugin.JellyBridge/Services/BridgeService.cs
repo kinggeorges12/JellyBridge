@@ -1,17 +1,20 @@
-using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
-using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using Jellyfin.Plugin.JellyBridge.Utils;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 using MediaBrowser.Controller.Dto;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
  
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
     /// <summary>
-    /// Service for managing bridge folders and metadata (refactored version with only helper methods).
+    /// Service for handling mixed elements from Jellyfin and Jellyseerr.
     /// </summary>
 public class BridgeService
 {
@@ -136,7 +139,7 @@ public class BridgeService
 
         foreach (var match in matches)
         {
-            var bridgeFolderPath = _metadataService.GetJellyseerrItemDirectory(match.JellyseerrItem);
+            var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(match.JellyseerrItem);
             var item = match.JellyfinItem;
             var ignoreFilePath = Path.Combine(bridgeFolderPath, IgnoreFileName);
             try
