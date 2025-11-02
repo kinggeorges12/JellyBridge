@@ -14,16 +14,10 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 public class MetadataService
 {
     private readonly DebugLogger<MetadataService> _logger;
-    private readonly JellyfinILibraryManager _libraryManager;
-    private readonly JellyfinIUserDataManager _userDataManager;
-    private readonly JellyfinIUserManager _userManager;
 
-    public MetadataService(ILogger<MetadataService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager)
+    public MetadataService(ILogger<MetadataService> logger)
     {
         _logger = new DebugLogger<MetadataService>(logger);
-        _libraryManager = libraryManager;
-        _userDataManager = userDataManager;
-        _userManager = userManager;
     }
 
     /// <summary>
@@ -37,7 +31,7 @@ public class MetadataService
         try
         {
             // Get categorized directories
-            var (movieDirectories, showDirectories) = ReadMetadataInternal();
+            var (movieDirectories, showDirectories) = ReadMetadataFolders();
 
             // Parse all movie directories
             foreach (var directory in movieDirectories)
@@ -105,10 +99,10 @@ public class MetadataService
     }
 
     /// <summary>
-    /// Internal method to discover and categorize directories containing metadata files.
+    /// Discovers and categorizes directories containing metadata files.
     /// </summary>
     /// <returns>Tuple containing lists of movie directories and show directories</returns>
-    private (List<string> movieDirectories, List<string> showDirectories) ReadMetadataInternal()
+    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders()
     {
         var movieDirectories = new List<string>();
         var showDirectories = new List<string>();
@@ -300,188 +294,6 @@ public class MetadataService
         }
         // If not using network prefix, just store in the base directory with the folder name
         return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);
-    }
-
-    /// <summary>
-    /// Randomizes play counts for all discover library items across all users.
-    /// This enables random sorting by play count in Jellyfin.
-    /// Uses ReadMetadataInternal to discover movie and show directories.
-    /// </summary>
-    /// <returns>A tuple containing a list of successful updates (name, type, playCount), a list of failed item paths, and a list of skipped item paths (ignored files).</returns>
-    public async Task<(List<(string name, string type, int playCount)> successes, List<string> failures, List<string> skipped)> RandomizePlayCountAsync()
-    {
-        var successes = new List<(string name, string type, int playCount)>();
-        var failures = new List<string>();
-        var skipped = new List<string>();
-        
-        // Get configuration setting for marking shows as played
-        var markShowsPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkShowsPlayed));
-        
-        try
-        {
-            // Get categorized directories
-            var (movieDirectories, showDirectories) = ReadMetadataInternal();
-            var totalCount = movieDirectories.Count + showDirectories.Count;
-
-            if (totalCount == 0)
-            {
-                _logger.LogDebug("No directories found to update");
-                return (successes, failures, skipped);
-            }
-
-            // Get all users
-            var users = _userManager.GetAllUsers().ToList();
-            if (users.Count == 0)
-            {
-                _logger.LogWarning("No users found - cannot update play counts");
-                return (successes, failures, skipped);
-            }
-
-            // Create a list of play count values (1000, 1100, 1200, etc. with increments of 100) and shuffle them
-            // Using increments of 100 ensures that when users play items (incrementing by 1), the sort order remains stable
-            var random = System.Random.Shared;
-            var playCounts = Enumerable.Range(0, totalCount)
-                .Select(i => 1000 + (i * 100))
-                .OrderBy(_ => random.Next())
-                .ToList();
-
-            // Create directory info map with play count and isShow flag (for efficient lookup)
-            // Combine movies and shows, then map each to (playCount, isShow) tuple
-            var directoryInfoMap = movieDirectories.Select(dir => (dir, isShow: false))
-                .Concat(showDirectories.Select(dir => (dir, isShow: true)))
-                .Select((item, index) => (item.dir, playCount: playCounts[index], item.isShow))
-                .ToDictionary(x => x.dir, x => (x.playCount, x.isShow));
-
-            // Update play count for each item across all users - parallelize by item
-            // Sort by play count (ascending) before updating to ensure lower play counts are processed first
-            var updateTasks = directoryInfoMap.OrderBy(kvp => kvp.Value.playCount).Select(async kvp =>
-            {
-                var directory = kvp.Key;
-                var (assignedPlayCount, isShowDirectory) = kvp.Value;
-                
-                try
-                {
-                    // Check if directory is ignored (has .ignore file)
-                    var ignoreFile = Path.Combine(directory, ".ignore");
-                    if (File.Exists(ignoreFile))
-                    {
-                        _logger.LogDebug("Item ignored (has .ignore file) for path: {Path}", directory);
-                        return (success: ((string name, string type, int playCount)?)null, failure: (string?)null, skipped: directory);
-                    }
-
-                    // Find item by directory path - handles both movies and shows
-                    var item = _libraryManager.FindItemByDirectoryPath(directory);
-                    
-                    if (item == null)
-                    {
-                        _logger.LogDebug("Item not found for path: {Path}", directory);
-                        return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
-                    }
-                    string itemName = item.Name;
-                    string itemType = item.GetType().Name;
-                    
-                    // Update play count for each user - parallelize user updates for this item
-                    var userUpdateTasks = users.Select(user => Task.Run(() =>
-                    {
-                        try
-                        {
-                            if (_userDataManager.TryUpdatePlayCount(user, item, assignedPlayCount))
-                            {
-                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (isShowDirectory: {IsShowDirectory})", 
-                                    user.Username, itemName, directory, assignedPlayCount, isShowDirectory);
-                                
-                                // For shows, also mark placeholder episode (S00E00 special) as played if it exists and is not already marked
-                                // Only do this if MarkShowsPlayed is enabled
-                                if (markShowsPlayed && isShowDirectory)
-                                {
-                                    try
-                                    {
-                                        var seriesWrapper = JellyfinSeries.FromItem(item);
-                                        _logger.LogTrace("Attempting to mark placeholder episode as played for series '{SeriesName}' for user {UserName}", 
-                                            seriesWrapper.Name, user.Username);
-                                        
-                                        var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager);
-                                        
-                                        if (result.Success)
-                                        {
-                                            _logger.LogTrace("Placeholder episode marked as played for series '{SeriesName}' for user {UserName}: {Message}", 
-                                                seriesWrapper.Name, user.Username, result.Message);
-                                        }
-                                        else
-                                        {
-                                            _logger.LogTrace("Placeholder episode not marked as played for series '{SeriesName}' for user {UserName}: {Message}", 
-                                                seriesWrapper.Name, user.Username, result.Message);
-                                        }
-                                    }
-                                    catch (ArgumentException ex)
-                                    {
-                                        // Item is not a Series - this is expected for some items
-                                        _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play status update", itemName);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        // Handle other errors
-                                        _logger.LogTrace(ex, "Could not mark placeholder episode as played for user {UserName}, item: {ItemName}", user.Username, itemName);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
-                            }
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, directory);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
-                        }
-                    }));
-
-                    // Wait for all user updates for this item to complete
-                    await Task.WhenAll(userUpdateTasks);
-
-                    return (success: ((string name, string type, int playCount)?)(itemName, itemType, assignedPlayCount), failure: (string?)null, skipped: (string?)null);
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger.LogWarning("Operation canceled while processing directory: {Directory}", directory);
-                    return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to update play count for directory: {Directory}", directory);
-                    return (success: ((string name, string type, int playCount)?)null, failure: directory, skipped: (string?)null);
-                }
-            });
-
-            // Wait for all item updates to complete and collect results
-            var results = await Task.WhenAll(updateTasks);
-            
-            foreach (var (success, failure, skippedItem) in results)
-            {
-                if (success.HasValue)
-                {
-                    successes.Add((success.Value.name, success.Value.type, success.Value.playCount));
-                }
-                else if (failure != null)
-                {
-                    failures.Add(failure);
-                }
-                else if (skippedItem != null)
-                {
-                    skipped.Add(skippedItem);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating play counts");
-        }
-        
-        return (successes, failures, skipped);
     }
 
     #endregion

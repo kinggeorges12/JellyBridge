@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using MediaBrowser.Model.Plugins;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Configuration;
 
@@ -62,7 +63,8 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MaxDiscoverPages), 1 },
 
         // Sort Discover Content
-        { nameof(RandomizeDiscoverSortOrder), false },
+        { nameof(EnableAutomatedSortTask), false },
+        { nameof(SortOrder), SortOrderOptions.Random },
         { nameof(MarkShowsPlayed), false },
         { nameof(SortTaskIntervalHours), 5.0 },
 
@@ -169,9 +171,14 @@ public class PluginConfiguration : BasePluginConfiguration
 
     // ===== Sort Discover Content =====
     /// <summary>
-    /// Gets or sets whether to randomize the discover library sort order by randomizing play counts for all users.
+    /// Gets or sets whether to enable the automated task to sort discover content.
     /// </summary>
-    public bool? RandomizeDiscoverSortOrder { get; set; }
+    public bool? EnableAutomatedSortTask { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sort order algorithm to use for discover library content.
+    /// </summary>
+    public SortOrderOptions? SortOrder { get; set; }
 
     /// <summary>
     /// Gets or sets whether to mark shows as played (changes unplayed count badge to checkmark badge).

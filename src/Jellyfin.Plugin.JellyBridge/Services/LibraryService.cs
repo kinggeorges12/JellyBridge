@@ -173,8 +173,7 @@ public class LibraryService
     /// Scans all Jellyfin libraries for first-time plugin initialization.
     /// Uses the same functionality as the "Scan All Libraries" button.
     /// </summary>
-    [Obsolete("ScanAllLibrariesForFirstTime is deprecated and will be removed in a future version.")]
-    public bool? ScanAllLibrariesForFirstTime()
+    public async Task<bool?> ScanAllLibraries()
     {
         try
         {
@@ -188,23 +187,10 @@ public class LibraryService
 
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
 
-            // Use the same method as the "Scan All Libraries" button, run in background
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
-                    // refreshUserData defaults to true - will perform light refresh to reload user data
-                    _ = await RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error during full scan of all libraries");
-                }
-            });
+            // Use the same method as the "Scan All Libraries" button
+            await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
 
-            // Return immediately - background task continues running
-            _logger.LogDebug("Full scan of all libraries started successfully");
+            _logger.LogDebug("Full scan of all libraries completed successfully");
             
             return true;
         }
