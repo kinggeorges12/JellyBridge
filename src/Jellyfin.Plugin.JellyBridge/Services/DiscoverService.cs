@@ -102,6 +102,39 @@ public class DiscoverService
         
         return result;
     }
+    
+    /// <summary>
+    /// Filters duplicate media items from a list using the GetItemHashCode method.
+    /// Returns a list containing only unique items based on their hash code.
+    /// </summary>
+    /// <param name="items">List of media items to filter</param>
+    /// <returns>List of unique media items</returns>
+    public List<IJellyseerrItem> FilterDuplicateMedia(List<IJellyseerrItem> items)
+    {
+        var seenHashes = new HashSet<int>();
+        var uniqueItems = new List<IJellyseerrItem>();
+        
+        foreach (var item in items)
+        {
+            if (item == null) continue;
+            
+            var hash = item.GetItemHashCode();
+            if (seenHashes.Add(hash))
+            {
+                uniqueItems.Add(item);
+            }
+            else
+            {
+                _logger.LogTrace("Filtered duplicate item: {MediaName} (Id: {Id}, Hash: {Hash})", 
+                    item.MediaName, item.Id, hash);
+            }
+        }
+        
+        _logger.LogDebug("Filtered {TotalCount} items to {UniqueCount} unique items", 
+            items.Count, uniqueItems.Count);
+        
+        return uniqueItems;
+    }
 
     #endregion
 

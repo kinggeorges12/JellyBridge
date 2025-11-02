@@ -7,7 +7,6 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using System.Linq;
-using System.IO;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -18,7 +17,6 @@ public partial class SyncService
 {
     private readonly DebugLogger<SyncService> _logger;
     private readonly ApiService _apiService;
-    private readonly JellyfinILibraryManager _libraryManager;
     private readonly BridgeService _bridgeService;
     private readonly LibraryService _libraryService;
     private readonly DiscoverService _discoverService;
@@ -29,7 +27,6 @@ public partial class SyncService
     public SyncService(
         ILogger<SyncService> logger,
         ApiService apiService,
-        JellyfinILibraryManager libraryManager,
         BridgeService bridgeService,
         LibraryService libraryService,
         DiscoverService discoverService,
@@ -38,7 +35,6 @@ public partial class SyncService
     {
         _logger = new DebugLogger<SyncService>(logger);
         _apiService = apiService;
-        _libraryManager = libraryManager;
         _bridgeService = bridgeService;
         _libraryService = libraryService;
         _discoverService = discoverService;
@@ -63,7 +59,7 @@ public partial class SyncService
         {
             _logger.LogDebug("Starting sync from Jellyseerr to Jellyfin...");
 
-            // Step 1: Test connection first
+            // Step 0: Test connection first
             var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status);
             if (status == null)
             {
@@ -73,7 +69,7 @@ public partial class SyncService
                 return result;
             }
 
-            // Step 2: Fetch movies and TV shows for all networks
+            // Step 1: Fetch movies and TV shows for all networks
             var discoverMovies = await _discoverService.FetchDiscoverMediaAsync<JellyseerrMovie>();
             var discoverShows = await _discoverService.FetchDiscoverMediaAsync<JellyseerrShow>();
 
@@ -97,34 +93,35 @@ public partial class SyncService
             _logger.LogDebug("Processing {MovieCount} movies and {ShowCount} shows from Jellyseerr", 
                 discoverMovies.Count, discoverShows.Count);
 
+            // Combine movies and shows into a single list
+            var discoverMedia = new List<IJellyseerrItem>();
+            discoverMedia.AddRange(discoverMovies.Cast<IJellyseerrItem>());
+            discoverMedia.AddRange(discoverShows.Cast<IJellyseerrItem>());
+
+            // Step 2: Filter duplicates for networks
+            var uniqueDiscoverMedia = _discoverService.FilterDuplicateMedia(discoverMedia);
+
             // Step 3: Process movies and TV shows
-            _logger.LogTrace("🎬 Creating Jellyfin folders and metadata for movies from Jellyseerr...");
-            var movieTask = _metadataService.CreateFolderMetadataAsync(discoverMovies);
+            _logger.LogTrace("📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
+            var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
 
-            _logger.LogTrace("📺 Creating Jellyfin folders and metadata for TV shows from Jellyseerr...");
-            var showTask = _metadataService.CreateFolderMetadataAsync(discoverShows);
-
-            // Wait for both to complete
-            await Task.WhenAll(movieTask, showTask);
-            
             // Get the results and set them immediately
-            var (addedMovies, updatedMovies) = await movieTask;
-            var (addedShows, updatedShows) = await showTask;
+            var addedMovies = addedMedia.OfType<JellyseerrMovie>().ToList();
+            var addedShows = addedMedia.OfType<JellyseerrShow>().ToList();
+            var updatedMovies = updatedMedia.OfType<JellyseerrMovie>().ToList();
+            var updatedShows = updatedMedia.OfType<JellyseerrShow>().ToList();
             result.AddedMovies = addedMovies;
-            result.UpdatedMovies = updatedMovies;
             result.AddedShows = addedShows;
+            result.UpdatedMovies = updatedMovies;
             result.UpdatedShows = updatedShows;
 
             // Step 4: Library Scan to find matches and get unmatched items
             List<JellyMatch> matchedItems = new List<JellyMatch>();
             List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
-            var discoverMedia = new List<IJellyseerrItem>();
-            discoverMedia.AddRange(discoverMovies.Cast<IJellyseerrItem>());
-            discoverMedia.AddRange(discoverShows.Cast<IJellyseerrItem>());
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
                 // Run library scan to find matches and get unmatched items
-                (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(discoverMedia);
+                (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
                 // Remove matches that point to items already inside the JellyBridge sync directory
                 (matchedItems, var syncedItems) = _discoverService.FilterSyncedItems(allMatchedItems);
                 // Remove any unmatched items that already have an ignore file in their folder
@@ -132,7 +129,7 @@ public partial class SyncService
                 unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
             } else {
                 // Step 4.5: If not excluding from main libraries, set unmatched items to discover media
-                unmatchedItems = discoverMedia;
+                unmatchedItems = uniqueDiscoverMedia;
                 _logger.LogDebug("Including main libraries in JellyBridge");
                 
                 // Delete all existing .ignore files when including main libraries
@@ -177,8 +174,8 @@ public partial class SyncService
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
             result.Details = $"Movies: {addedMovies.Count} added, {updatedMovies.Count} updated, {deletedMovies.Count} deleted | Shows: {addedShows.Count} added, {updatedShows.Count} updated, {deletedShows.Count} deleted";
 
-            _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated | Shows: {ShowAdded} added, {ShowUpdated} updated", 
-                addedMovies.Count, updatedMovies.Count, addedShows.Count, updatedShows.Count);
+            _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
+                addedMovies.Count, updatedMovies.Count, deletedMovies.Count, addedShows.Count, updatedShows.Count, deletedShows.Count);
         }
         catch (DirectoryNotFoundException ex)
         {
