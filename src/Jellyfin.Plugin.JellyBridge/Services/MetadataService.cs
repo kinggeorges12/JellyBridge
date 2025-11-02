@@ -284,26 +284,33 @@ public class MetadataService
         var createdFolders = new List<string>();
         var existingFolders = new List<string>();
         
+        var config = Plugin.GetConfiguration();
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var networkMap = config.NetworkMap ?? new List<JellyseerrNetwork>();
+        
+        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
+        {
+            throw new InvalidOperationException($"Library Directory does not exist: {baseDirectory}");
+        }
+        
+        if (networkMap.Count == 0)
+        {
+            _logger.LogWarning("No networks configured. No folders will be created.");
+            return (createdFolders, existingFolders);
+        }
+        
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        if (!useNetworkFolders)
+        {
+            _logger.LogWarning("UseNetworkFolders is not enabled. No folders will be created.");
+            return (createdFolders, existingFolders);
+        }
+        
+        _logger.LogInformation("Starting network folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
+            baseDirectory, networkMap.Count);
+        
         try
         {
-            var config = Plugin.GetConfiguration();
-            var baseDirectory = FolderUtils.GetBaseDirectory();
-            var networkMap = config.NetworkMap ?? new List<JellyseerrNetwork>();
-            
-            if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
-            {
-                throw new InvalidOperationException($"Library Directory does not exist: {baseDirectory}");
-            }
-            
-            if (networkMap.Count == 0)
-            {
-                _logger.LogWarning("No networks configured. No folders will be created.");
-                return (createdFolders, existingFolders);
-            }
-            
-            _logger.LogInformation("Starting network folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
-                baseDirectory, networkMap.Count);
-            
             foreach (var network in networkMap)
             {
                 try
@@ -314,10 +321,11 @@ public class MetadataService
                         continue;
                     }
                     
+                    // Use GetNetworkFolder which handles the prefix
                     var networkFolderPath = GetNetworkFolder(network.Name);
                     if (networkFolderPath == null)
                     {
-                        _logger.LogWarning("UseNetworkFolders is not enabled or network name is empty. Skipping network: {NetworkName}", network.Name);
+                        _logger.LogWarning("GetNetworkFolder returned null for network: {NetworkName}", network.Name);
                         continue;
                     }
                     

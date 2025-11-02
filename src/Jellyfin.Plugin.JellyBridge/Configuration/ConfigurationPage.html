@@ -124,14 +124,14 @@
                 
                 #IsEnabledContainer {
                     display: flex;
-                    flex:0;
+                    /* flex:0; */
                     white-space: nowrap;
                 }
                 
                 .helpButton {
                     cursor: help;
                     display: flex;
-                    flex: 1;
+                    /* flex: 1; */
                     width: 32px;
                     height: 32px;
                     line-height: 32px;
@@ -434,7 +434,7 @@
                             <li>☑️ <strong>Save artwork into media folders</strong></li>
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                         </ul>
-                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <a href="#" onclick="scrollToElement('UseNetworkFolders'); return false;" style="cursor: pointer; color: #00a4dc; text-decoration: underline;"><i>Use Network Folders</i></a></p>
+                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span onclick="scrollToElement('UseNetworkFolders');" style="cursor: pointer; color: #00a4dc; text-decoration: underline;"><i>Use Network Folders</i></span></p>
                         
                         <details id="troubleshootingDetails" class="troubleshootingDetails">
                             <summary>🤖 Troubleshooting</summary>
@@ -459,7 +459,7 @@
                                 </ol>
                                 <p><i>The <strong>Request JellyBridge Library Favorites in Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
-                                    <li>Disable CSRF protection in your Jellyseerr instance to allow cross-origin (from outside the Jellyseerr interface) favorite requests: Settings → Network → Uncheck "Enable CSRF Protection".</li>
+                                    <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck "Enable CSRF Protection".</li>
                                 </ol>
                             </div>
                         </details>
@@ -684,9 +684,10 @@
                                 <h4>Network Folder Setup Instructions</h4>
                                 <p>Do this before clicking <strong>Sync Discover Content from Jellyseerr to JellyBridge Library</strong> or running the <i>Automated Task to Sync Jellyseerr and Jellyfin</i>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
+                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span onclick="scrollToElement('activeNetworks', 100);" style="cursor: pointer; color: #00a4dc; text-decoration: underline;">Network Services</span></li>
                                     <li>Click the <strong>Generate Network Folders</strong> button below</li>
                                     <li>Create Jellyfin libraries that contain the network folders</li>
-                                    <li>For each library, follow the <a href="#" onclick="scrollToElement('librarySetupHelp'); return false;" style="cursor: pointer; color: #00a4dc; text-decoration: underline;">Library Setup Instructions</a></li>
+                                    <li>For each library, follow the <span onclick="scrollToElement('librarySetupHelp');" style="cursor: pointer; color: #00a4dc; text-decoration: underline;">Library Setup Instructions</span></li>
                                 </ol>
 
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
