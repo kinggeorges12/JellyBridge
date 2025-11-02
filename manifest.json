@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.3.37 - Updated LibraryPrefix handling to preserve leading and trailing spaces by adding trim parameter to safeParseString and preventing trimming in validateField. Enhanced windowsFilename validator to reject values starting with a space character to comply with Windows filename restrictions.",
+        "version": "1.3.37.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.37.11.zip",
+        "dependencies": [],
+        "checksum": "A6B5902331F2CA31951EEDE3D85888BE",
+        "timestamp": "2025-11-02T22:02:06.125Z",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.3.37 - Updated LibraryPrefix handling to preserve leading and trailing spaces by adding trim parameter to safeParseString and preventing trimming in validateField. Enhanced windowsFilename validator to reject values starting with a space character to comply with Windows filename restrictions.",
+        "version": "1.3.37.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.37.10.zip",
+        "dependencies": [],
+        "checksum": "24EE4B39A66181334751C0E12727FDF2",
+        "timestamp": "2025-11-02T22:02:06.125Z",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.36.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.36 - Fixed scroll links to use span elements instead of anchor tags to avoid Jellyfin hashtag navigation conflicts. Increased scroll offset to 60px default and 100px for Network Services link to provide better visual spacing. Fixed Generate Network Folders to properly use Library Prefix through GetNetworkFolder and added early return if UseNetworkFolders is not enabled.",
         "targetAbi": "10.11.0.0",

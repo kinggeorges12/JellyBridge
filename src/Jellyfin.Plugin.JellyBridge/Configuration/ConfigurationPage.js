@@ -1302,7 +1302,7 @@ function initializeAdvancedSettings(page) {
     const libraryPrefixInput = page.querySelector('#LibraryPrefix');
     if (libraryPrefixInput) {
         libraryPrefixInput.addEventListener('input', function() {
-            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
+            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
         });
     }
 }
@@ -1380,20 +1380,16 @@ function updateStartupSyncDescription() {
     
     const enabledTasks = [];
     if (isSyncEnabled) {
-        enabledTasks.push('<i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i>');
+        enabledTasks.push('🔄 <i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i>');
     }
     if (isSortEnabled) {
-        enabledTasks.push('<i>Enable the Automated Task to Sort Discover Content</i>');
+        enabledTasks.push('🔀 <i>Enable the Automated Task to Sort Discover Content</i>');
     }
     
     let descriptionText = 'Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.';
     
     if (enabledTasks.length > 0) {
-        if (enabledTasks.length === 1) {
-            descriptionText += ' If the task option is enabled, the task runs at Jellyfin startup: ' + enabledTasks[0] + '.';
-        } else {
-            descriptionText += ' If the task options are enabled, the tasks run at Jellyfin startup: ' + enabledTasks.join(' and ') + '.';
-        }
+        descriptionText += ' These tasks will run at Jellyfin startup: ' + enabledTasks.join(', ') + '.';
     } else {
         descriptionText += ' No automated tasks are currently enabled.';
     }
@@ -1559,7 +1555,7 @@ function savePluginConfiguration(page) {
     if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
     
     // Validate Library Prefix for Windows filename compatibility
-    if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
+    if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
@@ -1572,7 +1568,7 @@ function savePluginConfiguration(page) {
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
-    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
+    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
     form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
@@ -1798,6 +1794,8 @@ const validators = {
     },
     windowsFilename: (value) => {
         if (!value) return true; // Allow empty values
+        // Windows filenames cannot start with a space
+        if (value.length > 0 && value[0] === ' ') return false;
         // Check for invalid Windows filename characters: \ / : * ? " < > |
         const invalidChars = /[\\/:*?"<>|]/;
         return !invalidChars.test(value);
@@ -1862,12 +1860,12 @@ function safeParseInt(element) {
     return parseInt(value);
 }
 
-function safeParseString(element) {
+function safeParseString(element, trim = true) {
     const value = element.value;
     if (value === null || value === undefined) {
         return '';
     }
-    return value.trim();
+    return trim ? value.trim() : value;
 }
 
 function safeParseDouble(element) {
