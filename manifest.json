@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.28.11.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.3.28 - Added scroll-to-checkbox functionality when clicking disabled fields. Centralized disabled state styling and scroll handler logic into reusable utility functions. Removed beta tag and note from Create separate libraries option.",
+        "version": "1.3.28.11",
+        "dependencies": [],
+        "timestamp": "2025-11-02T04:06:06.601Z",
+        "checksum": "D8D8D930AA3F030CDE6E4C2E82BFD4F5"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.28.10.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.3.28 - Added scroll-to-checkbox functionality when clicking disabled fields. Centralized disabled state styling and scroll handler logic into reusable utility functions. Removed beta tag and note from Create separate libraries option.",
+        "version": "1.3.28.10",
+        "dependencies": [],
+        "timestamp": "2025-11-02T04:06:06.601Z",
+        "checksum": "EA28CC9C7F7E06E9808B3D021FDBF7BB"
+      },
+      {
         "version": "1.3.27.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.27.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.27 - Fixed SortOrder dropdown initialization to convert enum name strings (like 'Random') to integer values when populating from ConfigDefaults. Added enum name-to-value mapping to ensure dropdown correctly displays selected option when no explicit config value is set.",
