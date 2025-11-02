@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "F520E520C8E9D9D60F27F56AEEE9DFCC",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.33.11.zip",
+        "timestamp": "2025-11-02T20:28:38.597Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.33 - Improved disabled element UI styling with cursor: not-allowed for better user feedback. Added feature to manually request JellyBridge library favorites in Jellyseerr. Updated README with improved release notes structure and compatibility information.",
+        "version": "1.3.33.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "checksum": "94AD34FEBC2C6AC3EE17ABB55FDA1FE0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.33.10.zip",
+        "timestamp": "2025-11-02T20:28:38.597Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.33 - Improved disabled element UI styling with cursor: not-allowed for better user feedback. Added feature to manually request JellyBridge library favorites in Jellyseerr. Updated README with improved release notes structure and compatibility information.",
+        "version": "1.3.33.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.32 - Renamed CreateSeparateLibraries to UseNetworkFolders across all code. Added collapsible Network Folder Options detail dropdown that opens/closes with the checkbox. Reorganized UI elements by moving Add Duplicate Content above generate button and combining caution text, plus added Release 2.0 compatibility note to README.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.32.11.zip",
         "timestamp": "2025-11-02T19:44:59.438Z",

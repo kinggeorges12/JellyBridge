@@ -21,7 +21,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(SyncIntervalHours), 24.0 },
-        { nameof(EnableStartupSync), true },
+        { nameof(EnableStartupSync), false },
         { nameof(StartupDelaySeconds), 30 },
 
         // Library Settings

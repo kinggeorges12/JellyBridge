@@ -2,14 +2,18 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
-## Release 2.0
+## Release Notes
 
-**⚠️ Compatibility Note**: If you are using the option "Create separate libraries for streaming services", you need to review and enable those options in the configuration page after upgrading.
+After installing the new version, you may need to update the plugin configuration page using these instructions:
+`Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
+
+### Version 2.0
+
+**⚠️ Compatibility Note**: If you are using the option "Create separate libraries for streaming services", you need to review and enable those options in the configuration page after upgrading. To prevent errors after the upgrade, I disabled the option here by default: `Advanced → Auto-sync on Plugin Startup`
+
+### Version 1.0
 
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
-
-After installing the new version, you must update the plugin page using these instructions:
-`Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
 
 ## Features
 
@@ -161,6 +165,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Manage Jellyseerr Library**: Automatically refreshes your JellyBridge library in Jellyfin after each sync to show newly added or updated content. Performs a quick refresh for new items, or a full refresh if content was removed from Jellyseerr.
 - **Exclude from Main Libraries**: Prevents duplicate content by hiding movies and shows in the JellyBridge library if they already exist in your other Jellyfin libraries.
 - **Remove requested items from favorites**: Automatically removes items from everyone's favorites list once they've been successfully requested in Jellyseerr, and hides them from the library. This prevents conflicts with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. If the request is denied in Jellyseerr, the item will reappear on the next sync.
+- **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger requests for all favorited items in the JellyBridge library to be sent to Jellyseerr. This button processes favorites immediately without waiting for the scheduled sync task.
 - **Create Separate Libraries**: Creates individual libraries for each streaming service instead of one combined library.
 - **Library Prefix**: Text added to the beginning of library names when creating separate libraries for each streaming service.
 
