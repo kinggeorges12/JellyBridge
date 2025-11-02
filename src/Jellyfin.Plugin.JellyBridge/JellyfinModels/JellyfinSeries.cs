@@ -193,12 +193,13 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     }
 
     /// <summary>
-    /// Try to mark the placeholder episode (S00E00) as played for a user if it's not already marked.
+    /// Attempts to set the placeholder episode (S00E00) play status.
     /// </summary>
-    /// <param name="user">The user to mark the episode as played for</param>
-    /// <param name="userDataManager">The user data manager to update play status</param>
+    /// <param name="user">The user for which to set the play status.</param>
+    /// <param name="userDataManager">The user data manager to use for updating play status.</param>
+    /// <param name="markAsPlayed">If true, marks as played; if false, marks as not played.</param>
     /// <returns>Result object containing success status and detailed information about the operation</returns>
-    public PlaceholderEpisodePlayCountResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager)
+    public PlaceholderEpisodePlayCountResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager, bool markAsPlayed)
     {
         // Get the placeholder episode (S00E00)
         var placeholderEpisode = GetPlaceholderEpisode();
@@ -212,8 +213,9 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             };
         }
         
-        // Check current play status and mark as played if needed
-        // This prevents the placeholder episode from appearing in unplayed counts (series badge shows "1")
+        // Check current play status and update if needed
+        // Marking as played prevents the placeholder episode from appearing in unplayed counts (series badge shows "1")
+        // Marking as not played restores the unplayed count badge
         var userData = userDataManager.GetUserData(user, placeholderEpisode);
         if (userData == null)
         {
@@ -224,26 +226,28 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             };
         }
         
-        if (!userData.Played)
+        // Only update if the current status doesn't match the desired status
+        if (userData.Played != markAsPlayed)
         {
-            // Mark as played - this prevents it from appearing in unplayed counts (series badge)
-            // Use the inner UserDataManager directly to set Played = true for this specific episode only
+            // Update play status - use the inner UserDataManager directly to set Played for this specific episode only
             var userEntity = user.Inner;
-            userData.Played = true;
+            userData.Played = markAsPlayed;
             userDataManager.Inner.SaveUserData(userEntity, placeholderEpisode, userData, MediaBrowser.Model.Entities.UserDataSaveReason.Import, System.Threading.CancellationToken.None);
             
+            var status = markAsPlayed ? "played" : "not played";
             return new PlaceholderEpisodePlayCountResult
             {
                 Success = true,
-                Message = $"Marked placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) as played"
+                Message = $"Marked placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) as {status}"
             };
         }
         
-        // Already marked as played, no need to update
+        // Already in the desired state, no need to update
+        var currentStatus = userData.Played ? "played" : "not played";
         return new PlaceholderEpisodePlayCountResult
         {
             Success = false,
-            Message = $"Placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) is already marked as played"
+            Message = $"Placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) is already marked as {currentStatus}"
         };
     }
 }

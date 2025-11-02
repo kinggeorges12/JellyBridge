@@ -10,6 +10,7 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
+using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
@@ -23,9 +24,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     private readonly BridgeService _bridgeService;
     private readonly LibraryService _libraryService;
     private readonly MetadataService _metadataService;
+    private readonly SortService _sortService;
     private readonly ITaskManager _taskManager;
 
-    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, BridgeService bridgeService, LibraryService libraryService, MetadataService metadataService, ITaskManager taskManager)
+    public RouteController(ILoggerFactory loggerFactory, SyncService syncService, ApiService apiService, BridgeService bridgeService, LibraryService libraryService, MetadataService metadataService, SortService sortService, ITaskManager taskManager)
     {
         _logger = new DebugLogger<RouteController>(loggerFactory.CreateLogger<RouteController>());
         _syncService = syncService;
@@ -33,6 +35,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         _bridgeService = bridgeService;
         _libraryService = libraryService;
         _metadataService = metadataService;
+        _sortService = sortService;
         _taskManager = taskManager;
     }
 
@@ -44,7 +47,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             try
             {
                 var config = Plugin.GetConfiguration();
-                
+
                 // Convert the internal list format to dictionary format for JavaScript
                 var configForFrontend = new
                 {
@@ -68,12 +71,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
-                    RandomizeDiscoverSortOrder = config.RandomizeDiscoverSortOrder,
+                    SortOrder = config.SortOrder,
                     MarkShowsPlayed = config.MarkShowsPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
-                    DefaultValues = PluginConfiguration.DefaultValues
+                    ConfigOptions = BridgeConfiguration.ToJson(),
+                    ConfigDefaults = PluginConfiguration.DefaultValues
                 };
                 
                 return Ok(configForFrontend);
@@ -107,7 +111,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
-                    var oldRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
+                    var oldSortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder), config);
                     var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Update configuration properties using simplified helper
@@ -130,7 +134,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
-                    SetJsonValue<bool?>(configData, nameof(config.RandomizeDiscoverSortOrder), config);
+                    SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
                     SetJsonValue<bool?>(configData, nameof(config.MarkShowsPlayed), config);
                     SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
@@ -170,7 +174,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var newStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
-                    var newRandomizeSort = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder), config);
+                    var newSortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder), config);
                     var newRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Debug snapshot of old vs new
@@ -193,7 +197,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // To prevent unnecessary deferrals, we only touch:
                         // - the scheduled sync task when Enabled/Interval changes
                         // - the startup task when EnableStartupSync changes
-                        // - the sort task when RandomizeDiscoverSortOrder/SortTaskIntervalHours changes
+                        // - the sort task when SortOrder/SortTaskIntervalHours changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
                         var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSort");
@@ -224,11 +228,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             }
                         }
 
-                        // Update sort task triggers only if RandomizeDiscoverSortOrder or SortTaskIntervalHours changed
-                        var randomizeSortChanged = oldRandomizeSort != newRandomizeSort || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
-                        if (randomizeSortChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.SortTask randomizeSortTask)
+                        // Update sort task triggers only if SortOrder or SortTaskIntervalHours changed
+                        var sortOrderChanged = oldSortOrder != newSortOrder || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
+                        if (sortOrderChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.SortTask randomizeSortTask)
                         {
-                            _logger.LogDebug("Reloading randomize sort task triggers due to config change. Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldRandomizeSort, oldRandomizeSortInterval, newRandomizeSort, newRandomizeSortInterval);
+                            _logger.LogDebug("Reloading sort task triggers due to config change. Old: sortOrder={OldSortOrder}, interval={OldInterval}; New: sortOrder={NewSortOrder}, interval={NewInterval}", oldSortOrder, oldRandomizeSortInterval, newSortOrder, newRandomizeSortInterval);
                             
                             var newTriggers = randomizeSortTask.GetDefaultTriggers();
                             randomizeSortWorker.Triggers = newTriggers.ToList();
@@ -514,7 +518,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     // Randomize play counts for all users to enable random sorting
-                    var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
+                    var (successes, failures, skipped) = await _sortService.ApplyPlayCountAlgorithmAsync();
 
                     _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
 
@@ -834,6 +838,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // refreshUserData defaults to true - will perform light refresh to reload user data
                     await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
 
+                    await _libraryService.ScanAllLibraries();
+
                     _logger.LogInformation("Jellyseerr library refresh initiated");
 
                     return true;
@@ -930,6 +936,32 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     value = bool.TryParse(str, out var bv) ? bv : (bool?)null;
                 }
             }
+            else if (typeof(T).IsEnum || (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>) && typeof(T).GetGenericArguments()[0].IsEnum))
+            {
+                // Handle enum types (including nullable enums)
+                var enumType = typeof(T).IsGenericType ? typeof(T).GetGenericArguments()[0] : typeof(T);
+                
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    value = null;
+                }
+                else if (element.ValueKind == JsonValueKind.Number)
+                {
+                    var intValue = element.GetInt32();
+                    if (Enum.IsDefined(enumType, intValue))
+                    {
+                        value = Enum.ToObject(enumType, intValue);
+                    }
+                }
+                else if (element.ValueKind == JsonValueKind.String)
+                {
+                    var str = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(str) && Enum.TryParse(enumType, str, true, out var parsedEnum))
+                    {
+                        value = parsedEnum;
+                    }
+                }
+            }
             // Always set the property when provided, even if null for nullable types
             property.SetValue(config, value);
         }
@@ -959,6 +991,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // For nullable doubles, only accept strings that parse as doubles; otherwise treat as "empty"
                 if (typeof(T) == typeof(double?) && !double.TryParse(stringValue, out _))
                     return true;
+                
+                // For nullable enums, only accept strings that parse as the enum; otherwise treat as "empty"
+                if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>) && typeof(T).GetGenericArguments()[0].IsEnum)
+                {
+                    var enumType = typeof(T).GetGenericArguments()[0];
+                    if (!Enum.TryParse(enumType, stringValue, true, out _))
+                        return true;
+                }
             }
 
             return false;

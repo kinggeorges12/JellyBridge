@@ -14,16 +14,16 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 public class SortTask : IScheduledTask
 {
     private readonly DebugLogger<SortTask> _logger;
-    private readonly MetadataService _metadataService;
+    private readonly SortService _sortService;
     private readonly LibraryService _libraryService;
 
     public SortTask(
         ILogger<SortTask> logger,
-        MetadataService metadataService,
+        SortService sortService,
         LibraryService libraryService)
     {
         _logger = new DebugLogger<SortTask>(logger);
-        _metadataService = metadataService;
+        _sortService = sortService;
         _libraryService = libraryService;
         _logger.LogInformation("SortTask constructor called - task initialized");
     }
@@ -45,11 +45,11 @@ public class SortTask : IScheduledTask
                 progress.Report(10);
                 
                 // Randomize play counts for all users to enable random sorting
-                var (successes, failures, skipped) = await _metadataService.RandomizePlayCountAsync();
+                var (successes, failures, skipped) = await _sortService.ApplyPlayCountAlgorithmAsync();
                 
                 progress.Report(50);
                 
-                // Don't refresh library - play count changes don't require a refresh, the UI will update when items are viewed
+                // Refresh library to reload user data (play counts)
                 await _libraryService.RefreshBridgeLibrary(refreshUserData: false);
                 
                 progress.Report(100);
@@ -68,12 +68,12 @@ public class SortTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RandomizeDiscoverSortOrder));
+        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
         var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours));
         
         if (!isEnabled)
         {
-            _logger.LogDebug("Randomize sort is disabled, returning empty triggers");
+            _logger.LogDebug("Automated sort task is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();
         }
 

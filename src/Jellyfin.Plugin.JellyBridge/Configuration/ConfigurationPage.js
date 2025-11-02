@@ -361,12 +361,12 @@ function initializeImportContent(page) {
     const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
     // Populate region settings
-    const regionSelect = config.Region || config.DefaultValues.Region;
+    const regionSelect = config.Region || config.ConfigDefaults.Region;
     populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
 	// If NetworkMap is null/undefined, fall back to defaults; if it's an empty array, keep it empty
-	const defaultNetworkMap = (config.DefaultValues && Array.isArray(config.DefaultValues.NetworkMap)) ? config.DefaultValues.NetworkMap : [];
+	const defaultNetworkMap = (config.ConfigDefaults && Array.isArray(config.ConfigDefaults.NetworkMap)) ? config.ConfigDefaults.NetworkMap : [];
 	const activeNetworksSource = Array.isArray(config.NetworkMap) ? config.NetworkMap : defaultNetworkMap;
 	populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
     sortSelectOptions(activeNetworksSelect);
@@ -623,7 +623,7 @@ function updateAvailableNetworks(page, networkMap = []) {
     const activeNetworks = parseNetworkOptions(activeNetworksSelect.options);
     
     // Get default network map from global config
-    const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
+    const defaultNetworkMap = config?.ConfigDefaults?.NetworkMap || [];
     
     // Combine default networks with API networks from parameter
     const combinedNetworks = [...defaultNetworkMap, ...networkMap];
@@ -854,8 +854,21 @@ function loadRegions(page) {
 function initializeSortContent(page) {
     const config = window.configJellyBridge || {};
     
+    // Populate SortOrder dropdown from enum values
+    const sortOrderSelect = page.querySelector('#SortOrder');
+    if (sortOrderSelect && config.ConfigOptions && config.ConfigOptions.SortOrderOptions && Array.isArray(config.ConfigOptions.SortOrderOptions)) {
+        sortOrderSelect.innerHTML = '';
+        config.ConfigOptions.SortOrderOptions.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.Value.toString();
+            optionElement.textContent = option.Name;
+            sortOrderSelect.appendChild(optionElement);
+        });
+    }
+    
     // Set sort content form values with null handling
-    setInputField(page, 'RandomizeDiscoverSortOrder', true);
+    setInputField(page, 'EnableAutomatedSortTask', true);
+    setInputField(page, 'SortOrder');
     setInputField(page, 'MarkShowsPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
 
@@ -1203,7 +1216,8 @@ function performPluginReset(page) {
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
-                RandomizeDiscoverSortOrder: null,
+                EnableAutomatedSortTask: null,
+                SortOrder: null,
                 MarkShowsPlayed: null,
                 SortTaskIntervalHours: null,
                 IsEnabled: null,
@@ -1242,7 +1256,7 @@ function performPluginReset(page) {
 function performRecycleLibraryData(page) {
     // Get current library directory, fallback to default if empty
     const config = window.configJellyBridge || {};
-    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
+    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.ConfigDefaults?.LibraryDirectory;
     // Get the button
     const recycleLibraryButton = page.querySelector('#recycleLibraryData');
     
@@ -1270,7 +1284,7 @@ function performRecycleLibraryData(page) {
             // After saving, show second confirmation
             Dashboard.confirm({
                 title: '🚨 FINAL CONFIRMATION - DELETE LIBRARY',
-                text: `This next step will delete ALL Jellyseerr library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                text: `This next step will delete ALL JellyBridge library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
                 confirmText: '🚩 YES, DELETE EVERYTHING',
                 cancelText: 'Cancel',
                 primary: "cancel"
@@ -1289,7 +1303,7 @@ function performRecycleLibraryData(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(result) {
-                    Dashboard.alert('✅ All Jellyseerr library data has been deleted successfully.');
+                    Dashboard.alert('✅ All JellyBridge library data has been deleted successfully.');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
                 }).finally(function() {
@@ -1339,31 +1353,32 @@ function savePluginConfiguration(page) {
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
     form.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
     form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
-    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.DefaultValues.RemoveRequestedFromFavorites);
-    form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
+    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
+    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
+    form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.ConfigDefaults.CreateSeparateLibraries);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
-    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
+    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
     form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
-    form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+    form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.ConfigDefaults.Region);
     form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
-    form.RandomizeDiscoverSortOrder = nullIfDefault(page.querySelector('#RandomizeDiscoverSortOrder').checked, config.DefaultValues.RandomizeDiscoverSortOrder);
-    form.MarkShowsPlayed = nullIfDefault(page.querySelector('#MarkShowsPlayed').checked, config.DefaultValues.MarkShowsPlayed);
+    form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
+    form.SortOrder = nullIfDefault(safeParseInt(page.querySelector('#SortOrder').value), config.ConfigDefaults.SortOrder);
+    form.MarkShowsPlayed = nullIfDefault(page.querySelector('#MarkShowsPlayed').checked, config.ConfigDefaults.MarkShowsPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.DefaultValues.EnableTraceLogging);
-    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
+    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
+    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     
     // Save the configuration using our custom endpoint
     return fetch('/JellyBridge/PluginConfiguration', {
@@ -1492,7 +1507,7 @@ function setInputField(page, propertyName, isCheckbox = false) {
     }
     
     const config = window.configJellyBridge || {};
-    const defaults = config.DefaultValues || {};
+    const defaults = config.ConfigDefaults || {};
     const configValue = config[propertyName];
     const defaultValue = defaults[propertyName];
     

@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "74FCE5E564D5D26240F1E261EF9B3BFF",
+        "timestamp": "2025-11-02T00:32:54.158Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.24.11.zip",
+        "version": "1.3.24.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.24 - Refactored sort functionality into new SortService class and added BridgeConfiguration with SortOrderOptions enum. Replaced boolean sort toggle with dropdown (None/Random/Smart) and added dynamic enum population via ConfigOptions. Made ScanAllLibraries async/awaitable and renamed DefaultValues to ConfigDefaults in frontend."
+      },
+      {
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "3BD9E6A72DEE59DFB700A8473F96CF8E",
+        "timestamp": "2025-11-02T00:32:54.158Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.24.10.zip",
+        "version": "1.3.24.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.24 - Refactored sort functionality into new SortService class and added BridgeConfiguration with SortOrderOptions enum. Replaced boolean sort toggle with dropdown (None/Random/Smart) and added dynamic enum population via ConfigOptions. Made ScanAllLibraries async/awaitable and renamed DefaultValues to ConfigDefaults in frontend."
+      },
+      {
         "checksum": "440ED47C83E31CC82CC389E4B98C7C9F",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.23.11.zip",
