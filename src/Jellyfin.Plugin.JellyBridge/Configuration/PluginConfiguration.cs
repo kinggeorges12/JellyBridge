@@ -28,7 +28,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(LibraryDirectory), "/data/JellyBridge" },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(RemoveRequestedFromFavorites), false },
-        { nameof(CreateSeparateLibraries), false },
+        { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), false },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ManageJellyseerrLibrary), true },
@@ -138,9 +138,9 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? RemoveRequestedFromFavorites { get; set; }
 
     /// <summary>
-    /// Gets or sets whether to create separate libraries for streaming services.
+    /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
-    public bool? CreateSeparateLibraries { get; set; }
+    public bool? UseNetworkFolders { get; set; }
 
     /// <summary>
     /// Gets or sets whether to add duplicate content to network folders when separate libraries are enabled.

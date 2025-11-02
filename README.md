@@ -2,6 +2,10 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
+## Release 2.0
+
+**⚠️ Compatibility Note**: If you are using the option "Create separate libraries for streaming services", you need to review and enable those options in the configuration page after upgrading.
+
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
 After installing the new version, you must update the plugin page using these instructions:

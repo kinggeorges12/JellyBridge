@@ -1002,19 +1002,27 @@ function initializeManageLibrary(page) {
     // Set library settings form values with null handling
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
-    setInputField(page, 'CreateSeparateLibraries', true);
+    setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
     setInputField(page, 'ManageJellyseerrLibrary', true);
     
-    updateLibraryPrefixState();
+    updateNetworkFolderOptionsState();
     updateAddDuplicateContentState();
     
-    // Add event listener for CreateSeparateLibraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
+    // Add event listener for UseNetworkFolders checkbox
+    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
+    if (useNetworkFoldersCheckbox) {
+        useNetworkFoldersCheckbox.addEventListener('change', function() {
+            updateNetworkFolderOptionsState();
+            updateAddDuplicateContentState();
+        });
+    }
+    
+    // Add event listener for AddDuplicateContent checkbox
+    const addDuplicateContentCheckbox = page.querySelector('#AddDuplicateContent');
+    if (addDuplicateContentCheckbox) {
+        addDuplicateContentCheckbox.addEventListener('change', function() {
             updateAddDuplicateContentState();
         });
     }
@@ -1022,7 +1030,7 @@ function initializeManageLibrary(page) {
     // Add scroll handler for AddDuplicateContent
     const addDuplicateContentContainer = page.querySelector('#AddDuplicateContentContainer');
     if (addDuplicateContentContainer) {
-        setupDisabledScrollHandlers('#CreateSeparateLibraries', [addDuplicateContentContainer]);
+        setupDisabledScrollHandlers('#UseNetworkFolders', [addDuplicateContentContainer]);
     }
     
     // Sync Favorites button functionality
@@ -1040,21 +1048,29 @@ function initializeManageLibrary(page) {
     }
 }
 
-function updateLibraryPrefixState() {
-    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+function updateNetworkFolderOptionsState() {
+    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
     const libraryPrefixInput = document.querySelector('#LibraryPrefix');
     const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
-    const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
+    const networkFolderOptionsDetails = document.querySelector('#networkFolderOptionsDetails');
     const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
     
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
+    const isEnabled = useNetworkFoldersCheckbox.checked;
+    
+    // Show/hide network folder options details
+    if (networkFolderOptionsDetails) {
+        networkFolderOptionsDetails.style.display = isEnabled ? 'block' : 'none';
+        // Open or close the details element
+        if (isEnabled) {
+            networkFolderOptionsDetails.setAttribute('open', '');
+        } else {
+            networkFolderOptionsDetails.removeAttribute('open');
+        }
+    }
     
     // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Show/hide warning message
-    if (separateLibrariesWarning) {
-        separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
+    if (libraryPrefixInput) {
+        libraryPrefixInput.disabled = !isEnabled;
     }
     
     // Show/hide generate network folders container
@@ -1066,21 +1082,28 @@ function updateLibraryPrefixState() {
     applyDisabledState(libraryPrefixInput, libraryPrefixContainer, isEnabled);
     
     // Add click handler to scroll to required checkbox when disabled field is clicked
-    if (libraryPrefixContainer && createSeparateLibrariesCheckbox) {
-        addScrollToCheckboxHandler(libraryPrefixContainer, createSeparateLibrariesCheckbox);
+    if (libraryPrefixContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(libraryPrefixContainer, useNetworkFoldersCheckbox);
     }
 }
 
-// Update controls that depend on CreateSeparateLibraries being enabled
+// Update controls that depend on UseNetworkFolders being enabled
 function updateAddDuplicateContentState() {
-    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
+    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
     const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
     const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
+    const addDuplicateContentWarning = document.querySelector('#addDuplicateContentWarning');
     
-    const isSeparateLibrariesEnabled = createSeparateLibrariesCheckbox ? !!createSeparateLibrariesCheckbox.checked : false;
+    const isUseNetworkFoldersEnabled = useNetworkFoldersCheckbox ? !!useNetworkFoldersCheckbox.checked : false;
+    const isAddDuplicateContentEnabled = addDuplicateContentCheckbox ? !!addDuplicateContentCheckbox.checked : false;
+    
+    // Show/hide warning message
+    if (addDuplicateContentWarning) {
+        addDuplicateContentWarning.style.display = isAddDuplicateContentEnabled ? 'block' : 'none';
+    }
     
     // Apply disabled state styling
-    applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isSeparateLibrariesEnabled);
+    applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isUseNetworkFoldersEnabled);
 }
 
 function performGenerateNetworkFolders(page) {
@@ -1250,11 +1273,11 @@ function initializeAdvancedSettings(page) {
         });
     }
     
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
+    // Add event listener for Use Network Folders checkbox
+    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
+    if (useNetworkFoldersCheckbox) {
+        useNetworkFoldersCheckbox.addEventListener('change', function() {
+            updateNetworkFolderOptionsState();
         });
     }
     
@@ -1372,7 +1395,7 @@ function performPluginReset(page) {
                 MarkShowsPlayed: null,
                 SortTaskIntervalHours: null,
                 IsEnabled: null,
-                CreateSeparateLibraries: null,
+                UseNetworkFolders: null,
                 AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
                 EnableStartupSync: null,
@@ -1512,7 +1535,7 @@ function savePluginConfiguration(page) {
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
-    form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.ConfigDefaults.CreateSeparateLibraries);
+    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
@@ -1564,7 +1587,7 @@ function initializeGlobalSettings(page) {
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
     // List of detail section IDs
-    const detailIds = ['syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'advancedSettings'];
+    const detailIds = ['troubleshootingDetails', 'syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'advancedSettings'];
     
     detailIds.forEach(detailId => {
         const detailsElement = page.querySelector(`#${detailId}`);

@@ -317,7 +317,7 @@ public class MetadataService
                     var networkFolderPath = GetNetworkFolder(network.Name);
                     if (networkFolderPath == null)
                     {
-                        _logger.LogWarning("CreateSeparateLibraries is not enabled or network name is empty. Skipping network: {NetworkName}", network.Name);
+                        _logger.LogWarning("UseNetworkFolders is not enabled or network name is empty. Skipping network: {NetworkName}", network.Name);
                         continue;
                     }
                     
@@ -359,13 +359,13 @@ public class MetadataService
     #region Helpers
 
     /// <summary>
-    /// Get the network folder path if CreateSeparateLibraries is enabled, otherwise returns null.
+    /// Get the network folder path if UseNetworkFolders is enabled, otherwise returns null.
     /// </summary>
     /// <param name="networkName">The name of the network (from NetworkTag or network.Name)</param>
     /// <returns>Network folder path if enabled, null otherwise</returns>
     private string? GetNetworkFolder(string? networkName)
     {
-        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries)) || string.IsNullOrEmpty(networkName))
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders)) || string.IsNullOrEmpty(networkName))
         {
             return null;
         }
