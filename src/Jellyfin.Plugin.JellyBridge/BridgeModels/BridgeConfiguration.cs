@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
 /// <summary>
@@ -8,6 +10,7 @@ public class BridgeConfiguration
     /// <summary>
     /// Defines the sort order options for discover library content.
     /// </summary>
+    [JsonConverter(typeof(JsonNumberEnumConverter<SortOrderOptions>))]
     public enum SortOrderOptions
     {
         /// <summary>

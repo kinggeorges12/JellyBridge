@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.25.11",
+        "timestamp": "2025-11-02T00:55:31.891Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.25.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.25 - Added JsonNumberEnumConverter to SortOrderOptions enum to ensure proper numeric serialization for frontend compatibility.",
+        "checksum": "4A74118862F4ADB63963998BB5ACE6F8",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "version": "1.3.25.10",
+        "timestamp": "2025-11-02T00:55:31.891Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.25.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.25 - Added JsonNumberEnumConverter to SortOrderOptions enum to ensure proper numeric serialization for frontend compatibility.",
+        "checksum": "BA7A0927A8C45A6002A40ED883A2E59E",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "dependencies": [],
         "targetAbi": "10.11.0.0",
         "checksum": "74FCE5E564D5D26240F1E261EF9B3BFF",
