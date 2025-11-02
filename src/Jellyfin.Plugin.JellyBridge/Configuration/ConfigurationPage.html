@@ -114,11 +114,10 @@
                     font-size: 16px;
                     font-weight: bold;
                     margin-left: 5px;
-                    cursor: help;
                     vertical-align: middle;
                 }
                 
-                .helpIcon:hover {
+                .helpButton:hover .helpIcon {
                     background: #106ebe;
                 }
                 
@@ -129,6 +128,7 @@
                 }
                 
                 .helpButton {
+                    cursor: help;
                     display: flex;
                     flex: 1;
                     width: 32px;
@@ -368,8 +368,8 @@
                                 <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                             </span>
                         </label>
-                        <div class="helpButton" id="librarySetupHelp">
-                            <span class="helpIcon" title="Click me! Show library setup instruction before enabling the task.">?</span>
+                        <div class="helpButton" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">
+                            <span class="helpIcon">?</span>
                             <span style="margin-left: 5px;">Setup</span>
                         </div>
                     </div>

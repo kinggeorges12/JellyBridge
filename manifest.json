@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.31 - Improved help button hover behavior by moving cursor styling to container and applying icon background color change when hovering anywhere on the button including the Setup text.",
+        "version": "1.3.31.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.31.11.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-02T19:02:21.861Z",
+        "checksum": "26D5569C75FBA1DCEA9D220D6E135E4C"
+      },
+      {
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.31 - Improved help button hover behavior by moving cursor styling to container and applying icon background color change when hovering anywhere on the button including the Setup text.",
+        "version": "1.3.31.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.31.10.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-02T19:02:21.861Z",
+        "checksum": "5CBA5BE9A4AEB7FFF205C41076DC45F4"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.30 - Refactored monolithic RouteController into specialized controllers (PluginConfigurationController, GeneralSettingsController, ImportDiscoverContentController, SortDiscoverContentController, ManageDiscoverLibraryController, AdvancedSettingsController, TaskStatusController). Moved library setup instructions above test connection button and converted troubleshooting section to collapsible details. Updated all service using statements to minimal sets and improved service class summaries.",
         "checksum": "B36634942B3960D8AD1AF75B5C23DE96",
         "version": "1.3.30.11",
