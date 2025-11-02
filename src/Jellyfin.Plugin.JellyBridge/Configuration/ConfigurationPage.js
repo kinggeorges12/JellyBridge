@@ -1780,14 +1780,22 @@ function scrollToElement(elementId, offset = 60) {
 
 // Global validators object
 const validators = {
-    notNull: (value) => !!value && value.trim() !== '',
-    url: (value) => !value || /^https?:\/\/.+/.test(value),
+    notNull: (value) => {
+        value = value.trim();
+        return !!value && value !== '';
+    },
+    url: (value) => {
+        value = value.trim();
+        return !value || /^https?:\/\/.+/.test(value);
+    },
     int: (value) => {
+        value = value.trim();
         if (!value) return true; // Allow empty values
         const num = parseInt(value);
         return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
     },
     double: (value) => {
+        value = value.trim();
         if (!value) return true; // Allow empty values
         const num = parseFloat(value);
         return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
@@ -1810,10 +1818,8 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
         return { isValid: false, error: `Field "${fieldId}" not found` };
     }
     
-    const value = field.value.trim();
-    
     // Check validator function if provided
-    if (validator && !validator(value)) {
+    if (validator && !validator(field.value)) {
         const message = errorMessage || `${fieldId} is invalid`;
         Dashboard.alert(`❌ ${message}`);
         scrollToElement(fieldId);
@@ -1853,7 +1859,7 @@ function nullIfDefault(value, defaultValue) {
 
 // Helper function to safely parse integers with user feedback
 function safeParseInt(element) {
-    const value = element.value;
+    const value = element.value.trim();
     if (value === null || value === undefined || value === '') {
         return null;
     }
@@ -1869,7 +1875,7 @@ function safeParseString(element, trim = true) {
 }
 
 function safeParseDouble(element) {
-    const value = element.value;
+    const value = element.value.trim();
     if (value === null || value === undefined || value === '') {
         return null;
     }
