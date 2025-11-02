@@ -521,6 +521,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     _logger.LogTrace("Sort library completed successfully - {SuccessCount} successes, {FailureCount} failures, {SkippedCount} skipped", successes.Count, failures.Count, skipped.Count);
 
+                    if (successes.Count > 0) {
+                        // Refresh library to reload user data (play counts) - same as SortTask
+                        await _libraryService.RefreshBridgeLibrary(refreshUserData: false);
+                        _logger.LogInformation("Library refreshed started for Sort Library");
+                    }
+
                     // Build detailed message
                     var detailsBuilder = new System.Text.StringBuilder();
                     detailsBuilder.AppendLine($"Items randomized: {successes.Count}");

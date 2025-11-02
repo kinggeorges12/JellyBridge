@@ -251,6 +251,28 @@ function initializeGeneralSettings(page) {
     }
     // Initialize dependency state on load
     updateAutoTaskDependencies();
+    
+    // Add click handlers to scroll to the IsEnabled checkbox when disabled fields are clicked
+    const syncIntervalContainer = page.querySelector('#SyncIntervalHoursContainer');
+    const enableStartupSyncContainer = page.querySelector('#EnableStartupSync')?.closest('.checkboxContainer');
+    
+    // Set up scroll handlers for containers that depend on IsEnabled
+    const dependentContainers = [syncIntervalContainer].filter(Boolean);
+    if (enableStartupSyncContainer) {
+        // Special handling for EnableStartupSync - check for disabled checkbox instead of disabled class
+        const enableStartupSyncCheckbox = page.querySelector('#EnableStartupSync');
+        if (enableStartupSyncCheckbox) {
+            enableStartupSyncContainer.addEventListener('click', function(e) {
+                if (enableStartupSyncCheckbox.disabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    scrollToCheckboxAndHighlight('#IsEnabled');
+                }
+            });
+        }
+    }
+    
+    setupDisabledScrollHandlers('#IsEnabled', dependentContainers);
 }
 
 function performTestConnection(page) {
@@ -992,17 +1014,12 @@ function updateLibraryPrefixState() {
         separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
     }
     
-    // Add/remove disabled styling to both input and container
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.remove('disabled');
-        }
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.add('disabled');
-        }
+    // Apply disabled state styling
+    applyDisabledState(libraryPrefixInput, libraryPrefixContainer, isEnabled);
+    
+    // Add click handler to scroll to required checkbox when disabled field is clicked
+    if (libraryPrefixContainer && createSeparateLibrariesCheckbox) {
+        addScrollToCheckboxHandler(libraryPrefixContainer, createSeparateLibrariesCheckbox);
     }
 }
 
@@ -1149,20 +1166,23 @@ function updateStartupDelayState() {
     const isAutoSyncEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
     const isEnabled = isPluginEnabled && isAutoSyncEnabled;
     
-    // Enable/disable the input
-    startupDelaySecondsInput.disabled = !isEnabled;
+    // Apply disabled state styling
+    applyDisabledState(startupDelaySecondsInput, startupDelaySecondsContainer, isEnabled);
     
-    // Add/remove disabled styling
-    if (isEnabled) {
-        startupDelaySecondsInput.classList.remove('disabled');
-        if (startupDelaySecondsContainer) {
-            startupDelaySecondsContainer.classList.remove('disabled');
-        }
-    } else {
-        startupDelaySecondsInput.classList.add('disabled');
-        if (startupDelaySecondsContainer) {
-            startupDelaySecondsContainer.classList.add('disabled');
-        }
+    // Add click handler to scroll to required checkbox when disabled field is clicked
+    // This one is special because it needs to determine the target dynamically
+    if (startupDelaySecondsContainer) {
+        startupDelaySecondsContainer.addEventListener('click', function(e) {
+            if (startupDelaySecondsContainer.classList.contains('disabled')) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Scroll to the checkbox that needs to be enabled (either IsEnabled or EnableStartupSync)
+                const targetCheckbox = !isPluginEnabled ? pluginEnabledCheckbox : autoSyncOnStartupCheckbox;
+                if (targetCheckbox) {
+                    scrollToCheckboxAndHighlight(targetCheckbox);
+                }
+            }
+        });
     }
 }
 
@@ -1173,18 +1193,12 @@ function updateTraceLoggingState() {
     
     const isDebugLoggingEnabled = enableDebugLoggingCheckbox && enableDebugLoggingCheckbox.checked;
     
-    // Enable/disable the trace logging checkbox
-    if (enableTraceLoggingCheckbox) {
-        enableTraceLoggingCheckbox.disabled = !isDebugLoggingEnabled;
-    }
+    // Apply disabled state styling
+    applyDisabledState(enableTraceLoggingCheckbox, enableTraceLoggingContainer, isDebugLoggingEnabled);
     
-    // Add/remove disabled styling
-    if (enableTraceLoggingContainer) {
-        if (isDebugLoggingEnabled) {
-            enableTraceLoggingContainer.classList.remove('disabled');
-        } else {
-            enableTraceLoggingContainer.classList.add('disabled');
-        }
+    // Add click handler to scroll to required checkbox when disabled field is clicked
+    if (enableTraceLoggingContainer && enableDebugLoggingCheckbox) {
+        addScrollToCheckboxHandler(enableTraceLoggingContainer, enableDebugLoggingCheckbox);
     }
 }
 
@@ -1192,16 +1206,15 @@ function updateTraceLoggingState() {
 function updateAutoTaskDependencies() {
     const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const syncIntervalInput = document.querySelector('#SyncIntervalHours');
+    const syncIntervalContainer = document.querySelector('#SyncIntervalHoursContainer');
     const enableStartupSyncCheckbox = document.querySelector('#EnableStartupSync');
+    const enableStartupSyncContainer = enableStartupSyncCheckbox ? enableStartupSyncCheckbox.closest('.checkboxContainer') : null;
 
     const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
 
-    if (syncIntervalInput) {
-        syncIntervalInput.disabled = !isPluginEnabled;
-    }
-    if (enableStartupSyncCheckbox) {
-        enableStartupSyncCheckbox.disabled = !isPluginEnabled;
-    }
+    // Apply disabled state styling
+    applyDisabledState(syncIntervalInput, syncIntervalContainer, isPluginEnabled);
+    applyDisabledState(enableStartupSyncCheckbox, enableStartupSyncContainer, isPluginEnabled);
 
     // Update startup delay to reflect current combined state
     updateStartupDelayState();
@@ -1434,9 +1447,16 @@ function initializeDetailTabScroll(page) {
             const summaryElement = detailsElement.querySelector('summary');
             if (summaryElement) {
                 summaryElement.addEventListener('click', function(e) {
-                    // Wait a brief moment for the details to open/close, then scroll
+                    // Check if the details is being opened (will be open after the click)
+                    // We need to check before the state changes, so we check if it's currently closed
+                    const wasClosed = !detailsElement.hasAttribute('open');
+                    
+                    // Wait a brief moment for the details to open/close, then check and scroll only if opening
                     setTimeout(() => {
-                        scrollToElement(detailId);
+                        // Only scroll if the details was closed before (meaning it's being opened)
+                        if (wasClosed && detailsElement.hasAttribute('open')) {
+                            scrollToElement(detailId);
+                        }
                     }, 50);
                 });
             }
@@ -1447,6 +1467,88 @@ function initializeDetailTabScroll(page) {
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
+
+// Apply disabled state styling to an input element and optionally its container
+// element: The input/checkbox element to disable/enable
+// container: Optional container element to also apply disabled styling to
+// isEnabled: Whether the element should be enabled (true) or disabled (false)
+function applyDisabledState(element, container, isEnabled) {
+    if (!element) return;
+    
+    element.disabled = !isEnabled;
+    
+    // Apply/remove disabled class styling
+    if (isEnabled) {
+        element.classList.remove('disabled');
+        if (container) {
+            container.classList.remove('disabled');
+        }
+    } else {
+        element.classList.add('disabled');
+        if (container) {
+            container.classList.add('disabled');
+        }
+    }
+}
+
+// Set up scroll handlers for multiple dependent containers that scroll to the same target checkbox
+// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
+// dependentContainers: Array of container elements that should trigger scroll when disabled
+function setupDisabledScrollHandlers(targetCheckboxSelector, dependentContainers) {
+    if (!Array.isArray(dependentContainers)) {
+        dependentContainers = [dependentContainers];
+    }
+    
+    dependentContainers.forEach(container => {
+        if (container) {
+            addScrollToCheckboxHandler(container, targetCheckboxSelector);
+        }
+    });
+}
+
+// Scroll to a checkbox and highlight it
+// targetCheckbox: Query selector string or element for the checkbox to scroll to
+function scrollToCheckboxAndHighlight(targetCheckbox) {
+    // Get the target checkbox (either from selector string or element)
+    const checkbox = typeof targetCheckbox === 'string' 
+        ? document.querySelector(targetCheckbox)
+        : targetCheckbox;
+    
+    if (checkbox) {
+        checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Briefly highlight the checkbox
+        const container = checkbox.closest('.checkboxContainer') || checkbox.closest('#IsEnabledContainer');
+        if (container) {
+            container.style.transition = 'background-color 0.3s ease';
+            container.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
+            setTimeout(() => {
+                container.style.backgroundColor = '';
+                setTimeout(() => {
+                    container.style.transition = '';
+                }, 300);
+            }, 1000);
+        }
+    }
+}
+
+// Add a scroll-to-checkbox handler when a disabled container is clicked
+// containerElement: The container element that should trigger the scroll when disabled
+// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
+function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
+    if (!containerElement || containerElement.hasAttribute('data-scroll-handler')) {
+        return;
+    }
+    
+    containerElement.setAttribute('data-scroll-handler', 'true');
+    containerElement.addEventListener('click', function(e) {
+        if (containerElement.classList.contains('disabled')) {
+            e.preventDefault();
+            e.stopPropagation();
+            scrollToCheckboxAndHighlight(targetCheckboxSelector);
+        }
+    });
+}
 
 // Scroll to a specific element by ID with smooth scrolling
 function scrollToElement(elementId, offset = 20) {
