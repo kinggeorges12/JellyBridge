@@ -452,6 +452,9 @@ public class BridgeService
 						var existsSameDir = existingItemsSet.Contains((normalizedLibrary, normalizedDir, itemHashCode));
 						var existsAnyDir = existingItemsSet.Any(t => t.libraryName == normalizedLibrary && t.itemHashCode == itemHashCode);
                         var shouldFilter = !existsSameDir && existsAnyDir;
+                        _logger.LogTrace("Checking duplicate {MediaName} (Hash: {HashCode}) in library {LibraryName} from directory {Directory}", 
+                            pair.item.MediaName, itemHashCode, pair.libraryName, pair.directory);
+                        _logger.LogTrace("existsSameDir: {ExistsSameDir}, existsAnyDir: {ExistsAnyDir}", existsSameDir, existsAnyDir);
 						
 						if (shouldFilter)
 						{
