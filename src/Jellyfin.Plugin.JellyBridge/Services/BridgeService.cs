@@ -433,59 +433,28 @@ public class BridgeService
 			}
             _logger.LogTrace("Using existing items set with {Count} hashes", existingItemsSet.Count);
 
-            // Anti-join: filter out items that already exist in the same library
-            // Items are considered duplicates if they have the same library name and the same item hash code
+            // Group by library and item hash code to keep only one item per duplicate group
 			var filteredLibraryItemPairs = libraryItemPairs
-                .Where(pair =>
-                {
-                    try
-                    {
-                        // Add all items that have no library mapping
-                        if (string.IsNullOrEmpty(pair.libraryName))
-                        {
-                            return true;
-                        }
-						var itemHashCode = pair.item.GetItemHashCode();
-                        var normalizedDir = Path.GetFullPath(pair.directory)?.ToLowerInvariant() ?? string.Empty;
-                        var normalizedLibrary = pair.libraryName?.ToLowerInvariant() ?? string.Empty;
-						// Treat as duplicate only if an existing entry with the same library and hash exists in a DIFFERENT directory
-						var existsSameDir = existingItemsSet.Contains((normalizedLibrary, normalizedDir, itemHashCode));
-						var existsAnyDir = existingItemsSet.Any(t => t.libraryName == normalizedLibrary && t.itemHashCode == itemHashCode);
-                        var shouldFilter = !existsSameDir && existsAnyDir;
-                        _logger.LogTrace("Checking duplicate {MediaName} (Hash: {HashCode}) in library {LibraryName} from directory {Directory}", 
-                            pair.item.MediaName, itemHashCode, pair.libraryName, pair.directory);
-                        _logger.LogTrace("existsSameDir: {ExistsSameDir}, existsAnyDir: {ExistsAnyDir}", existsSameDir, existsAnyDir);
-						
-						if (shouldFilter)
-						{
-							_logger.LogTrace("Filtering duplicate {MediaName} (Hash: {HashCode}) in library {LibraryName} from different directory. CurrentDir={Dir}", 
-								pair.item.MediaName, itemHashCode, pair.libraryName, normalizedDir);
-						}
-						
-						return !shouldFilter;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Error checking duplicate for item {MediaName} in library {LibraryName}", 
-                            pair.item.MediaName, pair.libraryName);
-                        // If we can't check, include it to be safe
-                        return true;
-                    }
-                })
+                .GroupBy(pair => (pair.libraryName?.ToLowerInvariant() ?? string.Empty, pair.item.GetItemHashCode()))
+                .Select(group => group.First())
                 .ToList();
 
 			results.AddRange(filteredLibraryItemPairs);
 			_logger.LogDebug("Appended {Count} items from libraries after filtering duplicates", filteredLibraryItemPairs.Count);
 
 			// Second step: for items without a matching library location, map them to the default empty library
+			// Include items that are in itemNetworkPairs but not in libraryItemPairs (items that didn't match a library)
+			// Check both directory and item hash code to ensure we don't add duplicates
 			var unmatchedAsDefault = itemNetworkPairs
-				.Where(ip => !libraryLocationPairs.Any(lp => string.Equals(lp.location, ip.networkPath, StringComparison.OrdinalIgnoreCase)))
 				.Select(ip => (
 					libraryName: string.Empty,
 					directory: _metadataService.GetJellyBridgeItemDirectory(ip.item),
 					item: ip.item
 				))
 				.Where(t => !string.IsNullOrEmpty(t.directory) && FolderUtils.IsPathInSyncDirectory(t.directory))
+				.Where(t => !libraryItemPairs.Any(lp => 
+					Path.GetFullPath(lp.directory)?.ToLowerInvariant() == Path.GetFullPath(t.directory)?.ToLowerInvariant() &&
+					lp.item.GetItemHashCode() == t.item.GetItemHashCode()))
 				.ToList();
 
 			if (unmatchedAsDefault.Count > 0)
