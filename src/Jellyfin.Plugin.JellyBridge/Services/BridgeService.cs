@@ -386,42 +386,50 @@ public class BridgeService
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // Get existing metadata items from libraries to filter out duplicates
-            var existingMetadataItems = await ReadMetadataLibraries();
-            
-            // Create a HashSet of (libraryName, itemHashCode) tuples for fast lookup
-            var existingItemsSet = new HashSet<(string libraryName, int itemHashCode)>();
-            foreach (var existingItem in existingMetadataItems)
-            {
-                try
-                {
-                    var itemHashCode = existingItem.item.GetItemHashCode();
-                    existingItemsSet.Add((existingItem.libraryName, itemHashCode));
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error getting hash code for existing item {MediaName} in library {LibraryName}", 
-                        existingItem.item.MediaName, existingItem.libraryName);
-                }
-            }
+			// Get existing metadata items from libraries to filter out duplicates
+			var existingMetadataItems = await ReadMetadataLibraries();
+			
+			// Create a HashSet of (libraryName, directory, itemHashCode) tuples for fast lookup
+			// Use normalized uppercase strings to avoid case-sensitivity issues with default comparer
+			var existingItemsSet = new HashSet<(string libraryName, string directory, int itemHashCode)>();
+			foreach (var existingItem in existingMetadataItems)
+			{
+				try
+				{
+					var itemHashCode = existingItem.item.GetItemHashCode();
+					var normalizedDir = Path.GetFullPath(existingItem.directory)?.ToUpperInvariant() ?? string.Empty;
+					var normalizedLibrary = existingItem.libraryName?.ToUpperInvariant() ?? string.Empty;
+					existingItemsSet.Add((normalizedLibrary, normalizedDir, itemHashCode));
+				}
+				catch (Exception ex)
+				{
+					_logger.LogWarning(ex, "Error preparing duplicate key for existing item {MediaName} in library {LibraryName}", 
+						existingItem.item.MediaName, existingItem.libraryName);
+				}
+			}
 
             // Anti-join: filter out items that already exist in the same library
             // Items are considered duplicates if they have the same library name and the same item hash code
-            var filteredLibraryItemPairs = libraryItemPairs
+			var filteredLibraryItemPairs = libraryItemPairs
                 .Where(pair =>
                 {
                     try
                     {
-                        var itemHashCode = pair.item.GetItemHashCode();
-                        var isDuplicate = existingItemsSet.Contains((pair.libraryName, itemHashCode));
-                        
-                        if (isDuplicate)
-                        {
-                            _logger.LogTrace("Filtering out duplicate item {MediaName} (Hash: {HashCode}) in library {LibraryName}", 
-                                pair.item.MediaName, itemHashCode, pair.libraryName);
-                        }
-                        
-                        return !isDuplicate;
+						var itemHashCode = pair.item.GetItemHashCode();
+					var normalizedDir = Path.GetFullPath(pair.directory)?.ToUpperInvariant() ?? string.Empty;
+					var normalizedLibrary = pair.libraryName?.ToUpperInvariant() ?? string.Empty;
+						// Treat as duplicate only if an existing entry with the same library and hash exists in a DIFFERENT directory
+						var existsSameDir = existingItemsSet.Contains((normalizedLibrary, normalizedDir, itemHashCode));
+						var existsAnyDir = existingItemsSet.Any(t => t.libraryName == normalizedLibrary && t.itemHashCode == itemHashCode);
+						var shouldFilter = !existsSameDir && existsAnyDir;
+						
+						if (shouldFilter)
+						{
+							_logger.LogTrace("Filtering duplicate {MediaName} (Hash: {HashCode}) in library {LibraryName} from different directory. CurrentDir={Dir}", 
+								pair.item.MediaName, itemHashCode, pair.libraryName, normalizedDir);
+						}
+						
+						return !shouldFilter;
                     }
                     catch (Exception ex)
                     {

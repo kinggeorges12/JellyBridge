@@ -49,12 +49,13 @@ public class MetadataService
                     {
                     var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        //_logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        _logger.LogTrace("Reading metadata from {MetadataFile}", metadataFile);
                         
                             var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
-                            if (movie != null)
+                            var hasMeaningfulData = (movie?.Id != null && movie?.Id > 0) || !string.IsNullOrWhiteSpace(movie?.MediaName);
+                            if (movie != null && hasMeaningfulData)
                             {
-                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'",
                                     movie.MediaName, movie.Id, movie.MediaType, movie.Year);
                                 movies.Add(movie);
                             }
@@ -76,12 +77,13 @@ public class MetadataService
                 {
                     var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
                     var json = await File.ReadAllTextAsync(metadataFile);
-                    //_logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                    _logger.LogTrace("Reading metadata from {MetadataFile}", metadataFile);
                     
                             var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
-                            if (show != null)
+                            var hasMeaningfulData = (show?.Id != null && show?.Id > 0) || !string.IsNullOrWhiteSpace(show?.MediaName);
+                            if (show != null && hasMeaningfulData)
                             {
-                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'",
                                     show.MediaName, show.Id, show.MediaType, show.Year);
                                 shows.Add(show);
                             }
