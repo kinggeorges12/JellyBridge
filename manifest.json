@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-03T23:07:30.456Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.60 - Fixed casing normalization bugs by changing ToUpperInvariant to ToLowerInvariant in duplicate detection logic. Added early return guard in IgnoreDuplicateLibraryItems when UseNetworkFolders and AddDuplicateContent are disabled. Added trace logging for debugging duplicate filtering operations.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.60.11.zip",
+        "checksum": "2CEF228E636731361AE8EE8167D9F929",
+        "version": "1.3.60.11",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2025-11-03T23:07:30.456Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.60 - Fixed casing normalization bugs by changing ToUpperInvariant to ToLowerInvariant in duplicate detection logic. Added early return guard in IgnoreDuplicateLibraryItems when UseNetworkFolders and AddDuplicateContent are disabled. Added trace logging for debugging duplicate filtering operations.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.60.10.zip",
+        "checksum": "F839079A057B5B97A3FDA6D3A8EF50DA",
+        "version": "1.3.60.10",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.59 - Added GetItemFolderHashCode method for folder-based duplicate detection with NetworkTag support. Optimized duplicate filtering to use hash codes instead of directory paths for better performance. Added IgnoreDuplicateLibraryItems method to create ignore files for duplicates in shared library scenarios.",

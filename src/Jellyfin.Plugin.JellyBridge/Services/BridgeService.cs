@@ -403,7 +403,8 @@ public class BridgeService
                     },
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
-
+            _logger.LogTrace("Joined {Count} item network pairs with {Count} library location pairs", itemNetworkPairs.Count, libraryLocationPairs.Count);
+            
 			// Get existing metadata items from libraries to filter out duplicates
 			var existingMetadataItems = await ReadMetadataLibraries();
 			
@@ -415,8 +416,8 @@ public class BridgeService
 				try
 				{
 					var itemHashCode = existingItem.item.GetItemHashCode();
-					var normalizedDir = Path.GetFullPath(existingItem.directory)?.ToUpperInvariant() ?? string.Empty;
-					var normalizedLibrary = existingItem.libraryName?.ToUpperInvariant() ?? string.Empty;
+					var normalizedDir = Path.GetFullPath(existingItem.directory)?.ToLowerInvariant() ?? string.Empty;
+					var normalizedLibrary = existingItem.libraryName?.ToLowerInvariant() ?? string.Empty;
 					existingItemsSet.Add((normalizedLibrary, normalizedDir, itemHashCode));
 				}
 				catch (Exception ex)
@@ -425,6 +426,7 @@ public class BridgeService
 						existingItem.item.MediaName, existingItem.libraryName);
 				}
 			}
+            _logger.LogTrace("Using existing items set with {Count} hashes", existingItemsSet.Count);
 
             // Anti-join: filter out items that already exist in the same library
             // Items are considered duplicates if they have the same library name and the same item hash code
@@ -439,8 +441,8 @@ public class BridgeService
                             return true;
                         }
 						var itemHashCode = pair.item.GetItemHashCode();
-                        var normalizedDir = Path.GetFullPath(pair.directory)?.ToUpperInvariant() ?? string.Empty;
-                        var normalizedLibrary = pair.libraryName?.ToUpperInvariant() ?? string.Empty;
+                        var normalizedDir = Path.GetFullPath(pair.directory)?.ToLowerInvariant() ?? string.Empty;
+                        var normalizedLibrary = pair.libraryName?.ToLowerInvariant() ?? string.Empty;
 						// Treat as duplicate only if an existing entry with the same library and hash exists in a DIFFERENT directory
 						var existsSameDir = existingItemsSet.Contains((normalizedLibrary, normalizedDir, itemHashCode));
 						var existsAnyDir = existingItemsSet.Any(t => t.libraryName == normalizedLibrary && t.itemHashCode == itemHashCode);
