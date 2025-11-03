@@ -444,7 +444,7 @@
                             <li>☑️ <strong>Save artwork into media folders</strong></li>
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                         </ul>
-                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target="UseNetworkFoldersContainer"><i>Use Network Folders</i></span></p>
+                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Use Network Folders</i></span></p>
                         
                         <details id="troubleshootingDetails" class="troubleshootingDetails">
                             <summary>🤖 Troubleshooting</summary>
@@ -455,7 +455,7 @@
                                     <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
                                     <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.2. Other versions may not be fully compatible.</li>
                                 </ol>
-                                <p><i>The <strong>Test Connection with Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
+                                <p><i>The <span class="link" data-target-page="testConnection">Test Connection with Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
                                     <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <i>Jellyseerr URL</i> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
                                     <li>Import Jellyfin users from the Jellyseerr interface: <i>Users</i> → <i>Import Jellyfin Users</i>.</li>
@@ -463,11 +463,12 @@
                                 </ol>
                                 <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
-                                    <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
-                                    <li>If content is still not updating, open the <strong>Metadata Manager</strong> and refresh metadata for the entry matching the name of your Jellyfin library</li>
-                                    <li>As a last resort, click <strong>Recycle Library Data</strong> and recreate the Jellyfin library according to the setup instructions above</li>
+                                    <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span></li>
+                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> and refresh metadata for the entry matching the name of your Jellyfin library</li>
+                                    <li>If networks are missing movies and shows, try disabled <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span>. Run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task and then re-enable the option.</li>
+                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructions">setup instructions above</span>.</li>
                                 </ol>
-                                <p><i>The <strong>Request JellyBridge Library Favorites in Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
+                                <p><i>The <span class="link" data-target-page="syncFavorites">Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
                                     <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck "Enable CSRF Protection".</li>
                                 </ol>
@@ -689,12 +690,12 @@
                             <summary>Network Folder Setup</summary>
                             <div>
                                 <h4>Network Folder Setup Instructions</h4>
-                                <p>Do this before clicking <strong>Sync Discover Content from Jellyseerr to JellyBridge Library</strong> or running the <i>Automated Task to Sync Jellyseerr and Jellyfin</i>. This allows the sync task to refresh the libraries after importing discover content.</p>
+                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
-                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link" data-target="availableNetworksSelectBox">Network Services</span></li>
-                                    <li>Click the <strong>Generate Network Folders</strong> button below.</li>
+                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link" data-target-page="availableNetworksSelectBox">Network Services</span></li>
+                                    <li>Click the <span class="link" data-target-page="generateNetworkFolders">Generate Network Folders</span> button below.</li>
                                     <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
-                                    <li>For each library, follow the <span class="link" data-target="librarySetupInstructions">Library Setup Instructions</span></li>
+                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">Library Setup Instructions</span></li>
                                 </ol>
 
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
@@ -816,7 +817,7 @@
                                 <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <i>Library Directory</i>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the setup instructions at the top of this page. This should clean-up the Jellyfin metadata and prevent errors when adding new content.
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupInstructions">setup instructions at the top of this page</span>. This should clean-up the Jellyfin metadata and prevent errors when adding new content.
                             </div>
                         </div>
 

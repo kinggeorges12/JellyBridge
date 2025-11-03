@@ -297,7 +297,7 @@ function performTestConnection(page) {
         Dashboard.confirm({
                 title: 'Connection Success!',
                 text: 'Save connection settings now?',
-                confirmText: 'Confirm',
+                confirmText: 'Save',
                 cancelText: 'Cancel',
                 primary: "confirm"
             }, 'Title', (confirmed) => {
@@ -1384,10 +1384,10 @@ function updateStartupSyncDescription() {
     
     const enabledTasks = [];
     if (isSyncEnabled) {
-        enabledTasks.push('🔄 <i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i>');
+        enabledTasks.push('🔄 <span class="link" data-target-page="IsEnabledContainer"><i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i></span>');
     }
     if (isSortEnabled) {
-        enabledTasks.push('🔀 <i>Enable the Automated Task to Sort Discover Content</i>');
+        enabledTasks.push('🔀 <span class="link" data-target-page="EnableAutomatedSortTask"><i>Enable the Automated Task to Sort Discover Content</i></span>');
     }
     
     let descriptionText = 'Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.';
@@ -1789,10 +1789,17 @@ function initializeLinkSpans(page) {
     const linkSpans = page.querySelectorAll('span.link');
     linkSpans.forEach(span => {
         span.addEventListener('click', function() {
-            // Prefer explicit data-target mapping when present
-            const target = span.getAttribute('data-target');
-            if (target) {
-                scrollToElement(target);
+            // Handle router navigation
+            const routerTarget = span.getAttribute('data-target-router');
+            if (routerTarget) {
+                Dashboard.navigate(routerTarget);
+                return;
+            }
+
+            // Handle page scrolling
+            const pageTarget = span.getAttribute('data-target-page');
+            if (pageTarget) {
+                scrollToElement(pageTarget);
                 return;
             }
 
