@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.63.11",
+        "checksum": "C3BAACA2EE4E83B5FA9A4490F889D051",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-03T23:39:34.273Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.63 - Added trace logging for duplicate checking to debug library filtering logic. Logs include MediaName, HashCode, LibraryName, Directory, and the existsSameDir/existsAnyDir flags.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.63.11.zip"
+      },
+      {
+        "version": "1.3.63.10",
+        "checksum": "8792589CE1D533D6CE94BFC26E79FE11",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-03T23:39:34.273Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.63 - Added trace logging for duplicate checking to debug library filtering logic. Logs include MediaName, HashCode, LibraryName, Directory, and the existsSameDir/existsAnyDir flags.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.63.10.zip"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.62 - Added DistinctBy to deduplicate libraryItemPairs by entire tuple (libraryName, directory, item.Id). Updated trace logging to use ItemHashCode instead of ItemName. Improved field descriptions in configuration page for MaxDiscoverPages and MaxRetentionDays.",
         "version": "1.3.62.11",
         "dependencies": [],
