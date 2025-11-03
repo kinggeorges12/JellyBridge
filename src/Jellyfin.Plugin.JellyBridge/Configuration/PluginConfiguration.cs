@@ -143,7 +143,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? UseNetworkFolders { get; set; }
 
     /// <summary>
-    /// Gets or sets whether to add duplicate content to network folders when separate libraries are enabled.
+    /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.
     /// </summary>
     public bool? AddDuplicateContent { get; set; }
 
