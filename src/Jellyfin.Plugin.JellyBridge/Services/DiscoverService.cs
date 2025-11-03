@@ -165,6 +165,7 @@ public class DiscoverService
     {
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
+        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         _logger.LogDebug("Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
@@ -175,6 +176,12 @@ public class DiscoverService
             {
                 // Get the folder path for this item
                 var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                var normalizedFolder = string.IsNullOrWhiteSpace(folderPath) ? folderPath : Path.GetFullPath(folderPath);
+                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
+                {
+                    _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
+                    continue;
+                }
                 
                 if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 {

@@ -36,6 +36,7 @@ public class BridgeService
 
     /// <summary>
     /// Overload: Scan providing a flat list of Jellyseerr items. Fetch Jellyfin items from the library.
+    /// Unmatched items returns all Jellyseerr items specific to the Jellymatch Library directory.
     /// </summary>
     public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> LibraryScanAsync(List<IJellyseerrItem> jellyseerrItems)
     {
@@ -45,13 +46,14 @@ public class BridgeService
         jellyfinItems.AddRange(existingMovies);
         jellyfinItems.AddRange(existingShows);
         var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
-        var matchedIds = matches.Select(m => m.JellyseerrItem.Id).ToHashSet();
-        var unmatched = jellyseerrItems.Where(item => !matchedIds.Contains(item.Id)).ToList();
+        var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
+        var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
         return (matches, unmatched);
     }
 
     /// <summary>
     /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
+    /// Unmatched items returns all Jellyseerr items regardless of Library directory.
     /// </summary>
     public async Task<(List<JellyMatch> matched, List<IJellyfinItem> unmatched)> LibraryScanAsync(List<IJellyfinItem> jellyfinItems)
     {
@@ -488,5 +490,55 @@ public class BridgeService
             _logger.LogError(ex, "Error mapping items to libraries, returning empty list");
         }
         return results;
+    }
+    
+
+    /// <summary>
+    /// Compare two Jellyseerr item lists for equivalence based on configuration.
+    /// When UseNetworkFolders is enabled, compares by composite key (Id + normalized directory).
+    /// Otherwise, compares by Id only.
+    /// The first list represents library matches; the second represents test items.
+    /// </summary>
+    /// <param name="libraryMatches">Items discovered from library/scan context</param>
+    /// <param name="testItems">Items to compare against libraryMatches</param>
+    /// <returns>True if sets are equivalent under the configured comparison mode</returns>
+    private List<IJellyseerrItem> GetNonMatchingJellyseerrItems(List<IJellyseerrItem> libraryMatches, List<IJellyseerrItem> testItems)
+    {
+        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        
+        var unmatched = new List<IJellyseerrItem>();
+        var libSet = new HashSet<string>();
+
+        if (useNetworkFolders && addDuplicateContent)
+        {
+            string MakeKey(IJellyseerrItem item)
+            {
+                try
+                {
+                    var dir = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var norm = !string.IsNullOrWhiteSpace(dir) ? Path.GetFullPath(dir) : string.Empty;
+                    return $"{item.Id}|{norm}";
+                }
+                catch
+                {
+                    return $"{item.Id}|";
+                }
+            }
+
+            libSet = new HashSet<string>(libraryMatches.Select(MakeKey), StringComparer.OrdinalIgnoreCase);
+            unmatched = testItems.Where(t => !libSet.Contains(MakeKey(t))).ToList();
+        } else {
+            var libIds = new HashSet<int>(libraryMatches.Select(i => i.Id));
+            libSet = new HashSet<string>(libIds.Select(id => id.ToString()), StringComparer.OrdinalIgnoreCase);
+            unmatched = testItems.Where(t => !libIds.Contains(t.Id)).ToList();
+        }
+        foreach (var item in libSet)
+        {
+            _logger.LogTrace("Unmatched library set hash code: {HashCode}", item);
+        }
+        _logger.LogDebug("GetNonMatchingJellyseerrItems: {UnmatchedCount} unmatched items", unmatched.Count);
+        return unmatched;
     }
 }
