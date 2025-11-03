@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.61.11",
+        "timestamp": "2025-11-03T23:22:24.176Z",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.3.61 - Added trace logging for library item pairs to debug library matching. Fixed unmatchedAsDefault logic to properly exclude items already in libraries by removing hash code checks and reverting to location-based matching.",
+        "checksum": "FEFF6DAB56FE835A9C1C706FBF560AF5",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.61.11.zip"
+      },
+      {
+        "version": "1.3.61.10",
+        "timestamp": "2025-11-03T23:22:24.176Z",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.3.61 - Added trace logging for library item pairs to debug library matching. Fixed unmatchedAsDefault logic to properly exclude items already in libraries by removing hash code checks and reverting to location-based matching.",
+        "checksum": "1C74AC3CFC8C32E18B50BD19A176D52F",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.61.10.zip"
+      },
+      {
         "timestamp": "2025-11-03T23:07:30.456Z",
         "changelog": "Jellyfin 10.11.0: v1.3.60 - Fixed casing normalization bugs by changing ToUpperInvariant to ToLowerInvariant in duplicate detection logic. Added early return guard in IgnoreDuplicateLibraryItems when UseNetworkFolders and AddDuplicateContent are disabled. Added trace logging for debugging duplicate filtering operations.",
         "targetAbi": "10.11.0.0",
