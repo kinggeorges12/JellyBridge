@@ -404,7 +404,7 @@
 
                     <div class="inputContainer">
                         <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="off" data-lpignore="true" data-form-type="other" />
-                        <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost</a>.</div>
+                        <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost on port 5055</a>.</div>
                     </div>
 
                     <div class="inputContainer">
@@ -464,7 +464,7 @@
                                 <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
                                     <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span></li>
-                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> and refresh metadata for the entry matching the name of your Jellyfin library</li>
+                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library</li>
                                     <li>If networks are missing movies and shows, try disabled <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span>. Run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task and then re-enable the option.</li>
                                     <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructions">setup instructions above</span>.</li>
                                 </ol>

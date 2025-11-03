@@ -1399,6 +1399,9 @@ function updateStartupSyncDescription() {
     }
     
     descriptionElement.innerHTML = descriptionText;
+    
+    // Bind click handlers for newly added links
+    initializeLinkSpans(descriptionElement);
 }
 
 function performPluginReset(page) {
@@ -1785,9 +1788,18 @@ function scrollToElement(elementId, offset = 60) {
 }
 
 // Initialize link spans - finds spans with class "link" and scrolls to elements with matching text
-function initializeLinkSpans(page) {
-    const linkSpans = page.querySelectorAll('span.link');
+// Can accept either a page element or a container element
+function initializeLinkSpans(pageOrContainer) {
+    const linkSpans = pageOrContainer.querySelectorAll('span.link');
     linkSpans.forEach(span => {
+        // Skip if already initialized (has data-link-initialized attribute)
+        if (span.hasAttribute('data-link-initialized')) {
+            return;
+        }
+        
+        // Mark as initialized to prevent duplicate bindings
+        span.setAttribute('data-link-initialized', 'true');
+        
         span.addEventListener('click', function() {
             // Handle router navigation
             const routerTarget = span.getAttribute('data-target-router');
