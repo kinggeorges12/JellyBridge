@@ -315,73 +315,6 @@ public class FavoriteService
     #region Removed
 
     /// <summary>
-    /// Remove .ignore markers for Jellyseerr requests that have been declined.
-    /// Uses FindJellyseerrFavorite to resolve the matching metadata item for each request.
-    /// </summary>
-    public async Task<List<IJellyseerrItem>> UnignoreDeclinedRequests()
-    {
-        var removedIgnoreCount = 0;
-        var declinedItems = new List<IJellyseerrItem>();
-        try
-        {
-            var requestsObj = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
-            var allRequests = requestsObj as List<JellyseerrMediaRequest> ?? new List<JellyseerrMediaRequest>();
-
-            // Group all requests by media identity (Type + TMDB id)
-            var requestsByMedia = allRequests
-                .Where(r => r != null && r.Media != null && r.Media.TmdbId > 0)
-                .GroupBy(r => (Type: r.Type!, TmdbId: r.Media!.TmdbId))
-                .ToList();
-
-            // Only consider media where ALL requests are declined
-            var fullyDeclinedGroups = requestsByMedia
-                .Where(g => g.All(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED))
-                .ToList();
-
-            if (fullyDeclinedGroups.Count == 0)
-            {
-                return declinedItems;
-            }
-
-            var representativeDeclinedRequests = fullyDeclinedGroups.Select(g => g.First()).ToList();
-
-            _logger.LogDebug(
-                "Found {DeclinedMediaCount} media with all requests declined; removing .ignore markers",
-                representativeDeclinedRequests.Count);
-
-            declinedItems = await FindJellyseerrFavorites(representativeDeclinedRequests);
-            foreach (var item in declinedItems)
-            {
-                try
-                {
-                    var dir = _metadataService.GetJellyBridgeItemDirectory(item);
-                    var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
-                    if (File.Exists(ignorePath))
-                    {
-                        File.Delete(ignorePath);
-                        removedIgnoreCount++;
-                        _logger.LogTrace("Removed .ignore for declined request: {Dir}", dir);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed removing .ignore for declined favorite {Name}", item?.MediaName);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error removing .ignore files for declined Jellyseerr requests");
-        }
-
-        if (removedIgnoreCount > 0)
-        {
-            _logger.LogDebug("Removed {RemovedCount} .ignore files for declined requests", removedIgnoreCount);
-        }
-        return declinedItems;
-    }
-
-    /// <summary>
     /// For each favorited item that was requested in Jellyseerr, create an .ignore marker and unmark it as favorite for the user.
     /// Uses GetUserFavorites to find all existing favorites, creates ignore files for all matched Jellyfin items,
     /// and unfavorites items only if they are in the bridge folder or not in any folder.
@@ -402,7 +335,9 @@ public class FavoriteService
         {
             // Get all existing favorites
             var allFavorites = GetUserFavorites();
+			_logger.LogDebug("Fetched {FavoriteCount} favorites for processing", allFavorites.Count);
             var (requestedFavorites, _) = await FilterRequestsFromFavorites(allFavorites);
+			_logger.LogDebug("Identified {RequestedCount} favorites with existing Jellyseerr requests", requestedFavorites.Count);
             // Build lookup of itemId -> users who favorited it
             var itemIdToUsers = requestedFavorites
                 .GroupBy(f => f.item.Id)
@@ -410,10 +345,12 @@ public class FavoriteService
 
             // Find matches between Jellyfin items and Jellyseerr metadata
             var jellyfinItems = requestedFavorites.Select(f => f.item).ToList();
-            var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
+			var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
+			_logger.LogDebug("Library scan produced {MatchCount} matches for ignore/unfavorite", matches.Count);
 
             // Create ignore files for all matched Jellyfin items
-            await _bridgeService.CreateIgnoreFilesAsync(matches);
+			await _bridgeService.CreateIgnoreFilesAsync(matches);
+			_logger.LogTrace("Created/updated ignore files for matched items");
 
             // Unfavorite items only if they are in bridge folder OR not in any folder
             foreach (var match in matches)
@@ -463,13 +400,85 @@ public class FavoriteService
         {
             _logger.LogError(ex, "Failed processing favorited items for unmark-and-ignore");
         }
+		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. AffectedItems={Count}", affectedItems.Count);
         return affectedItems;
+    }
+
+    /// <summary>
+    /// Remove .ignore markers for Jellyseerr requests that have been declined.
+    /// Uses FindJellyseerrFavorite to resolve the matching metadata item for each request.
+    /// </summary>
+    public async Task<List<IJellyseerrItem>> UnignoreDeclinedRequests()
+    {
+        var removedIgnoreCount = 0;
+        var declinedItems = new List<IJellyseerrItem>();
+        try
+        {
+            var requestsObj = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
+            var allRequests = requestsObj as List<JellyseerrMediaRequest> ?? new List<JellyseerrMediaRequest>();
+			_logger.LogDebug("Fetched {RequestCount} total requests for decline-check", allRequests.Count);
+
+            // Group all requests by media identity (Type + TMDB id)
+			var requestsByMedia = allRequests
+                .Where(r => r != null && r.Media != null && r.Media.TmdbId > 0)
+                .GroupBy(r => (Type: r.Type!, TmdbId: r.Media!.TmdbId))
+                .ToList();
+			_logger.LogTrace("Grouped into {GroupCount} media groups for decline evaluation", requestsByMedia.Count);
+
+            // Only consider media where ALL requests are declined
+            var fullyDeclinedGroups = requestsByMedia
+                .Where(g => g.All(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED))
+                .ToList();
+
+			if (fullyDeclinedGroups.Count == 0)
+            {
+				_logger.LogTrace("No fully-declined media groups found; nothing to unignore");
+                return declinedItems;
+            }
+
+            var representativeDeclinedRequests = fullyDeclinedGroups.Select(g => g.First()).ToList();
+
+            _logger.LogDebug(
+                "Found {DeclinedMediaCount} media with all requests declined; removing .ignore markers",
+                representativeDeclinedRequests.Count);
+
+            declinedItems = await FindJellyseerrFavorites(representativeDeclinedRequests);
+            foreach (var item in declinedItems)
+            {
+                try
+                {
+                    var dir = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
+                    if (File.Exists(ignorePath))
+                    {
+                        File.Delete(ignorePath);
+                        removedIgnoreCount++;
+                        _logger.LogTrace("Removed .ignore for declined request: {Dir}", dir);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed removing .ignore for declined favorite {Name}", item?.MediaName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing .ignore files for declined Jellyseerr requests");
+        }
+
+        if (removedIgnoreCount > 0)
+        {
+            _logger.LogDebug("Removed {RemovedCount} .ignore files for declined requests", removedIgnoreCount);
+        }
+		_logger.LogDebug("Unignore declined requests complete. DeclinedItems={DeclinedCount}", declinedItems.Count);
+        return declinedItems;
     }
 
     private async Task<List<IJellyseerrItem>> FindJellyseerrFavorites(
         List<JellyseerrMediaRequest> requests)
     {
-        var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
+		var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
         var allMeta = new List<IJellyseerrItem>();
         allMeta.AddRange(moviesMeta);
         allMeta.AddRange(showsMeta);
@@ -488,11 +497,20 @@ public class FavoriteService
         List<JellyseerrMediaRequest> requests,
         List<IJellyseerrItem>? items = null)
     {
+		_logger.LogDebug("Reading Jellyseerr metadata for {RequestCount} requests", requests?.Count ?? 0);
         var results = new List<IJellyseerrItem>();
         if (items == null || items.Count == 0 || requests == null || requests.Count == 0)
         {
             return results;
         }
+
+		// Log metadata item counts available for matching
+		var movieCount = items.OfType<JellyseerrMovie>().Count();
+		var showCount = items.OfType<JellyseerrShow>().Count();
+		_logger.LogDebug("Loaded metadata items: Movies={MovieCount}, Shows={ShowCount}, Total={Total}",
+			movieCount,
+			showCount,
+			movieCount + showCount);
 
         try
         {
