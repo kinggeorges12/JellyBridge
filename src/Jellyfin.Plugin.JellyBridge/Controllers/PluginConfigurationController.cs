@@ -59,7 +59,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
                     SortOrder = config.SortOrder,
-                    MarkShowsPlayed = config.MarkShowsPlayed,
+                    MarkMediaPlayed = config.MarkMediaPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
@@ -122,7 +122,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
                     SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
-                    SetJsonValue<bool?>(configData, nameof(config.MarkShowsPlayed), config);
+                    SetJsonValue<bool?>(configData, nameof(config.MarkMediaPlayed), config);
                     SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     SetJsonValue<string>(configData, nameof(config.Region), config);
                     // Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects

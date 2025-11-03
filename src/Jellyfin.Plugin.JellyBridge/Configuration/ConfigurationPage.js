@@ -892,7 +892,7 @@ function initializeSortContent(page) {
     
     // Set sort content form values with null handling
     setInputField(page, 'EnableAutomatedSortTask', true);
-    setInputField(page, 'MarkShowsPlayed', true);
+    setInputField(page, 'MarkMediaPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
 
     // Initialize sort task dependency state
@@ -1423,7 +1423,7 @@ function performPluginReset(page) {
                 MaxRetentionDays: null,
                 EnableAutomatedSortTask: null,
                 SortOrder: null,
-                MarkShowsPlayed: null,
+                MarkMediaPlayed: null,
                 SortTaskIntervalHours: null,
                 IsEnabled: null,
                 UseNetworkFolders: null,
@@ -1580,7 +1580,7 @@ function savePluginConfiguration(page) {
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
-    form.MarkShowsPlayed = nullIfDefault(page.querySelector('#MarkShowsPlayed').checked, config.ConfigDefaults.MarkShowsPlayed);
+    form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
