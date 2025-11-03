@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "F29ADA64D061A260ACC5AB65C58FF3D5",
+        "changelog": "Jellyfin 10.11.0: v1.3.64 - Simplified duplicate filtering by using GroupBy to keep one item per duplicate group instead of complex Where logic. Updated unmatchedAsDefault to check against libraryItemPairs using directory and hash code instead of libraryLocationPairs. Removed redundant trace logging and simplified filtering logic.",
+        "version": "1.3.64.11",
+        "dependencies": [],
+        "timestamp": "2025-11-03T23:55:17.545Z",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.64.11.zip"
+      },
+      {
+        "checksum": "E7E9935D72D191A9F1B34378275F74D6",
+        "changelog": "Jellyfin 10.10.7: v1.3.64 - Simplified duplicate filtering by using GroupBy to keep one item per duplicate group instead of complex Where logic. Updated unmatchedAsDefault to check against libraryItemPairs using directory and hash code instead of libraryLocationPairs. Removed redundant trace logging and simplified filtering logic.",
+        "version": "1.3.64.10",
+        "dependencies": [],
+        "timestamp": "2025-11-03T23:55:17.545Z",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.64.10.zip"
+      },
+      {
         "version": "1.3.63.11",
         "checksum": "C3BAACA2EE4E83B5FA9A4490F889D051",
         "targetAbi": "10.11.0.0",
