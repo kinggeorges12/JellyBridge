@@ -275,6 +275,14 @@ public class DiscoverService
     public async Task<List<IJellyseerrItem>> IgnoreDuplicateLibraryItems(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
     {
         var duplicates = new List<IJellyseerrItem>();
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        if (!(useNetworkFolders && addDuplicateContent))
+        {
+            _logger.LogDebug("Ignoring duplicate library items: UseNetworkFolders and AddDuplicateContent are both disabled");
+            return duplicates;
+        }
+
         var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
         foreach (var item in allItems)
         {
