@@ -120,30 +120,25 @@ public partial class SyncService
             List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
-                // print all uniqueDiscoverMedia items
-                foreach (var item in uniqueDiscoverMedia)
-                {
-                    var directory = _metadataService.GetJellyBridgeItemDirectory(item);
-                    _logger.LogDebug("Step 4: Unique discover media item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
-                }
+                _logger.LogDebug("*Step 4: Starting library scan to find matches and get unmatched items");
                 // Run library scan to find matches and get unmatched items
                 (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
+                //print matched items
+                foreach (var item in allMatchedItems)
+                {
+                    var directory = _metadataService.GetJellyBridgeItemDirectory(item.JellyseerrItem);
+                    _logger.LogDebug("Step 4: Matched item: {MediaName} (Id: {Id}) -> {Directory}", item.JellyseerrItem.MediaName, item.JellyseerrItem.Id, directory);
+                }
                 //print all unmatched items
                 foreach (var item in unmatchedItems)
                 {
                     var directory = _metadataService.GetJellyBridgeItemDirectory(item);
                     _logger.LogDebug("Step 4: Unmatched item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
                 }
-                _logger.LogDebug("Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
+                _logger.LogDebug("*Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
                 // Remove matches that point to items already inside the JellyBridge sync directory
                 (matchedItems, var syncedItems) = _discoverService.FilterSyncedItems(allMatchedItems);
-                //print all synced items
-                foreach (var item in syncedItems)
-                {
-                    var directory = _metadataService.GetJellyBridgeItemDirectory(item);
-                    _logger.LogDebug("Step 4: Synced item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
-                }
-                _logger.LogDebug("Step 4: Filtered {SyncedCount} synced items", syncedItems.Count);
+                _logger.LogDebug("*Step 4: Filtered {SyncedCount} synced items", syncedItems.Count);
                 unmatchedItems.AddRange(syncedItems);
                 // Remove any unmatched items that already have an ignore file in their folder
                 unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
