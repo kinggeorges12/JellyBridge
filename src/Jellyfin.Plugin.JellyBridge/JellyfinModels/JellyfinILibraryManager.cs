@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -31,7 +32,7 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
             // Get the appropriate BaseItemKind for the type
             if (typeof(T) == typeof(JellyfinMovie))
             {
-                var itemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Movie };
+                var itemTypes = new[] { BaseItemKind.Movie };
                 var items = Inner.GetItemList(new InternalItemsQuery
                 {
                     IncludeItemTypes = itemTypes,
@@ -62,7 +63,7 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
             }
             else if (typeof(T) == typeof(JellyfinSeries))
             {
-                var itemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Series };
+                var itemTypes = new[] { BaseItemKind.Series };
                 var items = Inner.GetItemList(new InternalItemsQuery
                 {
                     IncludeItemTypes = itemTypes,

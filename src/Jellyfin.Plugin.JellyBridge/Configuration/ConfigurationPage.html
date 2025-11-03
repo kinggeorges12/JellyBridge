@@ -453,7 +453,7 @@
                                 <ol>
                                     <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
                                     <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
-                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
+                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.2. Other versions may not be fully compatible.</li>
                                 </ol>
                                 <p><i>The <strong>Test Connection with Jellyseerr</strong> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
@@ -609,14 +609,14 @@
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
-                                <input id="MarkShowsPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Mark Shows Played</span>
+                                <input id="MarkMediaPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Mark Media Played</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">This feature changes the little 🔵1 badge in the upper right corner to a 🔵✓ checkmark badge. This setting only applies to shows.</div>
+                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For shows: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
                         </div>
 
                         <div>

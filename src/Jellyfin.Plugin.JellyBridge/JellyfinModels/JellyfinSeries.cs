@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Entities;
@@ -6,20 +7,16 @@ using System.Threading;
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
-/// Result of attempting to set placeholder episode play count.
-/// </summary>
-public class PlaceholderEpisodePlayCountResult
-{
-    public bool Success { get; init; }
-    public string Message { get; init; } = string.Empty;
-}
-
-/// <summary>
 /// Wrapper around Jellyfin's Series class.
 /// Provides additional functionality for Jellyseerr bridge operations.
 /// </summary>
 public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
 {
+    /// <summary>
+    /// The BaseItemKind type for series.
+    /// </summary>
+    public BaseItemKind TypeName => BaseItemKind.Series;
+
     public JellyfinSeries(Series series) : base(series) 
     {
         InitializeVersionSpecific();
@@ -199,14 +196,14 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     /// <param name="userDataManager">The user data manager to use for updating play status.</param>
     /// <param name="markAsPlayed">If true, marks as played; if false, marks as not played.</param>
     /// <returns>Result object containing success status and detailed information about the operation</returns>
-    public PlaceholderEpisodePlayCountResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager, bool markAsPlayed)
+    public JellyfinWrapperResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager, bool markAsPlayed)
     {
         // Get the placeholder episode (S00E00)
         var placeholderEpisode = GetPlaceholderEpisode();
         
         if (placeholderEpisode == null)
         {
-            return new PlaceholderEpisodePlayCountResult
+            return new JellyfinWrapperResult
             {
                 Success = false,
                 Message = "Placeholder episode (S00E00) not found"
@@ -219,7 +216,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
         var userData = userDataManager.GetUserData(user, placeholderEpisode);
         if (userData == null)
         {
-            return new PlaceholderEpisodePlayCountResult
+            return new JellyfinWrapperResult
             {
                 Success = false,
                 Message = $"UserData is null for placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id})"
@@ -235,7 +232,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             userDataManager.Inner.SaveUserData(userEntity, placeholderEpisode, userData, MediaBrowser.Model.Entities.UserDataSaveReason.Import, System.Threading.CancellationToken.None);
             
             var status = markAsPlayed ? "played" : "not played";
-            return new PlaceholderEpisodePlayCountResult
+            return new JellyfinWrapperResult
             {
                 Success = true,
                 Message = $"Marked placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) as {status}"
@@ -244,7 +241,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
         
         // Already in the desired state, no need to update
         var currentStatus = userData.Played ? "played" : "not played";
-        return new PlaceholderEpisodePlayCountResult
+        return new JellyfinWrapperResult
         {
             Success = false,
             Message = $"Placeholder episode '{placeholderEpisode.Name}' (Id: {placeholderEpisode.Id}) is already marked as {currentStatus}"

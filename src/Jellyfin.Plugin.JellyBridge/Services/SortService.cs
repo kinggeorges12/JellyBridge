@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
@@ -35,12 +36,11 @@ public class SortService
         _bridgeService = bridgeService;
     }
 
-
     /// <summary>
     /// Randomizes play counts by creating shuffled play count values and mapping them to directories.
     /// </summary>
-    /// <returns>A dictionary mapping directory paths to (playCount, isShow) tuples, or null if no directories found.</returns>
-    private async Task<Dictionary<string, (int playCount, bool isShow)>?> playCountRandomize()
+    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
+    private async Task<Dictionary<string, (int playCount, BaseItemKind mediaType)>?> playCountRandomize()
     {
         // Get categorized directories that are actually in Jellyfin libraries
         var metadataItems = await _bridgeService.ReadMetadataLibraries();
@@ -62,19 +62,19 @@ public class SortService
             .OrderBy(_ => random.Next())
             .ToList();
 
-        // Create directory info map with play count and isShow flag (for efficient lookup)
-        // Combine movies and shows, then map each to (playCount, isShow) tuple
-        return movieDirectories.Select(dir => (dir, isShow: false))
-            .Concat(showDirectories.Select(dir => (dir, isShow: true)))
-            .Select((item, index) => (item.dir, playCount: playCounts[index], item.isShow))
-            .ToDictionary(x => x.dir, x => (x.playCount, x.isShow));
+        // Create directory info map with play count and media type (for efficient lookup)
+        // Combine movies and shows, then map each to (playCount, mediaType) tuple
+        return movieDirectories.Select(dir => (dir, mediaType: BaseItemKind.Movie))
+            .Concat(showDirectories.Select(dir => (dir, mediaType: BaseItemKind.Series)))
+            .Select((item, index) => (item.dir, playCount: playCounts[index], item.mediaType))
+            .ToDictionary(x => x.dir, x => (x.playCount, x.mediaType));
     }
 
     /// <summary>
     /// Sets play counts to zero by mapping all directories to play count zero.
     /// </summary>
-    /// <returns>A dictionary mapping directory paths to (playCount, isShow) tuples, or null if no directories found.</returns>
-    private async Task<Dictionary<string, (int playCount, bool isShow)>?> playCountZero()
+    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
+    private async Task<Dictionary<string, (int playCount, BaseItemKind mediaType)>?> playCountZero()
     {
         // Get categorized directories that are actually in Jellyfin libraries
         var metadataItems = await _bridgeService.ReadMetadataLibraries();
@@ -88,12 +88,12 @@ public class SortService
             return null;
         }
 
-        // Create directory info map with play count set to zero and isShow flag (for efficient lookup)
-        // Combine movies and shows, then map each to (playCount: 0, isShow) tuple
-        return movieDirectories.Select(dir => (dir, isShow: false))
-            .Concat(showDirectories.Select(dir => (dir, isShow: true)))
-            .Select(item => (item.dir, playCount: 0, item.isShow))
-            .ToDictionary(x => x.dir, x => (x.playCount, x.isShow));
+        // Create directory info map with play count set to zero and media type (for efficient lookup)
+        // Combine movies and shows, then map each to (playCount: 0, mediaType) tuple
+        return movieDirectories.Select(dir => (dir, mediaType: BaseItemKind.Movie))
+            .Concat(showDirectories.Select(dir => (dir, mediaType: BaseItemKind.Series)))
+            .Select(item => (item.dir, playCount: 0, item.mediaType))
+            .ToDictionary(x => x.dir, x => (x.playCount, x.mediaType));
     }
 
     /// <summary>
@@ -107,8 +107,8 @@ public class SortService
         var failures = new List<string>();
         var skipped = new List<string>();
         
-        // Get configuration setting for marking shows as played
-        var markShowsPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkShowsPlayed));
+        // Get configuration setting for marking media as played
+        var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
         
         // Get configuration setting for sort order
         var sortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder));
@@ -124,7 +124,7 @@ public class SortService
             }
 
             // Choose play count algorithm based on configuration
-            Dictionary<string, (int playCount, bool isShow)>? directoryInfoMap;
+            Dictionary<string, (int playCount, BaseItemKind mediaType)>? directoryInfoMap;
             switch (sortOrder)
             {
                 case SortOrderOptions.None:
@@ -157,7 +157,7 @@ public class SortService
             var updateTasks = directoryInfoMap.OrderBy(kvp => kvp.Value.playCount).Select(async kvp =>
             {
                 var directory = kvp.Key;
-                var (assignedPlayCount, isShowDirectory) = kvp.Value;
+                var (assignedPlayCount, mediaType) = kvp.Value;
                 
                 try
                 {
@@ -187,41 +187,46 @@ public class SortService
                         {
                             if (_userDataManager.TryUpdatePlayCount(user, item, assignedPlayCount))
                             {
-                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (isShowDirectory: {IsShowDirectory})", 
-                                    user.Username, itemName, directory, assignedPlayCount, isShowDirectory);
+                                _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (mediaType: {MediaType})", 
+                                    user.Username, itemName, directory, assignedPlayCount, mediaType);
                                 
-                                // For shows, update placeholder episode (S00E00 special) play status based on MarkShowsPlayed setting
-                                if (isShowDirectory)
+                                var result = new JellyfinWrapperResult();
+                                try
                                 {
-                                    try
+                                    var wrapperName = string.Empty;
+                                    // For shows, update placeholder episode (S00E00 special) play status based on MarkMediaPlayed setting
+                                    if (mediaType == BaseItemKind.Series)
                                     {
-                                        var seriesWrapper = JellyfinSeries.FromItem(item);
-                                        _logger.LogTrace("Attempting to update placeholder episode play status for series '{SeriesName}' for user {UserName} (MarkShowsPlayed: {MarkShowsPlayed})", 
-                                            seriesWrapper.Name, user.Username, markShowsPlayed);
+                                        var wrapper = JellyfinSeries.FromItem(item);
+                                        result = wrapper.TrySetEpisodePlayCount(user, _userDataManager, markMediaPlayed);
+                                        wrapperName = wrapper.Name;
                                         
-                                        var result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager, markShowsPlayed);
-                                        
-                                        if (result.Success)
-                                        {
-                                            _logger.LogTrace("Placeholder episode play status updated for series '{SeriesName}' for user {UserName}: {Message}", 
-                                                seriesWrapper.Name, user.Username, result.Message);
-                                        }
-                                        else
-                                        {
-                                            _logger.LogTrace("Placeholder episode play status not updated for series '{SeriesName}' for user {UserName}: {Message}", 
-                                                seriesWrapper.Name, user.Username, result.Message);
-                                        }
                                     }
-                                    catch (ArgumentException ex)
+                                    // Movies usually have no badge
+                                    else if (mediaType == BaseItemKind.Movie)
                                     {
-                                        // Item is not a Series - this is expected for some items
-                                        _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play status update", itemName);
+                                        var wrapper = JellyfinMovie.FromItem(item);
+                                        wrapperName = wrapper.Name;
+                                        result = wrapper.TrySetMoviePlayCount(user, _userDataManager, markMediaPlayed);
                                     }
-                                    catch (Exception ex)
+                                    if (result.Success)
                                     {
-                                        // Handle other errors
-                                        _logger.LogTrace(ex, "Could not update placeholder episode play status for user {UserName}, item: {ItemName}", user.Username, itemName);
+                                        _logger.LogTrace("Placeholder episode play status updated for series '{SeriesName}' for user {UserName}: {Message}",
+                                            wrapperName, user.Username, result.Message);
                                     }
+                                    else
+                                    {
+                                        _logger.LogTrace("Placeholder episode play status not updated for series '{SeriesName}' for user {UserName}: {Message}",
+                                            wrapperName, user.Username, result.Message);
+                                    }
+                                }
+                                catch (ArgumentException ex)
+                                {
+                                    _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play status update", itemName);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogTrace(ex, "Could not update placeholder episode play status for user {UserName}, item: {ItemName}", user.Username, itemName);
                                 }
                             }
                             else

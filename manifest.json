@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.43.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.3.43 - Replace custom BaseItemKind wrapper; standardize on Jellyfin.Data.Enums with proper usings. Refactor IJellyfinItem to instance TypeName and update wrappers; fix SortService compile issues and deconstruction types. Remove wrapper file and clean up namespaces.",
+        "checksum": "92A3631E509201C7B5D2044DE7C82026",
+        "dependencies": [],
+        "timestamp": "2025-11-03T06:32:04.969Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.3.43.11"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.43.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.3.43 - Replace custom BaseItemKind wrapper; standardize on Jellyfin.Data.Enums with proper usings. Refactor IJellyfinItem to instance TypeName and update wrappers; fix SortService compile issues and deconstruction types. Remove wrapper file and clean up namespaces.",
+        "checksum": "D4ECE2E5082880F9AD9FAF630E112291",
+        "dependencies": [],
+        "timestamp": "2025-11-03T06:32:04.969Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.3.43.10"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-03T04:43:16.609Z",
         "checksum": "2FC427EDCD387ED46599360012A9453E",

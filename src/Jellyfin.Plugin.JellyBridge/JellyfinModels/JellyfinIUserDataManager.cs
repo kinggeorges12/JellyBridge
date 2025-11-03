@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -45,7 +46,7 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         {
             var userFavs = libraryManager.Inner.GetItemList(new InternalItemsQuery(user)
             {
-                IncludeItemTypes = new[] { Jellyfin.Data.Enums.BaseItemKind.Movie, Jellyfin.Data.Enums.BaseItemKind.Series },
+                IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
                 IsFavorite = true,
                 Recursive = true
             });

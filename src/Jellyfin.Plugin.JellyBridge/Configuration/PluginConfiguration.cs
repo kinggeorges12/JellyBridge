@@ -66,7 +66,7 @@ public class PluginConfiguration : BasePluginConfiguration
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
         { nameof(SortOrder), SortOrderOptions.Random },
-        { nameof(MarkShowsPlayed), false },
+        { nameof(MarkMediaPlayed), false },
         { nameof(SortTaskIntervalHours), 5.0 },
 
         // Advanced Settings
@@ -187,10 +187,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public SortOrderOptions? SortOrder { get; set; }
 
     /// <summary>
-    /// Gets or sets whether to mark shows as played (changes unplayed count badge to checkmark badge).
-    /// This only applies to shows.
+    /// Gets or sets whether to mark media as played (changes badges to checkmark).
+    /// For shows: changes the "1" unplayed count badge to a checkmark badge.
+    /// For movies: changes from no badge to a checkmark badge.
     /// </summary>
-    public bool? MarkShowsPlayed { get; set; }
+    public bool? MarkMediaPlayed { get; set; }
 
     /// <summary>
     /// Gets or sets the interval in hours for the sort task.
