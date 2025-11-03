@@ -27,7 +27,7 @@ public class PluginConfiguration : BasePluginConfiguration
         // Library Settings
         { nameof(LibraryDirectory), "/data/JellyBridge" },
         { nameof(ExcludeFromMainLibraries), true },
-        { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(RemoveRequestedFromFavorites), true },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), false },
         { nameof(LibraryPrefix), string.Empty },

@@ -57,18 +57,18 @@ public class LibraryService
 
             _logger.LogDebug("Starting Jellyseerr library refresh (FullRefresh: {FullRefresh})...", fullRefresh);
 
-            // Find all libraries that contain Jellyseerr folders
+            // Find all libraries that contain JellyBridge folders
             var libraries = _libraryManager.Inner.GetVirtualFolders();
-            var jellyseerrLibraries = libraries.Where(lib => 
+            var bridgeLibraries = libraries.Where(lib => 
                 lib.Locations?.Any(location => FolderUtils.IsPathInSyncDirectory(location)) == true).ToList();
 
-            if (!jellyseerrLibraries.Any())
+            if (!bridgeLibraries.Any())
             {
-                throw new InvalidOperationException("No Jellyseerr libraries found for refresh");
+                throw new InvalidOperationException("No JellyBridge libraries found for refresh");
             }
 
-            _logger.LogTrace("Found {LibraryCount} Jellyseerr libraries: {LibraryNames}", 
-                jellyseerrLibraries.Count, string.Join(", ", jellyseerrLibraries.Select(lib => lib.Name)));
+            _logger.LogTrace("Found {LibraryCount} JellyBridge libraries: {LibraryNames}", 
+                bridgeLibraries.Count, string.Join(", ", bridgeLibraries.Select(lib => lib.Name)));
 
             // Scan for new and updated files
             // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
@@ -120,15 +120,28 @@ public class LibraryService
                 refreshOptionsRemove.MetadataRefreshMode, refreshOptionsRemove.ImageRefreshMode, refreshOptionsRemove.ReplaceAllMetadata, refreshOptionsRemove.ReplaceAllImages, refreshOptionsRemove.RegenerateTrickplay,
                 refreshOptionsUpdate.MetadataRefreshMode, refreshOptionsUpdate.ImageRefreshMode, refreshOptionsUpdate.ReplaceAllMetadata, refreshOptionsUpdate.ReplaceAllImages, refreshOptionsUpdate.RegenerateTrickplay);
 
-            // Queue provider refresh for each Jellyseerr library via ProviderManager (same as API behavior)
-            foreach (var jellyseerrLibrary in jellyseerrLibraries)
+            // Queue provider refresh for each JellyBridge library via ProviderManager (same as API behavior)
+            foreach (var bridgeLibrary in bridgeLibraries)
             {
-                var libraryFolder = _libraryManager.Inner.GetItemById(Guid.Parse(jellyseerrLibrary.ItemId));
+                // Validate ItemId before parsing
+                if (string.IsNullOrEmpty(bridgeLibrary.ItemId))
+                {
+                    _logger.LogWarning("Library '{LibraryName}' has null or empty ItemId, skipping refresh", bridgeLibrary.Name);
+                    continue;
+                }
+
+                if (!Guid.TryParse(bridgeLibrary.ItemId, out var libraryItemId))
+                {
+                    _logger.LogWarning("Library '{LibraryName}' has invalid ItemId '{ItemId}', skipping refresh", bridgeLibrary.Name, bridgeLibrary.ItemId);
+                    continue;
+                }
+
+                var libraryFolder = _libraryManager.Inner.GetItemById(libraryItemId);
                 if (libraryFolder != null)
                 {
-                    _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                    _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", bridgeLibrary.Name);
                     // First validate children to scan for new/changed files
-                    _logger.LogTrace("Validating library: {LibraryName}", jellyseerrLibrary.Name);
+                    _logger.LogTrace("Validating library: {LibraryName}", bridgeLibrary.Name);
                     //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
 
                     if (refreshUserData)
@@ -143,29 +156,29 @@ public class LibraryService
                     else
                     {
                         // Light refresh for user data updates (play counts)
-                        _logger.LogTrace("Using update refresh options for library: {LibraryName}", jellyseerrLibrary.Name);
+                        _logger.LogTrace("Using update refresh options for library: {LibraryName}", bridgeLibrary.Name);
                         _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.High);
                     }
                     // ValidateChildren already refreshes child metadata when recursive=true.
                     // If needed in future, we could call RefreshMetadata here.
 
-                    _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", jellyseerrLibrary.Name);
+                    _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", bridgeLibrary.Name);
                 }
                 else
                 {
-                    _logger.LogWarning("Library folder not found for: {LibraryName}", jellyseerrLibrary.Name);
+                    _logger.LogWarning("Library folder not found for: {LibraryName}", bridgeLibrary.Name);
                     continue;
                 }
 
                 queuedCount++;
-                _logger.LogTrace("Queued provider refresh for library: {LibraryName} ({ItemId})", jellyseerrLibrary.Name, libraryFolder?.Id);
+                _logger.LogTrace("Queued provider refresh for library: {LibraryName} ({ItemId})", bridgeLibrary.Name, libraryFolder?.Id);
             }
 
-            _logger.LogDebug("Queued provider refresh for {Count} Jellyseerr libraries", queuedCount);
+            _logger.LogDebug("Queued provider refresh for {Count} JellyBridge libraries", queuedCount);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing Jellyseerr library");
+            _logger.LogError(ex, "Error refreshing JellyBridge library");
         }
         // No-op await to satisfy async method requirement when no asynchronous operations are performed
         await Task.CompletedTask;

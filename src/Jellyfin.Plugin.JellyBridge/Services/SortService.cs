@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
@@ -22,14 +23,16 @@ public class SortService
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
     private readonly MetadataService _metadataService;
+    private readonly BridgeService _bridgeService;
 
-    public SortService(ILogger<SortService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager, MetadataService metadataService)
+    public SortService(ILogger<SortService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager, MetadataService metadataService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<SortService>(logger);
         _libraryManager = libraryManager;
         _userDataManager = userDataManager;
         _userManager = userManager;
         _metadataService = metadataService;
+        _bridgeService = bridgeService;
     }
 
 
@@ -37,10 +40,12 @@ public class SortService
     /// Randomizes play counts by creating shuffled play count values and mapping them to directories.
     /// </summary>
     /// <returns>A dictionary mapping directory paths to (playCount, isShow) tuples, or null if no directories found.</returns>
-    private Dictionary<string, (int playCount, bool isShow)>? playCountRandomize()
+    private async Task<Dictionary<string, (int playCount, bool isShow)>?> playCountRandomize()
     {
-        // Get categorized directories
-        var (movieDirectories, showDirectories) = _metadataService.ReadMetadataFolders();
+        // Get categorized directories that are actually in Jellyfin libraries
+        var metadataItems = await _bridgeService.ReadMetadataLibraries();
+        var movieDirectories = metadataItems.Where(item => item.item is JellyseerrMovie).Select(item => item.directory).ToList();
+        var showDirectories = metadataItems.Where(item => item.item is JellyseerrShow).Select(item => item.directory).ToList();
         var totalCount = movieDirectories.Count + showDirectories.Count;
 
         if (totalCount == 0)
@@ -69,10 +74,12 @@ public class SortService
     /// Sets play counts to zero by mapping all directories to play count zero.
     /// </summary>
     /// <returns>A dictionary mapping directory paths to (playCount, isShow) tuples, or null if no directories found.</returns>
-    private Dictionary<string, (int playCount, bool isShow)>? playCountZero()
+    private async Task<Dictionary<string, (int playCount, bool isShow)>?> playCountZero()
     {
-        // Get categorized directories
-        var (movieDirectories, showDirectories) = _metadataService.ReadMetadataFolders();
+        // Get categorized directories that are actually in Jellyfin libraries
+        var metadataItems = await _bridgeService.ReadMetadataLibraries();
+        var movieDirectories = metadataItems.Where(item => item.item is JellyseerrMovie).Select(item => item.directory).ToList();
+        var showDirectories = metadataItems.Where(item => item.item is JellyseerrShow).Select(item => item.directory).ToList();
         var totalCount = movieDirectories.Count + showDirectories.Count;
 
         if (totalCount == 0)
@@ -92,7 +99,6 @@ public class SortService
     /// <summary>
     /// Applies the play count algorithm to all discover library items across all users.
     /// This enables random sorting by play count in Jellyfin.
-    /// Uses MetadataService.ReadMetadataFolders to discover movie and show directories.
     /// </summary>
     /// <returns>A tuple containing a list of successful updates (name, type, playCount), a list of failed item paths, and a list of skipped item paths (ignored files).</returns>
     public async Task<(List<(string name, string type, int playCount)> successes, List<string> failures, List<string> skipped)> ApplyPlayCountAlgorithmAsync()
@@ -123,12 +129,12 @@ public class SortService
             {
                 case SortOrderOptions.None:
                     _logger.LogDebug("Using None sort order - setting play counts to zero");
-                    directoryInfoMap = playCountZero();
+                    directoryInfoMap = await playCountZero();
                     break;
                 
                 case SortOrderOptions.Random:
                     _logger.LogDebug("Using Random sort order - randomizing play counts");
-                    directoryInfoMap = playCountRandomize();
+                    directoryInfoMap = await playCountRandomize();
                     break;
                 
                 case SortOrderOptions.Smart:
@@ -137,7 +143,7 @@ public class SortService
                     
                 default:
                     _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None", sortOrder);
-                    directoryInfoMap = playCountZero();
+                    directoryInfoMap = await playCountZero();
                     break;
             }
             

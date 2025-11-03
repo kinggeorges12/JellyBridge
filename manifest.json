@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.39.11.zip",
+        "dependencies": [],
+        "checksum": "E5B59D70A351BE432BEC9D593C4D4FBF",
+        "changelog": "Jellyfin 10.11.0: v1.3.39 - Refactored library metadata filtering and duplicate detection: Added ReadMetadataLibraries to filter metadata items to only those present in Jellyfin libraries, preventing crashes when updating items not in libraries. Simplified directory-to-library mapping by combining normalizedDirectoryMap and directoryToLibraryMap into a single directoryLibraryMap. Enhanced FilterDuplicatesByLibrary with anti-join logic to exclude items that already exist in the same library based on library name and item hash code.",
+        "version": "1.3.39.11",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-03T03:05:53.769Z"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.39.10.zip",
+        "dependencies": [],
+        "checksum": "E1FA4822A2D7277EB2203C90BFC753AC",
+        "changelog": "Jellyfin 10.10.7: v1.3.39 - Refactored library metadata filtering and duplicate detection: Added ReadMetadataLibraries to filter metadata items to only those present in Jellyfin libraries, preventing crashes when updating items not in libraries. Simplified directory-to-library mapping by combining normalizedDirectoryMap and directoryToLibraryMap into a single directoryLibraryMap. Enhanced FilterDuplicatesByLibrary with anti-join logic to exclude items that already exist in the same library based on library name and item hash code.",
+        "version": "1.3.39.10",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-03T03:05:53.769Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.38.11.zip",
         "timestamp": "2025-11-02T22:22:54.391Z",
         "version": "1.3.38.11",
