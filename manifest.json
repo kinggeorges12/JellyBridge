@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.44.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.44 - Add quotas settings and enforcement in favorites/sync; improve metadata handling. Update configuration UI for quotas and sorting controls. Refresh README.",
+        "checksum": "959B410F1B3B2A653760B9E285BADE48",
+        "version": "1.3.44.11",
+        "timestamp": "2025-11-03T07:42:24.767Z"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.44.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.44 - Add quotas settings and enforcement in favorites/sync; improve metadata handling. Update configuration UI for quotas and sorting controls. Refresh README.",
+        "checksum": "CC0FEA675E44D035F9220F71CC510EF6",
+        "version": "1.3.44.10",
+        "timestamp": "2025-11-03T07:42:24.767Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.43.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.43 - Replace custom BaseItemKind wrapper; standardize on Jellyfin.Data.Enums with proper usings. Refactor IJellyfinItem to instance TypeName and update wrappers; fix SortService compile issues and deconstruction types. Remove wrapper file and clean up namespaces.",
         "checksum": "92A3631E509201C7B5D2044DE7C82026",

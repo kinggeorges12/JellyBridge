@@ -238,11 +238,11 @@ public partial class SyncService
             var jellyseerrUsersTask = _favoriteService.GetJellyseerrUsersAsync();
 
             // Step 4: Filter out items that already have requests in Jellyseerr
-            var unrequestedFavoritesTask = _favoriteService.FilterRequestsFromFavorites(bridgeFavoritedItems);
+            var filteredFavoritesTask = _favoriteService.FilterRequestsFromFavorites(bridgeFavoritedItems);
             
-            await Task.WhenAll(jellyseerrUsersTask, unrequestedFavoritesTask);
+            await Task.WhenAll(jellyseerrUsersTask, filteredFavoritesTask);
             var jellyseerrUsers = await jellyseerrUsersTask;
-            var unrequestedFavorites = await unrequestedFavoritesTask;
+            var unrequestedFavorites = (await filteredFavoritesTask).pending;
 
             // Step 5: Group bridge-only items by TMDB ID and find first user who favorited each
             var unrequestedFavoritesWithJellyseerrUser = _favoriteService.EnsureJellyseerrUser(unrequestedFavorites, jellyseerrUsers);

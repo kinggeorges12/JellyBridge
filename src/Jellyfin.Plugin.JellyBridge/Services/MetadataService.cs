@@ -49,7 +49,7 @@ public class MetadataService
                     {
                     var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        //_logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                         
                             var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
                             if (movie != null)
@@ -76,7 +76,7 @@ public class MetadataService
                 {
                     var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
                     var json = await File.ReadAllTextAsync(metadataFile);
-                    _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                    //_logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
                     
                             var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
                             if (show != null)
