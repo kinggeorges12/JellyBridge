@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.3.62 - Added DistinctBy to deduplicate libraryItemPairs by entire tuple (libraryName, directory, item.Id). Updated trace logging to use ItemHashCode instead of ItemName. Improved field descriptions in configuration page for MaxDiscoverPages and MaxRetentionDays.",
+        "version": "1.3.62.11",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.62.11.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-03T23:34:40.701Z",
+        "checksum": "990CAC04C730382F8019B1415853351E"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.3.62 - Added DistinctBy to deduplicate libraryItemPairs by entire tuple (libraryName, directory, item.Id). Updated trace logging to use ItemHashCode instead of ItemName. Improved field descriptions in configuration page for MaxDiscoverPages and MaxRetentionDays.",
+        "version": "1.3.62.10",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.62.10.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-03T23:34:40.701Z",
+        "checksum": "363D4F834ABF58626FA76920BEC5B895"
+      },
+      {
         "version": "1.3.61.11",
         "timestamp": "2025-11-03T23:22:24.176Z",
         "dependencies": [],
