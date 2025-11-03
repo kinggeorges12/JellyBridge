@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.45.11.zip",
+        "version": "1.3.45.11",
+        "checksum": "FD0A25A5AA6BAD45B3151174EB62A99A",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.3.45 - Add detailed debug/trace logging in FavoriteService (unmark/ignore and declined-unignore). Consolidate metadata logging into FindJellyseerrFavorites overload and adjust log levels. No functional changes; improves diagnostics for favorites/request handling.",
+        "timestamp": "2025-11-03T07:57:04.017Z"
+      },
+      {
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.45.10.zip",
+        "version": "1.3.45.10",
+        "checksum": "E4FB00A9DF5A67EF766260844012EB87",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.3.45 - Add detailed debug/trace logging in FavoriteService (unmark/ignore and declined-unignore). Consolidate metadata logging into FindJellyseerrFavorites overload and adjust log levels. No functional changes; improves diagnostics for favorites/request handling.",
+        "timestamp": "2025-11-03T07:57:04.017Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.44.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
