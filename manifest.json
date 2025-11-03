@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.50.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.50 - BridgeService: add left-join fallback to default library, append unmatched items directly, and add debug counters; simplify unmatched mapping to avoid nulls. Setup UI: help now scrolls to IsEnabled. Version, manifest, and release artifacts updated for 10.10/10.11.",
+        "timestamp": "2025-11-03T11:03:10.367Z",
+        "checksum": "3E805BF05055C366EF4D2776F4686036",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.50.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "version": "1.3.50.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.50 - BridgeService: add left-join fallback to default library, append unmatched items directly, and add debug counters; simplify unmatched mapping to avoid nulls. Setup UI: help now scrolls to IsEnabled. Version, manifest, and release artifacts updated for 10.10/10.11.",
+        "timestamp": "2025-11-03T11:03:10.367Z",
+        "checksum": "54013295576CBFBF858DFB2042901FA0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.50.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "timestamp": "2025-11-03T09:45:55.381Z",
         "targetAbi": "10.11.0.0",
         "version": "1.3.49.11",
