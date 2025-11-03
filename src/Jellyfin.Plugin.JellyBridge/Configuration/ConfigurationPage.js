@@ -220,6 +220,10 @@ function initializeGeneralSettings(page) {
             if (instructionsDiv) {
                 const isVisible = instructionsDiv.style.display !== 'none';
                 instructionsDiv.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    // Scroll to and highlight the IsEnabled checkbox
+                    scrollToCheckboxAndHighlight('#IsEnabled');
+                }
             }
         });
     }

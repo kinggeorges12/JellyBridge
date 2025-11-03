@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.48.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.48.11.zip",
+        "checksum": "038E62469142B6757729F0B216F6950A",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.3.48 - BridgeService: include JellyBridge items not in any library (libraryName empty) and add debug counts for library/non-library additions; refine duplicate filtering logs. Minor: tweak setup help to scroll to IsEnabled when opened.",
+        "timestamp": "2025-11-03T09:07:17.296Z"
+      },
+      {
+        "version": "1.3.48.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.48.10.zip",
+        "checksum": "2B0B7DEAC67CF8D9B1471F15A905BF1F",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.3.48 - BridgeService: include JellyBridge items not in any library (libraryName empty) and add debug counts for library/non-library additions; refine duplicate filtering logs. Minor: tweak setup help to scroll to IsEnabled when opened.",
+        "timestamp": "2025-11-03T09:07:17.296Z"
+      },
+      {
         "version": "1.3.47.11",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.47.11.zip",
