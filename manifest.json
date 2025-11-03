@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "CBA730B4D7A56E58D63771B5C346DD47",
+        "version": "1.3.56.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.56 - Config UI: add data-target-page links for navigation, add router navigation spans (Dashboard/Metadata Manager), link remaining troubleshooting/setup references. JS: support data-target-router and data-target-page, make enabled task names in startup description clickable. No functional changes.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.56.11.zip",
+        "dependencies": [],
+        "timestamp": "2025-11-03T21:11:32.244Z"
+      },
+      {
+        "checksum": "ED8B8623D7C856FE8D1BD3F88A0F8CC2",
+        "version": "1.3.56.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.56 - Config UI: add data-target-page links for navigation, add router navigation spans (Dashboard/Metadata Manager), link remaining troubleshooting/setup references. JS: support data-target-router and data-target-page, make enabled task names in startup description clickable. No functional changes.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.56.10.zip",
+        "dependencies": [],
+        "timestamp": "2025-11-03T21:11:32.244Z"
+      },
+      {
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.55 - DiscoverService: make FilterSyncedLibraryItems async and dedupe unmatched via FilterDuplicateMedia; ensure unique placeholder paths. BridgeService: match-all in FindMatches. SyncService: await new filter and improve step 4 logs. Diagnostics only.",
         "checksum": "44250A7766BEC7D9EF6410395DA9A688",
