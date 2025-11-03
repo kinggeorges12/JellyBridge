@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "D49DC1ED9DEEE4EA8C3ED4295D1F7C25",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-03T21:33:11.926Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.58 - Config JS: bind click handlers after dynamic innerHTML updates in startup description, prevent duplicate event bindings with data-link-initialized flag. HTML: add Dashboard router link. No functional changes.",
+        "version": "1.3.58.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.58.11.zip"
+      },
+      {
+        "dependencies": [],
+        "checksum": "661F8ED82BEF281B74463ABD42522942",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-03T21:33:11.926Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.58 - Config JS: bind click handlers after dynamic innerHTML updates in startup description, prevent duplicate event bindings with data-link-initialized flag. HTML: add Dashboard router link. No functional changes.",
+        "version": "1.3.58.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.58.10.zip"
+      },
+      {
         "checksum": "CBA730B4D7A56E58D63771B5C346DD47",
         "version": "1.3.56.11",
         "changelog": "Jellyfin 10.11.0: v1.3.56 - Config UI: add data-target-page links for navigation, add router navigation spans (Dashboard/Metadata Manager), link remaining troubleshooting/setup references. JS: support data-target-router and data-target-page, make enabled task names in startup description clickable. No functional changes.",
