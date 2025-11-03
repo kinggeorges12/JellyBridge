@@ -156,7 +156,7 @@ public class BridgeService
                 var itemJson = item.ToJson(_dtoService);
                 _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
                     item.Name, itemJson?.Length ?? 0);
-                await File.WriteAllTextAsync(ignoreFilePath, itemJson);
+                ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
                 _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
             }
             catch (MissingMethodException ex)
@@ -513,34 +513,14 @@ public class BridgeService
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         
         var unmatched = new List<IJellyseerrItem>();
-        var libSet = new HashSet<string>();
 
         if (useNetworkFolders && addDuplicateContent)
         {
-            string MakeKey(IJellyseerrItem item)
-            {
-                try
-                {
-                    var dir = _metadataService.GetJellyBridgeItemDirectory(item);
-                    var norm = !string.IsNullOrWhiteSpace(dir) ? Path.GetFullPath(dir) : string.Empty;
-                    return $"{item.Id}|{norm}";
-                }
-                catch
-                {
-                    return $"{item.Id}|";
-                }
-            }
-
-            libSet = new HashSet<string>(libraryMatches.Select(MakeKey), StringComparer.OrdinalIgnoreCase);
-            unmatched = testItems.Where(t => !libSet.Contains(MakeKey(t))).ToList();
+            var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemFolderHashCode()));
+            unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemFolderHashCode())).ToList();
         } else {
             var libIds = new HashSet<int>(libraryMatches.Select(i => i.Id));
-            libSet = new HashSet<string>(libIds.Select(id => id.ToString()), StringComparer.OrdinalIgnoreCase);
             unmatched = testItems.Where(t => !libIds.Contains(t.Id)).ToList();
-        }
-        foreach (var item in libSet)
-        {
-            _logger.LogTrace("Unmatched library set hash code: {HashCode}", item);
         }
         _logger.LogDebug("GetNonMatchingJellyseerrItems: {UnmatchedCount} unmatched items", unmatched.Count);
         return unmatched;
