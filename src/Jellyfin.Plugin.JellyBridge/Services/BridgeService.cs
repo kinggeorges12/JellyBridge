@@ -241,7 +241,10 @@ public class BridgeService
                         var (movieDirs, showDirs) = _metadataService.ReadMetadataFolders(libraryLocation);
                         
                         // Track which library each directory belongs to (normalize paths for consistent lookup)
-                        foreach (var dir in movieDirs.Concat(showDirs))
+                        var allDirs = new List<string>();
+                        allDirs.AddRange(movieDirs);
+                        allDirs.AddRange(showDirs);
+                        foreach (var dir in allDirs)
                         {
                             try
                             {

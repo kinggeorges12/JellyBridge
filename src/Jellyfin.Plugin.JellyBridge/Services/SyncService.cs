@@ -122,12 +122,22 @@ public partial class SyncService
             if (excludeFromMainLibraries) {
                 // Run library scan to find matches and get unmatched items
                 (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
+                //print all unmatched items
+                foreach (var item in unmatchedItems)
+                {
+                    _logger.LogDebug("Step 4: Unmatched item: {MediaName} (Id: {Id})", item.MediaName, item.Id);
+                }
                 _logger.LogDebug("Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
                 // Remove matches that point to items already inside the JellyBridge sync directory
                 (matchedItems, var syncedItems) = _discoverService.FilterSyncedItems(allMatchedItems);
+                //print all synced items
+                foreach (var item in syncedItems)
+                {
+                    _logger.LogDebug("Step 4: Synced item: {MediaName} (Id: {Id})", item.MediaName, item.Id);
+                }
                 _logger.LogDebug("Step 4: Filtered {SyncedCount} synced items", syncedItems.Count);
-                // Remove any unmatched items that already have an ignore file in their folder
                 unmatchedItems.AddRange(syncedItems);
+                // Remove any unmatched items that already have an ignore file in their folder
                 unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
                 _logger.LogDebug("Step 4: Filtered ignored items; remaining unmatched = {UnmatchedCount}", unmatchedItems.Count);
             } else {
