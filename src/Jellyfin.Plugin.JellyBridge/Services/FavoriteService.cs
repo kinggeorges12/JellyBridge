@@ -249,16 +249,20 @@ public class FavoriteService
     /// Filter favorites by removing items that already have active (non-declined) Jellyseerr requests.
     /// Declined requests do NOT count as existing and are treated as unrequested.
     /// </summary>
-    public async Task<List<(JellyfinUser user, IJellyfinItem item)>> FilterRequestsFromFavorites(
+    public async Task<(
+        List<(JellyfinUser user, IJellyfinItem item)> requested,
+        List<(JellyfinUser user, IJellyfinItem item)> pending)> FilterRequestsFromFavorites(
         List<(JellyfinUser user, IJellyfinItem item)> allFavorites)
     {
+        var requested = new List<(JellyfinUser user, IJellyfinItem item)>();
+        var pending = new List<(JellyfinUser user, IJellyfinItem item)>();
         try
         {
             var requestsResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.ReadRequests);
             if (requestsResult == null)
             {
                 _logger.LogError("Jellyseerr requests endpoint returned null response");
-                return allFavorites; // Fail-safe: don't drop any favorites if API response is null
+                return (requested, pending);
             }
 
             var jellyseerrRequests = (List<JellyseerrMediaRequest>)requestsResult;
@@ -270,34 +274,38 @@ public class FavoriteService
                 jellyseerrRequests
                     .Where(r => r != null && r.Status != JellyseerrModel.MediaRequestStatus.DECLINED && r.Media != null)
                     .Select(r => (r.Media.MediaType, r.Media.TmdbId)));
+            var requestedLog = new List<string>();
 
-            var removedLogList = new List<string>();
-            // Only retain pairs whose item is NOT already requested
-            var filtered = allFavorites.Where(fav => {
+            foreach (var fav in allFavorites)
+            {
                 var tmdb = fav.item.GetTmdbId();
                 var type = IJellyseerrItem.GetMediaType(fav.item);
                 var isRequested = tmdb.HasValue && requestedLookup.Contains((type, tmdb.Value));
                 if (isRequested)
                 {
-                    removedLogList.Add(tmdb.HasValue
+                    requested.Add(fav);
+                    requestedLog.Add(tmdb.HasValue
                         ? $"{fav.item.Name} (TMDB {tmdb.Value}, {type})"
                         : $"{fav.item.Name} ({type})");
                 }
-                return !isRequested;
-            }).ToList();
-            if (removedLogList.Count > 0)
-            {
-                _logger.LogTrace("Filtered {Count} requested favorite items: {Items}", removedLogList.Count, string.Join(", ", removedLogList));
+                else
+                {
+                    pending.Add(fav);
+                }
             }
-            _logger.LogDebug("Found {UnrequestedCount} unrequested favorite items, filtered from {TotalCount} total", filtered.Count, allFavorites.Count);
-            return filtered;
+
+            if (requestedLog.Count > 0)
+            {
+                _logger.LogTrace("Identified {Count} already-requested favorite items: {Items}", requestedLog.Count, string.Join(", ", requestedLog));
+            }
+            _logger.LogDebug("Split favorites into {Requested} requested and {Pending} pending (total {Total})", requested.Count, pending.Count, allFavorites.Count);
+            return (requested, pending);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to filter favorites using Jellyseerr requests");
-            // On failure, return the original list to avoid dropping user selections
-            return allFavorites;
         }
+        return (requested, pending);
     }
 
     #endregion
@@ -341,12 +349,7 @@ public class FavoriteService
                 "Found {DeclinedMediaCount} media with all requests declined; removing .ignore markers",
                 representativeDeclinedRequests.Count);
 
-            var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
-            var allMeta = new List<IJellyseerrItem>();
-            allMeta.AddRange(moviesMeta);
-            allMeta.AddRange(showsMeta);
-
-            declinedItems = FindJellyseerrFavorites(allMeta, representativeDeclinedRequests);
+            declinedItems = await FindJellyseerrFavorites(representativeDeclinedRequests);
             foreach (var item in declinedItems)
             {
                 try
@@ -399,14 +402,14 @@ public class FavoriteService
         {
             // Get all existing favorites
             var allFavorites = GetUserFavorites();
-            
+            var (requestedFavorites, _) = await FilterRequestsFromFavorites(allFavorites);
             // Build lookup of itemId -> users who favorited it
-            var itemIdToUsers = allFavorites
+            var itemIdToUsers = requestedFavorites
                 .GroupBy(f => f.item.Id)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.user).ToList());
 
-            // Use LibraryScanAsync to find matches between Jellyfin items and Jellyseerr metadata
-            var jellyfinItems = allFavorites.Select(f => f.item).ToList();
+            // Find matches between Jellyfin items and Jellyseerr metadata
+            var jellyfinItems = requestedFavorites.Select(f => f.item).ToList();
             var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
 
             // Create ignore files for all matched Jellyfin items
@@ -463,6 +466,15 @@ public class FavoriteService
         return affectedItems;
     }
 
+    private async Task<List<IJellyseerrItem>> FindJellyseerrFavorites(
+        List<JellyseerrMediaRequest> requests)
+    {
+        var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
+        var allMeta = new List<IJellyseerrItem>();
+        allMeta.AddRange(moviesMeta);
+        allMeta.AddRange(showsMeta);
+        return FindJellyseerrFavorites(requests, allMeta);
+    }
 
     /// <summary>
     /// Find the corresponding Jellyseerr metadata item (movie or show) for a given request,
@@ -473,8 +485,8 @@ public class FavoriteService
     /// <param name="requests">Jellyseerr media requests to resolve</param>
     /// <returns>List of matching Jellyseerr items</returns>
     private List<IJellyseerrItem> FindJellyseerrFavorites(
-        List<IJellyseerrItem> items,
-        List<JellyseerrMediaRequest> requests)
+        List<JellyseerrMediaRequest> requests,
+        List<IJellyseerrItem>? items = null)
     {
         var results = new List<IJellyseerrItem>();
         if (items == null || items.Count == 0 || requests == null || requests.Count == 0)

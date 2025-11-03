@@ -1785,22 +1785,15 @@ function initializeLinkSpans(page) {
     const linkSpans = page.querySelectorAll('span.link');
     linkSpans.forEach(span => {
         span.addEventListener('click', function() {
-            const linkText = span.textContent.trim();
-            // Find all elements and search for one with matching text
-            const allElements = page.querySelectorAll('[id]');
-            for (const element of allElements) {
-                // Check if element or its label/description contains the link text
-                const elementText = element.textContent.trim();
-                const labelElement = element.querySelector('label, .checkboxLabel, .fieldDescription, h3, h4, summary');
-                const labelText = labelElement ? labelElement.textContent.trim() : '';
-                
-                // Match if the link text appears in the element's text or label (exact match preferred)
-                if (elementText === linkText || labelText === linkText || 
-                    elementText.includes(linkText) || labelText.includes(linkText)) {
-                    scrollToElement(element.id);
-                    return;
-                }
+            // Prefer explicit data-target mapping when present
+            const target = span.getAttribute('data-target');
+            if (target) {
+                scrollToElement(target);
+                return;
             }
+
+            // No fallback text matching to avoid accidental scroll to top
+            return;
         });
     });
 }

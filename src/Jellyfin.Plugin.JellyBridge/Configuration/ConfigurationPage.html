@@ -444,7 +444,7 @@
                             <li>☑️ <strong>Save artwork into media folders</strong></li>
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                         </ul>
-                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link"><i>Use Network Folders</i></span></p>
+                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target="UseNetworkFolders"><i>Use Network Folders</i></span></p>
                         
                         <details id="troubleshootingDetails" class="troubleshootingDetails">
                             <summary>🤖 Troubleshooting</summary>
@@ -670,7 +670,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show in the JellyBridge library by creating an .ignore file in the directory. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
+                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show in the JellyBridge library by creating an .ignore file in the directory. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -691,10 +691,10 @@
                                 <h4>Network Folder Setup Instructions</h4>
                                 <p>Do this before clicking <strong>Sync Discover Content from Jellyseerr to JellyBridge Library</strong> or running the <i>Automated Task to Sync Jellyseerr and Jellyfin</i>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
-                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link">Network Services</span></li>
+                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link" data-target="availableNetworksSelectBox">Network Services</span></li>
                                     <li>Click the <strong>Generate Network Folders</strong> button below.</li>
                                     <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
-                                    <li>For each library, follow the <span class="link">Library Setup Instructions</span></li>
+                                    <li>For each library, follow the <span class="link" data-target="librarySetupInstructions">Library Setup Instructions</span></li>
                                 </ol>
 
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
