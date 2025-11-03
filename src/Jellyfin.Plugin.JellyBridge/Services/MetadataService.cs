@@ -23,18 +23,24 @@ public class MetadataService
         _logger = new DebugLogger<MetadataService>(logger);
     }
 
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    {
+        // Get categorized directories
+        var (movieDirectories, showDirectories) = ReadMetadataFolders();
+        // Read metadata
+        return await ReadMetadataAsync(movieDirectories, showDirectories);
+    }
+
     /// <summary>
     /// Read all metadata files from the bridge folder, detecting movie vs show based on NFO files.
     /// </summary>
-    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync(List<string> movieDirectories, List<string> showDirectories)
     {
         var movies = new List<JellyseerrMovie>();
         var shows = new List<JellyseerrShow>();
 
         try
         {
-            // Get categorized directories
-            var (movieDirectories, showDirectories) = ReadMetadataFolders();
 
             // Parse all movie directories
             foreach (var directory in movieDirectories)
@@ -101,25 +107,31 @@ public class MetadataService
         return (movies, shows);
     }
 
+    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders()
+    {
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+
+        return ReadMetadataFolders(syncDirectory);
+    }
+
     /// <summary>
     /// Discovers and categorizes directories containing metadata files.
     /// </summary>
     /// <returns>Tuple containing lists of movie directories and show directories</returns>
-    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders()
+    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders(string folderPath)
     {
         var movieDirectories = new List<string>();
         var showDirectories = new List<string>();
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
         try
         {
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
             {
-                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
+                throw new InvalidOperationException($"Folder path does not exist: {folderPath}");
             }
 
             // Get all subdirectories that contain metadata files
-            var metadataFiles = Directory.GetFiles(syncDirectory, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
+            var metadataFiles = Directory.GetFiles(folderPath, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
             
             foreach (var metadataFile in metadataFiles)
             {
@@ -150,7 +162,7 @@ public class MetadataService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error discovering metadata directories from {SyncDirectory}", syncDirectory);
+            _logger.LogError(ex, "Error discovering metadata directories from {FolderPath}", folderPath);
         }
 
         return (movieDirectories, showDirectories);
@@ -371,7 +383,7 @@ public class MetadataService
     /// </summary>
     /// <param name="networkName">The name of the network (from NetworkTag or network.Name)</param>
     /// <returns>Network folder path if enabled, null otherwise</returns>
-    private string? GetNetworkFolder(string? networkName)
+    public string? GetNetworkFolder(string? networkName)
     {
         if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders)) || string.IsNullOrEmpty(networkName))
         {

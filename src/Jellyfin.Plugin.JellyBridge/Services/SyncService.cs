@@ -99,7 +99,7 @@ public partial class SyncService
             discoverMedia.AddRange(discoverShows.Cast<IJellyseerrItem>());
 
             // Step 2: Filter duplicates for networks
-            var uniqueDiscoverMedia = _discoverService.FilterDuplicateMedia(discoverMedia);
+            var uniqueDiscoverMedia = await _discoverService.FilterDuplicateMedia(discoverMedia);
 
             // Step 3: Process movies and TV shows
             _logger.LogTrace("📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");

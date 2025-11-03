@@ -16,13 +16,15 @@ public class DiscoverService
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
+    private readonly BridgeService _bridgeService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService)
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
+        _bridgeService = bridgeService;
     }
     
     #region FromJellyseerr
@@ -84,7 +86,7 @@ public class DiscoverService
                 _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
             }
             
-            // Add items to list (deduplication handled later by FilterDuplicateMedia)
+            // Add items to list (no deduplication)
             foreach (var item in items)
             {
                 // Set the network tag for this item
@@ -104,11 +106,11 @@ public class DiscoverService
     /// <summary>
     /// Filters duplicate media items from a list using the GetItemHashCode method.
     /// Returns a list containing only unique items based on their hash code.
-    /// If UseNetworkFolders and AddDuplicateContent are both enabled, returns the original list without filtering.
+    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
     /// <param name="items">List of media items to filter</param>
     /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
-    public List<IJellyseerrItem> FilterDuplicateMedia(List<IJellyseerrItem> items)
+    public async Task<List<IJellyseerrItem>> FilterDuplicateMedia(List<IJellyseerrItem> items)
     {
         // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
@@ -116,8 +118,13 @@ public class DiscoverService
         
         if (useNetworkFolders && addDuplicateContent)
         {
-            _logger.LogDebug("Skipping duplicate filtering: UseNetworkFolders and AddDuplicateContent are both enabled");
-            return items;
+            _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
+            var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
+            // Extract items from library-directory-item tuples into a single flat list
+            var combinedItems = libraryResults.Select(tuple => tuple.item).ToList();
+            _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
+                combinedItems.Count, libraryResults.Count);
+            return combinedItems;
         }
         
         var seenHashes = new HashSet<int>();
