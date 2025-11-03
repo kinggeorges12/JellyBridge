@@ -552,12 +552,12 @@
 
                         <div class="inputContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
+                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
                             <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Max Retention Days"/>
-                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. Items older than this will be removed during sync operations.</div>
+                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. JellyBridge items older than this will be removed after running the import task.</div>
                         </div>
 
                         <div>
