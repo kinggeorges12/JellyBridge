@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.3.40 - Renamed 'Add Duplicate Content' to 'Duplicate Discover Content for JellyBridge Libraries' with updated descriptions clarifying that duplicate content from different networks is allowed as long as unique within each library. Updated setup instructions to specify that each network folder must have a unique Jellyfin library. Removed obsolete patch note.",
+        "dependencies": [],
+        "version": "1.3.40.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.40.11.zip",
+        "targetAbi": "10.11.0.0",
+        "checksum": "6171A53DB444CC00B136BB7D55036FB2",
+        "timestamp": "2025-11-03T03:30:15.922Z"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.3.40 - Renamed 'Add Duplicate Content' to 'Duplicate Discover Content for JellyBridge Libraries' with updated descriptions clarifying that duplicate content from different networks is allowed as long as unique within each library. Updated setup instructions to specify that each network folder must have a unique Jellyfin library. Removed obsolete patch note.",
+        "dependencies": [],
+        "version": "1.3.40.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.40.10.zip",
+        "targetAbi": "10.10.0.0",
+        "checksum": "8DAE53418B7FEBBAB886695879FBD1A4",
+        "timestamp": "2025-11-03T03:30:15.922Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.39.11.zip",
         "dependencies": [],
         "checksum": "E5B59D70A351BE432BEC9D593C4D4FBF",

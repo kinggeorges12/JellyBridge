@@ -683,15 +683,13 @@
                                 <p>Do this before clicking <strong>Sync Discover Content from Jellyseerr to JellyBridge Library</strong> or running the <i>Automated Task to Sync Jellyseerr and Jellyfin</i>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
                                     <li>Select all Network Services that you want to store in the Jellybridge library: <span onclick="scrollToElement('activeNetworks', 100);" style="cursor: pointer; color: #00a4dc; text-decoration: underline;">Network Services</span></li>
-                                    <li>Click the <strong>Generate Network Folders</strong> button below</li>
-                                    <li>Create Jellyfin libraries that contain the network folders</li>
+                                    <li>Click the <strong>Generate Network Folders</strong> button below.</li>
+                                    <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
                                     <li>For each library, follow the <span onclick="scrollToElement('librarySetupHelp');" style="cursor: pointer; color: #00a4dc; text-decoration: underline;">Library Setup Instructions</span></li>
                                 </ol>
 
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                                     ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Alternatively, you can use different libraries for each network provider.
-                                    <br>
-                                    📝 Patch Note: All media items will be unique across all libraries, but will be patched in a later version to display unique items within each.
                                 </div>
 
                                 <div class="inputContainer" id="LibraryPrefixContainer">
@@ -702,15 +700,15 @@
                                 <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
                                     <label class="emby-checkbox-label">
                                         <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                        <span class="checkboxLabel">Add Duplicate Content</span>
+                                        <span class="checkboxLabel">Duplicate Discover Content for JellyBridge Libraries</span>
                                         <span class="checkboxOutline">
                                             <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                             <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                         </span>
                                     </label>
-                                    <div class="fieldDescription"><strong>Recommended only when creating separate Jellyfin libraries for each network service.</strong> When enabled, duplicate content will be added to their respective network folders instead of being filtered out. <i>If multiple networks are in the same library, this may cause duplicate content to appear in JellyBridge libraries.</i></div>
+                                    <div class="fieldDescription">When enabled, duplicate discover content from different networks will be added as long as the content is unique within each library. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>The normal behavior is to only import discover content that is unique across all JellyBridge libraries.</i></div>
                                     <div id="addDuplicateContentWarning" class="fieldDescription cautionText" style="display: none;">
-                                        <strong>⚠️ Caution:</strong> This option should only be used when individual networks are configured in separate libraries. If multiple networks are in the same library, this may cause duplicate content to appear from Jellyseerr. This setting only applies when "Use Network Folders" is enabled.
+                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
                                     </div>
                                 </div>
 
