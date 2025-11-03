@@ -120,6 +120,7 @@ public class BridgeService
 
         foreach (var jellyfinItem in jellyfinItems)
         {
+            // Finding all items in case we are using network folders and add duplicate content.
             var matchingJellyseerrItems = jellyseerrItems.Where(bm => bm.EqualsItem(jellyfinItem)).ToList();
             if (matchingJellyseerrItems.Count > 0)
             {

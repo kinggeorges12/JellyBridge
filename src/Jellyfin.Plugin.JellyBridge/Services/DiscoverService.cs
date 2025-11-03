@@ -423,16 +423,13 @@ public class DiscoverService
     /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
     /// This prevents re-processing items that were created by the plugin itself.
     /// </summary>
-    public (List<JellyMatch> filtered, List<IJellyseerrItem> synced) FilterSyncedItems(List<JellyMatch> matches)
+    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> FilterSyncedLibraryItems(List<JellyMatch> matchedItems, List<IJellyseerrItem> unmatchedItems)
     {
-        if (matches == null || matches.Count == 0)
-        {
-            return (new List<JellyMatch>(), new List<IJellyseerrItem>());
-        }
+        var matched = new List<JellyMatch>();
+        var unmatched = new List<IJellyseerrItem>();
+        unmatched.AddRange(unmatchedItems);
 
-        var filtered = new List<JellyMatch>();
-        var synced = new List<IJellyseerrItem>();
-        foreach (var match in matches)
+        foreach (var match in matchedItems)
         {
             var path = match?.JellyfinItem?.Path;
             // Keep the match only if it's not in the sync directory
@@ -440,15 +437,18 @@ public class DiscoverService
             {
                 if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
                 {
-                    filtered.Add(match);
+                    matched.Add(match);
                 } else {
-                    synced.Add(match.JellyseerrItem);
+                    unmatched.Add(match.JellyseerrItem);
                 }
             }
         }
 
-        _logger.LogTrace("FilterSyncedItems: filtered={Filtered}, synced={Synced}, total={Total}", filtered.Count, synced.Count, matches.Count);
-        return (filtered, synced);
+        // Apply unique-by-library filtering to unmatched via existing duplicate filter
+        var filteredUnmatched = await FilterDuplicateMedia(unmatched);
+
+        _logger.LogTrace("FilterSyncedLibraryItems: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
+        return (matched, filteredUnmatched);
     }
 
     /// <summary>

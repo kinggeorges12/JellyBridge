@@ -123,12 +123,11 @@ public partial class SyncService
                 _logger.LogDebug("Step 4: Starting library scan to find matches and get unmatched items");
                 // Run library scan to find matches and get unmatched items
                 // When UseNetworkFolders and AddDuplicateContent are enabled, unmatched items calculates on network directory.
-                (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
+                (var allMatchedItems, var allUnmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
                 _logger.LogDebug("Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
                 // Remove matches that point to items already inside the JellyBridge sync directory
-                (matchedItems, var syncedItems) = _discoverService.FilterSyncedItems(allMatchedItems);
-                _logger.LogDebug("Step 4: Filtered synced items: {SyncedCount}", syncedItems.Count);
-                unmatchedItems.AddRange(syncedItems);
+                (matchedItems, unmatchedItems) = await _discoverService.FilterSyncedLibraryItems(allMatchedItems, allUnmatchedItems);
+                _logger.LogDebug("Step 4: Filtered synced items: {SyncedCount}", allUnmatchedItems.Count);
                 // Remove any unmatched items that already have an ignore file in their folder
                 unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
                 _logger.LogDebug("Step 4: Filtered ignored items; remaining unmatched = {UnmatchedCount}", unmatchedItems.Count);
