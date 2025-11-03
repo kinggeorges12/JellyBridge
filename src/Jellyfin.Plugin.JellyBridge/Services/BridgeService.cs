@@ -120,12 +120,15 @@ public class BridgeService
 
         foreach (var jellyfinItem in jellyfinItems)
         {
-            var jellyseerrItem = jellyseerrItems.FirstOrDefault(bm => bm.EqualsItem(jellyfinItem));
-            if (jellyseerrItem != null)
+            var matchingJellyseerrItems = jellyseerrItems.Where(bm => bm.EqualsItem(jellyfinItem)).ToList();
+            if (matchingJellyseerrItems.Count > 0)
             {
-                _logger.LogTrace("Found match: '{JellyfinItemName}' (Id: {JellyfinItemId}) matches '{JellyseerrItemName}' (Id: {JellyseerrItemId})", 
-                    jellyseerrItem.MediaName, jellyseerrItem.Id, jellyfinItem.Name, jellyfinItem.Id);
-                matches.Add(new JellyMatch(jellyseerrItem, jellyfinItem));
+                foreach (var jellyseerrItem in matchingJellyseerrItems)
+                {
+                    _logger.LogTrace("Found match: '{JellyfinItemName}' (Id: {JellyfinItemId}) matches '{JellyseerrItemName}' (Id: {JellyseerrItemId})",
+                        jellyseerrItem.MediaName, jellyseerrItem.Id, jellyfinItem.Name, jellyfinItem.Id);
+                    matches.Add(new JellyMatch(jellyseerrItem, jellyfinItem));
+                }
             }
         }
 
