@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "ADDDEBAE6E28141934EE898A4A6BE6A3",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.54.11.zip",
+        "timestamp": "2025-11-03T19:03:30.819Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.54 - BridgeService: FindMatches now adds all matching Jellyseerr items per Jellyfin item (not just first). Also fixed prior brace/type issues. No behavioral changes beyond expanded match set for diagnostics.",
+        "version": "1.3.54.11",
+        "targetAbi": "10.11.0.0",
+        "dependencies": []
+      },
+      {
+        "checksum": "FEF69674CE320AA06295F224A1BFE294",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.54.10.zip",
+        "timestamp": "2025-11-03T19:03:30.819Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.54 - BridgeService: FindMatches now adds all matching Jellyseerr items per Jellyfin item (not just first). Also fixed prior brace/type issues. No behavioral changes beyond expanded match set for diagnostics.",
+        "version": "1.3.54.10",
+        "targetAbi": "10.10.0.0",
+        "dependencies": []
+      },
+      {
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.53.11.zip",
         "timestamp": "2025-11-03T17:58:37.951Z",
