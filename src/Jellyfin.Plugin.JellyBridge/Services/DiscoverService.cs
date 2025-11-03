@@ -116,19 +116,19 @@ public class DiscoverService
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         
+        var seenHashes = new HashSet<int>();
+        var uniqueItems = new List<IJellyseerrItem>();
+
         if (useNetworkFolders && addDuplicateContent)
         {
             _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
             var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
             // Extract items from library-directory-item tuples into a single flat list
-            var combinedItems = libraryResults.Select(tuple => tuple.item).ToList();
+            uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
             _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
-                combinedItems.Count, libraryResults.Count);
-            return combinedItems;
+                uniqueItems.Count, libraryResults.Count);
+            return uniqueItems;
         }
-        
-        var seenHashes = new HashSet<int>();
-        var uniqueItems = new List<IJellyseerrItem>();
         
         foreach (var item in items)
         {
@@ -264,6 +264,47 @@ public class DiscoverService
         _logger.LogDebug("Completed season folder creation for {ShowCount} shows", shows.Count);
     }
 
+    /// <summary>
+    /// Filters duplicate media items from a list using the GetItemFolderHashCode method.
+    /// Returns a list containing only unique items based on their hash code.
+    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
+    /// </summary>
+    /// <param name="allItems">List of media items to filter</param>
+    /// <param name="uniqueItems">List of unique media items</param>
+    /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
+    public async Task<List<IJellyseerrItem>> IgnoreDuplicateLibraryItems(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
+    {
+        var duplicates = new List<IJellyseerrItem>();
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
+        foreach (var item in allItems)
+        {
+            if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
+            {
+                duplicates.Add(item);
+            }
+        }
+        var ignoreFileTasks = new List<Task>();
+
+        foreach (var duplicate in duplicates)
+        {
+            var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(duplicate);
+            var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+            try
+            {
+                // Serialize using the actual runtime type - the converter handles this automatically
+                var itemJson = System.Text.Json.JsonSerializer.Serialize(duplicate, duplicate.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
+                ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", duplicate.MediaName, bridgeFolderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating ignore file for {ItemName}", duplicate.MediaName);
+            }
+        }
+
+        await Task.WhenAll(ignoreFileTasks);
+        return duplicates;
+    }
 
     #endregion
     

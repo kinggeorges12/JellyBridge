@@ -129,6 +129,12 @@ public interface IJellyseerrItem
     int GetItemHashCode();
     
     /// <summary>
+    /// Returns a hash code for the item that includes folder-specific properties (Id, MediaName, Year, MediaType, NetworkTag).
+    /// Used for folder-based matching when UseNetworkFolders is enabled.
+    /// </summary>
+    int GetItemFolderHashCode();
+    
+    /// <summary>
     /// Generates XML content for the media item (movie.nfo or tvshow.nfo format).
     /// </summary>
     /// <returns>XML string for the media item</returns>

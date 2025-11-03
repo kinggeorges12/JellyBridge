@@ -102,8 +102,12 @@ public partial class SyncService
             var uniqueDiscoverMedia = await _discoverService.FilterDuplicateMedia(discoverMedia);
 
             // Step 3: Process movies and TV shows
-            _logger.LogTrace("📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
+            _logger.LogTrace("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
+
+            // Step 3.5: Ignore duplicated items for networks with shared libraries
+            var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
+            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
 
             // Get the results and set them immediately
             var addedMovies = addedMedia.OfType<JellyseerrMovie>().ToList();
