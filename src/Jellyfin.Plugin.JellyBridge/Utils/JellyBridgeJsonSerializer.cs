@@ -97,19 +97,21 @@ public class JellyBridgePropertiesConverter<T> : JsonConverter<T> where T : clas
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
+        if (value == null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
         writer.WriteStartObject();
 
-        // Reflect over all public properties including interface properties
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        // Use the actual runtime type of the object, not the generic type parameter T
+        // This ensures we get all properties from the concrete class and its base classes,
+        // even when T is an interface type. GetProperties automatically includes inherited properties.
+        var actualType = value.GetType();
+        var properties = actualType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         
-        // Also get properties from interfaces
-        var interfaceProperties = typeof(T).GetInterfaces()
-            .SelectMany(i => i.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            .Where(p => !properties.Any(prop => prop.Name == p.Name && prop.DeclaringType == p.DeclaringType));
-        
-        var allProperties = properties.Concat(interfaceProperties);
-        
-        foreach (PropertyInfo prop in allProperties)
+        foreach (PropertyInfo prop in properties)
         {
             // Skip properties marked with JsonIgnore only at the current level (not inherited)
             if (prop.GetCustomAttribute<JsonIgnoreAttribute>(false) != null) continue;

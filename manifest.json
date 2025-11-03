@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-03T04:43:16.609Z",
+        "checksum": "2FC427EDCD387ED46599360012A9453E",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.42.11.zip",
+        "version": "1.3.42.11",
+        "changelog": "Jellyfin 10.11.0: v1.3.42 - Fixed JSON serializer to use runtime type instead of interface type when serializing metadata files. This ensures all properties from concrete classes and base classes are serialized correctly, preventing empty JSON objects from being written to metadata.json files.",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-03T04:43:16.609Z",
+        "checksum": "95347EDD5F07888845C52FFDABA5B11A",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.42.10.zip",
+        "version": "1.3.42.10",
+        "changelog": "Jellyfin 10.10.7: v1.3.42 - Fixed JSON serializer to use runtime type instead of interface type when serializing metadata files. This ensures all properties from concrete classes and base classes are serialized correctly, preventing empty JSON objects from being written to metadata.json files.",
+        "dependencies": []
+      },
+      {
         "version": "1.3.41.11",
         "checksum": "741AB26CFC9087BAEC0CB850B6483345",
         "dependencies": [],
