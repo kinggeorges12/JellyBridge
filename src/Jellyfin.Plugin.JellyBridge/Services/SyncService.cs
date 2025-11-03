@@ -120,12 +120,19 @@ public partial class SyncService
             List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
+                // print all uniqueDiscoverMedia items
+                foreach (var item in uniqueDiscoverMedia)
+                {
+                    var directory = _metadataService.GetJellyBridgeItemDirectory(item);
+                    _logger.LogDebug("Step 4: Unique discover media item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
+                }
                 // Run library scan to find matches and get unmatched items
                 (var allMatchedItems, unmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
                 //print all unmatched items
                 foreach (var item in unmatchedItems)
                 {
-                    _logger.LogDebug("Step 4: Unmatched item: {MediaName} (Id: {Id})", item.MediaName, item.Id);
+                    var directory = _metadataService.GetJellyBridgeItemDirectory(item);
+                    _logger.LogDebug("Step 4: Unmatched item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
                 }
                 _logger.LogDebug("Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
                 // Remove matches that point to items already inside the JellyBridge sync directory
@@ -133,7 +140,8 @@ public partial class SyncService
                 //print all synced items
                 foreach (var item in syncedItems)
                 {
-                    _logger.LogDebug("Step 4: Synced item: {MediaName} (Id: {Id})", item.MediaName, item.Id);
+                    var directory = _metadataService.GetJellyBridgeItemDirectory(item);
+                    _logger.LogDebug("Step 4: Synced item: {MediaName} (Id: {Id}) -> {Directory}", item.MediaName, item.Id, directory);
                 }
                 _logger.LogDebug("Step 4: Filtered {SyncedCount} synced items", syncedItems.Count);
                 unmatchedItems.AddRange(syncedItems);
