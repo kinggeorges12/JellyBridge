@@ -404,7 +404,11 @@ public class BridgeService
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
             _logger.LogTrace("Joined {Count} item network pairs with {Count} library location pairs", itemNetworkPairs.Count, libraryLocationPairs.Count);
-            
+            //foreach library item pairs logger them
+            foreach (var libraryItemPair in libraryItemPairs) {
+                _logger.LogTrace("LibraryItemPair: {LibraryName}, {Directory}, {ItemName}", libraryItemPair.libraryName, libraryItemPair.directory, libraryItemPair.item.MediaName);
+            }
+
 			// Get existing metadata items from libraries to filter out duplicates
 			var existingMetadataItems = await ReadMetadataLibraries();
 			
