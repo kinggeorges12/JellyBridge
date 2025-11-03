@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.3.41.11",
+        "checksum": "741AB26CFC9087BAEC0CB850B6483345",
+        "dependencies": [],
+        "timestamp": "2025-11-03T03:53:58.616Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.41 - Replaced inline onclick handlers with span.link class and added global initializeLinkSpans function that automatically scrolls to elements with matching text content. Added CSS styling for span.link to make them appear as clickable links. Fixed scrollToElement function definition that was missing from the module.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.41.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "1.3.41.10",
+        "checksum": "8FF8335E67A42446A58BE9F92CDF6208",
+        "dependencies": [],
+        "timestamp": "2025-11-03T03:53:58.616Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.41 - Replaced inline onclick handlers with span.link class and added global initializeLinkSpans function that automatically scrolls to elements with matching text content. Added CSS styling for span.link to make them appear as clickable links. Fixed scrollToElement function definition that was missing from the module.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.41.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.40 - Renamed 'Add Duplicate Content' to 'Duplicate Discover Content for JellyBridge Libraries' with updated descriptions clarifying that duplicate content from different networks is allowed as long as unique within each library. Updated setup instructions to specify that each network folder must have a unique Jellyfin library. Removed obsolete patch note.",
         "dependencies": [],
         "version": "1.3.40.11",
