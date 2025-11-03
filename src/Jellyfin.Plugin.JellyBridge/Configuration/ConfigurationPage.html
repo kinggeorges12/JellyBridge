@@ -444,7 +444,7 @@
                             <li>☑️ <strong>Save artwork into media folders</strong></li>
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                         </ul>
-                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target="UseNetworkFolders"><i>Use Network Folders</i></span></p>
+                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target="UseNetworkFoldersContainer"><i>Use Network Folders</i></span></p>
                         
                         <details id="troubleshootingDetails" class="troubleshootingDetails">
                             <summary>🤖 Troubleshooting</summary>
@@ -477,7 +477,7 @@
 
                     <div>
                         <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
-                            <span>🔌 Test Connection with Jellyseerr</span>
+                            <span>🚀 Test Connection with Jellyseerr</span>
                         </button>
                     </div>
 
@@ -621,7 +621,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
-                                <span>🎲 Randomize Discover Library Sort Order</span>
+                                <span>🎲 Refresh Discover Library Sort Order</span>
                             </button>
                             <div id="sortContentResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
@@ -673,7 +673,7 @@
                             <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show in the JellyBridge library by creating an .ignore file in the directory. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
                         </div>
                         
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
                             <label class="emby-checkbox-label">
                                 <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Use Network Folders</span>

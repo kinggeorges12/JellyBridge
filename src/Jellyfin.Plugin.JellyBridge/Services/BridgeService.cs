@@ -289,15 +289,24 @@ public class BridgeService
                     var expectedDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
                     var normalizedExpected = Path.GetFullPath(expectedDirectory);
                     
-                    if (directoryLibraryMap.TryGetValue(normalizedExpected, out var libraryInfo))
-                    {
-                        allMetadataItems.Add((libraryInfo.libraryName, libraryInfo.originalDirectory, item));
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Could not find matching directory/library for item {MediaName} (Id: {Id}). Expected: {ExpectedDirectory}", 
-                            item.MediaName, item.Id, expectedDirectory);
-                    }
+					if (directoryLibraryMap.TryGetValue(normalizedExpected, out var libraryInfo))
+					{
+						allMetadataItems.Add((libraryInfo.libraryName, libraryInfo.originalDirectory, item));
+					}
+					else
+					{
+						// If the item is inside the JellyBridge sync directory but not part of any library, return with empty library name
+						if (FolderUtils.IsPathInSyncDirectory(expectedDirectory))
+						{
+							allMetadataItems.Add((string.Empty, expectedDirectory, item));
+							_logger.LogTrace("Item {MediaName} (Id: {Id}) is in JellyBridge directory but not mapped to a library; assigning empty library name.", item.MediaName, item.Id);
+						}
+						else
+						{
+							_logger.LogWarning("Could not find matching directory/library for item {MediaName} (Id: {Id}). Expected: {ExpectedDirectory}", 
+								item.MediaName, item.Id, expectedDirectory);
+						}
+					}
                 }
                 catch (Exception ex)
                 {
@@ -416,8 +425,8 @@ public class BridgeService
                     try
                     {
 						var itemHashCode = pair.item.GetItemHashCode();
-					var normalizedDir = Path.GetFullPath(pair.directory)?.ToUpperInvariant() ?? string.Empty;
-					var normalizedLibrary = pair.libraryName?.ToUpperInvariant() ?? string.Empty;
+                        var normalizedDir = Path.GetFullPath(pair.directory)?.ToUpperInvariant() ?? string.Empty;
+                        var normalizedLibrary = pair.libraryName?.ToUpperInvariant() ?? string.Empty;
 						// Treat as duplicate only if an existing entry with the same library and hash exists in a DIFFERENT directory
 						var existsSameDir = existingItemsSet.Contains((normalizedLibrary, normalizedDir, itemHashCode));
 						var existsAnyDir = existingItemsSet.Any(t => t.libraryName == normalizedLibrary && t.itemHashCode == itemHashCode);
@@ -441,9 +450,18 @@ public class BridgeService
                 })
                 .ToList();
 
-            results.AddRange(filteredLibraryItemPairs);
+			results.AddRange(filteredLibraryItemPairs);
+			_logger.LogDebug("Appended {Count} items from libraries after filtering duplicates", filteredLibraryItemPairs.Count);
 
-            _logger.LogDebug("Mapped {TotalCount} items into {ResultCount} library-directory-item tuples after filtering {DuplicateCount} duplicates", 
+			// Also include items in the JellyBridge directory that are not part of any library (libraryName = "")
+			var itemsWithoutLibrary = existingMetadataItems
+				.Where(e => string.IsNullOrEmpty(e.libraryName))
+				.Select(e => (e.libraryName, e.directory, e.item))
+				.ToList();
+			results.AddRange(itemsWithoutLibrary);
+			_logger.LogTrace("Appended {Count} items from JellyBridge directory not in any library", itemsWithoutLibrary.Count);
+
+            _logger.LogTrace("Mapped {TotalCount} items into {ResultCount} library-directory-item tuples after filtering {DuplicateCount} duplicates", 
                 items.Count, results.Count, libraryItemPairs.Count - filteredLibraryItemPairs.Count);
         }
         catch (Exception ex)
