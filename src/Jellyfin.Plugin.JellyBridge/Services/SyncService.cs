@@ -188,7 +188,7 @@ public partial class SyncService
             // Step 10: Save results
             result.Success = true;
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
-            result.Details = result.ToString();
+            result.Details = "(number of items processed from Jellyseerr), (added items in the JellyBridge library from content in Jellyseerr discover pages), (updated items in the JellyBridge library from content in Jellyseerr discover pages), (items ignored - duplicates or already in Jellyfin library), (deleted items in the JellyBridge library due to retention policy)";
 
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
                 result.MoviesResult.Created, result.MoviesResult.Updated, result.MoviesResult.Deleted, result.ShowsResult.Created, result.ShowsResult.Updated, result.ShowsResult.Deleted);
@@ -314,7 +314,7 @@ public partial class SyncService
             // Step 9: Save results
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = result.ToString();
+            result.Details = "(number of favorites in Jellyfin), (number of favorites in JellyBridge library), (requests created in Jellyseerr), (items unfavorited after successful requests), (requests blocked by Jellyseerr due to quota limits or permission issues)";
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }

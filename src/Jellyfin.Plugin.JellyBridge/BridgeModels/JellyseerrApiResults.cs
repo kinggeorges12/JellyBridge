@@ -29,14 +29,11 @@ public class ProcessJellyseerrResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"  Processed: {Processed} (number of items processed from Jellyseerr)");
-        result.AppendLine($"  Added: {Created} (added items in the JellyBridge library from content in Jellyseerr discover pages)");
-        result.AppendLine($"  Updated: {Updated} (updated items in the JellyBridge library from content in Jellyseerr discover pages)");
-        result.AppendLine($"  Deleted: {Deleted} (deleted items in the JellyBridge library due to retention policy)");
-        if (Ignored > 0)
-        {
-            result.AppendLine($"  Ignored: {Ignored} (items ignored - duplicates or already in Jellyfin library)");
-        }
+        result.AppendLine($"  Processed: {Processed}");
+        result.AppendLine($"  Added: {Created}");
+        result.AppendLine($"  Updated: {Updated}");
+        result.AppendLine($"  Ignored: {Ignored}");
+        result.AppendLine($"  Deleted: {Deleted}");
         
         return result.ToString().TrimEnd();
     }
@@ -113,12 +110,15 @@ public class SyncJellyseerrResult
         
         if (!string.IsNullOrEmpty(Details))
         {
-            result.AppendLine($"\nDetails:\n{Details}");
+            result.AppendLine("\nDetails:\n");
+            result.AppendLine(Details);
         }
         
         if (Refresh != null)
         {
-            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
+            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
+            result.AppendLine($"\nRefresh Plan: {refreshType}, {refreshImages}");
         }
         
         result.AppendLine("\nMovies Result:");
@@ -155,11 +155,11 @@ public class ProcessJellyfinResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"  Processed: {Processed} (number of favorites in Jellyfin)");
-        result.AppendLine($"  Found: {Found} (number of favorites in JellyBridge library)");
-        result.AppendLine($"  Created: {Created} (requests created in Jellyseerr)");
-        result.AppendLine($"  Deleted: {Removed} (items unfavorited after successful requests)");
-        result.AppendLine($"  Blocked: {Blocked} (requests blocked by Jellyseerr due to quota limits or permission issues)");
+        result.AppendLine($"  Processed: {Processed}");
+        result.AppendLine($"  Found: {Found}");
+        result.AppendLine($"  Created: {Created}");
+        result.AppendLine($"  Blocked: {Blocked}");
+        result.AppendLine($"  Deleted: {Removed}");
         
         return result.ToString().TrimEnd();
     }
@@ -234,12 +234,15 @@ public class SyncJellyfinResult
         
         if (!string.IsNullOrEmpty(Details))
         {
-            result.AppendLine($"\nDetails:\n{Details}");
+            result.AppendLine("\nDetails:\n");
+            result.AppendLine(Details);
         }
         
         if (Refresh != null)
         {
-            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
+            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
+            result.AppendLine($"\nRefresh Plan: {refreshType}, {refreshImages}");
         }
         
         result.AppendLine("\nMovies Result:");
@@ -273,14 +276,8 @@ public class ProcessSortResult
     {
         var result = new System.Text.StringBuilder();
         result.AppendLine($"  Sorted: {Sorted} (items sorted by updating play counts)");
-        if (Skipped > 0)
-        {
-            result.AppendLine($"  Skipped: {Skipped} (items skipped - ignored files)");
-        }
-        if (Failed > 0)
-        {
-            result.AppendLine($"  Failed: {Failed} (items failed to update, possibly not processed yet by Jellyfin)");
-        }
+        result.AppendLine($"  Skipped: {Skipped} (items skipped - ignored files)");
+        result.AppendLine($"  Failed: {Failed} (items failed to update, possibly not processed yet by Jellyfin)");
         
         return result.ToString().TrimEnd();
     }
@@ -325,16 +322,32 @@ public class SortLibraryResult
         
         if (!string.IsNullOrEmpty(Details))
         {
-            result.AppendLine($"\nDetails:\n{Details}");
+            result.AppendLine("\nDetails:\n");
+            result.AppendLine(Details);
+            result.AppendLine();
         }
+        
+        // Add individual items with 2-space indentation
+        result.AppendLine($"  Algorithm: {SortAlgorithm}");
+        result.AppendLine($"  Users: {Users.Count}");
         
         if (Refresh != null)
         {
-            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
+            result.AppendLine($"  Refresh type: {refreshType} (FullRefresh={Refresh.FullRefresh}), Replace existing images: {Refresh.RefreshImages} (RefreshImages={Refresh.RefreshImages})");
         }
         
-        result.AppendLine("\nSort Result:");
-        result.AppendLine(ProcessResult.ToString());
+        result.AppendLine("\n  Sort Results:");
+        var processResult = ProcessResult.ToString();
+        // Indent each line of ProcessResult by 2 more spaces (4 total)
+        var lines = processResult.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                result.AppendLine($"    {line.TrimStart()}");
+            }
+        }
         
         return result.ToString().TrimEnd();
     }
