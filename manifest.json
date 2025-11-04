@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "34AC07BA05764F066A01CFCEA1ECAB5F",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.70.11.zip",
+        "timestamp": "2025-11-04T05:11:43.025Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.70 - Moved Details strings from service classes to result classes with formatted list format and emojis. Removed unnecessary null checks for Details property and standardized refresh plan display format across all result classes. Fixed EnableAutomatedSortTask checkbox saving issue by adding missing SetJsonValue call in PluginConfigurationController.",
+        "dependencies": [],
+        "version": "1.3.70.11"
+      },
+      {
+        "checksum": "57D11659AF6353CCECE6D83B02D12139",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.70.10.zip",
+        "timestamp": "2025-11-04T05:11:43.025Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.70 - Moved Details strings from service classes to result classes with formatted list format and emojis. Removed unnecessary null checks for Details property and standardized refresh plan display format across all result classes. Fixed EnableAutomatedSortTask checkbox saving issue by adding missing SetJsonValue call in PluginConfigurationController.",
+        "dependencies": [],
+        "version": "1.3.70.10"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.3.69 - Updated SortLibraryResult ToString() format to include checkmark emoji and descriptive refresh plan information. Reorganized configuration page UI by moving Sort Discover Content section below Manage Discover Library section. Updated refresh plan display format to show descriptive text with variable values in parentheses.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.69.11.zip",
         "version": "1.3.69.11",

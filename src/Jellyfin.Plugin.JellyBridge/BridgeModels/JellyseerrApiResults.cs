@@ -46,7 +46,7 @@ public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
+    public string Details { get; set; } = "• 📦 Processed: Number of items processed from Jellyseerr\n• ➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n• 🔄 Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n• ⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n• 🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyseerrResult MoviesResult { get; set; } = new();
     public ProcessJellyseerrResult ShowsResult { get; set; } = new();
@@ -108,11 +108,8 @@ public class SyncJellyseerrResult
         var result = new System.Text.StringBuilder();
         result.AppendLine(Message);
         
-        if (!string.IsNullOrEmpty(Details))
-        {
-            result.AppendLine("\nDetails:\n");
-            result.AppendLine(Details);
-        }
+        result.AppendLine("\nDetails:\n");
+        result.AppendLine(Details);
         
         if (Refresh != null)
         {
@@ -172,7 +169,7 @@ public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
+    public string Details { get; set; } = "• ❤️ Processed: Number of favorites in Jellyfin\n• 🔍 Found: Number of favorites in JellyBridge library\n• ➕ Created: Requests created in Jellyseerr\n• 🗑️ Deleted: Items unfavorited after successful requests\n• 🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyfinResult MoviesResult { get; set; } = new();
     public ProcessJellyfinResult ShowsResult { get; set; } = new();
@@ -232,11 +229,8 @@ public class SyncJellyfinResult
         var result = new System.Text.StringBuilder();
         result.AppendLine(Message);
         
-        if (!string.IsNullOrEmpty(Details))
-        {
-            result.AppendLine("\nDetails:\n");
-            result.AppendLine(Details);
-        }
+        result.AppendLine("\nDetails:\n");
+        result.AppendLine(Details);
         
         if (Refresh != null)
         {
@@ -290,7 +284,7 @@ public class SortLibraryResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
+    public string Details { get; set; } = "Algorithm is the sort order, Users have play counts individually updated in the JellyBridge library, Refresh type is true for Replace all metadata or false for Search for missing metadata, Sort results include movies and shows that had play counts changed.";
     public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
     public List<JellyfinUser> Users { get; set; } = new();
     public ProcessSortResult ProcessResult { get; set; } = new();
@@ -320,12 +314,9 @@ public class SortLibraryResult
         var result = new System.Text.StringBuilder();
         result.AppendLine(Message);
         
-        if (!string.IsNullOrEmpty(Details))
-        {
-            result.AppendLine("\nDetails:\n");
-            result.AppendLine(Details);
-            result.AppendLine();
-        }
+        result.AppendLine("\nDetails:\n");
+        result.AppendLine(Details);
+        result.AppendLine();
         
         // Add individual items with 2-space indentation
         result.AppendLine($"  Algorithm: {SortAlgorithm}");
@@ -334,7 +325,8 @@ public class SortLibraryResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            result.AppendLine($"  Refresh type: {refreshType} (FullRefresh={Refresh.FullRefresh}), Replace existing images: {Refresh.RefreshImages} (RefreshImages={Refresh.RefreshImages})");
+            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
+            result.AppendLine($"\n  Refresh Plan: {refreshType}, {refreshImages}");
         }
         
         result.AppendLine("\n  Sort Results:");

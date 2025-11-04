@@ -99,7 +99,6 @@ public class SortService
             
             result.Success = true;
             result.Message = "✓ Sort library completed successfully";
-            result.Details = "Algorithm is the sort order, Users have play counts individually updated in the JellyBridge library, Refresh type is true for Replace all metadata or false for Search for missing metadata, Sort results include movies and shows that had play counts changed.";
             
             // Populate ProcessResult
             result.ItemsSorted = successes;

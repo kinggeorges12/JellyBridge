@@ -101,61 +101,43 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Update configuration properties using simplified helper
+                    
+                    // General Settings
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
                     SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
                     SetJsonValue<string>(configData, nameof(config.ApiKey), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
                     SetJsonValue<double?>(configData, nameof(config.SyncIntervalHours), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
+                    
+                    // Import Discover Content
+                    SetJsonValue<string>(configData, nameof(config.Region), config);
+                    SetNetworkMap(configData, config);
+                    
+                    // Manage Discover Library
+                    SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
+                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyseerrLibrary), config);
+                    
+                    // Sort Content
+                    SetJsonValue<bool?>(configData, nameof(config.EnableAutomatedSortTask), config);
+                    SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
+                    SetJsonValue<bool?>(configData, nameof(config.MarkMediaPlayed), config);
+                    SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
+                    
+                    // Advanced Settings
                     SetJsonValue<int?>(configData, nameof(config.RequestTimeout), config);
                     SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
-                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
-                    SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
-                    SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
-                    SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<int?>(configData, nameof(config.StartupDelaySeconds), config);
                     SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
-                    SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
-                    SetJsonValue<bool?>(configData, nameof(config.MarkMediaPlayed), config);
-                    SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
-                    SetJsonValue<string>(configData, nameof(config.Region), config);
-                    // Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
-                    if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
-                    {
-                        if (networkMapElement.ValueKind == JsonValueKind.Null)
-                        {
-                            // Explicit reset: set to null so defaults are applied on next GET/UI load
-                            config.NetworkMap = null;
-                            _logger.LogInformation("NetworkMap explicitly set to null by client (reset to defaults on next load).");
-                        }
-                        else if (networkMapElement.ValueKind == JsonValueKind.Array)
-                        {
-                            try
-                            {
-                                config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
-                                _logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // If NetworkMap wasn't provided, preserve existing value; only fall back to defaults if null/empty
-                        if (config.NetworkMap == null || config.NetworkMap.Count == 0)
-                        {
-                            _logger.LogWarning("NetworkMap not provided in payload and existing value is empty. Using defaults.");
-                            config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
-                        }
-                    }
 
                     // Compute effective old vs new values (new values AFTER edits)
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
@@ -252,6 +234,46 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     details = $"Configuration update failed: {ex.GetType().Name} - {ex.Message}",
                     stackTrace = ex.StackTrace
                 });
+            }
+        }
+
+        /// <summary>
+        /// Handles NetworkMap property: supports explicit null (reset), array deserialization, or preserves existing value.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration object.</param>
+        private void SetNetworkMap(JsonElement configData, PluginConfiguration config)
+        {
+            // Handle NetworkMap: support explicit null (reset), or array of JellyseerrNetwork objects
+            if (configData.TryGetProperty(nameof(config.NetworkMap), out var networkMapElement))
+            {
+                if (networkMapElement.ValueKind == JsonValueKind.Null)
+                {
+                    // Explicit reset: set to null so defaults are applied on next GET/UI load
+                    config.NetworkMap = null;
+                    _logger.LogInformation("NetworkMap explicitly set to null by client (reset to defaults on next load).");
+                }
+                else if (networkMapElement.ValueKind == JsonValueKind.Array)
+                {
+                    try
+                    {
+                        config.NetworkMap = networkMapElement.Deserialize<List<JellyseerrNetwork>>() ?? new List<JellyseerrNetwork>();
+                        _logger.LogTrace("Successfully deserialized NetworkMap as array with {Count} networks", config.NetworkMap.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to deserialize NetworkMap as array. JSON: {Json}", networkMapElement.GetRawText());
+                    }
+                }
+            }
+            else
+            {
+                // If NetworkMap wasn't provided, preserve existing value; only fall back to defaults if null/empty
+                if (config.NetworkMap == null || config.NetworkMap.Count == 0)
+                {
+                    _logger.LogWarning("NetworkMap not provided in payload and existing value is empty. Using defaults.");
+                    config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
+                }
             }
         }
 
