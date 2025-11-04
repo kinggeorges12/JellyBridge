@@ -5,7 +5,7 @@ param(
     
     [string]$GitHubUsername = "kinggeorges12",
     
-    [string]$Branch = "quotas",
+    [string]$Branch = "feature",
     
     [ValidateSet("major", "minor", "patch")]
     [string]$ReleaseType = "patch"
