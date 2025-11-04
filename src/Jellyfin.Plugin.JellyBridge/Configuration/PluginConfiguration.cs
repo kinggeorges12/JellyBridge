@@ -66,7 +66,7 @@ public class PluginConfiguration : BasePluginConfiguration
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
         { nameof(SortOrder), SortOrderOptions.Random },
-        { nameof(MarkMediaPlayed), false },
+        { nameof(MarkMediaPlayed), true },
         { nameof(SortTaskIntervalHours), 5.0 },
 
         // Advanced Settings
