@@ -9,13 +9,31 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.6 - Sort: per-user async with in-user sequential processing; fixed implicit deconstruction and non-async await; added pre-step to mark all items unplayed. Favorites: switched to JellyfinIUserManager and updated IUserDataManager usage. Minor: cleaned unused usings; updated config/README notes.",
+        "dependencies": [],
+        "checksum": "4DDC13295F5CBBE615832706BAF114BD",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-04T15:57:12.220Z",
+        "version": "1.4.6.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.6.11.zip"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.6 - Sort: per-user async with in-user sequential processing; fixed implicit deconstruction and non-async await; added pre-step to mark all items unplayed. Favorites: switched to JellyfinIUserManager and updated IUserDataManager usage. Minor: cleaned unused usings; updated config/README notes.",
+        "dependencies": [],
+        "checksum": "E22D14F641DB9797552541D53CBDCB16",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-04T15:57:12.220Z",
+        "version": "1.4.6.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.6.10.zip"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.4.5 - Results: Added Processed count to sort; standardized Details order and wording; added refresh description across all operations; switched Updated emoji; removed Android TV/Kodi warning from config page.",
         "dependencies": [],
         "checksum": "A25DF7984697F23D1B731689D49966B4",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.5.11.zip",
         "version": "1.4.5.11",
-        "timestamp": "2025-11-04T08:21:42.790Z"
+        "timestamp": "2025-11-04T08:21:42.79Z"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -24,7 +42,7 @@
         "checksum": "780B8897F99EEF91D89A8D877A1691A1",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.5.10.zip",
         "version": "1.4.5.10",
-        "timestamp": "2025-11-04T08:21:42.790Z"
+        "timestamp": "2025-11-04T08:21:42.79Z"
       },
       {
         "timestamp": "2025-11-04T07:28:47.195Z",

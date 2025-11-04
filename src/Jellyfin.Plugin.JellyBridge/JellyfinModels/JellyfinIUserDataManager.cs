@@ -34,17 +34,17 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     /// <param name="userManager">The user manager</param>
     /// <param name="libraryManager">The library manager wrapper</param>
     /// <returns>Dictionary mapping users to their favorite items</returns>
-    public Dictionary<JellyfinUser, List<T>> GetUserFavorites<T>(IUserManager userManager, JellyfinILibraryManager libraryManager) where T : class
+    public Dictionary<JellyfinUser, List<T>> GetUserFavorites<T>(JellyfinIUserManager userManager, JellyfinILibraryManager libraryManager) where T : class
     {
         var userFavorites = new Dictionary<JellyfinUser, List<T>>();
         
-        // Get all users from user manager
-        var users = userManager.Users.ToList();
+        // Get all users from user manager wrapper
+        var users = userManager.GetAllUsers().ToList();
         
         // Get favorites for each user directly
         foreach (var user in users)
         {
-            var userFavs = libraryManager.Inner.GetItemList(new InternalItemsQuery(user)
+            var userFavs = libraryManager.Inner.GetItemList(new InternalItemsQuery(user.Inner)
             {
                 IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
                 IsFavorite = true,
@@ -73,9 +73,8 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                 return null;
             }).Where(item => item != null).Cast<T>().ToList();
             
-            // Convert user to JellyfinUser wrapper
-            var jellyfinUser = new JellyfinUser((dynamic)user);
-            userFavorites[jellyfinUser] = convertedFavs;
+            // user is already a JellyfinUser wrapper
+            userFavorites[user] = convertedFavs;
         }
         
         return userFavorites;

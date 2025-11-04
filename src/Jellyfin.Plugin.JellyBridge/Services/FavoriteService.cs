@@ -19,9 +19,9 @@ public class FavoriteService
     private readonly MetadataService _metadataService;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinILibraryManager _libraryManager;
-    private readonly MediaBrowser.Controller.Library.IUserManager _userManager;
+    private readonly JellyfinIUserManager _userManager;
 
-    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService, MetadataService metadataService, JellyfinIUserDataManager userDataManager, JellyfinILibraryManager libraryManager, MediaBrowser.Controller.Library.IUserManager userManager)
+    public FavoriteService(ILogger<FavoriteService> logger, ApiService apiService, BridgeService bridgeService, MetadataService metadataService, JellyfinIUserDataManager userDataManager, JellyfinILibraryManager libraryManager, JellyfinIUserManager userManager)
     {
         _logger = new DebugLogger<FavoriteService>(logger);
         _apiService = apiService;
