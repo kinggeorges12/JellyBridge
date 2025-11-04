@@ -9,12 +9,11 @@ After installing the new version, you may need to update the plugin configuratio
 
 ### Version 2.0 Change Notes
 
-**⚠️ Compatibility Note**: If you use the "Use Network Folders" (previously called "Create separate libraries for streaming services"), review and re-enable those options in the configuration page after upgrading.
+1. To prevent errors after upgrading, I disabled this option by default: `Advanced → Auto-sync on Plugin Startup`. If you want this option enabled, please enable it again after upgrading.
+2. If you use the "Use Network Folders" (previously called "Create separate libraries for streaming services"), review and re-enable those options in the configuration page after upgrading.
+3. The `Manage Discover Library → Clean-up Requests from Favorites` was set to default enabled, because it was causing some ignored items to get requested after the requests were deleted in Jellyseerr. This change will probably be invisible to end users.
 
-Also, the `Manage Discover Library → Clean-up Requests from Favorites` was set to default enabled, because it was causing some ignored items to get requested after the requests were deleted in Jellyseerr. This change will probably be invisible to end users.
-
-To prevent errors after upgrading, I disabled this option by default: `Advanced → Auto-sync on Plugin Startup`. If you want this option enabled, please enable it again after upgrading.
-
+**⚠️ Compatibility Note**
 This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
 
 ### Version 1.0 Change Notes
