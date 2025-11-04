@@ -373,6 +373,12 @@
                 details.troubleshootingDetails.disabled summary:hover {
                     background-color: rgba(0, 0, 0, 0.05); /* Slightly darker on hover to show it's interactive */
                 }
+                
+                /* Result textarea styling - max height and scroll after 25 lines */
+                .testResult {
+                    max-height: 500px; /* ~25 lines * 20px */
+                    overflow-y: auto;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -688,7 +694,7 @@
                             Control the sort order of items in the JellyBridge library by setting a generated play count and last played date of media items for all users. This allows users to see content in a different order each time.</i>
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            ✳️ Instructions: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Sort by <strong>Play count</strong> (Sort order <strong>Ascending</strong>)</i>. For Android TV users, sort by <i>Last Played</i>.
+                            ✳️ Instructions: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Sort by <strong>Play count</strong> (Sort order <strong>Ascending</strong>)</i>. For Android TV users, sort by <i><strong>Last Played</strong></i>.
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

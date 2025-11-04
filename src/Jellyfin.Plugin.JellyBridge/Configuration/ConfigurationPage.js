@@ -544,7 +544,7 @@ function performSyncImportContent(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
                 const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...');
+                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
                 syncDiscoverResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -917,7 +917,7 @@ function performSortContent(page) {
                 const sortOrderSelect = page.querySelector('#selectSortOrder');
                 const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
                 const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
-                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`);
+                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
                 sortContentResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -1155,7 +1155,7 @@ function performSyncManageLibrary(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the request result textbox
                 const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...');
+                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
                 syncFavoritesResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -1698,34 +1698,25 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
     });
 }
 
-// Append text to a result box and handle scrolling after 50 lines
-function appendToResultBox(element, text, clearFirst = false) {
+// Append text to a result box and handle scrolling after 25 lines
+function appendToResultBox(element, text, newLine = false) {
     if (!element) return;
-    
-    if (clearFirst) {
-        element.textContent = '';
-    }
     
     // Get current content and split into lines
     const currentText = element.textContent || '';
+    
+    if (newLine) {
+        element.textContent += '\n\n';
+    }
+
     const lines = currentText ? currentText.split('\n') : [];
     
     // Add new text and split into lines
     const newLines = text.split('\n');
     lines.push(...newLines);
     
-    // Keep only last 50 lines if we exceed that
-    if (lines.length > 50) {
-        lines.splice(0, lines.length - 50);
-    }
-    
     // Join back and set content
     element.textContent = lines.join('\n');
-    
-    // Set max-height to approximately 50 lines (assuming ~20px per line)
-    // This ensures scrollbar appears when content exceeds 50 lines
-    element.style.maxHeight = '1000px'; // ~50 lines * 20px
-    element.style.overflowY = 'auto';
     
     // Scroll to bottom when new results appear
     setTimeout(() => {

@@ -310,6 +310,7 @@ public class SortService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get user library items for smart sort");
+            // Return null so the failure is visible in results (items will be counted as skipped/failed)
             return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(null);
         }
 
@@ -367,6 +368,10 @@ public class SortService
                 var baseItem = _libraryManager.FindItemByDirectoryPath(directory);
                 if (baseItem == null)
                 {
+                    // Item not found - directory is likely ignored (similar to .ignore file)
+                    // Include it in result with zero play count so it gets processed and counted as skipped
+                    // This matches Random sort behavior where all directories are included
+                    result[directory] = (0, mediaType);
                     continue;
                 }
 
@@ -404,7 +409,7 @@ public class SortService
             }
         }
 
-        // Apply random sort to all failed directories at once
+        // Apply random sort to all failed directories at once (exceptions only, not null baseItems)
         if (failedDirectories.Count > 0)
         {
             _logger.LogDebug("Applying random sort fallback to {Count} failed directories", failedDirectories.Count);
@@ -418,7 +423,8 @@ public class SortService
             }
         }
 
-        return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(result.Count > 0 ? result : null);
+        // Return the dictionary - consistent with playCountRandom which always returns a dictionary when input has items
+        return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(result);
     }
 
     /// <summary>
