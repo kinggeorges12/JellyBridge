@@ -4,7 +4,9 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
+using System;
 using System.IO;
+using System.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
@@ -104,6 +106,71 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
         catch (Exception)
         {
             // Error getting existing items
+        }
+        return new List<T>();
+    }
+
+    /// <summary>
+    /// Get user's library items of a specific type (excluding favorites filter).
+    /// </summary>
+    /// <typeparam name="T">The type of Jellyfin wrapper to retrieve (JellyfinMovie, JellyfinSeries)</typeparam>
+    /// <param name="user">The user to get library items for</param>
+    /// <param name="excludePaths">Optional set of paths to exclude from results</param>
+    /// <returns>List of user's library items</returns>
+    public List<T> GetUserLibraryItems<T>(JellyfinUser user, HashSet<string>? excludePaths = null) where T : class, IJellyfinItem
+    {
+        try
+        {
+            var result = new List<T>();
+            
+            if (typeof(T) == typeof(JellyfinMovie))
+            {
+                var items = Inner.GetItemList(new InternalItemsQuery(user.Inner)
+                {
+                    IncludeItemTypes = new[] { BaseItemKind.Movie },
+                    Recursive = true
+                });
+                
+                var jellyfinItems = items.Select<BaseItem, T?>(item => 
+                {
+                    if (item is Movie movie)
+                    {
+                        return (T)(object)JellyfinMovie.FromMovie(movie);
+                    }
+                    return null;
+                }).Where(item => item != null && 
+                    (excludePaths == null || item.Path == null || 
+                     !excludePaths.Any(excludePath => item.Path.StartsWith(excludePath, StringComparison.OrdinalIgnoreCase)))).Cast<T>();
+                
+                result.AddRange(jellyfinItems);
+            }
+            else if (typeof(T) == typeof(JellyfinSeries))
+            {
+                var items = Inner.GetItemList(new InternalItemsQuery(user.Inner)
+                {
+                    IncludeItemTypes = new[] { BaseItemKind.Series },
+                    Recursive = true
+                });
+                
+                var jellyfinItems = items.Select<BaseItem, T?>(item => 
+                {
+                    if (item is Series series)
+                    {
+                        return (T)(object)JellyfinSeries.FromSeries(series);
+                    }
+                    return null;
+                }).Where(item => item != null && 
+                    (excludePaths == null || item.Path == null || 
+                     !excludePaths.Any(excludePath => item.Path.StartsWith(excludePath, StringComparison.OrdinalIgnoreCase)))).Cast<T>();
+                
+                result.AddRange(jellyfinItems);
+            }
+            
+            return result;
+        }
+        catch (Exception)
+        {
+            // Error getting user library items
         }
         return new List<T>();
     }

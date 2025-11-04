@@ -688,7 +688,7 @@
                             Control the sort order of items in the JellyBridge library by setting a generated play count of media items for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Play Count</i>.
+                            ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Sort by <strong>Play count</strong> (Sort order <strong>Ascending</strong>)</i>.
                             <br>
                             ⚠️ Warning: This option is untested in Android TV and Kodi. This may interfere with other plugins or features in Jellyfin that use play count.
                         </div>
@@ -715,7 +715,7 @@
                             <select id="selectSortOrder" is="emby-input" class="emby-input emby-select">
                                 <!-- Options will be populated dynamically from enum -->
                             </select>
-                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. None: sets play counts to zero. Random: randomizes play counts. Smart: intelligent sorting (not yet implemented).</div>
+                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. None: sets play counts to zero. Random: randomizes play counts. Smart: (semi-)intelligent sorting based on genres in each user's library.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.0.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.0 - Implemented Smart sort algorithm that uses genre preferences from user's library to calculate play counts. Refactored SortService to use wrapper methods instead of direct MediaBrowser calls and added GetUserLibraryItems method to JellyfinILibraryManager. Added fallback to random sort when smart sort fails for individual directories and updated configuration page to specify Play Count (Ascending) sort requirement.",
+        "timestamp": "2025-11-04T05:51:00.894Z",
+        "version": "1.4.0.11",
+        "checksum": "2DAD2F310FA6CFF4D74B66C369DEBE7A",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.0.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.0 - Implemented Smart sort algorithm that uses genre preferences from user's library to calculate play counts. Refactored SortService to use wrapper methods instead of direct MediaBrowser calls and added GetUserLibraryItems method to JellyfinILibraryManager. Added fallback to random sort when smart sort fails for individual directories and updated configuration page to specify Play Count (Ascending) sort requirement.",
+        "timestamp": "2025-11-04T05:51:00.894Z",
+        "version": "1.4.0.10",
+        "checksum": "633EB79369EA6CAAD53585A050437967",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "checksum": "34AC07BA05764F066A01CFCEA1ECAB5F",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.70.11.zip",
