@@ -10,6 +10,24 @@
     "versions": [
       {
         "targetAbi": "10.11.0.0",
+        "checksum": "A481242E08B4F7E9AC5AA6234ABAD6EE",
+        "changelog": "Jellyfin 10.11.0: v1.4.2 - Improve trace logging: parse project frames to show Class.Method instead of Task1.InnerInvoke in [TRACE] messages. No functional changes; formatting and diagnostics only.",
+        "dependencies": [],
+        "version": "1.4.2.11",
+        "timestamp": "2025-11-04T06:43:26.470Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "5D81B02B14AA0D2D36B980752C1BE4A4",
+        "changelog": "Jellyfin 10.10.7: v1.4.2 - Improve trace logging: parse project frames to show Class.Method instead of Task1.InnerInvoke in [TRACE] messages. No functional changes; formatting and diagnostics only.",
+        "dependencies": [],
+        "version": "1.4.2.10",
+        "timestamp": "2025-11-04T06:43:26.470Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.10.zip"
+      },
+      {
+        "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-04T06:36:07.034Z",
         "changelog": "Jellyfin 10.11.0: v1.4.1 - Refined sort result output: moved descriptions into Details, removed parentheticals, and switched result counts to bulleted lists. Implemented Smartish randomization adjustments and removed unnecessary smart-sort null check. Also ensured EnableAutomatedSortTask loads correctly in config UI.",
         "dependencies": [],
