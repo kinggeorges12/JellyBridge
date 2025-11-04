@@ -58,8 +58,7 @@ public class DebugLogger<T> : ILogger<T>
     /// <param name="args">Optional message arguments</param>
     public void LogTrace(string message, params object?[] args)
     {
-        var methodName = GetCallingMethodName();
-        LogTraceInternal(methodName, null, message, args);
+        LogTraceInternal(null, message, args);
     }
 
     /// <summary>
@@ -71,8 +70,7 @@ public class DebugLogger<T> : ILogger<T>
     /// <param name="args">Optional message arguments</param>
     public void LogTrace(Exception exception, string message, params object?[] args)
     {
-        var methodName = GetCallingMethodName();
-        LogTraceInternal(methodName, exception, message, args);
+        LogTraceInternal(exception, message, args);
     }
 
     /// <summary>
@@ -101,8 +99,10 @@ public class DebugLogger<T> : ILogger<T>
                     continue;
                 }
 
-                // Skip the logger itself
-                if (declaringType == typeof(DebugLogger<T>))
+                // Skip any frames from DebugLogger itself (all generic instantiations)
+                if (declaringType == typeof(DebugLogger<T>) ||
+                    (declaringType.IsGenericType && declaringType.GetGenericTypeDefinition() == typeof(DebugLogger<>)) ||
+                    (declaringType.FullName?.StartsWith("Jellyfin.Plugin.JellyBridge.Utils.DebugLogger", StringComparison.Ordinal) ?? false))
                 {
                     continue;
                 }
@@ -181,7 +181,7 @@ public class DebugLogger<T> : ILogger<T>
     /// <param name="exception">The exception to log (null if no exception)</param>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
-    private void LogTraceInternal(string memberName, Exception? exception, string message, object?[] args)
+    private void LogTraceInternal(Exception? exception, string message, object?[] args)
     {
         var config = Plugin.GetConfiguration();
         var enableTraceLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableTraceLogging), config);
@@ -190,6 +190,7 @@ public class DebugLogger<T> : ILogger<T>
         // Trace logging requires debug logging to be enabled (enforced by UI, but check here too)
         if (enableTraceLogging && enableDebugLogging)
         {
+            var memberName = GetCallingMethodName();
             var formattedMethodPrefix = !string.IsNullOrEmpty(memberName) ? $"[{memberName}] " : "";
             
             // When trace logging is enabled, we need to add the prefix and log as info

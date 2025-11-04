@@ -10,11 +10,29 @@
     "versions": [
       {
         "targetAbi": "10.11.0.0",
+        "checksum": "DCF0CA3C8A14140BDF9F78D0213D92E8",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.3.11.zip",
+        "timestamp": "2025-11-04T06:50:25.916Z",
+        "version": "1.4.3.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.3 - Further refine trace logging: move caller resolution into LogTraceInternal and more robustly skip DebugLogger<> frames for accurate Class.Method names. No functional changes; logging-only refactor."
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "4C20FEB27BE13E1EF09F88DDAE4C2946",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.3.10.zip",
+        "timestamp": "2025-11-04T06:50:25.916Z",
+        "version": "1.4.3.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.3 - Further refine trace logging: move caller resolution into LogTraceInternal and more robustly skip DebugLogger<> frames for accurate Class.Method names. No functional changes; logging-only refactor."
+      },
+      {
+        "targetAbi": "10.11.0.0",
         "checksum": "A481242E08B4F7E9AC5AA6234ABAD6EE",
         "changelog": "Jellyfin 10.11.0: v1.4.2 - Improve trace logging: parse project frames to show Class.Method instead of Task1.InnerInvoke in [TRACE] messages. No functional changes; formatting and diagnostics only.",
         "dependencies": [],
         "version": "1.4.2.11",
-        "timestamp": "2025-11-04T06:43:26.470Z",
+        "timestamp": "2025-11-04T06:43:26.47Z",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.11.zip"
       },
       {
@@ -23,7 +41,7 @@
         "changelog": "Jellyfin 10.10.7: v1.4.2 - Improve trace logging: parse project frames to show Class.Method instead of Task1.InnerInvoke in [TRACE] messages. No functional changes; formatting and diagnostics only.",
         "dependencies": [],
         "version": "1.4.2.10",
-        "timestamp": "2025-11-04T06:43:26.470Z",
+        "timestamp": "2025-11-04T06:43:26.47Z",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.10.zip"
       },
       {
