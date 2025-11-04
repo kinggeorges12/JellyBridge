@@ -316,29 +316,15 @@ function performTestConnection(page) {
                 }
             });
     }).catch(function (error) {
-        // Parse server message exactly as returned
-        let message = null;
-        let parseFailed = false;
-        
-        try { 
-            message = error?.responseJSON?.message; 
-        } catch {}
-        
-        if (!message && typeof error?.responseText === 'string' && error.responseText.trim()) {
-            try { 
-                message = JSON.parse(error.responseText).message; 
-            } catch {
-                parseFailed = true;
-            }
+        // Parse exactly what backend returns: JSON with { success, message, details, errorCode }
+        try {
+            const parsed = JSON.parse(error?.responseText || '{}');
+            const message = parsed?.message || 'Connection test failed';
+            Dashboard.alert('❌ ' + message);
+        } catch {
+            // Could not parse the plugin's response at all → Jellyfin endpoint issue
+            Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
         }
-        
-        if (parseFailed) {
-            message = 'Cannot communicate with Jellyfin plugin endpoint';
-        } else if (!message) {
-            message = 'Connection test failed';
-        }
-        
-        Dashboard.alert('❌ ' + message);
     }).finally(function() {
         Dashboard.hideLoadingMsg();
         testButton.disabled = false;
