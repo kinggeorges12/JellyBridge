@@ -316,32 +316,29 @@ function performTestConnection(page) {
                 }
             });
     }).catch(function (error) {
-        // Prefer server-provided message/details when available
-        let errorMessage = '❌ Connection test failed';
-
-        // Try structured JSON first; detect parse failure to show a clearer endpoint error
-        let json = error?.responseJSON;
+        // Parse server message exactly as returned
+        let message = null;
         let parseFailed = false;
-        if (!json && typeof error?.responseText === 'string') {
-            try {
-                json = JSON.parse(error.responseText);
+        
+        try { 
+            message = error?.responseJSON?.message; 
+        } catch {}
+        
+        if (!message && typeof error?.responseText === 'string' && error.responseText.trim()) {
+            try { 
+                message = JSON.parse(error.responseText).message; 
             } catch {
                 parseFailed = true;
             }
         }
-
+        
         if (parseFailed) {
-            // Could not parse server response at all - problem with Jellyfin plugin endpoint
-            errorMessage = '❌ Cannot communicate with Jellyfin plugin endpoint';
-        } else if (json?.message) {
-            // Backend provides the exact error message, use it directly
-            errorMessage = `❌ ${json.message}`;
-        } else {
-            // Generic fallback (should rarely happen if backend always sends message)
-            errorMessage = '❌ Connection test failed';
+            message = 'Cannot communicate with Jellyfin plugin endpoint';
+        } else if (!message) {
+            message = 'Connection test failed';
         }
-
-        Dashboard.alert(errorMessage);
+        
+        Dashboard.alert('❌ ' + message);
     }).finally(function() {
         Dashboard.hideLoadingMsg();
         testButton.disabled = false;

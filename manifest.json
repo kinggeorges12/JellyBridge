@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.10.11",
+        "timestamp": "2025-11-04T16:50:56.324Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.10 - Test Connection: fixed error message parsing to correctly display backend messages; simplified to check responseJSON.message first, then parse responseText; renamed variable to 'message' for clarity. Fixed parse failure and fallback messages.",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "checksum": "B9EFE562DDD33BE7BD585FA8D1ADD54A",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.10.11.zip"
+      },
+      {
+        "version": "1.4.10.10",
+        "timestamp": "2025-11-04T16:50:56.324Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.10 - Test Connection: fixed error message parsing to correctly display backend messages; simplified to check responseJSON.message first, then parse responseText; renamed variable to 'message' for clarity. Fixed parse failure and fallback messages.",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "checksum": "081509920198F7DD0D2C133FABB64D57",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.10.10.zip"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.9.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.9 - Test Connection: simplified error handling to use backend message directly (json.message only); removed redundant HTTP status fallbacks; fixed parse failure message to indicate Jellyfin plugin endpoint issue. Config: validation spinner fix from previous commit.",
         "dependencies": [],
