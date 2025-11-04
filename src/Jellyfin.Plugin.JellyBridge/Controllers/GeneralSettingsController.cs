@@ -29,114 +29,59 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             
             try
             {
-                // Extract parameters from request
-                string? jellyseerUrl = null;
-                string? apiKey = null;
+                // Extract and validate parameters
+                var jellyseerUrl = requestData.TryGetProperty("JellyseerrUrl", out var urlElement) 
+                    ? urlElement.GetString() 
+                    : null;
                 
-                if (requestData.TryGetProperty("JellyseerrUrl", out var urlElement))
-                {
-                    jellyseerUrl = urlElement.GetString();
-                }
-                
-                if (requestData.TryGetProperty("ApiKey", out var apiKeyElement))
-                {
-                    apiKey = apiKeyElement.GetString();
-                }
-                
-                // Fallback to current configuration if not provided
-                jellyseerUrl ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
-                
-                _logger.LogTrace("Request details - URL: {Url}, HasApiKey: {HasApiKey}, ApiKeyLength: {ApiKeyLength}", 
-                    jellyseerUrl, !string.IsNullOrEmpty(apiKey), apiKey?.Length ?? 0);
+                var apiKey = requestData.TryGetProperty("ApiKey", out var apiKeyElement) 
+                    ? apiKeyElement.GetString() 
+                    : null;
 
-                if (string.IsNullOrEmpty(jellyseerUrl) || string.IsNullOrEmpty(apiKey))
+                if (string.IsNullOrEmpty(apiKey))
                 {
                     _logger.LogWarning("TestConnection failed: Missing required fields");
-                    return BadRequest(new { success = false, message = "Jellyseerr URL and API Key are required" });
-                }
-
-                // Create temporary config for testing
-                var testConfig = new PluginConfiguration
-                {
-                    JellyseerrUrl = jellyseerUrl,
-                    ApiKey = apiKey
-                };
-
-                _logger.LogInformation("Testing connection using ApiService");
-
-                // Test basic connectivity using ApiService
-                var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, testConfig);
-                if (status == null)
-                {
-                    _logger.LogWarning("Basic connectivity test failed - Status endpoint returned null (likely unreachable Jellyseerr URL or service down)");
-                    return StatusCode(503, new {
-                        success = false,
-                        message = "Jellyseerr service unavailable",
-                        details = "Unable to reach Jellyseerr at the specified URL. The service may be down or unreachable.",
-                        errorCode = "SERVICE_UNAVAILABLE"
-                    });
-                }
-                
-                _logger.LogInformation("Basic connectivity test successful");
-
-                // Test authentication using ApiService
-                var userInfo = await _apiService.CallEndpointAsync(JellyseerrEndpoint.AuthMe, testConfig);
-                _logger.LogTrace("AuthMe response type: {Type}, Value: {Value}", userInfo?.GetType().Name ?? "null", userInfo?.ToString() ?? "null");
-                
-                var typedUserInfo = (JellyseerrUser?)userInfo;
-                if (typedUserInfo == null)
-                {
-                    _logger.LogWarning("API key authentication failed - invalid or unauthorized API key");
-                    return Unauthorized(new {
-                        success = false,
-                        message = "Unauthorized: Invalid API Key",
-                        details = "The provided API key is invalid or does not grant access to the Jellyseerr API. Verify the API key and try again.",
-                        errorCode = "AUTH_FAILED"
-                    });
-                }
-                
-                _logger.LogDebug("API key authentication successful for user: {Username}", typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown");
-
-                // Test user list permissions using ApiService
-                var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
-                if (users == null)
-                {
-                    _logger.LogWarning("User list test failed - UserList endpoint returned null");
-                    return StatusCode(403, new { 
+                    return BadRequest(new { 
                         success = false, 
-                        message = "Insufficient privileges to access user list",
-                        details = "The API key does not have sufficient permissions to access the user list endpoint.",
-                        errorCode = "INSUFFICIENT_PRIVILEGES"
-                    });
-                }
-                    
-                _logger.LogInformation("Successfully retrieved user list from object list. Found {UserCount} users", users.Count);
-
-                if (users.Count == 0)
-                {
-                    _logger.LogWarning("User list test failed - No users found");
-                    return StatusCode(500, new { 
-                        success = false, 
-                        message = "No users found in Jellyseerr",
-                        details = "The API key has access but no users were found. This may indicate a configuration issue in Jellyseerr.",
-                        errorCode = "NO_USERS_FOUND"
+                        message = "Jellyseerr API Key is required" 
                     });
                 }
 
+                var status = await _apiService.TestConnectionAsync(jellyseerUrl, apiKey);
+                
                 return Ok(new { 
                     success = true, 
                     message = "Connection test successful",
-                    details = $"Connected to Jellyseerr v{status.Version}, authenticated as {typedUserInfo.DisplayName ?? typedUserInfo.JellyfinUsername ?? typedUserInfo.Username ?? "Unknown"}, found {users.Count} users"
+                    details = $"Connected to Jellyseerr v{status.Version}"
+                });
+            }
+            catch (System.TimeoutException ex)
+            {
+                _logger.LogError(ex, "Connection test timed out");
+                return StatusCode(408, new { 
+                    success = false, 
+                    message = "Connection test timed out",
+                    details = ex.Message,
+                    errorCode = "TIMEOUT"
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "Connection test failed: HTTP error");
+                return StatusCode(503, new { 
+                    success = false, 
+                    message = "Jellyseerr service unavailable",
+                    details = ex.Message,
+                    errorCode = "SERVICE_UNAVAILABLE"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Connection test failed with exception");
+                _logger.LogError(ex, "Connection test failed");
                 return StatusCode(500, new { 
                     success = false, 
                     message = $"Connection test failed: {ex.Message}",
-                    details = $"Connection test exception: {ex.GetType().Name} - {ex.Message}",
-                    stackTrace = ex.StackTrace,
+                    details = ex.Message,
                     errorCode = "CONNECTION_EXCEPTION"
                 });
             }

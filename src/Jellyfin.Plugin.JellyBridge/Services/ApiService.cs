@@ -760,4 +760,46 @@ public class ApiService
     }
 
     #endregion
+
+    #region Test Connection
+
+    /// <summary>
+    /// Tests basic connectivity to Jellyseerr using the Status endpoint.
+    /// Throws exceptions exactly as they come from the backend.
+    /// </summary>
+    public async Task<SystemStatus> TestConnectionAsync(string? jellyseerUrl = null, string? apiKey = null)
+    {
+        // Fall back to plugin configuration if not provided
+        jellyseerUrl ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
+        apiKey ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey));
+        
+        var testConfig = new PluginConfiguration
+        {
+            JellyseerrUrl = jellyseerUrl,
+            ApiKey = apiKey
+        };
+
+        _logger.LogInformation("Testing Jellyseerr connectivity");
+        
+        // Build the request and use MakeApiRequestAsync which already handles exceptions
+        var request = JellyseerrUrlBuilder.BuildEndpointRequest(jellyseerUrl, JellyseerrEndpoint.Status, apiKey);
+        var content = await MakeApiRequestAsync(request, testConfig);
+        
+        if (content == null)
+        {
+            throw new HttpRequestException("Jellyseerr service unavailable");
+        }
+        
+        // Parse successful response
+        var status = JsonSerializer.Deserialize<SystemStatus>(content);
+        if (status == null || string.IsNullOrEmpty(status.Version))
+        {
+            throw new HttpRequestException("Jellyseerr service returned invalid response");
+        }
+        
+        _logger.LogInformation("Connected to Jellyseerr v{Version}", status.Version);
+        return status;
+    }
+
+    #endregion
 }
