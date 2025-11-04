@@ -94,6 +94,11 @@ public class SortService
                         _logger.LogDebug("Using Smart sort order - genre-based sorting for user {UserName}", user.Username);
                         directoryInfoMap = await playCountSmart(user, allDirectories);
                         break;
+                    
+                    case SortOrderOptions.Smartish:
+                        _logger.LogDebug("Using Smartish sort order - genre-based sorting for user {UserName}", user.Username);
+                        directoryInfoMap = await playCountSmartish(user, allDirectories);
+                        break;
                         
                     default:
                         _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None for user {UserName}", sortOrder, user.Username);
@@ -331,9 +336,6 @@ public class SortService
                 // Add 100 to base count
                 playCount += 100;
                 
-                // Add random number between 0 and max genre count
-                playCount += random.Next(0, maxGenreCount + 1);
-                
                 result[directory] = (playCount, mediaType);
             }
             catch (Exception ex)
@@ -358,6 +360,49 @@ public class SortService
         }
 
         return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(result.Count > 0 ? result : null);
+    }
+
+    /// <summary>
+    /// Smartish sort algorithm that uses playCountSmart and adds a random value from 1 to (max-min) of all directories.
+    /// </summary>
+    /// <param name="user">User to generate smartish sort for</param>
+    /// <param name="allDirectories">List of directories with their media types</param>
+    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
+    private async Task<Dictionary<string, (int playCount, BaseItemKind mediaType)>?> playCountSmartish(
+        JellyfinUser user,
+        List<(string directory, BaseItemKind mediaType)> allDirectories)
+    {
+        if (allDirectories == null || allDirectories.Count == 0)
+        {
+            _logger.LogDebug("No directories found to update");
+            return null;
+        }
+
+        // Get base play counts from smart sort
+        var smartResult = await playCountSmart(user, allDirectories);
+        if (smartResult == null || smartResult.Count == 0)
+        {
+            return null;
+        }
+
+        // Calculate min and max play counts
+        var playCounts = smartResult.Values.Select(v => v.playCount).ToList();
+        var minPlayCount = playCounts.Min();
+        var maxPlayCount = playCounts.Max();
+        var range = maxPlayCount - minPlayCount;
+
+        // Add random value from 0 to range (or 10 if range is 0) to each play count
+        var random = System.Random.Shared;
+        var result = new Dictionary<string, (int playCount, BaseItemKind mediaType)>();
+
+        foreach (var kvp in smartResult)
+        {
+            var randomOffset = random.Next(0, range + 10); // 0 to range + 10 (inclusive)
+            var newPlayCount = kvp.Value.playCount + randomOffset;
+            result[kvp.Key] = (newPlayCount, kvp.Value.mediaType);
+        }
+
+        return result;
     }
 
     /// <summary>

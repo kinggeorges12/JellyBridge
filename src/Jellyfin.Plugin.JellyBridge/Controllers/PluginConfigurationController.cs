@@ -60,6 +60,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     EnableTraceLogging = config.EnableTraceLogging,
                     SortOrder = config.SortOrder,
                     MarkMediaPlayed = config.MarkMediaPlayed,
+                    EnableAutomatedSortTask = config.EnableAutomatedSortTask,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
                     NetworkMap = config.NetworkMap,
