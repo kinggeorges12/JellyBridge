@@ -571,66 +571,6 @@
 
                     <br>
 
-                    <details id="sortContentSettings">
-                        <summary>Sort Discover Content</summary>
-                        <br>
-                        <div class="fieldDescription">
-                            Control the sort order of items in the JellyBridge library by setting a generated play count of media items for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
-                        </div>
-                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Play Count</i>.
-                            <br>
-                            ⚠️ Warning: This option is untested in Android TV and Kodi. This may interfere with other plugins or features in Jellyfin that use play count.
-                        </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="EnableAutomatedSortTask" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Enable the Automated Task to Sort Discover Content</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort JellyBridge library content.</div>
-                        </div>
-
-                        <div class="inputContainer" id="SortTaskIntervalHoursContainer">
-                            <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
-                            <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="selectSortOrder">Sort Order</label>
-                            <select id="selectSortOrder" is="emby-input" class="emby-input emby-select">
-                                <!-- Options will be populated dynamically from enum -->
-                            </select>
-                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. None: sets play counts to zero. Random: randomizes play counts. Smart: intelligent sorting (not yet implemented).</div>
-                        </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="MarkMediaPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Mark Media Played</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For shows: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
-                        </div>
-
-                        <div>
-                            <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
-                                <span>🎲 Refresh Discover Library Sort Order</span>
-                            </button>
-                            <div id="sortContentResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
-                        </div>
-
-                    </details>
-
-                    <br>
-
                     <details id="manageLibrarySettings">
                         <summary>Manage Discover Library</summary>
                         <br>
@@ -735,6 +675,66 @@
                                 <span>⭐ Request JellyBridge Library Favorites in Jellyseerr</span>
                             </button>
                             <div id="syncFavoritesResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                        </div>
+
+                    </details>
+
+                    <br>
+
+                    <details id="sortContentSettings">
+                        <summary>Sort Discover Content</summary>
+                        <br>
+                        <div class="fieldDescription">
+                            Control the sort order of items in the JellyBridge library by setting a generated play count of media items for all users. This allows users to see content in a different order each time. Also removes that pesky play count badge next to every media item, so the library no longer shows a that blue circle with a 1 in the upper right corner.
+                        </div>
+                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                            ✳️ Note: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Play Count</i>.
+                            <br>
+                            ⚠️ Warning: This option is untested in Android TV and Kodi. This may interfere with other plugins or features in Jellyfin that use play count.
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableAutomatedSortTask" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Enable the Automated Task to Sort Discover Content</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort JellyBridge library content.</div>
+                        </div>
+
+                        <div class="inputContainer" id="SortTaskIntervalHoursContainer">
+                            <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
+                            <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selectSortOrder">Sort Order</label>
+                            <select id="selectSortOrder" is="emby-input" class="emby-input emby-select">
+                                <!-- Options will be populated dynamically from enum -->
+                            </select>
+                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. None: sets play counts to zero. Random: randomizes play counts. Smart: intelligent sorting (not yet implemented).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="MarkMediaPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Mark Media Played</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For shows: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
+                        </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
+                                <span>🎲 Refresh Discover Library Sort Order</span>
+                            </button>
+                            <div id="sortContentResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
                         </div>
 
                     </details>

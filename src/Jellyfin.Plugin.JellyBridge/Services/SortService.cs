@@ -98,8 +98,8 @@ public class SortService
             var (successes, failures, skipped) = await ApplyPlayCountAlgorithmAsync(users, directoryInfoMap);
             
             result.Success = true;
-            result.Message = $"Sort library algorithm completed successfully ({sortOrder})";
-            result.Details = $"Algorithm: {sortOrder}\nUsers: {users.Count} (play counts updated for {users.Count} user{(users.Count == 1 ? "" : "s")})";
+            result.Message = "✓ Sort library completed successfully";
+            result.Details = "Algorithm is the sort order, Users have play counts individually updated in the JellyBridge library, Refresh type is true for Replace all metadata or false for Search for missing metadata, Sort results include movies and shows that had play counts changed.";
             
             // Populate ProcessResult
             result.ItemsSorted = successes;

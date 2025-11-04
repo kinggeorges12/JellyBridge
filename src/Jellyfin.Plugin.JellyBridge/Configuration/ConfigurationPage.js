@@ -29,11 +29,11 @@ export default function (view) {
                 // Initialize import discover content settings including network interface and sync buttons
                 initializeImportContent(page);
                 
-                // Initialize sort content settings
-                initializeSortContent(page);
-                
                 // Initialize manage discover library settings
                 initializeManageLibrary(page);
+                
+                // Initialize sort content settings
+                initializeSortContent(page);
                 
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
@@ -561,7 +561,7 @@ function performSyncImportContent(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
                 const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                syncDiscoverResult.textContent = '🔄 Syncing library...';
+                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
                 syncDiscoverResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -574,15 +574,15 @@ function performSyncImportContent(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncData) {
-                    syncDiscoverResult.textContent = syncData.result || 'No result available';
+                    appendToResultBox(syncDiscoverResult, '\n' + (syncData.result || 'No result available'));
                     scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Discover Sync Results:\n`;
+                    let resultText = `\nDiscover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
                     
-                    syncDiscoverResult.textContent = resultText;
+                    appendToResultBox(syncDiscoverResult, resultText);
                     scrollToElement('syncDiscoverResult');
                 });
             }).catch(function(error) {
@@ -918,8 +918,8 @@ function performSortContent(page) {
     // Show confirmation dialog for saving settings before sort
     Dashboard.confirm({
         title: 'Confirm Save',
-        text: 'Settings will be saved before starting sort content randomization.',
-        confirmText: 'Save & Randomize',
+        text: 'Settings will be saved before starting sort content.',
+        confirmText: 'Save & Sort',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -931,7 +931,10 @@ function performSortContent(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sort result textbox
                 const sortContentResult = page.querySelector('#sortContentResult');
-                sortContentResult.textContent = '🔄 Randomizing content sort order...';
+                const sortOrderSelect = page.querySelector('#selectSortOrder');
+                const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
+                const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
+                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
                 sortContentResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -944,15 +947,15 @@ function performSortContent(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(sortResult) {
-                    sortContentResult.textContent = sortResult.result || 'No result available';
+                    appendToResultBox(sortContentResult, '\n' + (sortResult.result || 'No result available'));
                     scrollToElement('sortContentResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Sort Content Results:\n`;
+                    let resultText = `\nSort Content Results:\n`;
                     resultText += `❌ Sort failed: ${error?.message || 'Unknown error'}\n`;
                     
-                    sortContentResult.textContent = resultText;
+                    appendToResultBox(sortContentResult, resultText);
                     scrollToElement('sortContentResult');
                 });
             }).catch(function(error) {
@@ -1169,7 +1172,7 @@ function performSyncManageLibrary(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the request result textbox
                 const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                syncFavoritesResult.textContent = '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...';
+                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
                 syncFavoritesResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -1182,15 +1185,15 @@ function performSyncManageLibrary(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncResult) {
-                    syncFavoritesResult.textContent = syncResult.result || 'No result available';
+                    appendToResultBox(syncFavoritesResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Request JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
                     
-                    syncFavoritesResult.textContent = resultText;
+                    appendToResultBox(syncFavoritesResult, resultText);
                     scrollToElement('syncFavoritesResult');
                 });
             }).catch(function(error) {
@@ -1592,7 +1595,7 @@ function initializeGlobalSettings(page) {
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
     // List of detail section IDs
-    const detailIds = ['troubleshootingDetails', 'syncSettings', 'sortContentSettings', 'manageLibrarySettings', 'networkFolderOptionsDetails', 'advancedSettings'];
+    const detailIds = ['troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
     
     detailIds.forEach(detailId => {
         const detailsElement = page.querySelector(`#${detailId}`);
@@ -1710,6 +1713,41 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
             scrollToCheckboxAndHighlight(targetCheckboxSelector);
         }
     });
+}
+
+// Append text to a result box and handle scrolling after 50 lines
+function appendToResultBox(element, text, clearFirst = false) {
+    if (!element) return;
+    
+    if (clearFirst) {
+        element.textContent = '';
+    }
+    
+    // Get current content and split into lines
+    const currentText = element.textContent || '';
+    const lines = currentText ? currentText.split('\n') : [];
+    
+    // Add new text and split into lines
+    const newLines = text.split('\n');
+    lines.push(...newLines);
+    
+    // Keep only last 50 lines if we exceed that
+    if (lines.length > 50) {
+        lines.splice(0, lines.length - 50);
+    }
+    
+    // Join back and set content
+    element.textContent = lines.join('\n');
+    
+    // Set max-height to approximately 50 lines (assuming ~20px per line)
+    // This ensures scrollbar appears when content exceeds 50 lines
+    element.style.maxHeight = '1000px'; // ~50 lines * 20px
+    element.style.overflowY = 'auto';
+    
+    // Scroll to bottom when new results appear
+    setTimeout(() => {
+        element.scrollTop = element.scrollHeight;
+    }, 0);
 }
 
 // Scroll to a specific element by ID with smooth scrolling
