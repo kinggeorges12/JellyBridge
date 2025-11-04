@@ -80,12 +80,57 @@ public class DebugLogger<T> : ILogger<T>
     /// </summary>
     private string GetCallingMethodName()
     {
-        var stackFrame = new StackFrame(2, false);
-        var method = stackFrame.GetMethod();
-        if (method != null)
+        try
         {
-            return $"{method.DeclaringType?.Name}.{method.Name}";
+            var trace = new StackTrace(skipFrames: 1, fNeedFileInfo: false);
+            var projectNamespace = "Jellyfin.Plugin.JellyBridge";
+
+            for (int i = 0; i < trace.FrameCount; i++)
+            {
+                var method = trace.GetFrame(i)?.GetMethod();
+                var declaringType = method?.DeclaringType;
+                if (method == null || declaringType == null)
+                {
+                    continue;
+                }
+
+                // Only consider frames from our project (fast path)
+                var ns = declaringType.Namespace ?? string.Empty;
+                if (!ns.StartsWith(projectNamespace, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                // Skip the logger itself
+                if (declaringType == typeof(DebugLogger<T>))
+                {
+                    continue;
+                }
+
+                string typeName = declaringType.Name;
+                string methodName = method.Name;
+
+                // Normalize async MoveNext state-machine frames
+                if (methodName == "MoveNext")
+                {
+                    var generated = typeName; // e.g., Class+<Method>d__12
+                    var lt = generated.IndexOf('<');
+                    var gt = generated.IndexOf('>');
+                    if (lt >= 0 && gt > lt)
+                    {
+                        methodName = generated.Substring(lt + 1, gt - lt - 1);
+                        if (declaringType.DeclaringType != null)
+                        {
+                            typeName = declaringType.DeclaringType.Name;
+                        }
+                    }
+                }
+
+                return $"{typeName}.{methodName}";
+            }
         }
+        catch { /* ignore and fall through */ }
+
         return string.Empty;
     }
 
