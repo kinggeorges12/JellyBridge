@@ -110,6 +110,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         moviesResult = new
                         {
                             moviesProcessed = syncResult.MoviesResult.Processed,
+                            moviesFound = syncResult.MoviesResult.Found,
                             moviesCreated = syncResult.MoviesResult.Created,
                             moviesDeleted = syncResult.MoviesResult.Removed,
                             moviesBlocked = syncResult.MoviesResult.Blocked
@@ -117,6 +118,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         showsResult = new
                         {
                             showsProcessed = syncResult.ShowsResult.Processed,
+                            showsFound = syncResult.ShowsResult.Found,
                             showsCreated = syncResult.ShowsResult.Created,
                             showsDeleted = syncResult.ShowsResult.Removed,
                             showsBlocked = syncResult.ShowsResult.Blocked

@@ -1209,13 +1209,17 @@ function performSyncManageLibrary(page) {
                     
                     resultText += `\nMovies Result:\n`;
                     resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
+                    resultText += `  Found: ${syncResult.moviesResult?.moviesFound || 0}\n`;
                     resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
+                    resultText += `  Deleted: ${syncResult.moviesResult?.moviesDeleted || 0}\n`;
+                    resultText += `  Blocked: ${syncResult.moviesResult?.moviesBlocked || 0}\n`;
                     
                     resultText += `\nShows Result:\n`;
                     resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
+                    resultText += `  Found: ${syncResult.showsResult?.showsFound || 0}\n`;
                     resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
+                    resultText += `  Deleted: ${syncResult.showsResult?.showsDeleted || 0}\n`;
+                    resultText += `  Blocked: ${syncResult.showsResult?.showsBlocked || 0}\n`;
                     
                     syncFavoritesResult.textContent = resultText;
                     scrollToElement('syncFavoritesResult');

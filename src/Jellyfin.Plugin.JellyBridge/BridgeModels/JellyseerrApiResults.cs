@@ -143,7 +143,7 @@ public class SyncJellyfinResult
 }
 
 /// <summary>
-/// Result of processing Jellyfin items with lists of IJellyfinItem for processed, updated items and JellyseerrMediaRequest for created items.
+/// Result of processing Jellyfin items with lists of IJellyfinItem for processed items and JellyseerrMediaRequest for created items.
 /// </summary>
 public class ProcessJellyfinResult
 {
@@ -170,57 +170,4 @@ public class ProcessJellyfinResult
         
         return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
     }
-}
-
-/// <summary>
-/// Result of a favorites scan test.
-/// </summary>
-public class TestFavoritesResult
-{
-    public int TotalUsers { get; set; }
-    public int UsersWithFavorites { get; set; }
-    public int TotalFavorites { get; set; }
-    public int UsersWithRequests { get; set; }
-    public int TotalRequests { get; set; }
-    public List<JellyseerrMediaRequest> Requests { get; set; } = new();
-}
-
-/// <summary>
-/// User favorites data.
-/// </summary>
-public class UserFavorites
-{
-    public Guid UserId { get; set; }
-    public string UserName { get; set; } = string.Empty;
-    public int FavoriteCount { get; set; }
-    public List<FavoriteItem> Favorites { get; set; } = new();
-    public int RequestCount { get; set; }
-    public List<RequestItem> Requests { get; set; } = new();
-}
-
-/// <summary>
-/// Individual favorite item.
-/// </summary>
-public class FavoriteItem
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public int? Year { get; set; }
-    public string? Path { get; set; }
-}
-
-/// <summary>
-/// Individual request item from Jellyseerr.
-/// </summary>
-public class RequestItem
-{
-    public int Id { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
-    public string? MediaUrl { get; set; }
-    public string? ServiceUrl { get; set; }
-    public bool Is4k { get; set; }
-    public int SeasonCount { get; set; }
 }
