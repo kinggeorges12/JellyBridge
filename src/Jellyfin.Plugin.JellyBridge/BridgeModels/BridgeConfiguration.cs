@@ -26,7 +26,12 @@ public class BridgeConfiguration
         /// <summary>
         /// Smart sorting - uses intelligent algorithm based on genre preferences from user's library.
         /// </summary>
-        Smart = 2
+        Smart = 2,
+
+        /// <summary>
+        /// Smartish sorting - uses smart sort algorithm with additional randomization based on play count range.
+        /// </summary>
+        Smartish = 3
     }
 
     /// <summary>

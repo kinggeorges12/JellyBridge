@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-04T06:36:07.034Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.1 - Refined sort result output: moved descriptions into Details, removed parentheticals, and switched result counts to bulleted lists. Implemented Smartish randomization adjustments and removed unnecessary smart-sort null check. Also ensured EnableAutomatedSortTask loads correctly in config UI.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.1.11.zip",
+        "version": "1.4.1.11",
+        "checksum": "962C62789A437C5AA70BFAC154C450CA"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-04T06:36:07.034Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.1 - Refined sort result output: moved descriptions into Details, removed parentheticals, and switched result counts to bulleted lists. Implemented Smartish randomization adjustments and removed unnecessary smart-sort null check. Also ensured EnableAutomatedSortTask loads correctly in config UI.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.1.10.zip",
+        "version": "1.4.1.10",
+        "checksum": "B7CE5A2E85A2089871B369F5E73DE85B"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.0.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.0 - Implemented Smart sort algorithm that uses genre preferences from user's library to calculate play counts. Refactored SortService to use wrapper methods instead of direct MediaBrowser calls and added GetUserLibraryItems method to JellyfinILibraryManager. Added fallback to random sort when smart sort fails for individual directories and updated configuration page to specify Play Count (Ascending) sort requirement.",
         "timestamp": "2025-11-04T05:51:00.894Z",

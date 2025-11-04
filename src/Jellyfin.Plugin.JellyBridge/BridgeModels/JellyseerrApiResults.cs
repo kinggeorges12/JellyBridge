@@ -29,11 +29,11 @@ public class ProcessJellyseerrResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"  Processed: {Processed}");
-        result.AppendLine($"  Added: {Created}");
-        result.AppendLine($"  Updated: {Updated}");
-        result.AppendLine($"  Ignored: {Ignored}");
-        result.AppendLine($"  Deleted: {Deleted}");
+        result.AppendLine($"• Processed: {Processed}");
+        result.AppendLine($"• Added: {Created}");
+        result.AppendLine($"• Updated: {Updated}");
+        result.AppendLine($"• Ignored: {Ignored}");
+        result.AppendLine($"• Deleted: {Deleted}");
         
         return result.ToString().TrimEnd();
     }
@@ -46,7 +46,7 @@ public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "• 📦 Processed: Number of items processed from Jellyseerr\n• ➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n• 🔄 Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n• ⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n• 🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
+    public string Details { get; set; } = "📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🔄 Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyseerrResult MoviesResult { get; set; } = new();
     public ProcessJellyseerrResult ShowsResult { get; set; } = new();
@@ -152,11 +152,11 @@ public class ProcessJellyfinResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"  Processed: {Processed}");
-        result.AppendLine($"  Found: {Found}");
-        result.AppendLine($"  Created: {Created}");
-        result.AppendLine($"  Blocked: {Blocked}");
-        result.AppendLine($"  Deleted: {Removed}");
+        result.AppendLine($"• Processed: {Processed}");
+        result.AppendLine($"• Found: {Found}");
+        result.AppendLine($"• Created: {Created}");
+        result.AppendLine($"• Blocked: {Blocked}");
+        result.AppendLine($"• Removed: {Removed}");
         
         return result.ToString().TrimEnd();
     }
@@ -169,7 +169,7 @@ public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "• ❤️ Processed: Number of favorites in Jellyfin\n• 🔍 Found: Number of favorites in JellyBridge library\n• ➕ Created: Requests created in Jellyseerr\n• 🗑️ Deleted: Items unfavorited after successful requests\n• 🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues";
+    public string Details { get; set; } = "❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🗑️ Deleted: Items unfavorited after successful requests\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyfinResult MoviesResult { get; set; } = new();
     public ProcessJellyfinResult ShowsResult { get; set; } = new();
@@ -269,9 +269,9 @@ public class ProcessSortResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"  Sorted: {Sorted} (items sorted by updating play counts)");
-        result.AppendLine($"  Skipped: {Skipped} (items skipped - ignored files)");
-        result.AppendLine($"  Failed: {Failed} (items failed to update, possibly not processed yet by Jellyfin)");
+        result.AppendLine($"• Sorted: {Sorted}");
+        result.AppendLine($"• Skipped: {Skipped}");
+        result.AppendLine($"• Failed: {Failed}");
         
         return result.ToString().TrimEnd();
     }
@@ -284,7 +284,7 @@ public class SortLibraryResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "Algorithm is the sort order, Users have play counts individually updated in the JellyBridge library, Refresh type is true for Replace all metadata or false for Search for missing metadata, Sort results include movies and shows that had play counts changed.";
+    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refresh type is true for Replace all metadata or false for Search for missing metadata\n📊 Results: Sort results include movies and shows that had play counts changed";
     public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
     public List<JellyfinUser> Users { get; set; } = new();
     public ProcessSortResult ProcessResult { get; set; } = new();
@@ -319,25 +319,25 @@ public class SortLibraryResult
         result.AppendLine();
         
         // Add individual items with 2-space indentation
-        result.AppendLine($"  Algorithm: {SortAlgorithm}");
-        result.AppendLine($"  Users: {Users.Count}");
+        result.AppendLine($"Algorithm: {SortAlgorithm}");
+        result.AppendLine($"Users: {Users.Count}");
         
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
             var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\n  Refresh Plan: {refreshType}, {refreshImages}");
+            result.AppendLine($"Refresh Plan: {refreshType}, {refreshImages}");
         }
         
-        result.AppendLine("\n  Sort Results:");
+        result.AppendLine("\nSort Results:");
         var processResult = ProcessResult.ToString();
-        // Indent each line of ProcessResult by 2 more spaces (4 total)
+        // ProcessResult already has bullets, just add indentation
         var lines = processResult.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
             if (!string.IsNullOrWhiteSpace(line))
             {
-                result.AppendLine($"    {line.TrimStart()}");
+                result.AppendLine($"  {line.TrimStart()}");
             }
         }
         
