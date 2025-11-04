@@ -108,11 +108,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     {
                         case 401:
                             errorCode = "AUTH_FAILED";
-                            message = "Invalid API key";
+                            message = "API authentication failed";
                             break;
                         case 403:
                             errorCode = "INSUFFICIENT_PRIVILEGES";
-                            message = "Insufficient permissions";
+                            message = "API key is incorrect";
                             break;
                         case 502:
                             errorCode = "INVALID_RESPONSE";
@@ -120,7 +120,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             break;
                         case 503:
                             errorCode = "SERVICE_UNAVAILABLE";
-                            message = "Unable to reach Jellyseerr service";
+                            message = "Jellyseerr URL is unreachable from Jellyfin";
                             break;
                         default:
                             errorCode = "HTTP_ERROR";
@@ -137,13 +137,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
                 else
                 {
-                    // No status code - connection error or unexpected exception
+                    // No status code - connection error or unexpected exception (unreachable endpoint)
                     _logger.LogWarning("HttpRequestException missing StatusCode - connection error or unexpected exception: {Error}", errorMessage);
-                    return StatusCode(503, new { 
+                    return StatusCode(500, new { 
                         success = false, 
-                        message = "Unable to reach Jellyseerr service",
+                        message = "Connection to Jellyseerr failed",
                         details = errorMessage,
-                        errorCode = "SERVICE_UNAVAILABLE"
+                        errorCode = "INTERNAL_SERVER_ERROR"
                     });
                 }
             }
@@ -153,8 +153,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test failed: Invalid JSON response from Jellyseerr");
                 return StatusCode(502, new { 
                     success = false, 
-                    message = "Jellyseerr returned an invalid response",
-                    details = "The response from Jellyseerr could not be parsed. This may indicate a configuration issue or Jellyseerr version incompatibility.",
+                    message = "Unable to parse Jellyseerr response",
+                    details = ex.Message,
                     errorCode = "INVALID_RESPONSE"
                 });
             }

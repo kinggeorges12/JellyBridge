@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.17.11.zip",
+        "timestamp": "2025-11-04T19:20:08.047Z",
+        "checksum": "4A11FB154C5FFBC16DF11782BDD26272",
+        "dependencies": [],
+        "version": "1.4.17.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.17 - Test Connection: Updated error messages to be more specific - API authentication failed for 401, API key is incorrect for 403, and Jellyseerr URL unreachable from Jellyfin for 503. Changed unreachable endpoint handling to return 500 with exception message in details. Updated JSON parse error to include actual exception message instead of generic text.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.17.10.zip",
+        "timestamp": "2025-11-04T19:20:08.047Z",
+        "checksum": "AC96767025AC482A131BD336C2108750",
+        "dependencies": [],
+        "version": "1.4.17.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.17 - Test Connection: Updated error messages to be more specific - API authentication failed for 401, API key is incorrect for 403, and Jellyseerr URL unreachable from Jellyfin for 503. Changed unreachable endpoint handling to return 500 with exception message in details. Updated JSON parse error to include actual exception message instead of generic text.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.4.16 - Test Connection: Fixed exception handling to properly cascade errors with correct HTTP status codes from ApiService to controller. Improved error messages to be plain and user-friendly, explaining what went wrong without technical jargon. Fixed frontend to handle non-JSON error responses, including when Jellyfin server is loading.",
         "timestamp": "2025-11-04T19:03:19.621Z",
