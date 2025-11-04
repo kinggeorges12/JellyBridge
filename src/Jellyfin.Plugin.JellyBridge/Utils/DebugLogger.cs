@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using System.Linq;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace Jellyfin.Plugin.JellyBridge.Utils;
 
@@ -50,23 +52,41 @@ public class DebugLogger<T> : ILogger<T>
 
     /// <summary>
     /// Logs a trace message. If trace logging is enabled in config, logs as Information, otherwise logs as Trace.
+    /// Automatically includes the calling method name using reflection.
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
     public void LogTrace(string message, params object?[] args)
     {
-        LogTraceInternal(null, message, args);
+        var methodName = GetCallingMethodName();
+        LogTraceInternal(methodName, null, message, args);
     }
 
     /// <summary>
     /// Logs a trace message with exception details.
+    /// Automatically includes the calling method name using reflection.
     /// </summary>
     /// <param name="exception">The exception to log</param>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
     public void LogTrace(Exception exception, string message, params object?[] args)
     {
-        LogTraceInternal(exception, message, args);
+        var methodName = GetCallingMethodName();
+        LogTraceInternal(methodName, exception, message, args);
+    }
+
+    /// <summary>
+    /// Gets the calling method name using reflection (StackFrame).
+    /// </summary>
+    private string GetCallingMethodName()
+    {
+        var stackFrame = new StackFrame(2, false);
+        var method = stackFrame.GetMethod();
+        if (method != null)
+        {
+            return $"{method.DeclaringType?.Name}.{method.Name}";
+        }
+        return string.Empty;
     }
 
     // LogInformation, LogWarning, and LogError just pass through to the inner logger
@@ -112,10 +132,11 @@ public class DebugLogger<T> : ILogger<T>
     /// <summary>
     /// Internal method to handle trace logging with optional exception.
     /// </summary>
+    /// <param name="memberName">The calling method name</param>
     /// <param name="exception">The exception to log (null if no exception)</param>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
-    private void LogTraceInternal(Exception? exception, string message, object?[] args)
+    private void LogTraceInternal(string memberName, Exception? exception, string message, object?[] args)
     {
         var config = Plugin.GetConfiguration();
         var enableTraceLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableTraceLogging), config);
@@ -124,8 +145,10 @@ public class DebugLogger<T> : ILogger<T>
         // Trace logging requires debug logging to be enabled (enforced by UI, but check here too)
         if (enableTraceLogging && enableDebugLogging)
         {
+            var formattedMethodPrefix = !string.IsNullOrEmpty(memberName) ? $"[{memberName}] " : "";
+            
             // When trace logging is enabled, we need to add the prefix and log as info
-            var prefixedMessage = "[TRACE] " + message;
+            var prefixedMessage = "[TRACE] " + formattedMethodPrefix + message;
             
             if (exception != null)
                 _innerLogger.LogInformation(exception, prefixedMessage, args);

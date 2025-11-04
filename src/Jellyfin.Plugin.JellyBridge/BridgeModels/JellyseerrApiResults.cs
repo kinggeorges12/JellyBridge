@@ -133,7 +133,12 @@ public class SyncJellyfinResult
 
     public override string ToString()
     {
-        return $"Movies: {MoviesResult.Processed} processed, {MoviesResult.Created} created | Shows: {ShowsResult.Processed} processed, {ShowsResult.Created} created";
+        var parts = new List<string>();
+        parts.Add($"Movies: {MoviesResult.Processed} processed, {MoviesResult.Created} created");
+        if (MoviesResult.Blocked > 0) parts.Add($"{MoviesResult.Blocked} blocked");
+        parts.Add($"Shows: {ShowsResult.Processed} processed, {ShowsResult.Created} created");
+        if (ShowsResult.Blocked > 0) parts.Add($"{ShowsResult.Blocked} blocked");
+        return string.Join(" | ", parts);
     }
 }
 
@@ -146,11 +151,13 @@ public class ProcessJellyfinResult
     public List<IJellyfinItem> ItemsFound { get; set; } = new();
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
     public List<IJellyfinItem> ItemsRemoved { get; set; } = new();
+    public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
 
     public int Processed => ItemsProcessed.Count;
     public int Found => ItemsFound.Count;
     public int Created => ItemsCreated.Count;
     public int Removed => ItemsRemoved.Count;
+    public int Blocked => ItemsBlocked.Count;
 
     public override string ToString()
     {
@@ -159,6 +166,7 @@ public class ProcessJellyfinResult
         if (Found > 0) parts.Add($"Found: {Found}");
         if (Created > 0) parts.Add($"Created: {Created}");
         if (Removed > 0) parts.Add($"Removed: {Removed}");
+        if (Blocked > 0) parts.Add($"Blocked: {Blocked}");
         
         return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
     }
