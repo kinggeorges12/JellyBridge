@@ -6,6 +6,7 @@ using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using System.Text.Json;
+using System.Net.Http;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
@@ -49,6 +50,26 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                 var status = await _apiService.TestConnectionAsync(jellyseerUrl, apiKey);
                 
+                // Check privileges (UserList endpoint requires user list permissions)
+                _logger.LogInformation("Checking user list privileges");
+                var testConfig = new PluginConfiguration
+                {
+                    JellyseerrUrl = jellyseerUrl ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl)),
+                    ApiKey = apiKey
+                };
+                var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
+                
+                if (users == null || users.Count == 0)
+                {
+                    _logger.LogWarning("User list check failed - UserList returned null or empty");
+                    return StatusCode(403, new { 
+                        success = false, 
+                        message = "Insufficient privileges to access user list",
+                        details = "The API key does not have sufficient permissions to access the user list endpoint.",
+                        errorCode = "INSUFFICIENT_PRIVILEGES"
+                    });
+                }
+                
                 return Ok(new { 
                     success = true, 
                     message = "Connection test successful",
@@ -57,6 +78,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
             catch (System.TimeoutException ex)
             {
+                // Thrown by MakeApiRequestAsync when all retry attempts timeout
                 _logger.LogError(ex, "Connection test timed out");
                 return StatusCode(408, new { 
                     success = false, 
@@ -67,22 +89,79 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
             catch (HttpRequestException ex)
             {
+                // Thrown by MakeApiRequestAsync on HTTP errors, or by TestConnectionAsync for validation failures
                 _logger.LogWarning(ex, "Connection test failed: HTTP error");
-                return StatusCode(503, new { 
+                
+                var errorMessage = ex.Message;
+                int statusCode = 503;
+                string errorCode = "SERVICE_UNAVAILABLE";
+                string message = "Jellyseerr service unavailable";
+                
+                // Status code should always be available from MakeApiRequestAsync or TestConnectionAsync
+                if (ex.Data.Contains("StatusCode") && ex.Data["StatusCode"] is int httpStatusCode)
+                {
+                    statusCode = httpStatusCode;
+                    
+                    // Map HTTP status codes to error codes and messages
+                    switch (httpStatusCode)
+                    {
+                        case 401:
+                            errorCode = "AUTH_FAILED";
+                            message = "Unauthorized: Invalid API Key";
+                            break;
+                        case 403:
+                            errorCode = "INSUFFICIENT_PRIVILEGES";
+                            message = "Forbidden: Insufficient Permissions";
+                            break;
+                        case 502:
+                            errorCode = "INVALID_RESPONSE";
+                            message = "Invalid response from Jellyseerr";
+                            break;
+                        case 503:
+                            errorCode = "SERVICE_UNAVAILABLE";
+                            message = "Jellyseerr service unavailable";
+                            break;
+                        default:
+                            errorCode = "HTTP_ERROR";
+                            message = $"HTTP {httpStatusCode} error";
+                            break;
+                    }
+                }
+                else
+                {
+                    // Fallback if status code is missing (shouldn't happen, but handle gracefully)
+                    _logger.LogWarning("HttpRequestException missing StatusCode in Data dictionary");
+                    errorCode = "HTTP_ERROR";
+                    message = "HTTP error occurred";
+                }
+                
+                return StatusCode(statusCode, new { 
                     success = false, 
-                    message = "Jellyseerr service unavailable",
-                    details = ex.Message,
-                    errorCode = "SERVICE_UNAVAILABLE"
+                    message = message,
+                    details = errorMessage,
+                    errorCode = errorCode
+                });
+            }
+            catch (JsonException ex)
+            {
+                // Thrown by JsonSerializer.Deserialize in TestConnectionAsync
+                _logger.LogError(ex, "Connection test failed: Invalid JSON response from Jellyseerr");
+                return StatusCode(502, new { 
+                    success = false, 
+                    message = "Invalid response format from Jellyseerr",
+                    details = "Jellyseerr returned an invalid JSON response",
+                    errorCode = "INVALID_RESPONSE"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Connection test failed");
+                // Catch-all for any other exceptions (InvalidOperationException, ArgumentException, etc.)
+                _logger.LogError(ex, "Connection test failed: Unexpected error");
                 return StatusCode(500, new { 
                     success = false, 
                     message = $"Connection test failed: {ex.Message}",
                     details = ex.Message,
-                    errorCode = "CONNECTION_EXCEPTION"
+                    errorCode = "UNEXPECTED_ERROR"
                 });
             }
         }
