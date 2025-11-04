@@ -24,7 +24,7 @@ public class BridgeConfiguration
         Random = 1,
 
         /// <summary>
-        /// Smart sorting - uses intelligent algorithm for optimal ordering (not yet implemented).
+        /// Smart sorting - uses intelligent algorithm based on genre preferences from user's library.
         /// </summary>
         Smart = 2
     }
