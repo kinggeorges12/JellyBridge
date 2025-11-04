@@ -104,11 +104,6 @@ public partial class SyncService
             // Step 3: Process movies and TV shows
             _logger.LogTrace("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
-
-            // Step 3.5: Ignore duplicated items for networks with shared libraries
-            var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
-            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
-
             // Get the results and set them immediately
             var addedMovies = addedMedia.OfType<JellyseerrMovie>().ToList();
             var addedShows = addedMedia.OfType<JellyseerrShow>().ToList();
@@ -118,6 +113,15 @@ public partial class SyncService
             result.AddedShows = addedShows;
             result.UpdatedMovies = updatedMovies;
             result.UpdatedShows = updatedShows;
+
+            // Step 3.5: Ignore duplicated items for networks with shared libraries
+            var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
+            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
+
+            var ignoredMovies = ignoredDuplicates.OfType<JellyseerrMovie>().ToList();
+            var ignoredShows = ignoredDuplicates.OfType<JellyseerrShow>().ToList();
+            result.IgnoredMovies = ignoredMovies;
+            result.IgnoredShows = ignoredShows;
 
             // Step 4: Library Scan to find matches and get unmatched items
             List<JellyMatch> matchedItems = new List<JellyMatch>();
@@ -145,9 +149,17 @@ public partial class SyncService
                 _logger.LogTrace("Step 4.5: Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
             } 
 
-            // Step 5: Create ignore files for matched items
+            // Step 5: Create ignore files for matched items and add them to ignored items
             _logger.LogDebug("Step 5: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
                 matchedItems.Count);
+            
+            // Add matched items to ignored items list
+            var matchedJellyseerrItems = matchedItems.Select(m => m.JellyseerrItem).ToList();
+            var matchedIgnoredMovies = matchedJellyseerrItems.OfType<JellyseerrMovie>().ToList();
+            var matchedIgnoredShows = matchedJellyseerrItems.OfType<JellyseerrShow>().ToList();
+            result.IgnoredMovies.AddRange(matchedIgnoredMovies);
+            result.IgnoredShows.AddRange(matchedIgnoredShows);
+            
             var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
             // Step 6: Create placeholder videos for unmatched movies
@@ -180,7 +192,7 @@ public partial class SyncService
             // Step 10: Save results
             result.Success = true;
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
-            result.Details = $"Movies: {addedMovies.Count} added, {updatedMovies.Count} updated, {deletedMovies.Count} deleted | Shows: {addedShows.Count} added, {updatedShows.Count} updated, {deletedShows.Count} deleted";
+            result.Details = result.ToString();
 
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
                 addedMovies.Count, updatedMovies.Count, deletedMovies.Count, addedShows.Count, updatedShows.Count, deletedShows.Count);
@@ -306,7 +318,7 @@ public partial class SyncService
             // Step 9: Save results
             result.Success = true;
             result.Message = "✅ Sync to Jellyseerr completed successfully";
-            result.Details = $"Found {bridgeFavoritedItems.Count} favorited bridge items, created {requestResults.Count} requests for favorited items, removed {removedItems.Count} requested items";
+            result.Details = result.ToString();
             
             _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
         }
