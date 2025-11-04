@@ -202,7 +202,7 @@ Notes:
 
 Instructions: Each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*.
 
-Note: Applying any sort will mark all items as played in the JellyBridge folder. This adds compatibility with the *Last Played* option on Android TV.
+Note: Applying any sort will change the played status for media items. Marking items as played is required for Android TV compatibility.
 
 ### ⚙️ Advanced Settings
 

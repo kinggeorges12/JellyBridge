@@ -9,11 +9,29 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.7 - Config: moved Android TV compatibility note under Mark Media Played and restored Sort note to 'mark all items as played (Last Played)'. README: clarified that sorting changes played status and that marking played is required for Android TV. No functional code changes.",
+        "timestamp": "2025-11-04T16:12:09.156Z",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "version": "1.4.7.11",
+        "checksum": "2BDAF6CBD28C53B3736CE65BC3586F00",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.7.11.zip"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.7 - Config: moved Android TV compatibility note under Mark Media Played and restored Sort note to 'mark all items as played (Last Played)'. README: clarified that sorting changes played status and that marking played is required for Android TV. No functional code changes.",
+        "timestamp": "2025-11-04T16:12:09.156Z",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "version": "1.4.7.10",
+        "checksum": "AE005EA0F2CB2243606E23E704F99BD1",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.7.10.zip"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.6 - Sort: per-user async with in-user sequential processing; fixed implicit deconstruction and non-async await; added pre-step to mark all items unplayed. Favorites: switched to JellyfinIUserManager and updated IUserDataManager usage. Minor: cleaned unused usings; updated config/README notes.",
         "dependencies": [],
         "checksum": "4DDC13295F5CBBE615832706BAF114BD",
         "targetAbi": "10.11.0.0",
-        "timestamp": "2025-11-04T15:57:12.220Z",
+        "timestamp": "2025-11-04T15:57:12.22Z",
         "version": "1.4.6.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.6.11.zip"
       },
@@ -22,7 +40,7 @@
         "dependencies": [],
         "checksum": "E22D14F641DB9797552541D53CBDCB16",
         "targetAbi": "10.10.0.0",
-        "timestamp": "2025-11-04T15:57:12.220Z",
+        "timestamp": "2025-11-04T15:57:12.22Z",
         "version": "1.4.6.10",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.6.10.zip"
       },
