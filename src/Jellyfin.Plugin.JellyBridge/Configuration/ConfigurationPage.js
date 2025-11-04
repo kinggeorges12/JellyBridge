@@ -316,42 +316,31 @@ function performTestConnection(page) {
                 }
             });
     }).catch(function (error) {
-        // Handle different types of errors
+        // Prefer server-provided message/details when available
         let errorMessage = '❌ Connection test failed';
-        
-        if (error && error.responseJSON) {
-            // Server returned structured error response
-            const errorData = error.responseJSON;
-            errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
-            if (errorData.details) {
-                errorMessage += `<br><br>Details: ${errorData.details}`;
+
+        // Try structured JSON first; detect parse failure to show a clearer endpoint error
+        let json = error?.responseJSON;
+        let parseFailed = false;
+        if (!json && typeof error?.responseText === 'string') {
+            try {
+                json = JSON.parse(error.responseText);
+            } catch {
+                parseFailed = true;
             }
-        } else if (error && error.status) {
-            // HTTP status code error
-            switch (error.status) {
-                case 400:
-                    errorMessage = '❌ Bad Request: Cannot reach URL';
-                    break;
-                case 401:
-                    errorMessage = '❌ Unauthorized: Invalid API Key';
-                    break;
-                case 403:
-                    errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
-                    break;
-                case 503:
-                    errorMessage = '❌ Service Unavailable: Cannot reach Jellyseerr at the specified URL';
-                    break;
-                case 500:
-                    errorMessage = '❌ Server Error: Connection test failed';
-                    break;
-                default:
-                    errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
-            }
-        } else {
-            // Generic error
-            errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
         }
-        
+
+        if (parseFailed) {
+            // Could not parse server response at all - problem with Jellyfin plugin endpoint
+            errorMessage = '❌ Cannot communicate with Jellyfin plugin endpoint';
+        } else if (json?.message) {
+            // Backend provides the exact error message, use it directly
+            errorMessage = `❌ ${json.message}`;
+        } else {
+            // Generic fallback (should rarely happen if backend always sends message)
+            errorMessage = '❌ Connection test failed';
+        }
+
         Dashboard.alert(errorMessage);
     }).finally(function() {
         Dashboard.hideLoadingMsg();
