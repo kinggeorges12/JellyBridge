@@ -120,7 +120,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             break;
                         case 503:
                             errorCode = "SERVICE_UNAVAILABLE";
-                            message = "Jellyseerr URL is unreachable from Jellyfin";
+                            message = "Jellyseerr server is unavailable";
                             break;
                         default:
                             errorCode = "HTTP_ERROR";
@@ -138,12 +138,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 else
                 {
                     // No status code - connection error or unexpected exception (unreachable endpoint)
+                    // This happens when connection is refused or endpoint is unreachable (no HTTP response)
                     _logger.LogWarning("HttpRequestException missing StatusCode - connection error or unexpected exception: {Error}", errorMessage);
-                    return StatusCode(500, new { 
+                    return StatusCode(503, new { 
                         success = false, 
-                        message = "Connection to Jellyseerr failed",
+                        message = "Jellyseerr URL is unreachable from Jellyfin",
                         details = errorMessage,
-                        errorCode = "INTERNAL_SERVER_ERROR"
+                        errorCode = "SERVICE_UNAVAILABLE"
                     });
                 }
             }
