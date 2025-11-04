@@ -2,11 +2,13 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
-## Release Notes
+## ❤️ Thank you for being a beta tester!
 
-### Version 2.0
+## 📣 Release Notes
 
-New in this release:
+### Version 2.0 🎉
+
+**🆕 New in this release**
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
 - Manage Discover Library: "Use Network Folders" setup with "Generate Network Folders", optional "Duplicate Discover Content", and configurable "Library Prefix"; improved exclusions and favorites cleanup.
 - Import Discover Content: two-pane region/network picker with search/refresh and an on-demand import button.
@@ -14,19 +16,18 @@ New in this release:
 
 **⚠️ Compatibility Notes**
 This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
-1) To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
-2) If you use "Use Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
-3) `Manage Discover Library → Clean-up Requests from Favorites` defaults to enabled to avoid ignored items being re-requested after deletion in Jellyseerr.
+- To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
+- If you use "Use Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
+- `Manage Discover Library → Clean-up Requests from Favorites` defaults to enabled to avoid ignored items being re-requested after deletion in Jellyseerr.
 
 After installing the new version, you may need to update the plugin configuration page using these instructions:
 `Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
-
 
 ### Version 1.0
 
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
-## Features
+## ✨ Features
 
 - **Native Jellyfin Support**: Whether you use Android TV or Kodi to sync videos and favorites with Jellyfin, this plugin has you covered
 - **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible from mobile apps, Android TV, and even Kodi Sync Queue!
@@ -38,7 +39,7 @@ After installing the new version, you may need to update the plugin configuratio
 - **Fine-grained Libraries**: Option to create separate directories for each network allowing you to group them into libraries
 - **Smart Exclusion**: Uses native Jellyfin configuration files to exclude movies and series that already exist in your other Jellyfin libraries
 
-## Jellyfin Integration
+## 🧩 Jellyfin Integration
 
 The plugin integrates seamlessly with Jellyfin, displaying discovered content as placeholder videos that users can browse and mark as favorites to request downloads.
 
@@ -94,9 +95,9 @@ Browse with Kodi and request content from Jellyfin via the JellyCon add-on. Inco
 - **Discover Recommended**: Use the "Recommended Items" or "Random Items" links to discover content
  
 For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/).
+- Note: In JellyCon, Jellyfin options are only accessible from Discover (Movies) or Discover (Shows), not from Discover - Show All.
 
-
-## Installation
+## 📦 Installation
 
 ### Method 1: Automatic Installation (Recommended)
 
@@ -130,7 +131,7 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 3. Restart Jellyfin
 4. Configure the plugin through the web interface
 
-## Configuration
+## 🛠️ Configuration
 
 Access the plugin configuration from the host machine at: `http://localhost:8096/web/#/configurationpage?name=JellyBridge`
 
@@ -146,7 +147,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
-### Main Configuration
+### 🌉 Main Configuration
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
@@ -215,7 +216,7 @@ Tip: Each user should set the JellyBridge library sort to “Play count” (Asce
 
 Note: The Advanced section also includes a destructive action "Recycle JellyBridge Library Data" to purge all generated JellyBridge data from the configured library directory. Use with extreme caution. After deletion, remove any JellyBridge libraries that point to the path and recreate them per the setup instructions.
 
-## Logging & Troubleshooting
+## 🧰 Logging & Troubleshooting
 
 The plugin integrates with Jellyfin's logging system. Enable debug logging from the advanced options to record detailed logs. Check Jellyfin logs for debugging information:
 
@@ -233,16 +234,16 @@ Tips:
 - If the config UI doesn’t reflect the latest changes after an update, force-refresh the page (see Release Notes for steps).
 - If favorites cannot be requested from the Manage Library page, temporarily disable CSRF protection in Jellyseerr (Settings → Network → uncheck “Enable CSRF Protection”).
 
-## Development
+## 🧑‍💻 Development
 
 For detailed development instructions, including building, testing, and contributing, see [Development.md](Development.md).
 
-## License
+## 📄 License
 
 This project is open source and available under the GNU General Public License v3.0.
 
-## Acknowledgments
+## 📌 Acknowledgments
 
-Thank you to the creator of the [Overseer-Jellyfin Bridge Script](https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged) for the inspiration. Special thanks to the developers of the [**Intro Skipper**](https://github.com/intro-skipper) and [**Custom Tabs**](https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs) plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.
+Thank you to the creator of the [Overseer-Jellyfin Bridge Script](https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged) for the inspiration. Special thanks to the developers of the [Intro Skipper](https://github.com/intro-skipper) and [Custom Tabs](https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs) plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.
 
-And of course, thanks to the developers of [**Jellyfin**](https://jellyfin.org/) and [**Jellyseerr**](https://seerr.dev/) for making it all possible.
+And of course, thanks to the developers of [Jellyfin](https://jellyfin.org/) and [Jellyseerr](https://seerr.dev/) for making it all possible.
