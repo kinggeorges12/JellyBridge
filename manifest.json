@@ -9,8 +9,26 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "619B3B8472D8B532A36BA60261D9B95B",
+        "timestamp": "2025-11-04T17:52:41.788Z",
         "dependencies": [],
-        "timestamp": "2025-11-04T17:33:10.000Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.14.11.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.14.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.14 - Test Connection: Refactored to use dedicated TestConnectionAsync method in ApiService that only tests basic connectivity via Status endpoint. Controller now delegates to ApiService and passes backend errors directly to frontend. TestConnectionAsync accepts nullable parameters and falls back to plugin configuration if not provided."
+      },
+      {
+        "checksum": "A95DA48B47B8997A09962967F1F6B54F",
+        "timestamp": "2025-11-04T17:52:41.788Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.14.10.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.14.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.14 - Test Connection: Refactored to use dedicated TestConnectionAsync method in ApiService that only tests basic connectivity via Status endpoint. Controller now delegates to ApiService and passes backend errors directly to frontend. TestConnectionAsync accepts nullable parameters and falls back to plugin configuration if not provided."
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2025-11-04T17:33:10Z",
         "version": "1.4.13.11",
         "changelog": "Jellyfin 10.11.0: v1.4.13 - Test Connection: Simplified error handling to use error.json() directly, removing try-catch complexity. Removed redundant responseJSON and responseText parsing fallbacks for cleaner code.",
         "targetAbi": "10.11.0.0",
@@ -19,7 +37,7 @@
       },
       {
         "dependencies": [],
-        "timestamp": "2025-11-04T17:33:10.000Z",
+        "timestamp": "2025-11-04T17:33:10Z",
         "version": "1.4.13.10",
         "changelog": "Jellyfin 10.10.7: v1.4.13 - Test Connection: Simplified error handling to use error.json() directly, removing try-catch complexity. Removed redundant responseJSON and responseText parsing fallbacks for cleaner code.",
         "targetAbi": "10.10.0.0",
