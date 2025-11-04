@@ -4,6 +4,8 @@ using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Tasks;
 using Jellyfin.Plugin.JellyBridge.Services;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Plugins;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services
@@ -11,10 +13,10 @@ namespace Jellyfin.Plugin.JellyBridge.Services
     /// <summary>
     /// Register Jellyseerr Bridge services.
     /// </summary>
-    public class PluginServiceRegistrator : MediaBrowser.Controller.Plugins.IPluginServiceRegistrator
+    public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         /// <inheritdoc />
-        public void RegisterServices(IServiceCollection serviceCollection, MediaBrowser.Controller.IServerApplicationHost applicationHost)
+        public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
             // Register logging services for the plugin
             serviceCollection.AddLogging();

@@ -200,7 +200,9 @@ Notes:
 - **Mark Media Played**: Toggle whether items appear played (affects Jellyfin badges). Disabling sets items to unplayed before sorting.
 - **Refresh Discover Library Sort Order**: Manually apply the selected algorithm immediately.
 
-Tip: Each user should set the JellyBridge library sort to “Play count” (Ascending) in the Jellyfin UI to see the intended order. This hides the blue “1” play-count badge clutter.
+Instructions: Each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*.
+
+Note: Applying any sort will mark all items as played in the JellyBridge folder. This adds compatibility with the *Last Played* option on Android TV.
 
 ### ⚙️ Advanced Settings
 
