@@ -140,11 +140,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         moviesResult = new {
                             moviesAdded = syncResult.AddedMovies.Count,
                             moviesUpdated = syncResult.UpdatedMovies.Count,
+                            moviesIgnored = syncResult.IgnoredMovies.Count,
                             moviesDeleted = syncResult.DeletedMovies.Count
                         },
                         showsResult = new {
                             showsAdded = syncResult.AddedShows.Count,
                             showsUpdated = syncResult.UpdatedShows.Count,
+                            showsIgnored = syncResult.IgnoredShows.Count,
                             showsDeleted = syncResult.DeletedShows.Count
                         }
                     };

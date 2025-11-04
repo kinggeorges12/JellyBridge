@@ -574,15 +574,23 @@ function performSyncImportContent(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncData) {
-                    // Parse the sync results for better user feedback
-                    const message = syncData.message || 'Folder structure creation completed successfully';
-                    
-                    // Build detailed information if available
                     let resultText = `Discover Sync Results:\n`;
-                    resultText += `✅ ${message}\n\n`;
+                    resultText += `${syncData.message || 'No message'}\n`;
+                    
+                    resultText += `\nMovies Result:\n`;
+                    resultText += `  Added: ${syncData.moviesResult?.moviesAdded || 0}\n`;
+                    resultText += `  Updated: ${syncData.moviesResult?.moviesUpdated || 0}\n`;
+                    resultText += `  Ignored: ${syncData.moviesResult?.moviesIgnored || 0}\n`;
+                    resultText += `  Deleted: ${syncData.moviesResult?.moviesDeleted || 0}\n`;
+                    
+                    resultText += `\nShows Result:\n`;
+                    resultText += `  Added: ${syncData.showsResult?.showsAdded || 0}\n`;
+                    resultText += `  Updated: ${syncData.showsResult?.showsUpdated || 0}\n`;
+                    resultText += `  Ignored: ${syncData.showsResult?.showsIgnored || 0}\n`;
+                    resultText += `  Deleted: ${syncData.showsResult?.showsDeleted || 0}\n`;
                     
                     if (syncData.details) {
-                        resultText += `Details:\n${syncData.details}`;
+                        resultText += `\nDetails:\n${syncData.details}\n`;
                     }
                     
                     syncDiscoverResult.textContent = resultText;
@@ -1203,10 +1211,6 @@ function performSyncManageLibrary(page) {
                     let resultText = `Request JellyBridge Library Favorites in Jellyseerr Results:\n`;
                     resultText += `${syncResult.message || 'No message'}\n`;
                     
-                    if (syncResult.details) {
-                        resultText += `\nDetails: ${syncResult.details}\n`;
-                    }
-                    
                     resultText += `\nMovies Result:\n`;
                     resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
                     resultText += `  Found: ${syncResult.moviesResult?.moviesFound || 0}\n`;
@@ -1220,6 +1224,10 @@ function performSyncManageLibrary(page) {
                     resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
                     resultText += `  Deleted: ${syncResult.showsResult?.showsDeleted || 0}\n`;
                     resultText += `  Blocked: ${syncResult.showsResult?.showsBlocked || 0}\n`;
+                    
+                    if (syncResult.details) {
+                        resultText += `\nDetails:\n${syncResult.details}\n`;
+                    }
                     
                     syncFavoritesResult.textContent = resultText;
                     scrollToElement('syncFavoritesResult');
