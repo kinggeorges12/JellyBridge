@@ -68,12 +68,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status, testConfig);
                 if (status == null)
                 {
-                    _logger.LogWarning("Basic connectivity test failed - Status endpoint returned null");
-                    return Unauthorized(new { 
-                        success = false, 
-                        message = "Authentication failed",
-                        details = "The API key is invalid or Jellyseerr is not accessible. Verify the API key and URL.",
-                        errorCode = "AUTH_FAILED"
+                    _logger.LogWarning("Basic connectivity test failed - Status endpoint returned null (likely unreachable Jellyseerr URL or service down)");
+                    return StatusCode(503, new {
+                        success = false,
+                        message = "Jellyseerr service unavailable",
+                        details = "Unable to reach Jellyseerr at the specified URL. The service may be down or unreachable.",
+                        errorCode = "SERVICE_UNAVAILABLE"
                     });
                 }
                 
@@ -86,12 +86,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var typedUserInfo = (JellyseerrUser?)userInfo;
                 if (typedUserInfo == null)
                 {
-                    _logger.LogWarning("API key authentication failed - userInfo is null");
-                    return StatusCode(503, new { 
-                        success = false, 
-                        message = "Jellyseerr service unavailable",
-                        details = "Unable to authenticate with Jellyseerr service. The service may be down or unreachable.",
-                        errorCode = "SERVICE_UNAVAILABLE"
+                    _logger.LogWarning("API key authentication failed - invalid or unauthorized API key");
+                    return Unauthorized(new {
+                        success = false,
+                        message = "Unauthorized: Invalid API Key",
+                        details = "The provided API key is invalid or does not grant access to the Jellyseerr API. Verify the API key and try again.",
+                        errorCode = "AUTH_FAILED"
                     });
                 }
                 

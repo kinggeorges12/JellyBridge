@@ -338,6 +338,9 @@ function performTestConnection(page) {
                 case 403:
                     errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
                     break;
+                case 503:
+                    errorMessage = '❌ Service Unavailable: Cannot reach Jellyseerr at the specified URL';
+                    break;
                 case 500:
                     errorMessage = '❌ Server Error: Connection test failed';
                     break;
@@ -1512,25 +1515,25 @@ function savePluginConfiguration(page) {
     const config = window.configJellyBridge || {};
     const form = {};
     
-    // Validate URL format
-    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    // Validate all fields - returns true if all pass, undefined/null if any fail
+    function validateInputs() {
+        if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+        if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
+        if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
+        if (!validateField(page, 'SortTaskIntervalHours', validators.double, 'Sort Task Interval must be a positive decimal number').isValid) return;
+        if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
+        if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
+        if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
+        if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+        if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
+        if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
+        if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
+        if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
+        return true;
+    }
     
-    // Validate API Key
-    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
-    
-    // Validate number fields with appropriate types
-    if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
-    if (!validateField(page, 'SortTaskIntervalHours', validators.double, 'Sort Task Interval must be a positive decimal number').isValid) return;
-    if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
-    if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
-    if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
-    if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
-    if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
-    if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
-    if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
-    
-    // Validate Library Prefix for Windows filename compatibility
-    if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
+    // Return early if validation fails
+    if (!validateInputs()) return Promise.reject(new Error('Validation failed'));
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
