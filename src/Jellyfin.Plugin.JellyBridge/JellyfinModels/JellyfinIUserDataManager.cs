@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
 using System.Threading;
+using System;
 
 #if JELLYFIN_10_11
 // Jellyfin version 10.11.*
@@ -137,9 +138,14 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     }
 
     /// <summary>
-    /// Updates play count for a user and item. GetUserData automatically creates user data if it doesn't exist.
+    /// Updates play count and last played date for a user and item asynchronously. GetUserData automatically creates user data if it doesn't exist.
+    /// Does not modify the Played flag.
     /// </summary>
-    public bool TryUpdatePlayCount(JellyfinUser user, IJellyfinItem item, int playCount)
+    /// <param name="user">The user to update play count for</param>
+    /// <param name="item">The item to update</param>
+    /// <param name="playCount">The play count to set</param>
+    /// <param name="assignedPlayDate">The date to set for LastPlayedDate. If null, uses DateTime.UtcNow</param>
+    public async Task<bool> TryUpdatePlayCountAsync(JellyfinUser user, IJellyfinItem item, int playCount, DateTime? assignedPlayDate = null)
     {
         var userEntity = user.Inner;
         
@@ -164,9 +170,13 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         var userData = Inner.GetUserData(userEntity, baseItem);
 #endif
         
-        // GetUserData automatically creates user data if it doesn't exist, so we just set the play count
+        // GetUserData automatically creates user data if it doesn't exist, so we just set the play count and last played date
         userData.PlayCount = playCount;
-        Inner.SaveUserData(userEntity, baseItem, userData, UserDataSaveReason.Import, CancellationToken.None);
+        // Set LastPlayedDate to assigned date (null allowed for zero play count)
+        userData.LastPlayedDate = assignedPlayDate;
+        // Do not modify the Played flag - it remains in its current state
+        // SaveUserData is synchronous, so we wrap it in Task.Run to make it truly asynchronous
+        await Task.Run(() => Inner.SaveUserData(userEntity, baseItem, userData, UserDataSaveReason.Import, CancellationToken.None)).ConfigureAwait(false);
         return true;
     }
 

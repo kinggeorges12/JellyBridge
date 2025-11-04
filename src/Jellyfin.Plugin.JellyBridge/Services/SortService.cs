@@ -143,7 +143,7 @@ public class SortService
 
                     case SortOrderOptions.Random:
                         _logger.LogDebug("Using Random sort order - randomizing play counts for user {UserName}", user.Username);
-                        directoryInfoMap = playCountRandomize(allDirectories);
+                        directoryInfoMap = playCountRandom(allDirectories);
                         break;
 
                     case SortOrderOptions.Smart:
@@ -168,8 +168,8 @@ public class SortService
                     return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<string>(), skipped: new List<(IJellyfinItem? item, string path)>());
                 }
 
-                // Apply the play count algorithm for this user synchronously (sequential within each user)
-                return ApplyPlayCountAlgorithm(user, directoryInfoMap);
+                // Apply the play count algorithm for this user asynchronously (sequential within each user)
+                return await ApplyPlayCountAlgorithmAsync(user, directoryInfoMap).ConfigureAwait(false);
             }));
 
             // Wait for all users to complete processing
@@ -248,7 +248,7 @@ public class SortService
     /// </summary>
     /// <param name="allDirectories">List of directories with their media types</param>
     /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
-    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountRandomize(List<(string directory, BaseItemKind mediaType)> allDirectories)
+    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountRandom(List<(string directory, BaseItemKind mediaType)> allDirectories)
     {
         var totalCount = allDirectories.Count;
 
@@ -263,7 +263,7 @@ public class SortService
         // Each call to this method creates a NEW random shuffle, so each user gets unique sort order
         var random = System.Random.Shared;
         var playCounts = Enumerable.Range(0, totalCount)
-            .Select(i => 1000 + (i * 100))
+            .Select(i => 100 + (i * 100))
             .OrderBy(_ => random.Next())
             .ToList();
 
@@ -408,7 +408,7 @@ public class SortService
         if (failedDirectories.Count > 0)
         {
             _logger.LogDebug("Applying random sort fallback to {Count} failed directories", failedDirectories.Count);
-            var fallbackResult = playCountRandomize(failedDirectories);
+            var fallbackResult = playCountRandom(failedDirectories);
             if (fallbackResult != null)
             {
                 foreach (var kvp in fallbackResult)
@@ -486,14 +486,74 @@ public class SortService
     }
 
     /// <summary>
+    /// Calculates date mappings from play count mappings.
+    /// Dates go back one day starting from yesterday (DateTime.UtcNow.AddDays(-1)), with most recent date assigned to lowest play count and earliest date to highest play count.
+    /// This ensures Android TV's "Last Played" sort (DESCENDING) matches the ascending play count order.
+    /// Items with the same play count get the same date.
+    /// If play count is zero, LastPlayedDate is set to null.
+    /// </summary>
+    /// <param name="directoryInfoMap">Dictionary mapping directory paths to play counts and media types</param>
+    /// <returns>Dictionary mapping directory paths to their assigned play dates (null for zero play count)</returns>
+    private Dictionary<string, DateTime?> CalculatePlayDateMapping(Dictionary<string, (int playCount, BaseItemKind mediaType)> directoryInfoMap)
+    {
+        if (directoryInfoMap == null || directoryInfoMap.Count == 0)
+        {
+            return new Dictionary<string, DateTime?>();
+        }
+
+        // Get unique play counts sorted in ascending order (lowest to highest), excluding zero
+        var uniquePlayCounts = directoryInfoMap.Values
+            .Select(v => v.playCount)
+            .Distinct()
+            .Where(pc => pc > 0) // Exclude zero play counts
+            .OrderBy(pc => pc)
+            .ToList();
+
+        // Create mapping from play count to date
+        // Lowest play count gets yesterday (DateTime.UtcNow.AddDays(-1)) - most recent date, so it appears first when Android TV sorts by Last Played (DESCENDING)
+        // Higher play counts go further back in time - older dates
+        // All dates are normalized to midnight (start of day) and explicitly set to UTC for compatibility with UserDataManager.SaveUserData
+        var playCountToDateMap = new Dictionary<int, DateTime?>();
+        // Use .Date to normalize to midnight, then explicitly ensure UTC Kind (DateTime.UtcNow.Date preserves UTC Kind, but being explicit)
+        var baseDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1).Date, DateTimeKind.Utc); // Start from yesterday at midnight UTC
+        
+        for (int i = 0; i < uniquePlayCounts.Count; i++)
+        {
+            var playCount = uniquePlayCounts[i];
+            // Days to subtract: current index
+            // This ensures lowest play count (index 0) gets 0 days subtracted (yesterday - most recent), highest gets (uniquePlayCounts.Count - 1) days subtracted (oldest)
+            var daysToSubtract = i;
+            // AddDays preserves the DateTime and Kind, so result stays at midnight UTC
+            playCountToDateMap[playCount] = baseDate.AddDays(-daysToSubtract);
+        }
+
+        // Create directory to date mapping
+        // Zero play count gets null, others get their assigned date
+        var dateMapping = new Dictionary<string, DateTime?>();
+        foreach (var kvp in directoryInfoMap)
+        {
+            if (kvp.Value.playCount == 0)
+            {
+                dateMapping[kvp.Key] = null;
+            }
+            else
+            {
+                dateMapping[kvp.Key] = playCountToDateMap[kvp.Value.playCount];
+            }
+        }
+
+        return dateMapping;
+    }
+
+    /// <summary>
     /// Applies the play count algorithm to all discover library items for a single user.
     /// </summary>
     /// <param name="user">User to update play counts for</param>
     /// <param name="directoryInfoMap">Dictionary mapping directory paths to play counts and media types</param>
     /// <returns>A tuple containing lists of successes, failures, and skipped items</returns>
-    private (List<(IJellyfinItem item, int playCount)> successes,
+    private async Task<(List<(IJellyfinItem item, int playCount)> successes,
         List<string> failures,
-        List<(IJellyfinItem? item, string path)> skipped) ApplyPlayCountAlgorithm(
+        List<(IJellyfinItem? item, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
         JellyfinUser user,
         Dictionary<string, (int playCount, BaseItemKind mediaType)> directoryInfoMap)
     {
@@ -504,8 +564,11 @@ public class SortService
         // Get configuration setting for marking media as played
         var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
 
-        // Apply updates sequentially in ascending play count order to ensure deterministic ordering
-        foreach (var kvp in directoryInfoMap.OrderBy(k => k.Value.playCount))
+        // Calculate date mappings from play counts
+        var dateMapping = CalculatePlayDateMapping(directoryInfoMap);
+
+        // Apply updates asynchronously for all items
+        foreach (var kvp in directoryInfoMap)
         {
             var directory = kvp.Key;
             var (assignedPlayCount, mediaType) = kvp.Value;
@@ -581,12 +644,21 @@ public class SortService
 
                 string itemName = item.Name;
 
-                // Update play count for this user
+                // Get the assigned play date for this item (based on play count)
+                // All directories in directoryInfoMap should be in dateMapping, but check defensively
+                // Zero play count will have null date
+                if (!dateMapping.TryGetValue(directory, out var assignedPlayDate))
+                {
+                    _logger.LogWarning("Date mapping not found for directory: {Path}, using null date", directory);
+                    assignedPlayDate = null;
+                }
+
+                // Update play count and last played date for this user asynchronously
                 try
                 {
-                    if (_userDataManager.TryUpdatePlayCount(user, item, assignedPlayCount))
+                    if (await _userDataManager.TryUpdatePlayCountAsync(user, item, assignedPlayCount, assignedPlayDate).ConfigureAwait(false))
                     {
-                        _logger.LogTrace("Updated play count for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (mediaType: {MediaType})",
+                        _logger.LogTrace("Updated play count and last played date for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (mediaType: {MediaType})",
                             user.Username, itemName, directory, assignedPlayCount, mediaType);
 
                         var result = new JellyfinWrapperResult();
