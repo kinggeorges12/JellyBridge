@@ -544,7 +544,7 @@ function performSyncImportContent(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
                 const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
+                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...');
                 syncDiscoverResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -917,7 +917,7 @@ function performSortContent(page) {
                 const sortOrderSelect = page.querySelector('#selectSortOrder');
                 const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
                 const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
-                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
+                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`);
                 sortContentResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -1155,7 +1155,7 @@ function performSyncManageLibrary(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the request result textbox
                 const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
+                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...');
                 syncFavoritesResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);

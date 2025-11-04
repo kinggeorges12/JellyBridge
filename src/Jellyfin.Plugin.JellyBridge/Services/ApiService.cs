@@ -794,7 +794,7 @@ public class ApiService
         var status = JsonSerializer.Deserialize<SystemStatus>(statusContent);
         if (status == null || string.IsNullOrEmpty(status.Version))
         {
-            var exception = new HttpRequestException("Jellyseerr service returned invalid response");
+            var exception = new HttpRequestException($"Jellyseerr API returned empty response: {statusRequest.RequestUri}");
             exception.Data["StatusCode"] = 502; // Bad Gateway - invalid response format
             throw exception;
         }
@@ -810,7 +810,7 @@ public class ApiService
         var userInfo = JsonSerializer.Deserialize<JellyseerrUser>(authContent);
         if (userInfo == null || userInfo.Id == 0)
         {
-            var exception = new HttpRequestException("Invalid API key: Authentication failed");
+            var exception = new HttpRequestException($"Jellyseerr API returned empty response: {authRequest.RequestUri}");
             exception.Data["StatusCode"] = 401; // Unauthorized
             throw exception;
         }
