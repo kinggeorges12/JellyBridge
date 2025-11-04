@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.4.16 - Test Connection: Fixed exception handling to properly cascade errors with correct HTTP status codes from ApiService to controller. Improved error messages to be plain and user-friendly, explaining what went wrong without technical jargon. Fixed frontend to handle non-JSON error responses, including when Jellyfin server is loading.",
+        "timestamp": "2025-11-04T19:03:19.621Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.16.11.zip",
+        "checksum": "BCAC838A12F1B6F0F3D212B414D9EF86",
+        "version": "1.4.16.11"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.4.16 - Test Connection: Fixed exception handling to properly cascade errors with correct HTTP status codes from ApiService to controller. Improved error messages to be plain and user-friendly, explaining what went wrong without technical jargon. Fixed frontend to handle non-JSON error responses, including when Jellyfin server is loading.",
+        "timestamp": "2025-11-04T19:03:19.621Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.16.10.zip",
+        "checksum": "7447A80E216FFEDCBF3CF25F9A595789",
+        "version": "1.4.16.10"
+      },
+      {
         "checksum": "A4418F255D9E043B3CBD509D09A17582",
         "version": "1.4.15.11",
         "timestamp": "2025-11-04T18:23:52.987Z",
