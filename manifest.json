@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.9.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.9 - Test Connection: simplified error handling to use backend message directly (json.message only); removed redundant HTTP status fallbacks; fixed parse failure message to indicate Jellyfin plugin endpoint issue. Config: validation spinner fix from previous commit.",
+        "dependencies": [],
+        "checksum": "01160CF34986E5E7924AC679E76917C3",
+        "timestamp": "2025-11-04T16:44:56.163Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.9.11"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.9.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.9 - Test Connection: simplified error handling to use backend message directly (json.message only); removed redundant HTTP status fallbacks; fixed parse failure message to indicate Jellyfin plugin endpoint issue. Config: validation spinner fix from previous commit.",
+        "dependencies": [],
+        "checksum": "53D5365726741A32799D4C1F22C9ADA5",
+        "timestamp": "2025-11-04T16:44:56.163Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.9.10"
+      },
+      {
         "checksum": "9C8C225EB7E62BAD9D68675FF785FD3D",
         "timestamp": "2025-11-04T16:34:12.097Z",
         "changelog": "Jellyfin 10.11.0: v1.4.8 - Config UI: moved Android TV note under Mark Media Played; restored Sort note text. JS: fixed spinner hang by making savePluginConfiguration return a rejected Promise on validation failure; added validateInputs() and updated callers to rely on .catch/.finally. Docs: README wording aligned to note that sorting changes played status for Android TV.",
