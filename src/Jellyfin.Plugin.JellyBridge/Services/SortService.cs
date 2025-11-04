@@ -72,6 +72,9 @@ public class SortService
                 return result;
             }
 
+            // Record total unique items (movies + shows) to display as Processed
+            result.ProcessResult.Processed = allDirectories.Count;
+
             // Apply the play count algorithm for each user separately (each user gets unique sort order)
             // Process all users in parallel for better performance
             var userTasks = users.Select(async user =>
