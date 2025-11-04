@@ -73,10 +73,11 @@ public class FavoriteService
     /// These are items that exist only in the Jellyseerr bridge folder and are favorited by users.
     /// Randomly assigns users to items and only marks items as processed after successful API responses.
     /// </summary>
-    public async Task<List<(IJellyfinItem item, JellyseerrMediaRequest request)>> RequestFavorites(
+    public async Task<(List<(IJellyfinItem item, JellyseerrMediaRequest request)> processed, List<IJellyfinItem> blocked)> RequestFavorites(
         List<(JellyseerrUser user, IJellyfinItem item)> favoritesWithUser)
     {
         var requestResults = new List<(IJellyfinItem item, JellyseerrMediaRequest request)>();
+        var blockedItems = new List<IJellyfinItem>();
         var successfullyProcessedItems = new HashSet<Guid>(); // Track items that have been successfully requested
 
         // Randomize the order of tuples
@@ -134,6 +135,7 @@ public class FavoriteService
                     // API returned error/default object (e.g., quota exceeded, forbidden, etc.)
                     _logger.LogWarning("Failed to create request for {ItemName} on behalf of {UserName} - no valid response from Jellyseerr", 
                         item.Name, user.JellyfinUsername ?? user.Username ?? "Unknown");
+                    blockedItems.Add(item);
                 }
             }
             catch (Exception ex)
@@ -141,6 +143,8 @@ public class FavoriteService
                 // If request creation fails (e.g., network error, quota exceeded exception), log and continue
                 _logger.LogWarning(ex, "Failed to create request for {ItemName} on behalf of {UserName}", 
                     item.Name, user.JellyfinUsername ?? user.Username ?? "Unknown");
+                // Add to blocked items so they appear in the frontend
+                blockedItems.Add(item);
             }
         }
         
@@ -153,7 +157,7 @@ public class FavoriteService
             _logger.LogDebug("Successfully created {FavoritedCount} requests for favorited Jellyseerr bridge items", requestResults.Count);
         }
         
-        return requestResults;
+        return (requestResults, blockedItems);
     }
 
     #endregion

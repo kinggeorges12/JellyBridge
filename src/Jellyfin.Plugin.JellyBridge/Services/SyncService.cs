@@ -263,8 +263,7 @@ public partial class SyncService
 
             // Step 5: Create requests for favorited bridge-only items
             _logger.LogDebug("Step 5: Creating Jellyseerr requests for mapped favorites");
-            var requestResults = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
-            _logger.LogDebug("Step 5: Created {RequestCount} requests", requestResults.Count);
+            var (requestResults, blockedItems) = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
             // Add the successful requests directly to the created lists (from tuple)
             result.MoviesResult.ItemsCreated.AddRange(
@@ -274,17 +273,22 @@ public partial class SyncService
                 requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.TV)
                               .Select(r => r.request));
             
+            // Add blocked items to the result
+            result.MoviesResult.ItemsBlocked.AddRange(
+                blockedItems.Where(item => item is JellyfinMovie).Cast<JellyfinMovie>());
+            result.ShowsResult.ItemsBlocked.AddRange(
+                blockedItems.Where(item => item is JellyfinSeries).Cast<JellyfinSeries>());
+            
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
             var removedItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
-            _logger.LogDebug("Step 6: Affected items (unfavorited/ignored) = {Count}", removedItems.Count);
 
             //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             _logger.LogDebug("Step 7: Removing .ignore files for fully declined requests");
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();
-            _logger.LogDebug("Step 7: Declined items with .ignore removed = {Count}", declinedItems.Count);
 
             // Step 8: Provide refresh plan to caller based on removals
+            _logger.LogDebug("Step 8: Refreshing Jellyfin libraries");
             var itemsDeleted = removedItems.Count > 0 || (declinedItems.Count > 0);
             if (itemsDeleted)
             {

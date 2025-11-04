@@ -111,13 +111,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         {
                             moviesProcessed = syncResult.MoviesResult.Processed,
                             moviesCreated = syncResult.MoviesResult.Created,
-                            moviesDeleted = syncResult.MoviesResult.Removed
+                            moviesDeleted = syncResult.MoviesResult.Removed,
+                            moviesBlocked = syncResult.MoviesResult.Blocked
                         },
                         showsResult = new
                         {
                             showsProcessed = syncResult.ShowsResult.Processed,
                             showsCreated = syncResult.ShowsResult.Created,
-                            showsDeleted = syncResult.ShowsResult.Removed
+                            showsDeleted = syncResult.ShowsResult.Removed,
+                            showsBlocked = syncResult.ShowsResult.Blocked
                         }
                     };
                 }, _logger, "Sync to Jellyseerr");
