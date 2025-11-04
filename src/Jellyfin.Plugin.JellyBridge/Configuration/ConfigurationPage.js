@@ -315,22 +315,13 @@ function performTestConnection(page) {
                     Dashboard.alert('🚫 Exited without saving');
                 }
             });
-    }).catch(function (error) {
-        try {
-            // Prefer already-parsed JSON, fall back to manual parse
-            let parsed = error?.responseJSON;
-            if (!parsed && error?.responseText) {
-                parsed = JSON.parse(error.responseText);
-            }
-    
-            const status = error?.status;
-            // Fallback if backend doesn't return a message
-            const message = parsed?.message || 
-                            (status ? `Request failed (${status})` : 'Connection test failed');
-    
-            Dashboard.alert('❌ ' + message);
-        } catch (parseErr) {
+    }).catch(async function (error) {
+        const errorResponse = await error.json();
+        if (!errorResponse) {
             Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
+        } else {
+            const message = errorResponse?.message || `Request failed (${errorResponse.status} ${errorResponse.statusText})`;
+            Dashboard.alert('❌ ' + message);
         }
     }).finally(function() {
         Dashboard.hideLoadingMsg();
