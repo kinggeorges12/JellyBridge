@@ -46,7 +46,7 @@ public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🔄 Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
+    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the specified metadata options\n📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyseerrResult MoviesResult { get; set; } = new();
     public ProcessJellyseerrResult ShowsResult { get; set; } = new();
@@ -169,7 +169,7 @@ public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🗑️ Deleted: Items unfavorited after successful requests\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues";
+    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the specified metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🗑️ Deleted: Items unfavorited after successful requests";
     public RefreshPlan? Refresh { get; set; }
     public ProcessJellyfinResult MoviesResult { get; set; } = new();
     public ProcessJellyfinResult ShowsResult { get; set; } = new();
@@ -261,6 +261,8 @@ public class ProcessSortResult
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
     public List<string> ItemsFailed { get; set; } = new();
     public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
+    // Total unique items considered for sorting (movies + shows) regardless of user count
+    public int Processed { get; set; }
 
     public int Sorted => ItemsSorted.Count;
     public int Failed => ItemsFailed.Count;
@@ -269,6 +271,7 @@ public class ProcessSortResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
+        result.AppendLine($"• Processed: {Processed}");
         result.AppendLine($"• Sorted: {Sorted}");
         result.AppendLine($"• Skipped: {Skipped}");
         result.AppendLine($"• Failed: {Failed}");
@@ -284,7 +287,7 @@ public class SortLibraryResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refresh type is true for Replace all metadata or false for Search for missing metadata\n📊 Results: Sort results include movies and shows that had play counts changed";
+    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refresh type is Replace all metadata vs Search for missing metadata; Replace images vs Do not replace images\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
     public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
     public List<JellyfinUser> Users { get; set; } = new();
     public ProcessSortResult ProcessResult { get; set; } = new();
@@ -326,7 +329,7 @@ public class SortLibraryResult
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
             var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"Refresh Plan: {refreshType}, {refreshImages}");
+            result.AppendLine($"Refresh: {refreshType}, {refreshImages}");
         }
         
         result.AppendLine("\nSort Results:");

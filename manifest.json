@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.4.5 - Results: Added Processed count to sort; standardized Details order and wording; added refresh description across all operations; switched Updated emoji; removed Android TV/Kodi warning from config page.",
+        "dependencies": [],
+        "checksum": "A25DF7984697F23D1B731689D49966B4",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.5.11.zip",
+        "version": "1.4.5.11",
+        "timestamp": "2025-11-04T08:21:42.790Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.4.5 - Results: Added Processed count to sort; standardized Details order and wording; added refresh description across all operations; switched Updated emoji; removed Android TV/Kodi warning from config page.",
+        "dependencies": [],
+        "checksum": "780B8897F99EEF91D89A8D877A1691A1",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.5.10.zip",
+        "version": "1.4.5.10",
+        "timestamp": "2025-11-04T08:21:42.790Z"
+      },
+      {
         "timestamp": "2025-11-04T07:28:47.195Z",
         "version": "1.4.4.11",
         "dependencies": [],
