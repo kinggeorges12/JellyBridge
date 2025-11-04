@@ -4,19 +4,25 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and s
 
 ## Release Notes
 
+### Version 2.0
+
+New in this release:
+- Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
+- Manage Discover Library: "Use Network Folders" setup with "Generate Network Folders", optional "Duplicate Discover Content", and configurable "Library Prefix"; improved exclusions and favorites cleanup.
+- Import Discover Content: two-pane region/network picker with search/refresh and an on-demand import button.
+- Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
+
+**⚠️ Compatibility Notes**
+This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
+1) To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
+2) If you use "Use Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
+3) `Manage Discover Library → Clean-up Requests from Favorites` defaults to enabled to avoid ignored items being re-requested after deletion in Jellyseerr.
+
 After installing the new version, you may need to update the plugin configuration page using these instructions:
 `Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
 
-### Version 2.0 Change Notes
 
-1. To prevent errors after upgrading, I disabled this option by default: `Advanced → Auto-sync on Plugin Startup`. If you want this option enabled, please enable it again after upgrading.
-2. If you use the "Use Network Folders" (previously called "Create separate libraries for streaming services"), review and re-enable those options in the configuration page after upgrading.
-3. The `Manage Discover Library → Clean-up Requests from Favorites` was set to default enabled, because it was causing some ignored items to get requested after the requests were deleted in Jellyseerr. This change will probably be invisible to end users.
-
-**⚠️ Compatibility Note**
-This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
-
-### Version 1.0 Change Notes
+### Version 1.0
 
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
