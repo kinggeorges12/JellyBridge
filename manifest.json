@@ -9,8 +9,26 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2025-11-04T17:33:10.000Z",
+        "version": "1.4.13.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.13 - Test Connection: Simplified error handling to use error.json() directly, removing try-catch complexity. Removed redundant responseJSON and responseText parsing fallbacks for cleaner code.",
         "targetAbi": "10.11.0.0",
-        "timestamp": "2025-11-04T17:11:18.490Z",
+        "checksum": "E1308D662655D7D75798F2B9CFFDB4A7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.13.11.zip"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2025-11-04T17:33:10.000Z",
+        "version": "1.4.13.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.13 - Test Connection: Simplified error handling to use error.json() directly, removing try-catch complexity. Removed redundant responseJSON and responseText parsing fallbacks for cleaner code.",
+        "targetAbi": "10.10.0.0",
+        "checksum": "2C97D325DF77C8916C65E1CEA1BC8E58",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.13.10.zip"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-04T17:11:18.49Z",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.12.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.12 - Test Connection: fixed error message parsing to correctly extract backend messages by checking responseJSON first (jQuery auto-parsed JSON), then falling back to manual responseText parse. Added HTTP status code to error message fallback for better debugging.",
@@ -19,7 +37,7 @@
       },
       {
         "targetAbi": "10.10.0.0",
-        "timestamp": "2025-11-04T17:11:18.490Z",
+        "timestamp": "2025-11-04T17:11:18.49Z",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.12.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.12 - Test Connection: fixed error message parsing to correctly extract backend messages by checking responseJSON first (jQuery auto-parsed JSON), then falling back to manual responseText parse. Added HTTP status code to error message fallback for better debugging.",
