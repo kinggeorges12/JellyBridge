@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "checksum": "8889E7FD039CC298D9E1AE3781AA07D5",
+        "timestamp": "2025-11-04T17:04:34.632Z",
+        "dependencies": [],
+        "version": "1.4.11.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.11 - Test Connection: fixed error parsing to use responseText JSON directly; removed multiple fallbacks and simplified to single parse path; added proper message for parse failures (Jellyfin endpoint issue).",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.11.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "82BB546B61877495EA90928160F93302",
+        "timestamp": "2025-11-04T17:04:34.632Z",
+        "dependencies": [],
+        "version": "1.4.11.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.11 - Test Connection: fixed error parsing to use responseText JSON directly; removed multiple fallbacks and simplified to single parse path; added proper message for parse failures (Jellyfin endpoint issue).",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.11.10.zip"
+      },
+      {
         "version": "1.4.10.11",
         "timestamp": "2025-11-04T16:50:56.324Z",
         "changelog": "Jellyfin 10.11.0: v1.4.10 - Test Connection: fixed error message parsing to correctly display backend messages; simplified to check responseJSON.message first, then parse responseText; renamed variable to 'message' for clarity. Fixed parse failure and fallback messages.",
