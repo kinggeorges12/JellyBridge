@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             break;
                         case 403:
                             errorCode = "INSUFFICIENT_PRIVILEGES";
-                            message = "API key is incorrect";
+                            message = "API Key is not valid";
                             break;
                         case 502:
                             errorCode = "INVALID_RESPONSE";
