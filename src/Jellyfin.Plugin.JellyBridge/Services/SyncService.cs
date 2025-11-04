@@ -105,23 +105,17 @@ public partial class SyncService
             _logger.LogTrace("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
             // Get the results and set them immediately
-            var addedMovies = addedMedia.OfType<JellyseerrMovie>().ToList();
-            var addedShows = addedMedia.OfType<JellyseerrShow>().ToList();
-            var updatedMovies = updatedMedia.OfType<JellyseerrMovie>().ToList();
-            var updatedShows = updatedMedia.OfType<JellyseerrShow>().ToList();
-            result.AddedMovies = addedMovies;
-            result.AddedShows = addedShows;
-            result.UpdatedMovies = updatedMovies;
-            result.UpdatedShows = updatedShows;
+            result.AddedMovies.AddRange(addedMedia.OfType<JellyseerrMovie>().ToList());
+            result.UpdatedMovies.AddRange(updatedMedia.OfType<JellyseerrMovie>().ToList());
+            result.AddedShows.AddRange(addedMedia.OfType<JellyseerrShow>().ToList());
+            result.UpdatedShows.AddRange(updatedMedia.OfType<JellyseerrShow>().ToList());
 
             // Step 3.5: Ignore duplicated items for networks with shared libraries
             var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
             _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
 
-            var ignoredMovies = ignoredDuplicates.OfType<JellyseerrMovie>().ToList();
-            var ignoredShows = ignoredDuplicates.OfType<JellyseerrShow>().ToList();
-            result.IgnoredMovies = ignoredMovies;
-            result.IgnoredShows = ignoredShows;
+            result.IgnoredMovies.AddRange(ignoredDuplicates.OfType<JellyseerrMovie>().ToList());
+            result.IgnoredShows.AddRange(ignoredDuplicates.OfType<JellyseerrShow>().ToList());
 
             // Step 4: Library Scan to find matches and get unmatched items
             List<JellyMatch> matchedItems = new List<JellyMatch>();
@@ -178,8 +172,10 @@ public partial class SyncService
             // Step 8: Clean up old metadata before refreshing library
             _logger.LogDebug("Step 8: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
             var (deletedMovies, deletedShows) = await _discoverService.CleanupMetadataAsync();
-            result.DeletedMovies = deletedMovies;
-            result.DeletedShows = deletedShows;
+            
+            // Update MoviesResult and ShowsResult with deleted items
+            result.DeletedMovies.AddRange(deletedMovies);
+            result.DeletedShows.AddRange(deletedShows);
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
             var itemsDeleted = deletedMovies.Count > 0 || deletedShows.Count > 0;
@@ -195,7 +191,7 @@ public partial class SyncService
             result.Details = result.ToString();
 
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
-                addedMovies.Count, updatedMovies.Count, deletedMovies.Count, addedShows.Count, updatedShows.Count, deletedShows.Count);
+                result.MoviesResult.Created, result.MoviesResult.Updated, result.MoviesResult.Deleted, result.ShowsResult.Created, result.ShowsResult.Updated, result.ShowsResult.Deleted);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -253,8 +249,8 @@ public partial class SyncService
             var bridgeFavoritedItems = _favoriteService.GetUserFavorites();
             _logger.LogDebug("Step 1: Retrieved {Count} favorited bridge items", bridgeFavoritedItems.Count);
             
-            result.MoviesResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
-            result.ShowsResult.ItemsProcessed.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
+            result.ProcessedMovies.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
+            result.ProcessedShows.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
             
             // Step 2: Get all Jellyseerr users for request creation
             _logger.LogDebug("Step 2: Fetching Jellyseerr users for request creation");
@@ -278,17 +274,17 @@ public partial class SyncService
             var (requestResults, blockedItems) = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
             // Add the successful requests directly to the created lists (from tuple)
-            result.MoviesResult.ItemsCreated.AddRange(
+            result.CreatedMovies.AddRange(
                 requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.MOVIE)
                               .Select(r => r.request));
-            result.ShowsResult.ItemsCreated.AddRange(
+            result.CreatedShows.AddRange(
                 requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.TV)
                               .Select(r => r.request));
             
             // Add blocked items to the result
-            result.MoviesResult.ItemsBlocked.AddRange(
+            result.BlockedMovies.AddRange(
                 blockedItems.Where(item => item is JellyfinMovie).Cast<JellyfinMovie>());
-            result.ShowsResult.ItemsBlocked.AddRange(
+            result.BlockedShows.AddRange(
                 blockedItems.Where(item => item is JellyfinSeries).Cast<JellyfinSeries>());
             
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
@@ -304,10 +300,10 @@ public partial class SyncService
             var itemsDeleted = removedItems.Count > 0 || (declinedItems.Count > 0);
             if (itemsDeleted)
             {
-                result.MoviesResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinMovie>());
-                result.ShowsResult.ItemsRemoved.AddRange(removedItems.OfType<JellyfinSeries>());
-                result.MoviesResult.ItemsRemoved.AddRange(declinedItems.OfType<JellyfinMovie>());
-                result.ShowsResult.ItemsRemoved.AddRange(declinedItems.OfType<JellyfinSeries>());
+                result.RemovedMovies.AddRange(removedItems.OfType<JellyfinMovie>());
+                result.RemovedShows.AddRange(removedItems.OfType<JellyfinSeries>());
+                result.RemovedMovies.AddRange(declinedItems.OfType<JellyfinMovie>());
+                result.RemovedShows.AddRange(declinedItems.OfType<JellyfinSeries>());
                 result.Refresh = new RefreshPlan
                 {
                     FullRefresh = true,
