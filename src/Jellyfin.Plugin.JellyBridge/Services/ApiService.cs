@@ -453,7 +453,8 @@ public class ApiService
             {
                 lastException = ex;
                 // EnsureSuccessStatusCode doesn't include status code in exception, so add it for controller
-                if (!ex.Data.Contains("StatusCode") && responseStatusCode.HasValue)
+                // Only set status code from response if we have one (preserve actual HTTP status)
+                if (responseStatusCode.HasValue)
                 {
                     ex.Data["StatusCode"] = responseStatusCode.Value;
                 }

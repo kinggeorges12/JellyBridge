@@ -316,12 +316,22 @@ function performTestConnection(page) {
                 }
             });
     }).catch(async function (error) {
-        const errorResponse = await error.json();
-        if (!errorResponse) {
-            Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
-        } else {
-            const message = errorResponse?.message || `Request failed (${errorResponse.status} ${errorResponse.statusText})`;
-            Dashboard.alert('❌ ' + message);
+        let errorResponse = null;
+        try {
+            errorResponse = await error.json();
+            if (errorResponse) {
+                const message = errorResponse?.message || `Request failed (${errorResponse.status} ${errorResponse.statusText})`;
+                Dashboard.alert('❌ ' + message);
+            } else {
+                Dashboard.alert('❓ Cannot communicate with Jellyfin plugin endpoint');
+            }
+        } catch (e) {
+            const rawText = await error.text();
+            if (rawText) {
+                Dashboard.alert('⏳ ' + rawText);
+            } else {
+                Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
+            }
         }
     }).finally(function() {
         Dashboard.hideLoadingMsg();

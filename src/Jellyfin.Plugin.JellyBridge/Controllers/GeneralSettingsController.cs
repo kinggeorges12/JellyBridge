@@ -57,15 +57,17 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     JellyseerrUrl = jellyseerUrl ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl)),
                     ApiKey = apiKey
                 };
+                
+                // Check UserList endpoint - if it returns empty/null after successful connection, likely insufficient privileges
                 var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
                 
                 if (users == null || users.Count == 0)
                 {
-                    _logger.LogWarning("User list check failed - UserList returned null or empty");
+                    _logger.LogWarning("User list check returned empty list - likely insufficient privileges");
                     return StatusCode(403, new { 
                         success = false, 
-                        message = "Insufficient privileges to access user list",
-                        details = "The API key does not have sufficient permissions to access the user list endpoint.",
+                        message = "API key lacks required permissions",
+                        details = "The API key cannot access the user list. Ensure the API key has user management permissions in Jellyseerr.",
                         errorCode = "INSUFFICIENT_PRIVILEGES"
                     });
                 }
@@ -82,8 +84,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test timed out");
                 return StatusCode(408, new { 
                     success = false, 
-                    message = "Connection test timed out",
-                    details = ex.Message,
+                    message = "Connection to Jellyseerr timed out",
+                    details = "The request to Jellyseerr took too long to respond. Check that Jellyseerr is running and the URL is correct.",
                     errorCode = "TIMEOUT"
                 });
             }
@@ -93,54 +95,57 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogWarning(ex, "Connection test failed: HTTP error");
                 
                 var errorMessage = ex.Message;
-                int statusCode = 503;
-                string errorCode = "SERVICE_UNAVAILABLE";
-                string message = "Jellyseerr service unavailable";
                 
-                // Status code should always be available from MakeApiRequestAsync or TestConnectionAsync
+                // Check if status code is available
                 if (ex.Data.Contains("StatusCode") && ex.Data["StatusCode"] is int httpStatusCode)
                 {
-                    statusCode = httpStatusCode;
+                    int statusCode = httpStatusCode;
+                    string errorCode;
+                    string message;
                     
                     // Map HTTP status codes to error codes and messages
                     switch (httpStatusCode)
                     {
                         case 401:
                             errorCode = "AUTH_FAILED";
-                            message = "Unauthorized: Invalid API Key";
+                            message = "Invalid API key";
                             break;
                         case 403:
                             errorCode = "INSUFFICIENT_PRIVILEGES";
-                            message = "Forbidden: Insufficient Permissions";
+                            message = "Insufficient permissions";
                             break;
                         case 502:
                             errorCode = "INVALID_RESPONSE";
-                            message = "Invalid response from Jellyseerr";
+                            message = "Jellyseerr returned an invalid response";
                             break;
                         case 503:
                             errorCode = "SERVICE_UNAVAILABLE";
-                            message = "Jellyseerr service unavailable";
+                            message = "Unable to reach Jellyseerr service";
                             break;
                         default:
                             errorCode = "HTTP_ERROR";
-                            message = $"HTTP {httpStatusCode} error";
+                            message = $"Connection failed with error {httpStatusCode}";
                             break;
                     }
+                    
+                    return StatusCode(statusCode, new { 
+                        success = false, 
+                        message = message,
+                        details = errorMessage,
+                        errorCode = errorCode
+                    });
                 }
                 else
                 {
-                    // Fallback if status code is missing (shouldn't happen, but handle gracefully)
-                    _logger.LogWarning("HttpRequestException missing StatusCode in Data dictionary");
-                    errorCode = "HTTP_ERROR";
-                    message = "HTTP error occurred";
+                    // No status code - connection error or unexpected exception
+                    _logger.LogWarning("HttpRequestException missing StatusCode - connection error or unexpected exception: {Error}", errorMessage);
+                    return StatusCode(503, new { 
+                        success = false, 
+                        message = "Unable to reach Jellyseerr service",
+                        details = errorMessage,
+                        errorCode = "SERVICE_UNAVAILABLE"
+                    });
                 }
-                
-                return StatusCode(statusCode, new { 
-                    success = false, 
-                    message = message,
-                    details = errorMessage,
-                    errorCode = errorCode
-                });
             }
             catch (JsonException ex)
             {
@@ -148,20 +153,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test failed: Invalid JSON response from Jellyseerr");
                 return StatusCode(502, new { 
                     success = false, 
-                    message = "Invalid response format from Jellyseerr",
-                    details = "Jellyseerr returned an invalid JSON response",
+                    message = "Jellyseerr returned an invalid response",
+                    details = "The response from Jellyseerr could not be parsed. This may indicate a configuration issue or Jellyseerr version incompatibility.",
                     errorCode = "INVALID_RESPONSE"
-                });
-            }
-            catch (Exception ex)
-            {
-                // Catch-all for any other exceptions (InvalidOperationException, ArgumentException, etc.)
-                _logger.LogError(ex, "Connection test failed: Unexpected error");
-                return StatusCode(500, new { 
-                    success = false, 
-                    message = $"Connection test failed: {ex.Message}",
-                    details = ex.Message,
-                    errorCode = "UNEXPECTED_ERROR"
                 });
             }
         }
