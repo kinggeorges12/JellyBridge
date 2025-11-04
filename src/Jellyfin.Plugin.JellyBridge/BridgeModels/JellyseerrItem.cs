@@ -157,6 +157,18 @@ public interface IJellyseerrItem
         JellyseerrShow => JellyseerrShow.GetNfoFilename(),
         _ => throw new NotSupportedException($"Unsupported type: {item.GetType().Name}")
     };
+    
+    /// <summary>
+    /// Gets the library type for the media item.
+    /// </summary>
+    /// <param name="item">The media item to get the library type for</param>
+    /// <returns>Library type string</returns>
+    static string GetLibraryType(IJellyseerrItem item) => item switch
+    {
+        JellyseerrMovie => JellyseerrMovie.LibraryType,
+        JellyseerrShow => JellyseerrShow.LibraryType,
+        _ => throw new NotSupportedException($"Unsupported type: {item.GetType().Name}")
+    };
 
     /// <summary>
     /// Gets the metadata filename for the media item.

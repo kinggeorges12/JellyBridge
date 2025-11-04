@@ -321,7 +321,7 @@ public class DiscoverService
     /// <summary>
     /// Cleans up metadata by removing items older than the specified number of days.
     /// </summary>
-    public async Task<(List<JellyseerrMovie> deletedMovies, List<JellyseerrShow> deletedShows)> CleanupMetadataAsync()
+    public async Task<List<IJellyseerrItem>> CleanupMetadataAsync()
     {
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
         var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
@@ -334,19 +334,25 @@ public class DiscoverService
             _logger.LogDebug("Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
                 movies.Count, shows.Count);
 
-            // Process movies and shows using the same logic
-            var deletedMovies = ProcessItemsForCleanup(movies);
-            var deletedShows = ProcessItemsForCleanup(shows);
+            // Combine movies and shows into a single list, then process together
+            var allItems = new List<IJellyseerrItem>();
+            allItems.AddRange(movies.Cast<IJellyseerrItem>());
+            allItems.AddRange(shows.Cast<IJellyseerrItem>());
 
-            _logger.LogDebug("Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
-                deletedMovies.Count, deletedShows.Count);
+            // Process all items together using the interface
+            var deletedItems = ProcessItemsForCleanup(allItems);
+
+            var deletedMovies = deletedItems.OfType<JellyseerrMovie>().Count();
+            var deletedShows = deletedItems.OfType<JellyseerrShow>().Count();
+            _logger.LogDebug("Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows (total: {TotalCount})", 
+                deletedMovies, deletedShows, deletedItems.Count);
             
-            return (deletedMovies, deletedShows);
+            return deletedItems;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during cleanup process");
-            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
+            return new List<IJellyseerrItem>();
         }
     }
 
@@ -368,23 +374,22 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Helper method to process items for cleanup.
+    /// Processes items for cleanup.
+    /// Deletes items that are not in the NetworkMap configuration.
+    /// Deletes items that are older than the specified number of days.
     /// </summary>
-    private List<TJellyseerr> ProcessItemsForCleanup<TJellyseerr>(
-        List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    private List<IJellyseerrItem> ProcessItemsForCleanup(List<IJellyseerrItem> items)
     {
-        var deletedItems = new List<TJellyseerr>();
+        var deletedItems = new List<IJellyseerrItem>();
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
         var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
-        var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
         
-        _logger.LogTrace("Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
-            items.Count, itemType, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogTrace("Processing {ItemCount} items for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
+            items.Count, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
         
-        try
+        foreach (var item in items)
         {
-            foreach (var item in items)
+            try
             {
                 string deletionReason = "";
 
@@ -409,14 +414,16 @@ public class DiscoverService
                         Directory.Delete(itemDirectory, true);
                         deletedItems.Add(item);
                         _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
-                            itemType, item.MediaName, deletionReason);
+                            item.MediaType, item.MediaName, deletionReason);
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing {ItemType}", itemType);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing cleanup for item '{ItemName}' ({ItemType})", 
+                    item.MediaName, item.MediaType);
+                continue;
+            }
         }
         
         return deletedItems;

@@ -104,18 +104,15 @@ public partial class SyncService
             // Step 3: Process movies and TV shows
             _logger.LogTrace("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
-            // Get the results and set them immediately
-            result.AddedMovies.AddRange(addedMedia.OfType<JellyseerrMovie>().ToList());
-            result.UpdatedMovies.AddRange(updatedMedia.OfType<JellyseerrMovie>().ToList());
-            result.AddedShows.AddRange(addedMedia.OfType<JellyseerrShow>().ToList());
-            result.UpdatedShows.AddRange(updatedMedia.OfType<JellyseerrShow>().ToList());
+            // Add items to unified collections
+            result.ItemsAdded.AddRange(addedMedia);
+            result.ItemsUpdated.AddRange(updatedMedia);
 
             // Step 3.5: Ignore duplicated items for networks with shared libraries
             var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
             _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
 
-            result.IgnoredMovies.AddRange(ignoredDuplicates.OfType<JellyseerrMovie>().ToList());
-            result.IgnoredShows.AddRange(ignoredDuplicates.OfType<JellyseerrShow>().ToList());
+            result.ItemsIgnored.AddRange(ignoredDuplicates);
 
             // Step 4: Library Scan to find matches and get unmatched items
             List<JellyMatch> matchedItems = new List<JellyMatch>();
@@ -149,10 +146,7 @@ public partial class SyncService
             
             // Add matched items to ignored items list
             var matchedJellyseerrItems = matchedItems.Select(m => m.JellyseerrItem).ToList();
-            var matchedIgnoredMovies = matchedJellyseerrItems.OfType<JellyseerrMovie>().ToList();
-            var matchedIgnoredShows = matchedJellyseerrItems.OfType<JellyseerrShow>().ToList();
-            result.IgnoredMovies.AddRange(matchedIgnoredMovies);
-            result.IgnoredShows.AddRange(matchedIgnoredShows);
+            result.ItemsIgnored.AddRange(matchedJellyseerrItems);
             
             var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
@@ -171,14 +165,13 @@ public partial class SyncService
 
             // Step 8: Clean up old metadata before refreshing library
             _logger.LogDebug("Step 8: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
-            var (deletedMovies, deletedShows) = await _discoverService.CleanupMetadataAsync();
+            var deletedItems = await _discoverService.CleanupMetadataAsync();
             
-            // Update MoviesResult and ShowsResult with deleted items
-            result.DeletedMovies.AddRange(deletedMovies);
-            result.DeletedShows.AddRange(deletedShows);
+            // Add deleted items to unified collection
+            result.ItemsDeleted.AddRange(deletedItems);
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
-            var itemsDeleted = deletedMovies.Count > 0 || deletedShows.Count > 0;
+            var itemsDeleted = deletedItems.Count > 0;
             result.Refresh = new RefreshPlan
             {
                 FullRefresh = itemsDeleted,
@@ -190,7 +183,7 @@ public partial class SyncService
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
 
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
-                result.MoviesResult.Created, result.MoviesResult.Updated, result.MoviesResult.Deleted, result.ShowsResult.Created, result.ShowsResult.Updated, result.ShowsResult.Deleted);
+                result.MoviesAdded, result.MoviesUpdated, result.MoviesDeleted, result.ShowsAdded, result.ShowsUpdated, result.ShowsDeleted);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -248,8 +241,8 @@ public partial class SyncService
             var bridgeFavoritedItems = _favoriteService.GetUserFavorites();
             _logger.LogDebug("Step 1: Retrieved {Count} favorited bridge items", bridgeFavoritedItems.Count);
             
-            result.ProcessedMovies.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinMovie).Select(fav => (JellyfinMovie)fav.item));
-            result.ProcessedShows.AddRange(bridgeFavoritedItems.Where(fav => fav.item is JellyfinSeries).Select(fav => (JellyfinSeries)fav.item));
+            // Add items to unified collection
+            result.ItemsProcessed.AddRange(bridgeFavoritedItems.Select(fav => fav.item));
             
             // Step 2: Get all Jellyseerr users for request creation
             _logger.LogDebug("Step 2: Fetching Jellyseerr users for request creation");
@@ -261,8 +254,11 @@ public partial class SyncService
             
             await Task.WhenAll(jellyseerrUsersTask, filteredFavoritesTask);
             var jellyseerrUsers = await jellyseerrUsersTask;
-            var (_, unrequestedFavorites) = await filteredFavoritesTask;
+            var (requestedFavorites, unrequestedFavorites) = await filteredFavoritesTask;
             _logger.LogDebug("Step 3: Found {UnrequestedCount} favorites pending request", unrequestedFavorites.Count);
+
+            // Add found items to unified collection
+            result.ItemsFound.AddRange(requestedFavorites.Select(fav => fav.item));
 
             // Step 4: Group bridge-only items by TMDB ID and find first user who favorited each
             _logger.LogDebug("Step 4: Mapping favorites to Jellyseerr users");
@@ -272,19 +268,11 @@ public partial class SyncService
             _logger.LogDebug("Step 5: Creating Jellyseerr requests for mapped favorites");
             var (requestResults, blockedItems) = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
-            // Add the successful requests directly to the created lists (from tuple)
-            result.CreatedMovies.AddRange(
-                requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.MOVIE)
-                              .Select(r => r.request));
-            result.CreatedShows.AddRange(
-                requestResults.Where(r => r.request?.Media?.MediaType == JellyseerrModel.MediaType.TV)
-                              .Select(r => r.request));
+            // Add requests to unified collection
+            result.ItemsCreated.AddRange(requestResults.Select(r => r.request).Where(r => r != null));
             
-            // Add blocked items to the result
-            result.BlockedMovies.AddRange(
-                blockedItems.Where(item => item is JellyfinMovie).Cast<JellyfinMovie>());
-            result.BlockedShows.AddRange(
-                blockedItems.Where(item => item is JellyfinSeries).Cast<JellyfinSeries>());
+            // Add blocked items to unified collection
+            result.ItemsBlocked.AddRange(blockedItems);
             
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
@@ -299,10 +287,7 @@ public partial class SyncService
             var itemsDeleted = removedItems.Count > 0 || (declinedItems.Count > 0);
             if (itemsDeleted)
             {
-                result.RemovedMovies.AddRange(removedItems.OfType<JellyfinMovie>());
-                result.RemovedShows.AddRange(removedItems.OfType<JellyfinSeries>());
-                result.RemovedMovies.AddRange(declinedItems.OfType<JellyfinMovie>());
-                result.RemovedShows.AddRange(declinedItems.OfType<JellyfinSeries>());
+                result.ItemsRemoved.AddRange(removedItems);
                 result.Refresh = new RefreshPlan
                 {
                     FullRefresh = true,
