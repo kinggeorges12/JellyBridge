@@ -574,26 +574,7 @@ function performSyncImportContent(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncData) {
-                    let resultText = `Discover Sync Results:\n`;
-                    resultText += `${syncData.message || 'No message'}\n`;
-                    
-                    resultText += `\nMovies Result:\n`;
-                    resultText += `  Added: ${syncData.moviesResult?.moviesAdded || 0}\n`;
-                    resultText += `  Updated: ${syncData.moviesResult?.moviesUpdated || 0}\n`;
-                    resultText += `  Ignored: ${syncData.moviesResult?.moviesIgnored || 0}\n`;
-                    resultText += `  Deleted: ${syncData.moviesResult?.moviesDeleted || 0}\n`;
-                    
-                    resultText += `\nShows Result:\n`;
-                    resultText += `  Added: ${syncData.showsResult?.showsAdded || 0}\n`;
-                    resultText += `  Updated: ${syncData.showsResult?.showsUpdated || 0}\n`;
-                    resultText += `  Ignored: ${syncData.showsResult?.showsIgnored || 0}\n`;
-                    resultText += `  Deleted: ${syncData.showsResult?.showsDeleted || 0}\n`;
-                    
-                    if (syncData.details) {
-                        resultText += `\nDetails:\n${syncData.details}\n`;
-                    }
-                    
-                    syncDiscoverResult.textContent = resultText;
+                    syncDiscoverResult.textContent = syncData.result || 'No result available';
                     scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
@@ -963,14 +944,7 @@ function performSortContent(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(sortResult) {
-                    let resultText = `Sort Content Results:\n`;
-                    resultText += `${sortResult.message || 'No message'}\n`;
-                    
-                    if (sortResult.details) {
-                        resultText += `\nDetails: ${sortResult.details}\n`;
-                    }
-                    
-                    sortContentResult.textContent = resultText;
+                    sortContentResult.textContent = sortResult.result || 'No result available';
                     scrollToElement('sortContentResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
@@ -1208,28 +1182,7 @@ function performSyncManageLibrary(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncResult) {
-                    let resultText = `Request JellyBridge Library Favorites in Jellyseerr Results:\n`;
-                    resultText += `${syncResult.message || 'No message'}\n`;
-                    
-                    resultText += `\nMovies Result:\n`;
-                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
-                    resultText += `  Found: ${syncResult.moviesResult?.moviesFound || 0}\n`;
-                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
-                    resultText += `  Deleted: ${syncResult.moviesResult?.moviesDeleted || 0}\n`;
-                    resultText += `  Blocked: ${syncResult.moviesResult?.moviesBlocked || 0}\n`;
-                    
-                    resultText += `\nShows Result:\n`;
-                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
-                    resultText += `  Found: ${syncResult.showsResult?.showsFound || 0}\n`;
-                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
-                    resultText += `  Deleted: ${syncResult.showsResult?.showsDeleted || 0}\n`;
-                    resultText += `  Blocked: ${syncResult.showsResult?.showsBlocked || 0}\n`;
-                    
-                    if (syncResult.details) {
-                        resultText += `\nDetails:\n${syncResult.details}\n`;
-                    }
-                    
-                    syncFavoritesResult.textContent = resultText;
+                    syncFavoritesResult.textContent = syncResult.result || 'No result available';
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));

@@ -58,8 +58,6 @@ public class SyncTask : IScheduledTask
                 try
                 {
                     syncToResult = await _syncService.SyncToJellyseerr();
-                    _logger.LogDebug("Step 1 completed: {Success} - {Message}", syncToResult.Success, syncToResult.Message);
-                    _logger.LogDebug("Step 1 details: {Details}", syncToResult.Details);
                 }
                 catch (Exception ex)
                 {
@@ -80,7 +78,6 @@ public class SyncTask : IScheduledTask
                 try
                 {
                     syncFromResult = await _syncService.SyncFromJellyseerr();
-                    _logger.LogDebug("Step 2 completed: {Success} - {Message}", syncFromResult.Success, syncFromResult.Message);
                 }
                 catch (Exception ex)
                 {
@@ -96,11 +93,14 @@ public class SyncTask : IScheduledTask
                 }
 
                 try {
-                    _logger.LogDebug("Sync details - To Jellyseerr: {ToDetails}, From Jellyseerr: {FromDetails}", 
-                        syncToResult?.Details, syncFromResult?.Details);
-                    
-                    _logger.LogInformation("Scheduled Jellyseerr sync task completed - To Jellyseerr: {ToSuccess}, From Jellyseerr: {FromSuccess}", 
-                        syncToResult?.Success, syncFromResult?.Success);
+                    if (syncToResult != null)
+                    {
+                        _logger.LogInformation("Sync to Jellyseerr result: {Result}", syncToResult.ToString());
+                    }
+                    if (syncFromResult != null)
+                    {
+                        _logger.LogInformation("Sync from Jellyseerr result: {Result}", syncFromResult.ToString());
+                    }
 
                     // Apply refresh operations after both syncs are complete
                     await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult);

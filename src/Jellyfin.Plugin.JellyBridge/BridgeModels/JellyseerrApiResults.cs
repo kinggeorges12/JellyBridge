@@ -5,14 +5,9 @@ using System.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
-/// <summary>
-/// Plan describing how to refresh Jellyfin libraries after a sync.
-/// </summary>
-public class RefreshPlan
-{
-    public bool FullRefresh { get; set; }
-    public bool RefreshImages { get; set; }
-}
+// ============================================================================
+// SyncFromJellyseerr Operation Results
+// ============================================================================
 
 /// <summary>
 /// Result of processing Jellyseerr items with counts for created, updated, deleted items.
@@ -23,77 +18,27 @@ public class ProcessJellyseerrResult
     public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
     public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
     public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
+    public List<IJellyseerrItem> ItemsIgnored { get; set; } = new();
 
     public int Processed => ItemsProcessed.Count;
     public int Created => ItemsAdded.Count;
     public int Updated => ItemsUpdated.Count;
     public int Deleted => ItemsDeleted.Count;
-
-    // Combine two ProcessJellyseerrResult instances into a new aggregated result
-    public static ProcessJellyseerrResult operator +(ProcessJellyseerrResult left, ProcessJellyseerrResult right)
-    {
-        var combined = new ProcessJellyseerrResult();
-
-        if (left != null)
-        {
-            AddUniqueRange(combined.ItemsProcessed, left.ItemsProcessed);
-            AddUniqueRange(combined.ItemsAdded, left.ItemsAdded);
-            AddUniqueRange(combined.ItemsUpdated, left.ItemsUpdated);
-            AddUniqueRange(combined.ItemsDeleted, left.ItemsDeleted);
-        }
-
-        if (right != null)
-        {
-            AddUniqueRange(combined.ItemsProcessed, right.ItemsProcessed);
-            AddUniqueRange(combined.ItemsAdded, right.ItemsAdded);
-            AddUniqueRange(combined.ItemsUpdated, right.ItemsUpdated);
-            AddUniqueRange(combined.ItemsDeleted, right.ItemsDeleted);
-        }
-
-        return combined;
-    }
-
-    // Helper to combine many results at once
-    public static ProcessJellyseerrResult Combine(IEnumerable<ProcessJellyseerrResult> results)
-    {
-        var total = new ProcessJellyseerrResult();
-        if (results == null)
-        {
-            return total;
-        }
-        foreach (var r in results)
-        {
-            total = total + r;
-        }
-        return total;
-    }
-
-    private static void AddUniqueRange(List<IJellyseerrItem> target, IEnumerable<IJellyseerrItem> source)
-    {
-        if (source == null)
-        {
-            return;
-        }
-        var existingHashes = new HashSet<int>(target.Select(item => item?.GetHashCode() ?? 0));
-        foreach (var item in source)
-        {
-            if (item != null && existingHashes.Add(item.GetHashCode()))
-            {
-                target.Add(item);
-            }
-        }
-    }
+    public int Ignored => ItemsIgnored.Count;
 
     public override string ToString()
     {
-        var parts = new List<string>();
+        var result = new System.Text.StringBuilder();
+        result.AppendLine($"  Processed: {Processed} (number of items processed from Jellyseerr)");
+        result.AppendLine($"  Added: {Created} (added items in the JellyBridge library from content in Jellyseerr discover pages)");
+        result.AppendLine($"  Updated: {Updated} (updated items in the JellyBridge library from content in Jellyseerr discover pages)");
+        result.AppendLine($"  Deleted: {Deleted} (deleted items in the JellyBridge library due to retention policy)");
+        if (Ignored > 0)
+        {
+            result.AppendLine($"  Ignored: {Ignored} (items ignored - duplicates or already in Jellyfin library)");
+        }
         
-        if (Processed > 0) parts.Add($"Processed: {Processed}");
-        if (Created > 0) parts.Add($"Created: {Created}");
-        if (Updated > 0) parts.Add($"Updated: {Updated}");
-        if (Deleted > 0) parts.Add($"Deleted: {Deleted}");
-        
-        return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
+        return result.ToString().TrimEnd();
     }
 }
 
@@ -106,73 +51,89 @@ public class SyncJellyseerrResult
     public string Message { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
     public RefreshPlan? Refresh { get; set; }
-    public List<JellyseerrMovie> AddedMovies { get; set; } = new();
-    public List<JellyseerrMovie> UpdatedMovies { get; set; } = new();
-    public List<JellyseerrShow> AddedShows { get; set; } = new();
-    public List<JellyseerrShow> UpdatedShows { get; set; } = new();
-    public List<JellyseerrMovie> IgnoredMovies { get; set; } = new();
-    public List<JellyseerrShow> IgnoredShows { get; set; } = new();
-    public List<JellyseerrMovie> DeletedMovies { get; set; } = new();
-    public List<JellyseerrShow> DeletedShows { get; set; } = new();
+    public ProcessJellyseerrResult MoviesResult { get; set; } = new();
+    public ProcessJellyseerrResult ShowsResult { get; set; } = new();
+    
+    // Aliases for convenience - delegate to MoviesResult and ShowsResult
+    // These support AddRange operations by forwarding to the underlying lists
+    // Note: Assignments should use the underlying list directly (e.g., result.MoviesResult.ItemsAdded = list)
+    // or use AddRange on the alias (e.g., result.AddedMovies.AddRange(list))
+    public ListAlias<JellyseerrMovie, IJellyseerrItem> AddedMovies
+    {
+        get => new ListAlias<JellyseerrMovie, IJellyseerrItem>(MoviesResult.ItemsAdded);
+        set => MoviesResult.ItemsAdded = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrMovie, IJellyseerrItem> UpdatedMovies
+    {
+        get => new ListAlias<JellyseerrMovie, IJellyseerrItem>(MoviesResult.ItemsUpdated);
+        set => MoviesResult.ItemsUpdated = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrMovie, IJellyseerrItem> DeletedMovies
+    {
+        get => new ListAlias<JellyseerrMovie, IJellyseerrItem>(MoviesResult.ItemsDeleted);
+        set => MoviesResult.ItemsDeleted = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrShow, IJellyseerrItem> AddedShows
+    {
+        get => new ListAlias<JellyseerrShow, IJellyseerrItem>(ShowsResult.ItemsAdded);
+        set => ShowsResult.ItemsAdded = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrShow, IJellyseerrItem> UpdatedShows
+    {
+        get => new ListAlias<JellyseerrShow, IJellyseerrItem>(ShowsResult.ItemsUpdated);
+        set => ShowsResult.ItemsUpdated = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrShow, IJellyseerrItem> DeletedShows
+    {
+        get => new ListAlias<JellyseerrShow, IJellyseerrItem>(ShowsResult.ItemsDeleted);
+        set => ShowsResult.ItemsDeleted = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrMovie, IJellyseerrItem> IgnoredMovies
+    {
+        get => new ListAlias<JellyseerrMovie, IJellyseerrItem>(MoviesResult.ItemsIgnored);
+        set => MoviesResult.ItemsIgnored = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
+    
+    public ListAlias<JellyseerrShow, IJellyseerrItem> IgnoredShows
+    {
+        get => new ListAlias<JellyseerrShow, IJellyseerrItem>(ShowsResult.ItemsIgnored);
+        set => ShowsResult.ItemsIgnored = value != null ? new List<IJellyseerrItem>(value.Cast<IJellyseerrItem>()) : new List<IJellyseerrItem>();
+    }
 
     public override string ToString()
     {
-        var parts = new List<string>();
-        const string addedExplanation = "added items in the JellyBridge library from content in Jellyseerr discover pages";
-        const string updatedExplanation = "updated items in the JellyBridge library from content in Jellyseerr discover pages";
-        const string ignoredExplanation = "ignored JellyBridge folders in Jellyfin to avoid duplicate media";
-        const string deletedExplanation = "deleted items in the JellyBridge library due to retention policy";
+        var result = new System.Text.StringBuilder();
+        result.AppendLine(Message);
         
-        var totalAdded = AddedMovies.Count + AddedShows.Count;
-        var totalUpdated = UpdatedMovies.Count + UpdatedShows.Count;
-        var totalIgnored = IgnoredMovies.Count + IgnoredShows.Count;
-        var totalDeleted = DeletedMovies.Count + DeletedShows.Count;
+        if (!string.IsNullOrEmpty(Details))
+        {
+            result.AppendLine($"\nDetails:\n{Details}");
+        }
         
-        if (totalAdded > 0) parts.Add($"Added: {totalAdded} ({addedExplanation})");
-        if (totalUpdated > 0) parts.Add($"Updated: {totalUpdated} ({updatedExplanation})");
-        if (totalIgnored > 0) parts.Add($"Ignored: {totalIgnored} ({ignoredExplanation})");
-        if (totalDeleted > 0) parts.Add($"Deleted: {totalDeleted} ({deletedExplanation})");
+        if (Refresh != null)
+        {
+            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+        }
         
-        return parts.Count > 0 ? string.Join("\n", parts) : "No items processed";
+        result.AppendLine("\nMovies Result:");
+        result.AppendLine(MoviesResult.ToString());
+        
+        result.AppendLine("\nShows Result:");
+        result.AppendLine(ShowsResult.ToString());
+        
+        return result.ToString().TrimEnd();
     }
 }
 
-/// <summary>
-/// Result of a sync operation from Jellyfin (processing favorites).
-/// </summary>
-public class SyncJellyfinResult
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
-    public RefreshPlan? Refresh { get; set; }
-    public ProcessJellyfinResult MoviesResult { get; set; } = new();
-    public ProcessJellyfinResult ShowsResult { get; set; } = new();
-
-    public override string ToString()
-    {
-        var parts = new List<string>();
-        const string processedExplanation = "number of favorites in Jellyfin";
-        const string foundExplanation = "number of favorites in JellyBridge library";
-        const string createdExplanation = "requests created in Jellyseerr";
-        const string deletedExplanation = "items unfavorited after successful requests";
-        const string blockedExplanation = "requests blocked by Jellyseerr due to quota limits or permission issues";
-        
-        var totalProcessed = MoviesResult.Processed + ShowsResult.Processed;
-        var totalFound = MoviesResult.Found + ShowsResult.Found;
-        var totalCreated = MoviesResult.Created + ShowsResult.Created;
-        var totalDeleted = MoviesResult.Removed + ShowsResult.Removed;
-        var totalBlocked = MoviesResult.Blocked + ShowsResult.Blocked;
-        
-        if (totalProcessed > 0) parts.Add($"Processed: {totalProcessed} ({processedExplanation})");
-        if (totalFound > 0) parts.Add($"Found: {totalFound} ({foundExplanation})");
-        if (totalCreated > 0) parts.Add($"Created: {totalCreated} ({createdExplanation})");
-        if (totalDeleted > 0) parts.Add($"Deleted: {totalDeleted} ({deletedExplanation})");
-        if (totalBlocked > 0) parts.Add($"Blocked: {totalBlocked} ({blockedExplanation})");
-        
-        return parts.Count > 0 ? string.Join("\n", parts) : "No items processed";
-    }
-}
+// ============================================================================
+// SyncToJellyseerr Operation Results
+// ============================================================================
 
 /// <summary>
 /// Result of processing Jellyfin items with lists of IJellyfinItem for processed items and JellyseerrMediaRequest for created items.
@@ -193,13 +154,233 @@ public class ProcessJellyfinResult
 
     public override string ToString()
     {
-        var parts = new List<string>();
-        if (Processed > 0) parts.Add($"Processed: {Processed}");
-        if (Found > 0) parts.Add($"Found: {Found}");
-        if (Created > 0) parts.Add($"Created: {Created}");
-        if (Removed > 0) parts.Add($"Removed: {Removed}");
-        if (Blocked > 0) parts.Add($"Blocked: {Blocked}");
+        var result = new System.Text.StringBuilder();
+        result.AppendLine($"  Processed: {Processed} (number of favorites in Jellyfin)");
+        result.AppendLine($"  Found: {Found} (number of favorites in JellyBridge library)");
+        result.AppendLine($"  Created: {Created} (requests created in Jellyseerr)");
+        result.AppendLine($"  Deleted: {Removed} (items unfavorited after successful requests)");
+        result.AppendLine($"  Blocked: {Blocked} (requests blocked by Jellyseerr due to quota limits or permission issues)");
         
-        return parts.Count > 0 ? string.Join(", ", parts) : "No items processed";
+        return result.ToString().TrimEnd();
     }
+}
+
+/// <summary>
+/// Result of a sync operation from Jellyfin (processing favorites).
+/// </summary>
+public class SyncJellyfinResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public RefreshPlan? Refresh { get; set; }
+    public ProcessJellyfinResult MoviesResult { get; set; } = new();
+    public ProcessJellyfinResult ShowsResult { get; set; } = new();
+    
+    // Aliases for convenience - delegate to MoviesResult and ShowsResult
+    // These support AddRange operations by forwarding to the underlying lists
+    public ListAlias<JellyfinMovie, IJellyfinItem> ProcessedMovies
+    {
+        get => new ListAlias<JellyfinMovie, IJellyfinItem>(MoviesResult.ItemsProcessed);
+        set => MoviesResult.ItemsProcessed = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+    
+    public ListAlias<JellyfinSeries, IJellyfinItem> ProcessedShows
+    {
+        get => new ListAlias<JellyfinSeries, IJellyfinItem>(ShowsResult.ItemsProcessed);
+        set => ShowsResult.ItemsProcessed = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+    
+    public List<JellyseerrMediaRequest> CreatedMovies
+    {
+        get => MoviesResult.ItemsCreated;
+        set => MoviesResult.ItemsCreated = value;
+    }
+    
+    public List<JellyseerrMediaRequest> CreatedShows
+    {
+        get => ShowsResult.ItemsCreated;
+        set => ShowsResult.ItemsCreated = value;
+    }
+    
+    public ListAlias<JellyfinMovie, IJellyfinItem> BlockedMovies
+    {
+        get => new ListAlias<JellyfinMovie, IJellyfinItem>(MoviesResult.ItemsBlocked);
+        set => MoviesResult.ItemsBlocked = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+    
+    public ListAlias<JellyfinSeries, IJellyfinItem> BlockedShows
+    {
+        get => new ListAlias<JellyfinSeries, IJellyfinItem>(ShowsResult.ItemsBlocked);
+        set => ShowsResult.ItemsBlocked = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+    
+    public ListAlias<JellyfinMovie, IJellyfinItem> RemovedMovies
+    {
+        get => new ListAlias<JellyfinMovie, IJellyfinItem>(MoviesResult.ItemsRemoved);
+        set => MoviesResult.ItemsRemoved = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+    
+    public ListAlias<JellyfinSeries, IJellyfinItem> RemovedShows
+    {
+        get => new ListAlias<JellyfinSeries, IJellyfinItem>(ShowsResult.ItemsRemoved);
+        set => ShowsResult.ItemsRemoved = value != null ? new List<IJellyfinItem>(value.Cast<IJellyfinItem>()) : new List<IJellyfinItem>();
+    }
+
+    public override string ToString()
+    {
+        var result = new System.Text.StringBuilder();
+        result.AppendLine(Message);
+        
+        if (!string.IsNullOrEmpty(Details))
+        {
+            result.AppendLine($"\nDetails:\n{Details}");
+        }
+        
+        if (Refresh != null)
+        {
+            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+        }
+        
+        result.AppendLine("\nMovies Result:");
+        result.AppendLine(MoviesResult.ToString());
+        
+        result.AppendLine("\nShows Result:");
+        result.AppendLine(ShowsResult.ToString());
+        
+        return result.ToString().TrimEnd();
+    }
+}
+
+// ============================================================================
+// SortJellyBridge Operation Results
+// ============================================================================
+
+/// <summary>
+/// Result of processing sort operations with counts for sorted, failed, and skipped items.
+/// </summary>
+public class ProcessSortResult
+{
+    public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
+    public List<string> ItemsFailed { get; set; } = new();
+    public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
+
+    public int Sorted => ItemsSorted.Count;
+    public int Failed => ItemsFailed.Count;
+    public int Skipped => ItemsSkipped.Count;
+
+    public override string ToString()
+    {
+        var result = new System.Text.StringBuilder();
+        result.AppendLine($"  Sorted: {Sorted} (items sorted by updating play counts)");
+        if (Skipped > 0)
+        {
+            result.AppendLine($"  Skipped: {Skipped} (items skipped - ignored files)");
+        }
+        if (Failed > 0)
+        {
+            result.AppendLine($"  Failed: {Failed} (items failed to update, possibly not processed yet by Jellyfin)");
+        }
+        
+        return result.ToString().TrimEnd();
+    }
+}
+
+/// <summary>
+/// Result of sorting the discover library by updating play counts.
+/// </summary>
+public class SortLibraryResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
+    public List<JellyfinUser> Users { get; set; } = new();
+    public ProcessSortResult ProcessResult { get; set; } = new();
+    public RefreshPlan? Refresh { get; set; }
+    
+    // Aliases for convenience - delegate to ProcessResult
+    public List<(IJellyfinItem item, int playCount)> ItemsSorted
+    {
+        get => ProcessResult.ItemsSorted;
+        set => ProcessResult.ItemsSorted = value;
+    }
+    
+    public List<string> ItemsFailed
+    {
+        get => ProcessResult.ItemsFailed;
+        set => ProcessResult.ItemsFailed = value;
+    }
+    
+    public List<(IJellyfinItem? item, string path)> ItemsSkipped
+    {
+        get => ProcessResult.ItemsSkipped;
+        set => ProcessResult.ItemsSkipped = value;
+    }
+
+    public override string ToString()
+    {
+        var result = new System.Text.StringBuilder();
+        result.AppendLine(Message);
+        
+        if (!string.IsNullOrEmpty(Details))
+        {
+            result.AppendLine($"\nDetails:\n{Details}");
+        }
+        
+        if (Refresh != null)
+        {
+            result.AppendLine($"\nRefresh Plan: FullRefresh={Refresh.FullRefresh}, RefreshImages={Refresh.RefreshImages}");
+        }
+        
+        result.AppendLine("\nSort Result:");
+        result.AppendLine(ProcessResult.ToString());
+        
+        return result.ToString().TrimEnd();
+    }
+}
+
+// ============================================================================
+// Helper Classes
+// ============================================================================
+
+/// <summary>
+/// Wrapper for List that forwards AddRange operations to an underlying list with a different type.
+/// </summary>
+public class ListAlias<T, TBase> : ICollection<T> where T : TBase
+{
+    private readonly List<TBase> _underlying;
+    
+    public ListAlias(List<TBase> underlying)
+    {
+        _underlying = underlying;
+    }
+    
+    public void AddRange(IEnumerable<T> collection)
+    {
+        _underlying.AddRange(collection.Cast<TBase>());
+    }
+    
+    public void Add(T item)
+    {
+        _underlying.Add(item);
+    }
+    
+    public void Clear() => _underlying.Clear();
+    public bool Contains(T item) => _underlying.Contains(item);
+    public void CopyTo(T[] array, int arrayIndex) => _underlying.Cast<T>().ToList().CopyTo(array, arrayIndex);
+    public bool Remove(T item) => _underlying.Remove(item);
+    public int Count => _underlying.Count;
+    public bool IsReadOnly => false;
+    public IEnumerator<T> GetEnumerator() => _underlying.OfType<T>().GetEnumerator();
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+/// <summary>
+/// Plan describing how to refresh Jellyfin libraries after a sync.
+/// </summary>
+public class RefreshPlan
+{
+    public bool FullRefresh { get; set; }
+    public bool RefreshImages { get; set; }
 }

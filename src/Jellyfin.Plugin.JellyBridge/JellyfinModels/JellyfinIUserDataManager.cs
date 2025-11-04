@@ -140,13 +140,21 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     /// <summary>
     /// Updates play count for a user and item. GetUserData automatically creates user data if it doesn't exist.
     /// </summary>
-    public bool TryUpdatePlayCount(JellyfinUser user, BaseItem item, int playCount)
+    public bool TryUpdatePlayCount(JellyfinUser user, IJellyfinItem item, int playCount)
     {
         var userEntity = user.Inner;
         
+        // Get the BaseItem from the wrapper
+        BaseItem baseItem = item switch
+        {
+            JellyfinMovie movie => movie,
+            JellyfinSeries series => series,
+            _ => throw new ArgumentException($"Unsupported item type: {item.GetType().Name}", nameof(item))
+        };
+        
 #if JELLYFIN_10_11
         // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
-        var userData = Inner.GetUserData(userEntity, item);
+        var userData = Inner.GetUserData(userEntity, baseItem);
         if (userData is null)
         {
             // Should never happen per implementation, but handle nullable signature defensively
@@ -154,12 +162,12 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         }
 #else
         // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
-        var userData = Inner.GetUserData(userEntity, item);
+        var userData = Inner.GetUserData(userEntity, baseItem);
 #endif
         
         // GetUserData automatically creates user data if it doesn't exist, so we just set the play count
         userData.PlayCount = playCount;
-        Inner.SaveUserData(userEntity, item, userData, UserDataSaveReason.Import, CancellationToken.None);
+        Inner.SaveUserData(userEntity, baseItem, userData, UserDataSaveReason.Import, CancellationToken.None);
         return true;
     }
 

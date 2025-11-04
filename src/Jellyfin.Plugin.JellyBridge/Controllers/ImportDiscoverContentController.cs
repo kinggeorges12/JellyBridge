@@ -131,28 +131,16 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     await _syncService.ApplyRefreshAsync(syncToResult: null, syncFromResult: syncResult);
 
                     _logger.LogTrace("Discover sync completed successfully");
-                    _logger.LogDebug("Discover sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
+                    _logger.LogInformation("Sync discover completed: {0}", syncResult.ToString());
 
                     return new
                     {
-                        message = syncResult.Message,
-                        details = syncResult.Details,
-                        moviesResult = new {
-                            moviesAdded = syncResult.AddedMovies.Count,
-                            moviesUpdated = syncResult.UpdatedMovies.Count,
-                            moviesIgnored = syncResult.IgnoredMovies.Count,
-                            moviesDeleted = syncResult.DeletedMovies.Count
-                        },
-                        showsResult = new {
-                            showsAdded = syncResult.AddedShows.Count,
-                            showsUpdated = syncResult.UpdatedShows.Count,
-                            showsIgnored = syncResult.IgnoredShows.Count,
-                            showsDeleted = syncResult.DeletedShows.Count
-                        }
+                        result = syncResult.ToString(),
+                        success = syncResult.Success,
+                        message = syncResult.Message
                     };
                 }, _logger, "Sync Discover");
 
-                _logger.LogInformation("Sync discover completed");
                 return Ok(result);
             }
             catch (TimeoutException)

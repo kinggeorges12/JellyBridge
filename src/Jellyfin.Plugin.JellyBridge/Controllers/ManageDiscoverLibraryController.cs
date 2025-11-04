@@ -100,29 +100,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     await _syncService.ApplyRefreshAsync(syncToResult: syncResult);
                     
                     _logger.LogTrace("Favorites sync completed successfully");
-                    _logger.LogDebug("Favorites sync result: {Success} - {Message}", syncResult.Success, syncResult.Message);
+                    _logger.LogInformation("Sync favorites completed: {0}", syncResult.ToString());
 
                     return new
                     {
+                        result = syncResult.ToString(),
                         success = syncResult.Success,
-                        message = syncResult.Message,
-                        details = syncResult.Details,
-                        moviesResult = new
-                        {
-                            moviesProcessed = syncResult.MoviesResult.Processed,
-                            moviesFound = syncResult.MoviesResult.Found,
-                            moviesCreated = syncResult.MoviesResult.Created,
-                            moviesDeleted = syncResult.MoviesResult.Removed,
-                            moviesBlocked = syncResult.MoviesResult.Blocked
-                        },
-                        showsResult = new
-                        {
-                            showsProcessed = syncResult.ShowsResult.Processed,
-                            showsFound = syncResult.ShowsResult.Found,
-                            showsCreated = syncResult.ShowsResult.Created,
-                            showsDeleted = syncResult.ShowsResult.Removed,
-                            showsBlocked = syncResult.ShowsResult.Blocked
-                        }
+                        message = syncResult.Message
                     };
                 }, _logger, "Sync to Jellyseerr");
                 

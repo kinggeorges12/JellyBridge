@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "AD4E602BB9C6DC366C7A2B1E8514336F",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.68.11.zip",
+        "dependencies": [],
+        "timestamp": "2025-11-04T04:01:26.407Z",
+        "changelog": "Jellyfin 10.11.0: v1.3.68 - Refactored result classes organized by operation (SyncFromJellyseerr, SyncToJellyseerr, SortJellyBridge) with helper classes at bottom. Added Refresh property to SortLibraryResult and updated all ToString() methods to include refresh information. Enhanced result classes with consistent aliases for easier data access and removed unused operator+ and Combine methods from ProcessJellyseerrResult.",
+        "version": "1.3.68.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "checksum": "AF47D1D4407D365691E970EC132F2BDD",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.68.10.zip",
+        "dependencies": [],
+        "timestamp": "2025-11-04T04:01:26.407Z",
+        "changelog": "Jellyfin 10.10.7: v1.3.68 - Refactored result classes organized by operation (SyncFromJellyseerr, SyncToJellyseerr, SortJellyBridge) with helper classes at bottom. Added Refresh property to SortLibraryResult and updated all ToString() methods to include refresh information. Enhanced result classes with consistent aliases for easier data access and removed unused operator+ and Combine methods from ProcessJellyseerrResult.",
+        "version": "1.3.68.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "dependencies": [],
         "checksum": "402FAFDE7F304459352D4024484819F4",
         "targetAbi": "10.11.0.0",
