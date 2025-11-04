@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "A4418F255D9E043B3CBD509D09A17582",
+        "version": "1.4.15.11",
+        "timestamp": "2025-11-04T18:23:52.987Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.15 - Test Connection: Enhanced to validate API key using AuthMe endpoint and check user list privileges. Improved error handling with specific HTTP status codes (401 for auth failures, 403 for insufficient privileges) and clearer error messages. Added JsonException handling for invalid response format detection.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.15.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "checksum": "A078508EB5FCB532E0CF3267247BC4A8",
+        "version": "1.4.15.10",
+        "timestamp": "2025-11-04T18:23:52.987Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.15 - Test Connection: Enhanced to validate API key using AuthMe endpoint and check user list privileges. Improved error handling with specific HTTP status codes (401 for auth failures, 403 for insufficient privileges) and clearer error messages. Added JsonException handling for invalid response format detection.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.15.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "checksum": "619B3B8472D8B532A36BA60261D9B95B",
         "timestamp": "2025-11-04T17:52:41.788Z",
         "dependencies": [],
