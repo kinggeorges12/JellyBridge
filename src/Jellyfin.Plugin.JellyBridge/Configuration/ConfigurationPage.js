@@ -316,13 +316,20 @@ function performTestConnection(page) {
                 }
             });
     }).catch(function (error) {
-        // Parse exactly what backend returns: JSON with { success, message, details, errorCode }
         try {
-            const parsed = JSON.parse(error?.responseText || '{}');
-            const message = parsed?.message || 'Connection test failed';
+            // Prefer already-parsed JSON, fall back to manual parse
+            let parsed = error?.responseJSON;
+            if (!parsed && error?.responseText) {
+                parsed = JSON.parse(error.responseText);
+            }
+    
+            const status = error?.status;
+            // Fallback if backend doesn't return a message
+            const message = parsed?.message || 
+                            (status ? `Request failed (${status})` : 'Connection test failed');
+    
             Dashboard.alert('❌ ' + message);
-        } catch {
-            // Could not parse the plugin's response at all → Jellyfin endpoint issue
+        } catch (parseErr) {
             Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
         }
     }).finally(function() {
