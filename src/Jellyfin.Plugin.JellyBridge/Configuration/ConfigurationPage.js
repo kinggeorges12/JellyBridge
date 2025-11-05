@@ -425,6 +425,7 @@ function initializeImportContent(page) {
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
                 config.ApiKey != page.querySelector('#ApiKey').value){
                 Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
                 return;
             }
             Dashboard.showLoadingMsg();
@@ -524,6 +525,7 @@ function initializeImportContent(page) {
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
                 config.ApiKey != page.querySelector('#ApiKey').value){
                 Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
                 return;
             }
             Dashboard.showLoadingMsg();
@@ -1613,6 +1615,7 @@ function savePluginConfiguration(page) {
         .then(async response => {
             const result = await response.json();
             if (result.success) {
+                window.configJellyBridge = form;
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
