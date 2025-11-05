@@ -423,7 +423,7 @@ function initializeImportContent(page) {
         refreshAvailableButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
             loadAvailableNetworks(page).then(function(availableNetworks) {
-                Dashboard.alert(`✅ Refreshed available networks.`);
+                Dashboard.alert(`✅ Refreshed available networks`);
                 scrollToElement('availableNetworksSelectBox');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
@@ -513,7 +513,7 @@ function initializeImportContent(page) {
         refreshButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.alert('✅ Regions refreshed successfully!');
+                Dashboard.alert('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));

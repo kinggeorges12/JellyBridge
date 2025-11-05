@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-05T04:13:40.218Z",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.11.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
+        "checksum": "8DB2E631E11FB823CF74EDDF24A32E0F",
+        "version": "1.4.28.11"
+      },
+      {
+        "timestamp": "2025-11-05T04:13:40.218Z",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.10.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
+        "checksum": "617C08C57D55D11EB0455BAAC88C06FC",
+        "version": "1.4.28.10"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.27 - Updated result table formatting to use tabs for emoji alignment, expanding first column to 18 characters and centering header column names. Improved monospace font stack to include Consolas, SF Mono, and JetBrains Mono for better emoji rendering in result textboxes.",
         "dependencies": [],
         "timestamp": "2025-11-05T03:48:11.308Z",
