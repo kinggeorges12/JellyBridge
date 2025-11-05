@@ -329,12 +329,12 @@ public partial class SyncService
     /// - Calls RefreshBridgeLibrary with computed parameters
     /// - Then scans all libraries and awaits completion
     /// </summary>
-    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null)
+    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null, CleanupResult? cleanupResult = null)
     {
         try
         {
-            var fullRefresh = (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
-            var refreshImages = (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
+            var fullRefresh = (cleanupResult?.Refresh?.FullRefresh == true) || (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
+            var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
 
             _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
             _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
