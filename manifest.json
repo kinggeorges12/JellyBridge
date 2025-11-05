@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2025-11-05T07:47:52.264Z",
+        "version": "1.4.35.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.11.zip",
+        "checksum": "FCF40FCF8DDC667912D8B559EFA8CA9D",
+        "changelog": "Jellyfin 10.11.0: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2025-11-05T07:47:52.264Z",
+        "version": "1.4.35.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.10.zip",
+        "checksum": "53249DB9AA75FDEE91E0AB2B40F02F0B",
+        "changelog": "Jellyfin 10.10.7: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.11.zip",
         "targetAbi": "10.11.0.0",
