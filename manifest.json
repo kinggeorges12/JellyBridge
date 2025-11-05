@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-05T03:23:33.771Z",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.11.zip",
+        "version": "1.4.26.11",
+        "checksum": "3008E108CF47ED1D533A9CB0FFDD680B",
+        "changelog": "Jellyfin 10.11.0: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
+      },
+      {
+        "timestamp": "2025-11-05T03:23:33.771Z",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.10.zip",
+        "version": "1.4.26.10",
+        "checksum": "8227B65C13A9D5C3948FA2BD8A67665C",
+        "changelog": "Jellyfin 10.10.7: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
+      },
+      {
         "version": "1.4.25.11",
         "checksum": "71C48AAD209C62FD14897492DC71F014",
         "changelog": "Jellyfin 10.11.0: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
