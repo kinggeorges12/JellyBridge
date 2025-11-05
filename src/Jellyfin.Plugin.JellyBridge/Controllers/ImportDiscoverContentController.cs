@@ -98,6 +98,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var combinedNetworks = new List<JellyseerrNetwork>();
                 combinedNetworks.AddRange(movieNetworksList ?? new List<JellyseerrNetwork>());
                 combinedNetworks.AddRange(showNetworksList ?? new List<JellyseerrNetwork>());
+                if (combinedNetworks.Count == 0) {
+                    _logger.LogWarning("No networks returned from API service");
+                    return StatusCode(503, new { 
+                        success = false, 
+                        message = "No networks returned from Jellyseerr API",
+                        details = "The Jellyseerr API returned no networks for the selected region. This may indicate a configuration issue or API version mismatch.",
+                        errorCode = "NO_NETWORKS_FOUND"
+                    });
+                }
                 combinedNetworks.ForEach(network => network.Country = targetRegion);
                 
                 _logger.LogInformation("Retrieved {Count} networks for region {Region}", combinedNetworks.Count, targetRegion);
@@ -109,8 +118,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Failed to get watch networks for region {Region}", region);
                 return StatusCode(500, new { 
                     success = false, 
-                    message = $"Failed to get networks: {ex.Message}",
-                    details = $"Networks retrieval exception for region '{region}': {ex.GetType().Name} - {ex.Message}",
+                    message = $"{ex.Message}",
+                    details = $"Unknown error occurred while refreshing networks for region '{region}': {ex.GetType().Name} - {ex.Message}",
                     stackTrace = ex.StackTrace,
                     errorCode = "NETWORKS_EXCEPTION"
                 });

@@ -649,17 +649,16 @@ function loadAvailableNetworks(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && Array.isArray(response)) {
-            // Store the full network objects for later use
-            window.availableNetworksData = response;
-                        
             // Use updateAvailableNetworks to handle the rest
             return Promise.resolve(updateAvailableNetworks(page, response));
         } else {
             // Use updateAvailableNetworks with empty map to show defaults
+            Dashboard.alert(`❌ No available networks found: ${response?.message || 'Unknown error'}`);
             return Promise.resolve(null);
         }
     }).catch(function(error) {
         // Use updateAvailableNetworks with empty map to show defaults
+        Dashboard.alert(`❌ Failed to refresh available networks: ${error?.message || 'Unknown error'}`);
         return Promise.resolve(null);
     });
 }
