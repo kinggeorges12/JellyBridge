@@ -9,6 +9,294 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-05T08:26:00.483Z",
+        "dependencies": [],
+        "checksum": "A7C2F22F3AD5DBB74D9B24FCF2CFC26E",
+        "changelog": "Jellyfin 10.11.0: v1.4.37 - Sort order select now uses enum names as option values and selects by name to support both string/number enum values; removed unused mapping logic.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.37.11.zip",
+        "version": "1.4.37.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "timestamp": "2025-11-05T08:26:00.483Z",
+        "dependencies": [],
+        "checksum": "D9389763AF48B3447D00D1F4E4AED902",
+        "changelog": "Jellyfin 10.10.7: v1.4.37 - Sort order select now uses enum names as option values and selects by name to support both string/number enum values; removed unused mapping logic.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.37.10.zip",
+        "version": "1.4.37.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
+        "version": "1.4.36.11",
+        "checksum": "0CCEECC646355192B1D6E4547B878695",
+        "dependencies": [],
+        "timestamp": "2025-11-05T08:01:12.906Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
+        "version": "1.4.36.10",
+        "checksum": "D72168860688F51254F66A495620CDCE",
+        "dependencies": [],
+        "timestamp": "2025-11-05T08:01:12.906Z"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2025-11-05T07:47:52.264Z",
+        "version": "1.4.35.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.11.zip",
+        "checksum": "FCF40FCF8DDC667912D8B559EFA8CA9D",
+        "changelog": "Jellyfin 10.11.0: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2025-11-05T07:47:52.264Z",
+        "version": "1.4.35.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.10.zip",
+        "checksum": "53249DB9AA75FDEE91E0AB2B40F02F0B",
+        "changelog": "Jellyfin 10.10.7: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "checksum": "DE8CC9E18D4FB5B2F164905D08D07399",
+        "version": "1.4.34.11",
+        "timestamp": "2025-11-05T07:36:06.422Z"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "checksum": "36CDE6899303AEE94710CFD1995CAE9F",
+        "version": "1.4.34.10",
+        "timestamp": "2025-11-05T07:36:06.422Z"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.33 - Refined available networks loader to surface errors to caller (removed internal catch/alerts); UI now relies on caller-level handling.",
+        "dependencies": [],
+        "checksum": "2D5DF124FCA3130123E902E324E1E593",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.33.11.zip",
+        "version": "1.4.33.11",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-05T07:20:35.326Z"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.33 - Refined available networks loader to surface errors to caller (removed internal catch/alerts); UI now relies on caller-level handling.",
+        "dependencies": [],
+        "checksum": "2E1841FC5E40F7C86D37DF94451D2C40",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.33.10.zip",
+        "version": "1.4.33.10",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-05T07:20:35.326Z"
+      },
+      {
+        "timestamp": "2025-11-05T07:06:41.136Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.32.11.zip",
+        "checksum": "86F0CE6DBDECEC19D896EB167AB0268A",
+        "dependencies": [],
+        "version": "1.4.32.11",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.4.32 - Networks endpoint now returns 404 with explicit error when no providers are returned for a region; improved 500 details. Frontend shows explicit alerts on refresh failure or empty response and avoids populating stale data."
+      },
+      {
+        "timestamp": "2025-11-05T07:06:41.136Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.32.10.zip",
+        "checksum": "900FFB998457AD53583678F63FDBAC2E",
+        "dependencies": [],
+        "version": "1.4.32.10",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.4.32 - Networks endpoint now returns 404 with explicit error when no providers are returned for a region; improved 500 details. Frontend shows explicit alerts on refresh failure or empty response and avoids populating stale data."
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.31 - Refined available networks UI: adjusted alert/scroll behavior and removed debug noise. Updated Import screenshot to reflect current UI.",
+        "timestamp": "2025-11-05T06:30:11.224Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.31.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.11.zip",
+        "dependencies": [],
+        "checksum": "D23BE241F8D863210074DF7766DCA147"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.31 - Refined available networks UI: adjusted alert/scroll behavior and removed debug noise. Updated Import screenshot to reflect current UI.",
+        "timestamp": "2025-11-05T06:30:11.224Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.31.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.10.zip",
+        "dependencies": [],
+        "checksum": "F760B198BA2EA3E427B1636D29FCF3EF"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.30 - Updated GetPluginConfiguration to use GetConfigOrDefault for NetworkMap, ensuring default network map is returned when config is null. Improved available networks refresh button to show appropriate alerts when no networks are found. Removed debug alert from network loading error handling.",
+        "checksum": "F4CEB5C0808B5583E8B40ACDF8BF70B2",
+        "timestamp": "2025-11-05T06:24:30.062Z",
+        "version": "1.4.30.11",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.30 - Updated GetPluginConfiguration to use GetConfigOrDefault for NetworkMap, ensuring default network map is returned when config is null. Improved available networks refresh button to show appropriate alerts when no networks are found. Removed debug alert from network loading error handling.",
+        "checksum": "9B729231819AF2292FFA37FA50A58C49",
+        "timestamp": "2025-11-05T06:24:30.062Z",
+        "version": "1.4.30.10",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "timestamp": "2025-11-05T06:05:09.317Z",
+        "targetAbi": "10.11.0.0",
+        "checksum": "CAB92445E3FAB3ED3DCF12710301D903",
+        "version": "1.4.29.11",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.11.zip"
+      },
+      {
+        "timestamp": "2025-11-05T06:05:09.317Z",
+        "targetAbi": "10.10.0.0",
+        "checksum": "2B70D9C7BD3D93B30D5EE54D6D363E5E",
+        "version": "1.4.29.10",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.10.zip"
+      },
+      {
+        "timestamp": "2025-11-05T04:13:40.218Z",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.11.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
+        "checksum": "8DB2E631E11FB823CF74EDDF24A32E0F",
+        "version": "1.4.28.11"
+      },
+      {
+        "timestamp": "2025-11-05T04:13:40.218Z",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.10.zip",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
+        "checksum": "617C08C57D55D11EB0455BAAC88C06FC",
+        "version": "1.4.28.10"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.27 - Updated result table formatting to use tabs for emoji alignment, expanding first column to 18 characters and centering header column names. Improved monospace font stack to include Consolas, SF Mono, and JetBrains Mono for better emoji rendering in result textboxes.",
+        "dependencies": [],
+        "timestamp": "2025-11-05T03:48:11.308Z",
+        "checksum": "DB5AD76F84DBAC1F518D991AD7B5996E",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.27.11.zip",
+        "version": "1.4.27.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.27 - Updated result table formatting to use tabs for emoji alignment, expanding first column to 18 characters and centering header column names. Improved monospace font stack to include Consolas, SF Mono, and JetBrains Mono for better emoji rendering in result textboxes.",
+        "dependencies": [],
+        "timestamp": "2025-11-05T03:48:11.308Z",
+        "checksum": "6FDC9BAC65199BD7F6CE96FEC6582786",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.27.10.zip",
+        "version": "1.4.27.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "timestamp": "2025-11-05T03:23:33.771Z",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.11.zip",
+        "version": "1.4.26.11",
+        "checksum": "3008E108CF47ED1D533A9CB0FFDD680B",
+        "changelog": "Jellyfin 10.11.0: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
+      },
+      {
+        "timestamp": "2025-11-05T03:23:33.771Z",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.10.zip",
+        "version": "1.4.26.10",
+        "checksum": "8227B65C13A9D5C3948FA2BD8A67665C",
+        "changelog": "Jellyfin 10.10.7: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
+      },
+      {
+        "version": "1.4.25.11",
+        "checksum": "71C48AAD209C62FD14897492DC71F014",
+        "changelog": "Jellyfin 10.11.0: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.11.zip",
+        "timestamp": "2025-11-05T02:49:25.723Z",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "1.4.25.10",
+        "checksum": "389D969745EE7898C75EF75CC6FDB35B",
+        "changelog": "Jellyfin 10.10.7: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.10.zip",
+        "timestamp": "2025-11-05T02:49:25.723Z",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "version": "1.4.24.11",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-05T02:37:25.086Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.11.zip",
+        "checksum": "385F56A52D023690C61305536DFBBB82",
+        "changelog": "Jellyfin 10.11.0: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
+        "dependencies": []
+      },
+      {
+        "version": "1.4.24.10",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-05T02:37:25.086Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.10.zip",
+        "checksum": "3425FC45657E9737E633AC1268114453",
+        "changelog": "Jellyfin 10.10.7: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
+        "dependencies": []
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.11.zip",
+        "checksum": "2741AD8421E0248CA85313DCCD969FFB",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.23.11",
+        "timestamp": "2025-11-05T02:21:06.248Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.23 - Added emojis to result tables and legends for better visual identification. Made result textboxes monospace font for improved ASCII table formatting. Refactored cleanup service to set refresh plan when items are deleted, with refresh applied in endpoints and sync task. Moved CleanupMetadata endpoint to AdvancedSettingsController above RecycleLibrary endpoint.",
+        "dependencies": []
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.10.zip",
+        "checksum": "297A1AA89FDE5EC503C227F6F1F98EE1",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.23.10",
+        "timestamp": "2025-11-05T02:21:06.248Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.23 - Added emojis to result tables and legends for better visual identification. Made result textboxes monospace font for improved ASCII table formatting. Refactored cleanup service to set refresh plan when items are deleted, with refresh applied in endpoints and sync task. Moved CleanupMetadata endpoint to AdvancedSettingsController above RecycleLibrary endpoint.",
+        "dependencies": []
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.11.zip",
+        "timestamp": "2025-11-05T01:48:35.438Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.22.11",
+        "checksum": "2174D87BE1691811C61092DCFF0F8881"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.10.zip",
+        "timestamp": "2025-11-05T01:48:35.438Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.22.10",
+        "checksum": "26F42FA4344F33AEC29C99D80134CE9A"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "timestamp": "2025-11-04T23:43:57.527Z",

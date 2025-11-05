@@ -421,13 +421,22 @@ function initializeImportContent(page) {
     const refreshAvailableButton = page.querySelector('#refreshAvailableNetworks');
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
+                return;
+            }
             Dashboard.showLoadingMsg();
-            loadAvailableNetworks(page).then(function(availableNetworks) {
-                Dashboard.alert(`✅ Refreshed available networks.`);
-                scrollToElement('availableNetworksSelectBox');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            loadAvailableNetworks(page)
+            .then(function(availableNetworks) {
+                if (availableNetworks) {
+                    Dashboard.alert(`✅ Refreshed available networks`);
+                    scrollToElement('availableNetworksSelectBox');
+                }
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -511,13 +520,19 @@ function initializeImportContent(page) {
     const refreshButton = page.querySelector('#refreshNetworks');
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
+                return;
+            }
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.alert('✅ Regions refreshed successfully!');
+                Dashboard.alert('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -643,20 +658,10 @@ function loadAvailableNetworks(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && Array.isArray(response)) {
-            // Store the full network objects for later use
-            window.availableNetworksData = response;
-                        
             // Use updateAvailableNetworks to handle the rest
             return Promise.resolve(updateAvailableNetworks(page, response));
-        } else {
-            // Use updateAvailableNetworks with empty map to show defaults
-            return Promise.resolve(updateAvailableNetworks(page));
         }
-    }).catch(function(error) {
-        Dashboard.alert(`❌ DEBUG: API call failed for networks. Error: ${error?.message || 'Unknown error'}`);
-        
-        // Use updateAvailableNetworks with empty map to show defaults
-        return Promise.resolve(updateAvailableNetworks(page));
+        // do not catch errors, let the caller handle them
     });
 }
 
@@ -815,19 +820,9 @@ function loadRegions(page) {
         dataType: 'json'
     }).then(function (data) {
         if (data && data.success && data.regions) {
-            const select = page.querySelector('#selectWatchRegion');
-            if (select) {
-                // When loading regions, set the current value to the selected value
-                populateRegion(page, data.regions, select.value);
-            }
-            return Promise.resolve();
-        } else {
-            // Failed to load regions - keep default US option
-            return Promise.resolve();
+            // When loading regions, set the current value to the selected value
+            return Promise.resolve(populateRegion(page, data.regions, page.querySelector('#selectWatchRegion').value));
         }
-    }).catch(function (error) {
-        // Re-throw the error so the calling function can handle it
-        throw error;
     });
 }
 
@@ -840,30 +835,20 @@ function initializeSortContent(page) {
     
     // Populate SortOrder dropdown from enum values
     const sortOrderSelect = page.querySelector('#selectSortOrder');
-    if (sortOrderSelect && config.ConfigOptions && config.ConfigOptions.SortOrderOptions && Array.isArray(config.ConfigOptions.SortOrderOptions)) {
+    if (sortOrderSelect) {
         sortOrderSelect.innerHTML = '';
         
-        // Create a map of enum names to values for lookup
-        const enumNameToValue = {};
+        // Use the name as the value
         config.ConfigOptions.SortOrderOptions.forEach(option => {
             const optionElement = document.createElement('option');
-            optionElement.value = option.Value.toString();
+            optionElement.value = option.Name;
             optionElement.textContent = option.Name;
             sortOrderSelect.appendChild(optionElement);
-            
-            // Store mapping for name to value conversion
-            enumNameToValue[option.Name] = option.Value;
         });
         
-        // Set the selected value using config value or default
-        let sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
-        if (sortOrderValue !== null && sortOrderValue !== undefined) {
-            // If it's a string (enum name), convert it to the integer value
-            if (typeof sortOrderValue === 'string' && enumNameToValue.hasOwnProperty(sortOrderValue)) {
-                sortOrderValue = enumNameToValue[sortOrderValue];
-            }
-            sortOrderSelect.value = sortOrderValue.toString();
-        }
+        // Store selected value
+        const sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
+        sortOrderSelect.value = sortOrderValue;
     }
     
     // Set sort content form values with null handling
@@ -947,6 +932,60 @@ function performSortContent(page) {
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
                 sortButton.disabled = false;
+            });
+        }
+    });
+}
+
+function performCleanupMetadata(page) {
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    
+    // Show confirmation dialog for saving settings before cleanup
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting cleanup.',
+        confirmText: 'Save & Cleanup',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            cleanupButton.disabled = true;
+            // Save settings first, then cleanup
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the cleanup result textbox
+                const cleanupResult = page.querySelector('#cleanupMetadataResult');
+                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
+                cleanupResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Cleanup if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/CleanupMetadata'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(cleanupData) {
+                    appendToResultBox(cleanupResult, '\n' + (cleanupData?.result || 'No result available'));
+                    scrollToElement('cleanupMetadataResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nCleanup Results:\n`;
+                    resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(cleanupResult, resultText);
+                    scrollToElement('cleanupMetadataResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                cleanupButton.disabled = false;
             });
         }
     });
@@ -1260,6 +1299,14 @@ function initializeAdvancedSettings(page) {
             validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
         });
     }
+    
+    // Add cleanup metadata button functionality
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    if (cleanupButton) {
+        cleanupButton.addEventListener('click', function() {
+            performCleanupMetadata(page);
+        });
+    }
 }
 
 function updateStartupDelayState() {
@@ -1556,6 +1603,8 @@ function savePluginConfiguration(page) {
         .then(async response => {
             const result = await response.json();
             if (result.success) {
+                form.ConfigDefaults = config.ConfigDefaults;
+                window.configJellyBridge = form;
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');

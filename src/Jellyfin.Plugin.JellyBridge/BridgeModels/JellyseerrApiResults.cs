@@ -11,72 +11,42 @@ namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 // ============================================================================
 
 /// <summary>
-/// Result of processing Jellyseerr items with counts for created, updated, deleted items.
-/// </summary>
-public class ProcessJellyseerrResult
-{
-    public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
-    public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
-    public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
-    public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
-    public List<IJellyseerrItem> ItemsIgnored { get; set; } = new();
-
-    public int Processed => ItemsProcessed.Count;
-    public int Created => ItemsAdded.Count;
-    public int Updated => ItemsUpdated.Count;
-    public int Deleted => ItemsDeleted.Count;
-    public int Ignored => ItemsIgnored.Count;
-
-    public override string ToString()
-    {
-        var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"• Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"• Added:",-15}{Created,15}");
-        result.AppendLine($"{"• Updated:",-15}{Updated,15}");
-        result.AppendLine($"{"• Ignored:",-15}{Ignored,15}");
-        result.AppendLine($"{"• Deleted:",-15}{Deleted,15}");
-        
-        return result.ToString().TrimEnd();
-    }
-}
-
-/// <summary>
 /// Result of a sync operation to Jellyseerr (creating requests).
 /// </summary>
 public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the specified metadata options\n📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: Items ignored - duplicates or already in Jellyfin library\n🗑️ Deleted: Items deleted in the JellyBridge library due to retention policy";
+    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: duplicate discover content or the content already exists in another Jellyfin library\n🙈 Hidden: Items newly hidden from Jellyfin using .ignore files (will be ignored on subsequent runs)";
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
     public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
     public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
-    public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
     public List<IJellyseerrItem> ItemsIgnored { get; set; } = new();
+    public List<IJellyseerrItem> ItemsHidden { get; set; } = new();
     
     // Computed properties - filter by type
     public List<JellyseerrMovie> AddedMovies => ItemsAdded.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> AddedShows => ItemsAdded.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> UpdatedMovies => ItemsUpdated.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> UpdatedShows => ItemsUpdated.OfType<JellyseerrShow>().ToList();
-    public List<JellyseerrMovie> DeletedMovies => ItemsDeleted.OfType<JellyseerrMovie>().ToList();
-    public List<JellyseerrShow> DeletedShows => ItemsDeleted.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> IgnoredMovies => ItemsIgnored.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> IgnoredShows => ItemsIgnored.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> HiddenMovies => ItemsHidden.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> HiddenShows => ItemsHidden.OfType<JellyseerrShow>().ToList();
     
     // Count properties for table display
-    public int MoviesProcessed => AddedMovies.Count + UpdatedMovies.Count + IgnoredMovies.Count + DeletedMovies.Count;
-    public int ShowsProcessed => AddedShows.Count + UpdatedShows.Count + IgnoredShows.Count + DeletedShows.Count;
+    public int MoviesProcessed => AddedMovies.Count + UpdatedMovies.Count + IgnoredMovies.Count;
+    public int ShowsProcessed => AddedShows.Count + UpdatedShows.Count + IgnoredShows.Count;
     public int MoviesAdded => AddedMovies.Count;
     public int ShowsAdded => AddedShows.Count;
     public int MoviesUpdated => UpdatedMovies.Count;
     public int ShowsUpdated => UpdatedShows.Count;
     public int MoviesIgnored => IgnoredMovies.Count;
     public int ShowsIgnored => IgnoredShows.Count;
-    public int MoviesDeleted => DeletedMovies.Count;
-    public int ShowsDeleted => DeletedShows.Count;
+    public int MoviesHidden => HiddenMovies.Count;
+    public int ShowsHidden => HiddenShows.Count;
 
     public override string ToString()
     {
@@ -89,25 +59,23 @@ public class SyncJellyseerrResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\nRefresh Plan: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "_______________";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
-        // Header row with top border
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies Result",-14}{separator}{"Shows Result",-14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        // Header row
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"• Processed:",-14}{separator}{MoviesProcessed,14}{separator}{ShowsProcessed,14}{separator}");
-        result.AppendLine($"{separator}{"• Added:",-14}{separator}{MoviesAdded,14}{separator}{ShowsAdded,14}{separator}");
-        result.AppendLine($"{separator}{"• Updated:",-14}{separator}{MoviesUpdated,14}{separator}{ShowsUpdated,14}{separator}");
-        result.AppendLine($"{separator}{"• Ignored:",-14}{separator}{MoviesIgnored,14}{separator}{ShowsIgnored,14}{separator}");
-        result.AppendLine($"{separator}{"• Deleted:",-14}{separator}{MoviesDeleted,14}{separator}{ShowsDeleted,14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\t"}{"Added",-10}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🛠️\t"}{"Updated",-10}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Ignored",-10}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -118,43 +86,13 @@ public class SyncJellyseerrResult
 // ============================================================================
 
 /// <summary>
-/// Result of processing Jellyfin items with lists of IJellyfinItem for processed items and JellyseerrMediaRequest for created items.
-/// </summary>
-public class ProcessJellyfinResult
-{
-    public List<IJellyfinItem> ItemsProcessed { get; set; } = new();
-    public List<IJellyfinItem> ItemsFound { get; set; } = new();
-    public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
-    public List<IJellyfinItem> ItemsRemoved { get; set; } = new();
-    public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
-
-    public int Processed => ItemsProcessed.Count;
-    public int Found => ItemsFound.Count;
-    public int Created => ItemsCreated.Count;
-    public int Removed => ItemsRemoved.Count;
-    public int Blocked => ItemsBlocked.Count;
-
-    public override string ToString()
-    {
-        var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"• Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"• Found:",-15}{Found,15}");
-        result.AppendLine($"{"• Created:",-15}{Created,15}");
-        result.AppendLine($"{"• Blocked:",-15}{Blocked,15}");
-        result.AppendLine($"{"• Removed:",-15}{Removed,15}");
-        
-        return result.ToString().TrimEnd();
-    }
-}
-
-/// <summary>
 /// Result of a sync operation from Jellyfin (processing favorites).
 /// </summary>
 public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the specified metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🗑️ Deleted: Items unfavorited after successful requests";
+    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🙈 Hidden: Jellyfin items marked with an .ignore file after requesting them from Jellyseerr\n👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
@@ -162,7 +100,8 @@ public class SyncJellyfinResult
     public List<IJellyfinItem> ItemsFound { get; set; } = new();
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
     public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
-    public List<IJellyfinItem> ItemsRemoved { get; set; } = new();
+    public List<IJellyseerrItem> ItemsHidden { get; set; } = new();
+    public List<IJellyseerrItem> ItemsUnhidden { get; set; } = new();
     
     // Computed properties - filter by type
     public List<JellyfinMovie> ProcessedMovies => ItemsProcessed.OfType<JellyfinMovie>().ToList();
@@ -173,8 +112,10 @@ public class SyncJellyfinResult
     public List<JellyseerrMediaRequest> CreatedShows => ItemsCreated.Where(r => r?.Media?.MediaType == JellyseerrModel.MediaType.TV).ToList();
     public List<JellyfinMovie> BlockedMovies => ItemsBlocked.OfType<JellyfinMovie>().ToList();
     public List<JellyfinSeries> BlockedShows => ItemsBlocked.OfType<JellyfinSeries>().ToList();
-    public List<JellyfinMovie> RemovedMovies => ItemsRemoved.OfType<JellyfinMovie>().ToList();
-    public List<JellyfinSeries> RemovedShows => ItemsRemoved.OfType<JellyfinSeries>().ToList();
+    public List<JellyseerrMovie> HiddenMovies => ItemsHidden.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> HiddenShows => ItemsHidden.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> UnhiddenMovies => ItemsUnhidden.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> UnhiddenShows => ItemsUnhidden.OfType<JellyseerrShow>().ToList();
     
     // Count properties for table display
     public int MoviesProcessed => ProcessedMovies.Count;
@@ -185,8 +126,10 @@ public class SyncJellyfinResult
     public int ShowsCreated => CreatedShows.Count;
     public int MoviesBlocked => BlockedMovies.Count;
     public int ShowsBlocked => BlockedShows.Count;
-    public int MoviesRemoved => RemovedMovies.Count;
-    public int ShowsRemoved => RemovedShows.Count;
+    public int MoviesHidden => HiddenMovies.Count;
+    public int ShowsHidden => HiddenShows.Count;
+    public int MoviesUnhidden => UnhiddenMovies.Count;
+    public int ShowsUnhidden => UnhiddenShows.Count;
 
     public override string ToString()
     {
@@ -199,25 +142,24 @@ public class SyncJellyfinResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\nRefresh Plan: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "_______________";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
-        // Header row with top border
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies Result",-14}{separator}{"Shows Result",-14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        // Header row
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"• Processed:",-14}{separator}{MoviesProcessed,14}{separator}{ShowsProcessed,14}{separator}");
-        result.AppendLine($"{separator}{"• Found:",-14}{separator}{MoviesFound,14}{separator}{ShowsFound,14}{separator}");
-        result.AppendLine($"{separator}{"• Created:",-14}{separator}{MoviesCreated,14}{separator}{ShowsCreated,14}{separator}");
-        result.AppendLine($"{separator}{"• Blocked:",-14}{separator}{MoviesBlocked,14}{separator}{ShowsBlocked,14}{separator}");
-        result.AppendLine($"{separator}{"• Removed:",-14}{separator}{MoviesRemoved,14}{separator}{ShowsRemoved,14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        result.AppendLine($"{separator}{"❤️\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🔍\t"}{"Found",-10}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\t"}{"Created",-10}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🚫\t"}{"Blocked",-10}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"👁️\t"}{"Unhidden",-10}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -228,10 +170,18 @@ public class SyncJellyfinResult
 // ============================================================================
 
 /// <summary>
-/// Result of processing sort operations with counts for sorted, failed, and skipped items.
+/// Result of sorting the discover library by updating play counts.
 /// </summary>
-public class ProcessSortResult
+public class SortLibraryResult
 {
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
+    public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
+    public List<JellyfinUser> Users { get; set; } = new();
+    public RefreshPlan? Refresh { get; set; }
+    
+    // Collections
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
     public List<string> ItemsFailed { get; set; } = new();
     public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
@@ -263,46 +213,71 @@ public class ProcessSortResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"• Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"• Sorted:",-15}{Sorted,15}");
-        result.AppendLine($"{"• Skipped:",-15}{Skipped,15}");
-        result.AppendLine($"{"• Failed:",-15}{Failed,15}");
+        result.AppendLine(Message);
+        
+        result.AppendLine("\nDetails:");
+        result.AppendLine(Details);
+        result.AppendLine();
+        
+        // Add individual items with 2-space indentation
+        result.AppendLine($"🎲 {SortAlgorithm}");
+        result.AppendLine($"👥 {Users.Count}");
+        
+        if (Refresh != null)
+        {
+            // Sort always uses refreshUserData: false, which results in "Scan for new and updated files"
+            result.AppendLine($"🔄 Scan for new and updated files, 🔳 Replace existing images");
+        }
+        
+        result.AppendLine();
+        const string separator = "|";
+        const string rowBorder = "|------------------|----------|----------|----------|";
+        
+        // Header row
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{rowBorder}");
+        // Data rows
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
 }
 
+// ============================================================================
+// Cleanup Operation Results
+// ============================================================================
+
 /// <summary>
-/// Result of sorting the discover library by updating play counts.
+/// Result of a cleanup operation.
 /// </summary>
-public class SortLibraryResult
+public class CleanupResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refresh type is Replace all metadata vs Search for missing metadata; Replace images vs Do not replace images\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
-    public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
-    public List<JellyfinUser> Users { get; set; } = new();
-    public ProcessSortResult ProcessResult { get; set; } = new();
+    public string Details { get; set; } = "🧹 Cleanup: Removes old metadata items and folders without metadata.json files\n🔄 Refresh: When items are deleted, refreshes all Jellyfin libraries containing the JellyBridge folder (search for missing metadata only, do not replace images)\n📦 Processed: Number of items checked for cleanup\n🗑️ Deleted: Items deleted due to retention policy or missing metadata.json";
     public RefreshPlan? Refresh { get; set; }
     
-    // Aliases for convenience - delegate to ProcessResult
-    public List<(IJellyfinItem item, int playCount)> ItemsSorted
-    {
-        get => ProcessResult.ItemsSorted;
-        set => ProcessResult.ItemsSorted = value;
-    }
+    // Unified collections
+    public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
+    public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
+    public int FoldersWithoutMetadataDeleted { get; set; }
     
-    public List<string> ItemsFailed
-    {
-        get => ProcessResult.ItemsFailed;
-        set => ProcessResult.ItemsFailed = value;
-    }
+    // Computed properties - filter by type
+    public List<JellyseerrMovie> ProcessedMovies => ItemsProcessed.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> ProcessedShows => ItemsProcessed.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> DeletedMovies => ItemsDeleted.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> DeletedShows => ItemsDeleted.OfType<JellyseerrShow>().ToList();
     
-    public List<(IJellyfinItem? item, string path)> ItemsSkipped
-    {
-        get => ProcessResult.ItemsSkipped;
-        set => ProcessResult.ItemsSkipped = value;
-    }
+    // Count properties
+    public int MoviesProcessed => ProcessedMovies.Count;
+    public int ShowsProcessed => ProcessedShows.Count;
+    public int TotalProcessed => ItemsProcessed.Count;
+    public int MoviesDeleted => DeletedMovies.Count;
+    public int ShowsDeleted => DeletedShows.Count;
+    public int TotalDeleted => ItemsDeleted.Count;
 
     public override string ToString()
     {
@@ -311,33 +286,30 @@ public class SortLibraryResult
         
         result.AppendLine("\nDetails:");
         result.AppendLine(Details);
-        result.AppendLine();
-        
-        // Add individual items with 2-space indentation
-        result.AppendLine($"Algorithm: {SortAlgorithm}");
-        result.AppendLine($"Users: {Users.Count}");
         
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"Refresh: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "_______________";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
-        // Header row with top border
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies Result",-14}{separator}{"Shows Result",-14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        // Header row
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"• Processed:",-14}{separator}{ProcessResult.MoviesProcessed,14}{separator}{ProcessResult.ShowsProcessed,14}{separator}");
-        result.AppendLine($"{separator}{"• Sorted:",-14}{separator}{ProcessResult.MoviesSortedCount,14}{separator}{ProcessResult.ShowsSortedCount,14}{separator}");
-        result.AppendLine($"{separator}{"• Skipped:",-14}{separator}{ProcessResult.MoviesSkippedCount,14}{separator}{ProcessResult.ShowsSkippedCount,14}{separator}");
-        result.AppendLine($"{separator}{"• Failed:",-14}{separator}{ProcessResult.Failed,14}{separator}{ProcessResult.Failed,14}{separator}");
-        result.AppendLine($"{rowBorder}{rowBorder}{rowBorder}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🗑️\t"}{"Deleted",-10}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
+        
+        if (FoldersWithoutMetadataDeleted > 0)
+        {
+            result.AppendLine();
+            result.AppendLine($"Folders without metadata.json deleted: {FoldersWithoutMetadataDeleted}");
+        }
         
         return result.ToString().TrimEnd();
     }
