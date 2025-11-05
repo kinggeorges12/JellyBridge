@@ -59,8 +59,8 @@ public class SyncJellyseerrResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\n🔄 Refresh Plan: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
@@ -71,11 +71,11 @@ public class SyncJellyseerrResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕\tAdded     ",18}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🛠️\tUpdated   ",18}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\tIgnored   ",18}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🙈\tHidden    ",18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\t"}{"Added",-10}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🛠️\t"}{"Updated",-10}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Ignored",-10}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -142,8 +142,8 @@ public class SyncJellyfinResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\n🔄 Refresh Plan: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
@@ -154,12 +154,12 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"❤️\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🔍\tFound     ",18}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕\tCreated   ",18}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🚫\tBlocked   ",18}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🙈\tHidden    ",18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
-        result.AppendLine($"{separator}{"👁️\tUnhidden  ",18}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❤️\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🔍\t"}{"Found",-10}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\t"}{"Created",-10}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🚫\t"}{"Blocked",-10}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"👁️\t"}{"Unhidden",-10}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -220,13 +220,13 @@ public class SortLibraryResult
         result.AppendLine();
         
         // Add individual items with 2-space indentation
-        result.AppendLine($"🎲 Algorithm: {SortAlgorithm}");
-        result.AppendLine($"👥 Users: {Users.Count}");
+        result.AppendLine($"🎲 {SortAlgorithm}");
+        result.AppendLine($"👥 {Users.Count}");
         
         if (Refresh != null)
         {
             // Sort always uses refreshUserData: false, which results in "Scan for new and updated files"
-            result.AppendLine($"🔄 Refresh: Scan for new and updated files, Do not replace images");
+            result.AppendLine($"🔄 Scan for new and updated files, 🔳 Replace existing images");
         }
         
         result.AppendLine();
@@ -237,10 +237,10 @@ public class SortLibraryResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"✅\tSorted    ",18}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\tSkipped   ",18}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"❌\tFailed    ",18}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -290,8 +290,8 @@ public class CleanupResult
         if (Refresh != null)
         {
             var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "Replace existing images" : "Do not replace images";
-            result.AppendLine($"\n🔄 Refresh Plan: {refreshType}, {refreshImages}");
+            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
+            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
         }
         
         result.AppendLine();
@@ -302,8 +302,8 @@ public class CleanupResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🗑️\tDeleted   ",18}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🗑️\t"}{"Deleted",-10}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
         
         if (FoldersWithoutMetadataDeleted > 0)
         {

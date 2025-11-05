@@ -56,7 +56,7 @@ public class SyncTask : IScheduledTask
                 CleanupResult? cleanupResult = null;
                 
                 // Step 0: Cleanup metadata before sync operations
-                progress.Report(5);
+                progress.Report(10);
                 _logger.LogDebug("Step 0: Cleaning up metadata...");
                 
                 try
@@ -71,7 +71,7 @@ public class SyncTask : IScheduledTask
                 }
                 finally
                 {
-                    progress.Report(10);
+                    progress.Report(20);
                 }
                 
                 // Step 1: Sync favorites to Jellyseerr
@@ -91,7 +91,7 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(30);
+                    progress.Report(50);
                 }
                 
                 // Step 2: Sync discover from Jellyseerr
@@ -111,7 +111,7 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(60);
+                    progress.Report(80);
                 }
 
                 try {
