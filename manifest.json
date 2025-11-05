@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.30 - Updated GetPluginConfiguration to use GetConfigOrDefault for NetworkMap, ensuring default network map is returned when config is null. Improved available networks refresh button to show appropriate alerts when no networks are found. Removed debug alert from network loading error handling.",
+        "checksum": "F4CEB5C0808B5583E8B40ACDF8BF70B2",
+        "timestamp": "2025-11-05T06:24:30.062Z",
+        "version": "1.4.30.11",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.30 - Updated GetPluginConfiguration to use GetConfigOrDefault for NetworkMap, ensuring default network map is returned when config is null. Improved available networks refresh button to show appropriate alerts when no networks are found. Removed debug alert from network loading error handling.",
+        "checksum": "9B729231819AF2292FFA37FA50A58C49",
+        "timestamp": "2025-11-05T06:24:30.062Z",
+        "version": "1.4.30.10",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2025-11-05T06:05:09.317Z",
         "targetAbi": "10.11.0.0",
         "checksum": "CAB92445E3FAB3ED3DCF12710301D903",

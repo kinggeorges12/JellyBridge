@@ -63,7 +63,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
                     Region = config.Region,
-                    NetworkMap = config.NetworkMap,
+                    NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
                     ConfigOptions = BridgeConfiguration.ToJson(),
                     ConfigDefaults = PluginConfiguration.DefaultValues
                 };
