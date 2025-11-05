@@ -92,21 +92,21 @@ public class SyncJellyseerrResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|--------------|----------|----------|----------|";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦 Processed",-14}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕ Added",-14}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🛠️ Updated",-14}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️ Ignored",-14}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\tAdded",-18}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🛠️\tUpdated",-18}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\tIgnored",-18}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
         
         // Hidden row (only show if there are hidden items)
         if (MoviesHidden > 0 || ShowsHidden > 0)
         {
-            result.AppendLine($"{separator}{"🙈 Hidden",-14}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+            result.AppendLine($"{separator}{"🙈\tHidden",-18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
         }
         
         return result.ToString().TrimEnd();
@@ -210,18 +210,18 @@ public class SyncJellyfinResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|--------------|----------|----------|----------|";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"❤️ Processed",-14}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🔍 Found",-14}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕Created",-14}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🚫 Blocked",-14}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🙈 Hidden",-14}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
-        result.AppendLine($"{separator}{"👁️ Unhidden",-14}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❤️\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🔍\tFound",-18}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\tCreated",-18}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🚫\tBlocked",-18}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\tHidden",-18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"👁️\tUnhidden",-18}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -329,16 +329,16 @@ public class SortLibraryResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|--------------|----------|----------|----------|";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦 Processed",-14}{separator}{$"{ProcessResult.MoviesProcessed,8}  "}{separator}{$"{ProcessResult.ShowsProcessed,8}  "}{separator}{$"{ProcessResult.MoviesProcessed + ProcessResult.ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"✅Sorted",-14}{separator}{$"{ProcessResult.MoviesSortedCount,8}  "}{separator}{$"{ProcessResult.ShowsSortedCount,8}  "}{separator}{$"{ProcessResult.MoviesSortedCount + ProcessResult.ShowsSortedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️ Skipped",-14}{separator}{$"{ProcessResult.MoviesSkippedCount,8}  "}{separator}{$"{ProcessResult.ShowsSkippedCount,8}  "}{separator}{$"{ProcessResult.MoviesSkippedCount + ProcessResult.ShowsSkippedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"❌Failed",-14}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed * 2,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{ProcessResult.MoviesProcessed,8}  "}{separator}{$"{ProcessResult.ShowsProcessed,8}  "}{separator}{$"{ProcessResult.MoviesProcessed + ProcessResult.ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\tSorted",-18}{separator}{$"{ProcessResult.MoviesSortedCount,8}  "}{separator}{$"{ProcessResult.ShowsSortedCount,8}  "}{separator}{$"{ProcessResult.MoviesSortedCount + ProcessResult.ShowsSortedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\tSkipped",-18}{separator}{$"{ProcessResult.MoviesSkippedCount,8}  "}{separator}{$"{ProcessResult.ShowsSkippedCount,8}  "}{separator}{$"{ProcessResult.MoviesSkippedCount + ProcessResult.ShowsSkippedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\tFailed",-18}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed * 2,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -394,14 +394,14 @@ public class CleanupResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|--------------|----------|----------|----------|";
+        const string rowBorder = "|------------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
+        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦 Processed",-14}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🗑️ Deleted ",-14}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🗑️\tDeleted",-18}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
         
         if (FoldersWithoutMetadataDeleted > 0)
         {
