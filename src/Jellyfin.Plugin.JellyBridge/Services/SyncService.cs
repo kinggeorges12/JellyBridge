@@ -102,17 +102,19 @@ public partial class SyncService
             var uniqueDiscoverMedia = await _discoverService.FilterDuplicateMedia(discoverMedia);
 
             // Step 3: Process movies and TV shows
-            _logger.LogTrace("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
+            _logger.LogDebug("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
             // Add items to unified collections
             result.ItemsAdded.AddRange(addedMedia);
             result.ItemsUpdated.AddRange(updatedMedia);
 
             // Step 3.5: Ignore duplicated items for networks with shared libraries
-            var ignoredDuplicates = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
-            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items", ignoredDuplicates.Count);
+            var (newlyIgnoredDuplicates, existingIgnoredDuplicates) = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
+            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
+                newlyIgnoredDuplicates.Count + existingIgnoredDuplicates.Count, newlyIgnoredDuplicates.Count, existingIgnoredDuplicates.Count);
 
-            result.ItemsIgnored.AddRange(ignoredDuplicates);
+            result.ItemsIgnored.AddRange(existingIgnoredDuplicates);
+            result.ItemsHidden.AddRange(newlyIgnoredDuplicates);
 
             // Step 4: Library Scan to find matches and get unmatched items
             List<JellyMatch> matchedItems = new List<JellyMatch>();
@@ -137,17 +139,12 @@ public partial class SyncService
                 
                 // Delete all existing .ignore files when including main libraries
                 var deletedCount = await _discoverService.DeleteAllIgnoreFilesAsync();
-                _logger.LogTrace("Step 4.5: Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
+                _logger.LogDebug("Step 4.5: Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
             } 
 
             // Step 5: Create ignore files for matched items and add them to ignored items
             _logger.LogDebug("Step 5: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
                 matchedItems.Count);
-            
-            // Add matched items to ignored items list
-            var matchedJellyseerrItems = matchedItems.Select(m => m.JellyseerrItem).ToList();
-            result.ItemsIgnored.AddRange(matchedJellyseerrItems);
-            
             var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
 
             // Step 6: Create placeholder videos for unmatched movies
@@ -163,18 +160,24 @@ public partial class SyncService
             
             await Task.WhenAll(ignoreTask, placeholderMovieTask, placeholderShowTask);
 
-            // Step 8: Clean up old metadata before refreshing library
-            _logger.LogDebug("Step 8: 🧹 Cleaning up old metadata from Jellyseerr bridge folder...");
-            var deletedItems = await _discoverService.CleanupMetadataAsync();
-            
-            // Add deleted items to unified collection
-            result.ItemsDeleted.AddRange(deletedItems);
+            // Step 5: Get ignore results and add to appropriate collections
+            var (newIgnored, existingIgnored) = await ignoreTask;
+            result.ItemsIgnored.AddRange(existingIgnored);
+            result.ItemsHidden.AddRange(newIgnored);
+            _logger.LogDebug("Step 5.5: Ignored {IgnoredCount} matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
+                newIgnored.Count + existingIgnored.Count, newIgnored.Count, existingIgnored.Count);
+
+            // Step 8: Filter and ignore items with invalid network IDs
+            _logger.LogDebug("Step 8: 🔍 Filtering and ignoring items with invalid network IDs...");
+            var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
+            result.ItemsIgnored.AddRange(existingIgnoredNetwork);
+            result.ItemsHidden.AddRange(newIgnoredNetwork);
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
-            var itemsDeleted = deletedItems.Count > 0;
+            var itemsHidden = result.ItemsHidden.Count > 0;
             result.Refresh = new RefreshPlan
             {
-                FullRefresh = itemsDeleted,
+                FullRefresh = itemsHidden,
                 RefreshImages = true
             };
             
@@ -182,8 +185,8 @@ public partial class SyncService
             result.Success = true;
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
 
-            _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieDeleted} deleted | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowDeleted} deleted", 
-                result.MoviesAdded, result.MoviesUpdated, result.MoviesDeleted, result.ShowsAdded, result.ShowsUpdated, result.ShowsDeleted);
+            _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieHidden} hidden | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowHidden} hidden", 
+                result.MoviesAdded, result.MoviesUpdated, result.MoviesHidden, result.ShowsAdded, result.ShowsUpdated, result.ShowsHidden);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -276,21 +279,23 @@ public partial class SyncService
             
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
-            var removedItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
+            var newlyIgnoredItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
+            result.ItemsHidden.AddRange(newlyIgnoredItems);
+            _logger.LogDebug("Step 6: Hidden {NewlyIgnored} items", newlyIgnoredItems.Count);
 
             //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             _logger.LogDebug("Step 7: Removing .ignore files for fully declined requests");
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();
+            result.ItemsUnhidden.AddRange(declinedItems);
+            _logger.LogDebug("Step 7: Unhidden {UnhiddenCount} declined items", declinedItems.Count);
 
-            // Step 8: Provide refresh plan to caller based on removals
+            // Step 8: Provide refresh plan to caller based on hidden or unhidden items
             _logger.LogDebug("Step 8: Refreshing Jellyfin libraries");
-            var itemsDeleted = removedItems.Count > 0 || (declinedItems.Count > 0);
-            if (itemsDeleted)
+            if (result.ItemsHidden.Count > 0 || result.ItemsUnhidden.Count > 0)
             {
-                result.ItemsRemoved.AddRange(removedItems);
                 result.Refresh = new RefreshPlan
                 {
-                    FullRefresh = true,
+                    FullRefresh = result.ItemsHidden.Count > 0,
                     RefreshImages = false
                 };
             }

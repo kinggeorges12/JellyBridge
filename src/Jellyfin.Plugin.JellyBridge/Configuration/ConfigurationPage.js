@@ -952,6 +952,60 @@ function performSortContent(page) {
     });
 }
 
+function performCleanupMetadata(page) {
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    
+    // Show confirmation dialog for saving settings before cleanup
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting cleanup.',
+        confirmText: 'Save & Cleanup',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            cleanupButton.disabled = true;
+            // Save settings first, then cleanup
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the cleanup result textbox
+                const cleanupResult = page.querySelector('#cleanupMetadataResult');
+                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
+                cleanupResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Cleanup if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/CleanupMetadata'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(cleanupData) {
+                    appendToResultBox(cleanupResult, '\n' + (cleanupData?.result || 'No result available'));
+                    scrollToElement('cleanupMetadataResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nCleanup Results:\n`;
+                    resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(cleanupResult, resultText);
+                    scrollToElement('cleanupMetadataResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                cleanupButton.disabled = false;
+            });
+        }
+    });
+}
+
 // ==========================================
 // MANAGE DISCOVER LIBRARY FUNCTIONS
 // ==========================================
@@ -1258,6 +1312,14 @@ function initializeAdvancedSettings(page) {
     if (libraryPrefixInput) {
         libraryPrefixInput.addEventListener('input', function() {
             validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
+        });
+    }
+    
+    // Add cleanup metadata button functionality
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    if (cleanupButton) {
+        cleanupButton.addEventListener('click', function() {
+            performCleanupMetadata(page);
         });
     }
 }

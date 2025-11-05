@@ -39,6 +39,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<SyncService>();
             serviceCollection.AddScoped<MetadataService>();
             serviceCollection.AddScoped<SortService>();
+            serviceCollection.AddScoped<CleanupService>();
             
             // Register the bridge service
             serviceCollection.AddScoped<BridgeService>();
@@ -63,6 +64,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.ManageDiscoverLibraryController>();
             serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
+            serviceCollection.AddScoped<Controllers.CleanupController>();
         }
     }
 }
