@@ -422,8 +422,7 @@ function initializeImportContent(page) {
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
-            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
-                config.ApiKey != page.querySelector('#ApiKey').value){
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
                 Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
@@ -522,8 +521,7 @@ function initializeImportContent(page) {
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
-            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
-                config.ApiKey != page.querySelector('#ApiKey').value){
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
                 Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
@@ -1615,6 +1613,7 @@ function savePluginConfiguration(page) {
         .then(async response => {
             const result = await response.json();
             if (result.success) {
+                form.ConfigDefaults = config.ConfigDefaults;
                 window.configJellyBridge = form;
                 return result;
             } else {

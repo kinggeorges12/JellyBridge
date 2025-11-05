@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
+        "version": "1.4.36.11",
+        "checksum": "0CCEECC646355192B1D6E4547B878695",
+        "dependencies": [],
+        "timestamp": "2025-11-05T08:01:12.906Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
+        "version": "1.4.36.10",
+        "checksum": "D72168860688F51254F66A495620CDCE",
+        "dependencies": [],
+        "timestamp": "2025-11-05T08:01:12.906Z"
+      },
+      {
         "dependencies": [],
         "timestamp": "2025-11-05T07:47:52.264Z",
         "version": "1.4.35.11",
