@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.31 - Refined available networks UI: adjusted alert/scroll behavior and removed debug noise. Updated Import screenshot to reflect current UI.",
+        "timestamp": "2025-11-05T06:30:11.224Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.31.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.11.zip",
+        "dependencies": [],
+        "checksum": "D23BE241F8D863210074DF7766DCA147"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.31 - Refined available networks UI: adjusted alert/scroll behavior and removed debug noise. Updated Import screenshot to reflect current UI.",
+        "timestamp": "2025-11-05T06:30:11.224Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.31.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.10.zip",
+        "dependencies": [],
+        "checksum": "F760B198BA2EA3E427B1636D29FCF3EF"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.30 - Updated GetPluginConfiguration to use GetConfigOrDefault for NetworkMap, ensuring default network map is returned when config is null. Improved available networks refresh button to show appropriate alerts when no networks are found. Removed debug alert from network loading error handling.",
         "checksum": "F4CEB5C0808B5583E8B40ACDF8BF70B2",
         "timestamp": "2025-11-05T06:24:30.062Z",
