@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.25.11",
+        "checksum": "71C48AAD209C62FD14897492DC71F014",
+        "changelog": "Jellyfin 10.11.0: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.11.zip",
+        "timestamp": "2025-11-05T02:49:25.723Z",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "1.4.25.10",
+        "checksum": "389D969745EE7898C75EF75CC6FDB35B",
+        "changelog": "Jellyfin 10.10.7: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.10.zip",
+        "timestamp": "2025-11-05T02:49:25.723Z",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "version": "1.4.24.11",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-05T02:37:25.086Z",
