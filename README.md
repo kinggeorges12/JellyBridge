@@ -1,5 +1,13 @@
 # JellyBridge Plugin
 
+## Upcoming Release 2.0
+
+Check out a sneak preview in the [Feature branch](https://github.com/kinggeorges12/JellyBridge/tree/feature?tab=readme-ov-file#jellybridge-plugin)! Big changes: JellyBridge library sorting, Jellyseerr quota support, network folders, (and lots of bug fixes).
+
+**Release Date: November 11th!**
+
+## Back to our regularly scheduled programming...
+
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
