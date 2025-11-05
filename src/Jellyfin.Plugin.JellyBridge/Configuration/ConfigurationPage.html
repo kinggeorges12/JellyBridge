@@ -813,6 +813,13 @@
                             <div class="fieldDescription">Enable trace-level logging for even more detailed information. This is the most verbose logging level and creates a lot of log entries.</div>
                         </div>
 
+                        <div>
+                            <button is="emby-button" type="button" id="cleanupMetadata" class="raised button block emby-button">
+                                <span>🧹 Cleanup Metadata</span>
+                            </button>
+                            <div id="cleanupMetadataResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                        </div>
+
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
                             <button is="emby-button" type="button" id="recycleLibraryData" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
                                 <span>🗑️ Recycle JellyBridge Library Data</span>
@@ -821,7 +828,7 @@
                                 <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <i>Library Directory</i>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupInstructions">setup instructions at the top of this page</span>. This should clean-up the Jellyfin metadata and prevent errors when adding new content.
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupHelp">setup instructions at the top of this page</span>. This should clean-up the Jellyfin metadata and prevent errors when adding new content.
                             </div>
                         </div>
 

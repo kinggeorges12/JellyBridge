@@ -322,17 +322,18 @@ public class FavoriteService
     /// For each favorited item that was requested in Jellyseerr, create an .ignore marker and unmark it as favorite for the user.
     /// Uses GetUserFavorites to find all existing favorites, creates ignore files for all matched Jellyfin items,
     /// and unfavorites items only if they are in the bridge folder or not in any folder.
+    /// Returns the list of newly ignored Jellyseerr items.
     /// </summary>
-    public async Task<List<IJellyfinItem>> UnmarkAndIgnoreRequestedAsync()
+    public async Task<List<IJellyseerrItem>> UnmarkAndIgnoreRequestedAsync()
     {
-        var affectedItems = new List<IJellyfinItem>();
+        var newIgnored = new List<IJellyseerrItem>();
 
         // Respect configuration: if removal from favorites is disabled, do nothing
         var removeRequested = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
         if (!removeRequested)
         {
             _logger.LogTrace("RemoveRequestedFromFavorites disabled; skipping unfavorite and ignore creation.");
-            return affectedItems;
+            return newIgnored;
         }
 
         try
@@ -353,8 +354,10 @@ public class FavoriteService
 			_logger.LogDebug("Library scan produced {MatchCount} matches for ignore/unfavorite", matches.Count);
 
             // Create ignore files for all matched Jellyfin items
-			await _bridgeService.CreateIgnoreFilesAsync(matches);
-			_logger.LogTrace("Created/updated ignore files for matched items");
+			var (newIgnoredMatches, existingIgnored) = await _bridgeService.CreateIgnoreFilesAsync(matches);
+			newIgnored.AddRange(newIgnoredMatches);
+			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
+                newIgnoredMatches.Count, existingIgnored.Count);
 
             // Unfavorite items only if they are in bridge folder OR not in any folder
             foreach (var match in matches)
@@ -366,13 +369,12 @@ public class FavoriteService
                 var isInBridgeFolder = !string.IsNullOrEmpty(itemPath) && FolderUtils.IsPathInSyncDirectory(itemPath);
                 var isNotInAnyFolder = string.IsNullOrEmpty(itemPath);
                 
+                // Only unfavorite items that are in bridge folder or have no path
                 if (!isInBridgeFolder && !isNotInAnyFolder)
                 {
-                    // Skip items that are in other folders (not bridge, not null/empty)
+                    // Skip unfavoriting items that are in other folders (not bridge, not null/empty)
                     continue;
                 }
-
-                affectedItems.Add(jfItem);
 
                 if (!itemIdToUsers.TryGetValue(jfItem.Id, out var users))
                 {
@@ -404,8 +406,9 @@ public class FavoriteService
         {
             _logger.LogError(ex, "Failed processing favorited items for unmark-and-ignore");
         }
-		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. AffectedItems={Count}", affectedItems.Count);
-        return affectedItems;
+		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. NewIgnored={NewIgnoredCount}", 
+            newIgnored.Count);
+        return newIgnored;
     }
 
     /// <summary>

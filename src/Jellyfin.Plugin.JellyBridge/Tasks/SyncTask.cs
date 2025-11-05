@@ -19,18 +19,21 @@ public class SyncTask : IScheduledTask
     private readonly SyncService _syncService;
     private readonly ITaskManager _taskManager;
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
+    private readonly CleanupService _cleanupService;
 
 
     public SyncTask(
         ILogger<SyncTask> logger,
         SyncService syncService,
         ITaskManager taskManager,
-        PlaceholderVideoGenerator placeholderVideoGenerator)
+        PlaceholderVideoGenerator placeholderVideoGenerator,
+        CleanupService cleanupService)
     {
         _logger = new DebugLogger<SyncTask>(logger);
         _syncService = syncService;
         _taskManager = taskManager;
         _placeholderVideoGenerator = placeholderVideoGenerator;
+        _cleanupService = cleanupService;
         _logger.LogInformation("SyncTask constructor called - task initialized");
     }
 
@@ -51,8 +54,26 @@ public class SyncTask : IScheduledTask
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
                 
+                // Step 0: Cleanup metadata before sync operations
+                progress.Report(5);
+                _logger.LogDebug("Step 0: Cleaning up metadata...");
+                
+                try
+                {
+                    await _cleanupService.CleanupMetadataAsync();
+                    _logger.LogDebug("Step 0: Cleanup completed successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Step 0 failed: Cleanup metadata");
+                    // Continue with sync operations even if cleanup fails
+                }
+                finally
+                {
+                    progress.Report(10);
+                }
+                
                 // Step 1: Sync favorites to Jellyseerr
-                progress.Report(10);
                 _logger.LogDebug("Step 1: Syncing favorites to Jellyseerr...");
                 
                 try
