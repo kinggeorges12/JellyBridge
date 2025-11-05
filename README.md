@@ -142,8 +142,9 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
 2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
 3. **Test the connection** to ensure Jellyseerr is accessible
-4. **Enable the plugin** and trigger an initial sync (or use the Import button)
+4. **Import discover content** to browse movies and shows from Jellyseerr
 5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads
+6. **Customize sorting** to show users a variety of discover content
 
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
@@ -151,72 +152,69 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
-- **Jellyseerr URL**: The web address where your Jellyseerr instance is running
-- **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr
-- **Library Directory**: Where JellyBridge stores placeholder videos and metadata files on your system. Placeholder videos are short video files that represent content not yet downloaded. Metadata files contain information about movies and shows. Use a dedicated path for JellyBridge.
-- **Enable the Automated Task to Sync Jellyseerr and Jellyfin**: Turns on automatic syncing on a schedule. Syncing transfers content information between Jellyseerr and Jellyfin.
-- **Sync Interval (Hours)**: How often the plugin automatically syncs content (hours). Supports decimals (e.g., 1.5). Set to 0 to disable automatic syncing.
+- **Jellyseerr URL**: The web address where your Jellyseerr instance is accessible to Jellyfin.
+- **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr.
+- **Library Directory**: Path where JellyBridge stores its files. Use a dedicated directory for this plugin.
+- **Enable the Automated Task to Sync Jellyseerr and Jellyfin**: Turns on automatic syncing on a schedule.
+- **Sync Interval (Hours)**: How often the plugin automatically syncs content (hours).
 - **Test Connection with Jellyseerr**: Verifies that the plugin can successfully connect to your Jellyseerr instance
-- **Automated Sync Status**: Shows whether the scheduled sync is running/idle/disabled, progress, and last/next run times
-
-
-Notes:
-- For Docker, `Jellyseerr URL` can be `http://host.docker.internal:5055` on the host network.
-- After first-time install or some upgrades, Jellyfin delays scheduled tasks by ~1 hour before the first run.
+- **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time.
+- **Library Setup Instructions**: Click the "Setup" button (?) next to the automated task checkbox to view library setup instructions and troubleshooting.
 
 ### 🔍 Import Discover Content
 
 ![Import Discover Content](Screenshots/Import.png)
 
-- **Region**: Which geographic region to use for discovering streaming content. Different regions show different available networks.
-- **Network Services**: Choose which streaming networks to pull content from and include in your library. Use the two-pane picker to move networks from Available → Synced. Search boxes help filter; use ↻ to refresh lists.
-- **Max Discover Pages**: Controls how much discover content is pulled from each network during sync. Discover content includes available movies and shows from streaming networks. Each page contains 20 items. Applies to both movies and TV shows. Set to 0 to retrieve all pages (start small if testing).
-- **Max Retention Days**: How long to keep discover content in the library before automatically removing it. Older items are cleaned up during sync.
-- **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually import discover content immediately without waiting for the scheduled task.
+- **Region**: Which geographic region to use for searching networks
+- **Network Services**: Choose which networks to include using the two-pane picker
+- **Discover Pages**: The number of pages to import per network
+- **Content Retention Time (Days)**: How long to keep discover content before automatic cleanup
+- **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually trigger the task
 
 ### 📁 Manage Discover Library
 
 ![Manage Discover Library](Screenshots/Manage.png)
 
- - **Manage JellyBridge Library**: Automatically refreshes your JellyBridge library in Jellyfin after each sync to show newly added or updated content. Performs a quick refresh for new items, or a full refresh if content was removed from Jellyseerr.
- - **Exclude Jellyfin library media from streaming libraries**: Prevents duplicate content by hiding movies and shows in the JellyBridge library if they already exist in your other Jellyfin libraries.
- - **Clean-up Requests from Favorites**: Automatically removes items from everyone's favorites list once they've been successfully requested in Jellyseerr, and hides them from the library. This prevents conflicts with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. If the request is denied in Jellyseerr, the item will reappear on the next sync.
-- **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger requests for all favorited items in the JellyBridge library to be sent to Jellyseerr. This button processes favorites immediately without waiting for the scheduled sync task.
-- **Use Network Folders**: Creates separate folders for each selected network (e.g., Netflix, Prime Video, FOX) so you can map each to its own Jellyfin library.
-- **Network Folder Setup**: Use the “🗂️ Generate Network Folders” button after selecting networks. Then create one Jellyfin library per network folder. Prefer adding the network subfolders (not the base JellyBridge folder) to avoid folder icons in the UI.
-- **Library Prefix**: Prefix applied to generated network library names, e.g., `Network - FOX`.
-- **Duplicate Discover Content for JellyBridge Libraries**: When using network folders, allows the same title to exist in multiple JellyBridge libraries if each library’s network selection is unique (e.g., “Friends” in both HBO and Hulu network libraries). Caution: Do not include the same network in multiple libraries or you’ll create duplicates within a library.
+- **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
+- **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
+- **Clean-up Requests from Favorites**: Removes items from favorites and hides them from the library after they've been successfully requested in Jellyseerr
+- **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
+- **Network Folder Setup**
+  - **Setup Instructions**: Step-by-step guide for creating network folders and libraries
+  - **Library Prefix**: Prefix applied to generated network library names
+  - **Duplicate Discover Content for JellyBridge Libraries**: Allows the same title to exist in multiple JellyBridge libraries if each library's network selection is unique
+  - **Generate Network Folders**: Button to create the folder structure for all selected networks
+- **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
 
 ### 🔀 Sort Discover Content
 ![Sort Discover Content](Screenshots/Sort.png)
 
-- **Enable the Automated Task to Sort Discover Content**: Periodically updates play counts to drive sort order for all users.
-- **Sort Task Interval (Hours)**: How often to run the sort task; supports decimals. Set to 0 to disable automatic sort randomization.
-- **Sort Order**: Choose algorithm:
-  - None: set all play counts to 0
-  - Random: randomize play counts
-  - Smart: semi-intelligent ordering based on user library genres
-  - Smartish: smart ordering with some randomness
-- **Mark Media Played**: Toggle whether items appear played (affects Jellyfin badges). Disabling sets items to unplayed before sorting.
-- **Refresh Discover Library Sort Order**: Manually apply the selected algorithm immediately.
+- **Enable the Automated Task to Sort Discover Content**: Periodically updates play counts to drive sort order for all users
+- **Sort Task Interval (Hours)**: How often to run the sort task
+- **Sort Order**: Choose algorithm
+  - **None**: Sets all play counts to zero
+  - **Random**: Randomizes play counts
+  - **Smart**: Semi-intelligent ordering based on genres in each user's library
+  - **Smartish**: Smart ordering with a little randomness
+- **Mark Media Played**: Change 🔵 badge appearance in the JellyBridge library
+- **Refresh Discover Library Sort Order**: Manually apply the selected algorithm immediately
 
-Instructions: Each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*.
-
-Note: Applying any sort will change the played status for media items. Marking items as played is required for Android TV compatibility.
+**Instructions**: To see the sorted order, each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*. For Android TV users, sort by ***Last Played***.
 
 ### ⚙️ Advanced Settings
 
 ![Advanced Settings](Screenshots/Advanced.png)
-- **Run Automated Tasks on Plugin Startup**: Automatically runs enabled tasks when the plugin starts or when Jellyfin restarts.
-- **Startup Delay (seconds)**: How many seconds to wait before running the startup sync, in addition to Jellyfin's built-in 1-minute delay.
-- **Task Timeout (minutes)**: How long to wait for plugin tasks (sync, sort, etc.) to finish before cancelling. This timeout applies after acquiring the task lock. Default is 10 minutes.
-- **Request Timeout (seconds)**: How long to wait for responses from Jellyseerr before considering the request failed.
-- **Retry Attempts**: How many times to retry failed requests to Jellyseerr before giving up.
-- **Placeholder Video Duration (seconds)**: How long the placeholder videos should be. Placeholder videos are short video files created for movies and shows that aren't yet available in your library, allowing them to appear in Jellyfin.
-- **Enable Debug Logging**: Provides more detailed information in the logs to help troubleshoot issues.
-- **Enable Trace Logging**: The most verbose logs; only available when Debug Logging is enabled.
 
-Note: The Advanced section also includes a destructive action "Recycle JellyBridge Library Data" to purge all generated JellyBridge data from the configured library directory. Use with extreme caution. After deletion, remove any JellyBridge libraries that point to the path and recreate them per the setup instructions.
+- **Run Automated Tasks on Plugin Startup**: Runs all enabled automated tasks when Jellyfin starts
+- **Startup Delay (seconds)**: How many long to wait before running the startup tasks
+- **Task Queue Timeout (minutes)**: How long to wait for queued JellyBridge tasks to start behind running tasks
+- **Request Timeout (seconds)**: Jellyseerr API requests wait time
+- **Retry Attempts**: Number of retry attempts for failed API requests to Jellyseerr
+- **Placeholder Video Duration (seconds)**: A short video teaching users how to request the discover content
+- **Enable Debug Logging**: Normal logging
+- **Enable Trace Logging**: Huge logs
+- **Cleanup Metadata**: Button to manually clean up metadata in the JellyBridge library
+- **Recycle JellyBridge Library Data**: Permanently deletes all data from the JellyBridge library directory and requires confirmation twice
 
 ## 🧰 Logging & Troubleshooting
 

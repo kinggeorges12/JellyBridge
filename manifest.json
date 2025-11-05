@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-05T06:05:09.317Z",
+        "targetAbi": "10.11.0.0",
+        "checksum": "CAB92445E3FAB3ED3DCF12710301D903",
+        "version": "1.4.29.11",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.11.zip"
+      },
+      {
+        "timestamp": "2025-11-05T06:05:09.317Z",
+        "targetAbi": "10.10.0.0",
+        "checksum": "2B70D9C7BD3D93B30D5EE54D6D363E5E",
+        "version": "1.4.29.10",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.10.zip"
+      },
+      {
         "timestamp": "2025-11-05T04:13:40.218Z",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.11.zip",

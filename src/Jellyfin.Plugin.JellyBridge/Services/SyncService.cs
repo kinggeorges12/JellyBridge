@@ -174,12 +174,19 @@ public partial class SyncService
             result.ItemsHidden.AddRange(newIgnoredNetwork);
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
-            var itemsHidden = result.ItemsHidden.Count > 0;
-            result.Refresh = new RefreshPlan
+            // Only set refresh plan if there are added items or hidden items
+            var hasAddedItems = result.ItemsAdded.Count > 0;
+            var hasHiddenItems = result.ItemsHidden.Count > 0;
+            
+            if (hasAddedItems || hasHiddenItems)
             {
-                FullRefresh = itemsHidden,
-                RefreshImages = true
-            };
+                result.Refresh = new RefreshPlan
+                {
+                    // Added items trigger full refresh, hidden items trigger partial refresh
+                    FullRefresh = hasAddedItems,
+                    RefreshImages = hasAddedItems
+                };
+            }
             
             // Step 10: Save results
             result.Success = true;
@@ -333,14 +340,20 @@ public partial class SyncService
     {
         try
         {
-            var fullRefresh = (cleanupResult?.Refresh?.FullRefresh == true) || (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
-            var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
+            var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
+            if (doRefresh)
+            {
+                var fullRefresh = (cleanupResult?.Refresh?.FullRefresh == true) || (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
+                var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
 
-            _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
-            _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-            // refreshUserData defaults to true - will perform light refresh to reload user data
-            await _libraryService.RefreshBridgeLibrary(fullRefresh: fullRefresh, refreshImages: refreshImages);
-            _logger.LogDebug("Scan of all libraries completed");
+                _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
+                _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
+                // refreshUserData defaults to true - will perform light refresh to reload user data
+                await _libraryService.RefreshBridgeLibrary(fullRefresh: fullRefresh, refreshImages: refreshImages);
+                _logger.LogDebug("Scan of all libraries completed");
+            } else {
+                _logger.LogDebug("No refresh plan applied");
+            }
         }
         catch (Exception ex)
         {

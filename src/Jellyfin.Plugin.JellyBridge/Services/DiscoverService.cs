@@ -333,16 +333,6 @@ public class DiscoverService
     #region Deleted
 
     /// <summary>
-    /// Cleans up metadata by removing items older than the specified number of days.
-    /// Also deletes JellyBridge folders that do not contain a metadata.json file.
-    /// Delegates to CleanupService.
-    /// </summary>
-    public async Task<CleanupResult> CleanupMetadataAsync()
-    {
-        return await _cleanupService.CleanupMetadataAsync();
-    }
-
-    /// <summary>
     /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
     /// </summary>
     public Task<int> DeleteAllIgnoreFilesAsync()

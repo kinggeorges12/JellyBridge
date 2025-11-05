@@ -376,7 +376,7 @@
                 
                 /* Result textarea styling - max height and scroll after 25 lines */
                 .testResult {
-                    max-height: 510px; /* ~25 lines * 20px + 10px */
+                    max-height: 550px; /* ~25 lines * 20px + 10px */
                     overflow-y: auto;
                     font-family: 'Courier New', monospace;
                 }
@@ -444,7 +444,7 @@
                         <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
                         <ul>
                             <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
+                            <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
                             <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
                             <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
                             <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
@@ -495,7 +495,7 @@
                         <summary>Import Discover Content</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and streaming networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
+                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
@@ -558,12 +558,12 @@
                         </div>
 
                         <div class="inputContainer">
-                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Discover Pages"/>
                             <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
-                            <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Max Retention Days"/>
+                            <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Content Retention Time (Days)"/>
                             <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. JellyBridge items older than this will be removed after running the import task.</div>
                         </div>
 
@@ -582,7 +582,7 @@
                         <summary>Manage Discover Library</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, prevent duplicate content from appearing in multiple libraries, handle favorite removal for requested items, and optionally create separate libraries for each streaming service.
+                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, prevent duplicate content from appearing in multiple libraries, handle favorite removal for requested items, and optionally create separate libraries for each network service.
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -600,13 +600,13 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Exclude Jellyfin library media from streaming libraries</span>
+                                <span class="checkboxLabel">Hide Discover Content Already in Jellyfin Libraries</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, the JellyBridge library will exclude streaming movies and shows that appear in your Jellyfin libraries. To enable this feature, the scheduled sync task creates an .ignore file in the movie or show directory. The .ignore file contains Jellyfin metadata for reference.</div>
+                            <div class="fieldDescription">When enabled, the JellyBridge library will exclude movies and shows that are found in your other Jellyfin libraries. To enable this feature, the scheduled sync task creates an .ignore file in the movie or show directory.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -750,7 +750,7 @@
                         <summary>Advanced</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Configure advanced options including startup behavior, timeout settings, placeholder video configuration, and logging levels. Use these settings to fine-tune plugin behavior and troubleshoot issues.
+                            Configure advanced options including startup behavior, timeout settings, placeholder video configuration, and logging levels. Use these settings to fine-tune plugin behavior and troubleshoot issues. The <span class="link" data-target-page="cleanupMetadata">Cleanup Metadata</span> button will remove folders that are missing metadata or have out-dated metadata in the JellyBridge library.
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -771,8 +771,8 @@
                         </div>
 
                         <div class="inputContainer">
-                            <input id="TaskTimeoutMinutes" type="number" is="emby-input" min="1" max="1440" label="Task Timeout (minutes)"/>
-                            <div class="fieldDescription">How long to wait for plugin tasks (sync, sort, etc.) to finish before cancelling. This timeout applies after acquiring the task lock.</div>
+                            <input id="TaskTimeoutMinutes" type="number" is="emby-input" min="1" max="1440" label="Task Queue Timeout (minutes)"/>
+                            <div class="fieldDescription">How long to wait for plugin tasks (sync, sort, etc.) to finish before exiting the task queue. This option will not cancel running tasks.</div>
                         </div>
 
                         <div class="inputContainer">

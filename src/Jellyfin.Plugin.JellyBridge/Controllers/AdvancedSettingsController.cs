@@ -14,12 +14,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         private readonly DebugLogger<AdvancedSettingsController> _logger;
         private readonly LibraryService _libraryService;
         private readonly CleanupService _cleanupService;
+        private readonly SyncService _syncService;
 
-        public AdvancedSettingsController(ILoggerFactory loggerFactory, LibraryService libraryService, CleanupService cleanupService)
+        public AdvancedSettingsController(ILoggerFactory loggerFactory, LibraryService libraryService, CleanupService cleanupService, SyncService syncService)
         {
             _logger = new DebugLogger<AdvancedSettingsController>(loggerFactory.CreateLogger<AdvancedSettingsController>());
             _libraryService = libraryService;
             _cleanupService = cleanupService;
+            _syncService = syncService;
         }
 
         /// <summary>
@@ -46,7 +48,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         _logger.LogDebug("Applying cleanup refresh plan (FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages})", 
                             cleanupResult.Refresh.FullRefresh, cleanupResult.Refresh.RefreshImages);
                         _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                        await _libraryService.RefreshBridgeLibrary(fullRefresh: cleanupResult.Refresh.FullRefresh, refreshImages: cleanupResult.Refresh.RefreshImages);
+                        await _syncService.ApplyRefreshAsync(cleanupResult: cleanupResult);
                         _logger.LogDebug("Scan of all libraries completed");
                     }
 
