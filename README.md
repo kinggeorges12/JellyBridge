@@ -2,7 +2,7 @@
 
 ## Upcoming Release 2.0
 
-Check out a sneak preview in the [Feature branch](https://github.com/kinggeorges12/JellyBridge/tree/feature?tab=readme-ov-file#jellybridge-plugin)! Big changes: JellyBridge library sorting, Jellyseerr quota support, network folders, (and lots of bug fixes).
+Check out a sneak preview in the [Feature branch](https://github.com/kinggeorges12/JellyBridge/tree/feature?tab=readme-ov-file#jellybridge-plugin)! Big changes: JellyBridge library sorting and network folders, Jellyseerr quota support, (and lots of bug fixes).
 
 **Release Date: November 11th!**
 
