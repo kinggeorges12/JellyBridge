@@ -11,33 +11,6 @@ namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 // ============================================================================
 
 /// <summary>
-/// Result of processing Jellyseerr items with counts for created, updated, deleted items.
-/// </summary>
-public class ProcessJellyseerrResult
-{
-    public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
-    public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
-    public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
-    public List<IJellyseerrItem> ItemsIgnored { get; set; } = new();
-
-    public int Processed => ItemsProcessed.Count;
-    public int Created => ItemsAdded.Count;
-    public int Updated => ItemsUpdated.Count;
-    public int Ignored => ItemsIgnored.Count;
-
-    public override string ToString()
-    {
-        var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"📦 Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"➕ Added:",-15}{Created,15}");
-        result.AppendLine($"{"🛠️ Updated:",-15}{Updated,15}");
-        result.AppendLine($"{"⏭️ Ignored:",-15}{Ignored,15}");
-        
-        return result.ToString().TrimEnd();
-    }
-}
-
-/// <summary>
 /// Result of a sync operation to Jellyseerr (creating requests).
 /// </summary>
 public class SyncJellyseerrResult
@@ -98,16 +71,11 @@ public class SyncJellyseerrResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕\tAdded",-18}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🛠️\tUpdated",-18}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\tIgnored",-18}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
-        
-        // Hidden row (only show if there are hidden items)
-        if (MoviesHidden > 0 || ShowsHidden > 0)
-        {
-            result.AppendLine($"{separator}{"🙈\tHidden",-18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
-        }
+        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\tAdded     ",18}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🛠️\tUpdated   ",18}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\tIgnored   ",18}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\tHidden    ",18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -116,36 +84,6 @@ public class SyncJellyseerrResult
 // ============================================================================
 // SyncToJellyseerr Operation Results
 // ============================================================================
-
-/// <summary>
-/// Result of processing Jellyfin items with lists of IJellyfinItem for processed items and JellyseerrMediaRequest for created items.
-/// </summary>
-public class ProcessJellyfinResult
-{
-    public List<IJellyfinItem> ItemsProcessed { get; set; } = new();
-    public List<IJellyfinItem> ItemsFound { get; set; } = new();
-    public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
-    public List<IJellyfinItem> ItemsRemoved { get; set; } = new();
-    public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
-
-    public int Processed => ItemsProcessed.Count;
-    public int Found => ItemsFound.Count;
-    public int Created => ItemsCreated.Count;
-    public int Removed => ItemsRemoved.Count;
-    public int Blocked => ItemsBlocked.Count;
-
-    public override string ToString()
-    {
-        var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"❤️ Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"🔍 Found:",-15}{Found,15}");
-        result.AppendLine($"{"➕ Created:",-15}{Created,15}");
-        result.AppendLine($"{"🚫 Blocked:",-15}{Blocked,15}");
-        result.AppendLine($"{"• Removed:",-15}{Removed,15}");
-        
-        return result.ToString().TrimEnd();
-    }
-}
 
 /// <summary>
 /// Result of a sync operation from Jellyfin (processing favorites).
@@ -216,12 +154,12 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"❤️\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🔍\tFound",-18}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕\tCreated",-18}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🚫\tBlocked",-18}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🙈\tHidden",-18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
-        result.AppendLine($"{separator}{"👁️\tUnhidden",-18}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❤️\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🔍\tFound     ",18}{separator}{$"{MoviesFound,8}  "}{separator}{$"{ShowsFound,8}  "}{separator}{$"{MoviesFound + ShowsFound,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\tCreated   ",18}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🚫\tBlocked   ",18}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\tHidden    ",18}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"👁️\tUnhidden  ",18}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -232,10 +170,18 @@ public class SyncJellyfinResult
 // ============================================================================
 
 /// <summary>
-/// Result of processing sort operations with counts for sorted, failed, and skipped items.
+/// Result of sorting the discover library by updating play counts.
 /// </summary>
-public class ProcessSortResult
+public class SortLibraryResult
 {
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
+    public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
+    public List<JellyfinUser> Users { get; set; } = new();
+    public RefreshPlan? Refresh { get; set; }
+    
+    // Collections
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
     public List<string> ItemsFailed { get; set; } = new();
     public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
@@ -267,50 +213,6 @@ public class ProcessSortResult
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
-        result.AppendLine($"{"📦 Processed:",-15}{Processed,15}");
-        result.AppendLine($"{"✅ Sorted:",-15}{Sorted,15}");
-        result.AppendLine($"{"⏭️ Skipped:",-15}{Skipped,15}");
-        result.AppendLine($"{"❌ Failed:",-15}{Failed,15}");
-        
-        return result.ToString().TrimEnd();
-    }
-}
-
-/// <summary>
-/// Result of sorting the discover library by updating play counts.
-/// </summary>
-public class SortLibraryResult
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
-    public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
-    public List<JellyfinUser> Users { get; set; } = new();
-    public ProcessSortResult ProcessResult { get; set; } = new();
-    public RefreshPlan? Refresh { get; set; }
-    
-    // Aliases for convenience - delegate to ProcessResult
-    public List<(IJellyfinItem item, int playCount)> ItemsSorted
-    {
-        get => ProcessResult.ItemsSorted;
-        set => ProcessResult.ItemsSorted = value;
-    }
-    
-    public List<string> ItemsFailed
-    {
-        get => ProcessResult.ItemsFailed;
-        set => ProcessResult.ItemsFailed = value;
-    }
-    
-    public List<(IJellyfinItem? item, string path)> ItemsSkipped
-    {
-        get => ProcessResult.ItemsSkipped;
-        set => ProcessResult.ItemsSkipped = value;
-    }
-
-    public override string ToString()
-    {
-        var result = new System.Text.StringBuilder();
         result.AppendLine(Message);
         
         result.AppendLine("\nDetails:");
@@ -335,10 +237,10 @@ public class SortLibraryResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{ProcessResult.MoviesProcessed,8}  "}{separator}{$"{ProcessResult.ShowsProcessed,8}  "}{separator}{$"{ProcessResult.MoviesProcessed + ProcessResult.ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"✅\tSorted",-18}{separator}{$"{ProcessResult.MoviesSortedCount,8}  "}{separator}{$"{ProcessResult.ShowsSortedCount,8}  "}{separator}{$"{ProcessResult.MoviesSortedCount + ProcessResult.ShowsSortedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\tSkipped",-18}{separator}{$"{ProcessResult.MoviesSkippedCount,8}  "}{separator}{$"{ProcessResult.ShowsSkippedCount,8}  "}{separator}{$"{ProcessResult.MoviesSkippedCount + ProcessResult.ShowsSkippedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"❌\tFailed",-18}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed,8}  "}{separator}{$"{ProcessResult.Failed * 2,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\tSorted    ",18}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\tSkipped   ",18}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\tFailed    ",18}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -400,8 +302,8 @@ public class CleanupResult
         result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\tProcessed",-18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🗑️\tDeleted",-18}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\tProcessed ",18}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🗑️\tDeleted   ",18}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
         
         if (FoldersWithoutMetadataDeleted > 0)
         {
