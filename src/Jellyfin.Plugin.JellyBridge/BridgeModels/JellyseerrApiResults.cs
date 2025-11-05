@@ -92,7 +92,7 @@ public class SyncJellyseerrResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|----------|----------|----------|----------|";
+        const string rowBorder = "|--------------|----------|----------|----------|";
         
         // Header row
         result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
@@ -210,7 +210,7 @@ public class SyncJellyfinResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|----------|----------|----------|----------|";
+        const string rowBorder = "|--------------|----------|----------|----------|";
         
         // Header row
         result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
@@ -220,18 +220,8 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"🔍 Found",-14}{separator}{MoviesFound,8}{separator}{ShowsFound,8}{separator}{MoviesFound + ShowsFound,8}{separator}");
         result.AppendLine($"{separator}{"➕Created",-14}{separator}{MoviesCreated,8}{separator}{ShowsCreated,8}{separator}{MoviesCreated + ShowsCreated,8}{separator}");
         result.AppendLine($"{separator}{"🚫 Blocked",-14}{separator}{MoviesBlocked,8}{separator}{ShowsBlocked,8}{separator}{MoviesBlocked + ShowsBlocked,8}{separator}");
-        
-        // Hidden row (only show if there are hidden items)
-        if (MoviesHidden > 0 || ShowsHidden > 0)
-        {
-            result.AppendLine($"{separator}{"🙈 Hidden",-14}{separator}{MoviesHidden,8}{separator}{ShowsHidden,8}{separator}{MoviesHidden + ShowsHidden,8}{separator}");
-        }
-        
-        // Unhidden row (only show if there are unhidden items)
-        if (MoviesUnhidden > 0 || ShowsUnhidden > 0)
-        {
-            result.AppendLine($"{separator}{"👁️ Unhidden",-14}{separator}{MoviesUnhidden,8}{separator}{ShowsUnhidden,8}{separator}{MoviesUnhidden + ShowsUnhidden,8}{separator}");
-        }
+        result.AppendLine($"{separator}{"🙈 Hidden",-14}{separator}{MoviesHidden,8}{separator}{ShowsHidden,8}{separator}{MoviesHidden + ShowsHidden,8}{separator}");
+        result.AppendLine($"{separator}{"👁️ Unhidden",-14}{separator}{MoviesUnhidden,8}{separator}{ShowsUnhidden,8}{separator}{MoviesUnhidden + ShowsUnhidden,8}{separator}");
         
         return result.ToString().TrimEnd();
     }
@@ -339,7 +329,7 @@ public class SortLibraryResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|----------|----------|----------|----------|";
+        const string rowBorder = "|--------------|----------|----------|----------|";
         
         // Header row
         result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
@@ -404,7 +394,7 @@ public class CleanupResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|----------|----------|----------|----------|";
+        const string rowBorder = "|--------------|----------|----------|----------|";
         
         // Header row
         result.AppendLine($"{separator}{"",-14}{separator}{"Movies",-10}{separator}{"Shows",-10}{separator}{"Total",-10}{separator}");
