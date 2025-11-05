@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.11.zip",
+        "timestamp": "2025-11-05T01:48:35.438Z",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.22.11",
+        "checksum": "2174D87BE1691811C61092DCFF0F8881"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.10.zip",
+        "timestamp": "2025-11-05T01:48:35.438Z",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.22.10",
+        "checksum": "26F42FA4344F33AEC29C99D80134CE9A"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "timestamp": "2025-11-04T23:43:57.527Z",
