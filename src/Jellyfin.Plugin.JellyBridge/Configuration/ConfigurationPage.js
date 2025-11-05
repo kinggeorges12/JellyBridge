@@ -422,9 +422,15 @@ function initializeImportContent(page) {
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
             Dashboard.showLoadingMsg();
-            loadAvailableNetworks(page).then(function(availableNetworks) {
-                Dashboard.alert(`✅ Refreshed available networks`);
-                scrollToElement('availableNetworksSelectBox');
+            loadAvailableNetworks(page)
+            .then(function(availableNetworks) {
+                if (availableNetworks.length > 0) {
+                    Dashboard.alert(`✅ Refreshed available networks`);
+                    scrollToElement('availableNetworksSelectBox');
+                } else {
+                    Dashboard.alert('❌ No available networks found');
+                    scrollToElement('syncSettings');
+                }
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
                 scrollToElement('syncSettings');
@@ -653,8 +659,6 @@ function loadAvailableNetworks(page) {
             return Promise.resolve(updateAvailableNetworks(page));
         }
     }).catch(function(error) {
-        Dashboard.alert(`❌ DEBUG: API call failed for networks. Error: ${error?.message || 'Unknown error'}`);
-        
         // Use updateAvailableNetworks with empty map to show defaults
         return Promise.resolve(updateAvailableNetworks(page));
     });
