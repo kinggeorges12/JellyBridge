@@ -421,19 +421,22 @@ function initializeImportContent(page) {
     const refreshAvailableButton = page.querySelector('#refreshAvailableNetworks');
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
+                config.ApiKey != page.querySelector('#ApiKey').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                return;
+            }
             Dashboard.showLoadingMsg();
             loadAvailableNetworks(page)
             .then(function(availableNetworks) {
                 if (availableNetworks) {
                     Dashboard.alert(`✅ Refreshed available networks`);
                     scrollToElement('availableNetworksSelectBox');
-                } else {
-                    Dashboard.alert('❌ No available networks found');
-                    scrollToElement('syncSettings');
                 }
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -517,13 +520,19 @@ function initializeImportContent(page) {
     const refreshButton = page.querySelector('#refreshNetworks');
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value ||
+                config.ApiKey != page.querySelector('#ApiKey').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                return;
+            }
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
                 Dashboard.alert('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -811,19 +820,9 @@ function loadRegions(page) {
         dataType: 'json'
     }).then(function (data) {
         if (data && data.success && data.regions) {
-            const select = page.querySelector('#selectWatchRegion');
-            if (select) {
-                // When loading regions, set the current value to the selected value
-                populateRegion(page, data.regions, select.value);
-            }
-            return Promise.resolve();
-        } else {
-            // Failed to load regions - keep default US option
-            return Promise.resolve();
+            // When loading regions, set the current value to the selected value
+            return Promise.resolve(populateRegion(page, data.regions, page.querySelector('#selectWatchRegion').value));
         }
-    }).catch(function (error) {
-        // Re-throw the error so the calling function can handle it
-        throw error;
     });
 }
 
