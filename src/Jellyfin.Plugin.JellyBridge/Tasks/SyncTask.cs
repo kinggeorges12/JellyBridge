@@ -53,6 +53,7 @@ public class SyncTask : IScheduledTask
             {
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
+                CleanupResult? cleanupResult = null;
                 
                 // Step 0: Cleanup metadata before sync operations
                 progress.Report(5);
@@ -60,7 +61,7 @@ public class SyncTask : IScheduledTask
                 
                 try
                 {
-                    await _cleanupService.CleanupMetadataAsync();
+                    cleanupResult = await _cleanupService.CleanupMetadataAsync();
                     _logger.LogDebug("Step 0: Cleanup completed successfully");
                 }
                 catch (Exception ex)
@@ -124,7 +125,7 @@ public class SyncTask : IScheduledTask
                     }
 
                     // Apply refresh operations after both syncs are complete
-                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult);
+                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult, cleanupResult);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error applying refresh operations");
                 } finally {

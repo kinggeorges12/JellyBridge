@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.11.zip",
+        "checksum": "2741AD8421E0248CA85313DCCD969FFB",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.23.11",
+        "timestamp": "2025-11-05T02:21:06.248Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.23 - Added emojis to result tables and legends for better visual identification. Made result textboxes monospace font for improved ASCII table formatting. Refactored cleanup service to set refresh plan when items are deleted, with refresh applied in endpoints and sync task. Moved CleanupMetadata endpoint to AdvancedSettingsController above RecycleLibrary endpoint.",
+        "dependencies": []
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.10.zip",
+        "checksum": "297A1AA89FDE5EC503C227F6F1F98EE1",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.23.10",
+        "timestamp": "2025-11-05T02:21:06.248Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.23 - Added emojis to result tables and legends for better visual identification. Made result textboxes monospace font for improved ASCII table formatting. Refactored cleanup service to set refresh plan when items are deleted, with refresh applied in endpoints and sync task. Moved CleanupMetadata endpoint to AdvancedSettingsController above RecycleLibrary endpoint.",
+        "dependencies": []
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.11.zip",
