@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.24.11",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-05T02:37:25.086Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.11.zip",
+        "checksum": "385F56A52D023690C61305536DFBBB82",
+        "changelog": "Jellyfin 10.11.0: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
+        "dependencies": []
+      },
+      {
+        "version": "1.4.24.10",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-05T02:37:25.086Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.10.zip",
+        "checksum": "3425FC45657E9737E633AC1268114453",
+        "changelog": "Jellyfin 10.10.7: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
+        "dependencies": []
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.11.zip",
         "checksum": "2741AD8421E0248CA85313DCCD969FFB",
         "targetAbi": "10.11.0.0",
