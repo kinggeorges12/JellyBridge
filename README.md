@@ -64,12 +64,6 @@ The plugin generates placeholder videos for movies and series that aren't yet av
 
 ![Placeholder Videos](Screenshots/Placeholder.png)
 
-- **Smart Detection**: Jellyfin automatically identifies and displays placeholder videos
-- **Automatic Generation**: Creates placeholder videos for movies and series not yet in your Jellyfin library
-- **Configurable Duration**: Control the length of placeholder videos
-- **Retry Logic**: Includes retry attempts to ensure FFmpeg availability before generating placeholders
-- **Efficient Caching**: Cached placeholder videos are reused to minimize generation overhead
-
 ### Jellyseerr Integration
 
 The plugin seamlessly integrates with Jellyseerr to manage download requests and track availability of movies and series.
@@ -85,15 +79,15 @@ After installing Jellyseerr, disable the JellyBridge library to prevent requests
 
 ### Kodi Sync Plugin for Jellyfin
 
-Browse with Kodi and request content from Jellyfin via the JellyCon add-on. Incompatible with Jellyfin for Kodi.
+Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
 
-![JellyCon](Screenshots/JellyCon.png)
+**Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Shows) → Random Items / Recommended Items / any other view
+**Jellyseer Requests**: Open any Library view → right-click a movie or show → Jellyfin options → Add to favorites
 
-- **Native integration**: Favorite items directly from the Kodi interface
-- **Discover Recommended**: Use the "Recommended Items" or "Random Items" links to discover content
+![Jellyfin for Kodi Add-on](Screenshots/Kodi.png)
  
 For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/).
-- Note: In JellyCon, Jellyfin options are only accessible from Discover (Movies) or Discover (Shows), not from Discover - Show All.
+- Note: Incompatible with JellyCon for Kodi.
 
 ## 📦 Installation
 
