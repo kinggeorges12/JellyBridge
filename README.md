@@ -30,18 +30,16 @@ After installing the new version, you may need to update the plugin configuratio
 ## ✨ Features
 
 - **Native Jellyfin Support**: Whether you use Android TV or Kodi to sync videos and favorites with Jellyfin, this plugin has you covered
+- **New Discover Content**: Updates movies and series listings from selected networks (Netflix, Prime Video, etc.)
 - **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible from mobile apps, Android TV, and even Kodi Sync Queue!
-- **Automated Content Listing**: Automatically lists movies and series from various networks (Netflix, Prime Video, etc.) within Jellyfin as placeholders
 - **Easy Downloads**: Sends downloads to Arr apps through Jellyseerr media requests when you mark movies or series as favorites in Jellyfin
-- **Configure Network Discovery**: Allows selection of networks to fetch and display in Jellyfin
-- **Scheduled Tasks**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup; optional automated sort task to reshuffle library order
-- **Library Management**: Prevents placeholder movies and series from appearing in main libraries
-- **Fine-grained Libraries**: Option to create separate directories for each network allowing you to group them into libraries
+- **Scheduled Tasks**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup
 - **Smart Exclusion**: Uses native Jellyfin configuration files to exclude movies and series that already exist in your other Jellyfin libraries
+- **Shuffle Content**: Native support on Android TV for random or smart-sort for browsing discover content, always fresh!
 
 ## 🧩 Jellyfin Integration
 
-The plugin integrates seamlessly with Jellyfin, displaying discovered content as placeholder videos that users can browse and mark as favorites to request downloads.
+The plugin integrates seamlessly with Jellyfin, displaying shuffled discover content that users can browse and mark as favorites to request downloads.
 
 Get Jellyfin here: [jellyfin.org](https://jellyfin.org/). For setup, see the official [installation guide](https://jellyfin.org/docs/general/installation/).
 
