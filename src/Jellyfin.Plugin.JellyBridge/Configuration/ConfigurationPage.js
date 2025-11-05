@@ -424,7 +424,7 @@ function initializeImportContent(page) {
             Dashboard.showLoadingMsg();
             loadAvailableNetworks(page)
             .then(function(availableNetworks) {
-                if (availableNetworks.length > 0) {
+                if (availableNetworks) {
                     Dashboard.alert(`✅ Refreshed available networks`);
                     scrollToElement('availableNetworksSelectBox');
                 } else {
@@ -656,11 +656,11 @@ function loadAvailableNetworks(page) {
             return Promise.resolve(updateAvailableNetworks(page, response));
         } else {
             // Use updateAvailableNetworks with empty map to show defaults
-            return Promise.resolve(updateAvailableNetworks(page));
+            return Promise.resolve(null);
         }
     }).catch(function(error) {
         // Use updateAvailableNetworks with empty map to show defaults
-        return Promise.resolve(updateAvailableNetworks(page));
+        return Promise.resolve(null);
     });
 }
 
