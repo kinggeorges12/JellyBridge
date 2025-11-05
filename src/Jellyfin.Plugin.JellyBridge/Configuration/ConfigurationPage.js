@@ -835,30 +835,20 @@ function initializeSortContent(page) {
     
     // Populate SortOrder dropdown from enum values
     const sortOrderSelect = page.querySelector('#selectSortOrder');
-    if (sortOrderSelect && config.ConfigOptions && config.ConfigOptions.SortOrderOptions && Array.isArray(config.ConfigOptions.SortOrderOptions)) {
+    if (sortOrderSelect) {
         sortOrderSelect.innerHTML = '';
         
-        // Create a map of enum names to values for lookup
-        const enumNameToValue = {};
+        // Use the name as the value
         config.ConfigOptions.SortOrderOptions.forEach(option => {
             const optionElement = document.createElement('option');
-            optionElement.value = option.Value.toString();
+            optionElement.value = option.Name;
             optionElement.textContent = option.Name;
             sortOrderSelect.appendChild(optionElement);
-            
-            // Store mapping for name to value conversion
-            enumNameToValue[option.Name] = option.Value;
         });
         
-        // Set the selected value using config value or default
-        let sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
-        if (sortOrderValue !== null && sortOrderValue !== undefined) {
-            // If it's a string (enum name), convert it to the integer value
-            if (typeof sortOrderValue === 'string' && enumNameToValue.hasOwnProperty(sortOrderValue)) {
-                sortOrderValue = enumNameToValue[sortOrderValue];
-            }
-            sortOrderSelect.value = sortOrderValue.toString();
-        }
+        // Store selected value
+        const sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
+        sortOrderSelect.value = sortOrderValue;
     }
     
     // Set sort content form values with null handling
