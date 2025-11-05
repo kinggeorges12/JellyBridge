@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "checksum": "DE8CC9E18D4FB5B2F164905D08D07399",
+        "version": "1.4.34.11",
+        "timestamp": "2025-11-05T07:36:06.422Z"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "checksum": "36CDE6899303AEE94710CFD1995CAE9F",
+        "version": "1.4.34.10",
+        "timestamp": "2025-11-05T07:36:06.422Z"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.33 - Refined available networks loader to surface errors to caller (removed internal catch/alerts); UI now relies on caller-level handling.",
         "dependencies": [],
         "checksum": "2D5DF124FCA3130123E902E324E1E593",
