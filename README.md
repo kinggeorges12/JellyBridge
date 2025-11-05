@@ -191,7 +191,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Mark Media Played**: Change 🔵 badge appearance in the JellyBridge library
 - **Refresh Discover Library Sort Order**: Manually apply the selected algorithm immediately
 
-**Instructions**: To see the sorted order, each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*. For Android TV users, sort by ***Last Played***.
+**Instructions**: To see the sorted order, each user must open the JellyBridge library and change the default sort option *Sort by Folder* to *Sort by **Play count** (Sort order **Ascending**)*. For Android TV users, sort by ***Last Played***. Not recommended for Kodi, which already has a feature for random and recommended sorting.
 
 ### ⚙️ Advanced Settings
 

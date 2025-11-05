@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.38.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.38 - Updated README.md documentation and replaced JellyCon screenshot with Kodi screenshot. Documentation improvements and UI updates.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.38.11.zip",
+        "checksum": "6EFB7234936AAA5BE3DF8C62E29E0EDC",
+        "dependencies": [],
+        "timestamp": "2025-11-05T17:35:50.800Z"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.38.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.38 - Updated README.md documentation and replaced JellyCon screenshot with Kodi screenshot. Documentation improvements and UI updates.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.38.10.zip",
+        "checksum": "48A09C1545DE30A1D89BFE9DB036FB3B",
+        "dependencies": [],
+        "timestamp": "2025-11-05T17:35:50.800Z"
+      },
+      {
         "timestamp": "2025-11-05T08:26:00.483Z",
         "dependencies": [],
         "checksum": "A7C2F22F3AD5DBB74D9B24FCF2CFC26E",
