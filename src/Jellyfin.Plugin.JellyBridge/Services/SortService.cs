@@ -301,7 +301,6 @@ public class SortService
 
         // Calculate max genre count for random number range
         var maxGenreCount = genreCounts.Values.Any() ? genreCounts.Values.Max() : 0;
-        var random = System.Random.Shared;
 
         // Get genres for each JellyBridge item and calculate play count
         var result = new Dictionary<string, (int playCount, BaseItemKind mediaType)>();
@@ -342,7 +341,10 @@ public class SortService
                     // No matching genres, use minimum value
                     playCount = 0;
                 }
-                
+
+                // Sort play count in ascending order
+                playCount = maxGenreCount - playCount;
+
                 // Add 100 to base count
                 playCount += 100;
                 
