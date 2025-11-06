@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v1.4.44 - Removed unused random variable. Added ascending order sorting for play count by inverting genre count values.",
+        "timestamp": "2025-11-06T17:10:52.935Z",
+        "checksum": "DBC6BA78847C95D31A5EE2B12ED7ECF8",
+        "dependencies": [],
+        "version": "1.4.44.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.44.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.44 - Removed unused random variable. Added ascending order sorting for play count by inverting genre count values.",
+        "timestamp": "2025-11-06T17:10:52.935Z",
+        "checksum": "6A627B216FFECD64F41F7B4751087AE2",
+        "dependencies": [],
+        "version": "1.4.44.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.44.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2025-11-06T09:45:21.892Z",
         "changelog": "Jellyfin 10.11.0: v1.4.43 - Cache busting: navigate to config page with v=PluginVersion; expose no-arg cacheBuster and call it from header init.",
         "dependencies": [],
