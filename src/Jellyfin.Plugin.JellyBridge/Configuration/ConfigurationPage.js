@@ -60,17 +60,17 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
-function cacheBuster() {
+function cacheBuster(version) {
     try {
-        // Alternative to Date.now().toString()
-        const version = window.configJellyBridge?.PluginVersion;
         const base = Dashboard.getPluginUrl('JellyBridge'); // "configurationpage?name=JellyBridge"
-        Dashboard.navigate(`${base}&nocache=${version || Date.now()}`);
+        Dashboard.navigate(`${base}&nocache=${version}`);
     } catch (e) { /* ignore */ }
 }
 
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
+
+    cacheBuster(config.PluginVersion)
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
