@@ -60,8 +60,10 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
-function cacheBuster(version) {
+function cacheBuster() {
+    const config = window.configJellyBridge;
     try {
+        const version = config.PluginVersion;
         const base = Dashboard.getPluginUrl('JellyBridge'); // "configurationpage?name=JellyBridge"
         Dashboard.navigate(`${base}&v=${version}`);
     } catch (e) { /* ignore */ }
@@ -70,7 +72,7 @@ function cacheBuster(version) {
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
 
-    cacheBuster(config.PluginVersion)
+    cacheBuster()
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
