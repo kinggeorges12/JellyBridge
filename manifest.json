@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-06T09:45:21.892Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.43 - Cache busting: navigate to config page with v=PluginVersion; expose no-arg cacheBuster and call it from header init.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.43.11.zip",
+        "checksum": "14C6A010A3238A8DB2D4D543CCD65EE4",
+        "version": "1.4.43.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "timestamp": "2025-11-06T09:45:21.892Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.43 - Cache busting: navigate to config page with v=PluginVersion; expose no-arg cacheBuster and call it from header init.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.43.10.zip",
+        "checksum": "34D15131C7BAFCFE24F8E1C496112565",
+        "version": "1.4.43.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.4.42 - Config page: switch refresh link to span action (cacheBuster) to avoid global onclick; ensure JellyBridgeActions registry initializes; cacheBuster now uses PluginVersion and hash-safe navigation.",
         "version": "1.4.42.11",
