@@ -1622,6 +1622,8 @@ function initializeGlobalSettings(page) {
     initializeDetailTabScroll(page);
     // Initialize link spans
     initializeLinkSpans(page);
+    // Initialize number input scroll prevention
+    initializeNumberInputScrollPrevention(page);
 }
 
 // Initialize scroll-to functionality for detail tabs
@@ -1649,6 +1651,27 @@ function initializeDetailTabScroll(page) {
                 });
             }
         }
+    });
+}
+
+// Initialize number input scroll prevention
+// Prevents scroll events from changing number input values when focused
+// Instead, scrolls the page when a number input is focused and user scrolls
+function initializeNumberInputScrollPrevention(page) {
+    // Find all number input elements
+    const numberInputs = page.querySelectorAll('input[type="number"]');
+    
+    // Add wheel event listener to each number input
+    numberInputs.forEach(input => {
+        input.addEventListener('wheel', function(e) {
+            // Only block scroll-change while focused
+            if (document.activeElement === this) {
+                // Stop number increment/decrement
+                e.preventDefault();
+                // Scroll the page instead
+                requestAnimationFrame(() => window.scrollBy({ top: e.deltaY, behavior: 'smooth' }));
+            }
+        }, { passive: false });
     });
 }
 
