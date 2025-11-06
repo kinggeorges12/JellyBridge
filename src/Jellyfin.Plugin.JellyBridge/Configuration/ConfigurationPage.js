@@ -63,7 +63,7 @@ export default function (view) {
 function cacheBuster(version) {
     try {
         const base = Dashboard.getPluginUrl('JellyBridge'); // "configurationpage?name=JellyBridge"
-        Dashboard.navigate(`${base}&nocache=${version}`);
+        Dashboard.navigate(`${base}&v=${version}`);
     } catch (e) { /* ignore */ }
 }
 
