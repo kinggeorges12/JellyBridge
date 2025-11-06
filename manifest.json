@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.40.11.zip",
+        "timestamp": "2025-11-06T08:11:35.438Z",
+        "version": "1.4.40.11",
+        "checksum": "195AFD2D953A80FE1554E0CDA84EA731",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v1.4.40 - Add global number-input scroll prevention on configuration page. Prevent wheel from changing values when focused and scroll page smoothly instead. Minor comment clarification in global init."
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.40.10.zip",
+        "timestamp": "2025-11-06T08:11:35.438Z",
+        "version": "1.4.40.10",
+        "checksum": "91853FBF379B1FE9DE0CA847DF3E5692",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v1.4.40 - Add global number-input scroll prevention on configuration page. Prevent wheel from changing values when focused and scroll page smoothly instead. Minor comment clarification in global init."
+      },
+      {
         "version": "1.4.39.11",
         "timestamp": "2025-11-06T02:22:42.769Z",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.39.11.zip",
