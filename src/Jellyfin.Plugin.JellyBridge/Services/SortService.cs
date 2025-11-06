@@ -36,50 +36,6 @@ public class SortService
     }
 
     /// <summary>
-    /// Marks all JellyBridge media items as unplayed for all users, regardless of configuration.
-    /// This provides a consistent baseline before applying play count algorithms.
-    /// </summary>
-    private async Task MarkAllMediaUnplayedAsync(List<JellyfinUser> users, List<(string directory, BaseItemKind mediaType)> allDirectories)
-    {
-        if (users == null || users.Count == 0) return;
-        if (allDirectories == null || allDirectories.Count == 0) return;
-
-        // Run per-user to respect user-specific play states
-        var resetTasks = users.Select(user => Task.Run(() =>
-        {
-            foreach (var (directory, mediaType) in allDirectories)
-            {
-                try
-                {
-                    var baseItem = _libraryManager.FindItemByDirectoryPath(directory);
-                    if (baseItem == null) continue;
-
-                    if (mediaType == BaseItemKind.Series)
-                    {
-                        try
-                        {
-                            var series = JellyfinSeries.FromItem(baseItem);
-                            series.TrySetEpisodePlayCount(user, _userDataManager, false);
-                        }
-                        catch { /* ignore */ }
-                    }
-                    else if (mediaType == BaseItemKind.Movie)
-                    {
-                        try
-                        {
-                            var movie = JellyfinMovie.FromItem(baseItem);
-                            movie.TrySetMoviePlayCount(user, _userDataManager, false);
-                        }
-                        catch { /* ignore */ }
-                    }
-                }
-                catch { /* ignore */ }
-            }
-        }));
-
-        await Task.WhenAll(resetTasks);
-    }
-    /// <summary>
     /// Sorts the JellyBridge library by applying the play count algorithm to all discover library items.
     /// This enables random sorting by play count in Jellyfin.
     /// </summary>
@@ -113,16 +69,6 @@ public class SortService
                 result.Success = false;
                 result.Message = "No directories found to update";
                 return result;
-            }
-
-            // Before applying any algorithm, ensure all media is marked as UNPLAYED for all users
-            try
-            {
-                await MarkAllMediaUnplayedAsync(users, allDirectories);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to reset play status to unplayed before sorting");
             }
 
             // Record total unique items (movies + shows) to display as Processed
