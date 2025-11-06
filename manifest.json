@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v1.4.42 - Config page: switch refresh link to span action (cacheBuster) to avoid global onclick; ensure JellyBridgeActions registry initializes; cacheBuster now uses PluginVersion and hash-safe navigation.",
+        "version": "1.4.42.11",
+        "dependencies": [],
+        "checksum": "6820D19BA013D7D0DE2299B4CD90B54A",
+        "timestamp": "2025-11-06T09:21:44.886Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.42.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v1.4.42 - Config page: switch refresh link to span action (cacheBuster) to avoid global onclick; ensure JellyBridgeActions registry initializes; cacheBuster now uses PluginVersion and hash-safe navigation.",
+        "version": "1.4.42.10",
+        "dependencies": [],
+        "checksum": "18198BBCD37B60C34AA129DECCDB621A",
+        "timestamp": "2025-11-06T09:21:44.886Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.42.10.zip"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.41.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.41 - Config page UX: added span.link action registry (JellyBridgeActions) so spans can call cacheBuster without anchors; updated cacheBuster to use PluginVersion and route via Dashboard.getPluginUrl; replaced HTML refresh anchor with span link compatible with hash routing.",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.41.11",
+        "checksum": "1D01E3BEEA14B6DC185296C15164AFA1",
+        "timestamp": "2025-11-06T09:09:52.28Z"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.41.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.41 - Config page UX: added span.link action registry (JellyBridgeActions) so spans can call cacheBuster without anchors; updated cacheBuster to use PluginVersion and route via Dashboard.getPluginUrl; replaced HTML refresh anchor with span link compatible with hash routing.",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.41.10",
+        "checksum": "9E2EAC55B99F50269347C8B750C9DE19",
+        "timestamp": "2025-11-06T09:09:52.28Z"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.40.11.zip",
         "timestamp": "2025-11-06T08:11:35.438Z",
         "version": "1.4.40.11",
