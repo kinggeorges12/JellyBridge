@@ -60,12 +60,12 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
-function cacheBuster(config) {
+function cacheBuster() {
     try {
-        const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
-        const target = new URL(window.location.href);
-        target.searchParams.add('nocache', version);
-        return Dashboard.navigate(target.toString());
+        // Alternative to Date.now().toString()
+        const version = window.configJellyBridge?.PluginVersion;
+        const base = Dashboard.getPluginUrl('JellyBridge'); // "configurationpage?name=JellyBridge"
+        Dashboard.navigate(`${base}&nocache=${version || Date.now()}`);
     } catch (e) { /* ignore */ }
 }
 
@@ -1839,6 +1839,12 @@ function scrollToElement(elementId, offset = 60) {
 // Initialize link spans - finds spans with class "link" and scrolls to elements with matching text
 // Can accept either a page element or a container element
 function initializeLinkSpans(pageOrContainer) {
+    if (!window.JellyBridgeActions) {
+        window.JellyBridgeActions = {};
+    }
+    // Register actions used by data-target-script
+    window.JellyBridgeActions.cacheBuster = () => cacheBuster();
+
     const linkSpans = pageOrContainer.querySelectorAll('span.link');
     linkSpans.forEach(span => {
         // Skip if already initialized (has data-link-initialized attribute)
@@ -1854,6 +1860,15 @@ function initializeLinkSpans(pageOrContainer) {
             const routerTarget = span.getAttribute('data-target-router');
             if (routerTarget) {
                 Dashboard.navigate(routerTarget);
+                return;
+            }
+
+            // Handle script execution (expects a global function name)
+            const scriptTarget = span.getAttribute('data-target-script');
+            if (scriptTarget) {
+                const actions = window.JellyBridgeActions;
+                const fn = actions[scriptTarget];
+                fn();
                 return;
             }
 
