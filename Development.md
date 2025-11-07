@@ -2,10 +2,11 @@
 
 ## Planned Features
 
-1. Support for Jellyfin 10.11.*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
-2. Change sort order based on user preference or implement a random sort order plugin.
-3. Allow users to upload a custom picture or video for placeholder videos.
-4. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
+1. ~~Support for Jellyfin 10.11.*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).~~
+2. ~~Change sort order based on user preference or implement a random sort order plugin.~~
+3. Change the smart sort to include cast and directors as criteria
+4. Allow users to upload a custom picture or video for placeholder videos.
+5. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
 
 ## Contributing
 
