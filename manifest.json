@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.52.11.zip",
+        "checksum": "BE9EB2CCC07F00E0066D75EDA702F50F",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.52.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.52 - Added note about library refresh time when Manage JellyBridge Library is enabled. Adjusted refresh priorities: remove refresh to High priority, create refresh to Low priority, and update refresh to Low priority.",
+        "timestamp": "2025-11-08T18:56:06.148Z",
+        "dependencies": []
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.52.10.zip",
+        "checksum": "5F8DA587F45DD8867DFC1076793F1D17",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.52.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.52 - Added note about library refresh time when Manage JellyBridge Library is enabled. Adjusted refresh priorities: remove refresh to High priority, create refresh to Low priority, and update refresh to Low priority.",
+        "timestamp": "2025-11-08T18:56:06.148Z",
+        "dependencies": []
+      },
+      {
         "checksum": "14FEB4C76012ED66B759D96F3169F929",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.51.11.zip",
         "targetAbi": "10.11.0.0",
