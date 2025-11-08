@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "version": "1.4.45.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
+        "checksum": "2BC71B0BA72ECA3E5EC0D02668A12772",
+        "timestamp": "2025-11-08T17:29:52.898Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/favoritesync/release/JellyBridge-1.4.45.11.zip",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "version": "1.4.45.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
+        "checksum": "CDA4A91A2A4657391381110B99331367",
+        "timestamp": "2025-11-08T17:29:52.898Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/favoritesync/release/JellyBridge-1.4.45.10.zip",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.44 - Removed unused random variable. Added ascending order sorting for play count by inverting genre count values.",
         "timestamp": "2025-11-06T17:10:52.935Z",
         "checksum": "DBC6BA78847C95D31A5EE2B12ED7ECF8",

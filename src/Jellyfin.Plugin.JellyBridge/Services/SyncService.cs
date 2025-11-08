@@ -286,9 +286,10 @@ public partial class SyncService
             
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
-            var newlyIgnoredItems = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
+            var (newlyIgnoredItems, cleanedItems) = await _favoriteService.UnmarkAndIgnoreRequestedAsync();
             result.ItemsHidden.AddRange(newlyIgnoredItems);
-            _logger.LogDebug("Step 6: Hidden {NewlyIgnored} items", newlyIgnoredItems.Count);
+            result.ItemsCleaned.AddRange(cleanedItems);
+            _logger.LogDebug("Step 6: Hidden {NewlyIgnored} items, cleaned {CleanedCount} items", newlyIgnoredItems.Count, cleanedItems.Count);
 
             //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             _logger.LogDebug("Step 7: Removing .ignore files for fully declined requests");

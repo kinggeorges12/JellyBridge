@@ -114,8 +114,17 @@ public class SortService
                     return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<string>(), skipped: new List<(IJellyfinItem? item, string path)>());
                 }
 
+                // Calculate date mappings from play counts
+                var dateMapping = CalculatePlayDateMapping(directoryInfoMap);
+
+                // Combine directory info and date mapping using directory string as the common key
+                var combinedInfoMap = directoryInfoMap.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => (kvp.Value.playCount, kvp.Value.mediaType, dateMapping.TryGetValue(kvp.Key, out var date) ? date : null)
+                );
+
                 // Apply the play count algorithm for this user asynchronously (sequential within each user)
-                return await ApplyPlayCountAlgorithmAsync(user, directoryInfoMap).ConfigureAwait(false);
+                return await ApplyPlayCountAlgorithmAsync(user, combinedInfoMap).ConfigureAwait(false);
             }));
 
             // Wait for all users to complete processing
@@ -503,13 +512,13 @@ public class SortService
     /// Applies the play count algorithm to all discover library items for a single user.
     /// </summary>
     /// <param name="user">User to update play counts for</param>
-    /// <param name="directoryInfoMap">Dictionary mapping directory paths to play counts and media types</param>
+    /// <param name="combinedInfoMap">Dictionary mapping directory paths to combined info (play count, media type, and play date)</param>
     /// <returns>A tuple containing lists of successes, failures, and skipped items</returns>
     private async Task<(List<(IJellyfinItem item, int playCount)> successes,
         List<string> failures,
         List<(IJellyfinItem? item, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
         JellyfinUser user,
-        Dictionary<string, (int playCount, BaseItemKind mediaType)> directoryInfoMap)
+        Dictionary<string, (int playCount, BaseItemKind mediaType, DateTime? playDate)> combinedInfoMap)
     {
         var successes = new List<(IJellyfinItem item, int playCount)>();
         var failures = new List<string>();
@@ -518,14 +527,15 @@ public class SortService
         // Get configuration setting for marking media as played
         var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
 
-        // Calculate date mappings from play counts
-        var dateMapping = CalculatePlayDateMapping(directoryInfoMap);
+        // Collect tasks for play count updates and play status marking
+        var playCountTasks = new List<(Task<JellyfinWrapperResult> task, IJellyfinItem item, int playCount, string directory)>();
+        var playStatusTasks = new List<Task>();
 
-        // Apply updates asynchronously for all items
-        foreach (var kvp in directoryInfoMap)
+        // Create tasks for all items
+        foreach (var kvp in combinedInfoMap)
         {
             var directory = kvp.Key;
-            var (assignedPlayCount, mediaType) = kvp.Value;
+            var (assignedPlayCount, mediaType, assignedPlayDate) = kvp.Value;
 
             try
             {
@@ -598,74 +608,14 @@ public class SortService
 
                 string itemName = item.Name;
 
-                // Get the assigned play date for this item (based on play count)
-                // All directories in directoryInfoMap should be in dateMapping, but check defensively
-                // Zero play count will have null date
-                if (!dateMapping.TryGetValue(directory, out var assignedPlayDate))
-                {
-                    _logger.LogWarning("Date mapping not found for directory: {Path}, using null date", directory);
-                    assignedPlayDate = null;
-                }
+                // Create task for updating play count and last played date
+                // assignedPlayDate is already extracted from combinedInfoMap above
+                var playCountTask = _userDataManager.TryUpdatePlayCountAsync(user, item, assignedPlayCount, assignedPlayDate);
+                playCountTasks.Add((playCountTask, item, assignedPlayCount, directory));
 
-                // Update play count and last played date for this user asynchronously
-                try
-                {
-                    if (await _userDataManager.TryUpdatePlayCountAsync(user, item, assignedPlayCount, assignedPlayDate).ConfigureAwait(false))
-                    {
-                        _logger.LogTrace("Updated play count and last played date for user {UserName}, item: {ItemName} ({Path}) to {PlayCount} (mediaType: {MediaType})",
-                            user.Username, itemName, directory, assignedPlayCount, mediaType);
-
-                        var result = new JellyfinWrapperResult();
-                        try
-                        {
-                            var wrapperName = string.Empty;
-                            // For shows, update placeholder episode (S00E00 special) play status based on MarkMediaPlayed setting
-                            if (mediaType == BaseItemKind.Series && item is JellyfinSeries seriesWrapper)
-                            {
-                                result = seriesWrapper.TrySetEpisodePlayCount(user, _userDataManager, markMediaPlayed);
-                                wrapperName = seriesWrapper.Name;
-                            }
-                            // Movies usually have no badge
-                            else if (mediaType == BaseItemKind.Movie && item is JellyfinMovie movieWrapper)
-                            {
-                                result = movieWrapper.TrySetMoviePlayCount(user, _userDataManager, markMediaPlayed);
-                                wrapperName = movieWrapper.Name;
-                            }
-                            if (result.Success)
-                            {
-                                _logger.LogTrace("Placeholder episode play status updated for series '{SeriesName}' for user {UserName}: {Message}",
-                                    wrapperName, user.Username, result.Message);
-                            }
-                            else
-                            {
-                                _logger.LogTrace("Placeholder episode play status not updated for series '{SeriesName}' for user {UserName}: {Message}",
-                                    wrapperName, user.Username, result.Message);
-                            }
-                        }
-                        catch (ArgumentException ex)
-                        {
-                            _logger.LogTrace(ex, "Item '{ItemName}' is not a Series, skipping placeholder episode play status update", itemName);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogTrace(ex, "Could not update placeholder episode play status for user {UserName}, item: {ItemName}", user.Username, itemName);
-                        }
-
-                        successes.Add((item, assignedPlayCount));
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, directory);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
-                }
+                // Create task for marking play status (runs independently, doesn't affect success/failure)
+                var playStatusTask = _userDataManager.MarkItemPlayStatusAsync(user, item, markMediaPlayed);
+                playStatusTasks.Add(playStatusTask);
             }
             catch (OperationCanceledException)
             {
@@ -674,9 +624,77 @@ public class SortService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to update play count for directory: {Directory}", directory);
+                _logger.LogWarning(ex, "Failed to create tasks for directory: {Directory}", directory);
                 failures.Add(directory);
             }
+        }
+
+        // Await all play count tasks at once
+        // Task.WhenAll waits for all tasks to complete before throwing (if any fail)
+        // Ensure we always process all results even if aggregation fails
+        try
+        {
+            await Task.WhenAll(playCountTasks.Select(t => t.task)).ConfigureAwait(false);
+        }
+        catch (AggregateException ex)
+        {
+            // Log summary of failed tasks, but continue to process all results below
+            // Task.WhenAll already waited for all tasks to complete before throwing
+            _logger.LogWarning(ex, "Some play count update tasks failed for user {UserName}. Processing all results individually.", user.Username);
+        }
+        catch (OperationCanceledException ex)
+        {
+            // Cancellation occurred, but all tasks should still be in a final state
+            _logger.LogWarning(ex, "Operation canceled while awaiting play count update tasks for user {UserName}. Processing all results individually.", user.Username);
+        }
+        catch (Exception ex)
+        {
+            // Catch any other unexpected exceptions during aggregation
+            // Even if this fails, we still want to process all task results
+            _logger.LogError(ex, "Unexpected exception while awaiting play count update tasks for user {UserName}. Processing all results individually.", user.Username);
+        }
+
+        // Process results and determine success/failure/skipped based on results
+        foreach (var (task, item, playCount, directory) in playCountTasks)
+        {
+            if (task.IsFaulted)
+            {
+                _logger.LogWarning(task.Exception?.GetBaseException() ?? new Exception("Task faulted with unknown error"),
+                    "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
+                failures.Add(directory);
+            }
+            else if (task.IsCanceled)
+            {
+                _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, directory);
+                failures.Add(directory);
+            }
+            else
+            {
+                var result = task.Result;
+                if (result.Success)
+                {
+                    _logger.LogTrace("Updated play count and last played date for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}",
+                        user.Username, item.Name, directory, playCount);
+                    successes.Add((item, playCount));
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}: {Message}", 
+                        user.Username, directory, result.Message);
+                    failures.Add(directory);
+                }
+            }
+        }
+
+        // Await all play status tasks (fire and forget - errors are handled in user data manager)
+        try
+        {
+            await Task.WhenAll(playStatusTasks).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Log aggregate exception but don't affect success/failure/skipped
+            _logger.LogWarning(ex, "Some play status marking tasks failed for user {UserName}", user.Username);
         }
 
         return (successes, failures, skipped);
