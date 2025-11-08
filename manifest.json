@@ -9,9 +9,27 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "14FEB4C76012ED66B759D96F3169F929",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.51.11.zip",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "timestamp": "2025-11-08T18:32:07.145Z",
+        "version": "1.4.51.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.51 - Reverted IsAutomated to false for remove refresh. Reordered refresh operations to run create refresh before remove refresh, and changed remove refresh priority to Low."
+      },
+      {
+        "checksum": "8779987043C4D53B546DFFE49ADDFA06",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.51.10.zip",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "timestamp": "2025-11-08T18:32:07.145Z",
+        "version": "1.4.51.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.51 - Reverted IsAutomated to false for remove refresh. Reordered refresh operations to run create refresh before remove refresh, and changed remove refresh priority to Low."
+      },
+      {
         "dependencies": [],
         "checksum": "97C24DBE0B1AA6C5C849EB2356107334",
-        "timestamp": "2025-11-08T18:15:39.620Z",
+        "timestamp": "2025-11-08T18:15:39.62Z",
         "version": "1.4.50.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
@@ -20,7 +38,7 @@
       {
         "dependencies": [],
         "checksum": "A82477DDD78CE1FEABFF0D2BB253D5AE",
-        "timestamp": "2025-11-08T18:15:39.620Z",
+        "timestamp": "2025-11-08T18:15:39.62Z",
         "version": "1.4.50.10",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
