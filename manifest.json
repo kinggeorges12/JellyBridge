@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.48.11.zip",
+        "timestamp": "2025-11-08T17:59:25.726Z",
+        "version": "1.4.48.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.48 - Updated README documentation for Favorite Cleanup setting description.",
+        "dependencies": [],
+        "checksum": "279DDD8652F0D7A773F1E1013904A37A"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.48.10.zip",
+        "timestamp": "2025-11-08T17:59:25.726Z",
+        "version": "1.4.48.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.48 - Updated README documentation for Favorite Cleanup setting description.",
+        "dependencies": [],
+        "checksum": "43A84319022F930E81736FD4C38A8701"
+      },
+      {
         "version": "1.4.47.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.47.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.47 - Updated documentation to use correct setting name 'Favorite Cleanup' and fixed 'Cleaned' description accuracy. Consolidated repeated inline styles into CSS class and increased testResult max-height to 560px.",
