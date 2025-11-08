@@ -70,7 +70,7 @@ The plugin seamlessly integrates with Jellyseerr to manage download requests and
 
 ![Jellyseerr Requests](Screenshots/Requests.png)
 
-When users mark movies or series as favorites in Jellyfin, the plugin automatically sends download requests to Jellyseerr for processing. The user who requested the content is shown in Jellyseerr as the requestor, all you have to do is import the Jellyfin users. Any integrations with Jellyseerr like Radarr and Sonarr will manage the content creation in Jellyfin. After content is found in other Jellyfin libraries, the movie or series is hidden from the JellyBridge library.
+When users mark movies or series as favorites in Jellyfin, the plugin automatically sends download requests to Jellyseerr for processing. The user who requested the content is shown in Jellyseerr as the requestor, all you have to do is import the Jellyfin users. Any integrations with Jellyseerr like Radarr and Sonarr will manage the content creation in Jellyfin. After content is requested, the movie or series is hidden from the JellyBridge library.
 
 Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official [installation guide](https://docs.seerr.dev/getting-started).
 
@@ -169,7 +169,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 - **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Clean-up Requests from Favorites**: Removes items from favorites and hides them from the library after they've been successfully requested in Jellyseerr
+- **Clean-up Requests from Favorites**: Hides them from the library after they've been successfully requested in Jellyseerr
 - **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
 - **Network Folder Setup**
   - **Setup Instructions**: Step-by-step guide for creating network folders and libraries

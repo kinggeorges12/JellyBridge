@@ -5,7 +5,7 @@
     "description": "Bridge Jellyfin with Jellyseerr for seamless show discovery and download requests",
     "owner": "kinggeorges12",
     "category": "Metadata",
-    "imageUrl": "https://raw.githubusercontent.com/seerr-team/seerr/refs/heads/develop/public/logo_stacked.svg",
+    "imageUrl": "https://raw.githubusercontent.com/seerr-team/seerr/refs/heads/featureelop/public/logo_stacked.svg",
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
@@ -14,7 +14,7 @@
         "changelog": "Jellyfin 10.11.0: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
         "checksum": "2BC71B0BA72ECA3E5EC0D02668A12772",
         "timestamp": "2025-11-08T17:29:52.898Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/favoritesync/release/JellyBridge-1.4.45.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.45.11.zip",
         "targetAbi": "10.11.0.0"
       },
       {
@@ -23,7 +23,7 @@
         "changelog": "Jellyfin 10.10.7: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
         "checksum": "CDA4A91A2A4657391381110B99331367",
         "timestamp": "2025-11-08T17:29:52.898Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/favoritesync/release/JellyBridge-1.4.45.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.45.10.zip",
         "targetAbi": "10.10.0.0"
       },
       {
@@ -69,7 +69,7 @@
         "dependencies": [],
         "checksum": "6820D19BA013D7D0DE2299B4CD90B54A",
         "timestamp": "2025-11-06T09:21:44.886Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.42.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.42.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -78,10 +78,10 @@
         "dependencies": [],
         "checksum": "18198BBCD37B60C34AA129DECCDB621A",
         "timestamp": "2025-11-06T09:21:44.886Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.42.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.42.10.zip"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.41.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.41.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.41 - Config page UX: added span.link action registry (JellyBridgeActions) so spans can call cacheBuster without anchors; updated cacheBuster to use PluginVersion and route via Dashboard.getPluginUrl; replaced HTML refresh anchor with span link compatible with hash routing.",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
@@ -90,7 +90,7 @@
         "timestamp": "2025-11-06T09:09:52.28Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/temp/release/JellyBridge-1.4.41.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.41.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.41 - Config page UX: added span.link action registry (JellyBridgeActions) so spans can call cacheBuster without anchors; updated cacheBuster to use PluginVersion and route via Dashboard.getPluginUrl; replaced HTML refresh anchor with span link compatible with hash routing.",
         "dependencies": [],
         "targetAbi": "10.10.0.0",
@@ -157,7 +157,7 @@
         "dependencies": [],
         "checksum": "A7C2F22F3AD5DBB74D9B24FCF2CFC26E",
         "changelog": "Jellyfin 10.11.0: v1.4.37 - Sort order select now uses enum names as option values and selects by name to support both string/number enum values; removed unused mapping logic.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.37.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.37.11.zip",
         "version": "1.4.37.11",
         "targetAbi": "10.11.0.0"
       },
@@ -166,13 +166,13 @@
         "dependencies": [],
         "checksum": "D9389763AF48B3447D00D1F4E4AED902",
         "changelog": "Jellyfin 10.10.7: v1.4.37 - Sort order select now uses enum names as option values and selects by name to support both string/number enum values; removed unused mapping logic.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.37.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.37.10.zip",
         "version": "1.4.37.10",
         "targetAbi": "10.10.0.0"
       },
       {
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.36.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
         "version": "1.4.36.11",
         "checksum": "0CCEECC646355192B1D6E4547B878695",
@@ -181,7 +181,7 @@
       },
       {
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.36.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.36.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.36 - Investigated Jellyseerr auth behavior: watchproviders accept any X-Api-Key; regions/networks refresh confirmed without session cookie. No source changes since last commit; patch version bump and repackaging only. Updated manifest and build artifacts.",
         "version": "1.4.36.10",
         "checksum": "D72168860688F51254F66A495620CDCE",
@@ -192,7 +192,7 @@
         "dependencies": [],
         "timestamp": "2025-11-05T07:47:52.264Z",
         "version": "1.4.35.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.35.11.zip",
         "checksum": "FCF40FCF8DDC667912D8B559EFA8CA9D",
         "changelog": "Jellyfin 10.11.0: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
         "targetAbi": "10.11.0.0"
@@ -201,14 +201,14 @@
         "dependencies": [],
         "timestamp": "2025-11-05T07:47:52.264Z",
         "version": "1.4.35.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.35.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.35.10.zip",
         "checksum": "53249DB9AA75FDEE91E0AB2B40F02F0B",
         "changelog": "Jellyfin 10.10.7: v1.4.35 - Import UX: scroll to Save when connection fields changed; persist in-memory config after save to keep UI state in sync.",
         "targetAbi": "10.10.0.0"
       },
       {
         "changelog": "Jellyfin 10.11.0: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.34.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "checksum": "DE8CC9E18D4FB5B2F164905D08D07399",
@@ -217,7 +217,7 @@
       },
       {
         "changelog": "Jellyfin 10.10.7: v1.4.34 - Import tab UX polish: prevent refresh when Jellyseerr URL/API key changed until saved; improved error messages and scroll targets for region/network refresh; simplified region population flow.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.34.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.34.10.zip",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
         "checksum": "36CDE6899303AEE94710CFD1995CAE9F",
@@ -228,7 +228,7 @@
         "changelog": "Jellyfin 10.11.0: v1.4.33 - Refined available networks loader to surface errors to caller (removed internal catch/alerts); UI now relies on caller-level handling.",
         "dependencies": [],
         "checksum": "2D5DF124FCA3130123E902E324E1E593",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.33.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.33.11.zip",
         "version": "1.4.33.11",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-05T07:20:35.326Z"
@@ -237,14 +237,14 @@
         "changelog": "Jellyfin 10.10.7: v1.4.33 - Refined available networks loader to surface errors to caller (removed internal catch/alerts); UI now relies on caller-level handling.",
         "dependencies": [],
         "checksum": "2E1841FC5E40F7C86D37DF94451D2C40",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.33.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.33.10.zip",
         "version": "1.4.33.10",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-05T07:20:35.326Z"
       },
       {
         "timestamp": "2025-11-05T07:06:41.136Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.32.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.32.11.zip",
         "checksum": "86F0CE6DBDECEC19D896EB167AB0268A",
         "dependencies": [],
         "version": "1.4.32.11",
@@ -253,7 +253,7 @@
       },
       {
         "timestamp": "2025-11-05T07:06:41.136Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.32.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.32.10.zip",
         "checksum": "900FFB998457AD53583678F63FDBAC2E",
         "dependencies": [],
         "version": "1.4.32.10",
@@ -265,7 +265,7 @@
         "timestamp": "2025-11-05T06:30:11.224Z",
         "targetAbi": "10.11.0.0",
         "version": "1.4.31.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.31.11.zip",
         "dependencies": [],
         "checksum": "D23BE241F8D863210074DF7766DCA147"
       },
@@ -274,7 +274,7 @@
         "timestamp": "2025-11-05T06:30:11.224Z",
         "targetAbi": "10.10.0.0",
         "version": "1.4.31.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.31.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.31.10.zip",
         "dependencies": [],
         "checksum": "F760B198BA2EA3E427B1636D29FCF3EF"
       },
@@ -284,7 +284,7 @@
         "timestamp": "2025-11-05T06:24:30.062Z",
         "version": "1.4.30.11",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.30.11.zip",
         "targetAbi": "10.11.0.0"
       },
       {
@@ -293,7 +293,7 @@
         "timestamp": "2025-11-05T06:24:30.062Z",
         "version": "1.4.30.10",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.30.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.30.10.zip",
         "targetAbi": "10.10.0.0"
       },
       {
@@ -303,7 +303,7 @@
         "version": "1.4.29.11",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.29.11.zip"
       },
       {
         "timestamp": "2025-11-05T06:05:09.317Z",
@@ -312,12 +312,12 @@
         "version": "1.4.29.10",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.4.29 - Fixed compilation error by adding SyncService dependency to AdvancedSettingsController. Updated SyncService and SyncTask with improved refresh handling. Enhanced configuration page UI and updated screenshots.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.29.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.29.10.zip"
       },
       {
         "timestamp": "2025-11-05T04:13:40.218Z",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.28.11.zip",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
         "checksum": "8DB2E631E11FB823CF74EDDF24A32E0F",
@@ -326,7 +326,7 @@
       {
         "timestamp": "2025-11-05T04:13:40.218Z",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.28.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.28.10.zip",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.4.28 - Removed unused ProcessJellyseerrResult, ProcessJellyfinResult, and ProcessSortResult classes, merging ProcessSortResult properties directly into SortLibraryResult. Fixed table label padding to use correct number of spaces after each word (Processed: 1, Sorted: 4, Skipped: 3, Failed: 4, etc.) to properly fill 18-character columns. Made Hidden row always display in SyncJellyseerrResult table regardless of count.",
         "checksum": "617C08C57D55D11EB0455BAAC88C06FC",
@@ -337,7 +337,7 @@
         "dependencies": [],
         "timestamp": "2025-11-05T03:48:11.308Z",
         "checksum": "DB5AD76F84DBAC1F518D991AD7B5996E",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.27.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.27.11.zip",
         "version": "1.4.27.11",
         "targetAbi": "10.11.0.0"
       },
@@ -346,7 +346,7 @@
         "dependencies": [],
         "timestamp": "2025-11-05T03:48:11.308Z",
         "checksum": "6FDC9BAC65199BD7F6CE96FEC6582786",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.27.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.27.10.zip",
         "version": "1.4.27.10",
         "targetAbi": "10.10.0.0"
       },
@@ -354,7 +354,7 @@
         "timestamp": "2025-11-05T03:23:33.771Z",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.26.11.zip",
         "version": "1.4.26.11",
         "checksum": "3008E108CF47ED1D533A9CB0FFDD680B",
         "changelog": "Jellyfin 10.11.0: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
@@ -363,7 +363,7 @@
         "timestamp": "2025-11-05T03:23:33.771Z",
         "dependencies": [],
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.26.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.26.10.zip",
         "version": "1.4.26.10",
         "checksum": "8227B65C13A9D5C3948FA2BD8A67665C",
         "changelog": "Jellyfin 10.10.7: v1.4.26 - Fixed numeric column alignment in all result tables by formatting numbers as right-aligned 8 characters with 2 trailing spaces (10 total) to match column header widths. Applied consistent formatting across SyncJellyseerrResult, SyncJellyfinResult, SortLibraryResult, and CleanupResult tables for proper visual alignment."
@@ -372,7 +372,7 @@
         "version": "1.4.25.11",
         "checksum": "71C48AAD209C62FD14897492DC71F014",
         "changelog": "Jellyfin 10.11.0: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.25.11.zip",
         "timestamp": "2025-11-05T02:49:25.723Z",
         "dependencies": [],
         "targetAbi": "10.11.0.0"
@@ -381,7 +381,7 @@
         "version": "1.4.25.10",
         "checksum": "389D969745EE7898C75EF75CC6FDB35B",
         "changelog": "Jellyfin 10.10.7: v1.4.25 - Fixed table row borders to match column widths (14-char label column, 10-char data columns). Added Hidden and Unhidden rows to always display in SyncJellyfinResult table. Fixed emoji spacing and added refresh plan emoji to all result displays.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.25.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.25.10.zip",
         "timestamp": "2025-11-05T02:49:25.723Z",
         "dependencies": [],
         "targetAbi": "10.10.0.0"
@@ -390,7 +390,7 @@
         "version": "1.4.24.11",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-05T02:37:25.086Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.24.11.zip",
         "checksum": "385F56A52D023690C61305536DFBBB82",
         "changelog": "Jellyfin 10.11.0: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
         "dependencies": []
@@ -399,13 +399,13 @@
         "version": "1.4.24.10",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-05T02:37:25.086Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.24.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.24.10.zip",
         "checksum": "3425FC45657E9737E633AC1268114453",
         "changelog": "Jellyfin 10.10.7: v1.4.24 - Reduced table column widths to 10 characters for Movies/Shows/Total with numbers aligned 2 spaces from the right edge. Fixed emoji spacing issues in table rows by removing extra spaces after Sorted, Failed, Created, and Deleted. Added refresh plan emoji to all result displays and increased result textbox max-height to 510px.",
         "dependencies": []
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.23.11.zip",
         "checksum": "2741AD8421E0248CA85313DCCD969FFB",
         "targetAbi": "10.11.0.0",
         "version": "1.4.23.11",
@@ -414,7 +414,7 @@
         "dependencies": []
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.23.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.23.10.zip",
         "checksum": "297A1AA89FDE5EC503C227F6F1F98EE1",
         "targetAbi": "10.10.0.0",
         "version": "1.4.23.10",
@@ -425,7 +425,7 @@
       {
         "changelog": "Jellyfin 10.11.0: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.22.11.zip",
         "timestamp": "2025-11-05T01:48:35.438Z",
         "targetAbi": "10.11.0.0",
         "version": "1.4.22.11",
@@ -434,7 +434,7 @@
       {
         "changelog": "Jellyfin 10.10.7: v1.4.22 - Refactored ignore functions to return new/existing ignored items separately. Added ItemsHidden collection to track newly hidden items with .ignore files. Updated cleanup service to process movies and shows separately and display results with hidden/unhidden indicators.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.22.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.22.10.zip",
         "timestamp": "2025-11-05T01:48:35.438Z",
         "targetAbi": "10.10.0.0",
         "version": "1.4.22.10",
@@ -768,7 +768,7 @@
         "targetAbi": "10.11.0.0",
         "checksum": "DCF0CA3C8A14140BDF9F78D0213D92E8",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.3.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.3.11.zip",
         "timestamp": "2025-11-04T06:50:25.916Z",
         "version": "1.4.3.11",
         "changelog": "Jellyfin 10.11.0: v1.4.3 - Further refine trace logging: move caller resolution into LogTraceInternal and more robustly skip DebugLogger<> frames for accurate Class.Method names. No functional changes; logging-only refactor."
@@ -777,7 +777,7 @@
         "targetAbi": "10.10.0.0",
         "checksum": "4C20FEB27BE13E1EF09F88DDAE4C2946",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.3.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.3.10.zip",
         "timestamp": "2025-11-04T06:50:25.916Z",
         "version": "1.4.3.10",
         "changelog": "Jellyfin 10.10.7: v1.4.3 - Further refine trace logging: move caller resolution into LogTraceInternal and more robustly skip DebugLogger<> frames for accurate Class.Method names. No functional changes; logging-only refactor."
@@ -789,7 +789,7 @@
         "dependencies": [],
         "version": "1.4.2.11",
         "timestamp": "2025-11-04T06:43:26.47Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.2.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -798,14 +798,14 @@
         "dependencies": [],
         "version": "1.4.2.10",
         "timestamp": "2025-11-04T06:43:26.47Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.2.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.2.10.zip"
       },
       {
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-04T06:36:07.034Z",
         "changelog": "Jellyfin 10.11.0: v1.4.1 - Refined sort result output: moved descriptions into Details, removed parentheticals, and switched result counts to bulleted lists. Implemented Smartish randomization adjustments and removed unnecessary smart-sort null check. Also ensured EnableAutomatedSortTask loads correctly in config UI.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.1.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.1.11.zip",
         "version": "1.4.1.11",
         "checksum": "962C62789A437C5AA70BFAC154C450CA"
       },
@@ -814,12 +814,12 @@
         "timestamp": "2025-11-04T06:36:07.034Z",
         "changelog": "Jellyfin 10.10.7: v1.4.1 - Refined sort result output: moved descriptions into Details, removed parentheticals, and switched result counts to bulleted lists. Implemented Smartish randomization adjustments and removed unnecessary smart-sort null check. Also ensured EnableAutomatedSortTask loads correctly in config UI.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.1.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.1.10.zip",
         "version": "1.4.1.10",
         "checksum": "B7CE5A2E85A2089871B369F5E73DE85B"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.0.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.0.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.0 - Implemented Smart sort algorithm that uses genre preferences from user's library to calculate play counts. Refactored SortService to use wrapper methods instead of direct MediaBrowser calls and added GetUserLibraryItems method to JellyfinILibraryManager. Added fallback to random sort when smart sort fails for individual directories and updated configuration page to specify Play Count (Ascending) sort requirement.",
         "timestamp": "2025-11-04T05:51:00.894Z",
         "version": "1.4.0.11",
@@ -828,7 +828,7 @@
         "targetAbi": "10.11.0.0"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.4.0.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.0.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.0 - Implemented Smart sort algorithm that uses genre preferences from user's library to calculate play counts. Refactored SortService to use wrapper methods instead of direct MediaBrowser calls and added GetUserLibraryItems method to JellyfinILibraryManager. Added fallback to random sort when smart sort fails for individual directories and updated configuration page to specify Play Count (Ascending) sort requirement.",
         "timestamp": "2025-11-04T05:51:00.894Z",
         "version": "1.4.0.10",
@@ -839,7 +839,7 @@
       {
         "checksum": "34AC07BA05764F066A01CFCEA1ECAB5F",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.70.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.70.11.zip",
         "timestamp": "2025-11-04T05:11:43.025Z",
         "changelog": "Jellyfin 10.11.0: v1.3.70 - Moved Details strings from service classes to result classes with formatted list format and emojis. Removed unnecessary null checks for Details property and standardized refresh plan display format across all result classes. Fixed EnableAutomatedSortTask checkbox saving issue by adding missing SetJsonValue call in PluginConfigurationController.",
         "dependencies": [],
@@ -848,7 +848,7 @@
       {
         "checksum": "57D11659AF6353CCECE6D83B02D12139",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.70.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.70.10.zip",
         "timestamp": "2025-11-04T05:11:43.025Z",
         "changelog": "Jellyfin 10.10.7: v1.3.70 - Moved Details strings from service classes to result classes with formatted list format and emojis. Removed unnecessary null checks for Details property and standardized refresh plan display format across all result classes. Fixed EnableAutomatedSortTask checkbox saving issue by adding missing SetJsonValue call in PluginConfigurationController.",
         "dependencies": [],
@@ -856,7 +856,7 @@
       },
       {
         "changelog": "Jellyfin 10.11.0: v1.3.69 - Updated SortLibraryResult ToString() format to include checkmark emoji and descriptive refresh plan information. Reorganized configuration page UI by moving Sort Discover Content section below Manage Discover Library section. Updated refresh plan display format to show descriptive text with variable values in parentheses.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.69.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.69.11.zip",
         "version": "1.3.69.11",
         "checksum": "D1825EA22A0CA0AF58FC001B52D4B3A5",
         "targetAbi": "10.11.0.0",
@@ -865,7 +865,7 @@
       },
       {
         "changelog": "Jellyfin 10.10.7: v1.3.69 - Updated SortLibraryResult ToString() format to include checkmark emoji and descriptive refresh plan information. Reorganized configuration page UI by moving Sort Discover Content section below Manage Discover Library section. Updated refresh plan display format to show descriptive text with variable values in parentheses.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.69.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.69.10.zip",
         "version": "1.3.69.10",
         "checksum": "2173C9F8800C1DC37D7CD0677533FAD6",
         "targetAbi": "10.10.0.0",
@@ -874,7 +874,7 @@
       },
       {
         "checksum": "AD4E602BB9C6DC366C7A2B1E8514336F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.68.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.68.11.zip",
         "dependencies": [],
         "timestamp": "2025-11-04T04:01:26.407Z",
         "changelog": "Jellyfin 10.11.0: v1.3.68 - Refactored result classes organized by operation (SyncFromJellyseerr, SyncToJellyseerr, SortJellyBridge) with helper classes at bottom. Added Refresh property to SortLibraryResult and updated all ToString() methods to include refresh information. Enhanced result classes with consistent aliases for easier data access and removed unused operator+ and Combine methods from ProcessJellyseerrResult.",
@@ -883,7 +883,7 @@
       },
       {
         "checksum": "AF47D1D4407D365691E970EC132F2BDD",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.68.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.68.10.zip",
         "dependencies": [],
         "timestamp": "2025-11-04T04:01:26.407Z",
         "changelog": "Jellyfin 10.10.7: v1.3.68 - Refactored result classes organized by operation (SyncFromJellyseerr, SyncToJellyseerr, SortJellyBridge) with helper classes at bottom. Added Refresh property to SortLibraryResult and updated all ToString() methods to include refresh information. Enhanced result classes with consistent aliases for easier data access and removed unused operator+ and Combine methods from ProcessJellyseerrResult.",
@@ -897,7 +897,7 @@
         "changelog": "Jellyfin 10.11.0: v1.3.67 - Added IgnoredMovies and IgnoredShows tracking to SyncJellyseerrResult for items ignored due to duplicate library content and matched items. Moved detail generation logic from SyncService into ToString() methods of result classes to combine movie/show counts with explanations. Updated frontend to display Ignored counts and match structured output format between sync operations.",
         "timestamp": "2025-11-04T01:31:49.755Z",
         "version": "1.3.67.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.67.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.67.11.zip"
       },
       {
         "dependencies": [],
@@ -906,7 +906,7 @@
         "changelog": "Jellyfin 10.10.7: v1.3.67 - Added IgnoredMovies and IgnoredShows tracking to SyncJellyseerrResult for items ignored due to duplicate library content and matched items. Moved detail generation logic from SyncService into ToString() methods of result classes to combine movie/show counts with explanations. Updated frontend to display Ignored counts and match structured output format between sync operations.",
         "timestamp": "2025-11-04T01:31:49.755Z",
         "version": "1.3.67.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.67.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.67.10.zip"
       },
       {
         "targetAbi": "10.11.0.0",
@@ -915,7 +915,7 @@
         "timestamp": "2025-11-04T00:54:48.969Z",
         "changelog": "Jellyfin 10.11.0: v1.3.66 - Removed unused classes (TestFavoritesResult, UserFavorites, FavoriteItem, RequestItem) from JellyseerrApiResults. Updated frontend to display all ProcessJellyfinResult properties including Found, Deleted, and Blocked counts. Added Found property to API response in ManageDiscoverLibraryController.",
         "checksum": "A7697A6A590F1C58F9B4FE5D9A010E1D",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.66.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.66.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -924,10 +924,10 @@
         "timestamp": "2025-11-04T00:54:48.969Z",
         "changelog": "Jellyfin 10.10.7: v1.3.66 - Removed unused classes (TestFavoritesResult, UserFavorites, FavoriteItem, RequestItem) from JellyseerrApiResults. Updated frontend to display all ProcessJellyfinResult properties including Found, Deleted, and Blocked counts. Added Found property to API response in ManageDiscoverLibraryController.",
         "checksum": "3CF98C1CAB27E4DB2134F76BDB9F3B92",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.66.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.66.10.zip"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.65.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.65.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.65 - Added tracking and reporting of blocked requests (items that couldn't be requested due to API errors or quotas) in the frontend sync results. Enhanced DebugLogger to automatically include method names in trace logs using reflection, eliminating manual method name passing. Updated result models and API controllers to expose blocked item counts.",
         "timestamp": "2025-11-04T00:36:55.953Z",
         "version": "1.3.65.11",
@@ -936,7 +936,7 @@
         "checksum": "2B6F6E435E9EA924A0131164E436F534"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.65.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.65.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.65 - Added tracking and reporting of blocked requests (items that couldn't be requested due to API errors or quotas) in the frontend sync results. Enhanced DebugLogger to automatically include method names in trace logs using reflection, eliminating manual method name passing. Updated result models and API controllers to expose blocked item counts.",
         "timestamp": "2025-11-04T00:36:55.953Z",
         "version": "1.3.65.10",
@@ -951,7 +951,7 @@
         "dependencies": [],
         "timestamp": "2025-11-03T23:55:17.545Z",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.64.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.64.11.zip"
       },
       {
         "checksum": "E7E9935D72D191A9F1B34378275F74D6",
@@ -960,7 +960,7 @@
         "dependencies": [],
         "timestamp": "2025-11-03T23:55:17.545Z",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.64.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.64.10.zip"
       },
       {
         "version": "1.3.63.11",
@@ -969,7 +969,7 @@
         "timestamp": "2025-11-03T23:39:34.273Z",
         "changelog": "Jellyfin 10.11.0: v1.3.63 - Added trace logging for duplicate checking to debug library filtering logic. Logs include MediaName, HashCode, LibraryName, Directory, and the existsSameDir/existsAnyDir flags.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.63.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.63.11.zip"
       },
       {
         "version": "1.3.63.10",
@@ -978,13 +978,13 @@
         "timestamp": "2025-11-03T23:39:34.273Z",
         "changelog": "Jellyfin 10.10.7: v1.3.63 - Added trace logging for duplicate checking to debug library filtering logic. Logs include MediaName, HashCode, LibraryName, Directory, and the existsSameDir/existsAnyDir flags.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.63.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.63.10.zip"
       },
       {
         "changelog": "Jellyfin 10.11.0: v1.3.62 - Added DistinctBy to deduplicate libraryItemPairs by entire tuple (libraryName, directory, item.Id). Updated trace logging to use ItemHashCode instead of ItemName. Improved field descriptions in configuration page for MaxDiscoverPages and MaxRetentionDays.",
         "version": "1.3.62.11",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.62.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.62.11.zip",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-03T23:34:40.701Z",
         "checksum": "990CAC04C730382F8019B1415853351E"
@@ -993,7 +993,7 @@
         "changelog": "Jellyfin 10.10.7: v1.3.62 - Added DistinctBy to deduplicate libraryItemPairs by entire tuple (libraryName, directory, item.Id). Updated trace logging to use ItemHashCode instead of ItemName. Improved field descriptions in configuration page for MaxDiscoverPages and MaxRetentionDays.",
         "version": "1.3.62.10",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.62.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.62.10.zip",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-03T23:34:40.701Z",
         "checksum": "363D4F834ABF58626FA76920BEC5B895"
@@ -1005,7 +1005,7 @@
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.61 - Added trace logging for library item pairs to debug library matching. Fixed unmatchedAsDefault logic to properly exclude items already in libraries by removing hash code checks and reverting to location-based matching.",
         "checksum": "FEFF6DAB56FE835A9C1C706FBF560AF5",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.61.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.61.11.zip"
       },
       {
         "version": "1.3.61.10",
@@ -1014,13 +1014,13 @@
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.61 - Added trace logging for library item pairs to debug library matching. Fixed unmatchedAsDefault logic to properly exclude items already in libraries by removing hash code checks and reverting to location-based matching.",
         "checksum": "1C74AC3CFC8C32E18B50BD19A176D52F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.61.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.61.10.zip"
       },
       {
         "timestamp": "2025-11-03T23:07:30.456Z",
         "changelog": "Jellyfin 10.11.0: v1.3.60 - Fixed casing normalization bugs by changing ToUpperInvariant to ToLowerInvariant in duplicate detection logic. Added early return guard in IgnoreDuplicateLibraryItems when UseNetworkFolders and AddDuplicateContent are disabled. Added trace logging for debugging duplicate filtering operations.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.60.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.60.11.zip",
         "checksum": "2CEF228E636731361AE8EE8167D9F929",
         "version": "1.3.60.11",
         "dependencies": []
@@ -1029,7 +1029,7 @@
         "timestamp": "2025-11-03T23:07:30.456Z",
         "changelog": "Jellyfin 10.10.7: v1.3.60 - Fixed casing normalization bugs by changing ToUpperInvariant to ToLowerInvariant in duplicate detection logic. Added early return guard in IgnoreDuplicateLibraryItems when UseNetworkFolders and AddDuplicateContent are disabled. Added trace logging for debugging duplicate filtering operations.",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.60.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.60.10.zip",
         "checksum": "F839079A057B5B97A3FDA6D3A8EF50DA",
         "version": "1.3.60.10",
         "dependencies": []
@@ -1041,7 +1041,7 @@
         "timestamp": "2025-11-03T22:30:57.337Z",
         "checksum": "EFA0E04D1FBCD822C76C154E86C18A50",
         "version": "1.3.59.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.59.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.59.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -1050,7 +1050,7 @@
         "timestamp": "2025-11-03T22:30:57.337Z",
         "checksum": "233C7729EB68E445DEB6E06092FE8CF4",
         "version": "1.3.59.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.59.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.59.10.zip"
       },
       {
         "dependencies": [],
@@ -1059,7 +1059,7 @@
         "timestamp": "2025-11-03T21:33:11.926Z",
         "changelog": "Jellyfin 10.11.0: v1.3.58 - Config JS: bind click handlers after dynamic innerHTML updates in startup description, prevent duplicate event bindings with data-link-initialized flag. HTML: add Dashboard router link. No functional changes.",
         "version": "1.3.58.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.58.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.58.11.zip"
       },
       {
         "dependencies": [],
@@ -1068,14 +1068,14 @@
         "timestamp": "2025-11-03T21:33:11.926Z",
         "changelog": "Jellyfin 10.10.7: v1.3.58 - Config JS: bind click handlers after dynamic innerHTML updates in startup description, prevent duplicate event bindings with data-link-initialized flag. HTML: add Dashboard router link. No functional changes.",
         "version": "1.3.58.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.58.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.58.10.zip"
       },
       {
         "checksum": "CBA730B4D7A56E58D63771B5C346DD47",
         "version": "1.3.56.11",
         "changelog": "Jellyfin 10.11.0: v1.3.56 - Config UI: add data-target-page links for navigation, add router navigation spans (Dashboard/Metadata Manager), link remaining troubleshooting/setup references. JS: support data-target-router and data-target-page, make enabled task names in startup description clickable. No functional changes.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.56.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.56.11.zip",
         "dependencies": [],
         "timestamp": "2025-11-03T21:11:32.244Z"
       },
@@ -1084,7 +1084,7 @@
         "version": "1.3.56.10",
         "changelog": "Jellyfin 10.10.7: v1.3.56 - Config UI: add data-target-page links for navigation, add router navigation spans (Dashboard/Metadata Manager), link remaining troubleshooting/setup references. JS: support data-target-router and data-target-page, make enabled task names in startup description clickable. No functional changes.",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.56.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.56.10.zip",
         "dependencies": [],
         "timestamp": "2025-11-03T21:11:32.244Z"
       },
@@ -1095,7 +1095,7 @@
         "version": "1.3.55.11",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-03T19:41:44.071Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.55.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.55.11.zip"
       },
       {
         "dependencies": [],
@@ -1104,11 +1104,11 @@
         "version": "1.3.55.10",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-03T19:41:44.071Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.55.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.55.10.zip"
       },
       {
         "checksum": "ADDDEBAE6E28141934EE898A4A6BE6A3",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.54.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.54.11.zip",
         "timestamp": "2025-11-03T19:03:30.819Z",
         "changelog": "Jellyfin 10.11.0: v1.3.54 - BridgeService: FindMatches now adds all matching Jellyseerr items per Jellyfin item (not just first). Also fixed prior brace/type issues. No behavioral changes beyond expanded match set for diagnostics.",
         "version": "1.3.54.11",
@@ -1117,7 +1117,7 @@
       },
       {
         "checksum": "FEF69674CE320AA06295F224A1BFE294",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.54.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.54.10.zip",
         "timestamp": "2025-11-03T19:03:30.819Z",
         "changelog": "Jellyfin 10.10.7: v1.3.54 - BridgeService: FindMatches now adds all matching Jellyseerr items per Jellyfin item (not just first). Also fixed prior brace/type issues. No behavioral changes beyond expanded match set for diagnostics.",
         "version": "1.3.54.10",
@@ -1126,7 +1126,7 @@
       },
       {
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.53.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.53.11.zip",
         "timestamp": "2025-11-03T17:58:37.951Z",
         "version": "1.3.53.11",
         "dependencies": [],
@@ -1135,7 +1135,7 @@
       },
       {
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.53.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.53.10.zip",
         "timestamp": "2025-11-03T17:58:37.951Z",
         "version": "1.3.53.10",
         "dependencies": [],
@@ -1143,7 +1143,7 @@
         "checksum": "6B142D8AF1A13ECF370218F3DD42AEA4"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.52.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.52.11.zip",
         "version": "1.3.52.11",
         "checksum": "04ACD9815F9DFB17F5375032DBF6A437",
         "timestamp": "2025-11-03T11:30:23.642Z",
@@ -1152,7 +1152,7 @@
         "changelog": "Jellyfin 10.11.0: v1.3.52 - SyncService: improve step 4 diagnostics; log full folder paths for unique, unmatched, and synced items; no behavioral changes. Prepare new release artifacts for 10.10/10.11."
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.52.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.52.10.zip",
         "version": "1.3.52.10",
         "checksum": "9B893E31CD9FA42630B8544398B5BC50",
         "timestamp": "2025-11-03T11:30:23.642Z",
@@ -1166,7 +1166,7 @@
         "checksum": "09E567D89C6D3D95FF8884B36F4AB975",
         "version": "1.3.51.11",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.51.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.51.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.51 - SyncService: add full folder path logging for unmatched, synced, and unique discover items; remove invalid IJellyseerrItem.Directory references to fix build; diagnostics-only changes, no behavior impact. Release artifacts updated for 10.10/10.11."
       },
       {
@@ -1175,7 +1175,7 @@
         "checksum": "2BE0B5D461FF942711BF96B47575F7A6",
         "version": "1.3.51.10",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.51.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.51.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.51 - SyncService: add full folder path logging for unmatched, synced, and unique discover items; remove invalid IJellyseerrItem.Directory references to fix build; diagnostics-only changes, no behavior impact. Release artifacts updated for 10.10/10.11."
       },
       {
@@ -1183,7 +1183,7 @@
         "changelog": "Jellyfin 10.11.0: v1.3.50 - BridgeService: add left-join fallback to default library, append unmatched items directly, and add debug counters; simplify unmatched mapping to avoid nulls. Setup UI: help now scrolls to IsEnabled. Version, manifest, and release artifacts updated for 10.10/10.11.",
         "timestamp": "2025-11-03T11:03:10.367Z",
         "checksum": "3E805BF05055C366EF4D2776F4686036",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.50.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.50.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": []
       },
@@ -1192,7 +1192,7 @@
         "changelog": "Jellyfin 10.10.7: v1.3.50 - BridgeService: add left-join fallback to default library, append unmatched items directly, and add debug counters; simplify unmatched mapping to avoid nulls. Setup UI: help now scrolls to IsEnabled. Version, manifest, and release artifacts updated for 10.10/10.11.",
         "timestamp": "2025-11-03T11:03:10.367Z",
         "checksum": "54013295576CBFBF858DFB2042901FA0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.50.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.50.10.zip",
         "targetAbi": "10.10.0.0",
         "dependencies": []
       },
@@ -1201,7 +1201,7 @@
         "targetAbi": "10.11.0.0",
         "version": "1.3.49.11",
         "changelog": "Jellyfin 10.11.0: v1.3.49 - BridgeService: left-join fallback to default (empty) library, append unmatched items directly, and add debug counts. Simplify unmatched mapping to avoid nulls. Minor UI: setup help scrolls to IsEnabled.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.49.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.49.11.zip",
         "dependencies": [],
         "checksum": "897384636B683DBE5EB78B5E25A69D3D"
       },
@@ -1210,13 +1210,13 @@
         "targetAbi": "10.10.0.0",
         "version": "1.3.49.10",
         "changelog": "Jellyfin 10.10.7: v1.3.49 - BridgeService: left-join fallback to default (empty) library, append unmatched items directly, and add debug counts. Simplify unmatched mapping to avoid nulls. Minor UI: setup help scrolls to IsEnabled.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.49.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.49.10.zip",
         "dependencies": [],
         "checksum": "51774FE0454B691BF43E67C1B18F7360"
       },
       {
         "version": "1.3.48.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.48.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.48.11.zip",
         "checksum": "038E62469142B6757729F0B216F6950A",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
@@ -1225,7 +1225,7 @@
       },
       {
         "version": "1.3.48.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.48.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.48.10.zip",
         "checksum": "2B0B7DEAC67CF8D9B1471F15A905BF1F",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
@@ -1235,7 +1235,7 @@
       {
         "version": "1.3.47.11",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.47.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.47.11.zip",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.47 - Improve diagnostics: step-tagged debug logs in SyncService and refined FavoriteService logs; harden MetadataService deserialization logging. UI: add unique emojis to action buttons. BridgeService: don’t filter duplicates in same library and directory.",
         "timestamp": "2025-11-03T08:38:09.506Z",
@@ -1244,7 +1244,7 @@
       {
         "version": "1.3.47.10",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.47.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.47.10.zip",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.3.47 - Improve diagnostics: step-tagged debug logs in SyncService and refined FavoriteService logs; harden MetadataService deserialization logging. UI: add unique emojis to action buttons. BridgeService: don’t filter duplicates in same library and directory.",
         "timestamp": "2025-11-03T08:38:09.506Z",
@@ -1252,7 +1252,7 @@
       },
       {
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.45.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.45.11.zip",
         "version": "1.3.45.11",
         "checksum": "FD0A25A5AA6BAD45B3151174EB62A99A",
         "targetAbi": "10.11.0.0",
@@ -1261,7 +1261,7 @@
       },
       {
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.45.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.45.10.zip",
         "version": "1.3.45.10",
         "checksum": "E4FB00A9DF5A67EF766260844012EB87",
         "targetAbi": "10.10.0.0",
@@ -1269,7 +1269,7 @@
         "timestamp": "2025-11-03T07:57:04.017Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.44.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.44.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.44 - Add quotas settings and enforcement in favorites/sync; improve metadata handling. Update configuration UI for quotas and sorting controls. Refresh README.",
@@ -1278,7 +1278,7 @@
         "timestamp": "2025-11-03T07:42:24.767Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.44.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.44.10.zip",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.3.44 - Add quotas settings and enforcement in favorites/sync; improve metadata handling. Update configuration UI for quotas and sorting controls. Refresh README.",
@@ -1287,7 +1287,7 @@
         "timestamp": "2025-11-03T07:42:24.767Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.43.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.43.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.43 - Replace custom BaseItemKind wrapper; standardize on Jellyfin.Data.Enums with proper usings. Refactor IJellyfinItem to instance TypeName and update wrappers; fix SortService compile issues and deconstruction types. Remove wrapper file and clean up namespaces.",
         "checksum": "92A3631E509201C7B5D2044DE7C82026",
         "dependencies": [],
@@ -1296,7 +1296,7 @@
         "version": "1.3.43.11"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.43.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.43.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.43 - Replace custom BaseItemKind wrapper; standardize on Jellyfin.Data.Enums with proper usings. Refactor IJellyfinItem to instance TypeName and update wrappers; fix SortService compile issues and deconstruction types. Remove wrapper file and clean up namespaces.",
         "checksum": "D4ECE2E5082880F9AD9FAF630E112291",
         "dependencies": [],
@@ -1308,7 +1308,7 @@
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-03T04:43:16.609Z",
         "checksum": "2FC427EDCD387ED46599360012A9453E",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.42.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.42.11.zip",
         "version": "1.3.42.11",
         "changelog": "Jellyfin 10.11.0: v1.3.42 - Fixed JSON serializer to use runtime type instead of interface type when serializing metadata files. This ensures all properties from concrete classes and base classes are serialized correctly, preventing empty JSON objects from being written to metadata.json files.",
         "dependencies": []
@@ -1317,7 +1317,7 @@
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-03T04:43:16.609Z",
         "checksum": "95347EDD5F07888845C52FFDABA5B11A",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.42.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.42.10.zip",
         "version": "1.3.42.10",
         "changelog": "Jellyfin 10.10.7: v1.3.42 - Fixed JSON serializer to use runtime type instead of interface type when serializing metadata files. This ensures all properties from concrete classes and base classes are serialized correctly, preventing empty JSON objects from being written to metadata.json files.",
         "dependencies": []
@@ -1328,7 +1328,7 @@
         "dependencies": [],
         "timestamp": "2025-11-03T03:53:58.616Z",
         "changelog": "Jellyfin 10.11.0: v1.3.41 - Replaced inline onclick handlers with span.link class and added global initializeLinkSpans function that automatically scrolls to elements with matching text content. Added CSS styling for span.link to make them appear as clickable links. Fixed scrollToElement function definition that was missing from the module.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.41.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.41.11.zip",
         "targetAbi": "10.11.0.0"
       },
       {
@@ -1337,14 +1337,14 @@
         "dependencies": [],
         "timestamp": "2025-11-03T03:53:58.616Z",
         "changelog": "Jellyfin 10.10.7: v1.3.41 - Replaced inline onclick handlers with span.link class and added global initializeLinkSpans function that automatically scrolls to elements with matching text content. Added CSS styling for span.link to make them appear as clickable links. Fixed scrollToElement function definition that was missing from the module.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.41.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.41.10.zip",
         "targetAbi": "10.10.0.0"
       },
       {
         "changelog": "Jellyfin 10.11.0: v1.3.40 - Renamed 'Add Duplicate Content' to 'Duplicate Discover Content for JellyBridge Libraries' with updated descriptions clarifying that duplicate content from different networks is allowed as long as unique within each library. Updated setup instructions to specify that each network folder must have a unique Jellyfin library. Removed obsolete patch note.",
         "dependencies": [],
         "version": "1.3.40.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.40.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.40.11.zip",
         "targetAbi": "10.11.0.0",
         "checksum": "6171A53DB444CC00B136BB7D55036FB2",
         "timestamp": "2025-11-03T03:30:15.922Z"
@@ -1353,13 +1353,13 @@
         "changelog": "Jellyfin 10.10.7: v1.3.40 - Renamed 'Add Duplicate Content' to 'Duplicate Discover Content for JellyBridge Libraries' with updated descriptions clarifying that duplicate content from different networks is allowed as long as unique within each library. Updated setup instructions to specify that each network folder must have a unique Jellyfin library. Removed obsolete patch note.",
         "dependencies": [],
         "version": "1.3.40.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.40.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.40.10.zip",
         "targetAbi": "10.10.0.0",
         "checksum": "8DAE53418B7FEBBAB886695879FBD1A4",
         "timestamp": "2025-11-03T03:30:15.922Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.39.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.39.11.zip",
         "dependencies": [],
         "checksum": "E5B59D70A351BE432BEC9D593C4D4FBF",
         "changelog": "Jellyfin 10.11.0: v1.3.39 - Refactored library metadata filtering and duplicate detection: Added ReadMetadataLibraries to filter metadata items to only those present in Jellyfin libraries, preventing crashes when updating items not in libraries. Simplified directory-to-library mapping by combining normalizedDirectoryMap and directoryToLibraryMap into a single directoryLibraryMap. Enhanced FilterDuplicatesByLibrary with anti-join logic to exclude items that already exist in the same library based on library name and item hash code.",
@@ -1368,7 +1368,7 @@
         "timestamp": "2025-11-03T03:05:53.769Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.39.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.39.10.zip",
         "dependencies": [],
         "checksum": "E1FA4822A2D7277EB2203C90BFC753AC",
         "changelog": "Jellyfin 10.10.7: v1.3.39 - Refactored library metadata filtering and duplicate detection: Added ReadMetadataLibraries to filter metadata items to only those present in Jellyfin libraries, preventing crashes when updating items not in libraries. Simplified directory-to-library mapping by combining normalizedDirectoryMap and directoryToLibraryMap into a single directoryLibraryMap. Enhanced FilterDuplicatesByLibrary with anti-join logic to exclude items that already exist in the same library based on library name and item hash code.",
@@ -1377,7 +1377,7 @@
         "timestamp": "2025-11-03T03:05:53.769Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.38.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.38.11.zip",
         "timestamp": "2025-11-02T22:22:54.391Z",
         "version": "1.3.38.11",
         "changelog": "Jellyfin 10.11.0: v1.3.38 - Refactored validator functions to handle trimming internally: notNull, url, int, and double validators now trim values before validation, while windowsFilename validator receives untrimmed values to properly detect leading space characters. Updated validateField function to pass raw field.value to all validators, allowing each validator to manage its own trimming logic.",
@@ -1386,7 +1386,7 @@
         "dependencies": []
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.38.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.38.10.zip",
         "timestamp": "2025-11-02T22:22:54.391Z",
         "version": "1.3.38.10",
         "changelog": "Jellyfin 10.10.7: v1.3.38 - Refactored validator functions to handle trimming internally: notNull, url, int, and double validators now trim values before validation, while windowsFilename validator receives untrimmed values to properly detect leading space characters. Updated validateField function to pass raw field.value to all validators, allowing each validator to manage its own trimming logic.",
@@ -1397,7 +1397,7 @@
       {
         "changelog": "Jellyfin 10.11.0: v1.3.37 - Updated LibraryPrefix handling to preserve leading and trailing spaces by adding trim parameter to safeParseString and preventing trimming in validateField. Enhanced windowsFilename validator to reject values starting with a space character to comply with Windows filename restrictions.",
         "version": "1.3.37.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.37.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.37.11.zip",
         "dependencies": [],
         "checksum": "A6B5902331F2CA31951EEDE3D85888BE",
         "timestamp": "2025-11-02T22:02:06.125Z",
@@ -1406,14 +1406,14 @@
       {
         "changelog": "Jellyfin 10.10.7: v1.3.37 - Updated LibraryPrefix handling to preserve leading and trailing spaces by adding trim parameter to safeParseString and preventing trimming in validateField. Enhanced windowsFilename validator to reject values starting with a space character to comply with Windows filename restrictions.",
         "version": "1.3.37.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.37.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.37.10.zip",
         "dependencies": [],
         "checksum": "24EE4B39A66181334751C0E12727FDF2",
         "timestamp": "2025-11-02T22:02:06.125Z",
         "targetAbi": "10.10.0.0"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.36.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.36.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.36 - Fixed scroll links to use span elements instead of anchor tags to avoid Jellyfin hashtag navigation conflicts. Increased scroll offset to 60px default and 100px for Network Services link to provide better visual spacing. Fixed Generate Network Folders to properly use Library Prefix through GetNetworkFolder and added early return if UseNetworkFolders is not enabled.",
         "targetAbi": "10.11.0.0",
         "checksum": "C02AA3AF320A8B1E75BD87C233461CC7",
@@ -1422,7 +1422,7 @@
         "version": "1.3.36.11"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.36.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.36.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.36 - Fixed scroll links to use span elements instead of anchor tags to avoid Jellyfin hashtag navigation conflicts. Increased scroll offset to 60px default and 100px for Network Services link to provide better visual spacing. Fixed Generate Network Folders to properly use Library Prefix through GetNetworkFolder and added early return if UseNetworkFolders is not enabled.",
         "targetAbi": "10.10.0.0",
         "checksum": "AB071C3D276B8BCBC11F53455C5964CE",
@@ -1431,7 +1431,7 @@
         "version": "1.3.36.10"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.35.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.35.11.zip",
         "version": "1.3.35.11",
         "timestamp": "2025-11-02T21:16:19.299Z",
         "checksum": "DC26DF8CF4E6035FB852673C73046658",
@@ -1440,7 +1440,7 @@
         "targetAbi": "10.11.0.0"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.35.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.35.10.zip",
         "version": "1.3.35.10",
         "timestamp": "2025-11-02T21:16:19.299Z",
         "checksum": "D1665E6B813FCCB5D4149D52E1270908",
@@ -1454,7 +1454,7 @@
         "version": "1.3.34.11",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.34 - Fixed scroll-to-checkbox functionality for disabled fields by allowing pointer events on containers while blocking them only on form elements. Made Network Folder Options details appear disabled but remain clickable with proper cursor and hover feedback. Updated disabled state styling to ensure click handlers work correctly while maintaining visual disabled appearance.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.34.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.34.11.zip",
         "timestamp": "2025-11-02T20:45:12.929Z"
       },
       {
@@ -1463,13 +1463,13 @@
         "version": "1.3.34.10",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.3.34 - Fixed scroll-to-checkbox functionality for disabled fields by allowing pointer events on containers while blocking them only on form elements. Made Network Folder Options details appear disabled but remain clickable with proper cursor and hover feedback. Updated disabled state styling to ensure click handlers work correctly while maintaining visual disabled appearance.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.34.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.34.10.zip",
         "timestamp": "2025-11-02T20:45:12.929Z"
       },
       {
         "checksum": "F520E520C8E9D9D60F27F56AEEE9DFCC",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.33.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.33.11.zip",
         "timestamp": "2025-11-02T20:28:38.597Z",
         "changelog": "Jellyfin 10.11.0: v1.3.33 - Improved disabled element UI styling with cursor: not-allowed for better user feedback. Added feature to manually request JellyBridge library favorites in Jellyseerr. Updated README with improved release notes structure and compatibility information.",
         "version": "1.3.33.11",
@@ -1478,7 +1478,7 @@
       {
         "checksum": "94AD34FEBC2C6AC3EE17ABB55FDA1FE0",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.33.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.33.10.zip",
         "timestamp": "2025-11-02T20:28:38.597Z",
         "changelog": "Jellyfin 10.10.7: v1.3.33 - Improved disabled element UI styling with cursor: not-allowed for better user feedback. Added feature to manually request JellyBridge library favorites in Jellyseerr. Updated README with improved release notes structure and compatibility information.",
         "version": "1.3.33.10",
@@ -1486,7 +1486,7 @@
       },
       {
         "changelog": "Jellyfin 10.11.0: v1.3.32 - Renamed CreateSeparateLibraries to UseNetworkFolders across all code. Added collapsible Network Folder Options detail dropdown that opens/closes with the checkbox. Reorganized UI elements by moving Add Duplicate Content above generate button and combining caution text, plus added Release 2.0 compatibility note to README.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.32.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.32.11.zip",
         "timestamp": "2025-11-02T19:44:59.438Z",
         "version": "1.3.32.11",
         "dependencies": [],
@@ -1495,7 +1495,7 @@
       },
       {
         "changelog": "Jellyfin 10.10.7: v1.3.32 - Renamed CreateSeparateLibraries to UseNetworkFolders across all code. Added collapsible Network Folder Options detail dropdown that opens/closes with the checkbox. Reorganized UI elements by moving Add Duplicate Content above generate button and combining caution text, plus added Release 2.0 compatibility note to README.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.32.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.32.10.zip",
         "timestamp": "2025-11-02T19:44:59.438Z",
         "version": "1.3.32.10",
         "dependencies": [],
@@ -1506,7 +1506,7 @@
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.31 - Improved help button hover behavior by moving cursor styling to container and applying icon background color change when hovering anywhere on the button including the Setup text.",
         "version": "1.3.31.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.31.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.31.11.zip",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-02T19:02:21.861Z",
         "checksum": "26D5569C75FBA1DCEA9D220D6E135E4C"
@@ -1515,7 +1515,7 @@
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.3.31 - Improved help button hover behavior by moving cursor styling to container and applying icon background color change when hovering anywhere on the button including the Setup text.",
         "version": "1.3.31.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.31.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.31.10.zip",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-02T19:02:21.861Z",
         "checksum": "5CBA5BE9A4AEB7FFF205C41076DC45F4"
@@ -1527,7 +1527,7 @@
         "dependencies": [],
         "timestamp": "2025-11-02T18:44:45.171Z",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.30.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.30.11.zip"
       },
       {
         "changelog": "Jellyfin 10.10.7: v1.3.30 - Refactored monolithic RouteController into specialized controllers (PluginConfigurationController, GeneralSettingsController, ImportDiscoverContentController, SortDiscoverContentController, ManageDiscoverLibraryController, AdvancedSettingsController, TaskStatusController). Moved library setup instructions above test connection button and converted troubleshooting section to collapsible details. Updated all service using statements to minimal sets and improved service class summaries.",
@@ -1536,11 +1536,11 @@
         "dependencies": [],
         "timestamp": "2025-11-02T18:44:45.171Z",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.30.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.30.10.zip"
       },
       {
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.29.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.29.11.zip",
         "checksum": "EFA237AAE5542B2643A9E9C58E1EFD76",
         "timestamp": "2025-11-02T04:26:40.593Z",
         "changelog": "Jellyfin 10.11.0: v1.3.29 - Added AddDuplicateContent configuration option to allow duplicate media in network folders when separate libraries are enabled, with UI warning about proper usage. Updated FilterDuplicateMedia to use GetConfigOrDefault and skip filtering when both CreateSeparateLibraries and AddDuplicateContent are enabled. Added AddDuplicateContent to configuration endpoints and fixed Smart sort order case to explicitly fall through to default behavior.",
@@ -1549,7 +1549,7 @@
       },
       {
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.29.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.29.10.zip",
         "checksum": "DCF7D8DCAA1BF2A21DFE4C5D0F3104CC",
         "timestamp": "2025-11-02T04:26:40.593Z",
         "changelog": "Jellyfin 10.10.7: v1.3.29 - Added AddDuplicateContent configuration option to allow duplicate media in network folders when separate libraries are enabled, with UI warning about proper usage. Updated FilterDuplicateMedia to use GetConfigOrDefault and skip filtering when both CreateSeparateLibraries and AddDuplicateContent are enabled. Added AddDuplicateContent to configuration endpoints and fixed Smart sort order case to explicitly fall through to default behavior.",
@@ -1557,7 +1557,7 @@
         "dependencies": []
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.28.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.28.11.zip",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.28 - Added scroll-to-checkbox functionality when clicking disabled fields. Centralized disabled state styling and scroll handler logic into reusable utility functions. Removed beta tag and note from Create separate libraries option.",
         "version": "1.3.28.11",
@@ -1566,7 +1566,7 @@
         "checksum": "D8D8D930AA3F030CDE6E4C2E82BFD4F5"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.28.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.28.10.zip",
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.28 - Added scroll-to-checkbox functionality when clicking disabled fields. Centralized disabled state styling and scroll handler logic into reusable utility functions. Removed beta tag and note from Create separate libraries option.",
         "version": "1.3.28.10",
@@ -1576,7 +1576,7 @@
       },
       {
         "version": "1.3.27.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.27.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.27.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.27 - Fixed SortOrder dropdown initialization to convert enum name strings (like 'Random') to integer values when populating from ConfigDefaults. Added enum name-to-value mapping to ensure dropdown correctly displays selected option when no explicit config value is set.",
         "timestamp": "2025-11-02T02:20:26.005Z",
         "checksum": "962774A09E7B4540AFB396F8C86AAB89",
@@ -1585,7 +1585,7 @@
       },
       {
         "version": "1.3.27.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.27.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.27.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.27 - Fixed SortOrder dropdown initialization to convert enum name strings (like 'Random') to integer values when populating from ConfigDefaults. Added enum name-to-value mapping to ensure dropdown correctly displays selected option when no explicit config value is set.",
         "timestamp": "2025-11-02T02:20:26.005Z",
         "checksum": "1095204BA36C004288AC8A0E7DAF2FF1",
@@ -1594,7 +1594,7 @@
       },
       {
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.26.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.26.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.26 - Refactored MetadataService and SyncService to process movies and shows in a unified list. Added FilterDuplicateMedia function to DiscoverService for duplicate removal using item hashing. Cleaned up unused dependencies and using statements across all services.",
         "timestamp": "2025-11-02T01:46:52.647Z",
         "checksum": "E02DF3B413F909463F44D70B706DDA35",
@@ -1603,7 +1603,7 @@
       },
       {
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.26.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.26.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.26 - Refactored MetadataService and SyncService to process movies and shows in a unified list. Added FilterDuplicateMedia function to DiscoverService for duplicate removal using item hashing. Cleaned up unused dependencies and using statements across all services.",
         "timestamp": "2025-11-02T01:46:52.647Z",
         "checksum": "0FB7971D16BE0B8DA3F2654E64CA84C8",
@@ -1613,7 +1613,7 @@
       {
         "version": "1.3.25.11",
         "timestamp": "2025-11-02T00:55:31.891Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.25.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.25.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.25 - Added JsonNumberEnumConverter to SortOrderOptions enum to ensure proper numeric serialization for frontend compatibility.",
         "checksum": "4A74118862F4ADB63963998BB5ACE6F8",
         "targetAbi": "10.11.0.0",
@@ -1622,7 +1622,7 @@
       {
         "version": "1.3.25.10",
         "timestamp": "2025-11-02T00:55:31.891Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.25.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.25.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.25 - Added JsonNumberEnumConverter to SortOrderOptions enum to ensure proper numeric serialization for frontend compatibility.",
         "checksum": "BA7A0927A8C45A6002A40ED883A2E59E",
         "targetAbi": "10.10.0.0",
@@ -1633,7 +1633,7 @@
         "targetAbi": "10.11.0.0",
         "checksum": "74FCE5E564D5D26240F1E261EF9B3BFF",
         "timestamp": "2025-11-02T00:32:54.158Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.24.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.24.11.zip",
         "version": "1.3.24.11",
         "changelog": "Jellyfin 10.11.0: v1.3.24 - Refactored sort functionality into new SortService class and added BridgeConfiguration with SortOrderOptions enum. Replaced boolean sort toggle with dropdown (None/Random/Smart) and added dynamic enum population via ConfigOptions. Made ScanAllLibraries async/awaitable and renamed DefaultValues to ConfigDefaults in frontend."
       },
@@ -1642,14 +1642,14 @@
         "targetAbi": "10.10.0.0",
         "checksum": "3BD9E6A72DEE59DFB700A8473F96CF8E",
         "timestamp": "2025-11-02T00:32:54.158Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.24.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.24.10.zip",
         "version": "1.3.24.10",
         "changelog": "Jellyfin 10.10.7: v1.3.24 - Refactored sort functionality into new SortService class and added BridgeConfiguration with SortOrderOptions enum. Replaced boolean sort toggle with dropdown (None/Random/Smart) and added dynamic enum population via ConfigOptions. Made ScanAllLibraries async/awaitable and renamed DefaultValues to ConfigDefaults in frontend."
       },
       {
         "checksum": "440ED47C83E31CC82CC389E4B98C7C9F",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.23.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.23.11.zip",
         "targetAbi": "10.11.0.0",
         "version": "1.3.23.11",
         "timestamp": "2025-11-01T22:07:18.984Z",
@@ -1658,7 +1658,7 @@
       {
         "checksum": "4E62B0AB0F44982B22D75D3899FB328B",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.23.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.23.10.zip",
         "targetAbi": "10.10.0.0",
         "version": "1.3.23.10",
         "timestamp": "2025-11-01T22:07:18.984Z",
@@ -1671,7 +1671,7 @@
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v1.3.22 - Removed TryMarkPlayed method from JellyfinIUserDataManager and inlined the Played=true logic directly in JellyfinSeries.TrySetEpisodePlayCount to ensure only the placeholder episode is marked as played, not all BaseItems. This prevents accidental marking of other items while maintaining the fix for series unplayed badges.",
         "checksum": "CDFD1B1482F63794923CC6B2AE7872A7",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.22.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.22.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -1680,12 +1680,12 @@
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v1.3.22 - Removed TryMarkPlayed method from JellyfinIUserDataManager and inlined the Played=true logic directly in JellyfinSeries.TrySetEpisodePlayCount to ensure only the placeholder episode is marked as played, not all BaseItems. This prevents accidental marking of other items while maintaining the fix for series unplayed badges.",
         "checksum": "7B43784016F7CB7A993D9EC8100B216E",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.22.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.22.10.zip"
       },
       {
         "checksum": "329C76ACAF014FDAE9DCA683A033A9AB",
         "timestamp": "2025-11-01T21:16:17.997Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.21.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.21.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.21 - Fixed placeholder episode play status by setting Played=true when play count > 0. Jellyfin uses the Played flag (not just PlayCount) to determine if episodes are played, which affects the series unplayed badge. Updated TryUpdatePlayCount to set both PlayCount and Played flag appropriately.",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
@@ -1694,7 +1694,7 @@
       {
         "checksum": "67C1ACF61ED3FD74AC337A138CCB8761",
         "timestamp": "2025-11-01T21:16:17.997Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.21.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.21.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.21 - Fixed placeholder episode play status by setting Played=true when play count > 0. Jellyfin uses the Played flag (not just PlayCount) to determine if episodes are played, which affects the series unplayed badge. Updated TryUpdatePlayCount to set both PlayCount and Played flag appropriately.",
         "dependencies": [],
         "targetAbi": "10.10.0.0",
@@ -1703,7 +1703,7 @@
       {
         "checksum": "846B490ED235ECEFB9A3663368F288F2",
         "changelog": "Jellyfin 10.11.0: v1.3.20 - Enhanced placeholder episode play count logic to return detailed result objects with success status and descriptive messages instead of nullable bool. Added comprehensive logging to identify why placeholder episode play counts fail (episode not found, userData null, play count already > 0, or update failure). Sorted directories by play count before processing to ensure lower play counts are handled first.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.20.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.20.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "timestamp": "2025-11-01T21:09:47.013Z",
@@ -1712,7 +1712,7 @@
       {
         "checksum": "4D67D881612569D62B623CD46BAC8878",
         "changelog": "Jellyfin 10.10.7: v1.3.20 - Enhanced placeholder episode play count logic to return detailed result objects with success status and descriptive messages instead of nullable bool. Added comprehensive logging to identify why placeholder episode play counts fail (episode not found, userData null, play count already > 0, or update failure). Sorted directories by play count before processing to ensure lower play counts are handled first.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.20.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.20.10.zip",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
         "timestamp": "2025-11-01T21:09:47.013Z",
@@ -1723,7 +1723,7 @@
         "changelog": "Jellyfin 10.11.0: v1.3.19 - Enhanced placeholder episode play count logic with better error handling and logging. Changed TrySetEpisodePlayCount to return nullable bool (null when userData is null, false when episode not found or play count > 0, true when set). Removed exception catching to let errors cascade for better debugging and added detailed trace logging to identify why placeholder episode play counts aren't being set.",
         "targetAbi": "10.11.0.0",
         "checksum": "0CF949A7BE84723D08B1D3000880F820",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.19.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.19.11.zip",
         "dependencies": [],
         "version": "1.3.19.11"
       },
@@ -1732,7 +1732,7 @@
         "changelog": "Jellyfin 10.10.7: v1.3.19 - Enhanced placeholder episode play count logic with better error handling and logging. Changed TrySetEpisodePlayCount to return nullable bool (null when userData is null, false when episode not found or play count > 0, true when set). Removed exception catching to let errors cascade for better debugging and added detailed trace logging to identify why placeholder episode play counts aren't being set.",
         "targetAbi": "10.10.0.0",
         "checksum": "3994F61EE86B62856A8FF7C4F8213F03",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.19.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.19.10.zip",
         "dependencies": [],
         "version": "1.3.19.10"
       },
@@ -1741,7 +1741,7 @@
         "checksum": "80528A7CEFC0DB0813F386F82A1C03AA",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.18 - Updated library refresh options to differentiate between create and remove operations. Create operations now use ReplaceAllMetadata=false to search for missing metadata only, while remove operations use ReplaceAllMetadata=true to replace all metadata. This preserves existing metadata when refreshing newly added items while ensuring complete refresh for removed items.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.18.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.18.11.zip",
         "timestamp": "2025-11-01T20:49:01.245Z",
         "version": "1.3.18.11"
       },
@@ -1750,14 +1750,14 @@
         "checksum": "0C32223279667BCE6577466CA7B50A3E",
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.18 - Updated library refresh options to differentiate between create and remove operations. Create operations now use ReplaceAllMetadata=false to search for missing metadata only, while remove operations use ReplaceAllMetadata=true to replace all metadata. This preserves existing metadata when refreshing newly added items while ensuring complete refresh for removed items.",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.18.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.18.10.zip",
         "timestamp": "2025-11-01T20:49:01.245Z",
         "version": "1.3.18.10"
       },
       {
         "timestamp": "2025-11-01T19:56:20.529Z",
         "checksum": "A29B242CA32185F3F3773ABA7046CD4E",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.17.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.17.11.zip",
         "dependencies": [],
         "version": "1.3.17.11",
         "targetAbi": "10.11.0.0",
@@ -1766,7 +1766,7 @@
       {
         "timestamp": "2025-11-01T19:56:20.529Z",
         "checksum": "8D57CDF133B20188F69625AE8F00F517",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.17.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.17.10.zip",
         "dependencies": [],
         "version": "1.3.17.10",
         "targetAbi": "10.10.0.0",
@@ -1775,7 +1775,7 @@
       {
         "timestamp": "2025-11-01T19:25:13.654Z",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.16.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.16.11.zip",
         "dependencies": [],
         "checksum": "53FC65BC69CE9E9C10D5D61EE19861D9",
         "changelog": "Jellyfin 10.11.0: v1.3.16 - Changed play count randomization to use increments of 100 instead of 1 to ensure sort order remains stable when users play items. Updated SortTask to use ExecuteWithLockAsync for consistency with other plugin operations. Moved play count warning to a separate styled div on the configuration page.",
@@ -1784,7 +1784,7 @@
       {
         "timestamp": "2025-11-01T19:25:13.654Z",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.16.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.16.10.zip",
         "dependencies": [],
         "checksum": "C70BCA28E559DEA36B85F8D1350F922B",
         "changelog": "Jellyfin 10.10.7: v1.3.16 - Changed play count randomization to use increments of 100 instead of 1 to ensure sort order remains stable when users play items. Updated SortTask to use ExecuteWithLockAsync for consistency with other plugin operations. Moved play count warning to a separate styled div on the configuration page.",
@@ -1794,7 +1794,7 @@
         "version": "1.3.15.11",
         "checksum": "BA07B884C6467CF5CFC63F14879E0C06",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.15.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.15.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.15 - Added descriptive text under each configuration section header to improve user understanding. Renamed Sort Randomization Interval to Sort Task Interval across all files for clearer naming. Refactored play count randomization to use dictionary iteration for better efficiency and moved season folder creation logic to PlaceholderVideoGenerator static methods.",
         "dependencies": [],
         "timestamp": "2025-11-01T19:04:44.4Z"
@@ -1803,7 +1803,7 @@
         "version": "1.3.15.10",
         "checksum": "07F10F83F7179E7ADA8C16A54011D5A8",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.15.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.15.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.15 - Added descriptive text under each configuration section header to improve user understanding. Renamed Sort Randomization Interval to Sort Task Interval across all files for clearer naming. Refactored play count randomization to use dictionary iteration for better efficiency and moved season folder creation logic to PlaceholderVideoGenerator static methods.",
         "dependencies": [],
         "timestamp": "2025-11-01T19:04:44.4Z"
@@ -1812,7 +1812,7 @@
         "checksum": "600703943D3365A9F059E2843DE57C40",
         "dependencies": [],
         "version": "1.3.14.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.14.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.14.11.zip",
         "timestamp": "2025-11-01T17:14:40.031Z",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.14 - Renamed RandomizeSortTask to SortTask and restored parallel processing: Renamed RandomizeSortTask class and file to SortTask for clearer naming, updating task key from JellyBridgeRandomizeSort to JellyBridgeSort. Restored parallel processing in RandomizePlayCountAsync using Task.WhenAll for both item and user updates to improve performance. Added skipped items list to separate ignored files (.ignore) from actual failures in return values. Enhanced error handling with OperationCanceledException catching during parallel operations. Updated RouteController and SortTask to handle the new skipped items list in results."
@@ -1821,7 +1821,7 @@
         "checksum": "40F5B3604976AD274CDDFFC2D688C9AD",
         "dependencies": [],
         "version": "1.3.14.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.14.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.14.10.zip",
         "timestamp": "2025-11-01T17:14:40.031Z",
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.14 - Renamed RandomizeSortTask to SortTask and restored parallel processing: Renamed RandomizeSortTask class and file to SortTask for clearer naming, updating task key from JellyBridgeRandomizeSort to JellyBridgeSort. Restored parallel processing in RandomizePlayCountAsync using Task.WhenAll for both item and user updates to improve performance. Added skipped items list to separate ignored files (.ignore) from actual failures in return values. Enhanced error handling with OperationCanceledException catching during parallel operations. Updated RouteController and SortTask to handle the new skipped items list in results."
@@ -1830,7 +1830,7 @@
         "version": "1.3.13.11",
         "checksum": "61CC1C506A7E30EFB094499EF1F0A184",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.13.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.13.11.zip",
         "targetAbi": "10.11.0.0",
         "timestamp": "2025-11-01T16:53:12.071Z",
         "changelog": "Jellyfin 10.11.0: v1.3.13 - Refactored sort randomization and fixed duplicate user handling: Renamed RandomizeNfoDateAddedAsync to RandomizePlayCountAsync to accurately reflect that it randomizes play counts instead of date added metadata. Updated play count assignment to start at 1000 instead of 0 to avoid conflicts with actual user play counts. Fixed duplicate JellyfinUserGuid handling by moving duplicate filtering to GetJellyseerrUsersAsync source method, ensuring all callers receive clean user lists. Updated TrySetFavorite and TryUpdatePlayCount methods in JellyfinIUserDataManager to use version-specific preprocessor directives for proper handling of nullable return types between Jellyfin 10.10 and 10.11. Updated all documentation, configuration descriptions, and UI text to reference play counts instead of date added metadata. Reordered code in RandomizePlayCountAsync to check for users before shuffling directories for better error handling."
@@ -1839,7 +1839,7 @@
         "version": "1.3.13.10",
         "checksum": "2C446D145836CF7CB692E7E37D7E7F60",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.13.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.13.10.zip",
         "targetAbi": "10.10.0.0",
         "timestamp": "2025-11-01T16:53:12.071Z",
         "changelog": "Jellyfin 10.10.7: v1.3.13 - Refactored sort randomization and fixed duplicate user handling: Renamed RandomizeNfoDateAddedAsync to RandomizePlayCountAsync to accurately reflect that it randomizes play counts instead of date added metadata. Updated play count assignment to start at 1000 instead of 0 to avoid conflicts with actual user play counts. Fixed duplicate JellyfinUserGuid handling by moving duplicate filtering to GetJellyseerrUsersAsync source method, ensuring all callers receive clean user lists. Updated TrySetFavorite and TryUpdatePlayCount methods in JellyfinIUserDataManager to use version-specific preprocessor directives for proper handling of nullable return types between Jellyfin 10.10 and 10.11. Updated all documentation, configuration descriptions, and UI text to reference play counts instead of date added metadata. Reordered code in RandomizePlayCountAsync to check for users before shuffling directories for better error handling."
@@ -1848,7 +1848,7 @@
         "timestamp": "2025-11-01T00:49:53.501Z",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.12.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.12.11.zip",
         "checksum": "BA63D1A504806856ADC905EB83ACC03B",
         "version": "1.3.12.11",
         "changelog": "Jellyfin 10.11.0: v1.3.12 - Enhanced movie discovery in FindItemByDirectoryPath: Added fallback logic to search for video files (mkv, mp4, avi, m4v, mov, wmv, flv, webm, mpg, mpeg, m2ts, ts, mts) within the directory and attempt FindByPath on those file paths. This helps locate movies where Jellyfin stores the item path as the video file path rather than the directory path, significantly improving success rate for movie item discovery without using the problematic GetItemList method."
@@ -1857,13 +1857,13 @@
         "timestamp": "2025-11-01T00:49:53.501Z",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.12.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.12.10.zip",
         "checksum": "61BC0C68A002CB5E92B5F6DE1A6EE616",
         "version": "1.3.12.10",
         "changelog": "Jellyfin 10.10.7: v1.3.12 - Enhanced movie discovery in FindItemByDirectoryPath: Added fallback logic to search for video files (mkv, mp4, avi, m4v, mov, wmv, flv, webm, mpg, mpeg, m2ts, ts, mts) within the directory and attempt FindByPath on those file paths. This helps locate movies where Jellyfin stores the item path as the video file path rather than the directory path, significantly improving success rate for movie item discovery without using the problematic GetItemList method."
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.11.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.11.11.zip",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
         "version": "1.3.11.11",
@@ -1872,7 +1872,7 @@
         "checksum": "6E1A1D35109D552A2AC3BBCBD9494FC0"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.11.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.11.10.zip",
         "dependencies": [],
         "targetAbi": "10.10.0.0",
         "version": "1.3.11.10",
@@ -1886,7 +1886,7 @@
         "version": "1.3.10.11",
         "dependencies": [],
         "checksum": "A4CCA2A2BDB885342058641D90436F8A",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.10.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.10.11.zip",
         "timestamp": "2025-10-31T23:59:14.498Z"
       },
       {
@@ -1895,14 +1895,14 @@
         "version": "1.3.10.10",
         "dependencies": [],
         "checksum": "F566F9469EA012055B79A9F49B45092B",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.10.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.10.10.zip",
         "timestamp": "2025-10-31T23:59:14.498Z"
       },
       {
         "timestamp": "2025-10-31T23:44:26.899Z",
         "targetAbi": "10.11.0.0",
         "checksum": "66AC263E40C2FC06BF6DE5C2E55E183B",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.9.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.9.11.zip",
         "dependencies": [],
         "version": "1.3.9.11",
         "changelog": "Jellyfin 10.11.0: v1.3.9 - Refactored sort randomization from dateadded to play counts and moved MediaBrowser dependencies to JellyfinModels wrappers: Replaced NFO dateadded field manipulation with play count randomization for all users. Removed UpdateDateAddedInNfoFile method entirely. Updated RandomizeNfoDateAddedAsync to randomize play counts (0 to itemCount-1) for all discover library items across all users, enabling random sorting by play count. Created JellyfinIUserManager wrapper class and added TryUpdatePlayCount method to JellyfinIUserDataManager. Moved all MediaBrowser.Controller dependencies out of MetadataService into JellyfinModels wrappers. Updated RouteController to display play count information instead of dateAdded in sort results. Registered JellyfinIUserManager in dependency injection. Removed RefreshBridgeLibrary call as play count updates don't require metadata refresh."
@@ -1911,7 +1911,7 @@
         "timestamp": "2025-10-31T23:44:26.899Z",
         "targetAbi": "10.10.0.0",
         "checksum": "1A43F5FCE48612CAD6D63D49829EEE93",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.9.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.9.10.zip",
         "dependencies": [],
         "version": "1.3.9.10",
         "changelog": "Jellyfin 10.10.7: v1.3.9 - Refactored sort randomization from dateadded to play counts and moved MediaBrowser dependencies to JellyfinModels wrappers: Replaced NFO dateadded field manipulation with play count randomization for all users. Removed UpdateDateAddedInNfoFile method entirely. Updated RandomizeNfoDateAddedAsync to randomize play counts (0 to itemCount-1) for all discover library items across all users, enabling random sorting by play count. Created JellyfinIUserManager wrapper class and added TryUpdatePlayCount method to JellyfinIUserDataManager. Moved all MediaBrowser.Controller dependencies out of MetadataService into JellyfinModels wrappers. Updated RouteController to display play count information instead of dateAdded in sort results. Registered JellyfinIUserManager in dependency injection. Removed RefreshBridgeLibrary call as play count updates don't require metadata refresh."
@@ -1920,7 +1920,7 @@
         "version": "1.3.8.11",
         "timestamp": "2025-10-31T23:12:29.188Z",
         "checksum": "C47C4D14E1549E55DC3826198EA9BABD",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.8.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.8.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.3.8 - Code formatting cleanup: Normalized whitespace and line endings in MetadataService.cs for consistent code style.",
         "targetAbi": "10.11.0.0",
         "dependencies": []
@@ -1929,7 +1929,7 @@
         "version": "1.3.8.10",
         "timestamp": "2025-10-31T23:12:29.188Z",
         "checksum": "116FE7EF9495A5AA5947B5C878CFCD4F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.8.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.8.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.3.8 - Code formatting cleanup: Normalized whitespace and line endings in MetadataService.cs for consistent code style.",
         "targetAbi": "10.10.0.0",
         "dependencies": []
@@ -1941,7 +1941,7 @@
         "changelog": "Jellyfin 10.11.0: v1.3.7 - Fixed discover library sort randomization to use unique dates instead of random times: Updated RandomizeNfoDateAddedAsync to assign unique calendar dates (one per item) distributed over the last X days starting from yesterday going backwards, with time set to 00:00:00 since Jellyfin only sorts by calendar date. Added detailed success/failure tracking with return values. Enhanced SortLibrary endpoint to display detailed results including top 10 items by sort order and failed files. Improved error handling by throwing exceptions instead of returning null. Updated UpdateDateAddedInNfoFile to accept assigned DateTimeOffset parameter and extract item metadata (name, type) from XML.",
         "dependencies": [],
         "timestamp": "2025-10-31T22:51:42.648Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.7.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.7.11.zip"
       },
       {
         "targetAbi": "10.10.0.0",
@@ -1950,10 +1950,10 @@
         "changelog": "Jellyfin 10.10.7: v1.3.7 - Fixed discover library sort randomization to use unique dates instead of random times: Updated RandomizeNfoDateAddedAsync to assign unique calendar dates (one per item) distributed over the last X days starting from yesterday going backwards, with time set to 00:00:00 since Jellyfin only sorts by calendar date. Added detailed success/failure tracking with return values. Enhanced SortLibrary endpoint to display detailed results including top 10 items by sort order and failed files. Improved error handling by throwing exceptions instead of returning null. Updated UpdateDateAddedInNfoFile to accept assigned DateTimeOffset parameter and extract item metadata (name, type) from XML.",
         "dependencies": [],
         "timestamp": "2025-10-31T22:51:42.648Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.7.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.7.10.zip"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.6.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.6.11.zip",
         "targetAbi": "10.11.0.0",
         "version": "1.3.6.11",
         "checksum": "8C7B9045A775B4377998C4507387939D",
@@ -1962,7 +1962,7 @@
         "timestamp": "2025-10-31T22:12:41.886Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.6.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.6.10.zip",
         "targetAbi": "10.10.0.0",
         "version": "1.3.6.10",
         "checksum": "3AF27FD2FB6974E7FB85FAC4F3316E60",
@@ -1971,7 +1971,7 @@
         "timestamp": "2025-10-31T22:12:41.886Z"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.5.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.5.11.zip",
         "dependencies": [],
         "version": "1.3.5.11",
         "targetAbi": "10.11.0.0",
@@ -1980,7 +1980,7 @@
         "checksum": "BBFACE2A56DC6F4FA524B625956975C9"
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.5.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.5.10.zip",
         "dependencies": [],
         "version": "1.3.5.10",
         "targetAbi": "10.10.0.0",
@@ -1993,7 +1993,7 @@
         "checksum": "C61AD4B1639BFF3BC458A5E7C83D3C24",
         "version": "1.3.4.11",
         "timestamp": "2025-10-31T19:40:48.757Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.4.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.4.11.zip",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.4 - Add trace logging option with improved logging system: Added EnableTraceLogging configuration option that requires debug logging to be enabled. Refactored DebugLogger to use the new trace logging setting instead of debug logging for trace messages. Removed message truncation logic from trace logging. Updated configuration UI to include trace logging checkbox with proper state management. Enhanced README documentation with clearer field descriptions and updated compatibility information."
       },
@@ -2002,14 +2002,14 @@
         "checksum": "4E547A3A54929B17E94013A86F4AD9F6",
         "version": "1.3.4.10",
         "timestamp": "2025-10-31T19:40:48.757Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.4.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.4.10.zip",
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.4 - Add trace logging option with improved logging system: Added EnableTraceLogging configuration option that requires debug logging to be enabled. Refactored DebugLogger to use the new trace logging setting instead of debug logging for trace messages. Removed message truncation logic from trace logging. Updated configuration UI to include trace logging checkbox with proper state management. Enhanced README documentation with clearer field descriptions and updated compatibility information."
       },
       {
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.3.3 - Add UserQuota endpoint implementation",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.3.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.3.11.zip",
         "version": "1.3.3.11",
         "checksum": "DC94EA2C27C927DC01C3C475EC2907C4",
         "timestamp": "2025-10-31T18:54:59.26Z",
@@ -2018,7 +2018,7 @@
       {
         "targetAbi": "10.10.0.0",
         "changelog": "Jellyfin 10.10.7: v1.3.3 - Add UserQuota endpoint implementation",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/quotas/release/JellyBridge-1.3.3.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.3.3.10.zip",
         "version": "1.3.3.10",
         "checksum": "5BF3A53604F8FCEAA19592CFA2596E45",
         "timestamp": "2025-10-31T18:54:59.26Z",

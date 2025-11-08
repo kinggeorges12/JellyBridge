@@ -582,7 +582,7 @@
                         <summary>Manage Discover Library</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, prevent duplicate content from appearing in multiple libraries, handle favorite removal for requested items, and optionally create separate libraries for each network service.
+                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, prevent duplicate content from appearing in multiple libraries, handle favorite cleanup for requested items, and optionally create separate libraries for each network service.
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -612,13 +612,13 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Clean-up Requests from Favorites</span>
+                                <span class="checkboxLabel">Favorite Cleanup</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, this option removes items from the favorites list for all users. This setting is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>. After a request is successfully created in Jellyseerr, items are always hidden in the JellyBridge library by creating an .ignore file and marked as unplayed for all users. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
+                            <div class="fieldDescription">When enabled, this option removes favorited items for all users after the items are requested from Jellyseerr. This setting is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>. After a request is successfully created in Jellyseerr, items are always hidden in the JellyBridge library by creating an .ignore file and marked as unplayed for all users. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
@@ -831,7 +831,7 @@
                                 <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <i>Library Directory</i>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupHelp">setup instructions at the top of this page</span>. This should clean-up the Jellyfin metadata and prevent errors when adding new content.
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupHelp">setup instructions at the top of this page</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
                             </div>
                         </div>
 
