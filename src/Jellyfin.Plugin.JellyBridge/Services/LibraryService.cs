@@ -95,7 +95,7 @@ public class LibraryService
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
-                IsAutomated = true,
+                IsAutomated = false,
                 RemoveOldMetadata = false
             };
 
@@ -147,13 +147,13 @@ public class LibraryService
 
                         if (refreshUserData)
                         {
-                            // Full refresh first if items are removed
+                            // Scan for removed items first
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
+                            // Standard refresh for metadata/image updates
                             if(fullRefresh)
                             {
-                                _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                                _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.Low);
                             }
-                            // Standard refresh for metadata/image updates
-                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
                         }
                         else
                         {
