@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-08T18:00:00.733Z",
+        "checksum": "1CE4ED65DC8C5B6E2A2DC4DFAD3DEB24",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.49.11",
+        "changelog": "Jellyfin 10.11.0: v1.4.49 - Increased testResult text box max-height from 560px to 600px for better visibility of longer output.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.49.11.zip"
+      },
+      {
+        "timestamp": "2025-11-08T18:00:00.733Z",
+        "checksum": "4A1E7BB99471D97F63DB9C9213898EC3",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.49.10",
+        "changelog": "Jellyfin 10.10.7: v1.4.49 - Increased testResult text box max-height from 560px to 600px for better visibility of longer output.",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.49.10.zip"
+      },
+      {
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.48.11.zip",
         "timestamp": "2025-11-08T17:59:25.726Z",
