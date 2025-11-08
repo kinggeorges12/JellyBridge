@@ -376,9 +376,12 @@
                 
                 /* Result textarea styling - max height and scroll after 25 lines */
                 .testResult {
-                    max-height: 550px; /* ~25 lines * 20px + 10px */
+                    display: none;
+                    max-height: 560px; /* ~25 lines * 20px + 10px */
                     overflow-y: auto;
                     font-family: 'Courier New', monospace;
+                    margin-top: 10px;
+                    white-space: pre-wrap;
                 }
             </style>
             <form id="jellyBridgeConfigurationForm">
@@ -571,7 +574,7 @@
                             <button is="emby-button" type="button" id="syncDiscover" class="raised button block emby-button">
                                 <span>📥 Import Discover Content from Jellyseerr into JellyBridge Library</span>
                             </button>
-                            <div id="syncDiscoverResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="syncDiscoverResult" class="testResult emby-textarea"></div>
                         </div>
 
                     </details>
@@ -681,7 +684,7 @@
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
                                 <span>⭐ Request JellyBridge Library Favorites in Jellyseerr</span>
                             </button>
-                            <div id="syncFavoritesResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="syncFavoritesResult" class="testResult emby-textarea"></div>
                         </div>
 
                     </details>
@@ -741,7 +744,7 @@
                             <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
                                 <span>🎲 Refresh Discover Library Sort Order</span>
                             </button>
-                            <div id="sortContentResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="sortContentResult" class="testResult emby-textarea"></div>
                         </div>
 
                     </details>
@@ -820,7 +823,7 @@
                             <button is="emby-button" type="button" id="cleanupMetadata" class="raised button block emby-button">
                                 <span>🧹 Cleanup Metadata</span>
                             </button>
-                            <div id="cleanupMetadataResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="cleanupMetadataResult" class="testResult emby-textarea"></div>
                         </div>
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
