@@ -9,7 +9,25 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.52.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.53 - Merged dev branch into feature: includes all updates from v1.4.45 through v1.4.52 including favorites sync improvements, documentation updates, UI enhancements, and library refresh optimizations.",
+        "checksum": "11CA7768B23582D2BF357EC4D962DC0D",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.53.11",
+        "timestamp": "2025-11-08T19:01:17.402Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.53.11.zip"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v1.4.53 - Merged dev branch into feature: includes all updates from v1.4.45 through v1.4.52 including favorites sync improvements, documentation updates, UI enhancements, and library refresh optimizations.",
+        "checksum": "CC602C69F3437191FA07E4A217241C11",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.53.10",
+        "timestamp": "2025-11-08T19:01:17.402Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.53.10.zip"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.52.11.zip",
         "checksum": "BE9EB2CCC07F00E0066D75EDA702F50F",
         "targetAbi": "10.11.0.0",
         "version": "1.4.52.11",
@@ -18,7 +36,7 @@
         "dependencies": []
       },
       {
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.52.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.52.10.zip",
         "checksum": "5F8DA587F45DD8867DFC1076793F1D17",
         "targetAbi": "10.10.0.0",
         "version": "1.4.52.10",
@@ -28,7 +46,7 @@
       },
       {
         "checksum": "14FEB4C76012ED66B759D96F3169F929",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.51.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.51.11.zip",
         "targetAbi": "10.11.0.0",
         "dependencies": [],
         "timestamp": "2025-11-08T18:32:07.145Z",
@@ -37,7 +55,7 @@
       },
       {
         "checksum": "8779987043C4D53B546DFFE49ADDFA06",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.51.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.51.10.zip",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
         "timestamp": "2025-11-08T18:32:07.145Z",
@@ -49,7 +67,7 @@
         "checksum": "97C24DBE0B1AA6C5C849EB2356107334",
         "timestamp": "2025-11-08T18:15:39.62Z",
         "version": "1.4.50.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.50.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
         "targetAbi": "10.11.0.0"
       },
@@ -58,7 +76,7 @@
         "checksum": "A82477DDD78CE1FEABFF0D2BB253D5AE",
         "timestamp": "2025-11-08T18:15:39.62Z",
         "version": "1.4.50.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.50.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
         "targetAbi": "10.10.0.0"
       },
@@ -69,7 +87,7 @@
         "version": "1.4.49.11",
         "changelog": "Jellyfin 10.11.0: v1.4.49 - Increased testResult text box max-height from 560px to 600px for better visibility of longer output.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.49.11.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.49.11.zip"
       },
       {
         "timestamp": "2025-11-08T18:00:00.733Z",
@@ -78,11 +96,11 @@
         "version": "1.4.49.10",
         "changelog": "Jellyfin 10.10.7: v1.4.49 - Increased testResult text box max-height from 560px to 600px for better visibility of longer output.",
         "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.49.10.zip"
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.49.10.zip"
       },
       {
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.48.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.48.11.zip",
         "timestamp": "2025-11-08T17:59:25.726Z",
         "version": "1.4.48.11",
         "changelog": "Jellyfin 10.11.0: v1.4.48 - Updated README documentation for Favorite Cleanup setting description.",
@@ -91,7 +109,7 @@
       },
       {
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.48.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.48.10.zip",
         "timestamp": "2025-11-08T17:59:25.726Z",
         "version": "1.4.48.10",
         "changelog": "Jellyfin 10.10.7: v1.4.48 - Updated README documentation for Favorite Cleanup setting description.",
@@ -100,7 +118,7 @@
       },
       {
         "version": "1.4.47.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.47.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.47.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.47 - Updated documentation to use correct setting name 'Favorite Cleanup' and fixed 'Cleaned' description accuracy. Consolidated repeated inline styles into CSS class and increased testResult max-height to 560px.",
         "timestamp": "2025-11-08T17:58:42.461Z",
         "dependencies": [],
@@ -109,7 +127,7 @@
       },
       {
         "version": "1.4.47.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.47.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.47.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.47 - Updated documentation to use correct setting name 'Favorite Cleanup' and fixed 'Cleaned' description accuracy. Consolidated repeated inline styles into CSS class and increased testResult max-height to 560px.",
         "timestamp": "2025-11-08T17:58:42.461Z",
         "dependencies": [],
@@ -120,7 +138,7 @@
         "timestamp": "2025-11-08T17:46:47.536Z",
         "dependencies": [],
         "checksum": "0310B798E3B7AD2805CE7A870555EC5F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.46.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.46.11.zip",
         "changelog": "Jellyfin 10.11.0: v1.4.46 - Updated README with favorites sync documentation and improved configuration page descriptions",
         "targetAbi": "10.11.0.0",
         "version": "1.4.46.11"
@@ -129,7 +147,7 @@
         "timestamp": "2025-11-08T17:46:47.536Z",
         "dependencies": [],
         "checksum": "EE0ABCEF7A1A4B75DFFB9C2A436530CD",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.46.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.46.10.zip",
         "changelog": "Jellyfin 10.10.7: v1.4.46 - Updated README with favorites sync documentation and improved configuration page descriptions",
         "targetAbi": "10.10.0.0",
         "version": "1.4.46.10"
@@ -140,7 +158,7 @@
         "changelog": "Jellyfin 10.11.0: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
         "checksum": "2BC71B0BA72ECA3E5EC0D02668A12772",
         "timestamp": "2025-11-08T17:29:52.898Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.45.11.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.45.11.zip",
         "targetAbi": "10.11.0.0"
       },
       {
@@ -149,7 +167,7 @@
         "changelog": "Jellyfin 10.10.7: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
         "checksum": "CDA4A91A2A4657391381110B99331367",
         "timestamp": "2025-11-08T17:29:52.898Z",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.45.10.zip",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.45.10.zip",
         "targetAbi": "10.10.0.0"
       },
       {
