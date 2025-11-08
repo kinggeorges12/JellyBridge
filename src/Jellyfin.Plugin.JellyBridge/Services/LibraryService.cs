@@ -148,18 +148,18 @@ public class LibraryService
                         if (refreshUserData)
                         {
                             // Scan for removed items first
-                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
-                            // Standard refresh for metadata/image updates
                             if(fullRefresh)
                             {
-                                _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.Low);
+                                _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
                             }
+                            // Standard refresh for metadata/image updates
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.Low);
                         }
                         else
                         {
                             // Light refresh for user data updates (play counts)
                             _logger.LogTrace("Using update refresh options for library: {LibraryName}", bridgeLibrary.Name);
-                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.High);
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.Low);
                         }
                         // ValidateChildren already refreshes child metadata when recursive=true.
                         // If needed in future, we could call RefreshMetadata here.
