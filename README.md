@@ -169,7 +169,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 - **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Favorite Cleanup**: When enabled, removes favorited items for all users after the items are requested from Jellyseerr. This setting helps prevent favorited items from interfering with other plugins like Media Cleaner for Jellyfin. After a request is successfully created in Jellyseerr, items are always hidden in the JellyBridge library by creating an .ignore file and marked as unplayed for all users. If you deny the request in Jellyseerr, the item will repopulate on next sync.
+- **Clean-up Requests from Favorites**: Hides them from the library after they've been successfully requested in Jellyseerr
 - **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
 - **Network Folder Setup**
   - **Setup Instructions**: Step-by-step guide for creating network folders and libraries
