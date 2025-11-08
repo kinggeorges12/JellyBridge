@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.47.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.47.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.47 - Updated documentation to use correct setting name 'Favorite Cleanup' and fixed 'Cleaned' description accuracy. Consolidated repeated inline styles into CSS class and increased testResult max-height to 560px.",
+        "timestamp": "2025-11-08T17:58:42.461Z",
+        "dependencies": [],
+        "checksum": "189933B8056CC3170816E8429BF0A240",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "1.4.47.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.47.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.47 - Updated documentation to use correct setting name 'Favorite Cleanup' and fixed 'Cleaned' description accuracy. Consolidated repeated inline styles into CSS class and increased testResult max-height to 560px.",
+        "timestamp": "2025-11-08T17:58:42.461Z",
+        "dependencies": [],
+        "checksum": "12920163FEF5A309F6971626725A7BFD",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2025-11-08T17:46:47.536Z",
         "dependencies": [],
         "checksum": "0310B798E3B7AD2805CE7A870555EC5F",

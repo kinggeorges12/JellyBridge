@@ -18,7 +18,7 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and s
 This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
 - To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
 - If you use "Use Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
-- `Manage Discover Library → Clean-up Requests from Favorites` defaults to enabled to avoid ignored items being re-requested after deletion in Jellyseerr.
+- `Manage Discover Library → Favorite Cleanup` functionality changed to always ignore and unmark played for requested favorites. The option only affects whether the favorited items are unfavorited.
 
 After installing the new version, you may need to update the plugin configuration page using these instructions:
 `Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
@@ -169,7 +169,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 - **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Clean-up Requests from Favorites**: Hides them from the library after they've been successfully requested in Jellyseerr
+- **Favorite Cleanup**: When enabled, removes favorited items for all users after the items are requested from Jellyseerr. This setting helps prevent favorited items from interfering with other plugins like Media Cleaner for Jellyfin. After a request is successfully created in Jellyseerr, items are always hidden in the JellyBridge library by creating an .ignore file and marked as unplayed for all users. If you deny the request in Jellyseerr, the item will repopulate on next sync.
 - **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
 - **Network Folder Setup**
   - **Setup Instructions**: Step-by-step guide for creating network folders and libraries
