@@ -318,23 +318,20 @@ public class FavoriteService
 
     #region Removed
 
+
     /// <summary>
     /// For each favorited item that was requested in Jellyseerr, create an .ignore marker and unmark it as favorite for the user.
     /// Uses GetUserFavorites to find all existing favorites, creates ignore files for all matched Jellyfin items,
     /// and unfavorites items only if they are in the bridge folder or not in any folder.
+    /// Also marks items as unplayed (unwatched) for all users who had favorited them.
     /// Returns the list of newly ignored Jellyseerr items.
     /// </summary>
-    public async Task<List<IJellyseerrItem>> UnmarkAndIgnoreRequestedAsync()
+    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> cleaned)> UnmarkAndIgnoreRequestedAsync()
     {
         var newIgnored = new List<IJellyseerrItem>();
+        var cleaned = new List<IJellyseerrItem>();
 
-        // Respect configuration: if removal from favorites is disabled, do nothing
         var removeRequested = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
-        if (!removeRequested)
-        {
-            _logger.LogTrace("RemoveRequestedFromFavorites disabled; skipping unfavorite and ignore creation.");
-            return newIgnored;
-        }
 
         try
         {
@@ -353,13 +350,16 @@ public class FavoriteService
 			var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
 			_logger.LogDebug("Library scan produced {MatchCount} matches for ignore/unfavorite", matches.Count);
 
-            // Create ignore files for all matched Jellyfin items
+            // Create ignore files for all matched Jellyfin items (always done, regardless of RemoveRequestedFromFavorites setting)
 			var (newIgnoredMatches, existingIgnored) = await _bridgeService.CreateIgnoreFilesAsync(matches);
 			newIgnored.AddRange(newIgnoredMatches);
 			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newIgnoredMatches.Count, existingIgnored.Count);
 
-            // Unfavorite items only if they are in bridge folder OR not in any folder
+            // Collect tasks for unfavoriting and marking as unplayed
+            var unfavoriteTasks = new List<(Task<bool>? favoriteTask, Task<JellyfinWrapperResult> playStatusTask, JellyfinUser user, IJellyfinItem item, IJellyseerrItem jellyseerrItem)>();
+
+            // Process all items for marking as unplayed, but only unfavorite items in bridge folder or with no path
             foreach (var match in matches)
             {
                 var jfItem = match.JellyfinItem;
@@ -378,6 +378,7 @@ public class FavoriteService
 
                 if (!itemIdToUsers.TryGetValue(jfItem.Id, out var users))
                 {
+                    _logger.LogTrace("Skipping processing for '{ItemName}' - no users found who favorited this item", jfItem.Name);
                     continue;
                 }
 
@@ -389,16 +390,98 @@ public class FavoriteService
                         {
                             continue;
                         }
-                        var updated = _userDataManager.TrySetFavorite(jfUser, jfItem, false, _libraryManager);
-                        if (updated){
-                            _logger.LogTrace("Unfavorited '{ItemName}' for user '{UserName}' (in bridge folder: {InBridge}, no path: {NoPath})", 
-                                jfItem.Name, jfUser.Username, isInBridgeFolder, isNotInAnyFolder);
+                        // Create tasks for unfavoriting (only if enabled) and marking as unplayed (always)
+                        Task<bool>? favoriteTask = null;
+                        if (removeRequested)
+                        {
+                            favoriteTask = _userDataManager.TryUnfavoriteAsync(_libraryManager, jfUser, jfItem);
                         }
+                        var playStatusTask = _userDataManager.MarkItemPlayStatusAsync(jfUser, jfItem, markAsPlayed: false);
+                        unfavoriteTasks.Add((favoriteTask, playStatusTask, jfUser, jfItem, match.JellyseerrItem));
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to unfavorite '{ItemName}' for a user", jfItem?.Name);
+                        _logger.LogError(ex, "Failed to create tasks for processing '{ItemName}' for a user", jfItem?.Name);
                     }
+                }
+            }
+
+            // Await all tasks at once
+            try
+            {
+                var allTasks = unfavoriteTasks.SelectMany(t => 
+                {
+                    if (t.favoriteTask != null)
+                    {
+                        return new Task[] { t.favoriteTask, t.playStatusTask };
+                    }
+                    return new Task[] { t.playStatusTask };
+                });
+                await Task.WhenAll(allTasks).ConfigureAwait(false);
+            }
+            catch (AggregateException ex)
+            {
+                _logger.LogWarning(ex, "Some unfavorite/play status tasks failed. Processing all results individually.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Exception while awaiting unfavorite/play status tasks. Processing all results individually.");
+            }
+
+            // Process results - return value is based on whether favorite was updated
+            foreach (var (favoriteTask, playStatusTask, user, item, jellyseerrItem) in unfavoriteTasks)
+            {
+                try
+                {
+                    // Check favorite task status (only if RemoveRequestedFromFavorites is enabled and task was created)
+                    if (favoriteTask != null)
+                    {
+                        if (!favoriteTask.IsFaulted && !favoriteTask.IsCanceled)
+                        {
+                            var favoriteUpdated = favoriteTask.Result;
+                            if (favoriteUpdated)
+                            {
+                                _logger.LogTrace("Unfavorited '{ItemName}' for user '{UserName}'", 
+                                    item.Name, user.Username);
+                                cleaned.Add(jellyseerrItem);
+                            }
+                            else
+                            {
+                                _logger.LogTrace("Favorite was not updated for '{ItemName}' for user '{UserName}' (may already be unfavorited)", 
+                                    item.Name, user.Username);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning(favoriteTask.Exception?.GetBaseException() ?? new Exception("Task was canceled"), 
+                                favoriteTask.Exception?.GetBaseException()?.Message ?? "Task was canceled");
+                        }
+                    }
+                    
+                    // Check play status task status
+                    if (!playStatusTask.IsFaulted && !playStatusTask.IsCanceled)
+                    {
+                        var playStatusResult = playStatusTask.Result;
+                        if (playStatusResult.Success)
+                        {
+                            _logger.LogTrace("Marked '{ItemName}' as unplayed for user '{UserName}'", 
+                                item.Name, user.Username);
+                        }
+                        else
+                        {
+                            _logger.LogTrace("Play status was not updated for '{ItemName}' for user '{UserName}' (may already be unplayed): {Message}", 
+                                item.Name, user.Username, playStatusResult.Message);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning(playStatusTask.Exception?.GetBaseException() ?? new Exception("Task was canceled"), 
+                            playStatusTask.Exception?.GetBaseException()?.Message ?? "Task was canceled");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to process result for unfavoriting '{ItemName}' for user '{UserName}'", item?.Name, user?.Username);
                 }
             }
         }
@@ -406,9 +489,10 @@ public class FavoriteService
         {
             _logger.LogError(ex, "Failed processing favorited items for unmark-and-ignore");
         }
-		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. NewIgnored={NewIgnoredCount}", 
-            newIgnored.Count);
-        return newIgnored;
+		
+		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. NewIgnored={NewIgnoredCount}, Cleaned={CleanedCount}", 
+            newIgnored.Count, cleaned.Count);
+        return (newIgnored, cleaned);
     }
 
     /// <summary>

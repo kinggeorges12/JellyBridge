@@ -65,10 +65,10 @@ public class SyncJellyseerrResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|------------------|----------|----------|----------|";
+        const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -92,7 +92,7 @@ public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🙈 Hidden: Jellyfin items marked with an .ignore file after requesting them from Jellyseerr\n👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
+    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🙈 Hidden: Jellyfin items marked with an .ignore file after requesting them from Jellyseerr\n🧹 Cleaned: Items where favorite and/or play status was unmarked after requesting from Jellyseerr\n👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
@@ -101,6 +101,7 @@ public class SyncJellyfinResult
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
     public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
     public List<IJellyseerrItem> ItemsHidden { get; set; } = new();
+    public List<IJellyseerrItem> ItemsCleaned { get; set; } = new();
     public List<IJellyseerrItem> ItemsUnhidden { get; set; } = new();
     
     // Computed properties - filter by type
@@ -114,6 +115,8 @@ public class SyncJellyfinResult
     public List<JellyfinSeries> BlockedShows => ItemsBlocked.OfType<JellyfinSeries>().ToList();
     public List<JellyseerrMovie> HiddenMovies => ItemsHidden.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> HiddenShows => ItemsHidden.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> CleanedMovies => ItemsCleaned.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> CleanedShows => ItemsCleaned.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> UnhiddenMovies => ItemsUnhidden.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> UnhiddenShows => ItemsUnhidden.OfType<JellyseerrShow>().ToList();
     
@@ -128,6 +131,8 @@ public class SyncJellyfinResult
     public int ShowsBlocked => BlockedShows.Count;
     public int MoviesHidden => HiddenMovies.Count;
     public int ShowsHidden => HiddenShows.Count;
+    public int MoviesCleaned => CleanedMovies.Count;
+    public int ShowsCleaned => CleanedShows.Count;
     public int MoviesUnhidden => UnhiddenMovies.Count;
     public int ShowsUnhidden => UnhiddenShows.Count;
 
@@ -148,10 +153,10 @@ public class SyncJellyfinResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|------------------|----------|----------|----------|";
+        const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"❤️\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -159,6 +164,7 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"➕\t"}{"Created",-10}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
         result.AppendLine($"{separator}{"🚫\t"}{"Blocked",-10}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
         result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🧹\t"}{"Cleaned",-10}{separator}{$"{MoviesCleaned,8}  "}{separator}{$"{ShowsCleaned,8}  "}{separator}{$"{MoviesCleaned + ShowsCleaned,8}  "}{separator}");
         result.AppendLine($"{separator}{"👁️\t"}{"Unhidden",-10}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString().TrimEnd();
@@ -231,10 +237,10 @@ public class SortLibraryResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|------------------|----------|----------|----------|";
+        const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -296,10 +302,10 @@ public class CleanupResult
         
         result.AppendLine();
         const string separator = "|";
-        const string rowBorder = "|------------------|----------|----------|----------|";
+        const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-18}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");

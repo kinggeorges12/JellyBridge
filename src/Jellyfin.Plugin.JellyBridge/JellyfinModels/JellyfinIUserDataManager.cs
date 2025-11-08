@@ -82,35 +82,49 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     }
 
     /// <summary>
-    /// Set or unset the favorite flag for the given user and item using wrappers.
+    /// Unfavorite the item for the given user using wrappers.
     /// GetUserData automatically creates user data if it doesn't exist in both 10.10 and 10.11.
     /// </summary>
-    public bool TrySetFavorite(JellyfinUser user, IJellyfinItem item, bool isFavorite, JellyfinILibraryManager libraryManager)
+    public async Task<bool> TryUnfavoriteAsync(JellyfinILibraryManager libraryManager, JellyfinUser user, IJellyfinItem item)
     {
-        var userEntity = user.Inner;
-        var baseItem = libraryManager.Inner.GetItemById<BaseItem>(item.Id, userEntity);
-        if (baseItem is null)
+        try
         {
-            return false;
-        }
+            var userEntity = user.Inner;
+            var baseItem = libraryManager.Inner.GetItemById<BaseItem>(item.Id, userEntity);
+            if (baseItem is null)
+            {
+                return false;
+            }
 
 #if JELLYFIN_10_11
-        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
-        var data = Inner.GetUserData(userEntity, baseItem);
-        if (data is null)
+            // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
+            var data = Inner.GetUserData(userEntity, baseItem);
+            if (data is null)
+            {
+                // Should never happen per implementation, but handle nullable signature defensively
+                return false;
+            }
+#else
+            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+            var data = Inner.GetUserData(userEntity, baseItem);
+#endif
+            
+            // Only update if the item is currently favorited
+            if (!data.IsFavorite)
+            {
+                return false;
+            }
+            
+            // GetUserData automatically creates user data if it doesn't exist, so we just unset the favorite flag
+            // SaveUserData is synchronous, so we wrap it in Task.Run to make it truly asynchronous
+            data.IsFavorite = false;
+            await Task.Run(() => Inner.SaveUserData(userEntity, baseItem, data, UserDataSaveReason.UpdateUserRating, CancellationToken.None)).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception)
         {
-            // Should never happen per implementation, but handle nullable signature defensively
             return false;
         }
-#else
-        // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
-        var data = Inner.GetUserData(userEntity, baseItem);
-#endif
-        
-        // GetUserData automatically creates user data if it doesn't exist, so we just set the favorite flag
-        data.IsFavorite = isFavorite;
-        Inner.SaveUserData(userEntity, baseItem, data, UserDataSaveReason.UpdateUserRating, CancellationToken.None);
-        return true;
     }
 
     /// <summary>
@@ -145,40 +159,104 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     /// <param name="item">The item to update</param>
     /// <param name="playCount">The play count to set</param>
     /// <param name="assignedPlayDate">The date to set for LastPlayedDate. If null, uses DateTime.UtcNow</param>
-    public async Task<bool> TryUpdatePlayCountAsync(JellyfinUser user, IJellyfinItem item, int playCount, DateTime? assignedPlayDate = null)
+    /// <returns>JellyfinWrapperResult indicating success or failure with a message</returns>
+    public async Task<JellyfinWrapperResult> TryUpdatePlayCountAsync(JellyfinUser user, IJellyfinItem item, int playCount, DateTime? assignedPlayDate = null)
     {
-        var userEntity = user.Inner;
-        
-        // Get the BaseItem from the wrapper
-        BaseItem baseItem = item switch
+        try
         {
-            JellyfinMovie movie => movie,
-            JellyfinSeries series => series,
-            _ => throw new ArgumentException($"Unsupported item type: {item.GetType().Name}", nameof(item))
-        };
-        
+            var userEntity = user.Inner;
+            
+            // Get the BaseItem from the wrapper
+            BaseItem baseItem = item switch
+            {
+                JellyfinMovie movie => movie,
+                JellyfinSeries series => series,
+                _ => throw new ArgumentException($"Unsupported item type: {item.GetType().Name}", nameof(item))
+            };
+            
 #if JELLYFIN_10_11
-        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
-        var userData = Inner.GetUserData(userEntity, baseItem);
-        if (userData is null)
-        {
-            // Should never happen per implementation, but handle nullable signature defensively
-            return false;
-        }
+            // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
+            var userData = Inner.GetUserData(userEntity, baseItem);
+            if (userData is null)
+            {
+                // Should never happen per implementation, but handle nullable signature defensively
+                return new JellyfinWrapperResult
+                {
+                    Success = false,
+                    Message = "GetUserData returned null (unexpected)"
+                };
+            }
 #else
-        // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
-        var userData = Inner.GetUserData(userEntity, baseItem);
+            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+            var userData = Inner.GetUserData(userEntity, baseItem);
 #endif
-        
-        // GetUserData automatically creates user data if it doesn't exist, so we just set the play count and last played date
-        userData.PlayCount = playCount;
-        // Set LastPlayedDate to assigned date (null allowed for zero play count)
-        userData.LastPlayedDate = assignedPlayDate;
-        // Do not modify the Played flag - it remains in its current state
-        // SaveUserData is synchronous, so we wrap it in Task.Run to make it truly asynchronous
-        await Task.Run(() => Inner.SaveUserData(userEntity, baseItem, userData, UserDataSaveReason.Import, CancellationToken.None)).ConfigureAwait(false);
-        return true;
+            
+            // GetUserData automatically creates user data if it doesn't exist, so we just set the play count and last played date
+            userData.PlayCount = playCount;
+            // Set LastPlayedDate to assigned date (null allowed for zero play count)
+            userData.LastPlayedDate = assignedPlayDate;
+            // Do not modify the Played flag - it remains in its current state
+            // SaveUserData is synchronous, so we wrap it in Task.Run to make it truly asynchronous
+            await Task.Run(() => Inner.SaveUserData(userEntity, baseItem, userData, UserDataSaveReason.Import, CancellationToken.None)).ConfigureAwait(false);
+            return new JellyfinWrapperResult
+            {
+                Success = true,
+                Message = "Play count and last played date updated successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new JellyfinWrapperResult
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
     }
 
+    /// <summary>
+    /// Marks an item's play status for a specific user asynchronously.
+    /// Handles both movies and series (for series, marks the placeholder episode).
+    /// </summary>
+    /// <param name="user">The user for which to mark the item</param>
+    /// <param name="item">The item to mark</param>
+    /// <param name="markAsPlayed">If true, marks as played; if false, marks as unplayed</param>
+    /// <returns>JellyfinWrapperResult indicating success or failure with a message</returns>
+    public async Task<JellyfinWrapperResult> MarkItemPlayStatusAsync(JellyfinUser user, IJellyfinItem item, bool markAsPlayed = false)
+    {
+        try
+        {
+            JellyfinWrapperResult result;
+            
+            // Handle movies - wrap synchronous SaveUserData call in Task.Run to make it truly async
+            if (item is JellyfinMovie movie)
+            {
+                result = await Task.Run(() => movie.TrySetMoviePlayCount(user, this, markAsPlayed)).ConfigureAwait(false);
+            }
+            // Handle series (mark placeholder episode) - wrap synchronous SaveUserData call in Task.Run
+            else if (item is JellyfinSeries series)
+            {
+                result = await Task.Run(() => series.TrySetEpisodePlayCount(user, this, markAsPlayed)).ConfigureAwait(false);
+            }
+            else
+            {
+                return new JellyfinWrapperResult
+                {
+                    Success = false,
+                    Message = $"Unsupported item type: {item.GetType().Name}"
+                };
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            return new JellyfinWrapperResult
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }
 
 }
