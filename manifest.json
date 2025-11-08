@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "97C24DBE0B1AA6C5C849EB2356107334",
+        "timestamp": "2025-11-08T18:15:39.620Z",
+        "version": "1.4.50.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "A82477DDD78CE1FEABFF0D2BB253D5AE",
+        "timestamp": "2025-11-08T18:15:39.620Z",
+        "version": "1.4.50.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.50.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.50 - Changed IsAutomated to true for remove refresh operations and added try-catch error handling around library refresh loop. Reordered refresh operations so full refresh runs before create refresh.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2025-11-08T18:00:00.733Z",
         "checksum": "1CE4ED65DC8C5B6E2A2DC4DFAD3DEB24",
         "targetAbi": "10.11.0.0",

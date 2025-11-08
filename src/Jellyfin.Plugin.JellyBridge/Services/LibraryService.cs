@@ -95,7 +95,7 @@ public class LibraryService
                 ReplaceAllImages = refreshImages,
                 RegenerateTrickplay = false,
                 ForceSave = true,
-                IsAutomated = false,
+                IsAutomated = true,
                 RemoveOldMetadata = false
             };
 
@@ -122,55 +122,64 @@ public class LibraryService
             // Queue provider refresh for each JellyBridge library via ProviderManager (same as API behavior)
             foreach (var bridgeLibrary in bridgeLibraries)
             {
-                // Validate ItemId before parsing
-                if (string.IsNullOrEmpty(bridgeLibrary.ItemId))
+                try
                 {
-                    _logger.LogWarning("Library '{LibraryName}' has null or empty ItemId, skipping refresh", bridgeLibrary.Name);
-                    continue;
-                }
-
-                if (!Guid.TryParse(bridgeLibrary.ItemId, out var libraryItemId))
-                {
-                    _logger.LogWarning("Library '{LibraryName}' has invalid ItemId '{ItemId}', skipping refresh", bridgeLibrary.Name, bridgeLibrary.ItemId);
-                    continue;
-                }
-
-                var libraryFolder = _libraryManager.Inner.GetItemById(libraryItemId);
-                if (libraryFolder != null)
-                {
-                    _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", bridgeLibrary.Name);
-                    // First validate children to scan for new/changed files
-                    _logger.LogTrace("Validating library: {LibraryName}", bridgeLibrary.Name);
-                    //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
-
-                    if (refreshUserData)
+                    // Validate ItemId before parsing
+                    if (string.IsNullOrEmpty(bridgeLibrary.ItemId))
                     {
-                        // Standard refresh for metadata/image updates
-                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
-                        if(fullRefresh)
+                        _logger.LogWarning("Library '{LibraryName}' has null or empty ItemId, skipping refresh", bridgeLibrary.Name);
+                        continue;
+                    }
+
+                    if (!Guid.TryParse(bridgeLibrary.ItemId, out var libraryItemId))
+                    {
+                        _logger.LogWarning("Library '{LibraryName}' has invalid ItemId '{ItemId}', skipping refresh", bridgeLibrary.Name, bridgeLibrary.ItemId);
+                        continue;
+                    }
+
+                    var libraryFolder = _libraryManager.Inner.GetItemById(libraryItemId);
+                    if (libraryFolder != null)
+                    {
+                        _logger.LogTrace("Starting scan and refresh for library: {LibraryName}", bridgeLibrary.Name);
+                        // First validate children to scan for new/changed files
+                        _logger.LogTrace("Validating library: {LibraryName}", bridgeLibrary.Name);
+                        //await ((dynamic)libraryFolder).ValidateChildren(new Progress<double>(), refreshOptions, recursive: true, cancellationToken: CancellationToken.None);
+
+                        if (refreshUserData)
                         {
-                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                            // Full refresh first if items are removed
+                            if(fullRefresh)
+                            {
+                                _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsRemove, RefreshPriority.High);
+                            }
+                            // Standard refresh for metadata/image updates
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsCreate, RefreshPriority.High);
                         }
+                        else
+                        {
+                            // Light refresh for user data updates (play counts)
+                            _logger.LogTrace("Using update refresh options for library: {LibraryName}", bridgeLibrary.Name);
+                            _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.High);
+                        }
+                        // ValidateChildren already refreshes child metadata when recursive=true.
+                        // If needed in future, we could call RefreshMetadata here.
+
+                        _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", bridgeLibrary.Name);
                     }
                     else
                     {
-                        // Light refresh for user data updates (play counts)
-                        _logger.LogTrace("Using update refresh options for library: {LibraryName}", bridgeLibrary.Name);
-                        _providerManager.QueueRefresh(libraryFolder.Id, refreshOptionsUpdate, RefreshPriority.High);
+                        _logger.LogWarning("Library folder not found for: {LibraryName}", bridgeLibrary.Name);
+                        continue;
                     }
-                    // ValidateChildren already refreshes child metadata when recursive=true.
-                    // If needed in future, we could call RefreshMetadata here.
 
-                    _logger.LogTrace("Completed validation and refresh for library: {LibraryName}", bridgeLibrary.Name);
+                    queuedCount++;
+                    _logger.LogTrace("Queued provider refresh for library: {LibraryName} ({ItemId})", bridgeLibrary.Name, libraryFolder?.Id);
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("Library folder not found for: {LibraryName}", bridgeLibrary.Name);
-                    continue;
+                    _logger.LogError(ex, "Error processing library '{LibraryName}', continuing with remaining libraries", bridgeLibrary.Name);
+                    // Continue processing remaining libraries even if one fails
                 }
-
-                queuedCount++;
-                _logger.LogTrace("Queued provider refresh for library: {LibraryName} ({ItemId})", bridgeLibrary.Name, libraryFolder?.Id);
             }
 
             _logger.LogDebug("Queued provider refresh for {Count} JellyBridge libraries", queuedCount);
