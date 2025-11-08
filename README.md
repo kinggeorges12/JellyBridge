@@ -169,7 +169,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 - **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Clean-up Requests from Favorites**: Hides them from the library after they've been successfully requested in Jellyseerr
+- **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
 - **Network Folder Setup**
   - **Setup Instructions**: Step-by-step guide for creating network folders and libraries
