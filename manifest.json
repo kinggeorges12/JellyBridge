@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-08T17:46:47.536Z",
+        "dependencies": [],
+        "checksum": "0310B798E3B7AD2805CE7A870555EC5F",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.46.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.46 - Updated README with favorites sync documentation and improved configuration page descriptions",
+        "targetAbi": "10.11.0.0",
+        "version": "1.4.46.11"
+      },
+      {
+        "timestamp": "2025-11-08T17:46:47.536Z",
+        "dependencies": [],
+        "checksum": "EE0ABCEF7A1A4B75DFFB9C2A436530CD",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/dev/release/JellyBridge-1.4.46.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.46 - Updated README with favorites sync documentation and improved configuration page descriptions",
+        "targetAbi": "10.10.0.0",
+        "version": "1.4.46.10"
+      },
+      {
         "dependencies": [],
         "version": "1.4.45.11",
         "changelog": "Jellyfin 10.11.0: v1.4.45 - Refactored favorite and play status operations: combined unfavorite and mark-as-unplayed into parallel async tasks, added cleaned items tracking to sync results, and updated configuration to clarify that ignore files and unplayed status are always applied regardless of RemoveRequestedFromFavorites setting. Renamed TrySetFavorite to TryUnfavoriteAsync and made it async for consistency. Improved error handling for null exceptions in task result processing.",
