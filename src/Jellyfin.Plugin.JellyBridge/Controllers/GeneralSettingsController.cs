@@ -37,7 +37,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     && !string.IsNullOrWhiteSpace(jellyseerUrlElement.GetString())
                     ? jellyseerUrlElement.GetString()
                     : null)
-                    ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
+                    ?? (string)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.JellyseerrUrl)];
                 
                 var apiKey = requestData.TryGetProperty("ApiKey", out var apiKeyElement)
                     && !string.IsNullOrWhiteSpace(apiKeyElement.GetString())
@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     && !string.IsNullOrWhiteSpace(libraryDirElement.GetString())
                     ? libraryDirElement.GetString()
                     : null)
-                    ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                    ?? (string)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.LibraryDirectory)];
 
                 if (string.IsNullOrEmpty(apiKey))
                 {
@@ -170,6 +170,17 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     });
                 }
             }
+            catch (UriFormatException ex)
+            {
+                // Thrown by TestConnectionAsync when URL format is invalid
+                _logger.LogError(ex, "Connection test failed: Invalid URL format");
+                return BadRequest(new { 
+                    success = false, 
+                    message = "Invalid Jellyseerr URL format",
+                    details = ex.Message,
+                    errorCode = "INVALID_URL"
+                });
+            }
             catch (JsonException ex)
             {
                 // Thrown by JsonSerializer.Deserialize in TestConnectionAsync
@@ -179,6 +190,17 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     message = "Unable to parse Jellyseerr response",
                     details = ex.Message,
                     errorCode = "INVALID_RESPONSE"
+                });
+            }
+            catch (Exception ex)
+            {
+                // Catch any unexpected exceptions that would cause a 500
+                _logger.LogError(ex, "Connection test failed: Unexpected error");
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "An unexpected error occurred during connection test",
+                    details = ex.Message,
+                    errorCode = "INTERNAL_ERROR"
                 });
             }
         }
