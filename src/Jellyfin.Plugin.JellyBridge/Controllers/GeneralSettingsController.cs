@@ -54,8 +54,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     });
                 }
 
-                // Test library directory read/write access
-                var effectiveLibraryDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                // Test library directory read/write access only if a directory is provided or configured
+                var effectiveLibraryDirectory = !string.IsNullOrEmpty(libraryDirectory)
+                    ? libraryDirectory
+                    : Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                
                 if (!_libraryService.TestLibraryDirectoryReadWrite(effectiveLibraryDirectory))
                 {
                     _logger.LogWarning("Library directory read/write test failed for: {Directory}", effectiveLibraryDirectory);
