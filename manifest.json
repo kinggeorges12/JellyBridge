@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "version": "1.4.55.11",
+        "timestamp": "2025-11-09T04:25:15.241Z",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.55.11.zip",
+        "checksum": "B260D1BCDC589B8A866209B5F02B8411",
+        "changelog": "Jellyfin 10.11.0: v1.4.55 - Fixed TestConnection to skip library directory validation when blank. Added LibraryDirectory field validation in configuration UI for test connection and save operations."
+      },
+      {
+        "dependencies": [],
+        "version": "1.4.55.10",
+        "timestamp": "2025-11-09T04:25:15.241Z",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.55.10.zip",
+        "checksum": "A149715B0324722ADE74490BEB7B2A57",
+        "changelog": "Jellyfin 10.10.7: v1.4.55 - Fixed TestConnection to skip library directory validation when blank. Added LibraryDirectory field validation in configuration UI for test connection and save operations."
+      },
+      {
         "version": "1.4.54.11",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.54.11.zip",

@@ -278,7 +278,10 @@ function performTestConnection(page) {
     
     // Validate API Key
     if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
-    
+
+    // Validate Library Directory
+    if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
     testButton.disabled = true;
     Dashboard.showLoadingMsg();
     
@@ -1549,6 +1552,7 @@ function savePluginConfiguration(page) {
     function validateInputs() {
         if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
         if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
+        if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
         if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
         if (!validateField(page, 'SortTaskIntervalHours', validators.double, 'Sort Task Interval must be a positive decimal number').isValid) return;
         if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
@@ -1910,13 +1914,21 @@ const validators = {
         const num = parseFloat(value);
         return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
     },
+    windowsFolder: (value) => {
+        if (!value) return true; // Allow empty values
+        // Check for invalid Windows filename characters: \ / :
+        const invalidChars = /[*?"<>|]/;
+        // Windows folders cannot start with a space
+        const invalidFolder = /^ |\/ |\\ /;
+        return !invalidChars.test(value) && !invalidFolder.test(value);
+    },
     windowsFilename: (value) => {
         if (!value) return true; // Allow empty values
         // Windows filenames cannot start with a space
         if (value.length > 0 && value[0] === ' ') return false;
-        // Check for invalid Windows filename characters: \ / : * ? " < > |
-        const invalidChars = /[\\/:*?"<>|]/;
-        return !invalidChars.test(value);
+        // Check for invalid Windows filename characters: * ? " < > |
+        const invalidChars = /[\\/:]/;
+        return windowsFolder(value) && !invalidChars.test(value);
     }
 };
 
