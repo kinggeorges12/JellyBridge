@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("TestConnection")]
         public async Task<IActionResult> TestConnection([FromBody] JsonElement requestData)
         {
-            _logger.LogDebug("TestConnection endpoint called");
+            _logger.LogInformation("Running connection test...");
             
             try
             {
@@ -58,6 +58,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         message = "Jellyseerr API Key is required" 
                     });
                 }
+                _logger.LogInformation("API Key is not empty");
                 
                 if (!_libraryService.TestLibraryDirectoryReadWrite(libraryDirectory))
                 {
@@ -69,11 +70,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         errorCode = "INSUFFICIENT_STORAGE"
                     });
                 }
+                _logger.LogInformation("Library directory test successful for: {Directory}", libraryDirectory);
 
                 var status = await _apiService.TestConnectionAsync(jellyseerUrl, apiKey);
+                _logger.LogInformation("Test connection successful to Jellyseerr at: {JellyseerrUrl}", jellyseerUrl);
                 
                 // Check privileges (UserList endpoint requires user list permissions)
-                _logger.LogInformation("Checking user list privileges");
                 var testConfig = new PluginConfiguration
                 {
                     JellyseerrUrl = jellyseerUrl,
@@ -82,7 +84,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 
                 // Check UserList endpoint - if it returns empty/null after successful connection, likely insufficient privileges
                 var users = (List<JellyseerrUser>)await _apiService.CallEndpointAsync(JellyseerrEndpoint.UserList, testConfig);
-                
+
                 if (users == null || users.Count == 0)
                 {
                     _logger.LogWarning("User list check returned empty list - likely insufficient privileges");
@@ -93,6 +95,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         errorCode = "INSUFFICIENT_PRIVILEGES"
                     });
                 }
+                _logger.LogInformation("User list check successful found {Users} users", users.Count);
                 
                 return Ok(new { 
                     success = true, 

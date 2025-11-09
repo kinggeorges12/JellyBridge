@@ -1893,44 +1893,48 @@ function initializeLinkSpans(pageOrContainer) {
 }
 
 // Global validators object
-const validators = {
-    notNull: (value) => {
-        value = value.trim();
-        return !!value && value !== '';
-    },
-    url: (value) => {
-        value = value.trim();
-        return !value || /^https?:\/\/.+/.test(value);
-    },
-    int: (value) => {
-        value = value.trim();
-        if (!value) return true; // Allow empty values
-        const num = parseInt(value);
-        return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
-    },
-    double: (value) => {
-        value = value.trim();
-        if (!value) return true; // Allow empty values
-        const num = parseFloat(value);
-        return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
-    },
-    windowsFolder: (value) => {
+const validators = (() => {
+    const windowsFolder = (value) => {
         if (!value) return true; // Allow empty values
         // Check for invalid Windows filename characters: \ / :
         const invalidChars = /[*?"<>|]/;
         // Windows folders cannot start with a space
         const invalidFolder = /^ |\/ |\\ /;
         return !invalidChars.test(value) && !invalidFolder.test(value);
-    },
-    windowsFilename: (value) => {
-        if (!value) return true; // Allow empty values
-        // Windows filenames cannot start with a space
-        if (value.length > 0 && value[0] === ' ') return false;
-        // Check for invalid Windows filename characters: * ? " < > |
-        const invalidChars = /[\\/:]/;
-        return windowsFolder(value) && !invalidChars.test(value);
-    }
-};
+    };
+
+    return {
+        notNull: (value) => {
+            value = value.trim();
+            return !!value && value !== '';
+        },
+        url: (value) => {
+            value = value.trim();
+            return !value || /^https?:\/\/.+/.test(value);
+        },
+        int: (value) => {
+            value = value.trim();
+            if (!value) return true; // Allow empty values
+            const num = parseInt(value);
+            return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
+        },
+        double: (value) => {
+            value = value.trim();
+            if (!value) return true; // Allow empty values
+            const num = parseFloat(value);
+            return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
+        },
+        windowsFolder: windowsFolder,
+        windowsFilename: (value) => {
+            if (!value) return true; // Allow empty values
+            // Windows filenames cannot start with a space
+            if (value.length > 0 && value[0] === ' ') return false;
+            // Check for invalid Windows filename characters: * ? " < > |
+            const invalidChars = /[\\/:]/;
+            return windowsFolder(value) && !invalidChars.test(value);
+        }
+    };
+})();
 
 // Central field validation function
 function validateField(form, fieldId, validator = null, errorMessage = null) {
