@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.56.11",
+        "timestamp": "2025-11-09T04:37:17.290Z",
+        "checksum": "2F426507DC108714C2A0D600D8F60AA7",
+        "changelog": "Jellyfin 10.11.0: v1.4.56 - Added autocomplete attributes to configuration form to prevent browser autofill on sensitive fields.",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.56.11.zip"
+      },
+      {
+        "version": "1.4.56.10",
+        "timestamp": "2025-11-09T04:37:17.290Z",
+        "checksum": "125794B5F21AE5D5CA3F87CF50FE20B6",
+        "changelog": "Jellyfin 10.10.7: v1.4.56 - Added autocomplete attributes to configuration form to prevent browser autofill on sensitive fields.",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.56.10.zip"
+      },
+      {
         "dependencies": [],
         "version": "1.4.55.11",
         "timestamp": "2025-11-09T04:25:15.241Z",
