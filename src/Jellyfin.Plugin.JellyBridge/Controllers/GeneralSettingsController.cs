@@ -16,11 +16,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     {
         private readonly DebugLogger<GeneralSettingsController> _logger;
         private readonly ApiService _apiService;
+        private readonly LibraryService _libraryService;
 
-        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService)
+        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService, LibraryService libraryService)
         {
             _logger = new DebugLogger<GeneralSettingsController>(loggerFactory.CreateLogger<GeneralSettingsController>());
             _apiService = apiService;
+            _libraryService = libraryService;
         }
 
         [HttpPost("TestConnection")]
@@ -39,12 +41,29 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     ? apiKeyElement.GetString() 
                     : null;
 
+                var libraryDirectory = requestData.TryGetProperty("LibraryDirectory", out var libraryDirElement) 
+                    ? libraryDirElement.GetString() 
+                    : null;
+
                 if (string.IsNullOrEmpty(apiKey))
                 {
                     _logger.LogWarning("TestConnection failed: Missing required fields");
                     return BadRequest(new { 
                         success = false, 
                         message = "Jellyseerr API Key is required" 
+                    });
+                }
+
+                // Test library directory read/write access
+                var effectiveLibraryDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                if (!_libraryService.TestLibraryDirectoryReadWrite(effectiveLibraryDirectory))
+                {
+                    _logger.LogWarning("Library directory read/write test failed for: {Directory}", effectiveLibraryDirectory);
+                    return StatusCode(507, new { 
+                        success = false, 
+                        message = $"The library directory is not accessible: {effectiveLibraryDirectory}",
+                        details = $"The library directory '{effectiveLibraryDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",
+                        errorCode = "INSUFFICIENT_STORAGE"
                     });
                 }
 
