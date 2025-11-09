@@ -269,8 +269,9 @@ function initializeGeneralSettings(page) {
 
 function performTestConnection(page) {
     const testButton = page.querySelector('#testConnection');
-    const url = page.querySelector('#JellyseerrUrl').value.trim();
-    const apiKey = page.querySelector('#ApiKey').value.trim();
+    const url = safeParseString(page.querySelector('#JellyseerrUrl'));
+    const apiKey = safeParseString(page.querySelector('#ApiKey'));
+    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     
     // Validate URL format if provided
     if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
@@ -283,7 +284,8 @@ function performTestConnection(page) {
     
     const testData = {
         JellyseerrUrl: url,
-        ApiKey: apiKey
+        ApiKey: apiKey,
+        LibraryDirectory: libraryDirectory
     };
 
     ApiClient.ajax({
@@ -1469,9 +1471,8 @@ function performPluginReset(page) {
 function performRecycleLibraryData(page) {
     // Get current library directory, fallback to default if empty
     const config = window.configJellyBridge || {};
-    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.ConfigDefaults?.LibraryDirectory;
-    // Get the button
     const recycleLibraryButton = page.querySelector('#recycleLibraryData');
+    const currentLibraryDir = safeParseString(page.querySelector('#LibraryDirectory')) || config.ConfigDefaults?.LibraryDirectory;
     
     // First confirmation: save configuration
     Dashboard.confirm({

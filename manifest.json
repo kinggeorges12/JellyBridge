@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "1.4.54.11",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.54.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.54 - Enhanced connection test to validate library directory read/write access. Added TestLibraryDirectoryReadWrite method to LibraryService. Improved input parsing in configuration UI using safeParseString.",
+        "timestamp": "2025-11-09T03:30:40.766Z",
+        "checksum": "B5C1D02197D29C73AEE965DD074C276B",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "1.4.54.10",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.54.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.54 - Enhanced connection test to validate library directory read/write access. Added TestLibraryDirectoryReadWrite method to LibraryService. Improved input parsing in configuration UI using safeParseString.",
+        "timestamp": "2025-11-09T03:30:40.766Z",
+        "checksum": "86A565ACC9A36EB154CCA81A4BB8D949",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v1.4.53 - Merged dev branch into feature: includes all updates from v1.4.45 through v1.4.52 including favorites sync improvements, documentation updates, UI enhancements, and library refresh optimizations.",
         "checksum": "11CA7768B23582D2BF357EC4D962DC0D",
         "targetAbi": "10.11.0.0",

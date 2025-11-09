@@ -224,4 +224,89 @@ public class LibraryService
             return false;
         }
     }
+
+    /// <summary>
+    /// Tests read and write access to the library directory by creating, reading, and deleting a test file.
+    /// </summary>
+    /// <param name="libraryDirectory">The library directory path to test. If null or empty, uses the configured default.</param>
+    /// <returns>True if the test succeeds, false if any error occurs.</returns>
+    public bool TestLibraryDirectoryReadWrite(string? libraryDirectory = null)
+    {
+        try
+        {
+            // Use provided directory or fall back to configured default
+            var testDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            
+            if (string.IsNullOrEmpty(testDirectory))
+            {
+                _logger.LogWarning("Library directory is not configured");
+                return false;
+            }
+
+            // Ensure directory exists
+            if (!Directory.Exists(testDirectory))
+            {
+                _logger.LogWarning("Library directory does not exist: {Directory}", testDirectory);
+                return false;
+            }
+
+            var testFilePath = Path.Combine(testDirectory, ".jellybridge");
+            const string testContent = "Hello World!";
+
+            _logger.LogDebug("Testing read/write access to library directory: {Directory}", testDirectory);
+
+            try
+            {
+                // Delete test file if it already exists (cleanup from previous failed test)
+                if (File.Exists(testFilePath))
+                {
+                    File.Delete(testFilePath);
+                }
+
+                // Write test file and ensure it's flushed to disk
+                using (var fileStream = new FileStream(testFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                using (var writer = new StreamWriter(fileStream))
+                {
+                    writer.Write(testContent);
+                    writer.Flush();
+                    fileStream.Flush(true); // Force flush to physical disk
+                }
+
+                // Read test file
+                var readContent = File.ReadAllText(testFilePath);
+                
+                if (readContent != testContent)
+                {
+                    _logger.LogWarning("Test file content mismatch. Expected: {Expected}, Got: {Actual}", testContent, readContent);
+                    return false;
+                }
+
+                // Delete test file
+                File.Delete(testFilePath);
+                
+                _logger.LogDebug("Library directory read/write test successful");
+                return true;
+            }
+            finally
+            {
+                // Ensure cleanup even if an exception occurs
+                try
+                {
+                    if (File.Exists(testFilePath))
+                    {
+                        File.Delete(testFilePath);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Library directory read/write test failed");
+            return false;
+        }
+    }
 }

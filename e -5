@@ -1,0 +1,130 @@
+[1mdiff --git a/src/Jellyfin.Plugin.JellyBridge/Configuration/ConfigurationPage.js b/src/Jellyfin.Plugin.JellyBridge/Configuration/ConfigurationPage.js[m
+[1mindex e9eb3cd..38f82a8 100644[m
+[1m--- a/src/Jellyfin.Plugin.JellyBridge/Configuration/ConfigurationPage.js[m
+[1m+++ b/src/Jellyfin.Plugin.JellyBridge/Configuration/ConfigurationPage.js[m
+[36m@@ -269,8 +269,9 @@[m [mfunction initializeGeneralSettings(page) {[m
+ [m
+ function performTestConnection(page) {[m
+     const testButton = page.querySelector('#testConnection');[m
+[31m-    const url = page.querySelector('#JellyseerrUrl').value.trim();[m
+[31m-    const apiKey = page.querySelector('#ApiKey').value.trim();[m
+[32m+[m[32m    const url = safeParseString(page.querySelector('#JellyseerrUrl'));[m
+[32m+[m[32m    const apiKey = safeParseString(page.querySelector('#ApiKey'));[m
+[32m+[m[32m    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));[m
+     [m
+     // Validate URL format if provided[m
+     if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;[m
+[36m@@ -283,7 +284,8 @@[m [mfunction performTestConnection(page) {[m
+     [m
+     const testData = {[m
+         JellyseerrUrl: url,[m
+[31m-        ApiKey: apiKey[m
+[32m+[m[32m        ApiKey: apiKey,[m
+[32m+[m[32m        LibraryDirectory: libraryDirectory[m
+     };[m
+ [m
+     ApiClient.ajax({[m
+[36m@@ -1469,9 +1471,8 @@[m [mfunction performPluginReset(page) {[m
+ function performRecycleLibraryData(page) {[m
+     // Get current library directory, fallback to default if empty[m
+     const config = window.configJellyBridge || {};[m
+[31m-    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.ConfigDefaults?.LibraryDirectory;[m
+[31m-    // Get the button[m
+     const recycleLibraryButton = page.querySelector('#recycleLibraryData');[m
+[32m+[m[32m    const currentLibraryDir = safeParseString(page.querySelector('#LibraryDirectory')) || config.ConfigDefaults?.LibraryDirectory;[m
+     [m
+     // First confirmation: save configuration[m
+     Dashboard.confirm({[m
+[1mdiff --git a/src/Jellyfin.Plugin.JellyBridge/Controllers/GeneralSettingsController.cs b/src/Jellyfin.Plugin.JellyBridge/Controllers/GeneralSettingsController.cs[m
+[1mindex 9cdac8b..edf6bfd 100644[m
+[1m--- a/src/Jellyfin.Plugin.JellyBridge/Controllers/GeneralSettingsController.cs[m
+[1m+++ b/src/Jellyfin.Plugin.JellyBridge/Controllers/GeneralSettingsController.cs[m
+[36m@@ -16,11 +16,13 @@[m [mnamespace Jellyfin.Plugin.JellyBridge.Controllers[m
+     {[m
+         private readonly DebugLogger<GeneralSettingsController> _logger;[m
+         private readonly ApiService _apiService;[m
+[32m+[m[32m        private readonly LibraryService _libraryService;[m[41m[m
+ [m
+[31m-        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService)[m
+[32m+[m[32m        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService, LibraryService libraryService)[m[41m[m
+         {[m
+             _logger = new DebugLogger<GeneralSettingsController>(loggerFactory.CreateLogger<GeneralSettingsController>());[m
+             _apiService = apiService;[m
+[32m+[m[32m            _libraryService = libraryService;[m[41m[m
+         }[m
+ [m
+         [HttpPost("TestConnection")][m
+[36m@@ -39,6 +41,10 @@[m [mnamespace Jellyfin.Plugin.JellyBridge.Controllers[m
+                     ? apiKeyElement.GetString() [m
+                     : null;[m
+ [m
+[32m+[m[32m                var libraryDirectory = requestData.TryGetProperty("LibraryDirectory", out var libraryDirElement)[m[41m [m
+[32m+[m[32m                    ? libraryDirElement.GetString()[m[41m [m
+[32m+[m[32m                    : null;[m[41m[m
+[32m+[m[41m[m
+                 if (string.IsNullOrEmpty(apiKey))[m
+                 {[m
+                     _logger.LogWarning("TestConnection failed: Missing required fields");[m
+[36m@@ -48,6 +54,19 @@[m [mnamespace Jellyfin.Plugin.JellyBridge.Controllers[m
+                     });[m
+                 }[m
+ [m
+[32m+[m[32m                // Test library directory read/write access[m[41m[m
+[32m+[m[32m                var effectiveLibraryDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));[m[41m[m
+[32m+[m[32m                if (!_libraryService.TestLibraryDirectoryReadWrite(effectiveLibraryDirectory))[m[41m[m
+[32m+[m[32m                {[m[41m[m
+[32m+[m[32m                    _logger.LogWarning("Library directory read/write test failed for: {Directory}", effectiveLibraryDirectory);[m[41m[m
+[32m+[m[32m                    return StatusCode(507, new {[m[41m [m
+[32m+[m[32m                        success = false,[m[41m [m
+[32m+[m[32m                        message = $"The library directory is not accessible: {effectiveLibraryDirectory}",[m[41m[m
+[32m+[m[32m                        details = $"The library directory '{effectiveLibraryDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",[m[41m[m
+[32m+[m[32m                        errorCode = "INSUFFICIENT_STORAGE"[m[41m[m
+[32m+[m[32m                    });[m[41m[m
+[32m+[m[32m                }[m[41m[m
+[32m+[m[41m[m
+                 var status = await _apiService.TestConnectionAsync(jellyseerUrl, apiKey);[m
+                 [m
+                 // Check privileges (UserList endpoint requires user list permissions)[m
+[1mdiff --git a/src/Jellyfin.Plugin.JellyBridge/Services/LibraryService.cs b/src/Jellyfin.Plugin.JellyBridge/Services/LibraryService.cs[m
+[1mindex 06af082..dc08f9d 100644[m
+[1m--- a/src/Jellyfin.Plugin.JellyBridge/Services/LibraryService.cs[m
+[1m+++ b/src/Jellyfin.Plugin.JellyBridge/Services/LibraryService.cs[m
+[36m@@ -224,4 +224,89 @@[m [mpublic class LibraryService[m
+             return false;[m
+         }[m
+     }[m
+[32m+[m
+[32m+[m[32m    /// <summary>[m
+[32m+[m[32m    /// Tests read and write access to the library directory by creating, reading, and deleting a test file.[m
+[32m+[m[32m    /// </summary>[m
+[32m+[m[32m    /// <param name="libraryDirectory">The library directory path to test. If null or empty, uses the configured default.</param>[m
+[32m+[m[32m    /// <returns>True if the test succeeds, false if any error occurs.</returns>[m
+[32m+[m[32m    public bool TestLibraryDirectoryReadWrite(string? libraryDirectory = null)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        try[m
+[32m+[m[32m        {[m
+[32m+[m[32m            // Use provided directory or fall back to configured default[m
+[32m+[m[32m            var testDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));[m
+[32m+[m[41m            [m
+[32m+[m[32m            if (string.IsNullOrEmpty(testDirectory))[m
+[32m+[m[32m            {[m
+[32m+[m[32m                _logger.LogWarning("Library directory is not configured");[m
+[32m+[m[32m                return false;[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            // Ensure directory exists[m
+[32m+[m[32m            if (!Directory.Exists(testDirectory))[m
+[32m+[m[32m            {[m
+[32m+[m[32m                _logger.LogWarning("Library directory does not exist: {Directory}", testDirectory);[m
+[32m+[m[32m                return false;[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            var testFilePath = Path.Combine(testDirectory, ".jellybridge");[m
+[32m+[m[32m            const string testContent = "Hello World!";[m
+[32m+[m
+[32m+[m[32m            _logger.LogDebug("Testing read/write access to library directory: {Directory}", testDirectory);[m
+[32m+[m
+[32m+[m[32m            try[m
+[32m+[m[32m            {[m
+[32m+[m[32m                // Delete test file if it already exists (cleanup from previous failed test)[m
+[32m
