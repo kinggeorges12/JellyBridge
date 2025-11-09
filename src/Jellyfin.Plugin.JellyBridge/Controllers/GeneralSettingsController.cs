@@ -33,17 +33,22 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             try
             {
                 // Extract and validate parameters
-                var jellyseerUrl = requestData.TryGetProperty("JellyseerrUrl", out var urlElement) 
-                    ? urlElement.GetString() 
-                    : null;
+                var jellyseerUrl = (requestData.TryGetProperty("JellyseerrUrl", out var jellyseerUrlElement)
+                    && !string.IsNullOrWhiteSpace(jellyseerUrlElement.GetString())
+                    ? jellyseerUrlElement.GetString()
+                    : null)
+                    ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
                 
-                var apiKey = requestData.TryGetProperty("ApiKey", out var apiKeyElement) 
-                    ? apiKeyElement.GetString() 
+                var apiKey = requestData.TryGetProperty("ApiKey", out var apiKeyElement)
+                    && !string.IsNullOrWhiteSpace(apiKeyElement.GetString())
+                    ? apiKeyElement.GetString()
                     : null;
 
-                var libraryDirectory = requestData.TryGetProperty("LibraryDirectory", out var libraryDirElement) 
-                    ? libraryDirElement.GetString() 
-                    : null;
+                var libraryDirectory = (requestData.TryGetProperty("LibraryDirectory", out var libraryDirElement)
+                    && !string.IsNullOrWhiteSpace(libraryDirElement.GetString())
+                    ? libraryDirElement.GetString()
+                    : null)
+                    ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
                 if (string.IsNullOrEmpty(apiKey))
                 {
@@ -53,19 +58,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         message = "Jellyseerr API Key is required" 
                     });
                 }
-
-                // Test library directory read/write access only if a directory is provided or configured
-                var effectiveLibraryDirectory = !string.IsNullOrEmpty(libraryDirectory)
-                    ? libraryDirectory
-                    : Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
                 
-                if (!_libraryService.TestLibraryDirectoryReadWrite(effectiveLibraryDirectory))
+                if (!_libraryService.TestLibraryDirectoryReadWrite(libraryDirectory))
                 {
-                    _logger.LogWarning("Library directory read/write test failed for: {Directory}", effectiveLibraryDirectory);
+                    _logger.LogWarning("Library directory read/write test failed for: {Directory}", libraryDirectory);
                     return StatusCode(507, new { 
                         success = false, 
-                        message = $"The library directory is not accessible: {effectiveLibraryDirectory}",
-                        details = $"The library directory '{effectiveLibraryDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",
+                        message = $"The library directory is not accessible: {libraryDirectory}",
+                        details = $"The library directory '{libraryDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",
                         errorCode = "INSUFFICIENT_STORAGE"
                     });
                 }
@@ -76,7 +76,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogInformation("Checking user list privileges");
                 var testConfig = new PluginConfiguration
                 {
-                    JellyseerrUrl = jellyseerUrl ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl)),
+                    JellyseerrUrl = jellyseerUrl,
                     ApiKey = apiKey
                 };
                 

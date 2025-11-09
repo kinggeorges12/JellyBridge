@@ -9,8 +9,26 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-09T04:49:58.157Z",
+        "changelog": "Jellyfin 10.11.0: v1.4.57 - Fixed TestConnection to properly handle blank/null values by normalizing empty strings and falling back to configured defaults. Improved parameter extraction to check for null/whitespace before using request values.",
+        "version": "1.4.57.11",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.57.11.zip",
+        "checksum": "38B7D6309AC4C31FCDB7336F4B3EC101"
+      },
+      {
+        "timestamp": "2025-11-09T04:49:58.157Z",
+        "changelog": "Jellyfin 10.10.7: v1.4.57 - Fixed TestConnection to properly handle blank/null values by normalizing empty strings and falling back to configured defaults. Improved parameter extraction to check for null/whitespace before using request values.",
+        "version": "1.4.57.10",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.57.10.zip",
+        "checksum": "88BFA621101819A6E808135DD31016F8"
+      },
+      {
         "version": "1.4.56.11",
-        "timestamp": "2025-11-09T04:37:17.290Z",
+        "timestamp": "2025-11-09T04:37:17.29Z",
         "checksum": "2F426507DC108714C2A0D600D8F60AA7",
         "changelog": "Jellyfin 10.11.0: v1.4.56 - Added autocomplete attributes to configuration form to prevent browser autofill on sensitive fields.",
         "dependencies": [],
@@ -19,7 +37,7 @@
       },
       {
         "version": "1.4.56.10",
-        "timestamp": "2025-11-09T04:37:17.290Z",
+        "timestamp": "2025-11-09T04:37:17.29Z",
         "checksum": "125794B5F21AE5D5CA3F87CF50FE20B6",
         "changelog": "Jellyfin 10.10.7: v1.4.56 - Added autocomplete attributes to configuration form to prevent browser autofill on sensitive fields.",
         "dependencies": [],
