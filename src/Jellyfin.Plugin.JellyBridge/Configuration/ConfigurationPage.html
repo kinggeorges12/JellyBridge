@@ -384,7 +384,7 @@
                     white-space: pre-wrap;
                 }
             </style>
-            <form id="jellyBridgeConfigurationForm">
+            <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
                     <legend>JellyBridge Configuration</legend>
                     
@@ -408,12 +408,12 @@
                     
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL"/>
+                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" autocomplete="one-time-code" data-form-type="other" />
                         <div class="fieldDescription">The base URL of your Jellyseerr instance. For docker instances, use http://host.docker.internal:5055</div>
                     </div>
 
                     <div class="inputContainer">
-                        <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="off" data-lpignore="true" data-form-type="other" />
+                        <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="one-time-code" data-1p-ignore data-bwignore data-lpignore="true" data-form-type="other" />
                         <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost on port 5055</a>.</div>
                     </div>
 
