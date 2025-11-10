@@ -10,15 +10,15 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and s
 
 **🆕 New in this release**
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
-- Manage Discover Library: "Use Network Folders" setup with "Generate Network Folders", optional "Duplicate Discover Content", and configurable "Library Prefix"; improved exclusions and favorites cleanup.
+- Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
 - Import Discover Content: two-pane region/network picker with search/refresh and an on-demand import button.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
 **⚠️ Compatibility Notes**
 This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
 - To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
-- If you use "Use Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
-- `Manage Discover Library → Favorite Cleanup` functionality changed to always ignore and unmark played for requested favorites. The option only affects whether the favorited items are unfavorited.
+- If you use "Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
+- `Manage Discover Library → Favorite Cleanup` functionality changed to always ignore and unmark played for requested favorites. The option now only affects whether the favorited items are unfavorited.
 
 After installing the new version, you may need to update the plugin configuration page using these instructions:
 `Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".`
@@ -167,14 +167,14 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Manage Discover Library](Screenshots/Manage.png)
 
-- **Manage JellyBridge Library**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
-- **Hide Discover Content Already in Jellyfin Libraries**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
+- **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
+- **Hide Existing Discover Content**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
-- **Use Network Folders**: Creates separate folders for each selected network service so you can map each to its own Jellyfin library
-- **Network Folder Setup**
-  - **Setup Instructions**: Step-by-step guide for creating network folders and libraries
+- **Network Folders**: Creates separate folders for each selected network service so you can organize networks into different Jellyfin libraries
+- **Network Folders Setup**
+  - **Instructions**: Step-by-step guide for creating network folders and libraries
   - **Library Prefix**: Prefix applied to generated network library names
-  - **Duplicate Discover Content for JellyBridge Libraries**: Allows the same title to exist in multiple JellyBridge libraries if each library's network selection is unique
+  - **Show Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
   - **Generate Network Folders**: Button to create the folder structure for all selected networks
 - **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
 
