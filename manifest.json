@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-11-11T14:00:59.175Z",
+        "changelog": "Jellyfin 10.11.0: v2.0.0 - Major: Renamed configuration setting labels and synchronized README/UI. Merged feature into main excluding manifest and cleaned artifacts to match manifest. Updated screenshots and docs for the new configuration layout.",
+        "checksum": "41E8155849B7E6D4A1DE5D54AA16BD0D",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.0.0/JellyBridge-2.0.0.11.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "2.0.0.11",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2025-11-11T14:00:59.175Z",
+        "changelog": "Jellyfin 10.10.7: v2.0.0 - Major: Renamed configuration setting labels and synchronized README/UI. Merged feature into main excluding manifest and cleaned artifacts to match manifest. Updated screenshots and docs for the new configuration layout.",
+        "checksum": "4AA2D994CCE1B6B045ACC06676AC07B0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.0.0/JellyBridge-2.0.0.10.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "2.0.0.10",
+        "dependencies": []
+      },
+      {
         "version": "1.3.3.11",
         "timestamp": "2025-11-01T19:16:31.133Z",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v1.3.3/JellyBridge-1.3.3.11.zip",
