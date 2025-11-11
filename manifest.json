@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "FF65320CD06F9F4AD25F8F36AA7155E3",
+        "timestamp": "2025-11-11T00:03:02.233Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.61.11.zip",
+        "changelog": "Jellyfin 10.11.0: v1.4.61 - Simplified Favorite Cleanup field description by removing redundant details about .ignore files and unplayed status. Added italic formatting to the Network Folders note for better visual emphasis.",
+        "version": "1.4.61.11",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "checksum": "12680C55FC93F202627DF6D7035D522C",
+        "timestamp": "2025-11-11T00:03:02.233Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-1.4.61.10.zip",
+        "changelog": "Jellyfin 10.10.7: v1.4.61 - Simplified Favorite Cleanup field description by removing redundant details about .ignore files and unplayed status. Added italic formatting to the Network Folders note for better visual emphasis.",
+        "version": "1.4.61.10",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2025-11-10T23:56:15.781Z",
         "targetAbi": "10.11.0.0",
         "changelog": "Jellyfin 10.11.0: v1.4.60 - Updated configuration setting names: renamed 'Use Network Folders' to 'Network Folders', 'Duplicate Discover Content' to 'Show Discover Content in Multiple Libraries', and 'Manage JellyBridge Library' to 'Automated Library Refresh'. Updated README documentation to reflect new setting names throughout. Updated configuration page UI and backend code to use the new naming.",
