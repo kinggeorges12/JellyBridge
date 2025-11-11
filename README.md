@@ -82,6 +82,7 @@ After installing Jellyseerr, disable the JellyBridge library to prevent requests
 Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
 
 **Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Shows) → Random Items / Recommended Items / any other view
+
 **Jellyseer Requests**: Open any Library view → right-click a movie or show → Jellyfin options → Add to favorites
 
 ![Jellyfin for Kodi Add-on](Screenshots/Kodi.png)
