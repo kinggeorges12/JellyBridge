@@ -62,8 +62,8 @@ Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
  
 For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/). *Note*: Incompatible with JellyCon for Kodi.
 
-- **Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Shows) → Random Items / Recommended Items / any other view
-- **Jellyseer Requests**: Open any Library view → right-click a movie or show → Jellyfin options → Add to favorites
+- **Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Series) → Random Items / Recommended Items / any other view
+- **Jellyseer Requests**: Open any Library view → right-click a movie or series → Jellyfin options → Add to favorites
 
 ## 📦 Installation
 
@@ -110,7 +110,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
 2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
 3. **Test the connection** to ensure Jellyseerr is accessible
-4. **Import discover content** to browse movies and shows from Jellyseerr
+4. **Import discover content** to browse movies and series from Jellyseerr
 5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads
 6. **Customize sorting** to show users a variety of discover content
 
@@ -144,7 +144,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 ![Manage Discover Library](Screenshots/Manage.png)
 
 - **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
-- **Hide Existing Discover Content**: Excludes movies and shows from the JellyBridge library if they already exist in your other Jellyfin libraries
+- **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Network Folders**: Creates separate folders for each selected network service so you can organize networks into different Jellyfin libraries
 - **Network Folders Setup**
