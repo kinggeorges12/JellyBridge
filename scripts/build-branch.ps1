@@ -1,13 +1,14 @@
-﻿param(
-    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()]
+param(
     [string]$Version,
     
-    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()]
-    [string]$Changelog,
+    [string]$Changelog = "Automated branch release",
     
     [string]$GitHubUsername = "kinggeorges12",
-
-    [switch]$Release
+    
+    [string]$Branch = "feature",
+    
+    [ValidateSet("major", "minor", "patch")]
+    [string]$ReleaseType = "patch"
 )
 
 # Check PowerShell version - require PowerShell 7 or greater
@@ -18,17 +19,89 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     exit 1
 }
 
+if($Branch -eq "main") {
+    Write-Error '[X] main branch is not allowed to be released'
+    exit 1
+}
+
 # Set base directory (project root) - fully resolved path
 $BaseDir = Split-Path $PSScriptRoot -Parent
 
 # Where to save zip files
-$releaseDir = Join-Path $BaseDir "temp"
+$releaseDir = Join-Path $BaseDir "release"
 
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
 
 # GitHub API token - read from file
 $GitHubToken = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
+
+# Auto-determine version if not provided
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    Write-Host "[~] Version not provided, calculating from latest release..." -ForegroundColor Yellow
+    
+    # Find latest version from release folder
+    $releaseFiles = Get-ChildItem ".\release\*.zip" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+    $latestVersion = "1.0.0"
+    
+    if ($releaseFiles.Count -gt 0) {
+        # Extract version from filename (format: JellyBridge-X.Y.Z.10.zip or JellyBridge-X.Y.Z.11.zip)
+        # Remove .10 or .11 suffix as those are Jellyfin version suffixes
+        $versionRegex = 'JellyBridge-(\d+\.\d+\.\d+)\.(?:10|11)\.zip'
+        $versions = @()
+        
+        foreach ($file in $releaseFiles) {
+            if ($file.Name -match $versionRegex) {
+                $baseVersion = $matches[1]
+                if ($versions -notcontains $baseVersion) {
+                    $versions += $baseVersion
+                }
+            }
+        }
+        
+        if ($versions.Count -gt 0) {
+            # Sort versions numerically (not alphabetically)
+            $sortedVersions = $versions | ForEach-Object {
+                $parts = $_ -split '\.'
+                [PSCustomObject]@{
+                    Version = $_
+                    Major = [int]$parts[0]
+                    Minor = [int]$parts[1]
+                    Patch = [int]$parts[2]
+                }
+            } | Sort-Object -Property Major, Minor, Patch -Descending
+            
+            $latest = $sortedVersions[0]
+            
+            # Increment version based on release type
+            $major = $latest.Major
+            $minor = $latest.Minor
+            $patch = $latest.Patch
+            
+            switch ($ReleaseType) {
+                "major" {
+                    $major++
+                    $minor = 0
+                    $patch = 0
+                }
+                "minor" {
+                    $minor++
+                    $patch = 0
+                }
+                "patch" {
+                    $patch++
+                }
+            }
+            
+            $latestVersion = "$major.$minor.$patch"
+            Write-Host "[~] Latest release found: $($latest.Version), incrementing $ReleaseType -> $latestVersion" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "[~] No existing releases found, using default version: $latestVersion" -ForegroundColor Green
+    }
+    
+    $Version = $latestVersion
+}
 
 # Ensure Version is treated as string
 $Version = $Version.ToString()
@@ -50,10 +123,19 @@ if ([string]::IsNullOrWhiteSpace($Changelog)) {
 
 Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 
+# Switch to the specified branch
+Write-Host "[~] Switching to branch: $Branch" -ForegroundColor Yellow
+git checkout $Branch
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "[X] Failed to switch to branch: $Branch"
+    exit 1
+}
+Write-Host "[~] Switched to branch: $Branch" -ForegroundColor Green
+
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
-# Set manifest file 
+# Always use manifest.json from the current branch
 $manifestPath = "manifest.json"
 
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -158,7 +240,7 @@ foreach ($t in $targets) {
         version = $ver_sub
         changelog = "Jellyfin $($t.JellyfinVersion): $ChangelogText"
         targetAbi = $minAbi
-        sourceUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/$zipName"
+        sourceUrl = "https://raw.githubusercontent.com/$GitHubUsername/JellyBridge/$Branch/release/$zipName"
         checksum = $checksum
         timestamp = $timestamp
         dependencies = @()
@@ -174,10 +256,21 @@ Write-Host "[~] Updated $manifestPath with multi-ABI entries" -ForegroundColor G
 
 # Step 8: Commit changes to Git
 Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
+
+# Explicitly add all changes including release files
 git add .
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Git add failed!"
     exit 1
+}
+
+# Verify release files are staged
+$stagedReleaseFiles = git diff --cached --name-only -- "release/*.zip"
+if ($stagedReleaseFiles) {
+    Write-Host "[~] Staged release files:" -ForegroundColor Green
+    $stagedReleaseFiles | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
+} else {
+    Write-Host "[~] No new release files to commit (may already be committed)" -ForegroundColor Yellow
 }
 
 $commitMessage = "Release $ChangelogText"
@@ -190,72 +283,21 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[~] Committed changes" -ForegroundColor Green
 
 # Step 9: Push changes to GitHub
-Write-Host "Step 9: Pushing changes to GitHub..." -ForegroundColor Yellow
+Write-Host "Step 9: Pushing changes to GitHub branch '$Branch'..." -ForegroundColor Yellow
 
 # Configure git remote with token for authentication
 if ($GitHubToken) {
     git remote set-url origin "https://kinggeorges12:$GitHubToken@github.com/kinggeorges12/JellyBridge.git"
 }
 
-git push
+# Push to the specified branch, set upstream if needed
+Write-Host "[~] Pushing to origin/$Branch..." -ForegroundColor Cyan
+git push --set-upstream origin $Branch
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Git push failed!"
     exit 1
 }
-Write-Host "[~] Pushed to GitHub" -ForegroundColor Green
-
-# Step 10: Create GitHub release
-Write-Host "Step 10: Creating GitHub release..." -ForegroundColor Yellow
-$headers = @{
-    "Authorization" = "token $GitHubToken"
-    "Accept" = "application/vnd.github.v3+json"
-}
-
-$releaseBody = "## v$Version - Release`n`n$ChangelogText`n`n### Changes:`n- Updated version to $Version`n- Built and packaged DLL`n- Updated manifest.json with new version entry`n- Generated checksum and timestamp`n`n### Installation:`n1. Download the JellyBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
-
-$body = @{
-    tag_name = "v$Version"
-    target_commitish = "main"
-    name = "JellyBridge v$Version"
-    body = $releaseBody
-    draft = $false
-    prerelease = -not [bool]$Release
-} | ConvertTo-Json
-
-try {
-    $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$GitHubUsername/JellyBridge/releases" -Method Post -Headers $headers -Body $body -ContentType "application/json"
-    Write-Host "[~] Created GitHub release: $($response.html_url)" -ForegroundColor Green
-    $releaseId = $response.id
-} catch {
-    Write-Error "[X] Failed to create GitHub release: $($_.Exception.Message)"
-    exit 1
-}
-
-# Step 11: Upload both ZIP files as release assets
-Write-Host "Step 11: Uploading ZIP files as release assets..." -ForegroundColor Yellow
-$uploadHeaders = @{
-    "Authorization" = "token $GitHubToken"
-    "Content-Type" = "application/zip"
-}
-
-foreach ($zip in $createdZips) {
-    $name = [System.IO.Path]::GetFileName($zip)
-    $uploadUrl = "https://uploads.github.com/repos/$GitHubUsername/JellyBridge/releases/$releaseId/assets?name=$name"
-    try {
-        $fileBytes = [System.IO.File]::ReadAllBytes($zip)
-        $uploadResponse = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $fileBytes
-        Write-Host "[~] Uploaded ZIP file: ${name}: $($uploadResponse | ConvertTo-Json -Depth 10)" -ForegroundColor Green
-    } catch {
-        Write-Error "[X] Failed to upload ZIP file '$name': $($_.Exception.Message)"
-        exit 1
-    }
-}
-
-Write-Host "[!] Release v$Version completed successfully!" -ForegroundColor Green
-$downloadUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/download/v$Version/JellyBridge-$Version-DLL.zip"
-$releaseUrl = "https://github.com/$GitHubUsername/JellyBridge/releases/tag/v$Version"
-Write-Host "[~] Download URL: $downloadUrl" -ForegroundColor Cyan
-Write-Host "[~] Release URL: $releaseUrl" -ForegroundColor Cyan
+Write-Host "[~] Successfully pushed to GitHub branch '$Branch'" -ForegroundColor Green
 
 # Pop back to original directory
 Pop-Location

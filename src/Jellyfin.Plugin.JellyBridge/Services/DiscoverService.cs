@@ -4,11 +4,12 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
-/// Service for discovering and scanning library items between Jellyfin and Jellyseerr.
+/// Service for discovering and importing content between Jellyfin and Jellyseerr.
 /// </summary>
 public class DiscoverService
 {
@@ -16,13 +17,17 @@ public class DiscoverService
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
+    private readonly BridgeService _bridgeService;
+    private readonly CleanupService _cleanupService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService)
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService, CleanupService cleanupService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
+        _bridgeService = bridgeService;
+        _cleanupService = cleanupService;
     }
     
     #region FromJellyseerr
@@ -39,7 +44,7 @@ public class DiscoverService
     {
         var config = Plugin.GetConfiguration();
         var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
-        var allItems = new HashSet<T>();
+        var allItems = new List<T>();
         
         foreach (var network in networkMap)
         {
@@ -84,7 +89,7 @@ public class DiscoverService
                 _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
             }
             
-            // Add items to HashSet (automatically handles duplicates)
+            // Add items to list (no deduplication)
             foreach (var item in items)
             {
                 // Set the network tag for this item
@@ -96,11 +101,58 @@ public class DiscoverService
             _logger.LogTrace("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
         }
         
-        // Convert HashSet to List for return
-        var result = allItems.ToList();
-        _logger.LogDebug("Total unique {MediaType} after deduplication: {TotalCount}", T.LibraryType, result.Count);
+        _logger.LogDebug("Total {MediaType} collected: {TotalCount}", T.LibraryType, allItems.Count);
         
-        return result;
+        return allItems;
+    }
+    
+    /// <summary>
+    /// Filters duplicate media items from a list using the GetItemHashCode method.
+    /// Returns a list containing only unique items based on their hash code.
+    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
+    /// </summary>
+    /// <param name="items">List of media items to filter</param>
+    /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
+    public async Task<List<IJellyseerrItem>> FilterDuplicateMedia(List<IJellyseerrItem> items)
+    {
+        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        
+        var seenHashes = new HashSet<int>();
+        var uniqueItems = new List<IJellyseerrItem>();
+
+        if (useNetworkFolders && addDuplicateContent)
+        {
+            _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
+            var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
+            // Extract items from library-directory-item tuples into a single flat list
+            uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
+            _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
+                uniqueItems.Count, libraryResults.Count);
+            return uniqueItems;
+        }
+        
+        foreach (var item in items)
+        {
+            if (item == null) continue;
+            
+            var hash = item.GetItemHashCode();
+            if (seenHashes.Add(hash))
+            {
+                uniqueItems.Add(item);
+            }
+            else
+            {
+                _logger.LogTrace("Filtered duplicate item: {MediaName} (Id: {Id}, Hash: {Hash})", 
+                    item.MediaName, item.Id, hash);
+            }
+        }
+        
+        _logger.LogDebug("Filtered {TotalCount} items to {UniqueCount} unique items", 
+            items.Count, uniqueItems.Count);
+        
+        return uniqueItems;
     }
 
     #endregion
@@ -116,6 +168,7 @@ public class DiscoverService
     {
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
+        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         _logger.LogDebug("Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
@@ -125,7 +178,13 @@ public class DiscoverService
             try
             {
                 // Get the folder path for this item
-                var folderPath = _metadataService.GetJellyseerrItemDirectory(item);
+                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                var normalizedFolder = string.IsNullOrWhiteSpace(folderPath) ? folderPath : Path.GetFullPath(folderPath);
+                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
+                {
+                    _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
+                    continue;
+                }
                 
                 if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 {
@@ -172,31 +231,23 @@ public class DiscoverService
         {
             try
             {
-                var showFolderPath = _metadataService.GetJellyseerrItemDirectory(show);
+                var showFolderPath = _metadataService.GetJellyBridgeItemDirectory(show);
                 
                 _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
                     show.MediaName, showFolderPath);
                 
-                var seasonFolderName = "Season 00";
-                var seasonFolderPath = Path.Combine(showFolderPath, seasonFolderName);
-                
                 try
                 {
-                    // Create season folder if it doesn't exist
-                    if (!Directory.Exists(seasonFolderPath))
-                    {
-                        Directory.CreateDirectory(seasonFolderPath);
-                        _logger.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    // Generate season placeholder video
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(seasonFolderPath);
+                    // Generate season placeholder video (calculates season folder path internally)
+                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(showFolderPath);
                     if (placeholderSuccess)
                     {
+                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
                         _logger.LogDebug("Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     else
                     {
+                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
                         _logger.LogWarning("Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
                     }
                     
@@ -216,114 +267,70 @@ public class DiscoverService
         _logger.LogDebug("Completed season folder creation for {ShowCount} shows", shows.Count);
     }
 
+    /// <summary>
+    /// Filters duplicate media items from a list using the GetItemFolderHashCode method.
+    /// Returns a list containing only unique items based on their hash code.
+    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
+    /// </summary>
+    /// <param name="allItems">List of media items to filter</param>
+    /// <param name="uniqueItems">List of unique media items</param>
+    /// <returns>Tuple of (newly ignored items, existing ignored items)</returns>
+    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreDuplicateLibraryItems(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
+    {
+        var newlyIgnored = new List<IJellyseerrItem>();
+        var existingIgnored = new List<IJellyseerrItem>();
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        if (!(useNetworkFolders && addDuplicateContent))
+        {
+            _logger.LogDebug("Ignoring duplicate library items: UseNetworkFolders and AddDuplicateContent are both disabled");
+            return (newlyIgnored, existingIgnored);
+        }
+
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
+        var duplicates = new List<IJellyseerrItem>();
+        foreach (var item in allItems)
+        {
+            if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
+            {
+                duplicates.Add(item);
+            }
+        }
+        var ignoreFileTasks = new List<Task>();
+
+        foreach (var duplicate in duplicates)
+        {
+            var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(duplicate);
+            var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+            try
+            {
+                if (File.Exists(ignoreFilePath))
+                {
+                    existingIgnored.Add(duplicate);
+                    _logger.LogTrace("Ignore file already exists for {ItemName} in {BridgeFolder}", duplicate.MediaName, bridgeFolderPath);
+                }
+                else
+                {
+                    // Serialize using the actual runtime type - the converter handles this automatically
+                    var itemJson = System.Text.Json.JsonSerializer.Serialize(duplicate, duplicate.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
+                    ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                    newlyIgnored.Add(duplicate);
+                    _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", duplicate.MediaName, bridgeFolderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating ignore file for {ItemName}", duplicate.MediaName);
+            }
+        }
+
+        await Task.WhenAll(ignoreFileTasks);
+        return (newlyIgnored, existingIgnored);
+    }
 
     #endregion
     
     #region Deleted
-
-    /// <summary>
-    /// Cleans up metadata by removing items older than the specified number of days.
-    /// </summary>
-    public async Task<(List<JellyseerrMovie> deletedMovies, List<JellyseerrShow> deletedShows)> CleanupMetadataAsync()
-    {
-        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
-        var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);
-
-        try
-        {
-            // Read all bridge folder metadata
-            var (movies, shows) = await _metadataService.ReadMetadataAsync();
-            
-            _logger.LogDebug("Found {MovieCount} movies and {ShowCount} shows to check for cleanup", 
-                movies.Count, shows.Count);
-
-            // Process movies and shows using the same logic
-            var deletedMovies = ProcessItemsForCleanup(movies);
-            var deletedShows = ProcessItemsForCleanup(shows);
-
-            _logger.LogDebug("Completed cleanup - Deleted {MovieCount} movies, {ShowCount} shows", 
-                deletedMovies.Count, deletedShows.Count);
-            
-            return (deletedMovies, deletedShows);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during cleanup process");
-            return (new List<JellyseerrMovie>(), new List<JellyseerrShow>());
-        }
-    }
-
-    /// <summary>
-    /// Validates that the NetworkId exists in the NetworkMap configuration.
-    /// </summary>
-    private bool ValidateNetworkId(IJellyseerrItem item)
-    {
-        // If no NetworkId is set, delete the item
-        if (!item.NetworkId.HasValue)
-        {
-            return false;
-        }
-
-        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
-        
-        // Check if the NetworkId exists in the NetworkMap
-        return networkMap.Any(network => network.Id == item.NetworkId.Value);
-    }
-
-    /// <summary>
-    /// Helper method to process items for cleanup.
-    /// </summary>
-    private List<TJellyseerr> ProcessItemsForCleanup<TJellyseerr>(
-        List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
-    {
-        var deletedItems = new List<TJellyseerr>();
-        var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
-        var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
-        var itemType = typeof(TJellyseerr).Name.ToLower().Replace("jellyseerr", "");
-        
-        _logger.LogTrace("Processing {ItemCount} {ItemType}s for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
-            items.Count, itemType, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
-        
-        try
-        {
-            foreach (var item in items)
-            {
-                string deletionReason = "";
-
-                // Validate NetworkId exists in NetworkMap configuration
-                if (!ValidateNetworkId(item))
-                {
-                    deletionReason = $"NetworkId {item.NetworkId} not found in NetworkMap configuration";
-                }
-                // Check if the item's CreatedDate is older than the cutoff date
-                // Treat null CreatedDate as very old (past cutoff date)
-                else if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
-                {
-                    deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
-                }
-
-                if (!string.IsNullOrEmpty(deletionReason))
-                {
-                    var itemDirectory = _metadataService.GetJellyseerrItemDirectory(item);
-                    
-                    if (Directory.Exists(itemDirectory))
-                    {
-                        Directory.Delete(itemDirectory, true);
-                        deletedItems.Add(item);
-                        _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
-                            itemType, item.MediaName, deletionReason);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing {ItemType}", itemType);
-        }
-        
-        return deletedItems;
-    }
 
     /// <summary>
     /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
@@ -375,16 +382,13 @@ public class DiscoverService
     /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
     /// This prevents re-processing items that were created by the plugin itself.
     /// </summary>
-    public (List<JellyMatch> filtered, List<IJellyseerrItem> synced) FilterSyncedItems(List<JellyMatch> matches)
+    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> FilterSyncedLibraryItems(List<JellyMatch> matchedItems, List<IJellyseerrItem> unmatchedItems)
     {
-        if (matches == null || matches.Count == 0)
-        {
-            return (new List<JellyMatch>(), new List<IJellyseerrItem>());
-        }
+        var matched = new List<JellyMatch>();
+        var unmatched = new List<IJellyseerrItem>();
+        unmatched.AddRange(unmatchedItems);
 
-        var filtered = new List<JellyMatch>();
-        var synced = new List<IJellyseerrItem>();
-        foreach (var match in matches)
+        foreach (var match in matchedItems)
         {
             var path = match?.JellyfinItem?.Path;
             // Keep the match only if it's not in the sync directory
@@ -392,15 +396,119 @@ public class DiscoverService
             {
                 if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
                 {
-                    filtered.Add(match);
+                    matched.Add(match);
                 } else {
-                    synced.Add(match.JellyseerrItem);
+                    unmatched.Add(match.JellyseerrItem);
                 }
             }
         }
 
-        _logger.LogTrace("FilterSyncedItems: filtered={Filtered}, synced={Synced}, total={Total}", filtered.Count, synced.Count, matches.Count);
-        return (filtered, synced);
+        // Apply unique-by-library filtering to unmatched via existing duplicate filter
+        var filteredUnmatched = await FilterDuplicateMedia(unmatched);
+
+        _logger.LogTrace("FilterSyncedLibraryItems: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
+        return (matched, filteredUnmatched);
+    }
+
+    /// <summary>
+    /// Ignores items that have invalid NetworkIds (not in NetworkMap configuration).
+    /// Reads metadata internally and creates .ignore files for invalid items.
+    /// Returns a tuple of (newly ignored items, existing ignored items).
+    /// </summary>
+    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreInvalidNetworkItemsAsync()
+    {
+        // Read all bridge folder metadata
+        var (movies, shows) = await _metadataService.ReadMetadataAsync();
+        
+        // Combine movies and shows into a single list
+        var items = new List<IJellyseerrItem>();
+        items.AddRange(movies.Cast<IJellyseerrItem>());
+        items.AddRange(shows.Cast<IJellyseerrItem>());
+        
+        if (items.Count == 0)
+        {
+            return (new List<IJellyseerrItem>(), new List<IJellyseerrItem>());
+        }
+
+        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
+        var newlyIgnored = new List<IJellyseerrItem>();
+        var existingIgnored = new List<IJellyseerrItem>();
+        var ignoreFileTasks = new List<Task>();
+
+        foreach (var item in items)
+        {
+            try
+            {
+                // Check if NetworkId is valid
+                if (!item.NetworkId.HasValue)
+                {
+                    // No NetworkId - mark as ignored
+                    var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+                    
+                    try
+                    {
+                        if (File.Exists(ignoreFilePath))
+                        {
+                            existingIgnored.Add(item);
+                            _logger.LogTrace("Ignore file already exists for item with no NetworkId: {ItemName}", item.MediaName);
+                        }
+                        else
+                        {
+                            var itemJson = System.Text.Json.JsonSerializer.Serialize(item, item.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
+                            ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                            newlyIgnored.Add(item);
+                            _logger.LogTrace("Ignored item with no NetworkId: {ItemName}", item.MediaName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.MediaName);
+                    }
+                }
+                else if (!networkMap.Any(network => network.Id == item.NetworkId.Value))
+                {
+                    // NetworkId not in NetworkMap - mark as ignored
+                    var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+                    
+                    try
+                    {
+                        if (File.Exists(ignoreFilePath))
+                        {
+                            existingIgnored.Add(item);
+                            _logger.LogTrace("Ignore file already exists for item with invalid NetworkId {NetworkId}: {ItemName}", item.NetworkId, item.MediaName);
+                        }
+                        else
+                        {
+                            var itemJson = System.Text.Json.JsonSerializer.Serialize(item, item.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
+                            ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                            newlyIgnored.Add(item);
+                            _logger.LogTrace("Ignored item with invalid NetworkId {NetworkId}: {ItemName}", item.NetworkId, item.MediaName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.MediaName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering invalid network item: {ItemName}", item?.MediaName);
+            }
+        }
+
+        await Task.WhenAll(ignoreFileTasks);
+        
+        var totalIgnored = newlyIgnored.Count + existingIgnored.Count;
+        if (totalIgnored > 0)
+        {
+            _logger.LogDebug("Filtered and ignored {IgnoredCount} items with invalid NetworkIds ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
+                totalIgnored, newlyIgnored.Count, existingIgnored.Count);
+        }
+
+        return (newlyIgnored, existingIgnored);
     }
 
     /// <summary>
@@ -419,7 +527,7 @@ public class DiscoverService
         {
             try
             {
-                var dir = _metadataService.GetJellyseerrItemDirectory(item);
+                var dir = _metadataService.GetJellyBridgeItemDirectory(item);
                 var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
                 if (!File.Exists(ignorePath))
                 {

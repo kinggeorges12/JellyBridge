@@ -26,14 +26,20 @@ export default function (view) {
                 // Initialize general settings including test connection
                 initializeGeneralSettings(page);
                 
-                // Initialize favorite settings
-                initializeFavoriteSettings(page);
+                // Initialize import discover content settings including network interface and sync buttons
+                initializeImportContent(page);
                 
-                // Initialize sync settings including network interface and sync buttons
-                initializeSyncSettings(page);
+                // Initialize manage discover library settings
+                initializeManageLibrary(page);
+                
+                // Initialize sort content settings
+                initializeSortContent(page);
                 
                 // Initialize advanced settings
                 initializeAdvancedSettings(page);
+                
+                // Initialize global settings (including detail tab scroll functionality)
+                initializeGlobalSettings(page);
                 
                 // Scroll to top of page after successful initialization
                 scrollToElement('jellyBridgeConfigurationPage');
@@ -54,17 +60,19 @@ export default function (view) {
 // PLUGIN HEADER FUNCTIONS
 // ==========================================
 
-function cacheBuster(config) {
+function cacheBuster() {
+    const config = window.configJellyBridge;
     try {
-        const version = (config && config.PluginVersion) ? config.PluginVersion : Date.now().toString();
-        const target = new URL(window.location.href);
-        target.searchParams.add('nocache', version);
-        return Dashboard.navigate(target.toString());
+        const version = config.PluginVersion;
+        const base = Dashboard.getPluginUrl('JellyBridge'); // "configurationpage?name=JellyBridge"
+        Dashboard.navigate(`${base}&v=${version}`);
     } catch (e) { /* ignore */ }
 }
 
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
+
+    cacheBuster()
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
@@ -214,6 +222,10 @@ function initializeGeneralSettings(page) {
             if (instructionsDiv) {
                 const isVisible = instructionsDiv.style.display !== 'none';
                 instructionsDiv.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    // Scroll to and highlight the IsEnabled checkbox
+                    scrollToCheckboxAndHighlight('#IsEnabled');
+                }
             }
         });
     }
@@ -245,25 +257,38 @@ function initializeGeneralSettings(page) {
     }
     // Initialize dependency state on load
     updateAutoTaskDependencies();
+    
+    // Add click handlers to scroll to the IsEnabled checkbox when disabled fields are clicked
+    const syncIntervalContainer = page.querySelector('#SyncIntervalHoursContainer');
+    
+    // Set up scroll handlers for containers that depend on IsEnabled
+    const dependentContainers = [syncIntervalContainer].filter(Boolean);
+    
+    setupDisabledScrollHandlers('#IsEnabled', dependentContainers);
 }
 
 function performTestConnection(page) {
     const testButton = page.querySelector('#testConnection');
-    const url = page.querySelector('#JellyseerrUrl').value.trim();
-    const apiKey = page.querySelector('#ApiKey').value.trim();
+    const url = safeParseString(page.querySelector('#JellyseerrUrl'));
+    const apiKey = safeParseString(page.querySelector('#ApiKey'));
+    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     
     // Validate URL format if provided
     if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
     // Validate API Key
     if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
-    
+
+    // Validate Library Directory
+    if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
     testButton.disabled = true;
     Dashboard.showLoadingMsg();
     
     const testData = {
         JellyseerrUrl: url,
-        ApiKey: apiKey
+        ApiKey: apiKey,
+        LibraryDirectory: libraryDirectory
     };
 
     ApiClient.ajax({
@@ -279,7 +304,7 @@ function performTestConnection(page) {
         Dashboard.confirm({
                 title: 'Connection Success!',
                 text: 'Save connection settings now?',
-                confirmText: 'Confirm',
+                confirmText: 'Save',
                 cancelText: 'Cancel',
                 primary: "confirm"
             }, 'Title', (confirmed) => {
@@ -297,41 +322,24 @@ function performTestConnection(page) {
                     Dashboard.alert('🚫 Exited without saving');
                 }
             });
-    }).catch(function (error) {
-        // Handle different types of errors
-        let errorMessage = '❌ Connection test failed';
-        
-        if (error && error.responseJSON) {
-            // Server returned structured error response
-            const errorData = error.responseJSON;
-            errorMessage = `❌ ${errorData.message || 'Connection test failed'}`;
-            if (errorData.details) {
-                errorMessage += `<br><br>Details: ${errorData.details}`;
+    }).catch(async function (error) {
+        let errorResponse = null;
+        try {
+            errorResponse = await error.json();
+            if (errorResponse) {
+                const message = errorResponse?.message || `Request failed (${errorResponse.status} ${errorResponse.statusText})`;
+                Dashboard.alert('❌ ' + message);
+            } else {
+                Dashboard.alert('❓ Cannot communicate with Jellyfin plugin endpoint');
             }
-        } else if (error && error.status) {
-            // HTTP status code error
-            switch (error.status) {
-                case 400:
-                    errorMessage = '❌ Bad Request: Cannot reach URL';
-                    break;
-                case 401:
-                    errorMessage = '❌ Unauthorized: Invalid API Key';
-                    break;
-                case 403:
-                    errorMessage = '❌ Forbidden: Insufficient privileges - API key lacks required permissions';
-                    break;
-                case 500:
-                    errorMessage = '❌ Server Error: Connection test failed';
-                    break;
-                default:
-                    errorMessage = `❌ Connection test failed (HTTP ${error.status})`;
+        } catch (e) {
+            const rawText = await error.text();
+            if (rawText) {
+                Dashboard.alert('⏳ ' + rawText);
+            } else {
+                Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
             }
-        } else {
-            // Generic error
-            errorMessage = '❌ Connection test failed: ' + (error?.message || 'Unknown error');
         }
-        
-        Dashboard.alert(errorMessage);
     }).finally(function() {
         Dashboard.hideLoadingMsg();
         testButton.disabled = false;
@@ -339,132 +347,10 @@ function performTestConnection(page) {
 }
 
 // ==========================================
-// LIBRARY SETTINGS FUNCTIONS
+// IMPORT DISCOVER CONTENT FUNCTIONS
 // ==========================================
 
-function initializeFavoriteSettings(page) {
-    // Set library settings form values with null handling
-    setInputField(page, 'ExcludeFromMainLibraries', true);
-    setInputField(page, 'RemoveRequestedFromFavorites', true);
-    setInputField(page, 'CreateSeparateLibraries', true);
-    setInputField(page, 'LibraryPrefix');
-    setInputField(page, 'ManageJellyseerrLibrary', true);
-    
-    updateLibraryPrefixState();
-    
-    // Sync Favorites button functionality
-    const syncFavoritesButton = page.querySelector('#syncFavorites');
-    syncFavoritesButton.addEventListener('click', function() {
-        performSyncFavorites(page);
-    });
-}
-
-function updateLibraryPrefixState() {
-    const createSeparateLibrariesCheckbox = document.querySelector('#CreateSeparateLibraries');
-    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
-    const separateLibrariesWarning = document.querySelector('#separateLibrariesWarning');
-    
-    const isEnabled = createSeparateLibrariesCheckbox.checked;
-    
-    // Enable/disable the input
-    libraryPrefixInput.disabled = !isEnabled;
-    
-    // Show/hide warning message
-    if (separateLibrariesWarning) {
-        separateLibrariesWarning.style.display = isEnabled ? 'block' : 'none';
-    }
-    
-    // Add/remove disabled styling to both input and container
-    if (isEnabled) {
-        libraryPrefixInput.classList.remove('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.remove('disabled');
-        }
-    } else {
-        libraryPrefixInput.classList.add('disabled');
-        if (libraryPrefixContainer) {
-            libraryPrefixContainer.classList.add('disabled');
-        }
-    }
-}
-
-function performSyncFavorites(page) {
-    const syncFavoritesButton = page.querySelector('#syncFavorites');
-    
-    // Show confirmation dialog for saving settings before sync
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before starting favorites sync.',
-        confirmText: 'Save & Sync',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            syncFavoritesButton.disabled = true;
-            // Save settings first, then sync
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the sync result textbox
-                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                syncFavoritesResult.textContent = '🔄 Syncing to Jellyseerr...';
-                syncFavoritesResult.style.display = 'block';
-                
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                // sync if confirmed
-                Dashboard.showLoadingMsg();
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyBridge/SyncFavorites'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(syncResult) {
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `${syncResult.message || 'No message'}\n`;
-                    
-                    if (syncResult.details) {
-                        resultText += `\nDetails: ${syncResult.details}\n`;
-                    }
-                    
-                    resultText += `\nMovies Result:\n`;
-                    resultText += `  Processed: ${syncResult.moviesResult?.moviesProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.moviesResult?.moviesUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.moviesResult?.moviesCreated || 0}\n`;
-                    
-                    resultText += `\nShows Result:\n`;
-                    resultText += `  Processed: ${syncResult.showsResult?.showsProcessed || 0}\n`;
-                    resultText += `  Updated: ${syncResult.showsResult?.showsUpdated || 0}\n`;
-                    resultText += `  Created: ${syncResult.showsResult?.showsCreated || 0}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Sync favorites failed: ' + (error?.message || 'Unknown error'));
-                    
-                    let resultText = `Sync to Jellyseerr Results:\n`;
-                    resultText += `❌ Sync failed: ${error?.message || 'Unknown error'}\n`;
-                    
-                    syncFavoritesResult.textContent = resultText;
-                    scrollToElement('syncFavoritesResult');
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-                syncFavoritesButton.disabled = false;
-            });
-        }
-    });
-}
-
-// ==========================================
-// DISCOVER SETTINGS FUNCTIONS
-// ==========================================
-
-function initializeSyncSettings(page) {
+function initializeImportContent(page) {
     const config = window.configJellyBridge || {};
     
     const activeNetworksSelect = page.querySelector('#activeNetworks');
@@ -477,12 +363,12 @@ function initializeSyncSettings(page) {
     const clearAvailableNetworkSearch = page.querySelector('#clearAvailableNetworkSearch');
     
     // Populate region settings
-    const regionSelect = config.Region || config.DefaultValues.Region;
+    const regionSelect = config.Region || config.ConfigDefaults.Region;
     populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
 	// If NetworkMap is null/undefined, fall back to defaults; if it's an empty array, keep it empty
-	const defaultNetworkMap = (config.DefaultValues && Array.isArray(config.DefaultValues.NetworkMap)) ? config.DefaultValues.NetworkMap : [];
+	const defaultNetworkMap = (config.ConfigDefaults && Array.isArray(config.ConfigDefaults.NetworkMap)) ? config.ConfigDefaults.NetworkMap : [];
 	const activeNetworksSource = Array.isArray(config.NetworkMap) ? config.NetworkMap : defaultNetworkMap;
 	populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
     sortSelectOptions(activeNetworksSelect);
@@ -542,13 +428,22 @@ function initializeSyncSettings(page) {
     const refreshAvailableButton = page.querySelector('#refreshAvailableNetworks');
     if (refreshAvailableButton) {
         refreshAvailableButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
+                return;
+            }
             Dashboard.showLoadingMsg();
-            loadAvailableNetworks(page).then(function(availableNetworks) {
-                Dashboard.alert(`✅ Refreshed available networks.`);
-                scrollToElement('availableNetworksSelectBox');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh available networks: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            loadAvailableNetworks(page)
+            .then(function(availableNetworks) {
+                if (availableNetworks) {
+                    Dashboard.alert(`✅ Refreshed available networks`);
+                    scrollToElement('availableNetworksSelectBox');
+                }
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -606,10 +501,14 @@ function initializeSyncSettings(page) {
         });
     }
 
+    // Set Max Discover Pages and Max Retention Days
+    setInputField(page, 'MaxDiscoverPages');
+    setInputField(page, 'MaxRetentionDays');
+
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
     syncButton.addEventListener('click', function () {
-        performSyncDiscover(page);
+        performSyncImportContent(page);
     });
 
     // Add reset plugin config button functionality
@@ -628,13 +527,19 @@ function initializeSyncSettings(page) {
     const refreshButton = page.querySelector('#refreshNetworks');
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
+            const config = window.configJellyBridge || {};
+            if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
+                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                scrollToElement('saveConfig');
+                return;
+            }
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.alert('✅ Regions refreshed successfully!');
+                Dashboard.alert('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to refresh regions: ' + (error?.message || 'Unknown error'));
-                scrollToElement('syncSettings');
+            }).catch(function() {
+                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -642,7 +547,7 @@ function initializeSyncSettings(page) {
     }
 }
 
-function performSyncDiscover(page) {
+function performSyncImportContent(page) {
     const syncButton = page.querySelector('#syncDiscover');
     
     // Show confirmation dialog for saving settings before sync
@@ -661,7 +566,7 @@ function performSyncDiscover(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
                 const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                syncDiscoverResult.textContent = '🔄 Syncing library...';
+                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
                 syncDiscoverResult.style.display = 'block';
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
@@ -674,26 +579,15 @@ function performSyncDiscover(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(syncData) {
-                    // Parse the sync results for better user feedback
-                    const message = syncData.message || 'Folder structure creation completed successfully';
-                    
-                    // Build detailed information if available
-                    let resultText = `Discover Sync Results:\n`;
-                    resultText += `✅ ${message}\n\n`;
-                    
-                    if (syncData.details) {
-                        resultText += `Details:\n${syncData.details}`;
-                    }
-                    
-                    syncDiscoverResult.textContent = resultText;
+                    appendToResultBox(syncDiscoverResult, '\n' + (syncData.result || 'No result available'));
                     scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `Discover Sync Results:\n`;
+                    let resultText = `\nDiscover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
                     
-                    syncDiscoverResult.textContent = resultText;
+                    appendToResultBox(syncDiscoverResult, resultText);
                     scrollToElement('syncDiscoverResult');
                 });
             }).catch(function(error) {
@@ -707,7 +601,7 @@ function performSyncDiscover(page) {
     });
 }
 
-// Helper functions for Discover Settings
+// Helper functions for Import Discover Content
 function parseNetworkOptions(options) {
     return Array.from(options).map(option => {
         const networkObj = {};
@@ -735,7 +629,7 @@ function updateAvailableNetworks(page, networkMap = []) {
     const activeNetworks = parseNetworkOptions(activeNetworksSelect.options);
     
     // Get default network map from global config
-    const defaultNetworkMap = config?.DefaultValues?.NetworkMap || [];
+    const defaultNetworkMap = config?.ConfigDefaults?.NetworkMap || [];
     
     // Combine default networks with API networks from parameter
     const combinedNetworks = [...defaultNetworkMap, ...networkMap];
@@ -771,20 +665,10 @@ function loadAvailableNetworks(page) {
         dataType: 'json'
     }).then(function(response) {
         if (response && Array.isArray(response)) {
-            // Store the full network objects for later use
-            window.availableNetworksData = response;
-                        
             // Use updateAvailableNetworks to handle the rest
             return Promise.resolve(updateAvailableNetworks(page, response));
-        } else {
-            // Use updateAvailableNetworks with empty map to show defaults
-            return Promise.resolve(updateAvailableNetworks(page));
         }
-    }).catch(function(error) {
-        Dashboard.alert(`❌ DEBUG: API call failed for networks. Error: ${error?.message || 'Unknown error'}`);
-        
-        // Use updateAvailableNetworks with empty map to show defaults
-        return Promise.resolve(updateAvailableNetworks(page));
+        // do not catch errors, let the caller handle them
     });
 }
 
@@ -943,19 +827,412 @@ function loadRegions(page) {
         dataType: 'json'
     }).then(function (data) {
         if (data && data.success && data.regions) {
-            const select = page.querySelector('#selectWatchRegion');
-            if (select) {
-                // When loading regions, set the current value to the selected value
-                populateRegion(page, data.regions, select.value);
-            }
-            return Promise.resolve();
-        } else {
-            // Failed to load regions - keep default US option
-            return Promise.resolve();
+            // When loading regions, set the current value to the selected value
+            return Promise.resolve(populateRegion(page, data.regions, page.querySelector('#selectWatchRegion').value));
         }
-    }).catch(function (error) {
-        // Re-throw the error so the calling function can handle it
-        throw error;
+    });
+}
+
+// ==========================================
+// SORT CONTENT FUNCTIONS
+// ==========================================
+
+function initializeSortContent(page) {
+    const config = window.configJellyBridge || {};
+    
+    // Populate SortOrder dropdown from enum values
+    const sortOrderSelect = page.querySelector('#selectSortOrder');
+    if (sortOrderSelect) {
+        sortOrderSelect.innerHTML = '';
+        
+        // Use the name as the value
+        config.ConfigOptions.SortOrderOptions.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.Name;
+            optionElement.textContent = option.Name;
+            sortOrderSelect.appendChild(optionElement);
+        });
+        
+        // Store selected value
+        const sortOrderValue = config.SortOrder ?? config.ConfigDefaults?.SortOrder;
+        sortOrderSelect.value = sortOrderValue;
+    }
+    
+    // Set sort content form values with null handling
+    setInputField(page, 'EnableAutomatedSortTask', true);
+    setInputField(page, 'MarkMediaPlayed', true);
+    setInputField(page, 'SortTaskIntervalHours');
+
+    // Initialize sort task dependency state
+    updateSortTaskDependencies();
+    
+    // Add event listener for EnableAutomatedSortTask checkbox
+    const enableAutomatedSortTaskCheckbox = page.querySelector('#EnableAutomatedSortTask');
+    if (enableAutomatedSortTaskCheckbox) {
+        enableAutomatedSortTaskCheckbox.addEventListener('change', function() {
+            updateSortTaskDependencies();
+        });
+    }
+    
+    // Add scroll handler for SortTaskIntervalHours
+    const sortTaskIntervalContainer = page.querySelector('#SortTaskIntervalHoursContainer');
+    if (sortTaskIntervalContainer) {
+        setupDisabledScrollHandlers('#EnableAutomatedSortTask', [sortTaskIntervalContainer]);
+    }
+
+    // Add sort content button functionality
+    const sortButton = page.querySelector('#sortContent');
+    sortButton.addEventListener('click', function () {
+        performSortContent(page);
+    });
+}
+
+function performSortContent(page) {
+    const sortButton = page.querySelector('#sortContent');
+    
+    // Show confirmation dialog for saving settings before sort
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting sort content.',
+        confirmText: 'Save & Sort',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            sortButton.disabled = true;
+            // Save settings first, then sort
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the sort result textbox
+                const sortContentResult = page.querySelector('#sortContentResult');
+                const sortOrderSelect = page.querySelector('#selectSortOrder');
+                const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
+                const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
+                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
+                sortContentResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Sort if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/SortLibrary'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(sortResult) {
+                    appendToResultBox(sortContentResult, '\n' + (sortResult.result || 'No result available'));
+                    scrollToElement('sortContentResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nSort Content Results:\n`;
+                    resultText += `❌ Sort failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(sortContentResult, resultText);
+                    scrollToElement('sortContentResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                sortButton.disabled = false;
+            });
+        }
+    });
+}
+
+function performCleanupMetadata(page) {
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    
+    // Show confirmation dialog for saving settings before cleanup
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting cleanup.',
+        confirmText: 'Save & Cleanup',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            cleanupButton.disabled = true;
+            // Save settings first, then cleanup
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the cleanup result textbox
+                const cleanupResult = page.querySelector('#cleanupMetadataResult');
+                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
+                cleanupResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Cleanup if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/CleanupMetadata'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(cleanupData) {
+                    appendToResultBox(cleanupResult, '\n' + (cleanupData?.result || 'No result available'));
+                    scrollToElement('cleanupMetadataResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nCleanup Results:\n`;
+                    resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(cleanupResult, resultText);
+                    scrollToElement('cleanupMetadataResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                cleanupButton.disabled = false;
+            });
+        }
+    });
+}
+
+// ==========================================
+// MANAGE DISCOVER LIBRARY FUNCTIONS
+// ==========================================
+
+function initializeManageLibrary(page) {
+    // Set library settings form values with null handling
+    setInputField(page, 'ExcludeFromMainLibraries', true);
+    setInputField(page, 'RemoveRequestedFromFavorites', true);
+    setInputField(page, 'UseNetworkFolders', true);
+    setInputField(page, 'AddDuplicateContent', true);
+    setInputField(page, 'LibraryPrefix');
+    setInputField(page, 'ManageJellyseerrLibrary', true);
+    
+    updateNetworkFolderOptionsState();
+    updateAddDuplicateContentState();
+    
+    // Add event listener for UseNetworkFolders checkbox
+    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
+    if (useNetworkFoldersCheckbox) {
+        useNetworkFoldersCheckbox.addEventListener('change', function() {
+            updateNetworkFolderOptionsState();
+            updateAddDuplicateContentState();
+        });
+    }
+    
+    // Add event listener for AddDuplicateContent checkbox
+    const addDuplicateContentCheckbox = page.querySelector('#AddDuplicateContent');
+    if (addDuplicateContentCheckbox) {
+        addDuplicateContentCheckbox.addEventListener('change', function() {
+            updateAddDuplicateContentState();
+        });
+    }
+    
+    // Add scroll handler for AddDuplicateContent
+    const addDuplicateContentContainer = page.querySelector('#AddDuplicateContentContainer');
+    if (addDuplicateContentContainer) {
+        setupDisabledScrollHandlers('#UseNetworkFolders', [addDuplicateContentContainer]);
+    }
+    
+    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    syncFavoritesButton.addEventListener('click', function() {
+        performSyncManageLibrary(page);
+    });
+    
+    // Generate Network Folders button functionality
+    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
+    if (generateNetworkFoldersButton) {
+        generateNetworkFoldersButton.addEventListener('click', function(e) {
+            // If button is disabled, let the scroll handler take over
+            if (this.disabled) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            performGenerateNetworkFolders(page);
+        });
+    }
+}
+
+function updateNetworkFolderOptionsState() {
+    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
+    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
+    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
+    const networkFolderOptionsDetails = document.querySelector('#networkFolderOptionsDetails');
+    const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
+    const generateNetworkFoldersButton = document.querySelector('#generateNetworkFolders');
+    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
+    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
+    
+    const isEnabled = useNetworkFoldersCheckbox.checked;
+    
+    // Apply disabled state to the details element (makes it grayish)
+    if (networkFolderOptionsDetails) {
+        if (isEnabled) {
+            networkFolderOptionsDetails.classList.remove('disabled');
+        } else {
+            networkFolderOptionsDetails.classList.add('disabled');
+        }
+    }
+    
+    // Disable/enable Generate Network Folders button
+    if (generateNetworkFoldersButton) {
+        generateNetworkFoldersButton.disabled = !isEnabled;
+        // Apply disabled styling to the container
+        if (generateNetworkFoldersContainer) {
+            if (isEnabled) {
+                generateNetworkFoldersContainer.classList.remove('disabled');
+            } else {
+                generateNetworkFoldersContainer.classList.add('disabled');
+            }
+        }
+    }
+    
+    // Apply disabled state styling (this will handle the disabled property and styling)
+    applyDisabledState(libraryPrefixInput, libraryPrefixContainer, isEnabled);
+    // addDuplicateContent disabled state is handled by updateAddDuplicateContentState
+    
+    // Add click handler to scroll to required checkbox when disabled field is clicked
+    if (libraryPrefixContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(libraryPrefixContainer, useNetworkFoldersCheckbox);
+    }
+    
+    // Add click handler for add duplicate content container
+    if (addDuplicateContentContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(addDuplicateContentContainer, useNetworkFoldersCheckbox);
+    }
+    
+    // Add click handler for generate network folders container/button
+    if (generateNetworkFoldersContainer && useNetworkFoldersCheckbox) {
+        addScrollToCheckboxHandler(generateNetworkFoldersContainer, useNetworkFoldersCheckbox);
+    }
+}
+
+// Update controls that depend on UseNetworkFolders being enabled
+function updateAddDuplicateContentState() {
+    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
+    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
+    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
+    const addDuplicateContentWarning = document.querySelector('#addDuplicateContentWarning');
+    
+    const isUseNetworkFoldersEnabled = useNetworkFoldersCheckbox ? !!useNetworkFoldersCheckbox.checked : false;
+    const isAddDuplicateContentEnabled = addDuplicateContentCheckbox ? !!addDuplicateContentCheckbox.checked : false;
+    
+    // Show/hide warning message
+    if (addDuplicateContentWarning) {
+        addDuplicateContentWarning.style.display = isAddDuplicateContentEnabled ? 'block' : 'none';
+    }
+    
+    // Apply disabled state styling
+    applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isUseNetworkFoldersEnabled);
+}
+
+function performGenerateNetworkFolders(page) {
+    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
+    
+    // Show confirmation dialog for saving settings before generating folders
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before generating network folders.',
+        confirmText: 'Save & Generate',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            generateNetworkFoldersButton.disabled = true;
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                
+                // Call GenerateNetworkFolders endpoint
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/GenerateNetworkFolders'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(response) {
+                    const ok = !!(response && response.success === true);
+                    
+                    if (ok) {
+                        Dashboard.alert('✅ Network folders created successfully');
+                    } else {
+                        let message = response?.message || 'Network folder generation completed';
+                        Dashboard.alert('⚠️ ' + message);
+                    }
+                    
+                    generateNetworkFoldersButton.disabled = false;
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Failed to generate network folders: ' + (error?.message || 'Unknown error'));
+                    generateNetworkFoldersButton.disabled = false;
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+                generateNetworkFoldersButton.disabled = false;
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+            });
+        }
+    });
+}
+
+function performSyncManageLibrary(page) {
+    const syncFavoritesButton = page.querySelector('#syncFavorites');
+    
+    // Show confirmation dialog for saving settings before requesting content
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before requesting JellyBridge Library favorites in Jellyseerr.',
+        confirmText: 'Save & Request',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            syncFavoritesButton.disabled = true;
+            // Save settings first, then request content
+            Dashboard.showLoadingMsg();
+            
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the request result textbox
+                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
+                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
+                syncFavoritesResult.style.display = 'block';
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Request content if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/SyncFavorites'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncResult) {
+                    appendToResultBox(syncFavoritesResult, '\n' + (syncResult.result || 'No result available'));
+                    scrollToElement('syncFavoritesResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(syncFavoritesResult, resultText);
+                    scrollToElement('syncFavoritesResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                Dashboard.hideLoadingMsg();
+                syncFavoritesButton.disabled = false;
+            });
+        }
     });
 }
 
@@ -967,8 +1244,6 @@ function initializeAdvancedSettings(page) {
     // Set advanced settings form values with null handling
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
-    setInputField(page, 'MaxDiscoverPages');
-    setInputField(page, 'MaxRetentionDays');
     setInputField(page, 'PlaceholderDurationSeconds');
     const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
     if (placeholderDurationInput) {
@@ -980,10 +1255,18 @@ function initializeAdvancedSettings(page) {
     }
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
+    setInputField(page, 'TaskTimeoutMinutes');
     setInputField(page, 'EnableDebugLogging', true);
+    setInputField(page, 'EnableTraceLogging', true);
     
     // Initialize startup delay state
     updateStartupDelayState();
+    
+    // Initialize trace logging state
+    updateTraceLoggingState();
+    
+    // Initialize startup sync description
+    updateStartupSyncDescription();
     
     // Add event listener for AutoSyncOnStartup checkbox
     const autoSyncOnStartupCheckbox = page.querySelector('#EnableStartupSync');
@@ -993,11 +1276,26 @@ function initializeAdvancedSettings(page) {
         });
     }
     
-    // Add event listener for Create Separate Libraries checkbox
-    const createSeparateLibrariesCheckbox = page.querySelector('#CreateSeparateLibraries');
-    if (createSeparateLibrariesCheckbox) {
-        createSeparateLibrariesCheckbox.addEventListener('change', function() {
-            updateLibraryPrefixState();
+    // Set up scroll handler for startup delay container
+    const startupDelaySecondsContainer = page.querySelector('#StartupDelaySecondsContainer');
+    const enableStartupSyncCheckboxForHandler = page.querySelector('#EnableStartupSync');
+    if (startupDelaySecondsContainer && enableStartupSyncCheckboxForHandler) {
+        addScrollToCheckboxHandler(startupDelaySecondsContainer, enableStartupSyncCheckboxForHandler);
+    }
+    
+    // Add event listener for EnableDebugLogging checkbox
+    const enableDebugLoggingCheckbox = page.querySelector('#EnableDebugLogging');
+    if (enableDebugLoggingCheckbox) {
+        enableDebugLoggingCheckbox.addEventListener('change', function() {
+            updateTraceLoggingState();
+        });
+    }
+    
+    // Add event listener for Use Network Folders checkbox
+    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
+    if (useNetworkFoldersCheckbox) {
+        useNetworkFoldersCheckbox.addEventListener('change', function() {
+            updateNetworkFolderOptionsState();
         });
     }
     
@@ -1005,55 +1303,110 @@ function initializeAdvancedSettings(page) {
     const libraryPrefixInput = page.querySelector('#LibraryPrefix');
     if (libraryPrefixInput) {
         libraryPrefixInput.addEventListener('input', function() {
-            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |');
+            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
+        });
+    }
+    
+    // Add cleanup metadata button functionality
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    if (cleanupButton) {
+        cleanupButton.addEventListener('click', function() {
+            performCleanupMetadata(page);
         });
     }
 }
 
 function updateStartupDelayState() {
     const autoSyncOnStartupCheckbox = document.querySelector('#EnableStartupSync');
-    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
     const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
     
-    const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
     const isAutoSyncEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
-    const isEnabled = isPluginEnabled && isAutoSyncEnabled;
     
-    // Enable/disable the input
-    startupDelaySecondsInput.disabled = !isEnabled;
+    // Apply disabled state styling
+    applyDisabledState(startupDelaySecondsInput, startupDelaySecondsContainer, isAutoSyncEnabled);
+}
+
+function updateTraceLoggingState() {
+    const enableDebugLoggingCheckbox = document.querySelector('#EnableDebugLogging');
+    const enableTraceLoggingCheckbox = document.querySelector('#EnableTraceLogging');
+    const enableTraceLoggingContainer = document.querySelector('#EnableTraceLoggingContainer');
     
-    // Add/remove disabled styling
-    if (isEnabled) {
-        startupDelaySecondsInput.classList.remove('disabled');
-        if (startupDelaySecondsContainer) {
-            startupDelaySecondsContainer.classList.remove('disabled');
-        }
-    } else {
-        startupDelaySecondsInput.classList.add('disabled');
-        if (startupDelaySecondsContainer) {
-            startupDelaySecondsContainer.classList.add('disabled');
-        }
+    const isDebugLoggingEnabled = enableDebugLoggingCheckbox && enableDebugLoggingCheckbox.checked;
+    
+    // Apply disabled state styling
+    applyDisabledState(enableTraceLoggingCheckbox, enableTraceLoggingContainer, isDebugLoggingEnabled);
+    
+    // Add click handler to scroll to required checkbox when disabled field is clicked
+    if (enableTraceLoggingContainer && enableDebugLoggingCheckbox) {
+        addScrollToCheckboxHandler(enableTraceLoggingContainer, enableDebugLoggingCheckbox);
     }
+}
+
+// Update controls that depend on the automated sort task being enabled
+function updateSortTaskDependencies() {
+    const enableAutomatedSortTaskCheckbox = document.querySelector('#EnableAutomatedSortTask');
+    const sortTaskIntervalInput = document.querySelector('#SortTaskIntervalHours');
+    const sortTaskIntervalContainer = document.querySelector('#SortTaskIntervalHoursContainer');
+    
+    const isSortTaskEnabled = enableAutomatedSortTaskCheckbox ? !!enableAutomatedSortTaskCheckbox.checked : true;
+    
+    // Apply disabled state styling
+    applyDisabledState(sortTaskIntervalInput, sortTaskIntervalContainer, isSortTaskEnabled);
+    
+    // Update startup sync description to show enabled tasks
+    updateStartupSyncDescription();
 }
 
 // Update controls that depend on the automated task being enabled
 function updateAutoTaskDependencies() {
     const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
     const syncIntervalInput = document.querySelector('#SyncIntervalHours');
-    const enableStartupSyncCheckbox = document.querySelector('#EnableStartupSync');
+    const syncIntervalContainer = document.querySelector('#SyncIntervalHoursContainer');
 
     const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
 
-    if (syncIntervalInput) {
-        syncIntervalInput.disabled = !isPluginEnabled;
-    }
-    if (enableStartupSyncCheckbox) {
-        enableStartupSyncCheckbox.disabled = !isPluginEnabled;
-    }
+    // Apply disabled state styling
+    applyDisabledState(syncIntervalInput, syncIntervalContainer, isPluginEnabled);
 
-    // Update startup delay to reflect current combined state
+    // Update startup delay to reflect current state
     updateStartupDelayState();
+    
+    // Update startup sync description to show enabled tasks
+    updateStartupSyncDescription();
+}
+
+// Update the startup sync description to list only enabled tasks
+function updateStartupSyncDescription() {
+    const descriptionElement = document.querySelector('#enableStartupSyncDescription');
+    if (!descriptionElement) return;
+    
+    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
+    const sortTaskEnabledCheckbox = document.querySelector('#EnableAutomatedSortTask');
+    
+    const isSyncEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : false;
+    const isSortEnabled = sortTaskEnabledCheckbox ? !!sortTaskEnabledCheckbox.checked : false;
+    
+    const enabledTasks = [];
+    if (isSyncEnabled) {
+        enabledTasks.push('🔄 <span class="link" data-target-page="IsEnabledContainer"><i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i></span>');
+    }
+    if (isSortEnabled) {
+        enabledTasks.push('🔀 <span class="link" data-target-page="EnableAutomatedSortTask"><i>Enable the Automated Task to Sort Discover Content</i></span>');
+    }
+    
+    let descriptionText = 'Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.';
+    
+    if (enabledTasks.length > 0) {
+        descriptionText += ' These tasks will run at Jellyfin startup: ' + enabledTasks.join(', ') + '.';
+    } else {
+        descriptionText += ' No automated tasks are currently enabled.';
+    }
+    
+    descriptionElement.innerHTML = descriptionText;
+    
+    // Bind click handlers for newly added links
+    initializeLinkSpans(descriptionElement);
 }
 
 function performPluginReset(page) {
@@ -1080,11 +1433,19 @@ function performPluginReset(page) {
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
+                EnableAutomatedSortTask: null,
+                SortOrder: null,
+                MarkMediaPlayed: null,
+                SortTaskIntervalHours: null,
                 IsEnabled: null,
-                CreateSeparateLibraries: null,
+                UseNetworkFolders: null,
+                AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
                 EnableStartupSync: null,
+                StartupDelaySeconds: null,
+                TaskTimeoutMinutes: null,
                 EnableDebugLogging: null,
+                EnableTraceLogging: null,
                 Region: '',
                 NetworkMap: null
             };
@@ -1113,9 +1474,8 @@ function performPluginReset(page) {
 function performRecycleLibraryData(page) {
     // Get current library directory, fallback to default if empty
     const config = window.configJellyBridge || {};
-    const currentLibraryDir = page.querySelector('#LibraryDirectory').value || config.DefaultValues?.LibraryDirectory;
-    // Get the button
     const recycleLibraryButton = page.querySelector('#recycleLibraryData');
+    const currentLibraryDir = safeParseString(page.querySelector('#LibraryDirectory')) || config.ConfigDefaults?.LibraryDirectory;
     
     // First confirmation: save configuration
     Dashboard.confirm({
@@ -1141,7 +1501,7 @@ function performRecycleLibraryData(page) {
             // After saving, show second confirmation
             Dashboard.confirm({
                 title: '🚨 FINAL CONFIRMATION - DELETE LIBRARY',
-                text: `This next step will delete ALL Jellyseerr library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
+                text: `This next step will delete ALL JellyBridge library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
                 confirmText: '🚩 YES, DELETE EVERYTHING',
                 cancelText: 'Cancel',
                 primary: "cancel"
@@ -1160,7 +1520,7 @@ function performRecycleLibraryData(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(result) {
-                    Dashboard.alert('✅ All Jellyseerr library data has been deleted successfully.');
+                    Dashboard.alert('✅ All JellyBridge library data has been deleted successfully.');
                 }).catch(function(error) {
                     Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
                 }).finally(function() {
@@ -1188,46 +1548,56 @@ function savePluginConfiguration(page) {
     const config = window.configJellyBridge || {};
     const form = {};
     
-    // Validate URL format
-    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    // Validate all fields - returns true if all pass, undefined/null if any fail
+    function validateInputs() {
+        if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+        if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
+        if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+        if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
+        if (!validateField(page, 'SortTaskIntervalHours', validators.double, 'Sort Task Interval must be a positive decimal number').isValid) return;
+        if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
+        if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
+        if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
+        if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+        if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
+        if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
+        if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
+        if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
+        return true;
+    }
     
-    // Validate API Key
-    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required').isValid) return;
-    
-    // Validate number fields with appropriate types
-    if (!validateField(page, 'SyncIntervalHours', validators.double, 'Sync Interval must be a positive decimal number').isValid) return;
-    if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
-    if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
-    if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
-    if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
-    if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
-    if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
-    
-    // Validate Library Prefix for Windows filename compatibility
-    if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot contain: \\ / : * ? " < > |').isValid) return;
+    // Return early if validation fails
+    if (!validateInputs()) return Promise.reject(new Error('Validation failed'));
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.DefaultValues.IsEnabled);
+    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
     form.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
     form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
-    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.DefaultValues.ExcludeFromMainLibraries);
-    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.DefaultValues.RemoveRequestedFromFavorites);
-    form.CreateSeparateLibraries = nullIfDefault(page.querySelector('#CreateSeparateLibraries').checked, config.DefaultValues.CreateSeparateLibraries);
-    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'));
-    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.DefaultValues.EnableStartupSync);
+    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
+    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
+    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
+    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
+    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
+    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
-    form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.DefaultValues.Region);
+    form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
+    form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.ConfigDefaults.Region);
     form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
+    form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
+    form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
+    form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.DefaultValues.EnableDebugLogging);
-    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.DefaultValues.ManageJellyseerrLibrary);
+    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
+    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
+    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     
     // Save the configuration using our custom endpoint
     return fetch('/JellyBridge/PluginConfiguration', {
@@ -1240,6 +1610,8 @@ function savePluginConfiguration(page) {
         .then(async response => {
             const result = await response.json();
             if (result.success) {
+                form.ConfigDefaults = config.ConfigDefaults;
+                window.configJellyBridge = form;
                 return result;
             } else {
                 throw new Error(result.error || 'Failed to save configuration');
@@ -1248,52 +1620,321 @@ function savePluginConfiguration(page) {
 }
 
 // ==========================================
+// GLOBAL SETTINGS FUNCTIONS
+// ==========================================
+
+// Initialize global settings for the configuration page
+function initializeGlobalSettings(page) {
+    // Initialize detail tab scroll functionality
+    initializeDetailTabScroll(page);
+    // Initialize link spans
+    initializeLinkSpans(page);
+    // Initialize number input scroll prevention
+    initializeNumberInputScrollPrevention(page);
+}
+
+// Initialize scroll-to functionality for detail tabs
+function initializeDetailTabScroll(page) {
+    // List of detail section IDs
+    const detailIds = ['troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
+    
+    detailIds.forEach(detailId => {
+        const detailsElement = page.querySelector(`#${detailId}`);
+        if (detailsElement) {
+            const summaryElement = detailsElement.querySelector('summary');
+            if (summaryElement) {
+                summaryElement.addEventListener('click', function(e) {
+                    // Check if the details is being opened (will be open after the click)
+                    // We need to check before the state changes, so we check if it's currently closed
+                    const wasClosed = !detailsElement.hasAttribute('open');
+                    
+                    // Wait a brief moment for the details to open/close, then check and scroll only if opening
+                    setTimeout(() => {
+                        // Only scroll if the details was closed before (meaning it's being opened)
+                        if (wasClosed && detailsElement.hasAttribute('open')) {
+                        scrollToElement(detailId);
+                        }
+                    }, 50);
+                });
+            }
+        }
+    });
+}
+
+// Initialize number input scroll prevention
+// Prevents scroll events from changing number input values when focused
+// Instead, scrolls the page when a number input is focused and user scrolls
+function initializeNumberInputScrollPrevention(page) {
+    // Find all number input elements
+    const numberInputs = page.querySelectorAll('input[type="number"]');
+    
+    // Add wheel event listener to each number input
+    numberInputs.forEach(input => {
+        input.addEventListener('wheel', function(e) {
+            // Only block scroll-change while focused
+            if (document.activeElement === this) {
+                // Stop number increment/decrement
+                e.preventDefault();
+                // Scroll the page instead
+                requestAnimationFrame(() => window.scrollBy({ top: e.deltaY, behavior: 'smooth' }));
+            }
+        }, { passive: false });
+    });
+}
+
+// ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
 
-// Scroll to a specific element by ID with smooth scrolling
-function scrollToElement(elementId, offset = 20) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        const elementPosition = element.getBoundingClientRect().top;
-        const pluginContainerHeight = 48; // Plugin container bar height
-        const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
-        
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-        });
-        
-        // Add a temporary highlight effect
-        element.style.transition = 'box-shadow 0.3s ease';
-        element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
-        setTimeout(() => {
-            element.style.boxShadow = '';
-    }, 2000);
+// Apply disabled state styling to an input element and optionally its container
+// element: The input/checkbox element to disable/enable
+// container: Optional container element to also apply disabled styling to
+// isEnabled: Whether the element should be enabled (true) or disabled (false)
+function applyDisabledState(element, container, isEnabled) {
+    if (!element) return;
+    
+    element.disabled = !isEnabled;
+    
+    // Apply/remove disabled class styling
+    if (isEnabled) {
+        element.classList.remove('disabled');
+        if (container) {
+            container.classList.remove('disabled');
+        }
+    } else {
+        element.classList.add('disabled');
+        if (container) {
+            container.classList.add('disabled');
+        }
     }
 }
 
-// Global validators object
-const validators = {
-    notNull: (value) => !!value && value.trim() !== '',
-    url: (value) => !value || /^https?:\/\/.+/.test(value),
-    int: (value) => {
-        if (!value) return true; // Allow empty values
-        const num = parseInt(value);
-        return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
-    },
-    double: (value) => {
-        if (!value) return true; // Allow empty values
-        const num = parseFloat(value);
-        return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
-    },
-    windowsFilename: (value) => {
-        if (!value) return true; // Allow empty values
-        // Check for invalid Windows filename characters: \ / : * ? " < > |
-        const invalidChars = /[\\/:*?"<>|]/;
-        return !invalidChars.test(value);
+// Set up scroll handlers for multiple dependent containers that scroll to the same target checkbox
+// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
+// dependentContainers: Array of container elements that should trigger scroll when disabled
+function setupDisabledScrollHandlers(targetCheckboxSelector, dependentContainers) {
+    if (!Array.isArray(dependentContainers)) {
+        dependentContainers = [dependentContainers];
     }
-};
+    
+    dependentContainers.forEach(container => {
+        if (container) {
+            addScrollToCheckboxHandler(container, targetCheckboxSelector);
+        }
+    });
+}
+
+// Scroll to a checkbox and highlight it
+// targetCheckbox: Query selector string or element for the checkbox to scroll to
+function scrollToCheckboxAndHighlight(targetCheckbox) {
+    // Get the target checkbox (either from selector string or element)
+    const checkbox = typeof targetCheckbox === 'string' 
+        ? document.querySelector(targetCheckbox)
+        : targetCheckbox;
+    
+    if (checkbox) {
+        checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Briefly highlight the checkbox
+        const container = checkbox.closest('.checkboxContainer') || checkbox.closest('#IsEnabledContainer');
+        if (container) {
+            container.style.transition = 'background-color 0.3s ease';
+            container.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
+            setTimeout(() => {
+                container.style.backgroundColor = '';
+                setTimeout(() => {
+                    container.style.transition = '';
+                }, 300);
+            }, 1000);
+        }
+    }
+}
+
+// Add a scroll-to-checkbox handler when a disabled container is clicked
+// containerElement: The container element that should trigger the scroll when disabled
+// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
+function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
+    if (!containerElement || containerElement.hasAttribute('data-scroll-handler')) {
+        return;
+    }
+    
+    containerElement.setAttribute('data-scroll-handler', 'true');
+    containerElement.addEventListener('click', function(e) {
+        // Check if the container is disabled or contains disabled form elements
+        const isDisabled = containerElement.classList.contains('disabled') || 
+                          containerElement.querySelector('input:disabled, select:disabled, textarea:disabled, button:disabled');
+        
+        if (isDisabled) {
+            // Don't trigger if clicking on a help icon (which should still work)
+            if (e.target.closest('.helpIcon')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            scrollToCheckboxAndHighlight(targetCheckboxSelector);
+        }
+    });
+}
+
+// Append text to a result box and handle scrolling after 25 lines
+function appendToResultBox(element, text, newLine = false) {
+    if (!element) return;
+    
+    // Get current content and split into lines
+    const currentText = element.textContent || '';
+    
+    if (newLine) {
+        element.textContent += '\n\n';
+    }
+
+    const lines = currentText ? currentText.split('\n') : [];
+    
+    // Add new text and split into lines
+    const newLines = text.split('\n');
+    lines.push(...newLines);
+    
+    // Join back and set content
+    element.textContent = lines.join('\n');
+    
+    // Scroll to bottom when new results appear
+    setTimeout(() => {
+        element.scrollTop = element.scrollHeight;
+    }, 0);
+}
+
+// Scroll to a specific element by ID with smooth scrolling
+function scrollToElement(elementId, offset = 60) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        // Find and open all parent details elements without triggering onclick events
+        let parent = element.parentElement;
+        const detailsToOpen = [];
+        while (parent) {
+            if (parent.tagName === 'DETAILS' && !parent.hasAttribute('open')) {
+                detailsToOpen.push(parent);
+            }
+            parent = parent.parentElement;
+        }
+        
+        // Open all parent details elements (in reverse order to open outer ones first)
+        detailsToOpen.reverse().forEach(details => {
+            details.setAttribute('open', '');
+        });
+        
+        // Wait a brief moment for details to open before scrolling
+        setTimeout(() => {
+            const elementPosition = element.getBoundingClientRect().top;
+            const pluginContainerHeight = 48; // Plugin container bar height
+            const offsetPosition = elementPosition + window.pageYOffset - offset - pluginContainerHeight;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+            
+            // Add a temporary highlight effect
+            element.style.transition = 'box-shadow 0.3s ease';
+            element.style.boxShadow = '0 0 10px rgba(0, 123, 255, 0.5)';
+            setTimeout(() => {
+                element.style.boxShadow = '';
+            }, 2000);
+        }, detailsToOpen.length > 0 ? 100 : 0); // Small delay only if we opened details
+    }
+}
+
+// Initialize link spans - finds spans with class "link" and scrolls to elements with matching text
+// Can accept either a page element or a container element
+function initializeLinkSpans(pageOrContainer) {
+    if (!window.JellyBridgeActions) {
+        window.JellyBridgeActions = {};
+    }
+    // Register actions used by data-target-script
+    window.JellyBridgeActions.cacheBuster = () => cacheBuster();
+
+    const linkSpans = pageOrContainer.querySelectorAll('span.link');
+    linkSpans.forEach(span => {
+        // Skip if already initialized (has data-link-initialized attribute)
+        if (span.hasAttribute('data-link-initialized')) {
+            return;
+        }
+        
+        // Mark as initialized to prevent duplicate bindings
+        span.setAttribute('data-link-initialized', 'true');
+        
+        span.addEventListener('click', function() {
+            // Handle router navigation
+            const routerTarget = span.getAttribute('data-target-router');
+            if (routerTarget) {
+                Dashboard.navigate(routerTarget);
+                return;
+            }
+
+            // Handle script execution (expects a global function name)
+            const scriptTarget = span.getAttribute('data-target-script');
+            if (scriptTarget) {
+                const actions = window.JellyBridgeActions;
+                const fn = actions[scriptTarget];
+                fn();
+                return;
+            }
+
+            // Handle page scrolling
+            const pageTarget = span.getAttribute('data-target-page');
+            if (pageTarget) {
+                scrollToElement(pageTarget);
+                return;
+            }
+
+            // No fallback text matching to avoid accidental scroll to top
+            return;
+        });
+    });
+}
+
+// Global validators object
+const validators = (() => {
+    const windowsFolder = (value) => {
+        if (!value) return true; // Allow empty values
+        // Check for invalid Windows filename characters: \ / :
+        const invalidChars = /[*?"<>|]/;
+        // Windows folders cannot start with a space
+        const invalidFolder = /^ |\/ |\\ /;
+        return !invalidChars.test(value) && !invalidFolder.test(value);
+    };
+
+    return {
+        notNull: (value) => {
+            value = value.trim();
+            return !!value && value !== '';
+        },
+        url: (value) => {
+            value = value.trim();
+            return !value || /^https?:\/\/.+/.test(value);
+        },
+        int: (value) => {
+            value = value.trim();
+            if (!value) return true; // Allow empty values
+            const num = parseInt(value);
+            return !isNaN(num) && num >= 0 && num <= 2147483647; // C# int max value
+        },
+        double: (value) => {
+            value = value.trim();
+            if (!value) return true; // Allow empty values
+            const num = parseFloat(value);
+            return !isNaN(num) && num >= 0 && num <= Number.MAX_VALUE;
+        },
+        windowsFolder: windowsFolder,
+        windowsFilename: (value) => {
+            if (!value) return true; // Allow empty values
+            // Windows filenames cannot start with a space
+            if (value.length > 0 && value[0] === ' ') return false;
+            // Check for invalid Windows filename characters: * ? " < > |
+            const invalidChars = /[\\/:]/;
+            return windowsFolder(value) && !invalidChars.test(value);
+        }
+    };
+})();
 
 // Central field validation function
 function validateField(form, fieldId, validator = null, errorMessage = null) {
@@ -1303,10 +1944,8 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
         return { isValid: false, error: `Field "${fieldId}" not found` };
     }
     
-    const value = field.value.trim();
-    
     // Check validator function if provided
-    if (validator && !validator(value)) {
+    if (validator && !validator(field.value)) {
         const message = errorMessage || `${fieldId} is invalid`;
         Dashboard.alert(`❌ ${message}`);
         scrollToElement(fieldId);
@@ -1325,7 +1964,7 @@ function setInputField(page, propertyName, isCheckbox = false) {
     }
     
     const config = window.configJellyBridge || {};
-    const defaults = config.DefaultValues || {};
+    const defaults = config.ConfigDefaults || {};
     const configValue = config[propertyName];
     const defaultValue = defaults[propertyName];
     
@@ -1346,23 +1985,23 @@ function nullIfDefault(value, defaultValue) {
 
 // Helper function to safely parse integers with user feedback
 function safeParseInt(element) {
-    const value = element.value;
+    const value = element.value.trim();
     if (value === null || value === undefined || value === '') {
         return null;
     }
     return parseInt(value);
 }
 
-function safeParseString(element) {
+function safeParseString(element, trim = true) {
     const value = element.value;
     if (value === null || value === undefined) {
         return '';
     }
-    return value.trim();
+    return trim ? value.trim() : value;
 }
 
 function safeParseDouble(element) {
-    const value = element.value;
+    const value = element.value.trim();
     if (value === null || value === undefined || value === '') {
         return null;
     }

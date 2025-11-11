@@ -19,8 +19,6 @@ mono_crash.*
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
 !release/JellyseerrBridge/
 !release/JellyseerrBridge/*
 x64/
@@ -346,11 +344,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 *.code-workspace
 
 # Ignore all dot folders (IDE and tool specific)
@@ -372,8 +366,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Plugin specific
-# Keep release directory but ignore ZIP files
-release/*.zip
 
 # Configuration files with sensitive data
 nuget.config

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using MediaBrowser.Model.Plugins;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Configuration;
 
@@ -20,14 +21,15 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(SyncIntervalHours), 24.0 },
-        { nameof(EnableStartupSync), true },
+        { nameof(EnableStartupSync), false },
         { nameof(StartupDelaySeconds), 30 },
 
         // Library Settings
         { nameof(LibraryDirectory), "/data/JellyBridge" },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(RemoveRequestedFromFavorites), false },
-        { nameof(CreateSeparateLibraries), false },
+        { nameof(UseNetworkFolders), false },
+        { nameof(AddDuplicateContent), true },
         { nameof(LibraryPrefix), string.Empty },
         { nameof(ManageJellyseerrLibrary), true },
 
@@ -61,12 +63,20 @@ public class PluginConfiguration : BasePluginConfiguration
         },
         { nameof(MaxDiscoverPages), 1 },
 
+        // Sort Discover Content
+        { nameof(EnableAutomatedSortTask), false },
+        { nameof(SortOrder), SortOrderOptions.Random },
+        { nameof(MarkMediaPlayed), false },
+        { nameof(SortTaskIntervalHours), 5.0 },
+
         // Advanced Settings
+        { nameof(TaskTimeoutMinutes), 10 },
         { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
         { nameof(MaxRetentionDays), 30 },
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(EnableDebugLogging), false },
+        { nameof(EnableTraceLogging), false },
 
         // Internal flags
         // { nameof(RanFirstTime), false }
@@ -105,6 +115,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public int? StartupDelaySeconds { get; set; }
 
+    /// <summary>
+    /// Gets or sets the timeout in minutes for plugin tasks before cancelling.
+    /// </summary>
+    public int? TaskTimeoutMinutes { get; set; }
+
     // ===== Library Settings =====
     /// <summary>
     /// Gets or sets the library directory.
@@ -123,9 +138,14 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? RemoveRequestedFromFavorites { get; set; }
 
     /// <summary>
-    /// Gets or sets whether to create separate libraries for streaming services.
+    /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
-    public bool? CreateSeparateLibraries { get; set; }
+    public bool? UseNetworkFolders { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.
+    /// </summary>
+    public bool? AddDuplicateContent { get; set; }
 
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
@@ -155,6 +175,29 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public int? MaxDiscoverPages { get; set; }
 
+    // ===== Sort Discover Content =====
+    /// <summary>
+    /// Gets or sets whether to enable the automated task to sort discover content.
+    /// </summary>
+    public bool? EnableAutomatedSortTask { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sort order algorithm to use for discover library content.
+    /// </summary>
+    public SortOrderOptions? SortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to mark media as played (changes badges to checkmark).
+    /// For shows: changes the "1" unplayed count badge to a checkmark badge.
+    /// For movies: changes from no badge to a checkmark badge.
+    /// </summary>
+    public bool? MarkMediaPlayed { get; set; }
+
+    /// <summary>
+    /// Gets or sets the interval in hours for the sort task.
+    /// </summary>
+    public double? SortTaskIntervalHours { get; set; }
+
     // ===== Advanced Settings =====
     /// <summary>
     /// Gets or sets the request timeout in seconds.
@@ -181,6 +224,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to enable debug logging.
     /// </summary>
     public bool? EnableDebugLogging { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to enable trace logging.
+    /// </summary>
+    public bool? EnableTraceLogging { get; set; }
 
     // ===== Internal =====
     /// <summary>

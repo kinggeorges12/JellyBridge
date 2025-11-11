@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using System.Linq;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace Jellyfin.Plugin.JellyBridge.Utils;
 
@@ -49,8 +51,8 @@ public class DebugLogger<T> : ILogger<T>
     }
 
     /// <summary>
-    /// Logs a trace message. If debug logging is enabled in config, logs as Information, otherwise logs as Trace.
-    /// Limits output to 100 characters maximum.
+    /// Logs a trace message. If trace logging is enabled in config, logs as Information, otherwise logs as Trace.
+    /// Automatically includes the calling method name using reflection.
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
@@ -61,7 +63,7 @@ public class DebugLogger<T> : ILogger<T>
 
     /// <summary>
     /// Logs a trace message with exception details.
-    /// Limits output to 100 characters maximum.
+    /// Automatically includes the calling method name using reflection.
     /// </summary>
     /// <param name="exception">The exception to log</param>
     /// <param name="message">The message to log</param>
@@ -69,6 +71,67 @@ public class DebugLogger<T> : ILogger<T>
     public void LogTrace(Exception exception, string message, params object?[] args)
     {
         LogTraceInternal(exception, message, args);
+    }
+
+    /// <summary>
+    /// Gets the calling method name using reflection (StackFrame).
+    /// </summary>
+    private string GetCallingMethodName()
+    {
+        try
+        {
+            var trace = new StackTrace(skipFrames: 1, fNeedFileInfo: false);
+            var projectNamespace = "Jellyfin.Plugin.JellyBridge";
+
+            for (int i = 0; i < trace.FrameCount; i++)
+            {
+                var method = trace.GetFrame(i)?.GetMethod();
+                var declaringType = method?.DeclaringType;
+                if (method == null || declaringType == null)
+                {
+                    continue;
+                }
+
+                // Only consider frames from our project (fast path)
+                var ns = declaringType.Namespace ?? string.Empty;
+                if (!ns.StartsWith(projectNamespace, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                // Skip any frames from DebugLogger itself (all generic instantiations)
+                if (declaringType == typeof(DebugLogger<T>) ||
+                    (declaringType.IsGenericType && declaringType.GetGenericTypeDefinition() == typeof(DebugLogger<>)) ||
+                    (declaringType.FullName?.StartsWith("Jellyfin.Plugin.JellyBridge.Utils.DebugLogger", StringComparison.Ordinal) ?? false))
+                {
+                    continue;
+                }
+
+                string typeName = declaringType.Name;
+                string methodName = method.Name;
+
+                // Normalize async MoveNext state-machine frames
+                if (methodName == "MoveNext")
+                {
+                    var generated = typeName; // e.g., Class+<Method>d__12
+                    var lt = generated.IndexOf('<');
+                    var gt = generated.IndexOf('>');
+                    if (lt >= 0 && gt > lt)
+                    {
+                        methodName = generated.Substring(lt + 1, gt - lt - 1);
+                        if (declaringType.DeclaringType != null)
+                        {
+                            typeName = declaringType.DeclaringType.Name;
+                        }
+                    }
+                }
+
+                return $"{typeName}.{methodName}";
+            }
+        }
+        catch { /* ignore and fall through */ }
+
+        return string.Empty;
     }
 
     // LogInformation, LogWarning, and LogError just pass through to the inner logger
@@ -114,86 +177,37 @@ public class DebugLogger<T> : ILogger<T>
     /// <summary>
     /// Internal method to handle trace logging with optional exception.
     /// </summary>
+    /// <param name="memberName">The calling method name</param>
     /// <param name="exception">The exception to log (null if no exception)</param>
     /// <param name="message">The message to log</param>
     /// <param name="args">Optional message arguments</param>
     private void LogTraceInternal(Exception? exception, string message, object?[] args)
     {
         var config = Plugin.GetConfiguration();
+        var enableTraceLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableTraceLogging), config);
         var enableDebugLogging = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableDebugLogging), config);
         
-        if (enableDebugLogging)
+        // Trace logging requires debug logging to be enabled (enforced by UI, but check here too)
+        if (enableTraceLogging && enableDebugLogging)
         {
-            try
-            {
-                // When debug logging is enabled, try to format first, then limit and prefix
-                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+            var memberName = GetCallingMethodName();
+            var formattedMethodPrefix = !string.IsNullOrEmpty(memberName) ? $"[{memberName}] " : "";
             
-                var limitedMessage = LimitMessageToLinesAndCharacters(formattedMessage, 10, 100);
-                var prefixedMessage = "[TRACE] " + limitedMessage;
-                
-                if (exception != null)
-                    _innerLogger.LogInformation(exception, prefixedMessage);
-                else
-                    _innerLogger.LogInformation(prefixedMessage);
-            }
-            catch (FormatException)
-            {
-                // If formatting fails, let the logger handle it with the original message and args
-                var prefixedMessage = "[TRACE] " + message;
-                
-                if (exception != null)
-                    _innerLogger.LogInformation(exception, prefixedMessage, args);
-                else
-                    _innerLogger.LogInformation(prefixedMessage, args);
-                return;
-            }
+            // When trace logging is enabled, we need to add the prefix and log as info
+            var prefixedMessage = "[TRACE] " + formattedMethodPrefix + message;
+            
+            if (exception != null)
+                _innerLogger.LogInformation(exception, prefixedMessage, args);
+            else
+                _innerLogger.LogInformation(prefixedMessage, args);
         }
         else
         {
-            // When debug logging is disabled, use full structured logging without limiting
             if (exception != null)
                 _innerLogger.LogTrace(exception, message, args);
             else
                 _innerLogger.LogTrace(message, args);
         }
-    }
-
-    /// <summary>
-    /// Limits a message to the specified number of lines and characters per line by truncating if necessary.
-    /// If maxLines or maxCharactersPerLine is 0, that limit is considered unlimited.
-    /// </summary>
-    /// <param name="message">The message to limit</param>
-    /// <param name="maxLines">Maximum number of lines to keep (0 = unlimited)</param>
-    /// <param name="maxCharactersPerLine">Maximum number of characters per line (0 = unlimited)</param>
-    /// <returns>The limited message</returns>
-    private static string LimitMessageToLinesAndCharacters(string message, int maxLines, int maxCharactersPerLine)
-    {
-        if (string.IsNullOrEmpty(message))
-            return message;
-
-        var lines = message.Split('\n');
-        
-        // Apply line limit if maxLines > 0
-        var linesToProcess = maxLines > 0 ? lines.Take(maxLines) : lines;
-        
-        // Apply character limit per line if maxCharactersPerLine > 0
-        var limitedLines = linesToProcess.Select(line => 
-        {
-            if (maxCharactersPerLine > 0 && line.Length > maxCharactersPerLine)
-                return line.Substring(0, maxCharactersPerLine) + "...";
-            return line;
-        }).ToArray();
-
-        var result = string.Join("\n", limitedLines);
-        
-        // Add truncation notice if lines were removed
-        if (maxLines > 0 && lines.Length > maxLines)
-        {
-            result += $"\n... [TRUNCATED] {lines.Length - maxLines} lines";
-        }
-
-        return result;
     }
 
 }
