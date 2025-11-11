@@ -197,12 +197,20 @@ public class ApiService
             method: HttpMethod.Post,
             description: "Create a new request"
         ),
+
+        // User endpoints - use paginated response with JellyseerrUser model
         [JellyseerrEndpoint.UserList] = new JellyseerrEndpointConfig(
             "/api/v1/user",
             typeof(JellyseerrPaginatedResponse<JellyseerrUser>),
             returnModel: typeof(List<JellyseerrUser>),
             isPaginated: true,
             description: "Get user list"
+        ),
+        [JellyseerrEndpoint.UserQuota] = new JellyseerrEndpointConfig(
+            "/api/v1/user/{userId}/quota",
+            typeof(QuotaResponse),
+            returnModel: typeof(QuotaResponse),
+            description: "Get quotas for a specific user"
         ),
         
         // Discover endpoints - use paginated response with bridge models
@@ -375,6 +383,7 @@ public class ApiService
         
         Exception? lastException = null;
         string? content = null;
+        int? responseStatusCode = null;
         
         for (int attempt = 1; attempt <= retryAttempts; attempt++)
         {
@@ -412,12 +421,11 @@ public class ApiService
                 _logger.LogTrace("API Response Attempt {Attempt}: {StatusCode} {ReasonPhrase}", 
                     attempt, response.StatusCode, response.ReasonPhrase);
                 
-                // Check if the response was successful
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("API Request failed with status: {StatusCode}", response.StatusCode);
-                    return null!;
-                }
+                // Store status code before EnsureSuccessStatusCode throws (for retry catch block)
+                responseStatusCode = (int)response.StatusCode;
+                
+                // EnsureSuccessStatusCode throws HttpRequestException for non-success status codes - cascade it
+                response.EnsureSuccessStatusCode();
                 
                 // Log successful response
                 _logger.LogTrace("API Request successful with status: {StatusCode}", response.StatusCode);
@@ -444,6 +452,12 @@ public class ApiService
             catch (HttpRequestException ex)
             {
                 lastException = ex;
+                // EnsureSuccessStatusCode doesn't include status code in exception, so add it for controller
+                // Only set status code from response if we have one (preserve actual HTTP status)
+                if (responseStatusCode.HasValue)
+                {
+                    ex.Data["StatusCode"] = responseStatusCode.Value;
+                }
                 _logger.LogWarning("API Request Attempt {Attempt}/{MaxAttempts} failed: {Error}", 
                     attempt, retryAttempts, ex.Message);
                 
@@ -581,7 +595,7 @@ public class ApiService
                         var results = resultsProperty.GetValue(pageResponse);
                         _logger.LogTrace("Results value type: {ResultsType}, IsNull: {IsNull}", results?.GetType().Name ?? "null", results == null);
                         
-                        if (results is System.Collections.IEnumerable resultsEnumerable)
+                        if (results is IEnumerable resultsEnumerable)
                         {
                             var itemCount = 0;
                             foreach (var item in resultsEnumerable)
@@ -671,7 +685,7 @@ public class ApiService
                     ["mediaType"] = "", //REQUIRED
                     ["mediaId"] = -1, //REQUIRED
                     ["seasons"] = "all", // Accepts an array of season numbers or "all"
-                    ["userId"] = -1 //REQUIRED
+                    ["userId"] = 0 //REQUIRED
                 }, null
             ),
             // ReadRequests endpoint - no parameters needed for GET requests
@@ -721,6 +735,14 @@ public class ApiService
                 },
                 null
             ),
+            // User quota endpoint - provide default template parameter userId = 0
+            JellyseerrEndpoint.UserQuota => (
+                null,
+                new Dictionary<string, string>
+                {
+                    ["userId"] = "0"
+                }
+            ),
             
             // All other endpoints don't need parameters
             _ => (null, null)
@@ -741,6 +763,61 @@ public class ApiService
         }
         
         return Activator.CreateInstance(returnModelType) ?? new object();
+    }
+
+    #endregion
+
+    #region Test Connection
+
+    /// <summary>
+    /// Tests basic connectivity to Jellyseerr using the Status endpoint and validates API key with AuthMe endpoint.
+    /// Throws exceptions exactly as they come from the backend.
+    /// </summary>
+    public async Task<SystemStatus> TestConnectionAsync(string? jellyseerUrl = null, string? apiKey = null)
+    {
+        // Fall back to plugin configuration if not provided
+        jellyseerUrl ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyseerrUrl));
+        apiKey ??= Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey));
+        
+        var testConfig = new PluginConfiguration
+        {
+            JellyseerrUrl = jellyseerUrl,
+            ApiKey = apiKey
+        };
+
+        // Test 1: Basic connectivity (Status endpoint doesn't require auth)
+        _logger.LogInformation("Testing Jellyseerr connectivity");
+        var statusRequest = JellyseerrUrlBuilder.BuildEndpointRequest(jellyseerUrl, JellyseerrEndpoint.Status, apiKey);
+        // HttpRequestException from MakeApiRequestAsync will cascade with status code preserved
+        var statusContent = await MakeApiRequestAsync(statusRequest, testConfig);
+        
+        var status = JsonSerializer.Deserialize<SystemStatus>(statusContent);
+        if (status == null || string.IsNullOrEmpty(status.Version))
+        {
+            var exception = new HttpRequestException($"Jellyseerr API returned empty response: {statusRequest.RequestUri}");
+            exception.Data["StatusCode"] = 502; // Bad Gateway - invalid response format
+            throw exception;
+        }
+        
+        _logger.LogTrace("Connected to Jellyseerr v{Version}", status.Version);
+
+        // Test 2: Validate API key (AuthMe endpoint requires auth)
+        _logger.LogTrace("Validating API key");
+        var authRequest = JellyseerrUrlBuilder.BuildEndpointRequest(jellyseerUrl, JellyseerrEndpoint.AuthMe, apiKey);
+        // HttpRequestException from MakeApiRequestAsync will cascade with status code preserved (e.g., 401)
+        var authContent = await MakeApiRequestAsync(authRequest, testConfig);
+        
+        var userInfo = JsonSerializer.Deserialize<JellyseerrUser>(authContent);
+        if (userInfo == null || userInfo.Id == 0)
+        {
+            var exception = new HttpRequestException($"Jellyseerr API returned empty response: {authRequest.RequestUri}");
+            exception.Data["StatusCode"] = 401; // Unauthorized
+            throw exception;
+        }
+        
+        _logger.LogTrace("API key validated successfully");
+        
+        return status;
     }
 
     #endregion

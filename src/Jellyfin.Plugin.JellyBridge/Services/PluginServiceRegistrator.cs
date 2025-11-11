@@ -4,6 +4,8 @@ using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Tasks;
 using Jellyfin.Plugin.JellyBridge.Services;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Plugins;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services
@@ -11,10 +13,10 @@ namespace Jellyfin.Plugin.JellyBridge.Services
     /// <summary>
     /// Register Jellyseerr Bridge services.
     /// </summary>
-    public class PluginServiceRegistrator : MediaBrowser.Controller.Plugins.IPluginServiceRegistrator
+    public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         /// <inheritdoc />
-        public void RegisterServices(IServiceCollection serviceCollection, MediaBrowser.Controller.IServerApplicationHost applicationHost)
+        public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
             // Register logging services for the plugin
             serviceCollection.AddLogging();
@@ -27,6 +29,8 @@ namespace Jellyfin.Plugin.JellyBridge.Services
                 new JellyfinILibraryManager(provider.GetRequiredService<MediaBrowser.Controller.Library.ILibraryManager>()));
             serviceCollection.AddScoped<JellyfinIUserDataManager>(provider => 
                 new JellyfinIUserDataManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserDataManager>()));
+            serviceCollection.AddScoped<JellyfinIUserManager>(provider =>
+                new JellyfinIUserManager(provider.GetRequiredService<MediaBrowser.Controller.Library.IUserManager>()));
             serviceCollection.AddScoped<JellyfinIProviderManager>(provider =>
                 new JellyfinIProviderManager(provider.GetRequiredService<MediaBrowser.Controller.Providers.IProviderManager>()));
             
@@ -34,6 +38,8 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<ApiService>();
             serviceCollection.AddScoped<SyncService>();
             serviceCollection.AddScoped<MetadataService>();
+            serviceCollection.AddScoped<SortService>();
+            serviceCollection.AddScoped<CleanupService>();
             
             // Register the bridge service
             serviceCollection.AddScoped<BridgeService>();
@@ -50,8 +56,14 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             // Register placeholder video generator as transient to avoid early initialization
             serviceCollection.AddTransient<PlaceholderVideoGenerator>();
             
-            // Register the route controller
-            serviceCollection.AddScoped<Controllers.RouteController>();
+            // Register controllers (organized by configuration page sections)
+            serviceCollection.AddScoped<Controllers.PluginConfigurationController>();
+            serviceCollection.AddScoped<Controllers.GeneralSettingsController>();
+            serviceCollection.AddScoped<Controllers.TaskStatusController>();
+            serviceCollection.AddScoped<Controllers.ImportDiscoverContentController>();
+            serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
+            serviceCollection.AddScoped<Controllers.ManageDiscoverLibraryController>();
+            serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
         }
     }
 }

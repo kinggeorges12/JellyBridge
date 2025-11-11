@@ -2,12 +2,17 @@ using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
+using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
-/// Service for managing metadata files and folder operations for Jellyseerr bridge items.
+/// Service for handling file creation and folder management in the JellyBridge library.
 /// </summary>
 public class MetadataService
 {
@@ -18,46 +23,39 @@ public class MetadataService
         _logger = new DebugLogger<MetadataService>(logger);
     }
 
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    {
+        // Get categorized directories
+        var (movieDirectories, showDirectories) = ReadMetadataFolders();
+        // Read metadata
+        return await ReadMetadataAsync(movieDirectories, showDirectories);
+    }
+
     /// <summary>
     /// Read all metadata files from the bridge folder, detecting movie vs show based on NFO files.
     /// </summary>
-    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync()
+    public async Task<(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)> ReadMetadataAsync(List<string> movieDirectories, List<string> showDirectories)
     {
         var movies = new List<JellyseerrMovie>();
         var shows = new List<JellyseerrShow>();
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
 
         try
         {
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
-            }
 
-            // Get all subdirectories that contain metadata files
-            var metadataFiles = Directory.GetFiles(syncDirectory, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
-            
-            foreach (var metadataFile in metadataFiles)
-            {
-                var directory = Path.GetDirectoryName(metadataFile);
-                if (!string.IsNullOrEmpty(directory))
+            // Parse all movie directories
+            foreach (var directory in movieDirectories)
                 {
                     try
                     {
+                    var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
                         var json = await File.ReadAllTextAsync(metadataFile);
-                        _logger.LogTrace("Reading metadata from {MetadataFile}: {Json}", metadataFile, json);
+                        _logger.LogTrace("Reading metadata from {MetadataFile}", metadataFile);
                         
-                        // Check for movie.nfo to identify movie folders
-                        var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
-                        var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
-                        
-                        if (File.Exists(movieNfoFile))
-                        {
-                            // This is a movie folder
                             var movie = JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(json);
-                            if (movie != null)
+                            var hasMeaningfulData = (movie?.Id != null && movie?.Id > 0) || !string.IsNullOrWhiteSpace(movie?.MediaName);
+                            if (movie != null && hasMeaningfulData)
                             {
-                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                _logger.LogTrace("Successfully deserialized movie - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'",
                                     movie.MediaName, movie.Id, movie.MediaType, movie.Year);
                                 movies.Add(movie);
                             }
@@ -66,30 +64,37 @@ public class MetadataService
                                 _logger.LogWarning("Failed to deserialize movie from {MetadataFile}", metadataFile);
                             }
                         }
-                        else if (File.Exists(showNfoFile))
-                        {
-                            // This is a show folder
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
+                }
+            }
+
+            // Parse all show directories
+            foreach (var directory in showDirectories)
+            {
+                try
+                {
+                    var metadataFile = Path.Combine(directory, IJellyseerrItem.GetMetadataFilename());
+                    var json = await File.ReadAllTextAsync(metadataFile);
+                    _logger.LogTrace("Reading metadata from {MetadataFile}", metadataFile);
+                    
                             var show = JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(json);
-                            if (show != null)
+                            var hasMeaningfulData = (show?.Id != null && show?.Id > 0) || !string.IsNullOrWhiteSpace(show?.MediaName);
+                            if (show != null && hasMeaningfulData)
                             {
-                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'", 
+                                _logger.LogTrace("Successfully deserialized show - MediaName: '{MediaName}', Id: {Id}, MediaType: '{MediaType}', Year: '{Year}'",
                                     show.MediaName, show.Id, show.MediaType, show.Year);
                                 shows.Add(show);
                             }
                             else
                             {
                                 _logger.LogWarning("Failed to deserialize show from {MetadataFile}", metadataFile);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("No NFO file found in directory {Directory} - skipping", directory);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Error reading metadata file: {MetadataFile}", metadataFile);
-                    }
+                    _logger.LogWarning(ex, "Error reading metadata file from directory: {Directory}", directory);
                 }
             }
 
@@ -98,43 +103,103 @@ public class MetadataService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error reading metadata from {SyncDirectory}", syncDirectory);
+            _logger.LogError(ex, "Error reading metadata from bridge folders");
         }
 
         return (movies, shows);
     }
 
+    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders()
+    {
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+
+        return ReadMetadataFolders(syncDirectory);
+    }
+
+    /// <summary>
+    /// Discovers and categorizes directories containing metadata files.
+    /// </summary>
+    /// <returns>Tuple containing lists of movie directories and show directories</returns>
+    public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders(string folderPath)
+    {
+        var movieDirectories = new List<string>();
+        var showDirectories = new List<string>();
+
+        try
+        {
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+            {
+                throw new InvalidOperationException($"Folder path does not exist: {folderPath}");
+            }
+
+            // Get all subdirectories that contain metadata files
+            var metadataFiles = Directory.GetFiles(folderPath, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
+            
+            foreach (var metadataFile in metadataFiles)
+            {
+                var directory = Path.GetDirectoryName(metadataFile);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    // Check for movie.nfo to identify movie folders
+                    var movieNfoFile = Path.Combine(directory, JellyseerrMovie.GetNfoFilename());
+                    var showNfoFile = Path.Combine(directory, JellyseerrShow.GetNfoFilename());
+                    
+                    if (File.Exists(movieNfoFile))
+                    {
+                        movieDirectories.Add(directory);
+                    }
+                    else if (File.Exists(showNfoFile))
+                    {
+                        showDirectories.Add(directory);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No NFO file found in directory {Directory} - skipping", directory);
+                    }
+                }
+            }
+
+            _logger.LogDebug("Found {MovieCount} movie directories and {ShowCount} show directories", 
+                movieDirectories.Count, showDirectories.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error discovering metadata directories from {FolderPath}", folderPath);
+        }
+
+        return (movieDirectories, showDirectories);
+    }
+
     /// <summary>
     /// Create folders and JSON metadata files for movies or TV shows using JellyseerrFolderManager.
     /// </summary>
-    public async Task<(List<TJellyseerr> added, List<TJellyseerr> updated)> CreateFoldersAsync<TJellyseerr>(List<TJellyseerr> items) 
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    public async Task<(List<IJellyseerrItem> added, List<IJellyseerrItem> updated)> CreateFolderMetadataAsync(List<IJellyseerrItem> items)
     {
-        var addedItems = new List<TJellyseerr>();
-        var updatedItems = new List<TJellyseerr>();
+        var addedItems = new List<IJellyseerrItem>();
+        var updatedItems = new List<IJellyseerrItem>();
         
         // Get configuration values using centralized helper
         var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
         
-        _logger.LogDebug("Starting folder creation for {ItemType} - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
-            typeof(TJellyseerr).Name, baseDirectory, items.Count);
+        _logger.LogDebug("Starting folder creation for mixed media - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
+            baseDirectory, items.Count);
         
-        for (int i = 0; i < items.Count; i++)
+        // Local async function to process a single item (write metadata and handle result)
+        async Task ProcessCreateFolderMetadataAsync(IJellyseerrItem item, int index)
         {
-            var item = items[i];
             try
             {
                 _logger.LogTrace("Processing item {ItemNumber}/{TotalItems} - MediaName: '{MediaName}', Id: {Id}, Year: '{Year}'", 
-                    i + 1, items.Count, item.MediaName, item.Id, item.Year);
+                    index + 1, items.Count, item.MediaName, item.Id, item.Year);
                 
                 // Generate folder name and get directory path
-                var folderName = GetJellyseerrItemDirectory(item);
+                var folderName = GetJellyBridgeItemDirectory(item);
                 var folderExists = Directory.Exists(folderName);
 
                 _logger.LogTrace("Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
                     folderName, folderExists);
 
-                // Write metadata using folder manager
+                // Write metadata
                 var success = await WriteMetadataAsync(item);
                 
                 if (success)
@@ -143,13 +208,13 @@ public class MetadataService
                     {
                         updatedItems.Add(item);
                         _logger.LogTrace("✅ UPDATED {Type} folder: '{FolderName}'", 
-                            typeof(TJellyseerr).Name, folderName);
+                            item.GetType().Name, folderName);
                     }
                     else
                     {
                         addedItems.Add(item);
                         _logger.LogTrace("✅ CREATED {Type} folder: '{FolderName}'", 
-                            typeof(TJellyseerr).Name, folderName);
+                            item.GetType().Name, folderName);
                     }
                 }
                 else
@@ -160,13 +225,17 @@ public class MetadataService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ERROR creating folder for {Item} - MediaName: '{MediaName}', Id: {Id}", 
+                _logger.LogError(ex, "❌ ERROR processing item {Item} - MediaName: '{MediaName}', Id: {Id}", 
                     item, item.MediaName, item.Id);
             }
         }
         
-        _logger.LogDebug("Completed folder creation for {ItemType} - Added: {Added}, Updated: {Updated}", 
-            typeof(TJellyseerr).Name, addedItems.Count, updatedItems.Count);
+        // Create all tasks and await them in parallel
+        var tasks = items.Select((item, index) => ProcessCreateFolderMetadataAsync(item, index)).ToArray();
+        await Task.WhenAll(tasks);
+        
+        _logger.LogDebug("Completed folder creation for mixed media - Added: {Added}, Updated: {Updated}", 
+            addedItems.Count, updatedItems.Count);
         
         return (addedItems, updatedItems);
     }
@@ -174,11 +243,11 @@ public class MetadataService
     /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
-    private async Task<bool> WriteMetadataAsync<TJellyseerr>(TJellyseerr item) where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    private async Task<bool> WriteMetadataAsync(IJellyseerrItem item)
     {
         try
         {
-            var targetDirectory = GetJellyseerrItemDirectory(item);
+            var targetDirectory = GetJellyBridgeItemDirectory(item);
 
             // Create directory if it doesn't exist
             if (!Directory.Exists(targetDirectory))
@@ -220,12 +289,119 @@ public class MetadataService
     }
 
 
+    /// <summary>
+    /// Create empty network folders based on the network configuration.
+    /// </summary>
+    /// <returns>Tuple containing lists of created and existing folder names</returns>
+    public async Task<(List<string> createdFolders, List<string> existingFolders)> CreateEmptyNetworkFoldersAsync()
+    {
+        var createdFolders = new List<string>();
+        var existingFolders = new List<string>();
+        
+        var config = Plugin.GetConfiguration();
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var networkMap = config.NetworkMap ?? new List<JellyseerrNetwork>();
+        
+        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
+        {
+            throw new InvalidOperationException($"Library Directory does not exist: {baseDirectory}");
+        }
+        
+        if (networkMap.Count == 0)
+        {
+            _logger.LogWarning("No networks configured. No folders will be created.");
+            return (createdFolders, existingFolders);
+        }
+        
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        if (!useNetworkFolders)
+        {
+            _logger.LogWarning("UseNetworkFolders is not enabled. No folders will be created.");
+            return (createdFolders, existingFolders);
+        }
+        
+        _logger.LogInformation("Starting network folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
+            baseDirectory, networkMap.Count);
+        
+        try
+        {
+            foreach (var network in networkMap)
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(network.Name))
+                    {
+                        _logger.LogWarning("Skipping network with empty name: {NetworkId}", network.Id);
+                        continue;
+                    }
+                    
+                    // Use GetNetworkFolder which handles the prefix
+                    var networkFolderPath = GetNetworkFolder(network.Name);
+                    if (networkFolderPath == null)
+                    {
+                        _logger.LogWarning("GetNetworkFolder returned null for network: {NetworkName}", network.Name);
+                        continue;
+                    }
+                    
+                    var networkFolderName = Path.GetFileName(networkFolderPath);
+                    
+                    if (Directory.Exists(networkFolderPath))
+                    {
+                        existingFolders.Add(networkFolderName);
+                        _logger.LogTrace("Network folder already exists: {NetworkFolder}", networkFolderPath);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(networkFolderPath);
+                        createdFolders.Add(networkFolderName);
+                        _logger.LogInformation("Created network folder: {NetworkFolder}", networkFolderPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating folder for network: {NetworkName}", network.Name);
+                    throw; // Re-throw to fail the entire operation
+                }
+            }
+            
+            _logger.LogInformation("Network folder generation completed - Created: {Created}, Existing: {Existing}", 
+                createdFolders.Count, existingFolders.Count);
+            
+            await Task.CompletedTask; // Satisfy async requirement
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating network folders");
+            throw;
+        }
+        
+        return (createdFolders, existingFolders);
+    }
+
     #region Helpers
+
+    /// <summary>
+    /// Get the network folder path if UseNetworkFolders is enabled, otherwise returns null.
+    /// </summary>
+    /// <param name="networkName">The name of the network (from NetworkTag or network.Name)</param>
+    /// <returns>Network folder path if enabled, null otherwise</returns>
+    public string? GetNetworkFolder(string? networkName)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders)) || string.IsNullOrEmpty(networkName))
+        {
+            return null;
+        }
+        
+        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+        var networkFolderName = FolderUtils.SanitizeFileName(networkPrefix + networkName);
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        return Path.Combine(baseDirectory, networkFolderName);
+    }
 
     /// <summary>
     /// Get the directory path for a specific item.
     /// </summary>
-    public string GetJellyseerrItemDirectory(IJellyseerrItem? item = null)
+    public string GetJellyBridgeItemDirectory(IJellyseerrItem? item = null)
     {
         if (item == null)
         {
@@ -237,11 +413,10 @@ public class MetadataService
             throw new ArgumentException($"Item {item.GetType().Name} returned null or empty string from ToString()", nameof(item));
         }
         var itemFolder = FolderUtils.SanitizeFileName(itemString);
-        if(Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.CreateSeparateLibraries)) && !string.IsNullOrEmpty(item.NetworkTag))
+        var networkFolder = GetNetworkFolder(item.NetworkTag);
+        if (networkFolder != null)
         {
-            var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
-            var networkFolder = FolderUtils.SanitizeFileName(networkPrefix + item.NetworkTag);
-            return Path.Combine(FolderUtils.GetBaseDirectory(), networkFolder, itemFolder);
+            return Path.Combine(networkFolder, itemFolder);
         }
         // If not using network prefix, just store in the base directory with the folder name
         return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);

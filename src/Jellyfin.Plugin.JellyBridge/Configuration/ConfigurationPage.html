@@ -2,6 +2,15 @@
     <div data-role="content">
         <div class="content-primary">
             <style>
+                span.link {
+                    cursor: pointer;
+                    color: #00a4dc;
+                    text-decoration: underline;
+                }
+                span.link:hover {
+                    color: #0088cc;
+                    text-decoration: underline;
+                }
                 summary {
                     cursor: pointer;
                     padding: 10px;
@@ -24,6 +33,7 @@
                 .disabled-block select,
                 .disabled-block button {
                     pointer-events: none;
+                    cursor: not-allowed;
                 }
                 .disabled-block .inputLabel,
                 .disabled-block label.emby-checkbox-label span {
@@ -114,27 +124,29 @@
                     font-size: 16px;
                     font-weight: bold;
                     margin-left: 5px;
-                    cursor: help;
                     vertical-align: middle;
                 }
                 
-                .helpIcon:hover {
+                .helpButton:hover .helpIcon {
                     background: #106ebe;
                 }
                 
                 #IsEnabledContainer {
                     display: flex;
-                    flex:0;
+                    /* flex:0; */
                     white-space: nowrap;
                 }
                 
                 .helpButton {
+                    cursor: help;
                     display: flex;
-                    flex: 1;
+                    /* flex: 1; */
+                    min-width: 100px;
                     width: 32px;
                     height: 32px;
                     line-height: 32px;
                     align-items: center;
+                    justify-content: flex-end;
                 }
                 
                 .cautionText {
@@ -200,13 +212,24 @@
                 /* Disabled state for Library Prefix */
                 .disabled {
                     opacity: 0.6;
+                    cursor: not-allowed;
+                    /* Allow pointer events on container so scroll handlers work */
+                }
+                
+                /* Block pointer events only on form elements, not the container */
+                .disabled input,
+                .disabled select,
+                .disabled textarea,
+                .disabled button {
                     pointer-events: none;
+                    cursor: not-allowed;
                 }
                 
                 .disabled .inputLabel,
                 .disabled label,
                 .disabled .emby-input-label {
                     color: #999 !important;
+                    cursor: not-allowed;
                 }
                 
                 /* Allow pointer events on help icon even when container is disabled */
@@ -219,6 +242,7 @@
                 button:disabled {
                     opacity: 0.6;
                     pointer-events: none;
+                    cursor: not-allowed;
                 }
                 
                 /* Refresh button styling */
@@ -277,8 +301,90 @@
                     color: #888;
                     margin-top: 8px;
                 }
+                
+                /* Troubleshooting details styling - left-aligned and distinct */
+                details.troubleshootingDetails {
+                    margin-top: 16px;
+                }
+                
+                /* Network folder options - padding below instead of above */
+                #networkFolderOptionsDetails {
+                    margin-top: 0;
+                    margin-bottom: 16px;
+                }
+                
+                details.troubleshootingDetails summary {
+                    cursor: pointer;
+                    padding: 8px 12px;
+                    width: auto;
+                    margin: 0;
+                    margin-bottom: 0;
+                    border: none;
+                    text-align: left;
+                    font-size: 1em;
+                    font-weight: bold;
+                    outline: 1px solid rgba(155, 155, 155, 0.3);
+                    border-radius: 4px 4px 0 0;
+                    background-color: rgba(0, 0, 0, 0.05);
+                    display: inline-block;
+                    list-style: none;
+                }
+                
+                details.troubleshootingDetails summary::-webkit-details-marker {
+                    display: none;
+                }
+                
+                details.troubleshootingDetails summary::before {
+                    content: "▶";
+                    display: inline-block;
+                    margin-right: 8px;
+                    transition: transform 0.2s ease;
+                    font-size: 0.8em;
+                }
+                
+                details.troubleshootingDetails[open] summary::before {
+                    transform: rotate(90deg);
+                }
+                
+                details.troubleshootingDetails summary:hover {
+                    background-color: rgba(0, 0, 0, 0.1);
+                }
+                
+                details.troubleshootingDetails[open] > div {
+                    border: 1px solid rgba(155, 155, 155, 0.3);
+                    border-top: none;
+                    border-radius: 0 0 4px 4px;
+                    padding: 12px;
+                    margin-top: 0;
+                }
+                
+                /* Disabled state for details elements */
+                details.troubleshootingDetails.disabled {
+                    opacity: 0.6;
+                    /* Allow pointer events so click handlers work */
+                }
+                
+                details.troubleshootingDetails.disabled summary {
+                    cursor: pointer; /* Keep pointer cursor to indicate it's clickable */
+                    background-color: rgba(0, 0, 0, 0.02);
+                    pointer-events: auto; /* Ensure summary remains clickable */
+                }
+                
+                details.troubleshootingDetails.disabled summary:hover {
+                    background-color: rgba(0, 0, 0, 0.05); /* Slightly darker on hover to show it's interactive */
+                }
+                
+                /* Result textarea styling - max height and scroll after 25 lines */
+                .testResult {
+                    display: none;
+                    max-height: 600px; /* ~25 lines * 20px + 10px */
+                    overflow-y: auto;
+                    font-family: 'Courier New', monospace;
+                    margin-top: 10px;
+                    white-space: pre-wrap;
+                }
             </style>
-            <form id="jellyBridgeConfigurationForm">
+            <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
                     <legend>JellyBridge Configuration</legend>
                     
@@ -300,173 +406,99 @@
                     </div>
                     
                     
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL" autocomplete="one-time-code" data-form-type="other" />
+                        <div class="fieldDescription">The base URL of your Jellyseerr instance. For docker instances, use http://host.docker.internal:5055</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="one-time-code" data-1p-ignore data-bwignore data-lpignore="true" data-form-type="other" />
+                        <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost on port 5055</a>.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
+                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="manageLibrarySettings">Manage Jellyseerr Library</span> option will automatically refresh any Jellyfin libraries using this folder.</div>
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label" id="IsEnabledContainer">
+                            <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                            <span class="checkboxLabel">Enable the Automated Task to Sync Jellyseerr and Jellyfin</span>
+                            <span class="checkboxOutline">
+                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                            </span>
+                        </label>
+                        <div class="helpButton" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">
+                            <span class="helpIcon">?</span>
+                            <span style="margin-left: 5px;">Setup</span>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer" id="SyncIntervalHoursContainer">
+                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" max="168" step="0.1"/>
+                        <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                    </div>
+
                     <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
                         <h4>Library Setup Instructions</h4>
                         <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
                         <ul>
                             <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                            <li><strong>Display name:</strong> Anything you'd like! I use "Streaming"</li>
+                            <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
                             <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
                             <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
                             <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
                             <li>☑️ <strong>Save artwork into media folders</strong></li>
                             <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                         </ul>
+                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Use Network Folders</i></span></p>
                         
-                        <h5>🤖 Troubleshooting</h5>
-                        <div class="fieldDescription" style="margin-bottom: 20px;">
-                            <p><i>The plugin connects to Jellyseerr, but I am seeing error messages when running the sync or other issues.</i></p>
-                            <ol>
-                                <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
-                                <li>Jellyfin uses caching for the plugin configuration pages, so you may need to do a hard refresh of the page to see the latest changes. In Chrome, Open Developer Tools (F12) → Right-click Refresh button → "Empty Cache and Hard Reload".</li>
-                                <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.1. Other versions may not be fully compatible.</li>
-                            </ol>
-                            <p><i>The <strong>Test Connection</strong> button is not working, and I am seeing an error message.</i></p>
-                            <ol>
-                                <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <strong>Jellyseerr URL</strong> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
-                                <li>Import Jellyfin users from the Jellyseerr interface: <strong>Users</strong> → <strong>Import Jellyfin Users</strong>.</li>
-                                <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
-                            </ol>
-                            <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
-                            <ol>
-                                <li>Click the <strong>Scan All Libraries</strong> button on the Jellyfin dashboard</li>
-                                <li>If content is still not updating, open the <strong>Metadata Manager</strong> and refresh metadata for the entry matching the name of your Jellyfin library</li>
-                                <li>As a last resort, click <strong>Recycle Library Data</strong> and recreate the Jellyfin library according to the setup instructions above</li>
-                            </ol>
-                        </div>
-                    </div>
-                    
-                    
-
-                    <div class="inputContainer">
-                        <input is="emby-input" type="url" id="JellyseerrUrl" label="Jellyseerr URL"/>
-                        <div class="fieldDescription">The base URL of your Jellyseerr instance. For docker instances, use http://host.docker.internal:5055</div>
-                    </div>
-
-                    <div class="inputContainer">
-                        <input is="emby-input" type="password" id="ApiKey" label="API Key" autocomplete="off" data-lpignore="true" data-form-type="other" />
-                        <div class="fieldDescription">Your Jellyseerr API key, usually accessible from <a target="_blank" href="http://localhost:5055/settings">localhost</a>.</div>
-                    </div>
-
-                    <div class="inputContainer">
-                        <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
-                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library.</div>
-                    </div>
-
-                    <div class="checkboxContainer">
-                        <label class="emby-checkbox-label" id="IsEnabledContainer">
-                            <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                            <span class="checkboxLabel">Enable the automated task to sync Jellyseerr and Jellyfin</span>
-                            <span class="checkboxOutline">
-                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                            </span>
-                        </label>
-                        <div class="helpButton">
-                            <span class="helpIcon" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">?</span>
-                        </div>
-                    </div>
-
-                    <div class="inputContainer">
-                        <input is="emby-input" type="number" id="SyncIntervalHours" label="Sync Interval (Hours)" min="0" max="168" step="0.1"/>
-                        <div class="fieldDescription">Defines how often to run the scheduled sync task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic syncing. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                        <details id="troubleshootingDetails" class="troubleshootingDetails">
+                            <summary>🤖 Troubleshooting</summary>
+                            <div class="fieldDescription" style="margin-bottom: 20px;">
+                                <p><i>General debugging tips.</i></p>
+                                <ol>
+                                    <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
+                                    <li>Your browser may be caching an old version of the plugin configuration page. <span class="link" data-target-script="cacheBuster">Click here to bust your cache</span> and load the latest changes.</li>
+                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.2. Other versions may not be fully compatible.</li>
+                                </ol>
+                                <p><i>The <span class="link" data-target-page="testConnection">Test Connection with Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
+                                <ol>
+                                    <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <i>Jellyseerr URL</i> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
+                                    <li>Import Jellyfin users from the Jellyseerr interface: <i>Users</i> → <i>Import Jellyfin Users</i>.</li>
+                                    <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
+                                </ol>
+                                <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
+                                <ol>
+                                    <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span></li>
+                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library</li>
+                                    <li>If networks are missing movies and shows, try disabled <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span>. Run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task and then re-enable the option.</li>
+                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructions">setup instructions above</span>.</li>
+                                </ol>
+                                <p><i>The <span class="link" data-target-page="syncFavorites">Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
+                                <ol>
+                                    <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck "Enable CSRF Protection".</li>
+                                </ol>
+                            </div>
+                        </details>
                     </div>
 
                     <div>
                         <button is="emby-button" type="button" id="testConnection" class="raised button block emby-button">
-                            <span>Test Connection</span>
+                            <span>🚀 Test Connection with Jellyseerr</span>
                         </button>
                     </div>
 
                     <br>
 
-                    <details id="favoriteSettings">
-                        <summary>Favorite Settings</summary>
-                        <br>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Manage Jellyseerr library</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the <i>Library Directory</i> path. Runs a partial refresh "Search for missing metadata" (this should finish quickly), or a full refresh "Replace all metadata" if items are deleted from Jellyseerr (this takes a while). Uses default refresh settings: Replace all images, Keep existing trickplay images.</div>
-                        </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Exclude Jellyfin library media from streaming libraries</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">When enabled, the Jellyseerr library will exclude streaming movies and shows that appear in your Jellyfin libraries. To enable this feature, the scheduled sync task creates an .ignore file in the movie or show directory. The .ignore file contains Jellyfin metadata for reference.</div>
-                        </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Remove requested items from favorites</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">After a request is successfully created in Jellyseerr, the item will be removed from the favorites list for all users. This setting is to prevent the favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/stefanbohacek/MediaCleaner">Media Cleaner for Jellyfin</a>. Additionally, this option hides the movie or show from by creating an .ignore file in the directory. If you deny the request in Jellyseerr, the item will repopulate on next sync.</div>
-                        </div>
-
-                        
-
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="CreateSeparateLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">*BETA* Create separate libraries for streaming services</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">When enabled, separate libraries will be created for each streaming service, e.g., Netflix, Hulu, FOX. *BETA* Note: this feature is still in development and not fully functional. Currently, duplicate movies and shows appear when multiple networks offer the same content.</div>
-                            <div id="separateLibrariesWarning" class="fieldDescription cautionText" style="display: none;">
-                                ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Additionally, you can use different libraries for each network provider.
-                            </div>
-                        </div>
-
-                        <div class="inputContainer" id="LibraryPrefixContainer">
-                            <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                            <div class="fieldDescription">Prefix for streaming service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
-                        </div>
-
-
-                        <div>
-                            <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
-                                <span>Sync favorites from Jellyfin library to Jellyseerr</span>
-                            </button>
-                            <div id="syncFavoritesResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
-                        </div>
-
-                    </details>
-
-                    <br>
-
                     <details id="syncSettings">
-                        <summary>Discover Settings</summary>
+                        <summary>Import Discover Content</summary>
                         <br>
-
-                        <div class="inputContainer">
-                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Max Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to fetch from discover endpoint for each network during sync. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Max Retention Days"/>
-                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. Items older than this will be removed during sync operations.</div>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
@@ -481,7 +513,7 @@
                                     ↻
                                 </button>
                             </div>
-                            <div class="fieldDescription">Select your region for network services. This determines which streaming services are shown for movies and TV shows.</div>
+                            <div class="fieldDescription">Select your region for network services. This determines which watch providers are shown for movies and TV shows.</div>
                         </div>
 
                         <div class="inputContainer">
@@ -514,7 +546,7 @@
                                 <!-- Available Networks (Right) -->
                                 <div class="selectBox" id="availableNetworksSelectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available in Watch Network Region <span class="helpIcon" title="Click the refresh button to load all regions from Jellyseerr. Only the selected and default (US) region are shown in the list.">?</span></label>
+                                        <label class="inputLabel">Available in Watch Network Region <span class="helpIcon" title="Click the refresh button to load all networks from Jellyseerr. The default networks only include those from Jellyseerr's Network Slider.">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="availableNetworkSearch" placeholder="Search available networks..." class="emby-input">
@@ -528,12 +560,197 @@
                             <div class="fieldDescription">Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Active networks will be used for filtering and categorization.</div>
                         </div>
 
+                        <div class="inputContainer">
+                            <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Discover Pages"/>
+                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Content Retention Time (Days)"/>
+                            <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. JellyBridge items older than this will be removed after running the import task.</div>
+                        </div>
 
                         <div>
                             <button is="emby-button" type="button" id="syncDiscover" class="raised button block emby-button">
-                                <span>Sync discover content from Jellyseerr to Jellyfin library</span>
+                                <span>📥 Import Discover Content from Jellyseerr into JellyBridge Library</span>
                             </button>
-                            <div id="syncDiscoverResult" class="testResult emby-textarea" style="display: none; margin-top: 10px; white-space: pre-wrap;"></div>
+                            <div id="syncDiscoverResult" class="testResult emby-textarea"></div>
+                        </div>
+
+                    </details>
+
+                    <br>
+
+                    <details id="manageLibrarySettings">
+                        <summary>Manage Discover Library</summary>
+                        <br>
+                        <div class="fieldDescription">
+                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, hide existing Jellyfin items from discover content, and unfavorite requested items. With a few extra steps, organize discover content based on the network service.
+                        </div>
+                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                            🙈 Display: JellyBridge hides movie or show items in the library by creating an .ignore file in the item folder.
+                            <br>
+                            📋 Process: After a request is sent to Jellyseerr, requested items are always marked as unplayed for all users and hidden from all libraries. If you deny all requests for that item in Jellyseerr, the item will repopulate on next sync.
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Automated Library Refresh</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <i>Library Directory</i> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ExcludeFromMainLibraries" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Hide Existing Discover Content</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, the JellyBridge library will hide movies and shows that are found in your other Jellyfin libraries.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Favorite Cleanup</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, this option removes favorited items for all users after the items are requested from Jellyseerr. This setting is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Network Folders</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, separate folders will be created for each network service, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
+                        </div>
+
+                        <details id="networkFolderOptionsDetails" class="troubleshootingDetails">
+                            <summary>Network Folders Setup</summary>
+                            <div>
+                                <h4>Instructions</h4>
+                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
+                                <ol>
+                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link" data-target-page="availableNetworksSelectBox">Network Services</span></li>
+                                    <li>Click the <span class="link" data-target-page="generateNetworkFolders">Generate Network Folders</span> button below.</li>
+                                    <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
+                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">Library Setup Instructions</span></li>
+                                </ol>
+                                <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Alternatively, you can use different libraries for each network provider.
+                                </div>
+
+                                <div class="inputContainer" id="LibraryPrefixContainer">
+                                    <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
+                                    <div class="fieldDescription">Prefix for network service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
+                                </div>
+
+                                <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                        <span class="checkboxLabel">Show Discover Content in Multiple Libraries</span>
+                                        <span class="checkboxOutline">
+                                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                        </span>
+                                    </label>
+                                    <div class="fieldDescription">When enabled, copies content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
+                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText" style="display: none;">
+                                        <strong>💡 Recommended:</strong> If you have already synced discover content, you should manually <span class="link" data-target-page="recycleLibraryData">Recycle JellyBridge Library Data</span> to remove the existing data.
+                                        <br>
+                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
+                                    </div>
+                                </div>
+
+                                <div id="generateNetworkFoldersContainer" class="fieldDescription">
+                                    <button is="emby-button" type="button" id="generateNetworkFolders" class="raised button block emby-button">
+                                        <span>🗂️ Generate Network Folders</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+
+                        <div>
+                            <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
+                                <span>⭐ Request JellyBridge Library Favorites in Jellyseerr</span>
+                            </button>
+                            <div id="syncFavoritesResult" class="testResult emby-textarea"></div>
+                        </div>
+
+                    </details>
+
+                    <br>
+
+                    <details id="sortContentSettings">
+                        <summary>Sort Discover Content</summary>
+                        <br>
+                        <div class="fieldDescription">
+                            Control the sort order of items in the JellyBridge library by setting a generated play count and last played date of media items for all users. This allows users to see content in a different order each time.</i>
+                        </div>
+                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                            ✳️ Instructions: To enable this feature, each user must open the JellyBridge library and change the default sort option <i>Sort by Folder</i> to <i>Sort by <strong>Play count</strong> (Sort order <strong>Ascending</strong>)</i>. For Android TV users, sort by <i><strong>Last Played</strong></i>.
+                            <br>
+                            ⚠️ Caution: Recommended to disable sorting for Kodi integration, which has native support for random or recommended sorting. The sorting feature will trigger many updates in the Kodi Add-on, although they finish relatively quickly.
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableAutomatedSortTask" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Enable the Automated Task to Sort Discover Content</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Enables the automated scheduled task that periodically updates play counts to sort JellyBridge library content.</div>
+                        </div>
+
+                        <div class="inputContainer" id="SortTaskIntervalHoursContainer">
+                            <input is="emby-input" type="number" id="SortTaskIntervalHours" label="Sort Task Interval (Hours)" min="0" max="168" step="0.1"/>
+                            <div class="fieldDescription">Defines how often to run the sort task, allowing partial hours, e.g., 1.5. Set to 0 to disable automatic sort randomization. <i>Note: Jellyfin delays scheduled tasks for exactly one hour after first-time install and some version upgrades of the plugin.</i></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selectSortOrder">Sort Order</label>
+                            <select id="selectSortOrder" is="emby-input" class="emby-input emby-select">
+                                <!-- Options will be populated dynamically from enum -->
+                            </select>
+                            <div class="fieldDescription">Selects the algorithm used to sort JellyBridge library content. <i>None</i>: sets play counts to zero. <i>Random</i>: randomizes play counts. <i>Smart</i>: (semi-)intelligent sorting based on genres in each user's library. <i>Smartish</i>: smart sort with a little randomness.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="MarkMediaPlayed" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Mark Media Played</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For shows: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
+                        </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
+                                <span>🎲 Refresh Discover Library Sort Order</span>
+                            </button>
+                            <div id="sortContentResult" class="testResult emby-textarea"></div>
                         </div>
 
                     </details>
@@ -543,22 +760,30 @@
                     <details id="advancedSettings">
                         <summary>Advanced</summary>
                         <br>
+                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                            Configure advanced options including startup behavior, timeout settings, placeholder video configuration, and logging levels. Use these settings to fine-tune plugin behavior and troubleshoot issues. The <span class="link" data-target-page="cleanupMetadata">Cleanup Metadata</span> button will remove folders that are missing metadata or have out-dated metadata in the JellyBridge library.
+                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="EnableStartupSync" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Auto-sync on Plugin Startup</span>
+                                <span class="checkboxLabel">Run Automated Tasks on Plugin Startup</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Automatically perform a sync operation when the plugin starts up or when Jellyfin restarts.</div>
+                            <div id="enableStartupSyncDescription" class="fieldDescription">Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.</div>
                         </div>
 
                         <div class="inputContainer" id="StartupDelaySecondsContainer">
                             <input id="StartupDelaySeconds" type="number" is="emby-input" min="0" max="900" label="Startup Delay (seconds)"/>
                             <div class="fieldDescription">Delay a number of seconds before running the auto-sync task on startup, in addition to the 1-minute default delay for startup tasks. Useful when Jellyfin takes more than 1 minute to start, which you can check in the logs: <i>Main: Startup complete</i></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <input id="TaskTimeoutMinutes" type="number" is="emby-input" min="1" max="1440" label="Task Queue Timeout (minutes)"/>
+                            <div class="fieldDescription">How long to wait for plugin tasks (sync, sort, etc.) to finish before exiting the task queue. This option will not cancel running tasks.</div>
                         </div>
 
                         <div class="inputContainer">
@@ -573,7 +798,7 @@
 
                         <div class="inputContainer">
                             <input id="PlaceholderDurationSeconds" type="number" is="emby-input" min="1" max="3600" label="Placeholder Video Duration (seconds)"/>
-                            <div class="fieldDescription">Length of generated placeholder videos in the Jellyseerr library. A ten-second video uses approximately 100kb of disk space.</div>
+                            <div class="fieldDescription">Length of generated placeholder videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -585,18 +810,37 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This redirects the Debug and Trace logging to the Information log level to workaround the clunky logging system in Jellyfin.</div>
+                            <div class="fieldDescription">Enable detailed debug logging for troubleshooting. This redirects the lower log levels to the Information log level to workaround the clunky logging system in Jellyfin.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="EnableTraceLoggingContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableTraceLogging" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Enable Trace Logging</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Enable trace-level logging for even more detailed information. This is the most verbose logging level and creates a lot of log entries.</div>
+                        </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="cleanupMetadata" class="raised button block emby-button">
+                                <span>🧹 Cleanup Metadata</span>
+                            </button>
+                            <div id="cleanupMetadataResult" class="testResult emby-textarea"></div>
                         </div>
 
                         <div style="margin-top: 20px; padding: 15px; background-color: rgba(211, 47, 47, 0.1); border: 1px solid #d32f2f; border-radius: 5px;">
                             <button is="emby-button" type="button" id="recycleLibraryData" class="raised button block emby-button" style="background-color: #d32f2f; color: white;">
-                                <span>Recycle Jellyfin Library Data</span>
+                                <span>🗑️ Recycle JellyBridge Library Data</span>
                             </button>
                             <div class="fieldDescription criticalText">
-                                <strong>☠️ CRITICAL:</strong> This will permanently delete all library data from the library directory. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
+                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <i>Library Directory</i>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the Jellyfin library associated with Jellyseerr and recreate it using the setup instructions at the top of this page.
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the JellyBridge libraries containing the <i>Library Directory</i> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupHelp">setup instructions at the top of this page</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
                             </div>
                         </div>
 
@@ -606,22 +850,34 @@
 
                     <div>
                         <button is="emby-button" type="submit" id="saveConfig" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>💾 Save</span>
                         </button>
                     </div>
                     
                     <div style="margin-top: 10px;">
                         <button is="emby-button" type="button" id="resetPluginConfig" class="raised button block emby-button" style="background-color: #757575; border: 1px solid #bbb; color: white;">
-                            <span>Reset Configuration</span>
+                            <span>♻️ Reset Configuration</span>
                         </button>
                     </div>
                 </fieldset>
             </form>
             
-            <div style="margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.1); border-radius: 5px; font-size: 0.9em; color: #888;">
-                <p><strong>Credits & Acknowledgments:</strong></p>
-                <p>Thank you to the creator of the <a target="_blank" href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" style="color: #2196f3;"><strong>Overseer-Jellyfin Bridge Script</strong></a> for the inspiration. Special thanks to the developers of the <a target="_blank" href="https://github.com/intro-skipper" style="color: #2196f3;"><strong>Intro Skipper</strong></a> and <a target="_blank" href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" style="color: #2196f3;"><strong>Custom Tabs</strong></a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.</p>
-                <p>And of course, thanks to the developers of <a target="_blank" href="https://jellyfin.org/" style="color: #2196f3;"><strong>Jellyfin</strong></a> and <a target="_blank" href="https://seerr.dev/" style="color: #2196f3;"><strong>Jellyseerr</strong></a> for making it all possible.</p>
+            <div class="readOnlyContent" style="margin-top: 20px; text-align: center;">
+                <p style="margin: 0;">
+                    <a target="_blank" href="https://kinggeorges12.github.io/JellyBridge/" style="color: #2196f3; text-decoration: none; font-size: 1em;">
+                        <strong>📖 Documentation & Help ❓</strong>
+                    </a>
+                </p>
+            </div>
+            
+            <div class="readOnlyContent" style="margin-top: 60px; background-color: rgba(0,0,0,0.1); border-radius: 5px; color: #888;">
+                <p style="font-size: 0.9em;">
+                    <strong>Credits & Acknowledgments:</strong>
+                    <br>
+                    Thank you to the creator of the <a target="_blank" href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" style="color: #2196f3;">Overseer-Jellyfin Bridge Script</a> for the inspiration. Special thanks to the developers of the <a target="_blank" href="https://github.com/intro-skipper" style="color: #2196f3;">Intro Skipper</a> and <a target="_blank" href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" style="color: #2196f3;">Custom Tabs</a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.
+                    <br>
+                    And of course, thanks to the developers of <a target="_blank" href="https://jellyfin.org/" style="color: #2196f3;">Jellyfin</a> and <a target="_blank" href="https://seerr.dev/" style="color: #2196f3;">Jellyseerr</a> for making it all possible.
+                </p>
             </div>
         </div>
     </div>

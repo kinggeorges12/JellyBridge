@@ -1,3 +1,5 @@
+using Jellyfin.Data.Enums;
+
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 /// <summary>
@@ -6,6 +8,11 @@ namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
 /// </summary>
 public interface IJellyfinItem
 {
+    /// <summary>
+    /// Get the BaseItemKind type of this item (e.g., Movie or Series).
+    /// </summary>
+    BaseItemKind TypeName { get; }
+
     /// <summary>
     /// Get the ID of this item.
     /// </summary>

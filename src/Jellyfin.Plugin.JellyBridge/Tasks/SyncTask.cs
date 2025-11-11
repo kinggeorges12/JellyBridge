@@ -19,18 +19,21 @@ public class SyncTask : IScheduledTask
     private readonly SyncService _syncService;
     private readonly ITaskManager _taskManager;
     private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
+    private readonly CleanupService _cleanupService;
 
 
     public SyncTask(
         ILogger<SyncTask> logger,
         SyncService syncService,
         ITaskManager taskManager,
-        PlaceholderVideoGenerator placeholderVideoGenerator)
+        PlaceholderVideoGenerator placeholderVideoGenerator,
+        CleanupService cleanupService)
     {
         _logger = new DebugLogger<SyncTask>(logger);
         _syncService = syncService;
         _taskManager = taskManager;
         _placeholderVideoGenerator = placeholderVideoGenerator;
+        _cleanupService = cleanupService;
         _logger.LogInformation("SyncTask constructor called - task initialized");
     }
 
@@ -50,16 +53,33 @@ public class SyncTask : IScheduledTask
             {
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
+                CleanupResult? cleanupResult = null;
+                
+                // Step 0: Cleanup metadata before sync operations
+                progress.Report(10);
+                _logger.LogDebug("Step 0: Cleaning up metadata...");
+                
+                try
+                {
+                    cleanupResult = await _cleanupService.CleanupMetadataAsync();
+                    _logger.LogDebug("Step 0: Cleanup completed successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Step 0 failed: Cleanup metadata");
+                    // Continue with sync operations even if cleanup fails
+                }
+                finally
+                {
+                    progress.Report(20);
+                }
                 
                 // Step 1: Sync favorites to Jellyseerr
-                progress.Report(10);
                 _logger.LogDebug("Step 1: Syncing favorites to Jellyseerr...");
                 
                 try
                 {
                     syncToResult = await _syncService.SyncToJellyseerr();
-                    _logger.LogDebug("Step 1 completed: {Success} - {Message}", syncToResult.Success, syncToResult.Message);
-                    _logger.LogDebug("Step 1 details: {Details}", syncToResult.Details);
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +91,7 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(30);
+                    progress.Report(50);
                 }
                 
                 // Step 2: Sync discover from Jellyseerr
@@ -80,7 +100,6 @@ public class SyncTask : IScheduledTask
                 try
                 {
                     syncFromResult = await _syncService.SyncFromJellyseerr();
-                    _logger.LogDebug("Step 2 completed: {Success} - {Message}", syncFromResult.Success, syncFromResult.Message);
                 }
                 catch (Exception ex)
                 {
@@ -92,18 +111,21 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(60);
+                    progress.Report(80);
                 }
 
                 try {
-                    _logger.LogDebug("Sync details - To Jellyseerr: {ToDetails}, From Jellyseerr: {FromDetails}", 
-                        syncToResult?.Details, syncFromResult?.Details);
-                    
-                    _logger.LogInformation("Scheduled Jellyseerr sync task completed - To Jellyseerr: {ToSuccess}, From Jellyseerr: {FromSuccess}", 
-                        syncToResult?.Success, syncFromResult?.Success);
+                    if (syncToResult != null)
+                    {
+                        _logger.LogInformation("Sync to Jellyseerr result: {Result}", syncToResult.ToString());
+                    }
+                    if (syncFromResult != null)
+                    {
+                        _logger.LogInformation("Sync from Jellyseerr result: {Result}", syncFromResult.ToString());
+                    }
 
                     // Apply refresh operations after both syncs are complete
-                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult);
+                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult, cleanupResult);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error applying refresh operations");
                 } finally {
