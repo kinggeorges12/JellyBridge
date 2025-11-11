@@ -25,7 +25,7 @@ After installing the new version, you may need to update the plugin configuratio
 
 ### Version 1.0
 
-**🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
+**🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.\* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
 ## ✨ Features
 
@@ -81,14 +81,12 @@ After installing Jellyseerr, disable the JellyBridge library to prevent requests
 
 Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
 
-**Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Shows) → Random Items / Recommended Items / any other view
-
-**Jellyseer Requests**: Open any Library view → right-click a movie or show → Jellyfin options → Add to favorites
-
 ![Jellyfin for Kodi Add-on](Screenshots/Kodi.png)
  
-For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/).
-- Note: Incompatible with JellyCon for Kodi.
+For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/). *Note*: Incompatible with JellyCon for Kodi.
+
+- **Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Shows) → Random Items / Recommended Items / any other view
+- **Jellyseer Requests**: Open any Library view → right-click a movie or show → Jellyfin options → Add to favorites
 
 ## 📦 Installation
 
@@ -110,10 +108,10 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    - Click "Install"
    - Restart Jellyfin from the Dashboard
 
-   Note on versions:
-   - For Jellyfin 10.11.* users only, install the version ending in `.11` from the plugin page.
-   - Versions ending in `.10` or `.0` are for Jellyfin 10.10.* only, although the wonky Jellyfin plugin versioning does not let me change the visibility.
-   ![Versioning guide](Screenshots/Versioning.png)
+   Version Guide:
+   - For Jellyfin 10.11.\* users only, install the version ending in `.11` from the plugin page.
+   - Versions ending in `.10` are for Jellyfin 10.10.\* only, although the wonky Jellyfin plugin versioning does not let me change the visibility.
+   ![Version Guide](Screenshots/Versioning.png)
 
 3. **Configure the plugin** through the admin interface
 
