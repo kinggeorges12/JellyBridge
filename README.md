@@ -133,8 +133,8 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Import Discover Content](Screenshots/Import.png)
 
-- **Region**: Which geographic region to use for searching networks
-- **Network Services**: Choose which networks to include using the two-pane picker
+- **Watch Region**: Which geographic region to search for available networks
+- **Network Services**: Choose networks to import discover content from
 - **Discover Pages**: The number of pages to import per network
 - **Content Retention Time (Days)**: How long to keep discover content before automatic cleanup
 - **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually trigger the task
@@ -146,7 +146,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
-- **Network Folders**: Creates separate folders for each selected network service so you can organize networks into different Jellyfin libraries
+- **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
 - **Network Folders Setup**
   - **Instructions**: Step-by-step guide for creating network folders and libraries
   - **Library Prefix**: Prefix applied to generated network library names
@@ -191,7 +191,6 @@ The plugin provides a comprehensive web-based configuration interface with the f
 **🆕 New in this release**
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
 - Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
-- Import Discover Content: two-pane region/network picker with search/refresh and an on-demand import button.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
 **⚠️ Compatibility Notes**
