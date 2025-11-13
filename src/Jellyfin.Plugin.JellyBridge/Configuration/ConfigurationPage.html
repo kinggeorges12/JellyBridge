@@ -419,7 +419,7 @@
 
                     <div class="inputContainer">
                         <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
-                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="manageLibrarySettings">Manage Jellyseerr Library</span> option will automatically refresh any Jellyfin libraries using this folder.</div>
+                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option will refresh any Jellyfin libraries using this folder.</div>
                     </div>
 
                     <div class="checkboxContainer">
@@ -443,19 +443,21 @@
                     </div>
 
                     <div id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
-                        <h4>Library Setup Instructions</h4>
-                        <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
-                        <ul>
-                            <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                            <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
-                            <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
-                            <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
-                            <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
-                            <li>☑️ <strong>Save artwork into media folders</strong></li>
-                            <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
-                        </ul>
-                        <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Use Network Folders</i></span></p>
-                        
+                        <div id="librarySetupInstructionsContent">
+                            <h4>Library Setup Instructions</h4>
+                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                            <ul>
+                                <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
+                                <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
+                                <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the same root folder as found under <i>Library Settings</i> → <i>Library Directory</i></li>
+                                <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
+                                <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
+                                <li>☑️ <strong>Save artwork into media folders</strong></li>
+                                <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
+                            </ul>
+                            <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Network Folders</i></span></p>
+                        </div>
+
                         <details id="troubleshootingDetails" class="troubleshootingDetails">
                             <summary>🤖 Troubleshooting</summary>
                             <div class="fieldDescription" style="margin-bottom: 20px;">
@@ -465,7 +467,7 @@
                                     <li>Your browser may be caching an old version of the plugin configuration page. <span class="link" data-target-script="cacheBuster">Click here to bust your cache</span> and load the latest changes.</li>
                                     <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.2. Other versions may not be fully compatible.</li>
                                 </ol>
-                                <p><i>The <span class="link" data-target-page="testConnection">Test Connection with Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
+                                <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
                                     <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <i>Jellyseerr URL</i> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
                                     <li>Import Jellyfin users from the Jellyseerr interface: <i>Users</i> → <i>Import Jellyfin Users</i>.</li>
@@ -473,14 +475,14 @@
                                 </ol>
                                 <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
-                                    <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span></li>
-                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library</li>
-                                    <li>If networks are missing movies and shows, try disabled <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span>. Run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task and then re-enable the option.</li>
-                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructions">setup instructions above</span>.</li>
+                                    <li>If networks are missing movies and shows, try enabling the <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
+                                    <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span>.</li>
+                                    <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library.</li>
+                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">setup instructions above</span>.</li>
                                 </ol>
-                                <p><i>The <span class="link" data-target-page="syncFavorites">Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
+                                <p><i>The <span class="link" data-target-page="syncFavorites">⭐ Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
-                                    <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck "Enable CSRF Protection".</li>
+                                    <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck <i>Enable CSRF Protection</i>.</li>
                                 </ol>
                             </div>
                         </details>
@@ -504,22 +506,20 @@
                         <div class="inputContainer" id="regionContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1;">
-                                    <label class="inputLabel inputLabelUnfocused" for="selectWatchRegion">Region <span class="helpIcon" title="Click the refresh button to load all regions from Jellyseerr. Only unselected default networks from Jellyseerr's Network Slider are shown in the list.">?</span></label>
-                                    <select id="selectWatchRegion" is="emby-input" class="emby-input emby-select">
-                                        <option value="US">United States (US)</option>
-                                    </select>
+                                    <label class="inputLabel inputLabelUnfocused" for="selectWatchRegion">Watch Region <span class="helpIcon" title="Click the refresh button to load all watch regions from Jellyseerr.">?</span></label>
+                                    <select id="selectWatchRegion" is="emby-input" class="emby-input emby-select"/>
                                 </div>
-                                <button type="button" id="refreshNetworks" is="emby-button" class="raised button emby-button" style="margin-top: 30px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
+                                <button type="button" id="refreshWatchRegions" is="emby-button" class="raised button emby-button" style="margin-top: 30px; height: 40px; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Refresh regions">
                                     ↻
                                 </button>
                             </div>
-                            <div class="fieldDescription">Select your region for network services. This determines which watch providers are shown for movies and TV shows.</div>
+                            <div class="fieldDescription">Select your watch region for networks. Click <span class="link" data-target-page="refreshWatchRegions">↻</span> to load watch regions from Jellyseerr. This determines which watch providers are shown for movies and TV shows in the available networks list.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div id="networkServicesContainer" class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Network Services</label>
                             <div class="fieldDescription">
-                                Shown below as: Jellyseerr sort order #. Watch Provider Name (Provider ID #), and [REGION ID]
+                                Shown below as: Jellyseerr sort order #. Network Name (Network ID #), and [REGION ID]
                             </div>
                             <div class="multiSelectContainer">
                                 <!-- Active Networks (Left) -->
@@ -546,7 +546,7 @@
                                 <!-- Available Networks (Right) -->
                                 <div class="selectBox" id="availableNetworksSelectBox">
                                     <div class="selectBoxHeader">
-                                        <label class="inputLabel">Available in Watch Network Region <span class="helpIcon" title="Click the refresh button to load all networks from Jellyseerr. The default networks only include those from Jellyseerr's Network Slider.">?</span></label>
+                                        <label class="inputLabel">Available Networks in Watch Region <span class="helpIcon" title="Click the refresh button to load all service networks from Jellyseerr. The defaults only include those from Jellyseerr's Network Slider.">?</span></label>
                                     </div>
                                     <div class="searchInputContainer">
                                         <input type="text" id="availableNetworkSearch" placeholder="Search available networks..." class="emby-input">
@@ -557,12 +557,12 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="fieldDescription">Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Active networks will be used for filtering and categorization.</div>
+                            <div class="fieldDescription">Click <span class="link" data-target-page="refreshAvailableNetworks">↻</span> to load available networks from Jellyseerr. Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Feel free to add networks from other watch regions.</div>
                         </div>
 
                         <div class="inputContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (I suggest trying a smaller number first).</div>
+                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
@@ -585,7 +585,7 @@
                         <summary>Manage Discover Library</summary>
                         <br>
                         <div class="fieldDescription">
-                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, hide existing Jellyfin items from discover content, and unfavorite requested items. With a few extra steps, organize discover content based on the network service.
+                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, hide existing Jellyfin items from discover content, and unfavorite requested items. With a few extra steps, organize discover content based on the network.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             🙈 Display: JellyBridge hides movie or show items in the library by creating an .ignore file in the item folder.
@@ -593,7 +593,7 @@
                             📋 Process: After a request is sent to Jellyseerr, requested items are always marked as unplayed for all users and hidden from all libraries. If you deny all requests for that item in Jellyseerr, the item will repopulate on next sync.
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div id="ManageJellyseerrLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Automated Library Refresh</span>
@@ -638,7 +638,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, separate folders will be created for each network service, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibrary">Manage JellyBridge Library</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
+                            <div class="fieldDescription">When enabled, separate folders will be created for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
                         </div>
 
                         <details id="networkFolderOptionsDetails" class="troubleshootingDetails">
@@ -647,10 +647,10 @@
                                 <h4>Instructions</h4>
                                 <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
-                                    <li>Select all Network Services that you want to store in the Jellybridge library: <span class="link" data-target-page="availableNetworksSelectBox">Network Services</span></li>
-                                    <li>Click the <span class="link" data-target-page="generateNetworkFolders">Generate Network Folders</span> button below.</li>
+                                    <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
+                                    <li>Click the <span class="link" data-target-page="generateNetworkFolders">🗂️ Generate Network Folders</span> button below.</li>
                                     <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
-                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">Library Setup Instructions</span></li>
+                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">Library Setup Instructions</span>.</li>
                                 </ol>
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                                     ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base Library Directory. Alternatively, you can use different libraries for each network provider.
@@ -658,7 +658,7 @@
 
                                 <div class="inputContainer" id="LibraryPrefixContainer">
                                     <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                                    <div class="fieldDescription">Prefix for network service library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
+                                    <div class="fieldDescription">Prefix for network library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
                                 </div>
 
                                 <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
@@ -709,7 +709,7 @@
                             ⚠️ Caution: Recommended to disable sorting for Kodi integration, which has native support for random or recommended sorting. The sorting feature will trigger many updates in the Kodi Add-on, although they finish relatively quickly.
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div id="EnableAutomatedSortTaskContainer" class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="EnableAutomatedSortTask" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Enable the Automated Task to Sort Discover Content</span>

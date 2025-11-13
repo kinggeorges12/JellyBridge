@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v2.0.1 - Updated configuration page UI: renamed 'Region' to 'Watch Region', improved field descriptions and help text, updated link references to use new container IDs, and removed redundant default option from region select. Synchronized README terminology to match configuration page.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.0.1/JellyBridge-2.0.1.11.zip",
+        "version": "2.0.1.11",
+        "timestamp": "2025-11-13T02:55:21.296Z",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "checksum": "B0CF2684051BE115F69C8C6C17CAC5A3"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v2.0.1 - Updated configuration page UI: renamed 'Region' to 'Watch Region', improved field descriptions and help text, updated link references to use new container IDs, and removed redundant default option from region select. Synchronized README terminology to match configuration page.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.0.1/JellyBridge-2.0.1.10.zip",
+        "version": "2.0.1.10",
+        "timestamp": "2025-11-13T02:55:21.296Z",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "checksum": "340FE80F0A6EEDA3D3476ADB0CD79A20"
+      },
+      {
         "timestamp": "2025-11-11T14:00:59.175Z",
         "changelog": "Jellyfin 10.11.0: v2.0.0 - Major: Renamed configuration setting labels and synchronized README/UI. Merged feature into main excluding manifest and cleaned artifacts to match manifest. Updated screenshots and docs for the new configuration layout.",
         "checksum": "41E8155849B7E6D4A1DE5D54AA16BD0D",

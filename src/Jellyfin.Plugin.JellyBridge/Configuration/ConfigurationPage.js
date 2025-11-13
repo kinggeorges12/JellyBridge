@@ -524,7 +524,7 @@ function initializeImportContent(page) {
     });
 
     // Add refresh networks button functionality
-    const refreshButton = page.querySelector('#refreshNetworks');
+    const refreshButton = page.querySelector('#refreshWatchRegions');
     if (refreshButton) {
         refreshButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
@@ -1392,7 +1392,7 @@ function updateStartupSyncDescription() {
         enabledTasks.push('🔄 <span class="link" data-target-page="IsEnabledContainer"><i>Enable the Automated Task to Sync Jellyseerr and Jellyfin</i></span>');
     }
     if (isSortEnabled) {
-        enabledTasks.push('🔀 <span class="link" data-target-page="EnableAutomatedSortTask"><i>Enable the Automated Task to Sort Discover Content</i></span>');
+        enabledTasks.push('🔀 <span class="link" data-target-page="EnableAutomatedSortTaskContainer"><i>Enable the Automated Task to Sort Discover Content</i></span>');
     }
     
     let descriptionText = 'Automatically run all enabled automated tasks when the plugin starts up or when Jellyfin restarts.';
