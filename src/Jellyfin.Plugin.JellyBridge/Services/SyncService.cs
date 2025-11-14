@@ -70,8 +70,7 @@ public partial class SyncService
             }
 
             // Step 1: Fetch movies and TV shows for all networks
-            var discoverMovies = await _discoverService.FetchDiscoverMediaAsync<JellyseerrMovie>();
-            var discoverShows = await _discoverService.FetchDiscoverMediaAsync<JellyseerrShow>();
+            var (discoverMovies, discoverShows) = await _discoverService.FetchDiscoverMediaAsync();
 
             _logger.LogDebug("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
                 discoverMovies.Count, discoverShows.Count);
