@@ -36,74 +36,68 @@ public class DiscoverService
     
 
     /// <summary>
-    /// Generic method to fetch discover data for all networks using the specified endpoint.
+    /// Fetches discover data for all networks, calling both movies and TV endpoints for each network.
     /// </summary>
-    /// <typeparam name="T">The Jellyseerr type (JellyseerrMovie or JellyseerrShow)</typeparam>
-    /// <returns>List of items fetched from all networks</returns>
-    public async Task<List<T>> FetchDiscoverMediaAsync<T>() where T : TmdbMediaResult, IJellyseerrItem
+    /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync()
     {
         var config = Plugin.GetConfiguration();
         var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
-        var allItems = new List<T>();
+        var allMovies = new List<JellyseerrMovie>();
+        var allShows = new List<JellyseerrShow>();
         
         foreach (var network in networkMap)
         {
-            _logger.LogDebug("Fetching {MediaType} for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", T.LibraryType, network.Name, network.Id, network.Country, network.DisplayPriority);
+            _logger.LogTrace("Fetching discover content for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", network.Name, network.Id, network.Country, network.DisplayPriority);
             
             // Add network Id and Country parameters to query parameters
             var networkParameters = new Dictionary<string, object> {
                 ["watchRegion"] = network.Country,
                 ["watchProviders"] = network.Id
             };
-            JellyseerrEndpoint? endpoint = null;  
-            if (typeof(T) == typeof(JellyseerrMovie)) {
-                endpoint = JellyseerrEndpoint.DiscoverMovies;
-            } else if (typeof(T) == typeof(JellyseerrShow)) {
-                endpoint = JellyseerrEndpoint.DiscoverTv;
-            }
-            if (endpoint == null) {
-                _logger.LogError("Unsupported type: {Type}", typeof(T));
-                throw new InvalidOperationException($"Unsupported type: {typeof(T)}");
-            }
 
             // Debug: Log the parameters being used
-            _logger.LogTrace("Calling {Endpoint} with parameters: {Parameters}", 
-                endpoint.Value, 
+            _logger.LogTrace("Calling discover endpoints with parameters: {Parameters}", 
                 string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
             
-            var networkData = await _apiService.CallEndpointAsync(endpoint.Value, parameters: networkParameters);
+            // Fetch movies for this network
+            var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: networkParameters);
+            var movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
             
-            if (networkData == null)
-            {
-                _logger.LogWarning("API call returned null for {MediaType} endpoint for network: {NetworkName}", T.LibraryType, network.Name);
-                continue;
-            }
-            
-            var items = (List<T>)networkData;
+            // Fetch TV shows for this network
+            var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: networkParameters);
+            var shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
             
             // Debug: Log the response data
-            _logger.LogTrace("API call returned {ItemCount} items for {NetworkName}", items.Count, network.Name);
+            _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
             
-            if (items.Count == 0)
-            {
-                _logger.LogWarning("No {MediaType} returned for network: {NetworkName}", T.LibraryType, network.Name);
-            }
-            
-            // Add items to list (no deduplication)
-            foreach (var item in items)
+            // Add items to lists (no deduplication)
+            foreach (var item in movies)
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
                 item.NetworkId = network.Id;
-                allItems.Add(item);
+                allMovies.Add(item);
             }
             
-            _logger.LogTrace("Retrieved {ItemCount} {MediaType} for {NetworkName}", items.Count, T.LibraryType, network.Name);
+            foreach (var item in shows)
+            {
+                // Set the network tag for this item
+                item.NetworkTag = network.Name;
+                item.NetworkId = network.Id;
+                allShows.Add(item);
+            }
+            
+            // Only log warning if no items found for either endpoint
+            if (allMovies.Count == 0 && allShows.Count == 0)
+            {
+                _logger.LogWarning("No movies or shows returned for network: {NetworkName} (ID: {NetworkId}) [Country: {Country}]", network.Name, network.Id, network.Country);
+            }
+        
+            _logger.LogTrace("Retrieved {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
         }
         
-        _logger.LogDebug("Total {MediaType} collected: {TotalCount}", T.LibraryType, allItems.Count);
-        
-        return allItems;
+        return (allMovies, allShows);
     }
     
     /// <summary>

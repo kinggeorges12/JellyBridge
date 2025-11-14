@@ -42,7 +42,7 @@ public class PluginConfiguration : BasePluginConfiguration
                 new JellyseerrNetwork { Country = "US", Name = "Amazon Prime Video", Id = 9, DisplayPriority = 3 }, // Prime Video: 1024
                 new JellyseerrNetwork { Country = "US", Name = "Apple TV+", Id = 350, DisplayPriority = 8 }, // Apple TV+: 2552
                 new JellyseerrNetwork { Country = "US", Name = "Hulu", Id = 15, DisplayPriority = 7 }, // Hulu: 453
-                new JellyseerrNetwork { Country = "US", Name = "HBO Max", Id = 49, DisplayPriority = 27 }, // HBO: 49
+                new JellyseerrNetwork { Country = "US", Name = "HBO Max", Id = 1899, DisplayPriority = 27 }, // HBO: 49
                 new JellyseerrNetwork { Country = "US", Name = "Discovery +", Id = 520, DisplayPriority = 163 }, // Discovery+: 4353
                 new JellyseerrNetwork { Country = "US", Name = "ABC", Id = 148, DisplayPriority = 255 }, // ABC: 2
                 new JellyseerrNetwork { Country = "US", Name = "FOX", Id = 328, DisplayPriority = 97 }, // FOX: 19

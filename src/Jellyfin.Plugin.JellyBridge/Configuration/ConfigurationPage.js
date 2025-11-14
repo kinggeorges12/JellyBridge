@@ -367,10 +367,10 @@ function initializeImportContent(page) {
     populateRegion(page, [{ iso_3166_1: regionSelect }], regionSelect);
     
     // Load active networks from saved configuration
-	// If NetworkMap is null/undefined, fall back to defaults; if it's an empty array, keep it empty
-	const defaultNetworkMap = (config.ConfigDefaults && Array.isArray(config.ConfigDefaults.NetworkMap)) ? config.ConfigDefaults.NetworkMap : [];
-	const activeNetworksSource = Array.isArray(config.NetworkMap) ? config.NetworkMap : defaultNetworkMap;
-	populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
+    // If NetworkMap is null/undefined, fall back to defaults; if it's an empty array, keep it empty
+    const defaultNetworkMap = (config.ConfigDefaults && Array.isArray(config.ConfigDefaults.NetworkMap)) ? config.ConfigDefaults.NetworkMap : [];
+    const activeNetworksSource = Array.isArray(config.NetworkMap) ? config.NetworkMap : defaultNetworkMap;
+    populateSelectWithNetworks(activeNetworksSelect, activeNetworksSource);
     sortSelectOptions(activeNetworksSelect);
     
     // Update available networks with default networks that aren't already active
@@ -1777,20 +1777,21 @@ function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
     });
 }
 
-// Append text to a result box and handle scrolling after 25 lines
+// Append text to a result box
 function appendToResultBox(element, text, newLine = false) {
     if (!element) return;
     
     // Get current content and split into lines
     const currentText = element.textContent || '';
-    
-    if (newLine) {
-        element.textContent += '\n\n';
-    }
-
+    const isEmpty = currentText.trim().length === 0;
     const lines = currentText ? currentText.split('\n') : [];
     
-    // Add new text and split into lines
+    // Only add empty line separator if newLine is true AND the box is not empty
+    if (newLine && !isEmpty) {
+        lines.push('');
+    }
+    
+    // Add new text and split into lines (preserves newlines within the text)
     const newLines = text.split('\n');
     lines.push(...newLines);
     

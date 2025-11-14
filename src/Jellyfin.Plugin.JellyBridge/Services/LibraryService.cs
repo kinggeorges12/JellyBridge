@@ -80,7 +80,22 @@ public class LibraryService
                 ReplaceAllImages = false,
                 RegenerateTrickplay = false,
                 ForceSave = true,
-                IsAutomated = false,
+                IsAutomated = true,
+                RemoveOldMetadata = false
+            };
+
+            // Scan for new and updated files
+            // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
+            // Create refresh options for refreshing user data - minimal refresh to reload user data like play counts
+            var refreshOptionsUpdate = new MetadataRefreshOptions(_directoryService)
+            {
+                MetadataRefreshMode = MetadataRefreshMode.Default,
+                ImageRefreshMode = MetadataRefreshMode.Default,
+                ReplaceAllMetadata = false,
+                ReplaceAllImages = false,
+                RegenerateTrickplay = false,
+                ForceSave = true,
+                IsAutomated = true,
                 RemoveOldMetadata = false
             };
 
@@ -99,21 +114,6 @@ public class LibraryService
                 RemoveOldMetadata = false
             };
             
-            // Scan for new and updated files
-            // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
-            // Create refresh options for refreshing user data - minimal refresh to reload user data like play counts
-            var refreshOptionsUpdate = new MetadataRefreshOptions(_directoryService)
-            {
-                MetadataRefreshMode = MetadataRefreshMode.Default,
-                ImageRefreshMode = MetadataRefreshMode.Default,
-                ReplaceAllMetadata = false,
-                ReplaceAllImages = false,
-                RegenerateTrickplay = false,
-                ForceSave = true,
-                IsAutomated = false,
-                RemoveOldMetadata = false
-            };
-
             _logger.LogTrace("Refresh options - Create: Metadata={CreateMeta}, Images={CreateImages}, ReplaceAllMetadata={CreateReplaceMeta}, ReplaceAllImages={CreateReplaceImages}, RegenerateTrickplay={CreateTrick}; Remove: Metadata={RemoveMeta}, Images={RemoveImages}, ReplaceAllMetadata={RemoveReplaceMeta}, ReplaceAllImages={RemoveReplaceImages}, RegenerateTrickplay={RemoveTrick}; Update: Metadata={UpdateMeta}, Images={UpdateImages}, ReplaceAllMetadata={UpdateReplaceMeta}, ReplaceAllImages={UpdateReplaceImages}, RegenerateTrickplay={UpdateTrick}",
                 refreshOptionsCreate.MetadataRefreshMode, refreshOptionsCreate.ImageRefreshMode, refreshOptionsCreate.ReplaceAllMetadata, refreshOptionsCreate.ReplaceAllImages, refreshOptionsCreate.RegenerateTrickplay,
                 refreshOptionsRemove.MetadataRefreshMode, refreshOptionsRemove.ImageRefreshMode, refreshOptionsRemove.ReplaceAllMetadata, refreshOptionsRemove.ReplaceAllImages, refreshOptionsRemove.RegenerateTrickplay,
@@ -172,7 +172,7 @@ public class LibraryService
             {
                 try
                 {
-                    _providerManager.QueueRefresh(id, refreshOptionsUpdate, RefreshPriority.High);
+                    _providerManager.QueueRefresh(id, refreshOptionsUpdate, RefreshPriority.Normal);
                     _logger.LogTrace("Queued Update refresh for library: {LibraryName} ({ItemId})", name, id);
                 }
                 catch (Exception ex)
