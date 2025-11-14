@@ -67,7 +67,7 @@ public class SyncJellyseerrResult
         const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -76,7 +76,7 @@ public class SyncJellyseerrResult
         result.AppendLine($"{separator}{"⏭️\t"}{"Ignored",-10}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
         result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
         
-        return result.ToString().TrimEnd();
+        return result.ToString();
     }
 }
 
@@ -154,7 +154,7 @@ public class SyncJellyfinResult
         const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"❤️\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -165,7 +165,7 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"🧹\t"}{"Cleaned",-10}{separator}{$"{MoviesCleaned,8}  "}{separator}{$"{ShowsCleaned,8}  "}{separator}{$"{MoviesCleaned + ShowsCleaned,8}  "}{separator}");
         result.AppendLine($"{separator}{"👁️\t"}{"Unhidden",-10}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
-        return result.ToString().TrimEnd();
+        return result.ToString();
     }
 }
 
@@ -229,7 +229,6 @@ public class SortLibraryResult
         
         if (Refresh != null)
         {
-            result.AppendLine();
             result.AppendLine(Refresh.ToString());
         }
         
@@ -238,7 +237,7 @@ public class SortLibraryResult
         const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
@@ -246,7 +245,7 @@ public class SortLibraryResult
         result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
         result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
         
-        return result.ToString().TrimEnd();
+        return result.ToString();
     }
 }
 
@@ -261,13 +260,15 @@ public class CleanupResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🧹 Cleanup: Removes old metadata items and folders without metadata.json files\n🔄 Refresh: When items are deleted, refreshes all Jellyfin libraries containing the JellyBridge folder (search for missing metadata only, do not replace images)\n📦 Processed: Number of items checked for cleanup\n🗑️ Deleted: Items deleted due to retention policy or missing metadata.json";
+    public string Details { get; set; } = "🔄 Refresh: When items are deleted, refreshes all Jellyfin libraries containing the JellyBridge folder (search for missing metadata only, do not replace images)\n📦 Processed: Total items checked for cleanup\n🗑️ Deleted: Items deleted due to retention policy\n🧹 Cleaned: Items deleted that were not managed by JellyBridge (missing metadata.json)";
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
     public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
     public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
-    public int FoldersWithoutMetadataDeleted { get; set; }
+    public int MoviesCleaned { get; set; }
+    public int ShowsCleaned { get; set; }
+    public int ItemsCleaned => MoviesCleaned + ShowsCleaned;
     
     // Computed properties - filter by type
     public List<JellyseerrMovie> ProcessedMovies => ItemsProcessed.OfType<JellyseerrMovie>().ToList();
@@ -302,19 +303,14 @@ public class CleanupResult
         const string rowBorder = "|-----------------|----------|----------|----------|";
         
         // Header row
-        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Shows   ",-10}{separator}{"  Total   ",-10}{separator}");
+        result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
         result.AppendLine($"{separator}{"🗑️\t"}{"Deleted",-10}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🧹\t"}{"Cleaned",-10}{separator}{$"{MoviesCleaned,8}  "}{separator}{$"{ShowsCleaned,8}  "}{separator}{$"{ItemsCleaned,8}  "}{separator}");
         
-        if (FoldersWithoutMetadataDeleted > 0)
-        {
-            result.AppendLine();
-            result.AppendLine($"Folders without metadata.json deleted: {FoldersWithoutMetadataDeleted}");
-        }
-        
-        return result.ToString().TrimEnd();
+        return result.ToString();
     }
 }
 

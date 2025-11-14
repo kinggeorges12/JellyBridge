@@ -53,13 +53,14 @@ public class CleanupService
             // Process folders with .nfo files and delete those without metadata.json
             var (processedMovies, processedShows, deletedMovies, deletedShows) = await FindMissingMetadataFolders();
             result.ItemsDeleted.AddRange(deletedItems);
-            result.FoldersWithoutMetadataDeleted = deletedMovies.Count + deletedShows.Count;
+            result.MoviesCleaned = deletedMovies.Count;
+            result.ShowsCleaned = deletedShows.Count;
             
             _logger.LogDebug("Processed {ProcessedCount} folders with .nfo files, deleted {DeletedCount} folders without metadata.json", 
                 processedMovies.Count + processedShows.Count, deletedMovies.Count + deletedShows.Count);
             
             // If items were deleted, set refresh plan to RemoveRefresh=true (ReplaceAllMetadata=false)
-            var hasDeletedItems = result.ItemsDeleted.Count > 0;
+            var hasDeletedItems = result.ItemsDeleted.Count > 0 || result.ItemsCleaned > 0;
             if (hasDeletedItems)
             {
                 result.Refresh = new RefreshPlan
@@ -74,7 +75,7 @@ public class CleanupService
             }
             
             result.Success = true;
-            result.Message = $"✅ Cleanup completed: {deletedItems.Count} items deleted, {deletedMovies.Count + deletedShows.Count} folders without metadata";
+            result.Message = $"✅ Cleanup completed: {deletedItems.Count} items deleted, {result.ItemsCleaned} folders without metadata";
             
             _logger.LogDebug("Completed cleanup - Deleted {TotalCount} items, {FoldersWithoutMetadata} folders without metadata", 
                 deletedItems.Count, deletedMovies.Count + deletedShows.Count);

@@ -39,8 +39,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     var cleanupResult = await _cleanupService.CleanupMetadataAsync();
 
-                    _logger.LogInformation("Cleanup metadata completed: {DeletedCount} items deleted, {FoldersDeleted} folders without metadata", 
-                        cleanupResult.ItemsDeleted.Count, cleanupResult.FoldersWithoutMetadataDeleted);
+                    _logger.LogInformation("Cleanup metadata completed: {DeletedCount} items deleted, {MoviesCleaned} movie folders, {ShowsCleaned} show folders without metadata", 
+                        cleanupResult.ItemsDeleted.Count, cleanupResult.MoviesCleaned, cleanupResult.ShowsCleaned);
 
                     // Apply refresh if cleanup removed items
                     if (cleanupResult.Refresh != null)
