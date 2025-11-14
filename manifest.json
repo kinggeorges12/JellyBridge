@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "2.1.2.11",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v2.1.2 - Cleanup reporting tweaks",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.2/JellyBridge-2.1.2.11.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-14T08:50:17.837Z",
+        "checksum": "99996D3E6C709FB33BF1E6BB21847124"
+      },
+      {
+        "version": "2.1.2.10",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v2.1.2 - Cleanup reporting tweaks",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.2/JellyBridge-2.1.2.10.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-14T08:50:17.837Z",
+        "checksum": "84554DC790E1AB7A48B57680A69C6099"
+      },
+      {
         "version": "2.1.1.11",
         "timestamp": "2025-11-14T07:52:58.412Z",
         "checksum": "82BC84262BD5C8D5404F2C50C9D98EA2",
