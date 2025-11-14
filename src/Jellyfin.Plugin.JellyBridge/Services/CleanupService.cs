@@ -58,17 +58,19 @@ public class CleanupService
             _logger.LogDebug("Processed {ProcessedCount} folders with .nfo files, deleted {DeletedCount} folders without metadata.json", 
                 processedMovies.Count + processedShows.Count, deletedMovies.Count + deletedShows.Count);
             
-            // If items were deleted, set refresh plan to FullRefresh=false (ReplaceAllMetadata=false)
-            if (result.ItemsDeleted.Count > 0)
+            // If items were deleted, set refresh plan to RemoveRefresh=true (ReplaceAllMetadata=false)
+            var hasDeletedItems = result.ItemsDeleted.Count > 0;
+            if (hasDeletedItems)
             {
                 result.Refresh = new RefreshPlan
                 {
-                    FullRefresh = false,
+                    CreateRefresh = false,
+                    RemoveRefresh = true,
                     RefreshImages = false
                 };
                 
-                _logger.LogDebug("Cleanup removed {DeletedCount} items, refresh plan set (FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages})", 
-                    result.ItemsDeleted.Count, result.Refresh.FullRefresh, result.Refresh.RefreshImages);
+                _logger.LogDebug("Cleanup removed {DeletedCount} items, refresh plan set (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
+                    result.ItemsDeleted.Count, result.Refresh.CreateRefresh, result.Refresh.RemoveRefresh, result.Refresh.RefreshImages);
             }
             
             result.Success = true;

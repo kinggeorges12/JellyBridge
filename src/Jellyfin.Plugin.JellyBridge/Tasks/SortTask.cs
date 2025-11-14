@@ -53,7 +53,7 @@ public class SortTask : IScheduledTask
                 // Refresh library to reload user data (play counts) if refresh is needed
                 if (sortResult.Refresh != null)
                 {
-                    await _libraryService.RefreshBridgeLibrary(refreshUserData: false);
+                    await _libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
                 }
                 
                 progress.Report(100);

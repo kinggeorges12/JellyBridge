@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.0/JellyBridge-2.1.0.11.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v2.1.0 - Fixed placeholder video creation for new installations. Improved automated library refresh for more consistency and only minimal required refresh options.",
+        "timestamp": "2025-11-14T05:46:06.049Z",
+        "checksum": "736335436780D7D811A3E6E22C72EF43",
+        "dependencies": [],
+        "version": "2.1.0.11"
+      },
+      {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.0/JellyBridge-2.1.0.10.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v2.1.0 - Fixed placeholder video creation for new installations. Improved automated library refresh for more consistency and only minimal required refresh options.",
+        "timestamp": "2025-11-14T05:46:06.049Z",
+        "checksum": "E000313B10423CDFE3C4E4A403934075",
+        "dependencies": [],
+        "version": "2.1.0.10"
+      },
+      {
         "dependencies": [],
         "checksum": "7CA64685450C18245B928F9CA25C1F48",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.0.1/JellyBridge-2.0.1.11.zip",

@@ -158,7 +158,8 @@ public class SortService
             {
                 result.Refresh = new RefreshPlan
                 {
-                    FullRefresh = false,
+                    CreateRefresh = false,
+                    RemoveRefresh = false,
                     RefreshImages = false
                 };
             }
