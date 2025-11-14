@@ -49,11 +49,11 @@ public class SyncTask : IScheduledTask
             _logger.LogInformation("Starting interval sync task");
             
             // Use Jellyfin-style locking that pauses instead of canceling
-            await Plugin.ExecuteWithLockAsync<(SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
+            await Plugin.ExecuteWithLockAsync<(CleanupResult?, SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
             {
+                CleanupResult? cleanupResult = null;
                 SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
-                CleanupResult? cleanupResult = null;
                 
                 // Step 1: Cleanup metadata before sync operations
                 progress.Report(10);
@@ -132,7 +132,7 @@ public class SyncTask : IScheduledTask
                     progress.Report(100);
                 }
 
-                return (syncToResult, syncFromResult);
+                return (cleanupResult, syncToResult, syncFromResult);
             }, _logger, "Scheduled Sync");
         }
         catch (Exception ex)

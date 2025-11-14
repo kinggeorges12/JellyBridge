@@ -17,7 +17,13 @@ public class SyncJellyseerrResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Number of items processed from Jellyseerr\n➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages\n🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages\n⏭️ Ignored: duplicate discover content or the content already exists in another Jellyfin library\n🙈 Hidden: Items newly hidden from Jellyfin using .ignore files (will be ignored on subsequent runs)";
+    public string Details { get; set; } = string.Join("\n", 
+        ResultDetails.Refresh, 
+        ResultDetails.Processed, 
+        ResultDetails.ItemsAdded, 
+        ResultDetails.ItemsUpdated, 
+        ResultDetails.ItemsIgnored, 
+        ResultDetails.ItemsHidden);
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
@@ -91,7 +97,15 @@ public class SyncJellyfinResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n❤️ Processed: Number of favorites in Jellyfin\n🔍 Found: Number of favorites in JellyBridge library\n➕ Created: Requests created in Jellyseerr\n🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues\n🙈 Hidden: Jellyfin items marked with an .ignore file after requesting them from Jellyseerr\n🧹 Cleaned: Items where favorite was unmarked after requesting from Jellyseerr (only when Favorite Cleanup is enabled)\n👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
+    public string Details { get; set; } = string.Join("\n", 
+        ResultDetails.Refresh, 
+        ResultDetails.FavoritesProcessed, 
+        ResultDetails.FavoritesFound, 
+        ResultDetails.RequestsCreated, 
+        ResultDetails.RequestsBlocked, 
+        ResultDetails.ItemsHidden, 
+        ResultDetails.ItemsCleared, 
+        ResultDetails.ItemsUnhidden);
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
@@ -100,7 +114,7 @@ public class SyncJellyfinResult
     public List<JellyseerrMediaRequest> ItemsCreated { get; set; } = new();
     public List<IJellyfinItem> ItemsBlocked { get; set; } = new();
     public List<IJellyseerrItem> ItemsHidden { get; set; } = new();
-    public List<IJellyseerrItem> ItemsCleaned { get; set; } = new();
+    public List<IJellyseerrItem> ItemsCleared { get; set; } = new();
     public List<IJellyseerrItem> ItemsUnhidden { get; set; } = new();
     
     // Computed properties - filter by type
@@ -114,8 +128,8 @@ public class SyncJellyfinResult
     public List<JellyfinSeries> BlockedShows => ItemsBlocked.OfType<JellyfinSeries>().ToList();
     public List<JellyseerrMovie> HiddenMovies => ItemsHidden.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> HiddenShows => ItemsHidden.OfType<JellyseerrShow>().ToList();
-    public List<JellyseerrMovie> CleanedMovies => ItemsCleaned.OfType<JellyseerrMovie>().ToList();
-    public List<JellyseerrShow> CleanedShows => ItemsCleaned.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> ClearedMovies => ItemsCleared.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> ClearedShows => ItemsCleared.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> UnhiddenMovies => ItemsUnhidden.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> UnhiddenShows => ItemsUnhidden.OfType<JellyseerrShow>().ToList();
     
@@ -130,8 +144,8 @@ public class SyncJellyfinResult
     public int ShowsBlocked => BlockedShows.Count;
     public int MoviesHidden => HiddenMovies.Count;
     public int ShowsHidden => HiddenShows.Count;
-    public int MoviesCleaned => CleanedMovies.Count;
-    public int ShowsCleaned => CleanedShows.Count;
+    public int MoviesCleared => ClearedMovies.Count;
+    public int ShowsCleared => ClearedShows.Count;
     public int MoviesUnhidden => UnhiddenMovies.Count;
     public int ShowsUnhidden => UnhiddenShows.Count;
 
@@ -162,7 +176,7 @@ public class SyncJellyfinResult
         result.AppendLine($"{separator}{"➕\t"}{"Created",-10}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{MoviesCreated + ShowsCreated,8}  "}{separator}");
         result.AppendLine($"{separator}{"🚫\t"}{"Blocked",-10}{separator}{$"{MoviesBlocked,8}  "}{separator}{$"{ShowsBlocked,8}  "}{separator}{$"{MoviesBlocked + ShowsBlocked,8}  "}{separator}");
         result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🧹\t"}{"Cleaned",-10}{separator}{$"{MoviesCleaned,8}  "}{separator}{$"{ShowsCleaned,8}  "}{separator}{$"{MoviesCleaned + ShowsCleaned,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🧹\t"}{"Cleared",-10}{separator}{$"{MoviesCleared,8}  "}{separator}{$"{ShowsCleared,8}  "}{separator}{$"{MoviesCleared + ShowsCleared,8}  "}{separator}");
         result.AppendLine($"{separator}{"👁️\t"}{"Unhidden",-10}{separator}{$"{MoviesUnhidden,8}  "}{separator}{$"{ShowsUnhidden,8}  "}{separator}{$"{MoviesUnhidden + ShowsUnhidden,8}  "}{separator}");
         
         return result.ToString();
@@ -180,7 +194,14 @@ public class SortLibraryResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)\n👥 Users: Play counts are individually updated for each user in the JellyBridge library\n🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options\n📦 Processed: Total items in JellyBridge libraries (movies + shows)\n✅ Sorted: Items whose play counts were updated this run\n⏭️ Skipped: Items excluded from sorting (e.g., .ignore files)\n❌ Failed: Items that could not be processed (not found/type mismatch/errors)";
+    public string Details { get; set; } = string.Join("\n", 
+        ResultDetails.SortAlgorithm, 
+        ResultDetails.SortUsers, 
+        ResultDetails.Refresh, 
+        ResultDetails.SortProcessed, 
+        ResultDetails.SortSorted, 
+        ResultDetails.SortSkipped, 
+        ResultDetails.SortFailed);
     public BridgeConfiguration.SortOrderOptions SortAlgorithm { get; set; }
     public List<JellyfinUser> Users { get; set; } = new();
     public RefreshPlan? Refresh { get; set; }
@@ -260,7 +281,11 @@ public class CleanupResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string Details { get; set; } = "🔄 Refresh: When items are deleted, refreshes all Jellyfin libraries containing the JellyBridge folder (search for missing metadata only, do not replace images)\n📦 Processed: Total items checked for cleanup\n🗑️ Deleted: Items deleted due to retention policy\n🧹 Cleaned: Items deleted that were not managed by JellyBridge (missing metadata.json)";
+    public string Details { get; set; } = string.Join("\n", 
+        ResultDetails.Refresh, 
+        ResultDetails.CleanupProcessed, 
+        ResultDetails.CleanupDeleted, 
+        ResultDetails.CleanupFolders);
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
@@ -376,4 +401,29 @@ public class RefreshPlan
         }
         return result.ToString().TrimEnd();
     }
+}
+
+public static class ResultDetails
+{
+    public const string Refresh = "🔄 Refresh: Refreshes all Jellyfin libraries containing the JellyBridge folder using the metadata options";
+    public const string Processed = "📦 Processed: Number of items processed from Jellyseerr";
+    public const string ItemsAdded = "➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages";
+    public const string ItemsUpdated = "🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages";
+    public const string ItemsIgnored = "⏭️ Ignored: Skipped discover content (folder contains .ignore file)";
+    public const string ItemsHidden = "🙈 Hidden: Jellyfin items marked with an .ignore file";
+    public const string FavoritesProcessed = "❤️ Processed: Total items favorited in Jellyfin";
+    public const string FavoritesFound = "🔍 Found: Items favorited in JellyBridge library";
+    public const string RequestsCreated = "➕ Created: Requests created in Jellyseerr";
+    public const string RequestsBlocked = "🚫 Blocked: Requests blocked by Jellyseerr due to quota limits or permission issues";
+    public const string ItemsCleared = "💔 Cleared: Items that are successfully requested in Jellyseerr are unfavorited and view counts reset to zero";
+    public const string ItemsUnhidden = "👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
+    public const string CleanupProcessed = "📦 Processed: Total items checked for cleanup";
+    public const string CleanupDeleted = "🗑️ Deleted: Items deleted due to retention policy";
+    public const string CleanupFolders = "🧹 Cleaned: Items deleted that were not managed by JellyBridge (folder missing metadata.json file)";
+    public const string SortAlgorithm = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)";
+    public const string SortUsers = "👥 Users: Play counts are individually updated for each user in the JellyBridge library";
+    public const string SortProcessed = "📦 Processed: Total items in JellyBridge libraries";
+    public const string SortSorted = "✅ Sorted: Items whose play counts were updated this run";
+    public const string SortSkipped = "⏭️ Skipped: Ignored items are excluded from sorting";
+    public const string SortFailed = "❌ Failed: Items with missing or unsynced metadata in Jellyfin";
 }
