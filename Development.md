@@ -2,12 +2,14 @@
 
 ## Planned Features
 
-1. Change the smart sort to include cast and directors as criteria
-2. Allow users to upload a custom picture or video for placeholder videos.
-3. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
+1. Extract the request favorites function from the sync task. The favorites function can be triggered directly from the Favorite event handler in Jellyfin. See [Issue #12](https://github.com/kinggeorges12/JellyBridge/issues/12#issuecomment-3533119223).
+2. Faster refreshes that target only the metadata items that have been changed.
+3. Change the smart sort to include cast and directors as criteria
+4. Allow users to upload a custom picture or video for placeholder videos.
+5. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
 
 ## Completed Features
-1. Support for Jellyfin 10.11.*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
+1. Support for Jellyfin 10.11.\*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
 2. Change sort order based on user preference or implement a random sort order plugin.
 
 ## Contributing
