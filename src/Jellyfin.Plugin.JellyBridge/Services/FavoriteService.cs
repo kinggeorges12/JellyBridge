@@ -326,10 +326,10 @@ public class FavoriteService
     /// Also marks items as unplayed (unwatched) for all users who had favorited them.
     /// Returns the list of newly ignored Jellyseerr items.
     /// </summary>
-    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> cleaned)> UnmarkAndIgnoreRequestedAsync()
+public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> cleared)> ClearAndIgnoreRequestedAsync()
     {
         var newIgnored = new List<IJellyseerrItem>();
-        var cleaned = new List<IJellyseerrItem>();
+        var cleared = new List<IJellyseerrItem>();
 
         var removeRequested = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
 
@@ -443,7 +443,7 @@ public class FavoriteService
                             {
                                 _logger.LogTrace("Unfavorited '{ItemName}' for user '{UserName}'", 
                                     item.Name, user.Username);
-                                cleaned.Add(jellyseerrItem);
+                                cleared.Add(jellyseerrItem);
                             }
                             else
                             {
@@ -487,12 +487,10 @@ public class FavoriteService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed processing favorited items for unmark-and-ignore");
+            _logger.LogError(ex, "Failed processing favorited items");
         }
 		
-		_logger.LogDebug("UnmarkAndIgnoreRequestedAsync complete. NewIgnored={NewIgnoredCount}, Cleaned={CleanedCount}", 
-            newIgnored.Count, cleaned.Count);
-        return (newIgnored, cleaned);
+        return (newIgnored, cleared);
     }
 
     /// <summary>
