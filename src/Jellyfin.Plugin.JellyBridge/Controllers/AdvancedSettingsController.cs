@@ -45,8 +45,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Apply refresh if cleanup removed items
                     if (cleanupResult.Refresh != null)
                     {
-                        _logger.LogDebug("Applying cleanup refresh plan (FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages})", 
-                            cleanupResult.Refresh.FullRefresh, cleanupResult.Refresh.RefreshImages);
+                        _logger.LogDebug("Applying cleanup refresh plan (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
+                            cleanupResult.Refresh.CreateRefresh, cleanupResult.Refresh.RemoveRefresh, cleanupResult.Refresh.RefreshImages);
                         _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
                         await _syncService.ApplyRefreshAsync(cleanupResult: cleanupResult);
                         _logger.LogDebug("Scan of all libraries completed");
@@ -148,8 +148,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
                     
                     // Call the refresh method (fire-and-await, no return value)
-                    // refreshUserData defaults to true - will perform light refresh to reload user data
-                    await _libraryService.RefreshBridgeLibrary(fullRefresh: true, refreshImages: true);
+                    // Update refresh always runs to reload user data (play counts)
+                    await _libraryService.RefreshBridgeLibrary(createMode: true, removeMode: true, refreshImages: true);
 
                     await _libraryService.ScanAllLibraries();
 

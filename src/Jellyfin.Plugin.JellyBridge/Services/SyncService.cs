@@ -180,10 +180,12 @@ public partial class SyncService
             
             if (hasAddedItems || hasHiddenItems)
             {
+                _logger.LogDebug("Step 9: Refreshing Jellyfin libraries");
                 result.Refresh = new RefreshPlan
                 {
-                    // Added items trigger full refresh, hidden items trigger partial refresh
-                    FullRefresh = hasAddedItems,
+                    // Added items trigger create refresh, hidden items trigger remove refresh
+                    CreateRefresh = hasAddedItems,
+                    RemoveRefresh = hasHiddenItems,
                     RefreshImages = hasAddedItems
                 };
             }
@@ -297,13 +299,19 @@ public partial class SyncService
             result.ItemsUnhidden.AddRange(declinedItems);
             _logger.LogDebug("Step 7: Unhidden {UnhiddenCount} declined items", declinedItems.Count);
 
-            // Step 8: Provide refresh plan to caller based on hidden or unhidden items
-            _logger.LogDebug("Step 8: Refreshing Jellyfin libraries");
-            if (result.ItemsHidden.Count > 0 || result.ItemsUnhidden.Count > 0)
+            // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
+            // Only set refresh plan if there are added items or hidden items
+            var hasHiddenItems = result.ItemsHidden.Count > 0;
+            var hasUnhiddenItems = result.ItemsUnhidden.Count > 0;
+
+            if (hasHiddenItems || hasUnhiddenItems)
             {
+                _logger.LogDebug("Step 9: Refreshing Jellyfin libraries");
                 result.Refresh = new RefreshPlan
                 {
-                    FullRefresh = result.ItemsHidden.Count > 0,
+                    // Added items trigger create refresh, hidden items trigger remove refresh
+                    CreateRefresh = hasUnhiddenItems,
+                    RemoveRefresh = hasHiddenItems,
                     RefreshImages = false
                 };
             }
@@ -344,13 +352,14 @@ public partial class SyncService
             var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
             if (doRefresh)
             {
-                var fullRefresh = (cleanupResult?.Refresh?.FullRefresh == true) || (syncToResult?.Refresh?.FullRefresh == true) || (syncFromResult?.Refresh?.FullRefresh == true);
+                var createMode = (cleanupResult?.Refresh?.CreateRefresh == true) || (syncToResult?.Refresh?.CreateRefresh == true) || (syncFromResult?.Refresh?.CreateRefresh == true);
+                var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
                 var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
 
-                _logger.LogDebug("Applying refresh plan - FullRefresh: {FullRefresh}, RefreshImages: {RefreshImages}", fullRefresh, refreshImages);
+                _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
                 _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                // refreshUserData defaults to true - will perform light refresh to reload user data
-                await _libraryService.RefreshBridgeLibrary(fullRefresh: fullRefresh, refreshImages: refreshImages);
+                // Update refresh always runs to reload user data (play counts)
+                await _libraryService.RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
                 _logger.LogDebug("Scan of all libraries completed");
             } else {
                 _logger.LogDebug("No refresh plan applied");

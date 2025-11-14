@@ -108,7 +108,7 @@ Access the plugin configuration from the host machine at: `http://localhost:8096
 The plugin includes a modern, responsive web interface for configuration. Follow these steps to get started:
 
 1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
-2. **Create JellyBridge Library** in Jellyfin with the options suggested on the plugin configuration page
+2. **Create discover library** in Jellyfin with the options suggested on the plugin configuration page
 3. **Test the connection** to ensure Jellyseerr is accessible
 4. **Import discover content** to browse movies and series from Jellyseerr
 5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads

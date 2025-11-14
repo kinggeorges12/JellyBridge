@@ -58,9 +58,8 @@ public class SyncJellyseerrResult
         
         if (Refresh != null)
         {
-            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
-            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
+            result.AppendLine();
+            result.AppendLine(Refresh.ToString());
         }
         
         result.AppendLine();
@@ -146,9 +145,8 @@ public class SyncJellyfinResult
         
         if (Refresh != null)
         {
-            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
-            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
+            result.AppendLine();
+            result.AppendLine(Refresh.ToString());
         }
         
         result.AppendLine();
@@ -231,8 +229,8 @@ public class SortLibraryResult
         
         if (Refresh != null)
         {
-            // Sort always uses refreshUserData: false, which results in "Scan for new and updated files"
-            result.AppendLine($"🔄 Scan for new and updated files, 🔳 Replace existing images");
+            result.AppendLine();
+            result.AppendLine(Refresh.ToString());
         }
         
         result.AppendLine();
@@ -295,9 +293,8 @@ public class CleanupResult
         
         if (Refresh != null)
         {
-            var refreshType = Refresh.FullRefresh ? "Replace all metadata" : "Search for missing metadata";
-            var refreshImages = Refresh.RefreshImages ? "☑️ Replace existing images" : "🔳 Replace existing images";
-            result.AppendLine($"\n🔄 {refreshType}, {refreshImages}");
+            result.AppendLine();
+            result.AppendLine(Refresh.ToString());
         }
         
         result.AppendLine();
@@ -362,6 +359,25 @@ public class ListAlias<T, TBase> : ICollection<T> where T : TBase
 /// </summary>
 public class RefreshPlan
 {
-    public bool FullRefresh { get; set; }
+    public bool CreateRefresh { get; set; }
+    public bool RemoveRefresh { get; set; }
     public bool RefreshImages { get; set; }
+    
+    public override string ToString()
+    {
+        var result = new System.Text.StringBuilder();
+        var refreshImagesTrue = "☑️ Replace existing images";
+        var refreshImagesFalse = "🔳 Replace existing images";
+        var refreshImages = RefreshImages ? refreshImagesTrue : refreshImagesFalse;
+        if (RemoveRefresh)
+        {
+            result.AppendLine($"🔄 Search for missing metadata, {refreshImagesFalse}");
+        }
+        result.AppendLine($"🔄 Scan for new and updated files");
+        if (CreateRefresh)
+        {
+            result.AppendLine($"🔄 Replace all metadata, {refreshImages}");
+        }
+        return result.ToString().TrimEnd();
+    }
 }

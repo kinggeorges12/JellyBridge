@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Collections.Concurrent;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
@@ -14,6 +17,10 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 /// </summary>
 public class PlaceholderVideoGenerator
 {
+    
+    // Semaphores to serialize asset extraction per asset name (prevents race conditions)
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _assetExtractionSemaphores = new();
+
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetsPath;
@@ -193,62 +200,66 @@ public class PlaceholderVideoGenerator
 
     /// <summary>
     /// Ensures an embedded asset is extracted to the temp directory.
+    /// Uses a semaphore per asset name to prevent race conditions when multiple tasks try to extract the same asset simultaneously.
     /// </summary>
     /// <param name="assetName">The asset filename (e.g., "movie.png")</param>
     /// <returns>Path to the extracted asset file, or null if failed</returns>
     private async Task<string?> EnsureAssetExtractedAsync(string assetName)
     {
+        // Get or create a semaphore for this specific asset to serialize extraction
+        var semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
+        
+        await semaphore.WaitAsync();
         try
         {
             var assetPath = Path.Combine(_assetsPath, assetName);
             
+            // After acquiring the lock, check if file was already created by another task
             if (File.Exists(assetPath))
             {
+                _logger.LogTrace("Asset already extracted: {AssetPath}", assetPath);
                 return assetPath;
             }
             
-            // Extract embedded resource
-            var resourceName = $"Jellyfin.Plugin.JellyBridge.Assets.{assetName}";
-            _logger.LogTrace("Looking for embedded resource: {ResourceName}", resourceName);
+            // Construct the embedded resource name programmatically
+            // Pattern: {RootNamespace}.{FolderPath}.{FileName}
+            // Example: Jellyfin.Plugin.JellyBridge.Assets.movie.png
+            // Embedded resources use RootNamespace from csproj, which matches the root of the type namespace
+            var assembly = typeof(PlaceholderVideoGenerator).Assembly;
             
-            // List all available resources for debugging
-            var allResources = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceNames();
-            _logger.LogTrace("Available resources: {Resources}", string.Join(", ", allResources));
+            // Get root namespace from a type in the root namespace (e.g., Plugin class)
+            var rootNamespace = typeof(Plugin).Namespace ?? throw new InvalidOperationException("Plugin.Namespace is null");
             
-            using var stream = typeof(PlaceholderVideoGenerator).Assembly.GetManifestResourceStream(resourceName);
+            // Construct resource name: RootNamespace.Assets.assetName
+            var resourceName = $"{rootNamespace}.Assets.{assetName}";
+            
+            _logger.LogTrace("Looking for embedded resource: {ResourceName} (root namespace: {RootNamespace})", 
+                resourceName, rootNamespace);
+            
+            using var stream = assembly.GetManifestResourceStream(resourceName);
             
             if (stream == null)
             {
-                _logger.LogError("Embedded asset not found: {ResourceName}", resourceName);
-                return null;
+                var allResources = assembly.GetManifestResourceNames();
+                var errorMessage = $"Embedded asset not found: {assetName}. Tried: {resourceName}. Available resources: {string.Join(", ", allResources)}";
+                throw new InvalidOperationException(errorMessage);
             }
             
             using var fileStream = File.Create(assetPath);
             await stream.CopyToAsync(fileStream);
+            await fileStream.FlushAsync();
             
             _logger.LogTrace("Extracted embedded asset: {AssetPath}", assetPath);
-            
-            // Verify the extracted file exists and has content
-            if (!File.Exists(assetPath))
-            {
-                _logger.LogError("Extracted asset file does not exist: {AssetPath}", assetPath);
-                return null;
-            }
-            
-            var fileInfo = new FileInfo(assetPath);
-            if (fileInfo.Length == 0)
-            {
-                _logger.LogError("Extracted asset file is empty: {AssetPath}", assetPath);
-                return null;
-            }
-            
-            _logger.LogTrace("Asset file verified: {AssetPath} ({Size} bytes)", assetPath, fileInfo.Length);
             return assetPath;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to extract asset: {AssetName}", assetName);
             return null;
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 
