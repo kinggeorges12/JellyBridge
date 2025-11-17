@@ -232,7 +232,14 @@ public class MetadataService
         
         // Create all tasks and await them in parallel
         var tasks = items.Select((item, index) => ProcessCreateFolderMetadataAsync(item, index)).ToArray();
-        await Task.WhenAll(tasks);
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
         
         _logger.LogDebug("Completed folder creation for mixed media - Added: {Added}, Updated: {Updated}", 
             addedItems.Count, updatedItems.Count);
