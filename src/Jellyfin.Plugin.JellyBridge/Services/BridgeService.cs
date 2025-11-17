@@ -191,7 +191,14 @@ public class BridgeService
             }
         }
 
-        await Task.WhenAll(ignoreFileTasks);
+        try
+        {
+            await Task.WhenAll(ignoreFileTasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
         return (newIgnored, existingIgnored);
     }
 

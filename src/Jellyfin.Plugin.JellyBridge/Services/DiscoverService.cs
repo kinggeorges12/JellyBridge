@@ -205,7 +205,14 @@ public class DiscoverService
         }
         
         // Await all placeholder video tasks
-        await Task.WhenAll(tasks);
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
         
         _logger.LogDebug("Completed - Processed {ProcessedCount} items", 
             processedItems.Count);
@@ -318,7 +325,14 @@ public class DiscoverService
             }
         }
 
-        await Task.WhenAll(ignoreFileTasks);
+        try
+        {
+            await Task.WhenAll(ignoreFileTasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
         return (newlyIgnored, existingIgnored);
     }
 
@@ -493,7 +507,14 @@ public class DiscoverService
             }
         }
 
-        await Task.WhenAll(ignoreFileTasks);
+        try
+        {
+            await Task.WhenAll(ignoreFileTasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
         
         var totalIgnored = newlyIgnored.Count + existingIgnored.Count;
         if (totalIgnored > 0)

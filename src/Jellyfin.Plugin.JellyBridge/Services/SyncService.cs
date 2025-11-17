@@ -102,7 +102,7 @@ public partial class SyncService
 
             // Step 3: Process movies and TV shows
             _logger.LogDebug("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
-            var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
+            var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(discoverMedia);
             // Add items to unified collections
             result.ItemsAdded.AddRange(addedMedia);
             result.ItemsUpdated.AddRange(updatedMedia);

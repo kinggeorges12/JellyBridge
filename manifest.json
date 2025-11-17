@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "version": "2.1.4.11",
+        "changelog": "Jellyfin 10.11.0: v2.1.4 - Fix SyncService metadata step to process the full discover media list. Caused errors when creating ignore files that terminated the sync process. Fixed other files that did not try/catch when awaiting tasks.",
+        "timestamp": "2025-11-17T07:39:20.332Z",
+        "checksum": "EFFC9AACC77EA0ECC03B0670DDD1B1A8",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.4/JellyBridge-2.1.4.11.zip"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "version": "2.1.4.10",
+        "changelog": "Jellyfin 10.10.7: v2.1.4 - Fix SyncService metadata step to process the full discover media list. Caused errors when creating ignore files that terminated the sync process. Fixed other files that did not try/catch when awaiting tasks.",
+        "timestamp": "2025-11-17T07:39:20.332Z",
+        "checksum": "5AFDB447A31CDEC3E48A9A80A0B2FFEA",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.4/JellyBridge-2.1.4.10.zip"
+      },
+      {
         "checksum": "10C6CF1ABAF7ED6D6C9C8F52A702EFC8",
         "dependencies": [],
         "version": "2.1.3.11",
