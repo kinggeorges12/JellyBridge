@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "10C6CF1ABAF7ED6D6C9C8F52A702EFC8",
+        "dependencies": [],
+        "version": "2.1.3.11",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.3/JellyBridge-2.1.3.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.1.3 - Simplify placeholder video generation by removing redundant FFmpeg availability probe.",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-17T07:02:54.463Z"
+      },
+      {
+        "checksum": "8E26D4A8A2C54582B1594BA16D7D8ABA",
+        "dependencies": [],
+        "version": "2.1.3.10",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.3/JellyBridge-2.1.3.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.1.3 - Simplify placeholder video generation by removing redundant FFmpeg availability probe.",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-17T07:02:54.463Z"
+      },
+      {
         "version": "2.1.2.11",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v2.1.2 - Cleanup reporting tweaks",

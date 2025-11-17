@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,6 +21,9 @@ public class PlaceholderVideoGenerator
     
     // Semaphores to serialize asset extraction per asset name (prevents race conditions)
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _assetExtractionSemaphores = new();
+    
+    // Semaphores to serialize cache file generation per cache path (prevents race conditions)
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _cacheGenerationSemaphores = new();
 
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
@@ -112,6 +116,7 @@ public class PlaceholderVideoGenerator
     /// <summary>
     /// Ensures a cached placeholder video exists in the system temp directory for the given asset.
     /// Returns the path to the cached file if successful, null otherwise.
+    /// Uses a semaphore per cache path to prevent race conditions when multiple tasks try to generate the same cache file.
     /// </summary>
     /// <param name="assetName">The asset image filename to base the placeholder on (e.g., "movie.png")</param>
     /// <returns>Path to cached file if successful, null otherwise</returns>
@@ -126,25 +131,96 @@ public class PlaceholderVideoGenerator
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
             var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}{AssetExtension}");
 
-            if (!File.Exists(cachePath))
+            // Get or create a semaphore for this specific cache path to serialize generation
+            var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            
+            await semaphore.WaitAsync();
+            try
             {
-                _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
-                
-                // Check if FFmpeg is available before attempting to generate (with retry logic)
-                if (!await IsFFmpegAvailableAsync())
+                // Double-check pattern: after acquiring the lock, check if file was already created by another task
+                if (File.Exists(cachePath))
                 {
-                    _logger.LogError("FFmpeg is not available, cannot generate placeholder for {Asset}", assetName);
-                    return null;
+                    // Verify the file is not empty (another task might have just created it)
+                    var fileInfo = new FileInfo(cachePath);
+                    if (fileInfo.Length > 0)
+                    {
+                        _logger.LogTrace("Cached placeholder already exists: {CachePath} ({Size} bytes)", cachePath, fileInfo.Length);
+                        return cachePath;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Cached placeholder file exists but is empty, will regenerate: {CachePath}", cachePath);
+                        // File exists but is empty, delete it and regenerate
+                        try
+                        {
+                            File.Delete(cachePath);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to delete empty cache file: {CachePath}", cachePath);
+                        }
+                    }
                 }
+                
+                _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
                 
                 var ok = await GeneratePlaceholderVideoAsync(assetName, cachePath);
                 if (!ok)
                 {
                     return null;
                 }
+                
+                // Wait for the file to be created and have content before releasing the semaphore
+                // This handles cases where the file system is still writing the file
+                const int maxAttempts = 3;
+                
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    _logger.LogTrace("Waiting for cache file to be ready, attempt {Attempt}/{TotalAttempts}: {CachePath}", 
+                        attempt, maxAttempts, cachePath);
+                    
+                    if (File.Exists(cachePath))
+                    {
+                        var fileInfo = new FileInfo(cachePath);
+                        if (fileInfo.Length > 0)
+                        {
+                            _logger.LogTrace("Cache file is ready: {CachePath} ({Size} bytes) (attempt {Attempt}/{TotalAttempts})", 
+                                cachePath, fileInfo.Length, attempt, maxAttempts);
+                            return cachePath;
+                        }
+                        else
+                        {
+                            _logger.LogTrace("Cache file exists but is empty, waiting...: {CachePath}", cachePath);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogTrace("Cache file does not exist yet, waiting...: {CachePath}", cachePath);
+                    }
+                    
+                    // Wait with exponential backoff (1s, 2s, 4s)
+                    var waitSeconds = Math.Pow(2, attempt - 1);
+                    await Task.Delay(TimeSpan.FromSeconds(waitSeconds));
+                }
+                
+                // If we get here, all retry attempts failed
+                if (File.Exists(cachePath))
+                {
+                    var fileInfo = new FileInfo(cachePath);
+                    _logger.LogError("Cache file exists but is still empty after waiting: {CachePath} ({Size} bytes)", 
+                        cachePath, fileInfo.Length);
+                }
+                else
+                {
+                    _logger.LogError("Cache file was not created after waiting: {CachePath}", cachePath);
+                }
+                
+                return null;
             }
-
-            return cachePath;
+            finally
+            {
+                semaphore.Release();
+            }
         }
         catch (Exception ex)
         {
@@ -437,63 +513,5 @@ public class PlaceholderVideoGenerator
         }
 
         return deletedCount;
-    }
-
-    /// <summary>
-    /// Check if FFmpeg is available and working, with retry logic.
-    /// </summary>
-    /// <returns>True if FFmpeg is available, false otherwise</returns>
-    public async Task<bool> IsFFmpegAvailableAsync()
-    {
-        try
-        {
-            var requestTimeout = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout));
-            var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts));
-            
-            for (int attempt = 1; attempt <= retryAttempts; attempt++)
-            {
-                _logger.LogTrace("FFmpeg availability check attempt {Attempt}/{TotalAttempts}", attempt, retryAttempts);
-                
-                var attemptStartTime = DateTime.UtcNow;
-                var maxWaitTime = TimeSpan.FromSeconds(requestTimeout);
-                
-                // Keep trying until the timeout period expires for this attempt
-                while (DateTime.UtcNow - attemptStartTime < maxWaitTime)
-                {
-                    var processInfo = new ProcessStartInfo
-                    {
-                        FileName = _mediaEncoder.EncoderPath,
-                        Arguments = "-version",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true
-                    };
-
-                    using var process = new Process { StartInfo = processInfo };
-                    process.Start();
-                    await process.WaitForExitAsync();
-
-                    if (process.ExitCode == 0)
-                    {
-                        _logger.LogInformation("FFmpeg is now available (attempt {Attempt}/{TotalAttempts})", attempt, retryAttempts);
-                        return true;
-                    }
-                    
-                    // Wait a bit before retrying within this attempt
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                }
-                
-                _logger.LogDebug("Attempt {Attempt}/{TotalAttempts} timed out after {RequestTimeout} seconds", attempt, retryAttempts, requestTimeout);
-            }
-            
-            _logger.LogWarning("FFmpeg availability check failed after {RetryAttempts} attempts", retryAttempts);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "FFmpeg availability check failed");
-            return false;
-        }
     }
 }
