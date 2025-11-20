@@ -140,39 +140,13 @@ public class PlaceholderVideoGenerator
                 // Double-check pattern: after acquiring the lock, check if file was already created by another task
                 if (File.Exists(cachePath))
                 {
-                    // Verify the file is not empty (another task might have just created it)
-                    var fileInfo = new FileInfo(cachePath);
-                    if (fileInfo.Length > 0)
-                    {
-                        _logger.LogTrace("Cached placeholder already exists: {CachePath} ({Size} bytes)", cachePath, fileInfo.Length);
-                        return cachePath;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Cached placeholder file exists but is empty, will regenerate: {CachePath}", cachePath);
-                        // File exists but is empty, delete it and regenerate
-                        try
-                        {
-                            File.Delete(cachePath);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "Failed to delete empty cache file: {CachePath}", cachePath);
-                        }
-                    }
-                }
-                
-                _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
-                
-                var ok = await GeneratePlaceholderVideoAsync(assetName, cachePath);
-                if (!ok)
-                {
-                    return null;
+                    _logger.LogTrace("Cached placeholder already exists: {CachePath}", cachePath);
+                    return cachePath;
                 }
                 
                 // Wait for the file to be created and have content before releasing the semaphore
                 // This handles cases where the file system is still writing the file
-                const int maxAttempts = 3;
+                const int maxAttempts = 5;
                 
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
@@ -184,9 +158,18 @@ public class PlaceholderVideoGenerator
                         var fileInfo = new FileInfo(cachePath);
                         if (fileInfo.Length > 0)
                         {
-                            _logger.LogTrace("Cache file is ready: {CachePath} ({Size} bytes) (attempt {Attempt}/{TotalAttempts})", 
-                                cachePath, fileInfo.Length, attempt, maxAttempts);
-                            return cachePath;
+                            try {
+                                using (FileStream stream = File.Open(cachePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                                {
+                                    _logger.LogTrace("Cache file is ready: {CachePath} ({Size} bytes) (attempt {Attempt}/{TotalAttempts})", 
+                                        cachePath, fileInfo.Length, attempt, maxAttempts);
+                                }
+                                return cachePath;
+                            }
+                            catch (Exception)
+                            {
+                                _logger.LogTrace("Failed to open cache file, waiting...: {CachePath}", cachePath);
+                            }
                         }
                         else
                         {
@@ -195,7 +178,13 @@ public class PlaceholderVideoGenerator
                     }
                     else
                     {
-                        _logger.LogTrace("Cache file does not exist yet, waiting...: {CachePath}", cachePath);
+                        _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
+
+                        var ok = await GeneratePlaceholderVideoAsync(assetName, cachePath);
+                        if (!ok)
+                        {
+                            _logger.LogTrace("Generating video failed, waiting...: {CachePath}", cachePath);
+                        }
                     }
                     
                     // Wait with exponential backoff (1s, 2s, 4s)
@@ -204,16 +193,7 @@ public class PlaceholderVideoGenerator
                 }
                 
                 // If we get here, all retry attempts failed
-                if (File.Exists(cachePath))
-                {
-                    var fileInfo = new FileInfo(cachePath);
-                    _logger.LogError("Cache file exists but is still empty after waiting: {CachePath} ({Size} bytes)", 
-                        cachePath, fileInfo.Length);
-                }
-                else
-                {
-                    _logger.LogError("Cache file was not created after waiting: {CachePath}", cachePath);
-                }
+                _logger.LogError("Cache file was not created after waiting 30 seconds: {CachePath}", cachePath);
                 
                 return null;
             }
