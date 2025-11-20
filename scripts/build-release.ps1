@@ -211,7 +211,7 @@ $headers = @{
     "Accept" = "application/vnd.github.v3+json"
 }
 
-$releaseBody = "## v$Version - Release`n`n$ChangelogText`n`n### Changes:`n- Updated version to $Version`n- Built and packaged DLL`n- Updated manifest.json with new version entry`n- Generated checksum and timestamp`n`n### Installation:`n1. Download the JellyBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
+$releaseBody = "## v$Version`n`n$ChangelogText`n`n### Installation:`n1. Download the JellyBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
 
 $body = @{
     tag_name = "v$Version"
