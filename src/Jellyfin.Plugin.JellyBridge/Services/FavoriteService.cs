@@ -351,7 +351,7 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 			_logger.LogDebug("Library scan produced {MatchCount} matches for ignore/unfavorite", matches.Count);
 
             // Create ignore files for all matched Jellyfin items (always done, regardless of RemoveRequestedFromFavorites setting)
-			var (newIgnoredMatches, existingIgnored) = await _bridgeService.CreateIgnoreFilesAsync(matches);
+			var (newIgnoredMatches, existingIgnored) = await _bridgeService.IgnoreMatchAsync(matches);
 			newIgnored.AddRange(newIgnoredMatches);
 			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newIgnoredMatches.Count, existingIgnored.Count);

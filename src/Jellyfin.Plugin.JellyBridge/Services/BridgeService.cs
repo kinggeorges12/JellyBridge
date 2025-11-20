@@ -5,11 +5,14 @@ using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Dto;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System;
+using System.Text;
  
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -23,8 +26,11 @@ public class BridgeService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly IDtoService _dtoService;
     private readonly MetadataService _metadataService;
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileSemaphores = new();
 
     public readonly static string IgnoreFileName = ".ignore";
+
+    public readonly static string IgnorePattern = "**/*";
 
     public BridgeService(ILogger<BridgeService> logger, JellyfinILibraryManager libraryManager, IDtoService dtoService, MetadataService metadataService)
     {
@@ -138,10 +144,53 @@ public class BridgeService
     }
 
     /// <summary>
+    /// Creates an ignore file with the specified JSON content.
+    /// Uses a semaphore indexed by filename to prevent concurrent writes to the same file.
+    /// </summary>
+    /// <param name="ignoreFilePath">The full path to the ignore file</param>
+    /// <param name="fileContent">The JSON content to write to the file</param>
+    /// <returns>Task that completes when the file is written</returns>
+    public async Task CreateIgnoreFileAsync(string ignoreFilePath, string? fileContent)
+    {
+        var semaphore = _fileSemaphores.GetOrAdd(ignoreFilePath, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync();
+        try
+        {
+            // Comment out each line of the JSON content
+            if (string.IsNullOrEmpty(fileContent))
+            {
+                await File.WriteAllTextAsync(ignoreFilePath, IgnorePattern);
+                return;
+            }
+
+            var lines = fileContent.Split(Environment.NewLine);
+
+            var commentPrefix = "#";
+
+            // Calculate the expected length of the new string
+            var sb = new StringBuilder(fileContent.Length + lines.Length * (commentPrefix.Length + Environment.NewLine.Length) + IgnorePattern.Length + Environment.NewLine.Length);
+
+            foreach (var line in lines)
+            {
+                sb.Append(commentPrefix);
+                sb.AppendLine(line);
+            }
+
+            sb.AppendLine(IgnorePattern);
+
+            await File.WriteAllTextAsync(ignoreFilePath, sb.ToString());
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    /// <summary>
     /// Create ignore files for matched items.
     /// Returns a tuple of (newly ignored items, existing ignored items).
     /// </summary>
-    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> CreateIgnoreFilesAsync(List<JellyMatch> matches)
+    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> IgnoreMatchAsync(List<JellyMatch> matches)
     {
         var newIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
@@ -162,27 +211,22 @@ public class BridgeService
                 }
                 else
                 {
-                    _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
-                        item.Name, item.Id, ignoreFilePath);
-                    var itemJson = item.ToJson(_dtoService);
-                    _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
-                        item.Name, itemJson?.Length ?? 0);
-                    ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
-                    newIgnored.Add(match.JellyseerrItem);
-                    _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
-                }
-            }
-            catch (MissingMethodException ex)
-            {
-                _logger.LogDebug(ex, "Using incompatible Jellyfin version. Writing empty ignore file for {ItemName}", item.Name);
-                if (!File.Exists(ignoreFilePath))
-                {
-                    await File.WriteAllTextAsync(ignoreFilePath, "");
-                    newIgnored.Add(match.JellyseerrItem);
-                }
-                else
-                {
-                    existingIgnored.Add(match.JellyseerrItem);
+                    try {
+                        _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}", 
+                            item.Name, item.Id, ignoreFilePath);
+                        var itemJson = item.ToJson(_dtoService);
+                        _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters", 
+                            item.Name, itemJson?.Length ?? 0);
+                        ignoreFileTasks.Add(CreateIgnoreFileAsync(ignoreFilePath, itemJson));
+                        newIgnored.Add(match.JellyseerrItem);
+                        _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+                    }
+                    catch (MissingMethodException ex)
+                    {
+                        _logger.LogDebug(ex, "Using incompatible Jellyfin version. Writing empty ignore file for {ItemName}", item.Name);
+                        await CreateIgnoreFileAsync(ignoreFilePath, "");
+                        newIgnored.Add(match.JellyseerrItem);
+                    }
                 }
             }
             catch (Exception ex)

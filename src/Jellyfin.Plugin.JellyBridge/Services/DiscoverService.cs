@@ -314,7 +314,7 @@ public class DiscoverService
                 {
                     // Serialize using the actual runtime type - the converter handles this automatically
                     var itemJson = System.Text.Json.JsonSerializer.Serialize(duplicate, duplicate.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
-                    ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                    ignoreFileTasks.Add(_bridgeService.CreateIgnoreFileAsync(ignoreFilePath, itemJson));
                     newlyIgnored.Add(duplicate);
                     _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", duplicate.MediaName, bridgeFolderPath);
                 }
@@ -464,7 +464,7 @@ public class DiscoverService
                         else
                         {
                             var itemJson = System.Text.Json.JsonSerializer.Serialize(item, item.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
-                            ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                            ignoreFileTasks.Add(_bridgeService.CreateIgnoreFileAsync(ignoreFilePath, itemJson));
                             newlyIgnored.Add(item);
                             _logger.LogTrace("Ignored item with no NetworkId: {ItemName}", item.MediaName);
                         }
@@ -490,7 +490,7 @@ public class DiscoverService
                         else
                         {
                             var itemJson = System.Text.Json.JsonSerializer.Serialize(item, item.GetType(), JellyBridgeJsonSerializer.DefaultOptions<object>());
-                            ignoreFileTasks.Add(File.WriteAllTextAsync(ignoreFilePath, itemJson));
+                            ignoreFileTasks.Add(_bridgeService.CreateIgnoreFileAsync(ignoreFilePath, itemJson));
                             newlyIgnored.Add(item);
                             _logger.LogTrace("Ignored item with invalid NetworkId {NetworkId}: {ItemName}", item.NetworkId, item.MediaName);
                         }
