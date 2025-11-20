@@ -144,7 +144,7 @@ public partial class SyncService
             // Step 5: Create ignore files for matched items and add them to ignored items
             _logger.LogDebug("Step 5: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
                 matchedItems.Count);
-            var ignoreTask = _bridgeService.CreateIgnoreFilesAsync(matchedItems);
+            var ignoreTask = _bridgeService.IgnoreMatchAsync(matchedItems);
 
             // Step 6: Create placeholder videos for unmatched movies
             var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
