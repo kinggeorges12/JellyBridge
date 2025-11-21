@@ -145,7 +145,7 @@ public class CleanupService
         var processedShows = new List<string>();
         var deletedMovies = new List<string>();
         var deletedShows = new List<string>();
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var syncDirectory = FolderUtils.GetBaseDirectory();
         
         if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
         {

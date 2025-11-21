@@ -4,6 +4,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
+using Jellyfin.Plugin.JellyBridge.Utils;
 using System;
 using System.IO;
 using System.Linq;
@@ -140,7 +141,7 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
                     return null;
                 }).Where(item => item != null && 
                     (excludePaths == null || item.Path == null || 
-                     !excludePaths.Any(excludePath => item.Path.StartsWith(excludePath, StringComparison.OrdinalIgnoreCase)))).Cast<T>();
+                     !excludePaths.Any(excludePath => FolderUtils.IsPathInDirectory(item.Path, excludePath)))).Cast<T>();
                 
                 result.AddRange(jellyfinItems);
             }
@@ -161,7 +162,7 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
                     return null;
                 }).Where(item => item != null && 
                     (excludePaths == null || item.Path == null || 
-                     !excludePaths.Any(excludePath => item.Path.StartsWith(excludePath, StringComparison.OrdinalIgnoreCase)))).Cast<T>();
+                     !excludePaths.Any(excludePath => FolderUtils.IsPathInDirectory(item.Path, excludePath)))).Cast<T>();
                 
                 result.AddRange(jellyfinItems);
             }

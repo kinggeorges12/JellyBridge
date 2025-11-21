@@ -268,13 +268,14 @@ public class BridgeService
             var normalizedLocations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var location in library.Locations)
             {
-                try
+                var normalized = FolderUtils.GetNormalizedPath(location);
+                if (!string.IsNullOrEmpty(normalized))
                 {
-                    normalizedLocations.Add(Path.GetFullPath(location));
+                    normalizedLocations.Add(normalized);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogWarning(ex, "Error normalizing library location {Location} for library {LibraryName}", 
+                    _logger.LogWarning("Error normalizing library location {Location} for library {LibraryName}", 
                         location, library.Name);
                 }
             }
@@ -325,14 +326,14 @@ public class BridgeService
                         allDirs.AddRange(showDirs);
                         foreach (var dir in allDirs)
                         {
-                            try
+                            var normalized = FolderUtils.GetNormalizedPath(dir);
+                            if (!string.IsNullOrEmpty(normalized))
                             {
-                                var normalized = Path.GetFullPath(dir);
                                 directoryLibraryMap[normalized] = (libraryName, dir);
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                _logger.LogWarning(ex, "Error normalizing directory path: {Directory}. Skipping this directory.", dir);
+                                _logger.LogWarning("Error normalizing directory path: {Directory}. Skipping this directory.", dir);
                             }
                         }
                         
@@ -369,9 +370,9 @@ public class BridgeService
                 try
                 {
                     var expectedDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
-                    var normalizedExpected = Path.GetFullPath(expectedDirectory);
+                    var normalizedExpected = FolderUtils.GetNormalizedPath(expectedDirectory);
                     
-					if (directoryLibraryMap.TryGetValue(normalizedExpected, out var libraryInfo))
+					if (!string.IsNullOrEmpty(normalizedExpected) && directoryLibraryMap.TryGetValue(normalizedExpected, out var libraryInfo))
 					{
 						allMetadataItems.Add((libraryInfo.libraryName, libraryInfo.originalDirectory, item));
 					}
@@ -444,18 +445,18 @@ public class BridgeService
                 .Where(item => item != null && !string.IsNullOrEmpty(item.NetworkTag))
                 .SelectMany(item =>
                 {
-                    try
+                    var networkPath = _metadataService.GetNetworkFolder(item.NetworkTag);
+                    if (networkPath != null)
                     {
-                        var networkPath = _metadataService.GetNetworkFolder(item.NetworkTag);
-                        if (networkPath != null)
+                        var normalizedNetworkPath = FolderUtils.GetNormalizedPath(networkPath);
+                        if (!string.IsNullOrEmpty(normalizedNetworkPath))
                         {
-                            networkPath = Path.GetFullPath(networkPath);
-                            return new[] { (item: item, networkPath: networkPath) };
+                            return new[] { (item: item, networkPath: normalizedNetworkPath) };
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Error getting network folder for item {ItemName}", item?.MediaName);
+                        else
+                        {
+                            _logger.LogWarning("Error normalizing network folder path for item {ItemName}: {NetworkPath}", item?.MediaName, networkPath);
+                        }
                     }
                     return Array.Empty<(IJellyseerrItem item, string networkPath)>();
                 })
@@ -487,14 +488,14 @@ public class BridgeService
 			var existingMetadataItems = await ReadMetadataLibraries();
 			
 			// Create a HashSet of (libraryName, directory, itemHashCode) tuples for fast lookup
-			// Use normalized uppercase strings to avoid case-sensitivity issues with default comparer
+			// Use normalized paths to avoid case-sensitivity issues with default comparer
 			var existingItemsSet = new HashSet<(string libraryName, string directory, int itemHashCode)>();
 			foreach (var existingItem in existingMetadataItems)
 			{
 				try
 				{
 					var itemHashCode = existingItem.item.GetItemHashCode();
-					var normalizedDir = Path.GetFullPath(existingItem.directory)?.ToLowerInvariant() ?? string.Empty;
+					var normalizedDir = FolderUtils.GetNormalizedPath(existingItem.directory);
 					var normalizedLibrary = existingItem.libraryName?.ToLowerInvariant() ?? string.Empty;
 					existingItemsSet.Add((normalizedLibrary, normalizedDir, itemHashCode));
 				}
@@ -526,7 +527,7 @@ public class BridgeService
 				))
 				.Where(t => !string.IsNullOrEmpty(t.directory) && FolderUtils.IsPathInSyncDirectory(t.directory))
 				.Where(t => !libraryItemPairs.Any(lp => 
-					Path.GetFullPath(lp.directory)?.ToLowerInvariant() == Path.GetFullPath(t.directory)?.ToLowerInvariant() &&
+					FolderUtils.ArePathsEqual(lp.directory, t.directory) && 
 					lp.item.GetItemHashCode() == t.item.GetItemHashCode()))
 				.ToList();
 

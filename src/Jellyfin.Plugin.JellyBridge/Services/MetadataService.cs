@@ -111,7 +111,7 @@ public class MetadataService
 
     public (List<string> movieDirectories, List<string> showDirectories) ReadMetadataFolders()
     {
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var syncDirectory = FolderUtils.GetBaseDirectory();
 
         return ReadMetadataFolders(syncDirectory);
     }
@@ -179,7 +179,7 @@ public class MetadataService
         var updatedItems = new List<IJellyseerrItem>();
         
         // Get configuration values using centralized helper
-        var baseDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var baseDirectory = FolderUtils.GetBaseDirectory();
         
         _logger.LogDebug("Starting folder creation for mixed media - Base Directory: {BaseDirectory}, Items Count: {ItemCount}", 
             baseDirectory, items.Count);

@@ -248,11 +248,15 @@ public class SortService
         }
 
         // Get JellyBridge library directory to exclude from user's library
-        var libraryDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var libraryDirectory = FolderUtils.GetBaseDirectory();
         var bridgeLibraryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrEmpty(libraryDirectory))
         {
-            bridgeLibraryPaths.Add(Path.GetFullPath(libraryDirectory));
+            var normalized = FolderUtils.GetNormalizedPath(libraryDirectory);
+            if (!string.IsNullOrEmpty(normalized))
+            {
+                bridgeLibraryPaths.Add(normalized);
+            }
         }
 
         // Get all items from user's library (excluding JellyBridge items)
