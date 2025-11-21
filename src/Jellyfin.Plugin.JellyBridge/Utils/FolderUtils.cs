@@ -20,10 +20,10 @@ public static class FolderUtils
 
     /// <summary>
     /// Safely normalizes a path using Path.GetFullPath with error handling.
-    /// Returns the normalized path in lowercase for comparison, or empty string if normalization fails.
+    /// Returns the normalized path preserving original case for filesystem compatibility, or empty string if normalization fails.
     /// </summary>
     /// <param name="path">The path to normalize</param>
-    /// <returns>Normalized path in lowercase, or empty string if normalization fails</returns>
+    /// <returns>Normalized path preserving case, or empty string if normalization fails</returns>
     public static string GetNormalizedPath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -33,14 +33,12 @@ public static class FolderUtils
         {
             return Path.GetFullPath(path)
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .ToLowerInvariant()
                 + Path.DirectorySeparatorChar;
         }
         catch (Exception)
         {
             // If path normalization fails, fall back to string normalization
             return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .ToLowerInvariant()
                 + Path.DirectorySeparatorChar;
         }
     }
