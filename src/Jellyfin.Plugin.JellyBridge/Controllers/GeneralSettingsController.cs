@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogWarning("TestConnection failed: Missing required fields");
                     return BadRequest(new { 
                         success = false, 
-                        message = "Jellyseerr API Key is required" 
+                        message = "Jellyseerr connection error: API Key is required" 
                     });
                 }
                 _logger.LogInformation("API Key is not empty");
@@ -90,7 +90,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogWarning("User list check returned empty list - likely insufficient privileges");
                     return StatusCode(403, new { 
                         success = false, 
-                        message = "API key lacks required permissions",
+                        message = "Jellyseerr connection error: API key lacks required permissions",
                         details = "The API key cannot access the user list. Ensure the API key has user management permissions in Jellyseerr.",
                         errorCode = "INSUFFICIENT_PRIVILEGES"
                     });
@@ -109,7 +109,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test timed out");
                 return StatusCode(408, new { 
                     success = false, 
-                    message = "Connection to Jellyseerr timed out",
+                    message = "Jellyseerr connection error: Request timed out",
                     details = "The request to Jellyseerr took too long to respond. Check that Jellyseerr is running and the URL is correct.",
                     errorCode = "TIMEOUT"
                 });
@@ -141,21 +141,21 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                             break;
                         case 502:
                             errorCode = "INVALID_RESPONSE";
-                            message = "Jellyseerr returned an invalid response";
+                            message = "Received an invalid response";
                             break;
                         case 503:
                             errorCode = "SERVICE_UNAVAILABLE";
-                            message = "Jellyseerr server is unavailable";
+                            message = "Server is unavailable";
                             break;
                         default:
                             errorCode = "HTTP_ERROR";
-                            message = $"Connection failed with error {httpStatusCode}";
+                            message = $"Unknown error {httpStatusCode} occurred";
                             break;
                     }
                     
                     return StatusCode(statusCode, new { 
                         success = false, 
-                        message = message,
+                        message = "Jellyseerr connection error: " + message,
                         details = errorMessage,
                         errorCode = errorCode
                     });
@@ -167,7 +167,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogWarning("HttpRequestException missing StatusCode - connection error or unexpected exception: {Error}", errorMessage);
                     return StatusCode(503, new { 
                         success = false, 
-                        message = "Jellyseerr URL is unreachable from Jellyfin",
+                        message = "Jellyseerr connection error: URL is unreachable from Jellyfin",
                         details = errorMessage,
                         errorCode = "SERVICE_UNAVAILABLE"
                     });
@@ -179,7 +179,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test failed: Invalid URL format");
                 return BadRequest(new { 
                     success = false, 
-                    message = "Invalid Jellyseerr URL format",
+                    message = "Jellyseerr connection error: Invalid URL format",
                     details = ex.Message,
                     errorCode = "INVALID_URL"
                 });
@@ -190,7 +190,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test failed: Invalid JSON response from Jellyseerr");
                 return StatusCode(502, new { 
                     success = false, 
-                    message = "Unable to parse Jellyseerr response",
+                    message = "Jellyseerr connection error: Unable to parse response",
                     details = ex.Message,
                     errorCode = "INVALID_RESPONSE"
                 });
@@ -201,7 +201,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogError(ex, "Connection test failed: Unexpected error");
                 return StatusCode(500, new { 
                     success = false, 
-                    message = "An unexpected error occurred during connection test",
+                    message = "Jellyseerr connection error: An unexpected error occurred during connection test",
                     details = ex.Message,
                     errorCode = "INTERNAL_ERROR"
                 });
