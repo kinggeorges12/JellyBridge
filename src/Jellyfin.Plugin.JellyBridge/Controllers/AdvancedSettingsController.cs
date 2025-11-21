@@ -96,7 +96,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             try
             {
                 // Get library directory from saved configuration
-                var libraryDir = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+                var libraryDir = FolderUtils.GetBaseDirectory();
                 
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var success = await Plugin.ExecuteWithLockAsync<bool>(async () =>

@@ -19,6 +19,66 @@ public static class FolderUtils
     }
 
     /// <summary>
+    /// Safely normalizes a path using Path.GetFullPath with error handling.
+    /// Returns the normalized path in lowercase for comparison, or empty string if normalization fails.
+    /// </summary>
+    /// <param name="path">The path to normalize</param>
+    /// <returns>Normalized path in lowercase, or empty string if normalization fails</returns>
+    public static string GetNormalizedPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        try
+        {
+            return Path.GetFullPath(path)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .ToLowerInvariant()
+                + Path.DirectorySeparatorChar;
+        }
+        catch (Exception)
+        {
+            // If path normalization fails, fall back to string normalization
+            return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .ToLowerInvariant()
+                + Path.DirectorySeparatorChar;
+        }
+    }
+
+    /// <summary>
+    /// Check if a given path is within a specified directory.
+    /// Safely handles path normalization with error handling.
+    /// </summary>
+    /// <param name="pathToCheck">The path to check</param>
+    /// <param name="directory">The directory to check against</param>
+    /// <returns>True if the path is within the directory, false otherwise</returns>
+    public static bool IsPathInDirectory(string? pathToCheck, string? directory)
+    {
+        var normalizedDirectory = GetNormalizedPath(directory);
+        var normalizedPath = GetNormalizedPath(pathToCheck);
+
+        if (string.IsNullOrEmpty(normalizedDirectory) || string.IsNullOrEmpty(normalizedPath))
+            return false;
+
+        return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if two paths are equal after normalization.
+    /// Safely handles path normalization with error handling.
+    /// </summary>
+    /// <param name="path1">First path to compare</param>
+    /// <param name="path2">Second path to compare</param>
+    /// <returns>True if the paths are equal after normalization, false otherwise</returns>
+    public static bool ArePathsEqual(string? path1, string? path2)
+    {
+        var normalizedPath1 = GetNormalizedPath(path1);
+        var normalizedPath2 = GetNormalizedPath(path2);
+
+        return string.Equals(normalizedPath1, normalizedPath2, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Check if a given path is within the sync directory base path.
     /// </summary>
     /// <param name="pathToCheck">The path to check</param>
@@ -26,25 +86,8 @@ public static class FolderUtils
     /// <returns>True if the path is within the sync directory</returns>
     public static bool IsPathInSyncDirectory(string? pathToCheck)
     {
-        if (string.IsNullOrEmpty(pathToCheck))
-            return false;
-
         var syncDirectory = GetBaseDirectory();
-
-        try
-        {
-            var normalizedPath = Path.GetFullPath(pathToCheck);
-            var normalizedSyncPath = Path.GetFullPath(syncDirectory);
-            
-            var result = normalizedPath.StartsWith(normalizedSyncPath, StringComparison.OrdinalIgnoreCase);
-            
-            return result;
-        }
-        catch (Exception)
-        {
-            // If path normalization fails, fall back to string comparison
-            return pathToCheck.StartsWith(syncDirectory, StringComparison.OrdinalIgnoreCase);
-        }
+        return IsPathInDirectory(pathToCheck, syncDirectory);
     }
 
     /// <summary>

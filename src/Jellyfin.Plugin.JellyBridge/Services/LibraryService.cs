@@ -42,7 +42,7 @@ public class LibraryService
         try
         {
             var config = Plugin.GetConfiguration();
-            var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            var syncDirectory = FolderUtils.GetBaseDirectory();
             var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
 
             if (!manageJellyseerrLibrary) {
@@ -254,7 +254,7 @@ public class LibraryService
         try
         {
             // Use provided directory or fall back to configured default
-            var testDirectory = libraryDirectory ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+            var testDirectory = libraryDirectory ?? FolderUtils.GetBaseDirectory();
             
             if (string.IsNullOrEmpty(testDirectory))
             {

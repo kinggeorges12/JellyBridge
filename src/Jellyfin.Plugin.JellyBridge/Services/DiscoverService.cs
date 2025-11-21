@@ -173,7 +173,7 @@ public class DiscoverService
             {
                 // Get the folder path for this item
                 var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
-                var normalizedFolder = string.IsNullOrWhiteSpace(folderPath) ? folderPath : Path.GetFullPath(folderPath);
+                var normalizedFolder = FolderUtils.GetNormalizedPath(folderPath);
                 if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
                 {
                     _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
@@ -345,7 +345,7 @@ public class DiscoverService
     /// </summary>
     public Task<int> DeleteAllIgnoreFilesAsync()
     {
-        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var syncDirectory = FolderUtils.GetBaseDirectory();
         
         try
         {
