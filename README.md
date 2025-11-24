@@ -49,7 +49,7 @@ The plugin seamlessly integrates with Jellyseerr to manage download requests and
 
 When users mark movies or series as favorites in Jellyfin, the plugin automatically sends download requests to Jellyseerr for processing. The user who requested the content is shown in Jellyseerr as the requestor, all you have to do is import the Jellyfin users. Any integrations with [Jellyseerr's existing services](https://docs.seerr.dev/using-jellyseerr/settings/services) can manage the content creation in Jellyfin. After content is requested, the movie or series is hidden from the JellyBridge library.
 
-Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official [installation guide](https://docs.seerr.dev/getting-started).
+Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official [installation guide](https://docs.seerr.dev/getting-started). Note: to enable approval of requests created by JellyBridge ([see related issue](https://github.com/kinggeorges12/JellyBridge/issues/17#issuecomment-3572018193)), you must use a patched version of Jellyseerr 2.7.3 in this Docker image: `kinggeorges12/jellyseerr:latest`
 
 After installing Jellyseerr, disable the JellyBridge library to prevent requests from being marked as Available.
 ![Jellyseerr Requests](Screenshots/Jellyseerr.png)
