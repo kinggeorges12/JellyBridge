@@ -685,7 +685,8 @@ public class ApiService
                     ["mediaType"] = "", //REQUIRED
                     ["mediaId"] = -1, //REQUIRED
                     ["seasons"] = "all", // Accepts an array of season numbers or "all"
-                    ["userId"] = 0 //REQUIRED
+                    ["userId"] = 0, //REQUIRED
+                    ["is4k"] = false //BUG FIX: This is not required, but the Jellyseerr API allows multiple requests if unspecified.
                 }, null
             ),
             // ReadRequests endpoint - no parameters needed for GET requests
