@@ -13,45 +13,46 @@ export default function (view) {
         Dashboard.showLoadingMsg();
         const page = this;
         
-        // Use our custom endpoint to get the configuration
-        fetch('/JellyBridge/PluginConfiguration')
-            .then(response => response.json())
-            .then(function (config) {
-                // Store configuration globally for other functions to use
-                window.configJellyBridge = config;
+        // Use our custom endpoint to get the configuration via ApiClient
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyBridge/PluginConfiguration'),
+            type: 'GET',
+            dataType: 'json'
+        }).then(function (config) {
+            // Store configuration globally for other functions to use
+            window.configJellyBridge = config;
 
-                // Initialize header
-                initializePluginHeader(page);
-                
-                // Initialize general settings including test connection
-                initializeGeneralSettings(page);
-                
-                // Initialize import discover content settings including network interface and sync buttons
-                initializeImportContent(page);
-                
-                // Initialize manage discover library settings
-                initializeManageLibrary(page);
-                
-                // Initialize sort content settings
-                initializeSortContent(page);
-                
-                // Initialize advanced settings
-                initializeAdvancedSettings(page);
-                
-                // Initialize global settings (including detail tab scroll functionality)
-                initializeGlobalSettings(page);
-                
-                // Scroll to top of page after successful initialization
-                scrollToElement('jellyBridgeConfigurationPage');
-                
-                isInitialized = true;
-            })
-            .catch(function (error) {
-                Dashboard.alert('❌ Failed to load configuration: ' + error.message);
-                scrollToElement('jellyBridgeConfigurationPage');
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-            });
+            // Initialize header
+            initializePluginHeader(page);
+            
+            // Initialize general settings including test connection
+            initializeGeneralSettings(page);
+            
+            // Initialize import discover content settings including network interface and sync buttons
+            initializeImportContent(page);
+            
+            // Initialize manage discover library settings
+            initializeManageLibrary(page);
+            
+            // Initialize sort content settings
+            initializeSortContent(page);
+            
+            // Initialize advanced settings
+            initializeAdvancedSettings(page);
+            
+            // Initialize global settings (including detail tab scroll functionality)
+            initializeGlobalSettings(page);
+            
+            // Scroll to top of page after successful initialization
+            scrollToElement('jellyBridgeConfigurationPage');
+            
+            isInitialized = true;
+        }).catch(function (error) {
+            Dashboard.alert('❌ Failed to load configuration: ' + (error?.message || error));
+            scrollToElement('jellyBridgeConfigurationPage');
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
+        });
     });
     
 }
@@ -1597,24 +1598,22 @@ function savePluginConfiguration(page) {
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
     form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     
-    // Save the configuration using our custom endpoint
-    return fetch('/JellyBridge/PluginConfiguration', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form)
-        })
-        .then(async response => {
-            const result = await response.json();
-            if (result.success) {
-                form.ConfigDefaults = config.ConfigDefaults;
-                window.configJellyBridge = form;
-                return result;
-            } else {
-                throw new Error(result.error || 'Failed to save configuration');
-            }
-        });
+    // Save the configuration using ApiClient
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/PluginConfiguration'),
+        type: 'POST',
+        data: JSON.stringify(form),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (result) {
+        if (result && result.success) {
+            form.ConfigDefaults = config.ConfigDefaults;
+            window.configJellyBridge = form;
+            return result;
+        } else {
+            throw new Error(result?.error || 'Failed to save configuration');
+        }
+    });
 }
 
 // ==========================================
