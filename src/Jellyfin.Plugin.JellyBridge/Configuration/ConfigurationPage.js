@@ -72,8 +72,6 @@ function cacheBuster() {
 function initializePluginHeader(page) {
     const config = window.configJellyBridge;
 
-    cacheBuster()
-
     // Update header legend with plugin version
     if (config.PluginVersion) {
         page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
