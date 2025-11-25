@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.0: v2.1.14 - removing cacheBuster from default page configuration. Users must activate cachebuster through the Troubleshooting page.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.14/JellyBridge-2.1.14.11.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2025-11-25T03:25:16.551Z",
+        "checksum": "01102EC5B8DC056618A64034E508C9C3",
+        "dependencies": [],
+        "version": "2.1.14.11"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v2.1.14 - removing cacheBuster from default page configuration. Users must activate cachebuster through the Troubleshooting page.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.14/JellyBridge-2.1.14.10.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2025-11-25T03:25:16.551Z",
+        "checksum": "5487096A445C96B8C340A5D7FBF16DAD",
+        "dependencies": [],
+        "version": "2.1.14.10"
+      },
+      {
         "checksum": "E3DAADA4AD4CAC25D5E524C4526CDC01",
         "targetAbi": "10.11.0.0",
         "version": "2.1.13.11",
