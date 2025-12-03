@@ -9,22 +9,22 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "version": "2.1.21.11",
-        "timestamp": "2025-12-03T15:40:31.719Z",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.21/JellyBridge-2.1.21.11.zip",
-        "changelog": "Jellyfin 10.11.0: v2.1.21 - Prompt user to open troubleshooting section for Test Connection errors.",
+        "timestamp": "2025-12-03T15:49:55.109Z",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v2.1.22 - Prompt user to open troubleshooting section for Test Connection errors.",
         "dependencies": [],
-        "checksum": "C7A3D0E1D06FE2EF7BC51F60B9AA8FE3",
-        "targetAbi": "10.11.0.0"
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.22/JellyBridge-2.1.22.11.zip",
+        "version": "2.1.22.11",
+        "checksum": "D8089CBCB96FBF5C6407AB4828313A5D"
       },
       {
-        "version": "2.1.21.10",
-        "timestamp": "2025-12-03T15:40:31.719Z",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.21/JellyBridge-2.1.21.10.zip",
-        "changelog": "Jellyfin 10.10.7: v2.1.21 - Prompt user to open troubleshooting section for Test Connection errors.",
+        "timestamp": "2025-12-03T15:49:55.109Z",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v2.1.22 - Prompt user to open troubleshooting section for Test Connection errors.",
         "dependencies": [],
-        "checksum": "6699B8E4A34A142E4BD04013332E4A58",
-        "targetAbi": "10.10.0.0"
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.22/JellyBridge-2.1.22.10.zip",
+        "version": "2.1.22.10",
+        "checksum": "965B655D9D4538F421CB4E5A36D16E61"
       },
       {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.15/JellyBridge-2.1.15.11.zip",
