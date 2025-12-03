@@ -217,7 +217,15 @@ function initializeGeneralSettings(page) {
     const helpButton = page.querySelector('#librarySetupHelp');
     if (helpButton) {
         helpButton.addEventListener('click', function () {
-            scrollToElement('librarySetupInstructions');
+            const setupInstructions = page.querySelector('#librarySetupInstructions');
+            // Toggle visibility of instructions
+            if (setupInstructions) {
+                const isVisible = setupInstructions.style.display !== 'none';
+                setupInstructions.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    scrollToElement('librarySetupInstructions');
+                }
+            }
         });
     }
     
