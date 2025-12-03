@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>2.1.30.10</AssemblyVersion>
-    <FileVersion>2.1.30.10</FileVersion>
+    <AssemblyVersion>2.1.31.10</AssemblyVersion>
+    <FileVersion>2.1.31.10</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->

@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "44DF8EF0108BEFA943FA8F33355049BD",
+        "targetAbi": "10.11.0.0",
+        "version": "2.1.31.11",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.31/JellyBridge-2.1.31.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.1.31 - Fixing links on the config page",
+        "timestamp": "2025-12-03T17:39:48.706Z",
+        "dependencies": []
+      },
+      {
+        "checksum": "05D2A6894D3753972FA18AFA463651C5",
+        "targetAbi": "10.10.0.0",
+        "version": "2.1.31.10",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.31/JellyBridge-2.1.31.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.1.31 - Fixing links on the config page",
+        "timestamp": "2025-12-03T17:39:48.706Z",
+        "dependencies": []
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v2.1.30 - Prompt user to open troubleshooting section for Test Connection errors.",
         "timestamp": "2025-12-03T17:11:25.408Z",
         "dependencies": [],
