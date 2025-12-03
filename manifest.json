@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2025-12-03T14:33:47.088Z",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "checksum": "4CDF3C2BD8A40871330027189D6467D8",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.17/JellyBridge-2.1.17.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.1.17 - Updated compatibility notes for Jellyfin 10.11.4; improved error handling, UI feedback, and button labels in configuration page; removed redundant sync code; general code cleanup and bugfixes.",
+        "version": "2.1.17.11"
+      },
+      {
+        "timestamp": "2025-12-03T14:33:47.088Z",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "checksum": "375EBFC24E7114573F9922F3DD9A7E14",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.17/JellyBridge-2.1.17.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.1.17 - Updated compatibility notes for Jellyfin 10.11.4; improved error handling, UI feedback, and button labels in configuration page; removed redundant sync code; general code cleanup and bugfixes.",
+        "version": "2.1.17.10"
+      },
+      {
         "checksum": "5BAAA1B744B88A5E82C76BCD27FAF5A1",
         "timestamp": "2025-12-03T14:29:45.515Z",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.16/JellyBridge-2.1.16.11.zip",
