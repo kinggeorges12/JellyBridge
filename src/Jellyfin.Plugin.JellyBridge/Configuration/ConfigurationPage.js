@@ -1783,7 +1783,7 @@ function scrollToElement(elementId, offset = 60) {
         let nextElement = element;
         const detailsToOpen = [];
         while (nextElement) {
-            if (nextElement.tagName === 'DETAILS' && !nextElement.hasAttribute('open')) {
+            if (nextElement.tagName === 'DETAILS') {
                 detailsToOpen.push(nextElement);
             }
             // Iterate over parents elements to open all containing parent sections
