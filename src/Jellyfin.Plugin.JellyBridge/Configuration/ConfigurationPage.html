@@ -457,7 +457,7 @@
                             <ul>
                                 <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
                                 <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
-                                <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span></li>
+                                <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span></li>
                                 <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
                                 <li><strong>Metadata savers:</strong> ☑️ Nfo</li>
                                 <li>☑️ <strong>Save artwork into media folders</strong></li>
@@ -483,18 +483,18 @@
                                 </ol>
                                 <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button shows an error: The library directory is not accessible.</i></p>
                                 <ul>
-                                    <li>[Windows] Create the <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span>: <code>mkdir "C:\ProgramData\Jellyfin\JellyBridge"</code></li>
+                                    <li>[Windows] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>mkdir "C:\ProgramData\Jellyfin\JellyBridge"</code></li>
                                     <li>[Docker] Map the directory in <i>docker-compose.yml</i> > <i>services</i> > <i>Jellyfin</i> > <i>volumes</i>: <code>- /host_mnt/c/ProgramData/Jellyfin/JellyBridge:/data/JellyBridge</code></li>
                                     <li>[Docker] Map the volume in <i>DOCKERFILE</i>: <code>VOLUME /data/JellyBridge</code></li>
-                                    <li>[Linux] Create the <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span> (capitalization is important!): <code>mkdir -p /data/JellyBridge</code></li>
-                                    <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 644 /data/JellyBridge</code></li>
+                                    <li>[Linux] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> (capitalization is important!): <code>mkdir -p /data/JellyBridge</code></li>
+                                    <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 644 /data/JellyBridge</code></li>
                                 </ul>
                                 <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
                                     <li>If networks are missing movies and shows, try enabling the <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
                                     <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span>.</li>
                                     <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library.</li>
-                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">Recycle Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">📚 Library Setup Instructions</span>.</li>
+                                    <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">📚 Library Setup Instructions</span>.</li>
                                 </ol>
                                 <p><i>The <span class="link" data-target-page="syncFavorites">⭐ Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
@@ -620,7 +620,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <i>Library Directory</i> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -671,7 +671,7 @@
                                     <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>.</li>
                                 </ol>
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span>. Alternatively, you can use different libraries for each network provider.
+                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. Alternatively, you can use different libraries for each network provider.
                                 </div>
 
                                 <div class="inputContainer" id="LibraryPrefixContainer">
@@ -855,10 +855,10 @@
                                 <span>🗑️ Recycle JellyBridge Library Data</span>
                             </button>
                             <div class="fieldDescription criticalText">
-                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
+                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the Jellyfin libraries containing the <span class="link" data-target-page="LibraryDirectoryContainer"><i>Library Directory</i></span> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupHelp">📚 Library Setup Instructions</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
+                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the Jellyfin libraries containing the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
                             </div>
                         </div>
 
