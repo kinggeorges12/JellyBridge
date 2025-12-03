@@ -1778,13 +1778,14 @@ function scrollToElement(elementId, offset = 60) {
     const element = document.getElementById(elementId);
     if (element) {
         // Find and open all parent details elements without triggering onclick events
-        let parent = element.parentElement;
+        let nextElement = element;
         const detailsToOpen = [];
-        while (parent) {
-            if (parent.tagName === 'DETAILS' && !parent.hasAttribute('open')) {
+        while (nextElement) {
+            if (nextElement.tagName === 'DETAILS' && !nextElement.hasAttribute('open')) {
                 detailsToOpen.push(parent);
             }
-            parent = parent.parentElement;
+            // Iterate over parents elements to open all containing parent sections
+            nextElement = parent.parentElement;
         }
         
         // Open all parent details elements (in reverse order to open outer ones first)
