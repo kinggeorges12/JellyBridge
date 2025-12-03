@@ -27,42 +27,6 @@
         "timestamp": "2025-12-03T16:09:18.990Z"
       },
       {
-        "checksum": "8626556EFDE4DE6417946C04BEE2498B",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.24/JellyBridge-2.1.24.11.zip",
-        "version": "2.1.24.11",
-        "changelog": "Jellyfin 10.11.0: v2.1.24 - Prompt user to open troubleshooting section for Test Connection errors.",
-        "targetAbi": "10.11.0.0",
-        "dependencies": [],
-        "timestamp": "2025-12-03T16:02:29.082Z"
-      },
-      {
-        "checksum": "E2D2FA5C0CBE9BC66AB05D8E5F603691",
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.24/JellyBridge-2.1.24.10.zip",
-        "version": "2.1.24.10",
-        "changelog": "Jellyfin 10.10.7: v2.1.24 - Prompt user to open troubleshooting section for Test Connection errors.",
-        "targetAbi": "10.10.0.0",
-        "dependencies": [],
-        "timestamp": "2025-12-03T16:02:29.082Z"
-      },
-      {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.23/JellyBridge-2.1.23.11.zip",
-        "version": "2.1.23.11",
-        "checksum": "1C751733B699B97AA42AC90248327059",
-        "timestamp": "2025-12-03T15:53:18.457Z",
-        "targetAbi": "10.11.0.0",
-        "changelog": "Jellyfin 10.11.0: v2.1.23 - Prompt user to open troubleshooting section for Test Connection errors.",
-        "dependencies": []
-      },
-      {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.23/JellyBridge-2.1.23.10.zip",
-        "version": "2.1.23.10",
-        "checksum": "2DFCB2F11EBE9488B56CC05D81E6F653",
-        "timestamp": "2025-12-03T15:53:18.457Z",
-        "targetAbi": "10.10.0.0",
-        "changelog": "Jellyfin 10.10.7: v2.1.23 - Prompt user to open troubleshooting section for Test Connection errors.",
-        "dependencies": []
-      },
-      {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.15/JellyBridge-2.1.15.11.zip",
         "changelog": "Jellyfin 10.11.0: v2.1.15 - Patch: bugfixes and improvements",
         "checksum": "4F891B3C3FE83776E338458C5077E46D",
