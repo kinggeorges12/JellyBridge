@@ -353,7 +353,7 @@ function performTestConnection(page) {
                 primary: "confirm"
             }, 'Title', (confirmed) => {
                 if (confirmed) {
-                    scrollToCheckboxAndHighlight('#troubleshootingDetails');
+                    scrollToElement('troubleshootingDetails');
                 }
             });
         } finally {
@@ -1705,7 +1705,7 @@ function scrollToCheckboxAndHighlight(targetCheckbox) {
         checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
         // Briefly highlight the checkbox
-        const container = checkbox.closest('.checkboxContainer') || checkbox.closest('#IsEnabledContainer');
+        const container = checkbox.closest('.checkboxContainer');
         if (container) {
             container.style.transition = 'background-color 0.3s ease';
             container.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
