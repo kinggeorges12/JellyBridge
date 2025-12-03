@@ -226,6 +226,8 @@ function initializeGeneralSettings(page) {
                     scrollToElement('librarySetupInstructions');
                 }
             }
+            // Toggle clicked class on button
+            helpButton.classList.toggle('clicked');
         });
     }
     
