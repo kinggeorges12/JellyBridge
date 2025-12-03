@@ -223,7 +223,7 @@ function initializeGeneralSettings(page) {
                 setupInstructions.style.display = 'none';
             } else {
                 locateElement('librarySetupInstructions', false);
-                scrollToCheckboxAndHighlight('IsEnabled');
+                scrollToCheckboxAndHighlight('#IsEnabled');
             }
         });
 
