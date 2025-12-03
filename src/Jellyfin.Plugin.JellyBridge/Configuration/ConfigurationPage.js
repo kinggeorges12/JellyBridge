@@ -217,10 +217,10 @@ function initializeGeneralSettings(page) {
     const helpButton = page.querySelector('#librarySetupHelp');
     if (helpButton) {
         helpButton.addEventListener('click', function () {
-            const instructionsDiv = page.querySelector('#librarySetupInstructions');
-            if (instructionsDiv) {
-                const isVisible = instructionsDiv.style.display !== 'none';
-                instructionsDiv.style.display = isVisible ? 'none' : 'block';
+            const instructionsDetails = page.querySelector('#librarySetupInstructions');
+            if (instructionsDetails) {
+                const isVisible = instructionsDetails.style.display !== 'none';
+                instructionsDetails.style.display = isVisible ? 'none' : 'block';
                 if (!isVisible) {
                     // Scroll to and highlight the IsEnabled checkbox
                     scrollToCheckboxAndHighlight('#IsEnabled');
@@ -1605,7 +1605,7 @@ function initializeGlobalSettings(page) {
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
     // List of detail section IDs
-    const detailIds = ['troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
+    const detailIds = ['librarySetupInstructions', 'troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
     
     detailIds.forEach(detailId => {
         const detailsElement = page.querySelector(`#${detailId}`);
@@ -1789,6 +1789,8 @@ function scrollToElement(elementId, offset = 60) {
         
         // Open all parent details elements (in reverse order to open outer ones first)
         detailsToOpen.reverse().forEach(details => {
+            const isVisible = details.style.display !== 'none';
+            if (!isVisible) details.style.display = 'block';
             details.setAttribute('open', '');
         });
         
