@@ -301,9 +301,9 @@ function performTestConnection(page) {
         Dashboard.alert('✅ Connected to Jellyseerr!');
         // Show confirmation dialog for saving settings
         Dashboard.confirm({
-                title: 'Connection Success!',
+                title: '✅ Connection Success!',
                 text: 'Save connection settings now?',
-                confirmText: 'Save',
+                confirmText: '💾 Save',
                 cancelText: 'Cancel',
                 primary: "confirm"
             }, 'Title', (confirmed) => {
@@ -322,22 +322,43 @@ function performTestConnection(page) {
                 }
             });
     }).catch(async function (error) {
-        let errorResponse = null;
+        let message = null;
         try {
-            errorResponse = await error.json();
+            let errorResponse = await error.json();
             if (errorResponse) {
-                const message = errorResponse?.message || `Request failed (${errorResponse.status} ${errorResponse.statusText})`;
-                Dashboard.alert('❌ ' + message);
+                message = '❌ ';
+                if (errorResponse.message) {
+                    message += errorResponse.message;
+                } else {
+                    message += `Request failed (${errorResponse.status}): ${errorResponse.statusText}`;
+                }
             } else {
-                Dashboard.alert('❓ Cannot communicate with Jellyfin plugin endpoint');
+                message = '❓ Cannot communicate with Jellyfin plugin endpoint';
             }
         } catch (e) {
-            const rawText = await error.text();
+            let rawText = await error.text();
             if (rawText) {
-                Dashboard.alert('⏳ ' + rawText);
+                message = `🚫 ${rawText}`;
             } else {
-                Dashboard.alert('⛔ Cannot communicate with Jellyfin plugin endpoint');
+                message = '⛔ Cannot communicate with Jellyfin plugin endpoint';
             }
+        }
+        try{
+        // Show confirmation dialog for opening troubleshooting
+        Dashboard.confirm({
+                title: '🚧 Connection Test Failed',
+                text: `Do you want to try troubleshooting? Error: ${message}`,
+                confirmText: '🤖 Troubleshooting',
+                cancelText: 'Close',
+                primary: "confirm"
+            }, 'Title', (confirmed) => {
+                if (confirmed) {
+                    scrollToCheckboxAndHighlight('#troubleshootingDetails');
+                }
+            });
+        } finally {
+            // Something went wrong
+            Dashboard.alert(message);
         }
     }).finally(function() {
         Dashboard.hideLoadingMsg();
@@ -449,57 +470,6 @@ function initializeImportContent(page) {
         });
     }
     
-    // Add Run full sync button functionality (matches scheduled task behavior)
-    const runButton = page.querySelector('#runSyncTask');
-    if (runButton) {
-        runButton.addEventListener('click', function () {
-            // Prompt to save config before running
-            Dashboard.confirm({
-                title: 'Confirm Save',
-                text: 'Settings will be saved before starting full sync.',
-                confirmText: 'Save & Run',
-                cancelText: 'Cancel',
-                primary: 'confirm'
-            }, 'Title', (confirmed) => {
-                if (!confirmed) return;
-
-                runButton.disabled = true;
-                Dashboard.showLoadingMsg();
-
-                // Save settings first
-                savePluginConfiguration(page)
-                    .then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        // Then run full sync
-                        return ApiClient.ajax({
-                            url: ApiClient.getUrl('JellyBridge/RunSync'),
-                            type: 'POST',
-                            data: '{}',
-                            contentType: 'application/json',
-                            dataType: 'json'
-                        });
-                    })
-                    .then(function (data) {
-                        const ok = !!(data && data.success === true);
-                        const msg = data?.message || (ok ? 'Full sync completed successfully' : 'Full sync completed');
-                        Dashboard.alert((ok ? '✅ ' : '⚠️ ') + msg);
-                        // Refresh task status after run
-                        const refreshBtn = page.querySelector('#refreshTaskStatus');
-                        if (refreshBtn) refreshBtn.click();
-                        if (ok) {
-                            runButton.disabled = false;
-                        }
-                    })
-                    .catch(function (error) {
-                        Dashboard.alert('❌ Full sync failed: ' + (error?.message || 'Unknown error'));
-                    })
-                    .finally(function () {
-                        Dashboard.hideLoadingMsg();
-                    });
-            });
-        });
-    }
-
     // Set Max Discover Pages and Max Retention Days
     setInputField(page, 'MaxDiscoverPages');
     setInputField(page, 'MaxRetentionDays');
@@ -553,7 +523,7 @@ function performSyncImportContent(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before starting discover sync.',
-        confirmText: 'Save & Sync',
+        confirmText: '💾 Save & Sync 📥',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -893,7 +863,7 @@ function performSortContent(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before starting sort content.',
-        confirmText: 'Save & Sort',
+        confirmText: '💾 Save & Sort 🎲',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -950,7 +920,7 @@ function performCleanupMetadata(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before starting cleanup.',
-        confirmText: 'Save & Cleanup',
+        confirmText: '💾 Save & Cleanup 🧹',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -1137,7 +1107,7 @@ function performGenerateNetworkFolders(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before generating network folders.',
-        confirmText: 'Save & Generate',
+        confirmText: '💾 Save & Generate 📁',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -1188,7 +1158,7 @@ function performSyncManageLibrary(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before requesting JellyBridge Library favorites in Jellyseerr.',
-        confirmText: 'Save & Request',
+        confirmText: '💾 Save & Request ⭐',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -1412,8 +1382,8 @@ function performPluginReset(page) {
     // Single confirmation for configuration reset
     Dashboard.confirm({
         title: '⚠️ Reset Plugin Configuration',
-        text: 'This will reset ALL plugin settings to their default values. Jellyfin library data will be left unchanged. Are you sure you want to continue?',
-        confirmText: 'Yes, Reset Settings',
+        text: 'This will reset ALL plugin settings to their default values and refresh the page. Jellyfin library data will be left unchanged. Are you sure you want to continue?',
+        confirmText: '♻️ Reset & Refresh ⟳',
         cancelText: 'Cancel',
         primary: "cancel"
     }, 'Title', (confirmed) => {
@@ -1457,10 +1427,12 @@ function performPluginReset(page) {
                 contentType: 'application/json',
                 dataType: 'json'
             }).then(function(result) {
-                Dashboard.alert('✅ Plugin configuration has been reset to defaults! Please refresh the page to see the changes.');
+                Dashboard.alert('✅ Plugin configuration has been reset to defaults! ⟳ Refreshing the page...');
                 
                 // Reload the page to show default values
-                window.location.reload();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
             }).catch(function(error) {
                 Dashboard.alert('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
@@ -1478,9 +1450,9 @@ function performRecycleLibraryData(page) {
     
     // First confirmation: save configuration
     Dashboard.confirm({
-        title: '❗ Save Configuration',
+        title: '❗ Save Before Deleting Library Data',
         text: `This will save your current configuration settings, then confirm again to delete Jellyseerr library data. Library Directory: ${currentLibraryDir}`,
-        confirmText: 'Save & Continue',
+        confirmText: '💾 Save & Continue ❗',
         cancelText: 'Cancel',
         primary: "cancel"
     }, 'Title', (confirmed1) => {
@@ -1499,7 +1471,7 @@ function performRecycleLibraryData(page) {
             
             // After saving, show second confirmation
             Dashboard.confirm({
-                title: '🚨 FINAL CONFIRMATION - DELETE LIBRARY',
+                title: '🚨 FINAL CONFIRMATION TO DELETE LIBRARY DATA',
                 text: `This next step will delete ALL JellyBridge library data including folders and generated content. If "Manage Jellyseerr Library" option is enabled, it will also refresh the Jellyfin library to remove metadata. ⚠️ This action CANNOT be undone! Library Directory: ${currentLibraryDir}`,
                 confirmText: '🚩 YES, DELETE EVERYTHING',
                 cancelText: 'Cancel',

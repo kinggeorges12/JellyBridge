@@ -196,7 +196,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
 **⚠️ Compatibility Notes**
-This version is tested with Jellyfin 10.10.7 and 10.11.2 for compatibility.
+This version is tested with Jellyfin 10.10.7 and 10.11.\* (up to 10.11.4) for compatibility.
 - To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
 - If you use "Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
 - `Manage Discover Library → Favorite Cleanup` functionality changed to always ignore and unmark played for requested favorites. The option now only affects whether the favorited items are unfavorited.
@@ -220,7 +220,7 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 
 If you encounter any issues with the plugin, please leave a comment in the [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
 
-**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.2* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.2, or Jellyseerr versions before 2.7.3.
+**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.1* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
 
 Tips:
 - For additional help with plugin setup, check out [issues with the debugging tag](https://github.com/kinggeorges12/JellyBridge/issues?q=is%3Aissue%20label%3Adebugging).
