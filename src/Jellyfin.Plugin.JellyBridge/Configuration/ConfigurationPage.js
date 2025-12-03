@@ -223,6 +223,7 @@ function initializeGeneralSettings(page) {
                 setupInstructions.style.display = 'none';
             } else {
                 scrollToElement('librarySetupInstructions');
+                scrollToCheckboxAndHighlight('IsEnabled');
             }
         });
 
@@ -238,6 +239,7 @@ function initializeGeneralSettings(page) {
         // MutationObserver to watch for display changes
         const observer = new MutationObserver(handleDisplayChange);
         observer.observe(setupInstructions, { attributes: true, attributeFilter: ['style'] });
+        handleDisplayChange(); // Set initial state
     }
     
     // Add form submit event listener
