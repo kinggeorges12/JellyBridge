@@ -215,20 +215,29 @@ function initializeGeneralSettings(page) {
     
     // Library setup help button functionality
     const helpButton = page.querySelector('#librarySetupHelp');
-    if (helpButton) {
+    const setupInstructions = page.querySelector('#librarySetupInstructions');
+    if (helpButton && setupInstructions) {
+        // Click event toggles visibility and class
         helpButton.addEventListener('click', function () {
-            const setupInstructions = page.querySelector('#librarySetupInstructions');
-            // Toggle visibility of instructions
-            if (setupInstructions) {
-                const isVisible = setupInstructions.style.display !== 'none';
-                setupInstructions.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible) {
-                    scrollToElement('librarySetupInstructions');
-                }
+            if (helpButton.classList.contains('clicked')) {
+                setupInstructions.style.display = 'none';
+            } else {
+                scrollToElement('librarySetupInstructions');
             }
-            // Toggle clicked class on button
-            helpButton.classList.toggle('clicked');
         });
+
+        // Callback function for the observer
+        const handleDisplayChange = () => {
+            if (setupInstructions.style.display === 'none') {
+                helpButton.classList.remove('clicked');
+            } else {
+                helpButton.classList.add('clicked');
+            }
+        };
+
+        // MutationObserver to watch for display changes
+        const observer = new MutationObserver(handleDisplayChange);
+        observer.observe(setupInstructions, { attributes: true, attributeFilter: ['style'] });
     }
     
     // Add form submit event listener
