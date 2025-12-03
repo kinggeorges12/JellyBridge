@@ -27,24 +27,6 @@
         "checksum": "795B17CE277BB2372B67784D36388994"
       },
       {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.26/JellyBridge-2.1.26.11.zip",
-        "targetAbi": "10.11.0.0",
-        "dependencies": [],
-        "version": "2.1.26.11",
-        "checksum": "551C126475EABEACD0D0BA9BB1DBAFF2",
-        "timestamp": "2025-12-03T16:15:05.389Z",
-        "changelog": "Jellyfin 10.11.0: v2.1.26 - Prompt user to open troubleshooting section for Test Connection errors."
-      },
-      {
-        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.26/JellyBridge-2.1.26.10.zip",
-        "targetAbi": "10.10.0.0",
-        "dependencies": [],
-        "version": "2.1.26.10",
-        "checksum": "262D676387FECDD93A34716FCE807444",
-        "timestamp": "2025-12-03T16:15:05.389Z",
-        "changelog": "Jellyfin 10.10.7: v2.1.26 - Prompt user to open troubleshooting section for Test Connection errors."
-      },
-      {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.1.15/JellyBridge-2.1.15.11.zip",
         "changelog": "Jellyfin 10.11.0: v2.1.15 - Patch: bugfixes and improvements",
         "checksum": "4F891B3C3FE83776E338458C5077E46D",
