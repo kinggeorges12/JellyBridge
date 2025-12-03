@@ -217,15 +217,7 @@ function initializeGeneralSettings(page) {
     const helpButton = page.querySelector('#librarySetupHelp');
     if (helpButton) {
         helpButton.addEventListener('click', function () {
-            const instructionsDetails = page.querySelector('#librarySetupInstructions');
-            if (instructionsDetails) {
-                const isVisible = instructionsDetails.style.display !== 'none';
-                instructionsDetails.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible) {
-                    // Scroll to and highlight the IsEnabled checkbox
-                    scrollToCheckboxAndHighlight('#IsEnabled');
-                }
-            }
+            scrollToElement('librarySetupInstructions');
         });
     }
     
@@ -1785,7 +1777,7 @@ function scrollToElement(elementId, offset = 60) {
                 detailsToOpen.push(parent);
             }
             // Iterate over parents elements to open all containing parent sections
-            nextElement = parent.parentElement;
+            nextElement = nextElement.parentElement;
         }
         
         // Open all parent details elements (in reverse order to open outer ones first)
