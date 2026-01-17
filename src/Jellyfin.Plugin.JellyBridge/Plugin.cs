@@ -146,62 +146,41 @@ namespace Jellyfin.Plugin.JellyBridge
         {
             timeout ??= TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes))); // Use configured task timeout
             var startTime = DateTime.UtcNow;
-            bool isQueued = false;
+            var isQueued = false;
 
             // Try to acquire or queue the operation (global running, per-name queue, only one queued per name)
-            while (DateTime.UtcNow - startTime < timeout.Value)
+            while (true)
             {
                 lock (_operationSyncLock)
                 {
                     if (!_isOperationRunning)
                     {
                         _isOperationRunning = true;
+                        _isOperationQueuedByName[operationName] = false;
                         logger.LogTrace("Acquiring global operation lock for {OperationName}", operationName);
                         break;
-                    }
-                    else if (_isOperationQueuedByName.TryGetValue(operationName, out var queued))
+                    } else if (!isQueued && _isOperationQueuedByName.TryGetValue(operationName, out var queued))
                     {
-                        if (queued)
+                        if (!queued)
                         {
-                            // Already queued for this operation name, skip this request
-                            logger.LogWarning("Operation for {OperationName} is already queued. Skipping duplicate request.", operationName);
-                            return default!;
-                        } else {
                             // Not queued, so queue it
-                            _isOperationQueuedByName[operationName] = true;
                             isQueued = true;
+                            _isOperationQueuedByName[operationName] = true;
                             logger.LogTrace("Queuing operation for {OperationName}", operationName);
                             break;
+                        } else {
+                            // If already queued, skip
+                            logger.LogWarning("Operation for {OperationName} is already queued. Skipping duplicate request.", operationName);
+                            return default!;
                         }
+                    } else if (DateTime.UtcNow - startTime >= timeout.Value) {
+                        _isOperationQueuedByName[operationName] = false;
+                        throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
                     }
                 }
+                
+                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
                 await Task.Delay(1000); // Small delay to prevent busy waiting
-            }
-
-            // If we timed out waiting to queue or run
-            if (DateTime.UtcNow - startTime >= timeout.Value)
-            {
-                throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
-            }
-
-            // If this call was queued, wait until global running is free, then run
-            if (isQueued)
-            {
-                // Wait for the running operation to finish
-                while (true)
-                {
-                    lock (_operationSyncLock)
-                    {
-                        if (!_isOperationRunning)
-                        {
-                            _isOperationRunning = true;
-                            _isOperationQueuedByName[operationName] = false;
-                            logger.LogTrace("Dequeued and acquiring global operation lock for {OperationName}", operationName);
-                            break;
-                        }
-                    }
-                    await Task.Delay(1000); // Shorter delay for queued
-                }
             }
 
             try
