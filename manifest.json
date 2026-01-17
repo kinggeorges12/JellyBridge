@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-01-17T21:13:11.284Z",
+        "dependencies": [],
+        "version": "2.2.3.11",
+        "checksum": "281B592C82E1E6ED437914EA56A88BCE",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.3.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.3 - fixed queueing logic so only one operation runs per task",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "timestamp": "2026-01-17T21:13:11.284Z",
+        "dependencies": [],
+        "version": "2.2.3.10",
+        "checksum": "897BC5E2D89EFBB54361D3EF92D95B71",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.3.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.3 - fixed queueing logic so only one operation runs per task",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2026-01-17T20:29:22.577Z",
         "dependencies": [],
         "version": "2.2.2.11",

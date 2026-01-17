@@ -61,7 +61,7 @@ public class SortTask : IScheduledTask
                 _logger.LogInformation("Sort task completed: {Result}", sortResult.ToString());
                 
                 return null;
-            }, _logger, "Sort Task");
+            }, _logger, "Sort Library"); // Use same operation name as SortDiscoverContentController to avoid enqueuing multiple tasks
         }
         catch (Exception ex)
         {
