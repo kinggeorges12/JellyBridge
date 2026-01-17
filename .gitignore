@@ -6,7 +6,8 @@
 .github/commands/
 bin/
 obj/
-Debug/
+debug/
+release/
 # User-specific files
 *.user*
 *.suo
