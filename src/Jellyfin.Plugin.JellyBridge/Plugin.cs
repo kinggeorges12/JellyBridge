@@ -167,7 +167,6 @@ namespace Jellyfin.Plugin.JellyBridge
                             isQueued = true;
                             _isOperationQueuedByName[operationName] = true;
                             logger.LogTrace("Queuing operation for {OperationName}", operationName);
-                            break;
                         } else {
                             // If already queued, skip
                             logger.LogWarning("Operation for {OperationName} is already queued. Skipping duplicate request.", operationName);
