@@ -20,23 +20,24 @@ namespace Jellyfin.Plugin.JellyBridge
 
         public override Guid Id => Guid.Parse("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "JellyBridge";
-        
+
         public static Plugin Instance { get; private set; } = null!;
-        
+
         public ILoggerFactory LoggerFactory => _loggerFactory;
-        
-        // Jellyfin-style locking for operations that should be mutually exclusive
+
+        // Locking: Only one operation (any name) can run at a time, but allow one queued per operation name
         private static readonly object _operationSyncLock = new object();
         private static bool _isOperationRunning = false;
-        
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory, ITaskManager taskManager) 
+        private static readonly Dictionary<string, bool> _isOperationQueuedByName = new Dictionary<string, bool>();
+
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory, ITaskManager taskManager)
             : base(applicationPaths, xmlSerializer)
         {
             _loggerFactory = loggerFactory;
             _logger = new DebugLogger<Plugin>(loggerFactory.CreateLogger<Plugin>());
             _taskManager = taskManager;
             Instance = this;
-            
+
             _logger.LogInformation("Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
             _logger.LogInformation("Plugin ID: {PluginId}", Id);
             _logger.LogInformation("Plugin Name: {PluginName}", Name);
@@ -138,14 +139,16 @@ namespace Jellyfin.Plugin.JellyBridge
         public static bool IsOperationRunning => _isOperationRunning;
 
         /// <summary>
-        /// Executes an operation with Jellyfin-style locking that pauses instead of canceling.
+        /// Executes an operation with Jellyfin-style locking that pauses instead of canceling, per operation name.
+        /// Only one running and one queued per operation name.
         /// </summary>
         public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
         {
             timeout ??= TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes))); // Use configured task timeout
             var startTime = DateTime.UtcNow;
-            
-            // Wait for any running operation to complete (pausing, not canceling)
+            bool isQueued = false;
+
+            // Try to acquire or queue the operation (global running, per-name queue)
             while (DateTime.UtcNow - startTime < timeout.Value)
             {
                 lock (_operationSyncLock)
@@ -153,21 +156,47 @@ namespace Jellyfin.Plugin.JellyBridge
                     if (!_isOperationRunning)
                     {
                         _isOperationRunning = true;
-                        logger.LogTrace("Acquiring operation lock for {OperationName}", operationName);
+                        logger.LogTrace("Acquiring global operation lock for {OperationName}", operationName);
+                        break;
+                    }
+                    else if (!_isOperationQueuedByName.TryGetValue(operationName, out var queued) || !queued)
+                    {
+                        _isOperationQueuedByName[operationName] = true;
+                        isQueued = true;
+                        logger.LogTrace("Queuing operation for {OperationName}", operationName);
                         break;
                     }
                 }
-                
-                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
+                logger.LogWarning("Another operation is running, pausing until it completes (operation type: {OperationName})", operationName);
                 await Task.Delay(1000); // Small delay to prevent busy waiting
             }
-            
-            // Check if we timed out
+
+            // If we timed out waiting to queue or run
             if (DateTime.UtcNow - startTime >= timeout.Value)
             {
                 throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
             }
-            
+
+            // If this call was queued, wait until global running is free, then run
+            if (isQueued)
+            {
+                // Wait for the running operation to finish
+                while (true)
+                {
+                    lock (_operationSyncLock)
+                    {
+                        if (!_isOperationRunning)
+                        {
+                            _isOperationRunning = true;
+                            _isOperationQueuedByName[operationName] = false;
+                            logger.LogTrace("Dequeued and acquiring global operation lock for {OperationName}", operationName);
+                            break;
+                        }
+                    }
+                    await Task.Delay(1000); // Shorter delay for queued
+                }
+            }
+
             try
             {
                 return await operation();
@@ -177,7 +206,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 lock (_operationSyncLock)
                 {
                     _isOperationRunning = false;
-                    logger.LogTrace("Releasing operation lock for {OperationName}", operationName);
+                    logger.LogTrace("Releasing global operation lock for {OperationName}", operationName);
                 }
             }
         }

@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using MediaBrowser.Controller.Library;
@@ -16,6 +17,7 @@ public sealed class FavoriteEventHandler : IHostedService
     private readonly ILogger<FavoriteEventHandler> _logger;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
+    private readonly ManageDiscoverLibraryController _manageDiscoverLibraryController;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FavoriteEventHandler"/> class.
@@ -26,11 +28,13 @@ public sealed class FavoriteEventHandler : IHostedService
     public FavoriteEventHandler(
         ILogger<FavoriteEventHandler> logger,
         JellyfinIUserDataManager userDataManager,
-        JellyfinIUserManager userManager)
+        JellyfinIUserManager userManager,
+        ManageDiscoverLibraryController manageDiscoverLibraryController)
     {
         _logger = new DebugLogger<FavoriteEventHandler>(logger);
         _userDataManager = userDataManager;
         _userManager = userManager;
+        _manageDiscoverLibraryController = manageDiscoverLibraryController;
     }
 
     /// <inheritdoc />
@@ -76,12 +80,28 @@ public sealed class FavoriteEventHandler : IHostedService
 
             _logger.LogInformation("Favorite added: User={UserName}, Item={ItemName} (Id={ItemId})", 
                 user.Username, e.Item.Name, e.Item.Id);
+
+            // Fire and forget, log errors
+            _ = TriggerSyncFavoritesAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling favorite event for ItemId={ItemId}, UserId={UserId}", 
                 e.Item?.Id, e.UserId);
         }
+
+    async Task TriggerSyncFavoritesAsync()
+    {
+        try
+        {
+            var result = await _manageDiscoverLibraryController.SyncFavorites();
+            _logger.LogInformation("Triggered SyncFavorites from FavoriteEventHandler. Result: {Result}", result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error running SyncFavorites from FavoriteEventHandler");
+        }
+    }
     }
 }
 
