@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-01-17T20:29:22.577Z",
+        "dependencies": [],
+        "version": "2.2.2.11",
+        "checksum": "5D62369FA8913CE353AE5DB0068503C7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.2.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.2 - run Favorites sync after adding a favorite. at most, queue one instance of each task so favorites are not overwhelmed when users add many favorites.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "timestamp": "2026-01-17T20:29:22.577Z",
+        "dependencies": [],
+        "version": "2.2.2.10",
+        "checksum": "61EF25ABE35DCB7252305BF13418D639",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.2.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.2 - run Favorites sync after adding a favorite. at most, queue one instance of each task so favorites are not overwhelmed when users add many favorites.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "version": "2.2.1.11",
         "changelog": "Jellyfin 10.11.0: v2.2.1 - Automated branch release",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.1.11.zip",
