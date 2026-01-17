@@ -447,13 +447,41 @@ function initializeImportContent(page) {
         moveNetworks(activeNetworksSelect, availableNetworksSelect);
     });
     
-    // Double-click to move items
-    availableNetworksSelect.addEventListener('dblclick', function() {
-        moveNetworks(availableNetworksSelect, activeNetworksSelect);
+    // Double-click to move items or show details
+    availableNetworksSelect.addEventListener('dblclick', function(e) {
+        if (e.target && e.target.tagName === 'OPTION') {
+            require(["../Components/networkdialog/networkdialog"], function(networkDialog) {
+                const option = e.target;
+                const network = {
+                    name: option.textContent,
+                    id: option.getAttribute('data-str-id'),
+                    region: option.getAttribute('data-str-region')
+                };
+                networkDialog.showNetworkDialog(network, 'available', function(action) {
+                    if (action === 'add') {
+                        moveNetworks(availableNetworksSelect, activeNetworksSelect, option.value);
+                    }
+                });
+            });
+        }
     });
     
-    activeNetworksSelect.addEventListener('dblclick', function() {
-        moveNetworks(activeNetworksSelect, availableNetworksSelect);
+    activeNetworksSelect.addEventListener('dblclick', function(e) {
+        if (e.target && e.target.tagName === 'OPTION') {
+            require(["../Components/networkdialog/networkdialog"], function(networkDialog) {
+                const option = e.target;
+                const network = {
+                    name: option.textContent,
+                    id: option.getAttribute('data-str-id'),
+                    region: option.getAttribute('data-str-region')
+                };
+                networkDialog.showNetworkDialog(network, 'active', function(action) {
+                    if (action === 'remove') {
+                        moveNetworks(activeNetworksSelect, availableNetworksSelect, option.value);
+                    }
+                });
+            });
+        }
     });
     
     // Add refresh available networks button functionality
