@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-01-17T22:33:17.930Z",
+        "dependencies": [],
+        "version": "2.2.5.11",
+        "checksum": "F8A5A543877AF8D01EAD314DA7A3CD85",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.5.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.5 - fixed queueing logic so it doesn't exit the wait loop after queuing.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "timestamp": "2026-01-17T22:33:17.930Z",
+        "dependencies": [],
+        "version": "2.2.5.10",
+        "checksum": "6D62429719B9E78A8AF7CC9FFD267FF8",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.5.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.5 - fixed queueing logic so it doesn't exit the wait loop after queuing.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "timestamp": "2026-01-17T22:18:18.603Z",
         "dependencies": [],
         "version": "2.2.4.11",
