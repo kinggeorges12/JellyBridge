@@ -258,5 +258,14 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
             };
         }
     }
+    
+    /// <summary>
+    /// Occurs when user data is saved. Forwards to the underlying IUserDataManager event.
+    /// </summary>
+    public event EventHandler<UserDataSaveEventArgs>? UserDataSaved
+    {
+        add { Inner.UserDataSaved += value; }
+        remove { Inner.UserDataSaved -= value; }
+    }
 
 }
