@@ -108,7 +108,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         success = syncResult.Success,
                         message = syncResult.Message
                     };
-                }, _logger, "Sync to Jellyseerr");
+                }, _logger, "Sync Favorites");
                 
                 return Ok(result);
             }

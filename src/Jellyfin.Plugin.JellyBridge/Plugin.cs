@@ -148,7 +148,7 @@ namespace Jellyfin.Plugin.JellyBridge
             var startTime = DateTime.UtcNow;
             bool isQueued = false;
 
-            // Try to acquire or queue the operation (global running, per-name queue)
+            // Try to acquire or queue the operation (global running, per-name queue, only one queued per name)
             while (DateTime.UtcNow - startTime < timeout.Value)
             {
                 lock (_operationSyncLock)
@@ -159,15 +159,22 @@ namespace Jellyfin.Plugin.JellyBridge
                         logger.LogTrace("Acquiring global operation lock for {OperationName}", operationName);
                         break;
                     }
-                    else if (!_isOperationQueuedByName.TryGetValue(operationName, out var queued) || !queued)
+                    else if (_isOperationQueuedByName.TryGetValue(operationName, out var queued))
                     {
-                        _isOperationQueuedByName[operationName] = true;
-                        isQueued = true;
-                        logger.LogTrace("Queuing operation for {OperationName}", operationName);
-                        break;
+                        if (queued)
+                        {
+                            // Already queued for this operation name, skip this request
+                            logger.LogWarning("Operation for {OperationName} is already queued. Skipping duplicate request.", operationName);
+                            return default!;
+                        } else {
+                            // Not queued, so queue it
+                            _isOperationQueuedByName[operationName] = true;
+                            isQueued = true;
+                            logger.LogTrace("Queuing operation for {OperationName}", operationName);
+                            break;
+                        }
                     }
                 }
-                logger.LogWarning("Another operation is running, pausing until it completes (operation type: {OperationName})", operationName);
                 await Task.Delay(1000); // Small delay to prevent busy waiting
             }
 
