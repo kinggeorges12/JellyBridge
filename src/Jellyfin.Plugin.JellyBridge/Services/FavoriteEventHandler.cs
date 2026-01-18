@@ -90,11 +90,11 @@ public sealed class FavoriteEventHandler : IHostedService
             var itemPath = e.Item.Path;
             if (!FolderUtils.IsPathInSyncDirectory(itemPath))
             {
-                _logger.LogDebug("Media item is not in a JellyBridge sync directory. Skipping favorites sync to Jellyseerr. ItemPath={ItemPath}", itemPath);
+                _logger.LogTrace("Media item is not in a JellyBridge sync directory. Skipping favorites sync to Jellyseerr. ItemPath={ItemPath}", itemPath);
                 return;
             }
 
-            _logger.LogInformation("Favorite added: User={UserName}, Item={ItemName} (Id={ItemId})", 
+            _logger.LogDebug("JellyBridge favorite added: User={UserName}, Item={ItemName} (Id={ItemId})", 
                 user.Username, e.Item.Name, e.Item.Id);
 
             // Fire and forget, log errors
