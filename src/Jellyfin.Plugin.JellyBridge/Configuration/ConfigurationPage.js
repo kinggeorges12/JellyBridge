@@ -985,12 +985,13 @@ function performCleanupMetadata(page) {
 
 function initializeManageLibrary(page) {
     // Set library settings form values with null handling
+    setInputField(page, 'ManageJellyseerrLibrary', true);
     setInputField(page, 'ExcludeFromMainLibraries', true);
+    setInputField(page, 'ResponsiveFavoriteRequests', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
-    setInputField(page, 'ManageJellyseerrLibrary', true);
     
     updateNetworkFolderOptionsState();
     updateAddDuplicateContentState();
@@ -1559,7 +1560,9 @@ function savePluginConfiguration(page) {
     form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
+    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
+    form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
@@ -1580,7 +1583,6 @@ function savePluginConfiguration(page) {
     form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
-    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     
     // Save the configuration using ApiClient
     return ApiClient.ajax({
