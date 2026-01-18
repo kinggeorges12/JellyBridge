@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Hosting;
@@ -78,7 +79,22 @@ public sealed class FavoriteEventHandler : IHostedService
                 return;
             }
 
-            _logger.LogInformation("Favorite added: User={UserName}, Item={ItemName} (Id={ItemId})", 
+            // Check ResponsiveFavoriteRequests flag using Plugin.GetConfigOrDefault
+            if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ResponsiveFavoriteRequests)))
+            {
+                _logger.LogDebug("Responsive Favorite Requests is disabled. Skipping favorites sync to Jellyseerr.");
+                return;
+            }
+
+            // Check if item is in a JellyBridge sync directory using FolderUtils.IsPathInSyncDirectory
+            var itemPath = e.Item.Path;
+            if (!FolderUtils.IsPathInSyncDirectory(itemPath))
+            {
+                _logger.LogTrace("Media item is not in a JellyBridge sync directory. Skipping favorites sync to Jellyseerr. ItemPath={ItemPath}", itemPath);
+                return;
+            }
+
+            _logger.LogDebug("JellyBridge favorite added: User={UserName}, Item={ItemName} (Id={ItemId})", 
                 user.Username, e.Item.Name, e.Item.Id);
 
             // Fire and forget, log errors

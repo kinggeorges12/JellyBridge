@@ -20,18 +20,10 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(IsEnabled), false },
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
+        { nameof(LibraryDirectory), "/data/JellyBridge" },
         { nameof(SyncIntervalHours), 24.0 },
         { nameof(EnableStartupSync), false },
         { nameof(StartupDelaySeconds), 30 },
-
-        // Library Settings
-        { nameof(LibraryDirectory), "/data/JellyBridge" },
-        { nameof(ExcludeFromMainLibraries), true },
-        { nameof(RemoveRequestedFromFavorites), false },
-        { nameof(UseNetworkFolders), false },
-        { nameof(AddDuplicateContent), true },
-        { nameof(LibraryPrefix), string.Empty },
-        { nameof(ManageJellyseerrLibrary), true },
 
         // Discover / Sync Settings
         { nameof(Region), "US" },
@@ -62,6 +54,15 @@ public class PluginConfiguration : BasePluginConfiguration
             }
         },
         { nameof(MaxDiscoverPages), 1 },
+
+        // Library Settings
+        { nameof(ManageJellyseerrLibrary), true },
+        { nameof(ExcludeFromMainLibraries), true },
+        { nameof(ResponsiveFavoriteRequests), true },
+        { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(UseNetworkFolders), false },
+        { nameof(AddDuplicateContent), true },
+        { nameof(LibraryPrefix), string.Empty },
 
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
@@ -100,6 +101,13 @@ public class PluginConfiguration : BasePluginConfiguration
     [Required]
     public string ApiKey { get; set; } = string.Empty;
 
+    // ===== Library Settings =====
+    /// <summary>
+    /// Gets or sets the library directory.
+    /// </summary>
+    [Required]
+    public string LibraryDirectory { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the sync interval in hours.
     /// </summary>
@@ -120,17 +128,38 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public int? TaskTimeoutMinutes { get; set; }
 
-    // ===== Library Settings =====
+    // ===== Discover / Sync Settings =====
     /// <summary>
-    /// Gets or sets the library directory.
+    /// Gets or sets the watch network region (ISO 3166-1 country code).
     /// </summary>
-    [Required]
-    public string LibraryDirectory { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the mapping of network IDs to their names (populated after API communication).
+    /// Nullable to distinguish between "no value saved yet" and an empty list.
+    /// </summary>
+    public List<JellyseerrNetwork>? NetworkMap { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
+    /// This applies to both movies and TV shows discovery.
+    /// </summary>
+    public int? MaxDiscoverPages { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to manage libraries with JellyBridge.
+    /// </summary>
+    public bool? ManageJellyseerrLibrary { get; set; }
 
     /// <summary>
     /// Gets or sets whether to exclude placeholder shows from main libraries.
     /// </summary>
     public bool? ExcludeFromMainLibraries { get; set; }
+
+    /// <summary>
+    /// Enables responsive favorite requests.
+    /// </summary>
+    public bool ResponsiveFavoriteRequests { get; set; } = true;
 
     /// <summary>
     /// When enabled, remove items from all users' favorites after creating a request in Jellyseerr.
@@ -151,29 +180,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
     public string LibraryPrefix { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets whether to manage libraries with JellyBridge.
-    /// </summary>
-    public bool? ManageJellyseerrLibrary { get; set; }
-
-    // ===== Discover / Sync Settings =====
-    /// <summary>
-    /// Gets or sets the watch network region (ISO 3166-1 country code).
-    /// </summary>
-    public string Region { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the mapping of network IDs to their names (populated after API communication).
-    /// Nullable to distinguish between "no value saved yet" and an empty list.
-    /// </summary>
-    public List<JellyseerrNetwork>? NetworkMap { get; set; }
-
-    /// <summary>
-    /// Gets or sets the maximum number of pages to fetch from discover endpoint for each network during sync (0 = unlimited).
-    /// This applies to both movies and TV shows discovery.
-    /// </summary>
-    public int? MaxDiscoverPages { get; set; }
 
     // ===== Sort Discover Content =====
     /// <summary>
