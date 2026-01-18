@@ -46,6 +46,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
+                    ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
                     EnableStartupSync = config.EnableStartupSync,
@@ -116,12 +117,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetNetworkMap(configData, config);
                     
                     // Manage Discover Library
+                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyseerrLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
-                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyseerrLibrary), config);
                     
                     // Sort Content
                     SetJsonValue<bool?>(configData, nameof(config.EnableAutomatedSortTask), config);
