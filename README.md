@@ -2,7 +2,7 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
 
-> **Note for users upgrading from JellyBridge v1:** See [Release Notes](#-release-notes) for compatibility information and upgrade instructions.
+> **Note for users upgrading from JellyBridge v1:** See [Release Notes](#-release-notes) for upgrade instructions.
 
 ## ✨ Features
 
@@ -189,6 +189,11 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ## 📣 Release Notes
 
+### Version 2.2
+
+**🆕 New in this release**
+- Responsive Favorite Requests: An option, enabled by default, to immediately request favorites from Jellyseerr upon favoriting a media item.
+
 ### Version 2.0 🎉
 
 **🆕 New in this release**
@@ -196,7 +201,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
-**⚠️ Compatibility Notes**
+**⚠️ Version Notes**
 This version is tested with Jellyfin 10.10.7 and 10.11.\* (up to 10.11.4) for compatibility.
 - To prevent errors after upgrading, the option `Advanced → Auto-sync on Plugin Startup` is disabled by default. Re-enable it if desired.
 - If you use "Network Folders" (previously "Create separate libraries for streaming services"), review and re-enable the related options after upgrading.
@@ -209,7 +214,20 @@ After installing the new version, you may need to update the plugin configuratio
 
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.\* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
-## 🧰 Logging & Troubleshooting
+## 🖇️ Compatibility
+
+This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
+
+## 🧰 Troubleshooting
+
+Check the 🤖 Troubleshooting section link on the bottom of the plugin configuration page. This section contains basic steps, including how to set up the JellyBridge library.
+
+- For additional help with plugin setup, check out [issues with the debugging tag](https://github.com/kinggeorges12/JellyBridge/issues?q=is%3Aissue%20label%3Adebugging).
+- If the config UI doesn’t reflect the latest changes after an update, force-refresh the page (see Release Notes for steps).
+
+If you encounter any issues with the plugin, please post in the [GitHub Issues](https://github.com/kinggeorges12/JellyBridge/issues) or leave a comment in [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
+
+## 📝 Logging
 
 The plugin integrates with Jellyfin's logging system. Enable debug logging from the advanced options to record detailed logs. Check Jellyfin logs for debugging information:
 
@@ -218,15 +236,6 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 - Series sync operations
 - Library management
 - Error messages and warnings
-
-If you encounter any issues with the plugin, please leave a comment in the [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
-
-**⚠️ Compatibility Note**: This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.1* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
-
-Tips:
-- For additional help with plugin setup, check out [issues with the debugging tag](https://github.com/kinggeorges12/JellyBridge/issues?q=is%3Aissue%20label%3Adebugging).
-- If the config UI doesn’t reflect the latest changes after an update, force-refresh the page (see Release Notes for steps).
-- If favorites cannot be requested from the Manage Library page, temporarily disable CSRF protection in Jellyseerr (Settings → Network → uncheck “Enable CSRF Protection”).
 
 ## 🧑‍💻 Development
 

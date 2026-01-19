@@ -2,25 +2,26 @@
 
 ## Planned Features
 
-1. Extract the request favorites function from the sync task. The favorites function can be triggered directly from the Favorite event handler in Jellyfin. See [Issue #12](https://github.com/kinggeorges12/JellyBridge/issues/12#issuecomment-3533119223).
+1. Add a modal dialog when the network options are double-clicked from the active or available network multiselect. Options include "Add to Selected Networks" (if in available) or "Remove from Selected Networks" (if active).
 2. Faster refreshes that target only the metadata items that have been changed.
-3. Change the smart sort to include cast and directors as criteria
+3. Change the smart sort to include cast and directors as criteria, and watched media.
 4. Allow users to upload a custom picture or video for placeholder videos.
 5. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
 
 ## Completed Features
-1. Support for Jellyfin 10.11.\*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
-2. Change sort order based on user preference or implement a random sort order plugin.
+1. Extract the request favorites function from the sync task. The favorites function can be triggered directly from the Favorite event handler in Jellyfin. See [Issue #12](https://github.com/kinggeorges12/JellyBridge/issues/12#issuecomment-3533119223).
+2. Support for Jellyfin 10.11.\*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
+3. Change sort order based on user preference or implement a random sort order plugin.
 
 ## Contributing
 
 We welcome contributions! Here's how to get started:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. Fork the repository.
+2. In the scripts directory, use build-branch.ps1 and build-release.ps1 to easily test changes. Be sure to set the GitHubUsername and any required parameters.
+3. Iteratively develop code. Jellyfin and C# can be a bit unforgiving.
+4. Test thoroughly on 10.11.\* and 10.10.7 docker instances.
+5. Submit a pull request.
 
 ## Prerequisites
 
@@ -31,6 +32,8 @@ We welcome contributions! Here's how to get started:
 - Visual Studio 2022 or VS Code (optional)
 
 ## Building the Plugin
+
+Recommended to use the `/scripts/build-branch.ps1` PowerShell script.
 
 1. **Clone the repository**
    ```bash
@@ -55,7 +58,45 @@ We welcome contributions! Here's how to get started:
    dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror -p:JellyfinVersion=10.11.0
    ```
 
+4. **Publish a new release**
+
+   Add the metadata.json to the release. Zip the .dll and metadata and place in the release directory.
+   ```pwsh
+      $metaJson = @{
+         guid = $pluginInfo.guid
+         name = $pluginInfo.name
+         description = $pluginInfo.description
+         owner = $pluginInfo.owner
+         category = $pluginInfo.category
+         version = $ver_sub
+         changelog = $ChangelogText
+         targetAbi = $minAbi
+         timestamp = $timestamp
+         status = "Active"
+         autoUpdate = $true
+         assemblies = @("JellyBridge.dll")
+      }
+      Compress-Archive -Path $dllPath, $metaPath -DestinationPath $zipPath -Force
+   ```
+
+5. **Update the manifest**
+
+   Add an entry in manifest.json for your new release, pointing to the zip file in the release directory.
+   ```
+      $entry = @{
+         version = $ver_sub
+         changelog = "Jellyfin $($t.JellyfinVersion): $ChangelogText"
+         targetAbi = $minAbi
+         sourceUrl = "https://raw.githubusercontent.com/$GitHubUsername/JellyBridge/$Branch/release/$zipName"
+         checksum = $checksum
+         timestamp = $timestamp
+         dependencies = @()
+      }
+   ```
+
 ## Manual Installation
+
+Recommended to publish releases through the manifest and update plugins through the Jellyfin UI. I have not had any luck using local releases, although you may find online resources with better instructions.
 
 After building, copy the DLL to your Jellyfin plugins folder:
 1. Navigate to the build output directory based on your Jellyfin version:
@@ -210,8 +251,8 @@ pwsh -File scripts/build-release.ps1 -Version "1.0.0" -Changelog "Release descri
 ## Project Structure
 
 ```
-JellyBridge/
-├── Assets/                       # Image assets
+Jellyfin.Plugin.JellyBridge/
+├── Assets/                       # Image assets to generate placeholder videos
 │   ├── movie.png
 │   ├── S00E00.png
 │   ├── season.png
@@ -258,6 +299,7 @@ JellyBridge/
 │   ├── CleanupService.cs
 │   ├── DiscoverService.cs
 │   ├── FavoriteService.cs
+│   ├── FavoriteEventHandler.cs
 │   ├── LibraryService.cs
 │   ├── MetadataService.cs
 │   ├── PlaceholderVideoGenerator.cs
@@ -272,9 +314,9 @@ JellyBridge/
 │   ├── DebugLogger.cs
 │   ├── FolderUtils.cs
 │   └── JellyBridgeJsonSerializer.cs
-├── JellyBridge.csproj           # Project file
+├── JellyBridge.csproj            # Project file
 ├── Plugin.cs                     # Main plugin class
-└── manifest.json                 # Plugin manifest (in project root)
+manifest.json                     # Plugin manifest (in project root)
 ```
 
 ## Dependencies
