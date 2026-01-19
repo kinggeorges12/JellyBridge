@@ -10,6 +10,24 @@
     "versions": [
       {
         "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.8.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.8 - Automated branch release",
+        "checksum": "D30CC3F0212FBA0FB9874D88C02BF688",
+        "targetAbi": "10.11.0.0",
+        "version": "2.2.8.11",
+        "timestamp": "2026-01-19T02:56:36.405Z"
+      },
+      {
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.8.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.8 - Automated branch release",
+        "checksum": "043FCA2C0F3180C8199ACD64E14326A1",
+        "targetAbi": "10.10.0.0",
+        "version": "2.2.8.10",
+        "timestamp": "2026-01-19T02:56:36.405Z"
+      },
+      {
+        "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.7.11.zip",
         "changelog": "Jellyfin 10.11.0: v2.2.7 - Automated branch release",
         "checksum": "0978BEB3B6392BA0EB860DA7E90DF656",

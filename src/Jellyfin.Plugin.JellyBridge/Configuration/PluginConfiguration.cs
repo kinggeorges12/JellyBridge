@@ -159,7 +159,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Enables responsive favorite requests.
     /// </summary>
-    public bool ResponsiveFavoriteRequests { get; set; } = true;
+    public bool ResponsiveFavoriteRequests { get; set; }
 
     /// <summary>
     /// When enabled, remove items from all users' favorites after creating a request in Jellyseerr.

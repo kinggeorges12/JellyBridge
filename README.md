@@ -148,6 +148,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
+- **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
 - **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
 - **Network Folders Setup**
   - **Instructions**: Step-by-step guide for creating network folders and libraries

@@ -111,11 +111,11 @@ public sealed class FavoriteEventHandler : IHostedService
         try
         {
             var result = await _manageDiscoverLibraryController.SyncFavorites();
-            _logger.LogInformation("Triggered SyncFavorites from FavoriteEventHandler. Result: {Result}", result);
+            _logger.LogInformation("Triggered favorites sync from the event handler. Result: {Result}", result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error running SyncFavorites from FavoriteEventHandler");
+            _logger.LogError(ex, "Error running favorites sync from the event handler.");
         }
     }
     }
