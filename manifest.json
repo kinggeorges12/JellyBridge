@@ -9,22 +9,22 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.7.11.zip",
-        "changelog": "Jellyfin 10.11.0: v2.2.7 - Automated branch release",
-        "checksum": "0978BEB3B6392BA0EB860DA7E90DF656",
+        "checksum": "F5D98E10805C1E25E456D38D388DEBA8",
+        "version": "2.2.12.11",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.12/JellyBridge-2.2.12.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.12 - Adding config page option for responsive favorite syncing.",
+        "timestamp": "2026-01-19T03:19:29.551Z",
         "targetAbi": "10.11.0.0",
-        "version": "2.2.7.11",
-        "timestamp": "2026-01-18T23:14:44.346Z"
+        "dependencies": []
       },
       {
-        "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.7.10.zip",
-        "changelog": "Jellyfin 10.10.7: v2.2.7 - Automated branch release",
-        "checksum": "5AB80D6596FECB9FA584D85D0A839AD9",
+        "checksum": "9F0738F76C7E8788020EDC029B4AC52C",
+        "version": "2.2.12.10",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.12/JellyBridge-2.2.12.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.12 - Adding config page option for responsive favorite syncing.",
+        "timestamp": "2026-01-19T03:19:29.551Z",
         "targetAbi": "10.10.0.0",
-        "version": "2.2.7.10",
-        "timestamp": "2026-01-18T23:14:44.346Z"
+        "dependencies": []
       },
       {
         "dependencies": [],
