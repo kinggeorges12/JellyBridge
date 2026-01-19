@@ -39,7 +39,7 @@ public class SyncTask : IScheduledTask
 
     public string Name => "JellyBridge Sync";
     public string Key => "JellyBridgeSync";
-    public string Description => "Syncs favorites to Jellyseerr and discovers content from Jellyseerr to Jellyfin";
+    public string Description => "Syncs discover content from Jellyseerr to Jellyfin and favorites from Jellyfin to Jellyseerr.";
     public string Category => "JellyBridge";
 
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
@@ -52,8 +52,8 @@ public class SyncTask : IScheduledTask
             await Plugin.ExecuteWithLockAsync<(CleanupResult?, SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
             {
                 CleanupResult? cleanupResult = null;
-                SyncJellyfinResult? syncToResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
+                SyncJellyfinResult? syncToResult = null;
                 
                 // Step 1: Cleanup metadata before sync operations
                 progress.Report(10);
@@ -74,28 +74,8 @@ public class SyncTask : IScheduledTask
                     progress.Report(20);
                 }
                 
-                // Step 2: Sync favorites to Jellyseerr
-                _logger.LogDebug("Step 2: Syncing favorites to Jellyseerr...");
-                
-                try
-                {
-                    syncToResult = await _syncService.SyncToJellyseerr();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Step 2 failed: Sync to Jellyseerr");
-                    syncToResult = new SyncJellyfinResult
-                    {
-                        Success = false,
-                        Message = $"❌ Sync to Jellyseerr failed: {ex.Message}",
-                        Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
-                    };
-                } finally {
-                    progress.Report(50);
-                }
-                
-                // Step 3: Sync discover from Jellyseerr
-                _logger.LogDebug("Step 3: Syncing discover from Jellyseerr...");
+                // Step 2: Sync discover from Jellyseerr
+                _logger.LogDebug("Step 2: Syncing discover from Jellyseerr...");
                 
                 try
                 {
@@ -103,7 +83,7 @@ public class SyncTask : IScheduledTask
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Step 3 failed: Sync from Jellyseerr");
+                    _logger.LogError(ex, "Step 2 failed: Sync from Jellyseerr");
                     syncFromResult = new SyncJellyseerrResult
                     {
                         Success = false,
@@ -111,7 +91,27 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(80);
+                    progress.Report(70);
+                }
+                
+                // Step 3: Sync favorites to Jellyseerr
+                _logger.LogDebug("Step 3: Syncing favorites to Jellyseerr...");
+                
+                try
+                {
+                    syncToResult = await _syncService.SyncToJellyseerr();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Step 3 failed: Sync to Jellyseerr");
+                    syncToResult = new SyncJellyfinResult
+                    {
+                        Success = false,
+                        Message = $"❌ Sync to Jellyseerr failed: {ex.Message}",
+                        Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
+                    };
+                } finally {
+                    progress.Report(90);
                 }
 
                 try {
