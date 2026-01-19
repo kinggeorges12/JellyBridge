@@ -1423,13 +1423,17 @@ function performPluginReset(page) {
                 UseNetworkFolders: null,
                 AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
+                ResponsiveFavoriteRequests: null,
+                RemoveRequestedFromFavorites: null,
+                ManageJellyseerrLibrary: null,
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
                 TaskTimeoutMinutes: null,
                 EnableDebugLogging: null,
                 EnableTraceLogging: null,
                 Region: '',
-                NetworkMap: null
+                NetworkMap: null,
+                PlaceholderDurationSeconds: null
             };
             
             // Send reset configuration to the plugin
