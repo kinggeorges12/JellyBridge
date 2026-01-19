@@ -391,6 +391,19 @@
                     margin-top: 10px;
                     white-space: pre-wrap;
                 }
+
+                /* Documentation link styling on the bottom of the page */
+                .documentationLink {
+                    text-decoration: none;
+                    cursor: pointer;
+                    color: #2196f3;
+                    font-size: 1em;
+                    border: 1px solid transparent;
+                    transition: border-color 0.2s ease;
+                }
+                .documentationLink:hover {
+                    border-color: #e0e0e0;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -894,8 +907,14 @@
             
             <div class="readOnlyContent" style="margin-top: 20px; text-align: center;">
                 <p style="margin: 0;">
-                    <a target="_blank" href="https://kinggeorges12.github.io/JellyBridge/" style="color: #2196f3; text-decoration: none; font-size: 1em;">
-                        <strong>📖 Documentation & Help ❓</strong>
+                    <span class="link documentationLink" data-target-page="troubleshootingDetails" style="text-decoration: none;">
+                        <strong>🤖 Troubleshooting</strong>
+                    </span>
+                    <a target="_blank" href="https://kinggeorges12.github.io/JellyBridge/" class="documentationLink">
+                        <strong>📖 Documentation</strong>
+                    </a>
+                    <a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/issues" class="documentationLink">
+                        <strong>❓ Issues</strong>
                     </a>
                 </p>
             </div>
