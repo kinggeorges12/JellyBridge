@@ -221,54 +221,6 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Create season folders for all TV shows.
-    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
-    /// </summary>
-    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
-    {
-        _logger.LogDebug("Starting season folder creation for {ShowCount} shows", shows.Count);
-        
-        foreach (var show in shows)
-        {
-            try
-            {
-                var showFolderPath = _metadataService.GetJellyBridgeItemDirectory(show);
-                
-                _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
-                    show.MediaName, showFolderPath);
-                
-                try
-                {
-                    // Generate season placeholder video (calculates season folder path internally)
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(showFolderPath);
-                    if (placeholderSuccess)
-                    {
-                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
-                        _logger.LogDebug("Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    else
-                    {
-                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
-                        _logger.LogWarning("Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    _logger.LogTrace("✅ Created season folder for show '{MediaName}'", show.MediaName);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error creating season folder for show '{MediaName}'", show.MediaName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
-            }
-        }
-        
-        _logger.LogDebug("Completed season folder creation for {ShowCount} shows", shows.Count);
-    }
-
-    /// <summary>
     /// Filters duplicate media items from a list using the GetItemFolderHashCode method.
     /// Returns a list containing only unique items based on their hash code.
     /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
