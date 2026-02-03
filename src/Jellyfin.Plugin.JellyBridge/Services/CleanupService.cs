@@ -5,7 +5,6 @@ using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -16,13 +15,13 @@ public class CleanupService
 {
     private readonly DebugLogger<CleanupService> _logger;
     private readonly MetadataService _metadataService;
-    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
+    private readonly DiscoverService _discoverService;
 
-    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, PlaceholderVideoGenerator placeholderVideoGenerator)
+    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService)
     {
         _logger = new DebugLogger<CleanupService>(logger);
         _metadataService = metadataService;
-        _placeholderVideoGenerator = placeholderVideoGenerator;
+        _discoverService = discoverService;
     }
 
     /// <summary>
@@ -83,10 +82,10 @@ public class CleanupService
             
             result.Success = true;
             result.Message = $"✅ Cleanup completed: {deletedItems.Count} items deleted, {result.ItemsCleaned} folders without metadata";
-            
-            _logger.LogDebug("Completed cleanup - Deleted {TotalCount} items, {FoldersWithoutMetadata} folders without metadata", 
-                deletedItems.Count, deletedMovies.Count + deletedShows.Count);
-            
+
+            // Log the full output using CleanupResult's ToString()
+            _logger.LogInformation("Cleanup metadata completed:\n{CleanupOutput}", result.ToString());
+
             return result;
         }
         catch (Exception ex)
@@ -240,75 +239,34 @@ public class CleanupService
     }
 
     /// <summary>
-    /// Creates placeholder video only for items missing them (folders with metadata.json but no video file).
-    /// Returns a list of items for which a placeholder was actually created.
-    /// Uses deduplication and logging logic matching DiscoverService.
+    /// Filters out items with placeholders (by AssetExtension) and creates missing placeholders using DiscoverService.
     /// </summary>
     public async Task<List<IJellyseerrItem>> CreateMissingPlaceholderVideosAsync(List<IJellyseerrItem> items)
     {
-        var createdPlaceholders = new List<IJellyseerrItem>();
-        var tasks = new List<Task>();
-        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        _logger.LogDebug("Processing {UnmatchedCount} items for placeholder creation", items.Count);
-
+        var itemsWithoutPlaceholder = new List<IJellyseerrItem>();
         foreach (var item in items)
         {
             try
             {
                 var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
-                var normalizedFolder = FolderUtils.GetNormalizedPath(folderPath);
-                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
-                {
-                    _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
-                    continue;
-                }
-
                 if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                {
-                    _logger.LogTrace("Folder does not exist for item: {ItemName}", item.MediaName);
                     continue;
-                }
-
-                // Only create placeholder if no video exists (search subdirectories)
-                var hasPlaceholder = Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any();
-                if (hasPlaceholder)
+                if (!Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any())
                 {
-                    _logger.LogTrace("Placeholder already exists for {ItemName} at {FolderPath}", item.MediaName, folderPath);
-                    continue;
+                    _logger.LogTrace("No placeholder found for {ItemName} at {FolderPath}", item.MediaName, folderPath);
+                    itemsWithoutPlaceholder.Add(item);
                 }
-
-                // Create placeholder video based on media type
-                if (item is JellyseerrMovie)
-                {
-                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath));
-                }
-                else if (item is JellyseerrShow)
-                {
-                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(folderPath));
-                }
-
-                createdPlaceholders.Add(item);
-                _logger.LogTrace("Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating placeholder video for {ItemName}", item.MediaName);
+                _logger.LogError(ex, "Error checking placeholder for item: {ItemName}", item.MediaName);
+                continue;
             }
         }
 
-        // Await all placeholder video tasks
-        try
-        {
-            await Task.WhenAll(tasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "One or more tasks failed.");
-        }
-
-        _logger.LogDebug("Created placeholders for {CreatedCount} items", createdPlaceholders.Count);
-        return createdPlaceholders;
+        var filteredItems = _discoverService.FilterIgnoredItems(itemsWithoutPlaceholder);
+        var created = await _discoverService.CreatePlaceholderVideosAsync(filteredItems);
+        return created;
     }
 
 }

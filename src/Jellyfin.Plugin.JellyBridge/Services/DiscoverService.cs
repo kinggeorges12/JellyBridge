@@ -503,11 +503,11 @@ public class DiscoverService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "FilterIgnoredItems failed for {Name}", item?.MediaName);
+                _logger.LogError(ex, "Could not filter ignored item for {Name}", item?.MediaName);
             }
         }
 
-        _logger.LogTrace("FilterIgnoredItems kept {Kept}/{Total}", kept.Count, items.Count);
+        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
         return kept;
     }
 
