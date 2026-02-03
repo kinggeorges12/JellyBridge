@@ -18,16 +18,15 @@ public class DiscoverService
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
     private readonly BridgeService _bridgeService;
-    private readonly CleanupService _cleanupService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService, CleanupService cleanupService)
+
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
         _bridgeService = bridgeService;
-        _cleanupService = cleanupService;
     }
     
     #region FromJellyseerr
