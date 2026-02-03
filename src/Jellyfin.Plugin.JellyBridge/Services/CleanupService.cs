@@ -285,7 +285,7 @@ public class CleanupService
                 }
                 else if (item is JellyseerrShow)
                 {
-                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(folderPath));
                 }
 
                 createdPlaceholders.Add(item);

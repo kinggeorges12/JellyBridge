@@ -11,6 +11,24 @@
       {
         "dependencies": [],
         "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.19.11.zip",
+        "version": "2.2.19.11",
+        "checksum": "791DF9ECECF7DA77DAF235CAA90DB6D6",
+        "changelog": "Jellyfin 10.11.0: v2.2.19 - using correct placeholder season function",
+        "timestamp": "2026-02-03T18:48:59.841Z"
+      },
+      {
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.19.10.zip",
+        "version": "2.2.19.10",
+        "checksum": "ABA79A2DD065F6893D35B8DB49985603",
+        "changelog": "Jellyfin 10.10.7: v2.2.19 - using correct placeholder season function",
+        "timestamp": "2026-02-03T18:48:59.841Z"
+      },
+      {
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.18.11.zip",
         "version": "2.2.18.11",
         "checksum": "93ADB782C82377DA9358AC575410418D",
