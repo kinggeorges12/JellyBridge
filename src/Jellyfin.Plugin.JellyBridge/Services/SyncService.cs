@@ -155,7 +155,7 @@ public partial class SyncService
             // Step 7: Create season folders for unmatched TV shows
             var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
             _logger.LogDebug("Step 7: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
-            var placeholderShowTask = _discoverService.CreateSeasonFoldersForShows(unmatchedShows);
+            var placeholderShowTask = _discoverService.CreatePlaceholderVideosAsync(unmatchedShows);
             
             await Task.WhenAll(ignoreTask, placeholderMovieTask, placeholderShowTask);
 

@@ -11,6 +11,24 @@
       {
         "dependencies": [],
         "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.20.11.zip",
+        "version": "2.2.20.11",
+        "checksum": "0C01F0D37D845CF81E0738B0F37F8DE0",
+        "changelog": "Jellyfin 10.11.0: v2.2.20 - removing outdated functionality for creating placeholders differently between movies and shows. everything is in the CreatePlaceholderVideosAsync now.",
+        "timestamp": "2026-02-03T18:52:31.169Z"
+      },
+      {
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.20.10.zip",
+        "version": "2.2.20.10",
+        "checksum": "4B41A56F20E8BD9DEC899DC8A4179727",
+        "changelog": "Jellyfin 10.10.7: v2.2.20 - removing outdated functionality for creating placeholders differently between movies and shows. everything is in the CreatePlaceholderVideosAsync now.",
+        "timestamp": "2026-02-03T18:52:31.169Z"
+      },
+      {
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.19.11.zip",
         "version": "2.2.19.11",
         "checksum": "791DF9ECECF7DA77DAF235CAA90DB6D6",
