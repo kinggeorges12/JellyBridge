@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-02-03T19:38:44.030Z",
+        "changelog": "Jellyfin 10.11.0: v2.2.23 - cleanup services now fixes missing placeholder videos.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.23/JellyBridge-2.2.23.11.zip",
+        "version": "2.2.23.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "9A97F65DF4A55D925087B4202300AB91",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-02-03T19:38:44.030Z",
+        "changelog": "Jellyfin 10.10.7: v2.2.23 - cleanup services now fixes missing placeholder videos.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.23/JellyBridge-2.2.23.10.zip",
+        "version": "2.2.23.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "858A615CCCBDB9CA6DEE9A82BC36C0A5",
+        "dependencies": []
+      },
+      {
         "checksum": "693ACF8E6911AEDB2493908E31C96D9E",
         "version": "2.2.17.11",
         "timestamp": "2026-01-19T20:02:51.874Z",

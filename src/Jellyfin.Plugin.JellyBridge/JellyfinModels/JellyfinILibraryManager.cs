@@ -198,36 +198,6 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
             return item;
         }
 
-        // For movies, the path might be stored as the video file path, not the directory
-        // Try to find video files in the directory and search by those paths
-        if (Directory.Exists(directoryPath))
-        {
-            // Common video file extensions
-            var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".flv", ".webm", ".mpg", ".mpeg", ".m2ts", ".ts", ".mts" };
-            
-            try
-            {
-                var files = Directory.GetFiles(directoryPath);
-                foreach (var file in files)
-                {
-                    var extension = Path.GetExtension(file).ToLowerInvariant();
-                    if (videoExtensions.Contains(extension))
-                    {
-                        // Try to find the item by the video file path
-                        item = Inner.FindByPath(file, isFolder: false);
-                        if (item != null)
-                        {
-                            return item;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // If we can't read the directory, ignore and continue
-            }
-        }
-
         // If FindByPath doesn't work, return null
         // We avoid using GetItemList as a fallback because it can fail with deserialization errors
         // when some items in the library have unknown types
