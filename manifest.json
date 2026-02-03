@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-02-03T19:26:56.181Z",
+        "changelog": "Jellyfin 10.11.0: v2.2.22 - removed circular dependency, no need to call cleanup from discover service",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.22.11.zip",
+        "version": "2.2.22.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "C848ED5212031B45996A9D1377DFE261",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-02-03T19:26:56.181Z",
+        "changelog": "Jellyfin 10.10.7: v2.2.22 - removed circular dependency, no need to call cleanup from discover service",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.22.10.zip",
+        "version": "2.2.22.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "06ED29327DBDF376F667934449443A6F",
+        "dependencies": []
+      },
+      {
         "timestamp": "2026-02-03T19:16:35.851Z",
         "changelog": "Jellyfin 10.11.0: v2.2.21 - using discover service to fix placeholder videos in cleanup.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.21.11.zip",
