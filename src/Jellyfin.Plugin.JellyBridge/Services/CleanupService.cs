@@ -16,11 +16,13 @@ public class CleanupService
 {
     private readonly DebugLogger<CleanupService> _logger;
     private readonly MetadataService _metadataService;
+    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
 
-    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService)
+    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, PlaceholderVideoGenerator placeholderVideoGenerator)
     {
         _logger = new DebugLogger<CleanupService>(logger);
         _metadataService = metadataService;
+        _placeholderVideoGenerator = placeholderVideoGenerator;
     }
 
     /// <summary>
@@ -49,29 +51,34 @@ public class CleanupService
 
             // Process all items together - only delete items that are older than retention days
             var deletedItems = DeleteExpiredMedia(allItems);
+            result.ItemsProcessed.AddRange(allItems);
 
             // Process folders with .nfo files and delete those without metadata.json
             var (processedMovies, processedShows, deletedMovies, deletedShows) = await FindMissingMetadataFolders();
             result.ItemsDeleted.AddRange(deletedItems);
             result.MoviesCleaned = deletedMovies.Count;
             result.ShowsCleaned = deletedShows.Count;
-            
+
             _logger.LogDebug("Processed {ProcessedCount} folders with .nfo files, deleted {DeletedCount} folders without metadata.json", 
                 processedMovies.Count + processedShows.Count, deletedMovies.Count + deletedShows.Count);
-            
-            // If items were deleted, set refresh plan to RemoveRefresh=true (ReplaceAllMetadata=false)
+
+            // Run placeholder video creation and collect created items
+            var processedPlaceholders = await CreateMissingPlaceholderVideosAsync(allItems);
+            result.ItemsCreated.AddRange(processedPlaceholders);
+
+            // Determine refresh plan
             var hasDeletedItems = result.ItemsDeleted.Count > 0 || result.ItemsCleaned > 0;
-            if (hasDeletedItems)
+            var hasCreatedItems = result.ItemsCreated.Count > 0;
+            if (hasDeletedItems || hasCreatedItems)
             {
                 result.Refresh = new RefreshPlan
                 {
-                    CreateRefresh = false,
-                    RemoveRefresh = true,
+                    CreateRefresh = hasCreatedItems,
+                    RemoveRefresh = hasDeletedItems,
                     RefreshImages = false
                 };
-                
-                _logger.LogDebug("Cleanup removed {DeletedCount} items, refresh plan set (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
-                    result.ItemsDeleted.Count, result.Refresh.CreateRefresh, result.Refresh.RemoveRefresh, result.Refresh.RefreshImages);
+                _logger.LogDebug("Cleanup removed {DeletedCount} items, created {CreatedCount} placeholders, refresh plan set (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
+                    result.ItemsDeleted.Count, processedPlaceholders.Count, result.Refresh.CreateRefresh, result.Refresh.RemoveRefresh, result.Refresh.RefreshImages);
             }
             
             result.Success = true;
@@ -146,12 +153,6 @@ public class CleanupService
         var deletedMovies = new List<string>();
         var deletedShows = new List<string>();
         var syncDirectory = FolderUtils.GetBaseDirectory();
-        
-        if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-        {
-            _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-            return (processedMovies, processedShows, deletedMovies, deletedShows);
-        }
 
         var movieNfoFilename = JellyseerrMovie.GetNfoFilename();
         var showNfoFilename = JellyseerrShow.GetNfoFilename();
@@ -237,5 +238,77 @@ public class CleanupService
         
         return Task.FromResult((processedFolders, deletedFolders));
     }
-}
 
+    /// <summary>
+    /// Creates placeholder video only for items missing them (folders with metadata.json but no video file).
+    /// Returns a list of items for which a placeholder was actually created.
+    /// Uses deduplication and logging logic matching DiscoverService.
+    /// </summary>
+    public async Task<List<IJellyseerrItem>> CreateMissingPlaceholderVideosAsync(List<IJellyseerrItem> items)
+    {
+        var createdPlaceholders = new List<IJellyseerrItem>();
+        var tasks = new List<Task>();
+        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        _logger.LogDebug("Processing {UnmatchedCount} items for placeholder creation", items.Count);
+
+        foreach (var item in items)
+        {
+            try
+            {
+                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                var normalizedFolder = FolderUtils.GetNormalizedPath(folderPath);
+                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
+                {
+                    _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                {
+                    _logger.LogTrace("Folder does not exist for item: {ItemName}", item.MediaName);
+                    continue;
+                }
+
+                // Only create placeholder if no video exists (search subdirectories)
+                var hasPlaceholder = Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any();
+                if (hasPlaceholder)
+                {
+                    _logger.LogTrace("Placeholder already exists for {ItemName} at {FolderPath}", item.MediaName, folderPath);
+                    continue;
+                }
+
+                // Create placeholder video based on media type
+                if (item is JellyseerrMovie)
+                {
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderMovieAsync(folderPath));
+                }
+                else if (item is JellyseerrShow)
+                {
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
+                }
+
+                createdPlaceholders.Add(item);
+                _logger.LogTrace("Created placeholder video for {ItemName}", item.MediaName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating placeholder video for {ItemName}", item.MediaName);
+            }
+        }
+
+        // Await all placeholder video tasks
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
+
+        _logger.LogDebug("Created placeholders for {CreatedCount} items", createdPlaceholders.Count);
+        return createdPlaceholders;
+    }
+
+}

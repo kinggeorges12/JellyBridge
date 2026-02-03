@@ -38,7 +38,7 @@ public class PlaceholderVideoGenerator
     private static readonly string SeasonFolderName = "Season 00";
     
     // Asset file extension
-    private static readonly string AssetExtension = ".mp4";
+    public static readonly string AssetExtension = ".mp4";
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
     {
