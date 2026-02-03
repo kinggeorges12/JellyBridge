@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-02-03T19:16:35.851Z",
+        "changelog": "Jellyfin 10.11.0: v2.2.21 - using discover service to fix placeholder videos in cleanup.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.21.11.zip",
+        "version": "2.2.21.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "D0FFC736B90718589786EAA9549435FA",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-02-03T19:16:35.851Z",
+        "changelog": "Jellyfin 10.10.7: v2.2.21 - using discover service to fix placeholder videos in cleanup.",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.21.10.zip",
+        "version": "2.2.21.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "6D02DCEC55FE762EDE3D7ABAC3D43A34",
+        "dependencies": []
+      },
+      {
         "timestamp": "2026-02-03T19:15:52.198Z",
         "changelog": "Jellyfin 10.11.0: v2.2.20 - removing outdated functionality for creating placeholders differently between movies and shows. everything is in the CreatePlaceholderVideosAsync now.",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.20.11.zip",
