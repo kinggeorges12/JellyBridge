@@ -5,7 +5,6 @@ using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -16,11 +15,13 @@ public class CleanupService
 {
     private readonly DebugLogger<CleanupService> _logger;
     private readonly MetadataService _metadataService;
+    private readonly DiscoverService _discoverService;
 
-    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService)
+    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService)
     {
         _logger = new DebugLogger<CleanupService>(logger);
         _metadataService = metadataService;
+        _discoverService = discoverService;
     }
 
     /// <summary>
@@ -49,37 +50,42 @@ public class CleanupService
 
             // Process all items together - only delete items that are older than retention days
             var deletedItems = DeleteExpiredMedia(allItems);
+            result.ItemsProcessed.AddRange(allItems);
 
             // Process folders with .nfo files and delete those without metadata.json
             var (processedMovies, processedShows, deletedMovies, deletedShows) = await FindMissingMetadataFolders();
             result.ItemsDeleted.AddRange(deletedItems);
             result.MoviesCleaned = deletedMovies.Count;
             result.ShowsCleaned = deletedShows.Count;
-            
+
             _logger.LogDebug("Processed {ProcessedCount} folders with .nfo files, deleted {DeletedCount} folders without metadata.json", 
                 processedMovies.Count + processedShows.Count, deletedMovies.Count + deletedShows.Count);
-            
-            // If items were deleted, set refresh plan to RemoveRefresh=true (ReplaceAllMetadata=false)
+
+            // Run placeholder video creation and collect created items
+            var processedPlaceholders = await CreateMissingPlaceholderVideosAsync(allItems);
+            result.ItemsCreated.AddRange(processedPlaceholders);
+
+            // Determine refresh plan
             var hasDeletedItems = result.ItemsDeleted.Count > 0 || result.ItemsCleaned > 0;
-            if (hasDeletedItems)
+            var hasCreatedItems = result.ItemsCreated.Count > 0;
+            if (hasDeletedItems || hasCreatedItems)
             {
                 result.Refresh = new RefreshPlan
                 {
-                    CreateRefresh = false,
-                    RemoveRefresh = true,
+                    CreateRefresh = hasCreatedItems,
+                    RemoveRefresh = hasDeletedItems,
                     RefreshImages = false
                 };
-                
-                _logger.LogDebug("Cleanup removed {DeletedCount} items, refresh plan set (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
-                    result.ItemsDeleted.Count, result.Refresh.CreateRefresh, result.Refresh.RemoveRefresh, result.Refresh.RefreshImages);
+                _logger.LogDebug("Cleanup removed {DeletedCount} items, created {CreatedCount} placeholders, refresh plan set (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
+                    result.ItemsDeleted.Count, processedPlaceholders.Count, result.Refresh.CreateRefresh, result.Refresh.RemoveRefresh, result.Refresh.RefreshImages);
             }
             
             result.Success = true;
             result.Message = $"✅ Cleanup completed: {deletedItems.Count} items deleted, {result.ItemsCleaned} folders without metadata";
-            
-            _logger.LogDebug("Completed cleanup - Deleted {TotalCount} items, {FoldersWithoutMetadata} folders without metadata", 
-                deletedItems.Count, deletedMovies.Count + deletedShows.Count);
-            
+
+            // Log the full output using CleanupResult's ToString()
+            _logger.LogInformation("Cleanup metadata completed:\n{CleanupOutput}", result.ToString());
+
             return result;
         }
         catch (Exception ex)
@@ -146,12 +152,6 @@ public class CleanupService
         var deletedMovies = new List<string>();
         var deletedShows = new List<string>();
         var syncDirectory = FolderUtils.GetBaseDirectory();
-        
-        if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-        {
-            _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-            return (processedMovies, processedShows, deletedMovies, deletedShows);
-        }
 
         var movieNfoFilename = JellyseerrMovie.GetNfoFilename();
         var showNfoFilename = JellyseerrShow.GetNfoFilename();
@@ -237,5 +237,36 @@ public class CleanupService
         
         return Task.FromResult((processedFolders, deletedFolders));
     }
-}
 
+    /// <summary>
+    /// Filters out items with placeholders (by AssetExtension) and creates missing placeholders using DiscoverService.
+    /// </summary>
+    public async Task<List<IJellyseerrItem>> CreateMissingPlaceholderVideosAsync(List<IJellyseerrItem> items)
+    {
+        var itemsWithoutPlaceholder = new List<IJellyseerrItem>();
+        foreach (var item in items)
+        {
+            try
+            {
+                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
+                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                    continue;
+                if (!Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any())
+                {
+                    _logger.LogTrace("No placeholder found for {ItemName} at {FolderPath}", item.MediaName, folderPath);
+                    itemsWithoutPlaceholder.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking placeholder for item: {ItemName}", item.MediaName);
+                continue;
+            }
+        }
+
+        var filteredItems = _discoverService.FilterIgnoredItems(itemsWithoutPlaceholder);
+        var created = await _discoverService.CreatePlaceholderVideosAsync(filteredItems);
+        return created;
+    }
+
+}

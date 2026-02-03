@@ -18,16 +18,15 @@ public class DiscoverService
     private readonly ApiService _apiService;
     private readonly MetadataService _metadataService;
     private readonly BridgeService _bridgeService;
-    private readonly CleanupService _cleanupService;
 
-    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService, CleanupService cleanupService)
+
+    public DiscoverService(ILogger<DiscoverService> logger, PlaceholderVideoGenerator placeholderVideoGenerator, ApiService apiService, MetadataService metadataService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<DiscoverService>(logger);
         _placeholderVideoGenerator = placeholderVideoGenerator;
         _apiService = apiService;
         _metadataService = metadataService;
         _bridgeService = bridgeService;
-        _cleanupService = cleanupService;
     }
     
     #region FromJellyseerr
@@ -192,15 +191,15 @@ public class DiscoverService
                 }
                 else if (item is JellyseerrShow)
                 {
-                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(folderPath));
                 }
                 
                 processedItems.Add(item);
-                _logger.LogTrace("✅ Created placeholder video for {ItemName}", item.MediaName);
+                _logger.LogTrace("Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
+                _logger.LogError(ex, "Error creating placeholder video for {ItemName}", item.MediaName);
             }
         }
         
@@ -218,54 +217,6 @@ public class DiscoverService
             processedItems.Count);
         
         return processedItems;
-    }
-
-    /// <summary>
-    /// Create season folders for all TV shows.
-    /// Creates Season 01 through Season 12 folders with season placeholder videos for each show.
-    /// </summary>
-    public async Task CreateSeasonFoldersForShows(List<JellyseerrShow> shows)
-    {
-        _logger.LogDebug("Starting season folder creation for {ShowCount} shows", shows.Count);
-        
-        foreach (var show in shows)
-        {
-            try
-            {
-                var showFolderPath = _metadataService.GetJellyBridgeItemDirectory(show);
-                
-                _logger.LogTrace("Creating season folders for show '{MediaName}' in '{ShowFolderPath}'", 
-                    show.MediaName, showFolderPath);
-                
-                try
-                {
-                    // Generate season placeholder video (calculates season folder path internally)
-                    var placeholderSuccess = await _placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(showFolderPath);
-                    if (placeholderSuccess)
-                    {
-                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
-                        _logger.LogDebug("Created season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    else
-                    {
-                        var seasonFolderPath = PlaceholderVideoGenerator.GetSeasonFolder(showFolderPath);
-                        _logger.LogWarning("Failed to create season placeholder for: '{SeasonFolderPath}'", seasonFolderPath);
-                    }
-                    
-                    _logger.LogTrace("✅ Created season folder for show '{MediaName}'", show.MediaName);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error creating season folder for show '{MediaName}'", show.MediaName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ ERROR creating season folders for show '{MediaName}'", show.MediaName);
-            }
-        }
-        
-        _logger.LogDebug("Completed season folder creation for {ShowCount} shows", shows.Count);
     }
 
     /// <summary>
@@ -551,11 +502,11 @@ public class DiscoverService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "FilterIgnoredItems failed for {Name}", item?.MediaName);
+                _logger.LogError(ex, "Could not filter ignored item for {Name}", item?.MediaName);
             }
         }
 
-        _logger.LogTrace("FilterIgnoredItems kept {Kept}/{Total}", kept.Count, items.Count);
+        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
         return kept;
     }
 

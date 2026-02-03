@@ -284,26 +284,33 @@ public class CleanupResult
     public string Details { get; set; } = string.Join("\n", 
         ResultDetails.Refresh, 
         ResultDetails.CleanupProcessed, 
+        ResultDetails.CleanupCreated, 
         ResultDetails.CleanupDeleted, 
         ResultDetails.CleanupFolders);
     public RefreshPlan? Refresh { get; set; }
-    
+
     // Unified collections
     public List<IJellyseerrItem> ItemsProcessed { get; set; } = new();
     public List<IJellyseerrItem> ItemsDeleted { get; set; } = new();
+    public List<IJellyseerrItem> ItemsCreated { get; set; } = new();
     public int MoviesCleaned { get; set; }
     public int ShowsCleaned { get; set; }
     public int ItemsCleaned => MoviesCleaned + ShowsCleaned;
-    
+
     // Computed properties - filter by type
     public List<JellyseerrMovie> ProcessedMovies => ItemsProcessed.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> ProcessedShows => ItemsProcessed.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> CreatedMovies => ItemsCreated.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> CreatedShows => ItemsCreated.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> DeletedMovies => ItemsDeleted.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> DeletedShows => ItemsDeleted.OfType<JellyseerrShow>().ToList();
-    
+
     // Count properties
     public int MoviesProcessed => ProcessedMovies.Count;
     public int ShowsProcessed => ProcessedShows.Count;
+    public int MoviesCreated => CreatedMovies.Count;
+    public int ShowsCreated => CreatedShows.Count;
+    public int TotalCreated => ItemsCreated.Count;
     public int TotalProcessed => ItemsProcessed.Count;
     public int MoviesDeleted => DeletedMovies.Count;
     public int ShowsDeleted => DeletedShows.Count;
@@ -332,6 +339,7 @@ public class CleanupResult
         result.AppendLine($"{rowBorder}");
         // Data rows
         result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{TotalProcessed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Created",-10}{separator}{$"{MoviesCreated,8}  "}{separator}{$"{ShowsCreated,8}  "}{separator}{$"{TotalCreated,8}  "}{separator}");
         result.AppendLine($"{separator}{"🗑️\t"}{"Deleted",-10}{separator}{$"{MoviesDeleted,8}  "}{separator}{$"{ShowsDeleted,8}  "}{separator}{$"{TotalDeleted,8}  "}{separator}");
         result.AppendLine($"{separator}{"🧹\t"}{"Cleaned",-10}{separator}{$"{MoviesCleaned,8}  "}{separator}{$"{ShowsCleaned,8}  "}{separator}{$"{ItemsCleaned,8}  "}{separator}");
         
@@ -418,6 +426,7 @@ public static class ResultDetails
     public const string ItemsCleared = "💔 Cleared: Items that are successfully requested in Jellyseerr are unfavorited and view counts reset to zero";
     public const string ItemsUnhidden = "👁️ Unhidden: Requests in Jellyseerr that are declined are shown in Jellyfin";
     public const string CleanupProcessed = "📦 Processed: Total items checked for cleanup";
+    public const string CleanupCreated = "➕ Created: Total placeholder videos created during cleanup";
     public const string CleanupDeleted = "🗑️ Deleted: Items deleted due to retention policy";
     public const string CleanupFolders = "🧹 Cleaned: Items deleted that were not managed by JellyBridge (folder missing metadata.json file)";
     public const string SortAlgorithm = "🎲 Algorithm: The sort order algorithm used (None, Random, Smart, Smartish)";
