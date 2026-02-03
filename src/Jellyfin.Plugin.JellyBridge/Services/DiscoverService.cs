@@ -192,15 +192,15 @@ public class DiscoverService
                 }
                 else if (item is JellyseerrShow)
                 {
-                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderShowAsync(folderPath));
+                    tasks.Add(_placeholderVideoGenerator.GeneratePlaceholderSeasonAsync(folderPath));
                 }
                 
                 processedItems.Add(item);
-                _logger.LogTrace("✅ Created placeholder video for {ItemName}", item.MediaName);
+                _logger.LogTrace("Created placeholder video for {ItemName}", item.MediaName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ERROR creating placeholder video for {ItemName}", item.MediaName);
+                _logger.LogError(ex, "Error creating placeholder video for {ItemName}", item.MediaName);
             }
         }
         
