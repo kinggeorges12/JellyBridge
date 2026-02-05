@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "2.2.25.11",
+        "timestamp": "2026-02-05T17:04:11.317Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.25/JellyBridge-2.2.25.11.zip",
+        "checksum": "7CDC0D1F645DA6E7C44F47FE9B9B6D80",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v2.2.25 - Increased Jellyseerr request timeout by the number of Discover pages. This allows for larger requests to load correctly.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "2.2.25.10",
+        "timestamp": "2026-02-05T17:04:11.317Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.25/JellyBridge-2.2.25.10.zip",
+        "checksum": "5DF024D5B8982987695409EBA913A44A",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v2.2.25 - Increased Jellyseerr request timeout by the number of Discover pages. This allows for larger requests to load correctly.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.0: v2.2.24 - Enabled info logging for tasks starting from the plugin configuration page. Set task waiting to check every 10 seconds to avoid log spam.",
         "checksum": "29F84813BBE1E53D6DAE5E696AC9E048",
         "version": "2.2.24.11",

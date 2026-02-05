@@ -591,7 +591,7 @@
                             <div class="fieldDescription">Click <span class="link" data-target-page="refreshAvailableNetworks">↻</span> to load available networks from Jellyseerr. Select networks from the right box and move them to the left box. Use the search boxes to filter networks. Feel free to add networks from other watch regions.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MaxDiscoverPagesContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Discover Pages"/>
                             <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
                         </div>
@@ -831,7 +831,7 @@
 
                         <div class="inputContainer">
                             <input id="RequestTimeout" type="number" is="emby-input" min="1" max="3600" label="Request Timeout (seconds)"/>
-                            <div class="fieldDescription">Timeout for API requests to Jellyseerr.</div>
+                            <div class="fieldDescription">Base timeout for API requests to Jellyseerr. The total timeout is the base timeout plus the number of <span class="link" data-target-page="MaxDiscoverPagesContainer">Discover Pages</span>.</div>
                         </div>
 
                         <div class="inputContainer">
