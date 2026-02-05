@@ -9,7 +9,25 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "timestamp": "2026-02-03T19:38:44.030Z",
+        "changelog": "Jellyfin 10.11.0: v2.2.24 - Enabled info logging for tasks starting from the plugin configuration page. Set task waiting to check every 10 seconds to avoid log spam.",
+        "checksum": "29F84813BBE1E53D6DAE5E696AC9E048",
+        "version": "2.2.24.11",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-02-05T15:36:56.259Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.24/JellyBridge-2.2.24.11.zip"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v2.2.24 - Enabled info logging for tasks starting from the plugin configuration page. Set task waiting to check every 10 seconds to avoid log spam.",
+        "checksum": "F666FDE1A91C73DEC67CB744018E34D8",
+        "version": "2.2.24.10",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-02-05T15:36:56.259Z",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.24/JellyBridge-2.2.24.10.zip"
+      },
+      {
+        "timestamp": "2026-02-03T19:38:44.03Z",
         "changelog": "Jellyfin 10.11.0: v2.2.23 - cleanup services now fixes missing placeholder videos.",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.23/JellyBridge-2.2.23.11.zip",
         "version": "2.2.23.11",
@@ -18,7 +36,7 @@
         "dependencies": []
       },
       {
-        "timestamp": "2026-02-03T19:38:44.030Z",
+        "timestamp": "2026-02-03T19:38:44.03Z",
         "changelog": "Jellyfin 10.10.7: v2.2.23 - cleanup services now fixes missing placeholder videos.",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.23/JellyBridge-2.2.23.10.zip",
         "version": "2.2.23.10",

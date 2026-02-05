@@ -26,7 +26,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpGet("Regions")]
         public async Task<IActionResult> GetRegions()
         {
-            _logger.LogDebug("Regions requested");
+            _logger.LogInformation("Regions requested from plugin configuration page.");
             
             try
             {
@@ -73,7 +73,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpGet("Networks")]
         public async Task<IActionResult> GetNetworks([FromQuery] string? region = null)
         {
-            _logger.LogDebug("Networks requested for region: {Region}", region);
+            _logger.LogInformation("Networks requested from plugin configuration page for region: {Region}", region);
             
             try
             {
@@ -129,7 +129,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("SyncDiscover")]
         public async Task<IActionResult> SyncDiscover()
         {
-            _logger.LogTrace("Sync discover requested");
+            _logger.LogInformation("Sync discover requested from plugin configuration page.");
             
             try
             {

@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("GenerateNetworkFolders")]
         public async Task<IActionResult> GenerateNetworkFolders()
         {
-            _logger.LogDebug("GenerateNetworkFolders endpoint called");
+            _logger.LogInformation("Generate network folders requested from plugin configuration page.");
             
             try
             {
@@ -87,7 +87,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("SyncFavorites")]
         public async Task<IActionResult> SyncFavorites()
         {
-            _logger.LogDebug("SyncFavorites endpoint called");
+            _logger.LogInformation("Sync favorites requested from plugin configuration page.");
             
             try
             {
