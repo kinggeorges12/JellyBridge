@@ -378,7 +378,9 @@ public class ApiService
     /// </summary>
     private async Task<string> MakeApiRequestAsync(HttpRequestMessage request, PluginConfiguration config)
     {
-        var timeout = TimeSpan.FromSeconds((double)Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config));
+        // Timeout is the request timeout plus the number of discover pages, to allow for larger Jellyseerr requests.
+        var timeoutSeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RequestTimeout), config) + Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages), config);
+        var timeout = TimeSpan.FromSeconds((double)timeoutSeconds);
         var retryAttempts = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.RetryAttempts), config);
         
         Exception? lastException = null;
