@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpGet("TaskStatus")]
         public IActionResult GetTaskStatus()
         {
-            _logger.LogTrace("Task status requested");
+            _logger.LogTrace("Task status requested from plugin configuration page.");
             
             try
             {

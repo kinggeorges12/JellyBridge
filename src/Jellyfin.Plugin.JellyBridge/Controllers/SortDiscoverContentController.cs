@@ -26,7 +26,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("SortLibrary")]
         public async Task<IActionResult> SortLibrary()
         {
-            _logger.LogTrace("Sort library requested");
+            _logger.LogInformation("Sort library requested from plugin configuration page.");
             
             try
             {

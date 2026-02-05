@@ -179,7 +179,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 }
                 
                 logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                await Task.Delay(1000); // Small delay to prevent busy waiting
+                await Task.Delay(10000); // Small delay to prevent busy waiting
             }
 
             try

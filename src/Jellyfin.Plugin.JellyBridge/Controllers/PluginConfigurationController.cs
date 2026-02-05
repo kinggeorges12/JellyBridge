@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpGet("PluginConfiguration")]
         public IActionResult GetPluginConfiguration()
         {
-            _logger.LogTrace("PluginConfiguration GET endpoint called");
+            _logger.LogDebug("Get plugin configuration requested from plugin configuration page.");
             
             try
             {
@@ -85,7 +85,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("PluginConfiguration")]
         public IActionResult UpdatePluginConfiguration([FromBody] JsonElement configData)
         {
-            _logger.LogTrace("PluginConfiguration POST endpoint called");
+            _logger.LogInformation("Update plugin configuration requested from plugin configuration page.");
             
             try
             {

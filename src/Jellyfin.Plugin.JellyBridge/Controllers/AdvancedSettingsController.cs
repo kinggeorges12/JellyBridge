@@ -30,7 +30,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("CleanupMetadata")]
         public async Task<IActionResult> CleanupMetadata()
         {
-            _logger.LogTrace("Cleanup metadata requested");
+            _logger.LogInformation("Cleanup metadata requested from plugin configuration page.");
             
             try
             {
@@ -91,7 +91,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         [HttpPost("RecycleLibrary")]
         public async Task<IActionResult> RecycleLibrary()
         {
-            _logger.LogDebug("RecycleLibrary endpoint called - recycling library data");
+            _logger.LogInformation("Recycle library requested from plugin configuration page.");
             
             try
             {
