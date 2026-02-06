@@ -146,7 +146,7 @@ public class SortService
             }
             
             result.Success = true;
-            result.Message = "✓ Sort library completed successfully";
+            result.Message = "✅ Sort library completed successfully";
             
             // Populate ProcessResult
             result.ItemsSorted = allSuccesses;

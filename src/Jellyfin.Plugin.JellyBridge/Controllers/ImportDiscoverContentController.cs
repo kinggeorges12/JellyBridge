@@ -139,8 +139,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var syncResult = await _syncService.SyncFromJellyseerr();
                     await _syncService.ApplyRefreshAsync(syncToResult: null, syncFromResult: syncResult);
 
-                    _logger.LogTrace("Discover sync completed successfully");
-                    _logger.LogInformation("Sync discover completed: {0}", syncResult.ToString());
+                    _logger.LogInformation("Discover sync completed successfully:\n{SyncResult}", syncResult.ToString());
 
                     return new
                     {

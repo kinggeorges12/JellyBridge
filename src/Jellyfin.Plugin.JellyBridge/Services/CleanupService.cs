@@ -81,20 +81,19 @@ public class CleanupService
             }
             
             result.Success = true;
-            result.Message = $"✅ Cleanup completed: {deletedItems.Count} items deleted, {result.ItemsCleaned} folders without metadata";
+            result.Message = "✅ Cleanup completed successfully";
 
             // Log the full output using CleanupResult's ToString()
-            _logger.LogInformation("Cleanup metadata completed:\n{CleanupOutput}", result.ToString());
-
-            return result;
+            _logger.LogInformation("Missing data removed and placeholders rebuilt:\n{CleanupOutput}", result.ToString());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during cleanup process");
             result.Success = false;
             result.Message = $"❌ Cleanup failed: {ex.Message}";
-            return result;
         }
+
+        return result;
     }
 
     /// <summary>
