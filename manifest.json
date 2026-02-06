@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.26/JellyBridge-2.2.26.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.26 - minor changes to logging messages",
+        "checksum": "6F5F28E891713E52315326E9B9985649",
+        "version": "2.2.26.11",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-02-06T01:31:04.371Z"
+      },
+      {
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.26/JellyBridge-2.2.26.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.26 - minor changes to logging messages",
+        "checksum": "EF818D852C0342D45DBAAE9647135FC6",
+        "version": "2.2.26.10",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-02-06T01:31:04.371Z"
+      },
+      {
         "version": "2.2.25.11",
         "timestamp": "2026-02-05T17:04:11.317Z",
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.25/JellyBridge-2.2.25.11.zip",

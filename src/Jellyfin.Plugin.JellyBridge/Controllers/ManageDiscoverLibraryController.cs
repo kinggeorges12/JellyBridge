@@ -99,8 +99,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var syncResult = await _syncService.SyncToJellyseerr();
                     await _syncService.ApplyRefreshAsync(syncToResult: syncResult);
                     
-                    _logger.LogTrace("Favorites sync completed successfully");
-                    _logger.LogInformation("Sync favorites completed: {0}", syncResult.ToString());
+                    _logger.LogInformation("Sync favorites completed successfully:\n{SyncResult}", syncResult.ToString());
 
                     return new
                     {
