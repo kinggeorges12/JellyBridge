@@ -119,8 +119,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 
                 return Ok(new { 
                     success = true, 
-                    message = "Connection test successful",
-                    details = $"Connected to Jellyseerr v{status.Version}"
+                    message = "Connection test successful.",
+                    details = $"Connected to Jellyseerr v{status.Version}."
                 });
             }
             catch (System.TimeoutException ex)

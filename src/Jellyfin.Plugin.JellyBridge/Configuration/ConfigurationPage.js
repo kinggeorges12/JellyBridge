@@ -315,7 +315,13 @@ function performTestConnection(page) {
         dataType: 'json'
     }).then(function (data) {
         // HTTP 200 response means connection test was successful
-        Dashboard.alert('✅ Connected to Jellyseerr!');
+        let message = '✅ Connection test successful!';
+        if (data && data.details) {
+            message = '✅ ' + data.details;
+        } else if (data && data.message) {
+            message = '✅ ' + data.message;
+        }
+        Dashboard.alert(message);
         // Show confirmation dialog for saving settings
         Dashboard.confirm({
                 title: '✅ Connection Success!',
