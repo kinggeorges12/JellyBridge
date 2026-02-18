@@ -32,7 +32,7 @@ public class PlaceholderVideoGenerator
     // Asset file names for different media types
     private static readonly string MovieAsset = "movie.png";
     private static readonly string ShowAsset = "show.png";
-    private static readonly string SeasonAsset = "S00E00.png";
+    private static readonly string SeasonAsset = "S00E999.png";
     
     // Season folder name
     private static readonly string SeasonFolderName = "Season 00";
