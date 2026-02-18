@@ -1235,6 +1235,7 @@ function initializeAdvancedSettings(page) {
             }
         });
     }
+    setInputField(page, 'PlaceholderTempFolder');
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'TaskTimeoutMinutes');
@@ -1433,7 +1434,8 @@ function performPluginReset(page) {
                 EnableTraceLogging: null,
                 Region: '',
                 NetworkMap: null,
-                PlaceholderDurationSeconds: null
+                PlaceholderDurationSeconds: null,
+                PlaceholderTempFolder: ''
             };
             
             // Send reset configuration to the plugin
@@ -1584,9 +1586,10 @@ function savePluginConfiguration(page) {
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
-    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
-    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
+        form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+        form.PlaceholderTempFolder = safeParseString(page.querySelector('#PlaceholderTempFolder'), false);
+        form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
+        form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
     
     // Save the configuration using ApiClient
     return ApiClient.ajax({
