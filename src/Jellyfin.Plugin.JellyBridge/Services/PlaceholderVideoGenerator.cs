@@ -28,7 +28,7 @@ public class PlaceholderVideoGenerator
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetsPath;
-    private readonly string _tempFolder;
+    private readonly string _placeholderPath;
     
     // Asset file names for different media types
     private static readonly string MovieAsset = "movie.png";
@@ -47,17 +47,15 @@ public class PlaceholderVideoGenerator
         _mediaEncoder = mediaEncoder;
 
         // Get the configured temp folder, defaulting to system temp path if not set
-        var configuredTempFolder = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.PlaceholderTempFolder));
-        _tempFolder = string.IsNullOrWhiteSpace(configuredTempFolder)
-            ? Path.GetTempPath()
-            : configuredTempFolder;
-
+        var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
         // Assets are embedded in the plugin assembly
-        _assetsPath = Path.Combine(_tempFolder, "JellyBridge", "assets");
+        _assetsPath = Path.Combine(jellyBridgeTempDirectory, "assets");
         Directory.CreateDirectory(_assetsPath);
-
-        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Temp folder: {TempFolder}",
-            _mediaEncoder.EncoderPath, _assetsPath, _tempFolder);
+        _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
+        Directory.CreateDirectory(_placeholderPath);
+        
+        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
+            _mediaEncoder.EncoderPath, _assetsPath, _placeholderPath);
     }
 
     /// <summary>
@@ -131,12 +129,10 @@ public class PlaceholderVideoGenerator
     {
         try
         {
-            // Build cache directory in the configured or system temp path
-            var cacheDir = Path.Combine(_tempFolder, "JellyBridge", "placeholders");
-            Directory.CreateDirectory(cacheDir);
+            // Create cached placeholder videos in the configured or system temp path
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var cachePath = Path.Combine(cacheDir, $"{assetStem}_{videoDuration}{AssetExtension}");
+            var cachePath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
 
             // Get or create a semaphore for this specific cache path to serialize generation
             var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
