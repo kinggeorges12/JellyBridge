@@ -185,15 +185,14 @@ public static class FolderUtils
     /// Tests read and write access to the library directory by creating, reading, and deleting a test file.
     /// </summary>
     /// <param name="testDirectory">The test directory path to test.</param>
-    /// <returns>True if the test succeeds, false if any error occurs.</returns>
-    public bool TestDirectoryReadWrite(string testDirectory)
+    /// <returns>A tuple (success, message): success is true if the test succeeds, false otherwise; message contains debug info or error details.</returns>
+    public static (bool success, string message) TestDirectoryReadWrite(string testDirectory)
     {
         try
         {
             if (string.IsNullOrEmpty(testDirectory))
             {
-                _logger.LogWarning("Directory is not configured");
-                return false;
+                return (false, "Directory is not configured");
             }
 
             // Ensure directory exists or can be created
@@ -202,14 +201,11 @@ public static class FolderUtils
             // Ensure directory was created successfully
             if (!Directory.Exists(testDirectory))
             {
-                _logger.LogWarning("Directory does not exist: {Directory}", testDirectory);
-                return false;
+                return (false, $"Directory does not exist: {testDirectory}");
             }
 
             var testFilePath = Path.Combine(testDirectory, ".jellybridge");
             const string testContent = "Hello World!";
-
-            _logger.LogDebug("Testing read/write access to directory: {Directory}", testDirectory);
 
             try
             {
@@ -233,15 +229,13 @@ public static class FolderUtils
                 
                 if (readContent != testContent)
                 {
-                    _logger.LogWarning("Test file content mismatch. Expected: {Expected}, Got: {Actual}", testContent, readContent);
-                    return false;
+                    return (false, $"Test file content mismatch. Expected: {testContent}, Got: {readContent}");
                 }
 
                 // Delete test file
                 File.Delete(testFilePath);
                 
-                _logger.LogDebug("Directory read/write test successful");
-                return true;
+                return (true, "Directory read/write test successful");
             }
             finally
             {
@@ -261,8 +255,7 @@ public static class FolderUtils
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Directory read/write test failed: {TestDirectory}", testDirectory);
-            return false;
+            return (false, $"Directory read/write test failed: {testDirectory}. Error: {ex.Message}");
         }
     }
 }

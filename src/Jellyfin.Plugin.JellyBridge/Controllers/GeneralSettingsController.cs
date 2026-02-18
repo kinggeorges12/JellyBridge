@@ -67,31 +67,38 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 _logger.LogInformation("API Key is not empty");
                 
                 // Write check for library directory
-                if (!FolderUtils.TestDirectoryReadWrite(libraryDirectory))
+                var (libSuccess, libMessage) = FolderUtils.TestDirectoryReadWrite(libraryDirectory);
+                if (!libSuccess)
                 {
                     _logger.LogWarning("Library directory read/write test failed for: {Directory}", libraryDirectory);
-                    return StatusCode(507, new { 
-                        success = false, 
+                    _logger.LogError(libMessage);
+                    return StatusCode(507, new {
+                        success = false,
                         message = $"The library directory is not accessible: {libraryDirectory}",
-                        details = $"The library directory '{libraryDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",
+                        details = libMessage,
                         errorCode = "INSUFFICIENT_STORAGE"
                     });
                 }
+                _logger.LogDebug("{Message}", libMessage);
                 _logger.LogInformation("Library directory test successful for: {Directory}", libraryDirectory);
 
                 // Write check for temp directory
-                if (!FolderUtils.TestDirectoryReadWrite(jellyBridgeTempDirectory))
+                var (tempSuccess, tempMessage) = FolderUtils.TestDirectoryReadWrite(jellyBridgeTempDirectory);
+                if (!tempSuccess)
                 {
                     _logger.LogWarning("Temp directory read/write test failed for: {Directory}", jellyBridgeTempDirectory);
-                    return StatusCode(507, new { 
-                        success = false, 
+                    _logger.LogError(tempMessage);
+                    return StatusCode(507, new {
+                        success = false,
                         message = $"The temp directory is not accessible: {jellyBridgeTempDirectory}",
-                        details = $"The temp directory '{jellyBridgeTempDirectory}' cannot be read from or written to. Please check directory permissions and ensure the path is accessible.",
+                        details = tempMessage,
                         errorCode = "INSUFFICIENT_STORAGE"
                     });
                 }
+                _logger.LogDebug("{Message}", tempMessage);
                 _logger.LogInformation("Temp directory test successful for: {Directory}", jellyBridgeTempDirectory);
 
+                // Basic connection test to Jellyseerr
                 var status = await _apiService.TestConnectionAsync(jellyseerUrl, apiKey);
                 _logger.LogInformation("Test connection successful to Jellyseerr at: {JellyseerrUrl}", jellyseerUrl);
                 
