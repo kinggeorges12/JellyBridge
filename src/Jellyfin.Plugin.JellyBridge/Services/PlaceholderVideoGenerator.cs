@@ -28,6 +28,7 @@ public class PlaceholderVideoGenerator
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetsPath;
+    private readonly string _tempFolder;
     
     // Asset file names for different media types
     private static readonly string MovieAsset = "movie.png";
@@ -44,13 +45,19 @@ public class PlaceholderVideoGenerator
     {
         _logger = new DebugLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
-        
+
+        // Get the configured temp folder, defaulting to system temp path if not set
+        var configuredTempFolder = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.PlaceholderTempFolder));
+        _tempFolder = string.IsNullOrWhiteSpace(configuredTempFolder)
+            ? Path.GetTempPath()
+            : configuredTempFolder;
+
         // Assets are embedded in the plugin assembly
-        _assetsPath = Path.Combine(Path.GetTempPath(), "JellyBridge", "assets");
+        _assetsPath = Path.Combine(_tempFolder, "JellyBridge", "assets");
         Directory.CreateDirectory(_assetsPath);
-        
-        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}", 
-            _mediaEncoder.EncoderPath, _assetsPath);
+
+        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Temp folder: {TempFolder}",
+            _mediaEncoder.EncoderPath, _assetsPath, _tempFolder);
     }
 
     /// <summary>
@@ -124,8 +131,8 @@ public class PlaceholderVideoGenerator
     {
         try
         {
-            // Build cache directory in the system temp path
-            var cacheDir = Path.Combine(Path.GetTempPath(), "JellyBridge", "placeholders");
+            // Build cache directory in the configured or system temp path
+            var cacheDir = Path.Combine(_tempFolder, "JellyBridge", "placeholders");
             Directory.CreateDirectory(cacheDir);
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);

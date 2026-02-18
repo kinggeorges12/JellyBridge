@@ -57,6 +57,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
                     PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
+                    PlaceholderTempFolder = config.PlaceholderTempFolder,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
                     SortOrder = config.SortOrder,
@@ -137,6 +138,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
+                    SetJsonValue<string>(configData, nameof(config.PlaceholderTempFolder), config);
                     SetJsonValue<int?>(configData, nameof(config.StartupDelaySeconds), config);
                     SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
