@@ -844,6 +844,11 @@
                             <div class="fieldDescription">Length of generated placeholder videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>
                         </div>
 
+                        <div class="inputContainer">
+                            <input id="PlaceholderTempFolder" type="text" is="emby-input" label="Placeholder Temp Folder"/>
+                            <div class="fieldDescription">Directory for temporary files during placeholder video generation. If left empty, the system temp folder will be used. Useful if you have limited space in your temp directory.</div>
+                        </div>
+
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="EnableDebugLogging" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
