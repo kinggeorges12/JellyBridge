@@ -61,39 +61,17 @@ public class PlaceholderVideoGenerator
     /// <summary>
     /// Generate a placeholder video for a movie (asset: movie.png).
     /// </summary>
-    public async Task<bool> GeneratePlaceholderMovieAsync(string targetDirectory)
+    public async Task<bool> GeneratePlaceholderMovieAsync(string movieFolderPath)
     {
-        return await GeneratePlaceholderAsync(targetDirectory, MovieAsset);
-    }
-
-    /// <summary>
-    /// Generate a placeholder video for a TV show (asset: show.png).
-    /// </summary>
-    public Task<bool> GeneratePlaceholderShowAsync(string targetDirectory)
-    {
-        throw new NotSupportedException("GeneratePlaceholderShowAsync is obsolete and no longer supported. Use GeneratePlaceholderSeasonAsync instead.");
-    }
-
-    /// <summary>
-    /// Get the season placeholder path for a show.
-    /// </summary>
-    /// <param name="showFolderPath">The path to the show folder.</param>
-    /// <returns>The path to the season placeholder video (in the season folder).</returns>
-    public static string GetSeasonPlaceholderPath(string showFolderPath)
-    {
-        var seasonFolderPath = GetSeasonFolder(showFolderPath);
-        var assetStem = Path.GetFileNameWithoutExtension(SeasonAsset);
-        var targetFile = assetStem + AssetExtension;
-        return Path.Combine(seasonFolderPath, targetFile);
+        return await GeneratePlaceholderAsync(movieFolderPath, MovieAsset);
     }
 
     /// <summary>
     /// Get the season folder path for a show, creating it if it doesn't exist.
     /// </summary>
     /// <param name="showFolderPath">The path to the show folder.</param>
-    /// <param name="logger">Optional logger instance for logging folder creation.</param>
     /// <returns>The path to the season folder.</returns>
-    public static string GetSeasonFolder(string showFolderPath, ILogger<PlaceholderVideoGenerator>? logger = null)
+    private string GetSeasonFolder(string showFolderPath)
     {
         var seasonFolderPath = Path.Combine(showFolderPath, SeasonFolderName);
         
@@ -101,7 +79,7 @@ public class PlaceholderVideoGenerator
         if (!Directory.Exists(seasonFolderPath))
         {
             Directory.CreateDirectory(seasonFolderPath);
-            logger?.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
+            _logger.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
         }
         
         return seasonFolderPath;
@@ -247,6 +225,10 @@ public class PlaceholderVideoGenerator
             // Copy cached file to target directory
             File.Copy(cachedPath, targetPath, overwrite: true);
             _logger.LogTrace("Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
+
+            // Delete all extra placeholders except the designated one
+            DeleteExtraPlaceholders(targetDirectory, assetName);
+
             return true;
         }
         catch (Exception ex)
@@ -437,6 +419,29 @@ public class PlaceholderVideoGenerator
             _logger.LogError(ex, "Error generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Deletes all files with AssetExtension in the given folder except the designated asset file.
+    /// </summary>
+    /// <param name="folderPath">The folder to clean up</param>
+    /// <param name="fileAsset">The file name (with extension) to keep</param>
+    private void DeleteExtraPlaceholders(string folderPath, string fileAsset)
+    {
+        if (Directory.Exists(folderPath))
+        {
+            var allPlaceholders = Directory.GetFiles(folderPath, "*" + AssetExtension, SearchOption.TopDirectoryOnly)
+                .Where(f => !string.Equals(Path.GetFileName(f), fileAsset, StringComparison.OrdinalIgnoreCase));
+            foreach (var file in allPlaceholders)
+            {
+                try {
+                    File.Delete(file); _logger.LogTrace("Deleted extra placeholder: {File}", file);
+                } catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete extra placeholder: {File}", file);
+                }
+            }
         }
     }
 
