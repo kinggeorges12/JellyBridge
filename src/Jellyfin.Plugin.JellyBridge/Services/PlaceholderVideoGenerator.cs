@@ -227,7 +227,7 @@ public class PlaceholderVideoGenerator
             _logger.LogTrace("Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
 
             // Delete all extra placeholders except the designated one
-            DeleteExtraPlaceholders(targetDirectory, assetName);
+            DeleteExtraPlaceholders(targetDirectory, targetFile);
 
             return true;
         }
