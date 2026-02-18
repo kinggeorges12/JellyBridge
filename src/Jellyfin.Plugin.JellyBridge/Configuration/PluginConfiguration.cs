@@ -76,7 +76,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RetryAttempts), 3 },
         { nameof(MaxRetentionDays), 30 },
         { nameof(PlaceholderDurationSeconds), 10 },
-        { nameof(PlaceholderTempFolder), string.Empty },
+        { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
         { nameof(EnableDebugLogging), false },
         { nameof(EnableTraceLogging), false },
 
@@ -231,7 +231,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the temporary folder path for generating placeholder videos.
     /// If empty, the system temp folder will be used.
     /// </summary>
-    public string PlaceholderTempFolder { get; set; } = string.Empty;
+    public string JellyBridgeTempDirectory { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether to enable debug logging.

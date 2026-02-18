@@ -55,27 +55,11 @@ public class SyncTask : IScheduledTask
                 SyncJellyseerrResult? syncFromResult = null;
                 SyncJellyfinResult? syncToResult = null;
                 
-                // Step 1: Cleanup metadata before sync operations
+                // Initial report to indicate the task has started
                 progress.Report(10);
-                _logger.LogDebug("Step 1: Cleaning up metadata...");
-                
-                try
-                {
-                    cleanupResult = await _cleanupService.CleanupMetadataAsync();
-                    _logger.LogDebug("Step 1: Cleanup completed successfully");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Step 1 failed: Cleanup metadata");
-                    // Continue with sync operations even if cleanup fails
-                }
-                finally
-                {
-                    progress.Report(20);
-                }
-                
-                // Step 2: Sync discover from Jellyseerr
-                _logger.LogDebug("Step 2: Syncing discover from Jellyseerr...");
+
+                // Step 1: Sync discover from Jellyseerr
+                _logger.LogDebug("Step 1: Syncing discover from Jellyseerr...");
                 
                 try
                 {
@@ -83,7 +67,7 @@ public class SyncTask : IScheduledTask
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Step 2 failed: Sync from Jellyseerr");
+                    _logger.LogError(ex, "Step 1 failed: Sync from Jellyseerr");
                     syncFromResult = new SyncJellyseerrResult
                     {
                         Success = false,
@@ -91,11 +75,11 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(70);
+                    progress.Report(40);
                 }
                 
-                // Step 3: Sync favorites to Jellyseerr
-                _logger.LogDebug("Step 3: Syncing favorites to Jellyseerr...");
+                // Step 2: Sync favorites to Jellyseerr
+                _logger.LogDebug("Step 2: Syncing favorites to Jellyseerr...");
                 
                 try
                 {
@@ -103,7 +87,7 @@ public class SyncTask : IScheduledTask
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Step 3 failed: Sync to Jellyseerr");
+                    _logger.LogError(ex, "Step 2 failed: Sync to Jellyseerr");
                     syncToResult = new SyncJellyfinResult
                     {
                         Success = false,
@@ -113,7 +97,26 @@ public class SyncTask : IScheduledTask
                 } finally {
                     progress.Report(90);
                 }
+                
+                // Step 3: Cleanup metadata after sync operations
+                _logger.LogDebug("Step 3: Cleaning up metadata...");
+                
+                try
+                {
+                    cleanupResult = await _cleanupService.CleanupMetadataAsync();
+                    _logger.LogDebug("Step 3: Cleanup completed successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during metadata cleanup");
+                    // Continue with sync operations even if cleanup fails
+                }
+                finally
+                {
+                    progress.Report(90);
+                }
 
+                // Show results of sync operations in logs for debugging
                 try {
                     if (syncToResult != null)
                     {

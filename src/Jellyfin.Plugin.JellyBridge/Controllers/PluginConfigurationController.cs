@@ -37,35 +37,47 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Convert the internal list format to dictionary format for JavaScript
                 var configForFrontend = new
                 {
+                    // General Settings
+                    IsEnabled = config.IsEnabled,
                     JellyseerrUrl = config.JellyseerrUrl,
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
-                    IsEnabled = config.IsEnabled,
                     SyncIntervalHours = config.SyncIntervalHours,
-                    UseNetworkFolders = config.UseNetworkFolders,
-                    AddDuplicateContent = config.AddDuplicateContent,
-                    LibraryPrefix = config.LibraryPrefix,
+
+                    // Import Discover Content
+                    Region = config.Region,
+                    NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
+                    MaxDiscoverPages = config.MaxDiscoverPages,
+                    MaxRetentionDays = config.MaxRetentionDays,
+
+                    // Manage Discover Library
+                    ManageJellyseerrLibrary = config.ManageJellyseerrLibrary,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
-                    PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
+                    UseNetworkFolders = config.UseNetworkFolders,
+                    AddDuplicateContent = config.AddDuplicateContent,
+                    LibraryPrefix = config.LibraryPrefix,
+
+                    // Sort Content
+                    EnableAutomatedSortTask = config.EnableAutomatedSortTask,
+                    SortOrder = config.SortOrder,
+                    MarkMediaPlayed = config.MarkMediaPlayed,
+                    SortTaskIntervalHours = config.SortTaskIntervalHours,
+
+                    // Advanced Settings
                     EnableStartupSync = config.EnableStartupSync,
                     StartupDelaySeconds = config.StartupDelaySeconds,
                     TaskTimeoutMinutes = config.TaskTimeoutMinutes,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
-                    MaxDiscoverPages = config.MaxDiscoverPages,
-                    MaxRetentionDays = config.MaxRetentionDays,
                     PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
-                    PlaceholderTempFolder = config.PlaceholderTempFolder,
+                    JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
-                    SortOrder = config.SortOrder,
-                    MarkMediaPlayed = config.MarkMediaPlayed,
-                    EnableAutomatedSortTask = config.EnableAutomatedSortTask,
-                    SortTaskIntervalHours = config.SortTaskIntervalHours,
-                    Region = config.Region,
-                    NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
+
+                    // Plugin Info
+                    PluginVersion = Plugin.Instance.GetType().Assembly.GetName().Version?.ToString(),
                     ConfigOptions = BridgeConfiguration.ToJson(),
                     ConfigDefaults = PluginConfiguration.DefaultValues
                 };
@@ -111,11 +123,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<string>(configData, nameof(config.ApiKey), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
                     SetJsonValue<double?>(configData, nameof(config.SyncIntervalHours), config);
-                    SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     
                     // Import Discover Content
                     SetJsonValue<string>(configData, nameof(config.Region), config);
                     SetNetworkMap(configData, config);
+                    SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
+                    SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     
                     // Manage Discover Library
                     SetJsonValue<bool?>(configData, nameof(config.ManageJellyseerrLibrary), config);
@@ -133,14 +146,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     
                     // Advanced Settings
-                    SetJsonValue<int?>(configData, nameof(config.RequestTimeout), config);
-                    SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
-                    SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
-                    SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
-                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
-                    SetJsonValue<string>(configData, nameof(config.PlaceholderTempFolder), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
                     SetJsonValue<int?>(configData, nameof(config.StartupDelaySeconds), config);
                     SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
+                    SetJsonValue<int?>(configData, nameof(config.RequestTimeout), config);
+                    SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
+                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
+                    SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
 
