@@ -79,8 +79,8 @@
     <!--<EmbeddedResource Include="Assets\show.png" />-->
     <!--<None Remove="Assets\season.png" />-->
     <!--<EmbeddedResource Include="Assets\season.png" />-->
-    <None Remove="Assets\S00E00.png" />
-    <EmbeddedResource Include="Assets\S00E00.png" />
+    <None Remove="Assets\S00E999.png" />
+    <EmbeddedResource Include="Assets\S00E999.png" />
   </ItemGroup>
 
 </Project>
