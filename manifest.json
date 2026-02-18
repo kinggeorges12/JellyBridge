@@ -10,6 +10,24 @@
     "versions": [
       {
         "targetAbi": "10.11.0.0",
+        "version": "2.2.28.11",
+        "changelog": "Jellyfin 10.11.0: v2.2.28 - cleanup function for extra placeholder videos after creating a new one",
+        "timestamp": "2026-02-18T23:42:11.475Z",
+        "checksum": "25BCAA1BA55C4F1F0376213444C83B49",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.28.11.zip",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "version": "2.2.28.10",
+        "changelog": "Jellyfin 10.10.7: v2.2.28 - cleanup function for extra placeholder videos after creating a new one",
+        "timestamp": "2026-02-18T23:42:11.475Z",
+        "checksum": "61BC83851E7B2BA441E36422CD9A605F",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.28.10.zip",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.11.0.0",
         "version": "2.2.27.11",
         "changelog": "Jellyfin 10.11.0: v2.2.27 - testing new features: specify temp directory config, and renaming series placeholder to S00E999",
         "timestamp": "2026-02-18T22:46:02.513Z",

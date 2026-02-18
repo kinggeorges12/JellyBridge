@@ -50,11 +50,11 @@ public class CleanupService
 
             // Process all items together - only delete items that are older than retention days
             var deletedItems = DeleteExpiredMedia(allItems);
+            result.ItemsDeleted.AddRange(deletedItems);
             result.ItemsProcessed.AddRange(allItems);
 
             // Process folders with .nfo files and delete those without metadata.json
             var (processedMovies, processedShows, deletedMovies, deletedShows) = await FindMissingMetadataFolders();
-            result.ItemsDeleted.AddRange(deletedItems);
             result.MoviesCleaned = deletedMovies.Count;
             result.ShowsCleaned = deletedShows.Count;
 
