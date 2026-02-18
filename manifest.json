@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "10.11.0.0",
+        "version": "2.2.27.11",
+        "changelog": "Jellyfin 10.11.0: v2.2.27 - testing new features: specify temp directory config, and renaming series placeholder to S00E999",
+        "timestamp": "2026-02-18T22:46:02.513Z",
+        "checksum": "C15F98917D630F385B305C3611E53568",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.27.11.zip",
+        "dependencies": []
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "version": "2.2.27.10",
+        "changelog": "Jellyfin 10.10.7: v2.2.27 - testing new features: specify temp directory config, and renaming series placeholder to S00E999",
+        "timestamp": "2026-02-18T22:46:02.513Z",
+        "checksum": "13F34315EDF8A19A7C4D55AAA7947C27",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.27.10.zip",
+        "dependencies": []
+      },
+      {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.26/JellyBridge-2.2.26.11.zip",
         "changelog": "Jellyfin 10.11.0: v2.2.26 - minor changes to logging messages",
         "checksum": "6F5F28E891713E52315326E9B9985649",
