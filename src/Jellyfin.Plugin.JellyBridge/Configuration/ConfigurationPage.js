@@ -283,7 +283,8 @@ function performTestConnection(page) {
     const url = safeParseString(page.querySelector('#JellyseerrUrl'));
     const apiKey = safeParseString(page.querySelector('#ApiKey'));
     const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
-    
+    const jellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
+
     // Validate URL format if provided
     if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
     
@@ -293,13 +294,17 @@ function performTestConnection(page) {
     // Validate Library Directory
     if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
+    // Validate Library Directory
+    if (!validateField(page, 'JellyBridgeTempDirectory', validators.windowsFolder, 'Temp Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
     testButton.disabled = true;
     Dashboard.showLoadingMsg();
     
     const testData = {
         JellyseerrUrl: url,
         ApiKey: apiKey,
-        LibraryDirectory: libraryDirectory
+        LibraryDirectory: libraryDirectory,
+        JellyBridgeTempDirectory: jellyBridgeTempDirectory
     };
 
     ApiClient.ajax({
@@ -1235,7 +1240,7 @@ function initializeAdvancedSettings(page) {
             }
         });
     }
-    setInputField(page, 'PlaceholderTempFolder');
+    setInputField(page, 'JellyBridgeTempDirectory');
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'TaskTimeoutMinutes');
@@ -1435,7 +1440,7 @@ function performPluginReset(page) {
                 Region: '',
                 NetworkMap: null,
                 PlaceholderDurationSeconds: null,
-                PlaceholderTempFolder: ''
+                JellyBridgeTempDirectory: ''
             };
             
             // Send reset configuration to the plugin
@@ -1586,10 +1591,10 @@ function savePluginConfiguration(page) {
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
-        form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-        form.PlaceholderTempFolder = safeParseString(page.querySelector('#PlaceholderTempFolder'), false);
-        form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
-        form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
+    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+    form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
+    form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
+    form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
     
     // Save the configuration using ApiClient
     return ApiClient.ajax({
