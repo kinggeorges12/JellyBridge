@@ -54,6 +54,7 @@ public class PluginConfiguration : BasePluginConfiguration
             }
         },
         { nameof(MaxDiscoverPages), 1 },
+        { nameof(MaxRetentionDays), 30 },
 
         // Library Settings
         { nameof(ManageJellyseerrLibrary), true },
@@ -74,14 +75,10 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(TaskTimeoutMinutes), 10 },
         { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
-        { nameof(MaxRetentionDays), 30 },
         { nameof(PlaceholderDurationSeconds), 10 },
         { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
         { nameof(EnableDebugLogging), false },
         { nameof(EnableTraceLogging), false },
-
-        // Internal flags
-        // { nameof(RanFirstTime), false }
     };
 
     // ===== General =====
@@ -146,6 +143,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// This applies to both movies and TV shows discovery.
     /// </summary>
     public int? MaxDiscoverPages { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of days to retain items in the collection before cleanup.
+    /// Items older than this will be removed during sync operations.
+    /// </summary>
+    public int? MaxRetentionDays { get; set; }
 
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyBridge.
@@ -215,12 +218,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the number of retry attempts.
     /// </summary>
     public int? RetryAttempts { get; set; }
-
-    /// <summary>
-    /// Gets or sets the maximum number of days to retain items in the collection before cleanup.
-    /// Items older than this will be removed during sync operations.
-    /// </summary>
-    public int? MaxRetentionDays { get; set; }
 
     /// <summary>
     /// Gets or sets the default duration (in seconds) for generated placeholder videos.
