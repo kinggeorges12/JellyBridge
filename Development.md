@@ -254,7 +254,7 @@ pwsh -File scripts/build-release.ps1 -Version "1.0.0" -Changelog "Release descri
 Jellyfin.Plugin.JellyBridge/
 ├── Assets/                       # Image assets to generate placeholder videos
 │   ├── movie.png
-│   ├── S00E999.png
+│   ├── S00E9999.png
 │   ├── season.png
 │   └── show.png
 ├── Attributes/                   # Plugin attributes

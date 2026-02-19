@@ -157,7 +157,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     }
 
     /// <summary>
-    /// Get the placeholder episode (S00E999 special) for this series.
+    /// Get the placeholder episode (S00E9999 special) for this series.
     /// </summary>
     /// <returns>The placeholder episode if found, null otherwise</returns>
     public Episode? GetPlaceholderEpisode()
@@ -190,7 +190,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     }
 
     /// <summary>
-    /// Attempts to set the placeholder episode (S00E999) play status.
+    /// Attempts to set the placeholder episode (S00E9999) play status.
     /// </summary>
     /// <param name="user">The user for which to set the play status.</param>
     /// <param name="userDataManager">The user data manager to use for updating play status.</param>
@@ -198,7 +198,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
     /// <returns>Result object containing success status and detailed information about the operation</returns>
     public JellyfinWrapperResult TrySetEpisodePlayCount(JellyfinUser user, JellyfinIUserDataManager userDataManager, bool markAsPlayed)
     {
-        // Get the placeholder episode (S00E999)
+        // Get the placeholder episode (S00E9999)
         var placeholderEpisode = GetPlaceholderEpisode();
         
         if (placeholderEpisode == null)
@@ -206,7 +206,7 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
             return new JellyfinWrapperResult
             {
                 Success = false,
-                Message = "Placeholder episode (S00E999) not found"
+                Message = "Placeholder episode (S00E9999) not found"
             };
         }
         
