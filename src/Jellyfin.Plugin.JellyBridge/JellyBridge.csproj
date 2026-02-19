@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>2.2.29.10</AssemblyVersion>
-    <FileVersion>2.2.29.10</FileVersion>
+    <AssemblyVersion>2.2.30.10</AssemblyVersion>
+    <FileVersion>2.2.30.10</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->
@@ -79,8 +79,8 @@
     <!--<EmbeddedResource Include="Assets\show.png" />-->
     <!--<None Remove="Assets\season.png" />-->
     <!--<EmbeddedResource Include="Assets\season.png" />-->
-    <None Remove="Assets\S00E999.png" />
-    <EmbeddedResource Include="Assets\S00E999.png" />
+    <None Remove="Assets\S00E9999.png" />
+    <EmbeddedResource Include="Assets\S00E9999.png" />
   </ItemGroup>
 
 </Project>
