@@ -9,58 +9,22 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "targetAbi": "10.11.0.0",
-        "version": "2.2.29.11",
-        "changelog": "Jellyfin 10.11.0: v2.2.29 - cleanup function for extra placeholder videos after creating a new one",
-        "timestamp": "2026-02-18T23:45:52.816Z",
-        "checksum": "86DD6C666AC1015EA1EEFDE2137E3276",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.29.11.zip",
-        "dependencies": []
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.30/JellyBridge-2.2.30.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.30 - New features: specify temp directory config, and renaming series placeholder to S00E9999 to avoid loading real special data. Thanks to @kennedyshead for your PR on Github.",
+        "dependencies": [],
+        "version": "2.2.30.11",
+        "checksum": "1139F87A8386F2505B912E786AC115B4",
+        "timestamp": "2026-02-19T01:22:06.234Z",
+        "targetAbi": "10.11.0.0"
       },
       {
-        "targetAbi": "10.10.0.0",
-        "version": "2.2.29.10",
-        "changelog": "Jellyfin 10.10.7: v2.2.29 - cleanup function for extra placeholder videos after creating a new one",
-        "timestamp": "2026-02-18T23:45:52.816Z",
-        "checksum": "44E5B8C644B709596F05013AFFF5365F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.29.10.zip",
-        "dependencies": []
-      },
-      {
-        "targetAbi": "10.11.0.0",
-        "version": "2.2.28.11",
-        "changelog": "Jellyfin 10.11.0: v2.2.28 - cleanup function for extra placeholder videos after creating a new one",
-        "timestamp": "2026-02-18T23:42:11.475Z",
-        "checksum": "25BCAA1BA55C4F1F0376213444C83B49",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.28.11.zip",
-        "dependencies": []
-      },
-      {
-        "targetAbi": "10.10.0.0",
-        "version": "2.2.28.10",
-        "changelog": "Jellyfin 10.10.7: v2.2.28 - cleanup function for extra placeholder videos after creating a new one",
-        "timestamp": "2026-02-18T23:42:11.475Z",
-        "checksum": "61BC83851E7B2BA441E36422CD9A605F",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.28.10.zip",
-        "dependencies": []
-      },
-      {
-        "targetAbi": "10.11.0.0",
-        "version": "2.2.27.11",
-        "changelog": "Jellyfin 10.11.0: v2.2.27 - testing new features: specify temp directory config, and renaming series placeholder to S00E999",
-        "timestamp": "2026-02-18T22:46:02.513Z",
-        "checksum": "C15F98917D630F385B305C3611E53568",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.27.11.zip",
-        "dependencies": []
-      },
-      {
-        "targetAbi": "10.10.0.0",
-        "version": "2.2.27.10",
-        "changelog": "Jellyfin 10.10.7: v2.2.27 - testing new features: specify temp directory config, and renaming series placeholder to S00E999",
-        "timestamp": "2026-02-18T22:46:02.513Z",
-        "checksum": "13F34315EDF8A19A7C4D55AAA7947C27",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.27.10.zip",
-        "dependencies": []
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.30/JellyBridge-2.2.30.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.30 - New features: specify temp directory config, and renaming series placeholder to S00E9999 to avoid loading real special data. Thanks to @kennedyshead for your PR on Github.",
+        "dependencies": [],
+        "version": "2.2.30.10",
+        "checksum": "B61ED21B13DC1DAF336E28FBBE194349",
+        "timestamp": "2026-02-19T01:22:06.234Z",
+        "targetAbi": "10.10.0.0"
       },
       {
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.2.26/JellyBridge-2.2.26.11.zip",
