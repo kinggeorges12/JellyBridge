@@ -558,8 +558,9 @@ function performSyncImportContent(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
                 const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
-                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
                 syncDiscoverResult.style.display = 'block';
+                appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
+                appendToResultBox(syncDiscoverResult, "⏳ " + new Date().toLocaleTimeString());
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // sync if confirmed
@@ -586,6 +587,7 @@ function performSyncImportContent(page) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
+                appendToResultBox(syncDiscoverResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
                 syncButton.disabled = false;
             });
@@ -901,8 +903,9 @@ function performSortContent(page) {
                 const sortOrderSelect = page.querySelector('#selectSortOrder');
                 const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
                 const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
-                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
                 sortContentResult.style.display = 'block';
+                appendToResultBox(sortContentResult, `🔄 Applying ${algorithmName} algorithm to sort order...`, true);
+                appendToResultBox(sortContentResult, "⏳ " + new Date().toLocaleTimeString());
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // Sort if confirmed
@@ -929,6 +932,7 @@ function performSortContent(page) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
+                appendToResultBox(sortContentResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
                 sortButton.disabled = false;
             });
@@ -955,8 +959,9 @@ function performCleanupMetadata(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the cleanup result textbox
                 const cleanupResult = page.querySelector('#cleanupMetadataResult');
-                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
                 cleanupResult.style.display = 'block';
+                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
+                appendToResultBox(cleanupResult, "⏳ " + new Date().toLocaleTimeString());
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // Cleanup if confirmed
@@ -983,6 +988,7 @@ function performCleanupMetadata(page) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
+                appendToResultBox(cleanupResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
                 cleanupButton.disabled = false;
             });
@@ -1194,8 +1200,9 @@ function performSyncManageLibrary(page) {
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the request result textbox
                 const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
-                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
                 syncFavoritesResult.style.display = 'block';
+                appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
+                appendToResultBox(syncFavoritesResult, "⏳ " + new Date().toLocaleTimeString());
                 
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 // Request content if confirmed
@@ -1222,6 +1229,7 @@ function performSyncManageLibrary(page) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
+                appendToResultBox(syncFavoritesResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
                 syncFavoritesButton.disabled = false;
             });
