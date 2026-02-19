@@ -122,13 +122,13 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
-- **Jellyseerr URL**: The web address where your Jellyseerr instance is accessible to Jellyfin.
-- **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr.
-- **Library Directory**: Path where JellyBridge stores its files. Use a dedicated directory for this plugin.
-- **Enable the Automated Task to Sync Jellyseerr and Jellyfin**: Turns on automatic syncing on a schedule.
-- **Sync Interval (Hours)**: How often the plugin automatically syncs content (hours).
+- **Jellyseerr URL**: The web address where your Jellyseerr instance is accessible to Jellyfin
+- **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr
+- **Library Directory**: Path where JellyBridge stores its files. Use a dedicated directory for this plugin
+- **Enable the Automated Task to Sync Jellyseerr and Jellyfin**: Turns on automatic syncing on a schedule
+- **Sync Interval (hours)**: How often the plugin automatically syncs content
 - **Test Connection with Jellyseerr**: Verifies that the plugin can successfully connect to your Jellyseerr instance
-- **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time.
+- **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time
 - **Library Setup Instructions**: Click the "Setup" button (?) next to the automated task checkbox to view library setup instructions and troubleshooting.
 
 ### 🔍 Import Discover Content
@@ -138,7 +138,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Watch Region**: Which geographic region to search for available networks
 - **Network Services**: Choose networks to import discover content from
 - **Discover Pages**: The number of pages to import per network
-- **Content Retention Time (Days)**: How long to keep discover content before automatic cleanup
+- **Content Retention Time (days)**: How long to keep discover content before automatic cleanup
 - **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually trigger the task
 
 ### 📁 Manage Discover Library
@@ -161,7 +161,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 ![Sort Discover Content](Screenshots/Sort.png)
 
 - **Enable the Automated Task to Sort Discover Content**: Periodically updates play counts to drive sort order for all users
-- **Sort Task Interval (Hours)**: How often to run the sort task
+- **Sort Task Interval (hours)**: How often to run the sort task
 - **Sort Order**: Choose algorithm
   - **None**: Sets all play counts to zero
   - **Random**: Randomizes play counts
@@ -182,6 +182,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Request Timeout (seconds)**: Jellyseerr API requests wait time
 - **Retry Attempts**: Number of retry attempts for failed API requests to Jellyseerr
 - **Placeholder Video Duration (seconds)**: A short video teaching users how to request the discover content
+- **Temp Directory**: Path for generating placeholder files, usually the operating system default
 - **Enable Debug Logging**: Normal logging
 - **Enable Trace Logging**: Huge logs
 - **Cleanup Metadata**: Button to manually clean up metadata in the JellyBridge library
