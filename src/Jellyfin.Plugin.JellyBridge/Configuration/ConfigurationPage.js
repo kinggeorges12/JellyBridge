@@ -555,9 +555,9 @@ function performSyncImportContent(page) {
             // Save settings first, then sync
             Dashboard.showLoadingMsg();
             
+            const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sync result textbox
-                const syncDiscoverResult = page.querySelector('#syncDiscoverResult');
                 syncDiscoverResult.style.display = 'block';
                 appendToResultBox(syncDiscoverResult, '🔄 Syncing library...', true);
                 appendToResultBox(syncDiscoverResult, "⏳ " + new Date().toLocaleTimeString());
@@ -897,9 +897,9 @@ function performSortContent(page) {
             // Save settings first, then sort
             Dashboard.showLoadingMsg();
             
+            const sortContentResult = page.querySelector('#sortContentResult');
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the sort result textbox
-                const sortContentResult = page.querySelector('#sortContentResult');
                 const sortOrderSelect = page.querySelector('#selectSortOrder');
                 const selectedOption = sortOrderSelect ? sortOrderSelect.options[sortOrderSelect.selectedIndex] : null;
                 const algorithmName = selectedOption ? selectedOption.textContent : 'Sort';
@@ -935,62 +935,6 @@ function performSortContent(page) {
                 appendToResultBox(sortContentResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
                 sortButton.disabled = false;
-            });
-        }
-    });
-}
-
-function performCleanupMetadata(page) {
-    const cleanupButton = page.querySelector('#cleanupMetadata');
-    
-    // Show confirmation dialog for saving settings before cleanup
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before starting cleanup.',
-        confirmText: '💾 Save & Cleanup 🧹',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            cleanupButton.disabled = true;
-            // Save settings first, then cleanup
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                // Show loading message in the cleanup result textbox
-                const cleanupResult = page.querySelector('#cleanupMetadataResult');
-                cleanupResult.style.display = 'block';
-                appendToResultBox(cleanupResult, '🔄 Cleaning up metadata...', true);
-                appendToResultBox(cleanupResult, "⏳ " + new Date().toLocaleTimeString());
-                
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                // Cleanup if confirmed
-                Dashboard.showLoadingMsg();
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyBridge/CleanupMetadata'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(cleanupData) {
-                    appendToResultBox(cleanupResult, '\n' + (cleanupData?.result || 'No result available'));
-                    scrollToElement('cleanupMetadataResult');
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
-                    
-                    let resultText = `\nCleanup Results:\n`;
-                    resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
-                    
-                    appendToResultBox(cleanupResult, resultText);
-                    scrollToElement('cleanupMetadataResult');
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-            }).finally(function() {
-                appendToResultBox(cleanupResult, "⏰ " + new Date().toLocaleTimeString());
-                Dashboard.hideLoadingMsg();
-                cleanupButton.disabled = false;
             });
         }
     });
@@ -1040,7 +984,7 @@ function initializeManageLibrary(page) {
     // Request JellyBridge Library Favorites in Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     syncFavoritesButton.addEventListener('click', function() {
-        performSyncManageLibrary(page);
+        performSyncFavorites(page);
     });
     
     // Generate Network Folders button functionality
@@ -1182,7 +1126,7 @@ function performGenerateNetworkFolders(page) {
     });
 }
 
-function performSyncManageLibrary(page) {
+function performSyncFavorites(page) {
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     
     // Show confirmation dialog for saving settings before requesting content
@@ -1198,9 +1142,9 @@ function performSyncManageLibrary(page) {
             // Save settings first, then request content
             Dashboard.showLoadingMsg();
             
+            const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
             savePluginConfiguration(page).then(function(result) {
                 // Show loading message in the request result textbox
-                const syncFavoritesResult = page.querySelector('#syncFavoritesResult');
                 syncFavoritesResult.style.display = 'block';
                 appendToResultBox(syncFavoritesResult, '🔄 Requesting JellyBridge Library Favorites in Jellyseerr...', true);
                 appendToResultBox(syncFavoritesResult, "⏳ " + new Date().toLocaleTimeString());
@@ -1317,6 +1261,62 @@ function initializeAdvancedSettings(page) {
             performCleanupMetadata(page);
         });
     }
+}
+
+function performCleanupMetadata(page) {
+    const cleanupButton = page.querySelector('#cleanupMetadata');
+    
+    // Show confirmation dialog for saving settings before cleanup
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before starting cleanup.',
+        confirmText: '💾 Save & Cleanup 🧹',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            cleanupButton.disabled = true;
+            // Save settings first, then cleanup
+            Dashboard.showLoadingMsg();
+            
+            const cleanupMetadataResult = page.querySelector('#cleanupMetadataResult');
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the cleanup result textbox
+                cleanupMetadataResult.style.display = 'block';
+                appendToResultBox(cleanupMetadataResult, '🔄 Cleaning up metadata...', true);
+                appendToResultBox(cleanupMetadataResult, "⏳ " + new Date().toLocaleTimeString());
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Cleanup if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/CleanupMetadata'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(cleanupData) {
+                    appendToResultBox(cleanupMetadataResult, '\n' + (cleanupData?.result || 'No result available'));
+                    scrollToElement('cleanupMetadataResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nCleanup Results:\n`;
+                    resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(cleanupMetadataResult, resultText);
+                    scrollToElement('cleanupMetadataResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                appendToResultBox(cleanupMetadataResult, "⏰ " + new Date().toLocaleTimeString());
+                Dashboard.hideLoadingMsg();
+                cleanupButton.disabled = false;
+            });
+        }
+    });
 }
 
 function updateStartupDelayState() {
