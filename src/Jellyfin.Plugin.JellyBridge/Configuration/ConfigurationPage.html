@@ -379,7 +379,7 @@
                 }
                 
                 details.detailedInstructions.disabled summary:hover {
-                    background-color: rgba(0, 0, 0, 0.05); /* Slightly darker on hover to show it's interactive */
+                    background-color: rgba(0, 0, 0, 0.05); /* Slightly darker on hover to indicate that it is interactive */
                 }
                 
                 /* Result textarea styling - max height and scroll after 25 lines */
@@ -452,7 +452,7 @@
                                 <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                             </span>
                         </label>
-                        <div class="helpButton" id="librarySetupHelp" title="Click me! Show library setup instruction before enabling the task.">
+                        <div class="helpButton" id="librarySetupHelp" title="Click me! Display library setup instruction before enabling the task.">
                             <span class="helpIcon">?</span>
                             <span style="margin-left: 5px;">Setup</span>
                         </div>
@@ -489,13 +489,13 @@
                                     <li>Your browser may be caching an old version of the plugin configuration page. <span class="link" data-target-script="cacheBuster">Click here to bust your cache</span> and load the latest changes.</li>
                                     <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.4. Other versions may not be fully compatible.</li>
                                 </ol>
-                                <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button shows an error: Jellyseerr connection error.</i></p>
+                                <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button displays an error: Jellyseerr connection error.</i></p>
                                 <ol>
                                     <li>Make sure you have <a target="_blank" href="https://docs.seerr.dev/">Jellyseerr</a> installed and running. The <i>Jellyseerr URL</i> must be reachable from your Jellyfin server, so check your Docker container and Jellyfin network settings.</li>
                                     <li>Import Jellyfin users from the Jellyseerr interface: <i>Users</i> → <i>Import Jellyfin Users</i>.</li>
                                     <li>Ensure that Jellyseerr is connected to Jellyfin with an admin user. The admin on Jellyseerr's User List should display <i>Jellyfin User</i> under the <i>TYPE</i> column.</li>
                                 </ol>
-                                <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button shows an error: The library directory is not accessible.</i></p>
+                                <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button displays an error: The library directory is not accessible.</i></p>
                                 <ul>
                                     <li>[Windows] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>mkdir "C:\ProgramData\Jellyfin\JellyBridge"</code></li>
                                     <li>[Docker] Map the directory in <i>docker-compose.yml</i> > <i>services</i> > <i>Jellyfin</i> > <i>volumes</i>: <code>- /host_mnt/c/ProgramData/Jellyfin/JellyBridge:/data/JellyBridge</code></li>
@@ -503,9 +503,9 @@
                                     <li>[Linux] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> (capitalization is important!): <code>mkdir -p /data/JellyBridge</code></li>
                                     <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 644 /data/JellyBridge</code></li>
                                 </ul>
-                                <p><i>The Jellyfin library is not showing images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
+                                <p><i>The Jellyfin library is not displaying images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
-                                    <li>If networks are missing movies and shows, try enabling the <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
+                                    <li>If networks are missing movies and series, try enabling the <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
                                     <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span>.</li>
                                     <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library.</li>
                                     <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">📚 Library Setup Instructions</span>.</li>
@@ -545,13 +545,13 @@
                                     ↻
                                 </button>
                             </div>
-                            <div class="fieldDescription">Select your watch region for networks. Click <span class="link" data-target-page="refreshWatchRegions">↻</span> to load watch regions from Jellyseerr. This determines which watch providers are shown for movies and TV shows in the available networks list.</div>
+                            <div class="fieldDescription">Select your watch region for networks. Click <span class="link" data-target-page="refreshWatchRegions">↻</span> to load watch regions from Jellyseerr. This determines which watch providers are displayed for movies and series in the available networks list.</div>
                         </div>
 
                         <div id="networkServicesContainer" class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="DefaultNetworks">Network Services</label>
                             <div class="fieldDescription">
-                                Shown below as: Jellyseerr sort order #. Network Name (Network ID #), and [REGION ID]
+                                Displayed below as: Jellyseerr sort order #. Network Name (Network ID #), and [REGION ID]
                             </div>
                             <div class="multiSelectContainer">
                                 <!-- Active Networks (Left) -->
@@ -594,7 +594,7 @@
 
                         <div class="inputContainer" id="MaxDiscoverPagesContainer">
                             <input id="MaxDiscoverPages" type="number" is="emby-input" min="0" label="Discover Pages"/>
-                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 shows for each network. This applies to both movies and TV shows discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
+                            <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 series for each network. This applies to both movies and series discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
                         </div>
 
                         <div class="inputContainer">
@@ -620,7 +620,7 @@
                             Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, hide existing Jellyfin items from discover content, and unfavorite requested items. With a few extra steps, organize discover content based on the network.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            🙈 Display: JellyBridge hides movie or show items in the library by creating an .ignore file in the item folder.
+                            🙈 Display: JellyBridge hides movie or series items in the library by creating an .ignore file in the item folder.
                             <br>
                             📋 Process: After a request is sent to Jellyseerr, requested items are always marked as unplayed for all users and hidden from all libraries. If you deny all requests for that item in Jellyseerr, the item will repopulate on next sync.
                         </div>
@@ -646,7 +646,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, the JellyBridge library will hide movies and shows that are found in your other Jellyfin libraries.</div>
+                            <div class="fieldDescription">When enabled, the JellyBridge library will hide movies and series that are found in your other Jellyfin libraries.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -671,6 +671,17 @@
                                 </span>
                             </label>
                             <div class="fieldDescription">When enabled, this option removes favorited items for all users after the items are requested from Jellyseerr. This setting is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="RequestFirstSeason" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Request Only First Season</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">When enabled, requests will only be made for the first season of a series. This is useful for users who only want to limit the space used by initial series requests.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
@@ -708,7 +719,7 @@
                                 <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
                                     <label class="emby-checkbox-label">
                                         <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                        <span class="checkboxLabel">Show Discover Content in Multiple Libraries</span>
+                                        <span class="checkboxLabel">Display Discover Content in Multiple Libraries</span>
                                         <span class="checkboxOutline">
                                             <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                             <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
@@ -787,7 +798,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For shows: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
+                            <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For series: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
                         </div>
 
                         <div>
