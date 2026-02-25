@@ -11,20 +11,20 @@
       {
         "dependencies": [],
         "targetAbi": "10.11.0.0",
-        "version": "2.3.2.11",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.2.11.zip",
-        "timestamp": "2026-02-25T03:01:10.792Z",
-        "changelog": "Jellyfin 10.11.0: v2.3.2 - fixing cleanup task on config page",
-        "checksum": "AFD5DDC047D827612241AA6D99F8810C"
+        "version": "2.3.3.11",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.3.3/JellyBridge-2.3.3.11.zip",
+        "timestamp": "2026-02-25T03:08:38.957Z",
+        "changelog": "Jellyfin 10.11.0: v2.3.3 - New feature: Manage Discover Library > Request Only First Season. Fixing log output for Cleanup button.",
+        "checksum": "D62264CDC20C526D03195C0B8367CC9B"
       },
       {
         "dependencies": [],
         "targetAbi": "10.10.0.0",
-        "version": "2.3.2.10",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.2.10.zip",
-        "timestamp": "2026-02-25T03:01:10.792Z",
-        "changelog": "Jellyfin 10.10.7: v2.3.2 - fixing cleanup task on config page",
-        "checksum": "FF3C2A2ECFD83AA96C4A0EF27713E5FF"
+        "version": "2.3.3.10",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.3.3/JellyBridge-2.3.3.10.zip",
+        "timestamp": "2026-02-25T03:08:38.957Z",
+        "changelog": "Jellyfin 10.10.7: v2.3.3 - New feature: Manage Discover Library > Request Only First Season. Fixing log output for Cleanup button.",
+        "checksum": "6FF516AC7D293619BDCE337494442E9C"
       },
       {
         "version": "2.3.1.11",
