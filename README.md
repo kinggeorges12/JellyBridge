@@ -1,8 +1,8 @@
 # JellyBridge Plugin
 
-A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
+A Jellyfin plugin that bridges Jellyfin with Jellyseerr (and Seerr\*) for seamless movie and series discovery and download requests.
 
-> **Note for users upgrading from JellyBridge v1:** See [Release Notes](#-release-notes) for upgrade instructions.
+\* [Seerr v3.0.0 has recently released](https://docs.seerr.dev/blog/seerr-release) as the next iteration of Jellyseerr v2.7.3. The API appears to be unchanged, and my tests have not found any compatibility problems. Enjoy the new release! Please submit any issues with Seerr to this project, and I will try to expedite a fix. As for our documentation, I will wait until the next major update to switch to the new name.
 
 ## ✨ Features
 
@@ -220,7 +220,7 @@ After installing the new version, you may need to update the plugin configuratio
 
 ## 🖇️ Compatibility
 
-This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.1, or Jellyseerr versions before 2.7.3.
+This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3 and Seerr 3.0.1. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.6, or Jellyseerr versions before 2.7.3.
 
 ## 🧰 Troubleshooting
 
@@ -244,6 +244,14 @@ The plugin integrates with Jellyfin's logging system. Enable debug logging from 
 ## 🧑‍💻 Development
 
 For detailed development instructions, including building, testing, and contributing, see [Development.md](Development.md).
+
+## 🅰️ℹ️ AI Disclosure and Use Statement
+
+The Jellyfin Team published the [Jellyfin LLM/"AI" Development Policy](https://jellyfin.org/docs/general/contributing/llm-policies/) on January 22, 2026. I want to publish my own note for transparency and guidance to contributors of this project.
+
+I used AI tools to assist in the development of this project, mostly using OpenAI GPT-4.1 in Visual Studio Code. I have read every line of code that was generated and I took steps to deliberately construct the project. Every single word that you read of instructions was polished by yours truly, so you don't have to listen to clankers with zero aesthetic. I would not have attempted this project without AI help, but it would not actually run without lots of human effort.
+
+I welcome all efforts from the Jellyfin community that wishes to contribute to this project. Anyone who has used AI tools to code knows that it programs at the level of a first year developer, but it does help to structure the code and build prototypes. I ask that everyone keeps this in mind when building code with the LLMs, and run tests on your code. Also, understand that I have spent hundreds of hours working on this project, but I do not expect you to. Please do what you can to contribute and grow your favorite Jellyfin projects.
 
 ## 📄 License
 
