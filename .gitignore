@@ -7,7 +7,7 @@
 bin/
 obj/
 debug/
-#release/
+release/
 # User-specific files
 *.user*
 *.suo
