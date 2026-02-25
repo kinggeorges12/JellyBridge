@@ -149,6 +149,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
+- **Request Only First Season**: New favorited series will only request the first season instead of the entire series
 - **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
 - **Network Folders Setup**
   - **Instructions**: Step-by-step guide for creating network folders and libraries
@@ -190,14 +191,16 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ## 📣 Release Notes
 
-### Version 2.2
+### Version 2.3 🆕
 
-**🆕 New in this release**
+- Request Only First Season: Option to request only the first season of a TV series instead of the entire series. This can be enabled in the Manage Discover Library section of the plugin configuration.
+
+### Version 2.2 ✨
+
 - Responsive Favorite Requests: An option, enabled by default, to immediately request favorites from Jellyseerr upon favoriting a media item.
 
 ### Version 2.0 🎉
 
-**🆕 New in this release**
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
 - Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).

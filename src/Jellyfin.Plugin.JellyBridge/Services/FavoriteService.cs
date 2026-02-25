@@ -112,7 +112,6 @@ public class FavoriteService
                     ["mediaType"] = mediaType,
                     ["mediaId"] = tmdbId.Value,
                     ["userId"] = user.Id,
-                    ["seasons"] = "all" // Only for seasons, but doesn't stop it from working for movies
                 };
                 
                 _logger.LogTrace("Processing Jellyseerr bridge item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 

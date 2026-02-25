@@ -646,7 +646,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, the JellyBridge library will hide movies and series that are found in your other Jellyfin libraries.</div>
+                            <div class="fieldDescription">The JellyBridge library will hide movies and series that are found in your other Jellyfin libraries.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -658,7 +658,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, this option immediately requests favorited items for all users from Jellyseerr after any JellyBridge media is favorited. This setting allows for more responsive favorite requests syncing to Jellyseerr.</div>
+                            <div class="fieldDescription">Immediately request favorited items for all users from Jellyseerr after any JellyBridge media is favorited. This allows for more responsive favorite requests syncing to Jellyseerr.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -670,7 +670,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, this option removes favorited items for all users after the items are requested from Jellyseerr. This setting is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
+                            <div class="fieldDescription">Remove favorited items for all users after the items are requested from Jellyseerr. This is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -681,7 +681,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, requests will only be made for the first season of a series. This is useful for users who only want to limit the space used by initial series requests.</div>
+                            <div class="fieldDescription">New favorited series will only request the first season, rather than the default of all seasons. This is useful for users who only want to limit the space used by initial series requests. Any additional season requests must be made from the Jellyseerr interface.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
@@ -693,7 +693,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">When enabled, separate folders will be created for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
+                            <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
                         </div>
 
                         <details id="networkFolderOptionsDetails" class="detailedInstructions">
@@ -725,7 +725,7 @@
                                             <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                         </span>
                                     </label>
-                                    <div class="fieldDescription">When enabled, copies content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
+                                    <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
                                     <div id="addDuplicateContentWarning" class="fieldDescription cautionText" style="display: none;">
                                         <strong>💡 Recommended:</strong> If you have already synced discover content, you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the existing data.
                                         <br>
