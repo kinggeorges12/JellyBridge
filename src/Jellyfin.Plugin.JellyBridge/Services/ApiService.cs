@@ -678,6 +678,7 @@ public class ApiService
     /// </summary>
     private (Dictionary<string, object>? queryParameters, Dictionary<string, string>? templateValues) HandleEndpointSpecificLogic(JellyseerrEndpoint endpoint, PluginConfiguration config)
     {
+        var requestFirstSeason = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RequestFirstSeason), config);
         return endpoint switch
         {
             // CreateRequest endpoint - default parameters for POST body
@@ -686,7 +687,7 @@ public class ApiService
                 {
                     ["mediaType"] = "", //REQUIRED
                     ["mediaId"] = -1, //REQUIRED
-                    ["seasons"] = "all", // Accepts an array of season numbers or "all"
+                    ["seasons"] = requestFirstSeason ? new List<int> { 1 } : "all", // Send [1] for first season, "all" otherwise
                     ["userId"] = 0, //REQUIRED
                     ["is4k"] = false //BUG FIX: This is not required, but the Jellyseerr API allows multiple requests if unspecified.
                 }, null

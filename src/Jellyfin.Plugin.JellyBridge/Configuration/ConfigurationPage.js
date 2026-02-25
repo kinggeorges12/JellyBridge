@@ -1006,6 +1006,7 @@ function initializeManageLibrary(page) {
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'ResponsiveFavoriteRequests', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
+    setInputField(page, 'RequestFirstSeason', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
@@ -1445,6 +1446,7 @@ function performPluginReset(page) {
                 ExcludeFromMainLibraries: null,
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
+                RequestFirstSeason: null,
                 ManageJellyseerrLibrary: null,
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
@@ -1589,6 +1591,7 @@ function savePluginConfiguration(page) {
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
+    form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
