@@ -55,6 +55,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
+                    RequestFirstSeason = config.RequestFirstSeason,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
@@ -135,6 +136,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
+                    SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);

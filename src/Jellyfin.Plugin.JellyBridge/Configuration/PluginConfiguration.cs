@@ -61,6 +61,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
         { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(RequestFirstSeason), false },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(LibraryPrefix), string.Empty },
@@ -169,6 +170,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// When enabled, remove items from all users' favorites after creating a request in Jellyseerr.
     /// </summary>
     public bool? RemoveRequestedFromFavorites { get; set; }
+
+    /// <summary>
+    /// When enabled, requests will only be made for the first season of a show.
+    /// </summary>
+    public bool? RequestFirstSeason { get; set; }
 
     /// <summary>
     /// Gets or sets whether to use network folders for streaming services.
