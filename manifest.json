@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "2.2.32.11",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.32.11.zip",
+        "changelog": "Jellyfin 10.11.0: v2.2.32 - add config option to only request the first season of series",
+        "timestamp": "2026-02-25T01:37:21.659Z",
+        "dependencies": [],
+        "checksum": "5576BD327C1B5B4CC0E9D1BB21280354",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "version": "2.2.32.10",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.32.10.zip",
+        "changelog": "Jellyfin 10.10.7: v2.2.32 - add config option to only request the first season of series",
+        "timestamp": "2026-02-25T01:37:21.659Z",
+        "dependencies": [],
+        "checksum": "E6ED8E9E674980517FFE92A758A59E2A",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "version": "2.2.31.11",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.2.31.11.zip",
         "changelog": "Jellyfin 10.11.0: v2.2.31 - add config option to only request the first season of series",
