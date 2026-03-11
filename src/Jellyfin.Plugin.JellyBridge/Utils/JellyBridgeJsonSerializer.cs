@@ -84,7 +84,7 @@ public class SafeObjectConverter<T> : JsonConverter<T>
     /// <param name="options">The JSON serializer options.</param>
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        JsonSerializer.Serialize(writer, value, options);
+        JsonSerializer.Serialize(writer, value, _filteredOptions);
     }
 }
 
