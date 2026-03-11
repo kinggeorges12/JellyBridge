@@ -9,6 +9,24 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "2.4.0.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "218FB6243A940F8A95E642A3E2B42D2A",
+        "timestamp": "2026-03-11T22:14:00.495Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v2.4.0 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors from Jellyseerr API.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.4.0/JellyBridge-2.4.0.11.zip"
+      },
+      {
+        "version": "2.4.0.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "09D8933DB06CD2A1142FCF446061B9D0",
+        "timestamp": "2026-03-11T22:14:00.495Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v2.4.0 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors from Jellyseerr API.",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v2.4.0/JellyBridge-2.4.0.10.zip"
+      },
+      {
         "version": "2.3.8.11",
         "targetAbi": "10.11.0.0",
         "checksum": "83D811AFB1D07340BE289C82E1BF023B",
