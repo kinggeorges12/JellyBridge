@@ -29,10 +29,15 @@ public class SafeObjectConverterFactory : JsonConverterFactory
     /// <param name="type">The type to create a converter for.</param>
     /// <param name="options">The serializer options to use.</param>
     /// <returns>A SafeObjectConverter instance.</returns>
-    public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
+    public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        var converterType = typeof(SafeObjectConverter<>).MakeGenericType(type);
-        return (JsonConverter)Activator.CreateInstance(converterType)!;
+        // Create a new options object without the SafeObjectConverter itself
+        var filteredOptions = new JsonSerializerOptions(options);
+        var converterToRemove = filteredOptions.Converters.OfType<SafeObjectConverterFactory>().SingleOrDefault();
+        if (converterToRemove != null) filteredOptions.Converters.Remove(converterToRemove);
+
+        var converterType = typeof(SafeObjectConverter<>).MakeGenericType(typeToConvert);
+        return (JsonConverter)Activator.CreateInstance(converterType, filteredOptions)!;
     }
 }
 
@@ -43,6 +48,14 @@ public class SafeObjectConverterFactory : JsonConverterFactory
 /// <typeparam name="T">The type to convert.</typeparam>
 public class SafeObjectConverter<T> : JsonConverter<T>
 {
+    // Remove this class from the options to prevent infinite recursion when creating converters for nested objects.
+    private readonly JsonSerializerOptions _filteredOptions;
+
+    public SafeObjectConverter(JsonSerializerOptions filteredOptions)
+    {
+        _filteredOptions = filteredOptions;
+    }
+
     /// <summary>
     /// Reads and deserializes JSON, skipping invalid objects by returning default.
     /// </summary>
@@ -54,7 +67,7 @@ public class SafeObjectConverter<T> : JsonConverter<T>
     {
         try
         {
-            return JsonSerializer.Deserialize<T>(ref reader, options);
+            return JsonSerializer.Deserialize<T>(ref reader, _filteredOptions);
         }
         catch
         {
