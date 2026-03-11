@@ -9,10 +9,28 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "2.3.7.11",
+        "targetAbi": "10.11.0.0",
+        "checksum": "4CAD396E5BB32620B40B56CEE40A139E",
+        "timestamp": "2026-03-11T21:43:32.674Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v2.3.7 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.7.11.zip"
+      },
+      {
+        "version": "2.3.7.10",
+        "targetAbi": "10.10.0.0",
+        "checksum": "8A76955D183E1313993E962C4F1E9B0E",
+        "timestamp": "2026-03-11T21:43:32.674Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v2.3.7 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.7.10.zip"
+      },
+      {
         "version": "2.3.6.11",
         "targetAbi": "10.11.0.0",
         "checksum": "8D20D22C1FE07DF1ADED8AAAB65DDD8A",
-        "timestamp": "2026-03-11T21:10:40.010Z",
+        "timestamp": "2026-03-11T21:10:40.01Z",
         "dependencies": [],
         "changelog": "Jellyfin 10.11.0: v2.3.6 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.6.11.zip"
@@ -21,7 +39,7 @@
         "version": "2.3.6.10",
         "targetAbi": "10.10.0.0",
         "checksum": "8EDD8E4D1510D37410FB062D70EC60C1",
-        "timestamp": "2026-03-11T21:10:40.010Z",
+        "timestamp": "2026-03-11T21:10:40.01Z",
         "dependencies": [],
         "changelog": "Jellyfin 10.10.7: v2.3.6 - Bug fix: Jellyseerr errors when retreiving items on a watchlist. Feature: added generic json deserializer to safely handle errors",
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.3.6.10.zip"
