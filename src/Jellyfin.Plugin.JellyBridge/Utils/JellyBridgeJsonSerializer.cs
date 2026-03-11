@@ -32,7 +32,7 @@ public class SafeObjectConverterFactory : JsonConverterFactory
     public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
     {
         var converterType = typeof(SafeObjectConverter<>).MakeGenericType(type);
-        return (JsonConverter)Activator.CreateInstance(converterType, options)!;
+        return (JsonConverter)Activator.CreateInstance(converterType)!;
     }
 }
 
