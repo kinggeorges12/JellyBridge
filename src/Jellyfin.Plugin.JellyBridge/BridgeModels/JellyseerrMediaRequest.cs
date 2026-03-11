@@ -18,7 +18,7 @@ public class JellyseerrMediaRequest : MediaRequest
     /// </summary>
     [JsonPropertyName("type")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public new MediaType Type { get; set; }
+    public new JellyseerrModel.MediaType Type { get; set; }
 
     /// <summary>
     /// Media as Media object ignored in json output - override to use JellyseerrMedia
@@ -43,8 +43,8 @@ public class JellyseerrMediaRequest : MediaRequest
         // Compare media types first
         var jellyfinType = jellyfinItem switch
         {
-            JellyfinMovie => MediaType.MOVIE,
-            JellyfinSeries => MediaType.TV,
+            JellyfinMovie => JellyseerrModel.MediaType.MOVIE,
+            JellyfinSeries => JellyseerrModel.MediaType.TV,
             _ => throw new NotSupportedException($"Unsupported item type: {jellyfinItem.GetType().Name}")
         };
         if (Type != jellyfinType)
