@@ -44,7 +44,7 @@ public class JellyseerrMedia : Media
     [JsonIgnore]
     public new string Watchlists { get; set; } = string.Empty;
     [JsonPropertyName("watchlists")]
-    public List<Watchlist> WatchlistsList { get; set; } = new();
+    public List<JellyseerrWatchlist> WatchlistsList { get; set; } = new();
 
     /// <summary>
     /// Service ID as nullable number (TypeScript: serviceId?: number | null)
