@@ -10,6 +10,6 @@ public class JellyseerrWatchlist : Watchlist
     /// </summary>
     [JsonPropertyName("mediaType")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public new MediaType MediaType { get; set; }
+    public new JellyseerrModel.MediaType MediaType { get; set; }
 }
 
