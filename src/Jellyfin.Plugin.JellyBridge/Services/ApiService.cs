@@ -579,7 +579,7 @@ public class ApiService
                     // Deserialize paginated response using the response type from endpoint config
                     var responseType = endpointConfig.ResponseModel;
                     _logger.LogTrace("Deserializing {Operation} response as type: {ResponseType}", operationName, responseType.Name);
-                    var pageResponse = JsonSerializer.Deserialize(content, responseType);
+                    var pageResponse = JellyBridgeJsonSerializer.Deserialize(content, responseType);
                     if (pageResponse == null) 
                     {
                         _logger.LogWarning("Failed to deserialize {Operation} response - got null", operationName);
@@ -652,7 +652,7 @@ public class ApiService
                 
                 // Deserialize using the response type from endpoint config
                 var responseType = endpointConfig.ResponseModel;
-                var response = JsonSerializer.Deserialize(content, responseType);
+                var response = JellyBridgeJsonSerializer.Deserialize(content, responseType);
                 _logger.LogDebug("Successfully deserialized response for {Operation}", operationName);
                 return response ?? GetDefaultReturnValueForEndpoint(endpoint);
             }
@@ -795,7 +795,7 @@ public class ApiService
         // HttpRequestException from MakeApiRequestAsync will cascade with status code preserved
         var statusContent = await MakeApiRequestAsync(statusRequest, testConfig);
         
-        var status = JsonSerializer.Deserialize<SystemStatus>(statusContent);
+        var status = JellyBridgeJsonSerializer.Deserialize<SystemStatus>(statusContent);
         if (status == null || string.IsNullOrEmpty(status.Version))
         {
             var exception = new HttpRequestException($"Jellyseerr API returned empty response: {statusRequest.RequestUri}");
@@ -811,7 +811,7 @@ public class ApiService
         // HttpRequestException from MakeApiRequestAsync will cascade with status code preserved (e.g., 401)
         var authContent = await MakeApiRequestAsync(authRequest, testConfig);
         
-        var userInfo = JsonSerializer.Deserialize<JellyseerrUser>(authContent);
+        var userInfo = JellyBridgeJsonSerializer.Deserialize<JellyseerrUser>(authContent);
         if (userInfo == null || userInfo.Id == 0)
         {
             var exception = new HttpRequestException($"Jellyseerr API returned empty response: {authRequest.RequestUri}");
