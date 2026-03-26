@@ -110,7 +110,10 @@ public class PlaceholderVideoGenerator
             // Create cached placeholder videos in the configured or system temp path
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var cachePath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
+
+            // Include _custom in cache filename when a custom asset is active to prevent stale cache
+            var customSuffix = GetCustomAssetPath(assetName) != null ? "_custom" : string.Empty;
+            var cachePath = Path.Combine(_placeholderPath, $"{assetStem}{customSuffix}_{videoDuration}{AssetExtension}");
 
             // Get or create a semaphore for this specific cache path to serialize generation
             var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
@@ -305,6 +308,70 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
+    /// Returns the full path to a custom placeholder asset if one is configured and exists on disk.
+    /// Maps asset names to config properties: movie.png -> CustomMoviePlaceholderFileName,
+    /// S00E9999.png/show.png -> CustomShowPlaceholderFileName.
+    /// Returns null if no custom asset is configured or the file doesn't exist (fallback to embedded).
+    /// </summary>
+    /// <param name="assetName">The asset filename (e.g., "movie.png", "S00E9999.png")</param>
+    /// <returns>Full path to the custom asset file, or null if not available</returns>
+    private string? GetCustomAssetPath(string assetName)
+    {
+        try
+        {
+            var config = Plugin.GetConfiguration();
+            string customFileName;
+
+            // Map asset name to the appropriate config property
+            if (string.Equals(assetName, MovieAsset, StringComparison.OrdinalIgnoreCase))
+            {
+                customFileName = config.CustomMoviePlaceholderFileName;
+            }
+            else if (string.Equals(assetName, SeasonAsset, StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(assetName, ShowAsset, StringComparison.OrdinalIgnoreCase))
+            {
+                customFileName = config.CustomShowPlaceholderFileName;
+            }
+            else
+            {
+                _logger.LogDebug("No custom asset mapping for asset: {AssetName}", assetName);
+                return null;
+            }
+
+            // If no custom file is configured, fall back to embedded
+            if (string.IsNullOrWhiteSpace(customFileName))
+            {
+                _logger.LogTrace("No custom placeholder configured for {AssetName}", assetName);
+                return null;
+            }
+
+            // Build the full path in the custom-assets subfolder
+            var dataFolderPath = Plugin.Instance?.DataFolderPath;
+            if (string.IsNullOrEmpty(dataFolderPath))
+            {
+                _logger.LogDebug("Plugin DataFolderPath is not available");
+                return null;
+            }
+
+            var customAssetPath = Path.Combine(dataFolderPath, "custom-assets", customFileName);
+
+            if (!File.Exists(customAssetPath))
+            {
+                _logger.LogDebug("Custom placeholder file does not exist on disk: {CustomAssetPath}", customAssetPath);
+                return null;
+            }
+
+            _logger.LogDebug("Using custom placeholder asset for {AssetName}: {CustomAssetPath}", assetName, customAssetPath);
+            return customAssetPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resolving custom asset path for {AssetName}", assetName);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Generate a placeholder video from an asset image using FFmpeg.
     /// </summary>
     /// <param name="assetName">The asset filename (e.g., "movie.png")</param>
@@ -314,8 +381,17 @@ public class PlaceholderVideoGenerator
     {
         try
         {
-            var assetPath = await EnsureAssetExtractedAsync(assetName);
-            
+            // Check for a custom placeholder asset first; fall back to embedded extraction
+            var assetPath = GetCustomAssetPath(assetName);
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                _logger.LogDebug("Using custom asset for {AssetName}: {AssetPath}", assetName, assetPath);
+            }
+            else
+            {
+                assetPath = await EnsureAssetExtractedAsync(assetName);
+            }
+
             if (string.IsNullOrEmpty(assetPath))
             {
                 _logger.LogError("Asset file not found: {AssetName}", assetName);
