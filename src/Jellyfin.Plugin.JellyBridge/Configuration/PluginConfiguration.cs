@@ -237,6 +237,18 @@ public class PluginConfiguration : BasePluginConfiguration
     public string JellyBridgeTempDirectory { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the file name of the custom movie placeholder image (stored in plugin data folder).
+    /// Empty string means use the built-in asset.
+    /// </summary>
+    public string CustomMoviePlaceholderFileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the file name of the custom show placeholder image (stored in plugin data folder).
+    /// Empty string means use the built-in asset.
+    /// </summary>
+    public string CustomShowPlaceholderFileName { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets whether to enable debug logging.
     /// </summary>
     public bool? EnableDebugLogging { get; set; }
