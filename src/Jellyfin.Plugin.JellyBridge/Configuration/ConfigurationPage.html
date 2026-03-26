@@ -856,6 +856,38 @@
                             <div class="fieldDescription">Length of generated placeholder videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>
                         </div>
 
+                        <h3 style="margin-top: 20px;">Custom Placeholders</h3>
+                        <div class="fieldDescription">Upload a custom image (PNG/JPG) to replace the default placeholder image. The image will be converted to a video using the duration setting above.</div>
+                        <div class="fieldDescription">Changes take effect after the next sync. The sync may take some time to regenerate all placeholder videos.</div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="customMoviePlaceholderFile">Custom Movie Placeholder</label>
+                            <input type="file" id="customMoviePlaceholderFile" accept=".png,.jpg,.jpeg" class="emby-input" style="padding: 8px;" />
+                            <div id="moviePlaceholderStatus" class="fieldDescription" style="margin-top: 5px;">Using default</div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button is="emby-button" type="button" id="btnUploadMoviePlaceholder" class="raised button block emby-button">
+                                    <span>Upload Movie Placeholder</span>
+                                </button>
+                                <button is="emby-button" type="button" id="btnRemoveMoviePlaceholder" class="raised button block emby-button" style="display: none;">
+                                    <span>Remove Movie Placeholder</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="customShowPlaceholderFile">Custom Show Placeholder</label>
+                            <input type="file" id="customShowPlaceholderFile" accept=".png,.jpg,.jpeg" class="emby-input" style="padding: 8px;" />
+                            <div id="showPlaceholderStatus" class="fieldDescription" style="margin-top: 5px;">Using default</div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button is="emby-button" type="button" id="btnUploadShowPlaceholder" class="raised button block emby-button">
+                                    <span>Upload Show Placeholder</span>
+                                </button>
+                                <button is="emby-button" type="button" id="btnRemoveShowPlaceholder" class="raised button block emby-button" style="display: none;">
+                                    <span>Remove Show Placeholder</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="inputContainer">
                             <input id="JellyBridgeTempDirectory" type="text" is="emby-input" label="Temp Directory"/>
                             <div class="fieldDescription">Directory for temporary files during placeholder video generation. Defaults to the system temp folder. Useful if you have limited space in your temp directory.</div>
