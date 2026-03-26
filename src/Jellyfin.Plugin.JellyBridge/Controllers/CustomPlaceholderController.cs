@@ -216,7 +216,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
 
             var filePath = Path.Combine(customAssetsDir, fileName);
-            if (File.Exists(filePath))
+            if (System.IO.File.Exists(filePath))
             {
                 var fileInfo = new FileInfo(filePath);
                 return new { hasCustom = true, fileName = fileName, fileSize = (long?)fileInfo.Length };
@@ -241,9 +241,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             foreach (var ext in AllowedExtensions)
             {
                 var filePath = Path.Combine(customAssetsDir, prefix + ext);
-                if (File.Exists(filePath))
+                if (System.IO.File.Exists(filePath))
                 {
-                    File.Delete(filePath);
+                    System.IO.File.Delete(filePath);
                     _logger.LogDebug("Deleted existing custom asset: {FilePath}", filePath);
                 }
             }
@@ -276,7 +276,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var files = Directory.GetFiles(placeholderPath, pattern + ".mp4");
                     foreach (var file in files)
                     {
-                        File.Delete(file);
+                        System.IO.File.Delete(file);
                         _logger.LogDebug("Invalidated cached placeholder: {File}", file);
                     }
                 }
