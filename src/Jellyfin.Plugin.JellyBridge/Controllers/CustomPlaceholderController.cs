@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
@@ -11,14 +10,16 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     public class CustomPlaceholderController : ControllerBase
     {
         private readonly DebugLogger<CustomPlaceholderController> _logger;
+        private readonly Services.PlaceholderVideoGenerator _placeholderVideoGenerator;
 
         private static readonly string CustomAssetsFolder = "custom-assets";
         private static readonly string[] AllowedExtensions = { ".png", ".jpg", ".jpeg" };
         private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB
 
-        public CustomPlaceholderController(ILoggerFactory loggerFactory)
+        public CustomPlaceholderController(ILoggerFactory loggerFactory, Services.PlaceholderVideoGenerator placeholderVideoGenerator)
         {
             _logger = new DebugLogger<CustomPlaceholderController>(loggerFactory.CreateLogger<CustomPlaceholderController>());
+            _placeholderVideoGenerator = placeholderVideoGenerator;
         }
 
         /// <summary>
@@ -34,7 +35,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// Upload a custom placeholder image (PNG/JPG) for movies or shows.
         /// </summary>
         [HttpPost("CustomPlaceholder/Upload")]
-        public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string type)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromQuery] string type)
         {
             _logger.LogInformation("Custom placeholder upload requested for type: {Type}", type);
 
@@ -93,16 +95,16 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
                 Plugin.Instance.UpdateConfiguration(config);
 
-                // Invalidate cached placeholders
-                InvalidateCache(type);
+                // Invalidate cache and refresh all existing placeholders in the library
+                var refreshed = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync(type);
 
-                _logger.LogInformation("Custom placeholder uploaded successfully: {FileName} for type {Type}", targetFileName, type);
+                _logger.LogInformation("Custom placeholder uploaded successfully: {FileName} for type {Type}, refreshed {Refreshed} existing items", targetFileName, type, refreshed);
 
                 return Ok(new
                 {
                     success = true,
-                    message = $"Custom {type} placeholder uploaded successfully.",
-                    details = new { fileName = targetFileName, size = file.Length }
+                    message = $"Custom {type} placeholder uploaded successfully. {refreshed} existing item(s) updated.",
+                    details = new { fileName = targetFileName, size = file.Length, refreshedCount = refreshed }
                 });
             }
             catch (Exception ex)
@@ -121,7 +123,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// Delete a custom placeholder image for movies or shows.
         /// </summary>
         [HttpDelete("CustomPlaceholder/Delete")]
-        public IActionResult Delete([FromQuery] string type)
+        public async Task<IActionResult> Delete([FromQuery] string type)
         {
             _logger.LogInformation("Custom placeholder delete requested for type: {Type}", type);
 
@@ -150,15 +152,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
                 Plugin.Instance.UpdateConfiguration(config);
 
-                // Invalidate cached placeholders
-                InvalidateCache(type);
+                // Invalidate cache and refresh all existing placeholders back to default
+                var refreshed = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync(type);
 
-                _logger.LogInformation("Custom placeholder deleted successfully for type {Type}", type);
+                _logger.LogInformation("Custom placeholder deleted successfully for type {Type}, refreshed {Refreshed} existing items back to default", type, refreshed);
 
                 return Ok(new
                 {
                     success = true,
-                    message = $"Custom {type} placeholder removed. Default placeholder will be used."
+                    message = $"Custom {type} placeholder removed. {refreshed} existing item(s) reverted to default."
                 });
             }
             catch (Exception ex)
@@ -249,42 +251,5 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             }
         }
 
-        /// <summary>
-        /// Invalidates cached placeholder videos for the given type.
-        /// Deletes matching cached files so they regenerate on next sync.
-        /// </summary>
-        private void InvalidateCache(string type)
-        {
-            try
-            {
-                var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
-                var placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
-
-                if (!Directory.Exists(placeholderPath))
-                {
-                    return;
-                }
-
-                // Movie type: invalidate movie_*.mp4
-                // Show type: invalidate S00E9999_*.mp4 (season asset used for shows)
-                var patterns = type == "movie"
-                    ? new[] { "movie_*" }
-                    : new[] { "S00E9999_*" };
-
-                foreach (var pattern in patterns)
-                {
-                    var files = Directory.GetFiles(placeholderPath, pattern + ".mp4");
-                    foreach (var file in files)
-                    {
-                        System.IO.File.Delete(file);
-                        _logger.LogDebug("Invalidated cached placeholder: {File}", file);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to invalidate placeholder cache for type {Type}", type);
-            }
-        }
     }
 }

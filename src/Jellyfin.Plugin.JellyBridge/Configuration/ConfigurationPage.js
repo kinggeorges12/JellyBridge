@@ -1408,14 +1408,25 @@ function uploadCustomPlaceholder(page, type) {
     var formData = new FormData();
     formData.append('file', fileInput.files[0]);
 
+    // Using fetch instead of ApiClient.ajax because ApiClient.ajax passes non-string data
+    // through paramsToString(), which destroys FormData file content. fetch lets the browser
+    // set the correct multipart/form-data Content-Type with boundary automatically.
+    var uploadUrl = ApiClient.getUrl('JellyBridge/CustomPlaceholder/Upload', { type: type });
+
     Dashboard.showLoadingMsg();
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyBridge/CustomPlaceholder/Upload', { type: type }),
-        type: 'POST',
-        data: formData,
-        contentType: false,
-        processData: false,
-        dataType: 'json'
+    fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Authorization': 'MediaBrowser Token="' + ApiClient.accessToken() + '"'
+        }
+    }).then(function(response) {
+        return response.json().then(function(result) {
+            if (!response.ok) {
+                throw new Error(result?.message || 'Upload failed with status ' + response.status);
+            }
+            return result;
+        });
     }).then(function(result) {
         Dashboard.hideLoadingMsg();
         Dashboard.alert(result?.message || 'Custom placeholder uploaded successfully.');
@@ -1423,7 +1434,7 @@ function uploadCustomPlaceholder(page, type) {
         loadCustomPlaceholderStatus(page);
     }).catch(function(error) {
         Dashboard.hideLoadingMsg();
-        Dashboard.alert('❌ Upload failed: ' + (error?.message || 'Unknown error'));
+        Dashboard.alert('Upload failed: ' + (error?.message || 'Unknown error'));
     });
 }
 

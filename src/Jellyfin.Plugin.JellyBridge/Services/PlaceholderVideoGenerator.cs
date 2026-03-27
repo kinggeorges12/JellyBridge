@@ -415,7 +415,9 @@ public class PlaceholderVideoGenerator
             }
 
             // Build FFmpeg command
-            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
+            // Scale down to 1920x1080 max (only if larger), preserve aspect ratio, ensure even dimensions for yuv420p
+            var vf = "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p";
+            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"{vf}\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
             _logger.LogTrace("Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
@@ -518,6 +520,114 @@ public class PlaceholderVideoGenerator
                     _logger.LogWarning(ex, "Failed to delete extra placeholder: {File}", file);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Refreshes all existing placeholder videos in the library for the given type.
+    /// Invalidates the cache, regenerates the cached placeholder, and re-copies to all
+    /// library folders that already have a placeholder of that type.
+    /// </summary>
+    /// <param name="type">"movie" or "show"</param>
+    /// <returns>Number of placeholders refreshed</returns>
+    public async Task<int> RefreshAllPlaceholdersAsync(string type)
+    {
+        var refreshedCount = 0;
+
+        try
+        {
+            // 1. Delete old cached placeholder files for this type
+            InvalidateCachedFiles(type);
+
+            // 2. Determine which placeholder filename to search for
+            var targetFileName = type == "movie"
+                ? Path.GetFileNameWithoutExtension(MovieAsset) + AssetExtension   // movie.mp4
+                : Path.GetFileNameWithoutExtension(SeasonAsset) + AssetExtension; // S00E9999.mp4
+
+            var assetName = type == "movie" ? MovieAsset : SeasonAsset;
+
+            // 3. Scan the library for existing placeholder files
+            var libraryRoot = FolderUtils.GetBaseDirectory();
+            if (string.IsNullOrEmpty(libraryRoot) || !Directory.Exists(libraryRoot))
+            {
+                _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
+                return 0;
+            }
+
+            var existingFiles = Directory.GetFiles(libraryRoot, targetFileName, SearchOption.AllDirectories);
+            if (existingFiles.Length == 0)
+            {
+                _logger.LogDebug("No existing {Type} placeholders found in library to refresh", type);
+                return 0;
+            }
+
+            _logger.LogInformation("Refreshing {Count} existing {Type} placeholder(s) in library", existingFiles.Length, type);
+
+            // 4. Regenerate the cached placeholder (with new custom asset or default)
+            var cachedPath = await EnsureCachedPlaceholderAsync(assetName);
+            if (string.IsNullOrEmpty(cachedPath))
+            {
+                _logger.LogError("Failed to generate new cached placeholder for {Type}, cannot refresh library", type);
+                return 0;
+            }
+
+            // 5. Re-copy to all existing locations
+            foreach (var existingFile in existingFiles)
+            {
+                try
+                {
+                    File.Copy(cachedPath, existingFile, overwrite: true);
+                    refreshedCount++;
+                    _logger.LogTrace("Refreshed placeholder: {File}", existingFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to refresh placeholder: {File}", existingFile);
+                }
+            }
+
+            _logger.LogInformation("Refreshed {Count}/{Total} {Type} placeholders in library",
+                refreshedCount, existingFiles.Length, type);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing placeholders for type {Type}", type);
+        }
+
+        return refreshedCount;
+    }
+
+    /// <summary>
+    /// Invalidates cached placeholder files for the given type by deleting them from the cache directory.
+    /// </summary>
+    private void InvalidateCachedFiles(string type)
+    {
+        try
+        {
+            if (!Directory.Exists(_placeholderPath))
+            {
+                return;
+            }
+
+            // Movie type: invalidate movie_*.mp4
+            // Show type: invalidate S00E9999_*.mp4 (season asset used for shows)
+            var patterns = type == "movie"
+                ? new[] { "movie_*" }
+                : new[] { "S00E9999_*" };
+
+            foreach (var pattern in patterns)
+            {
+                var files = Directory.GetFiles(_placeholderPath, pattern + AssetExtension);
+                foreach (var file in files)
+                {
+                    File.Delete(file);
+                    _logger.LogDebug("Invalidated cached placeholder: {File}", file);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invalidate placeholder cache for type {Type}", type);
         }
     }
 
