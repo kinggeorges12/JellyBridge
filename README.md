@@ -103,14 +103,14 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 
 ## 🛠️ Configuration
 
-Access the plugin configuration from the host machine at: `http://localhost:8096/web/#/configurationpage?name=JellyBridge`
+Access the configuration using the plugin page on the host machine at: `http://localhost:8096/web/#/configurationpage?name=JellyBridge`
 
 ### Usage
 
 The plugin includes a modern, responsive web interface for configuration. Follow these steps to get started:
 
-1. **Configure the plugin** through the web interface with your Jellyseerr credentials and directory paths
-2. **Create discover library** in Jellyfin with the options suggested on the plugin configuration page
+1. **Configure the plugin** through the plugin page with your Jellyseerr credentials and directory paths
+2. **Create discover library** in Jellyfin by following steps for one-time setup, just click on the (?) Setup button
 3. **Test the connection** to ensure Jellyseerr is accessible
 4. **Import discover content** to browse movies and series from Jellyseerr
 5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads
@@ -129,7 +129,7 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Sync Interval (hours)**: How often the plugin automatically syncs content
 - **Test Connection with Jellyseerr**: Verifies that the plugin can successfully connect to your Jellyseerr instance
 - **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time
-- **Library Setup Instructions**: Click the "Setup" button (?) next to the automated task checkbox to view library setup instructions and troubleshooting.
+- **Library Setup Instructions**: Click the "(?) Setup" button next to the automated task checkbox to view library setup instructions and troubleshooting.
 
 ### 🔍 Import Discover Content
 
