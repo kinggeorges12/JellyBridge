@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <JellyfinVersion>10.10.7</JellyfinVersion>
+    <JellyfinVersion>10.11.9</JellyfinVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>2.4.0.10</AssemblyVersion>
-    <FileVersion>2.4.0.10</FileVersion>
+    <AssemblyVersion>2.4.0.11</AssemblyVersion>
+    <FileVersion>2.4.0.11</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->
   <PropertyGroup>
     <NormalizedJellyfinVersion Condition="$(JellyfinVersion.StartsWith('10.10'))">10.10.7</NormalizedJellyfinVersion>
-    <NormalizedJellyfinVersion Condition="$(JellyfinVersion.StartsWith('10.11'))">10.11.0</NormalizedJellyfinVersion>
+    <NormalizedJellyfinVersion Condition="$(JellyfinVersion.StartsWith('10.11'))">$(JellyfinVersion)</NormalizedJellyfinVersion>
     <NormalizedJellyfinVersion Condition="'$(NormalizedJellyfinVersion)' == ''">$(JellyfinVersion)</NormalizedJellyfinVersion>
   </PropertyGroup>
 
@@ -53,11 +53,11 @@
 
   <!-- Microsoft.Extensions packages for .NET 9.0 -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
   </ItemGroup>
 
 
