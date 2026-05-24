@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Services;
 using MediaBrowser.Model.Tasks;
@@ -13,16 +14,16 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 public class StartupTask : IScheduledTask
 {
     private readonly DebugLogger<StartupTask> _logger;
-    private readonly SyncService _syncService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ITaskManager _taskManager;
 
     public StartupTask(
         ILogger<StartupTask> logger,
-        SyncService syncService,
+        IServiceScopeFactory scopeFactory,
         ITaskManager taskManager)
     {
         _logger = new DebugLogger<StartupTask>(logger);
-        _syncService = syncService;
+        _scopeFactory = scopeFactory;
         _taskManager = taskManager;
     }
 
@@ -36,7 +37,10 @@ public class StartupTask : IScheduledTask
         try
         {
             _logger.LogInformation("Starting startup task execution");
-            
+
+            using var scope = _scopeFactory.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<SyncService>();
+
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync));
             var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             var isSyncEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
