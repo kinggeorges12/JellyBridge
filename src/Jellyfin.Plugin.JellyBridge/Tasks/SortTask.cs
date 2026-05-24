@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Services;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
@@ -15,17 +16,14 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 public class SortTask : IScheduledTask
 {
     private readonly DebugLogger<SortTask> _logger;
-    private readonly SortService _sortService;
-    private readonly LibraryService _libraryService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public SortTask(
         ILogger<SortTask> logger,
-        SortService sortService,
-        LibraryService libraryService)
+        IServiceScopeFactory scopeFactory)
     {
         _logger = new DebugLogger<SortTask>(logger);
-        _sortService = sortService;
-        _libraryService = libraryService;
+        _scopeFactory = scopeFactory;
         _logger.LogInformation("SortTask constructor called - task initialized");
     }
 
@@ -39,21 +37,25 @@ public class SortTask : IScheduledTask
         try
         {
             _logger.LogInformation("Starting sort task");
-            
+
+            using var scope = _scopeFactory.CreateScope();
+            var sortService = scope.ServiceProvider.GetRequiredService<SortService>();
+            var libraryService = scope.ServiceProvider.GetRequiredService<LibraryService>();
+
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<object?>(async () =>
             {
                 progress.Report(10);
-                
+
                 // Sort discover library by updating play counts for all users
-                var sortResult = await _sortService.SortJellyBridge();
-                
+                var sortResult = await sortService.SortJellyBridge();
+
                 progress.Report(50);
-                
+
                 // Refresh library to reload user data (play counts) if refresh is needed
                 if (sortResult.Refresh != null)
                 {
-                    await _libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
+                    await libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
                 }
                 
                 progress.Report(100);
