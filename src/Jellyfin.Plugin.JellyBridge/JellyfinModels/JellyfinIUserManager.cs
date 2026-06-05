@@ -17,7 +17,8 @@ public class JellyfinIUserManager : WrapperBase<IUserManager>
     /// </summary>
     public IEnumerable<JellyfinUser> GetAllUsers()
     {
-        return Inner.Users.Select(user => new JellyfinUser((dynamic)user));
+        var users = Inner.GetUsers();
+        return users.Select(user => new JellyfinUser((dynamic)user));
     }
 
     /// <summary>
