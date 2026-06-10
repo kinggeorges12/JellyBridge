@@ -7,8 +7,8 @@ param(
     
     [string]$Branch = "feature",
     
-    [ValidateSet("major", "minor", "patch")]
-    [string]$ReleaseType = "patch"
+    [ValidateSet("major", "minor")]
+    [string]$ReleaseType = "minor"
 )
 
 # Check PowerShell version - require PowerShell 7 or greater
@@ -67,33 +67,26 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
                     Version = $_
                     Major = [int]$parts[0]
                     Minor = [int]$parts[1]
-                    Patch = [int]$parts[2]
                 }
-            } | Sort-Object -Property Major, Minor, Patch -Descending
+            } | Sort-Object -Property Major, Minor -Descending
             
             $latest = $sortedVersions[0]
             
             # Increment version based on release type
             $major = $latest.Major
             $minor = $latest.Minor
-            $patch = $latest.Patch
             
             switch ($ReleaseType) {
                 "major" {
                     $major++
                     $minor = 0
-                    $patch = 0
                 }
                 "minor" {
                     $minor++
-                    $patch = 0
-                }
-                "patch" {
-                    $patch++
                 }
             }
             
-            $latestVersion = "$major.$minor.$patch"
+            $latestVersion = "$major.$minor"
             Write-Host "[~] Latest release found: $($latest.Version), incrementing $ReleaseType -> $latestVersion" -ForegroundColor Green
         }
     } else {
@@ -107,8 +100,8 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 $Version = $Version.ToString()
 
 # Validate version format (should be like 0.69.0)
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-    Write-Error '[X] Version must be in format X.Y.Z (e.g., 1.2.3)'
+if ($Version -notmatch '^\d+\.\d+$') {
+    Write-Error '[X] Version must be in format X.Y (e.g., 1.2)'
     exit 1
 }
 
@@ -149,8 +142,9 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
-    @{ JellyfinVersion = "10.11.0"; SubVersion = "11"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
-    @{ JellyfinVersion = "10.10.7"; SubVersion = "10"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
+    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
 )
 
 $createdZips = @()
@@ -185,10 +179,11 @@ foreach ($t in $targets) {
         "--warnaserror",
         "-p:JellyfinVersion=$jf"
     )
+    dotnet clean src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj | Out-Null
     $buildOutput = dotnet @buildArgs 2>&1
     Write-Host "Build output: $buildOutput" -ForegroundColor DarkGray
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "[X] Build failed for Jellyfin $jf"
+        Write-Error "[X] Build failed (Code=$LASTEXITCODE) for Jellyfin $jf"
         exit 1
     }
     Write-Host "[~] Build successful for $jf" -ForegroundColor Green
