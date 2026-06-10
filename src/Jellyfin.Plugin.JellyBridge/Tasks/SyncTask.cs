@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Controllers;
 using Jellyfin.Plugin.JellyBridge.Services;
@@ -16,24 +17,18 @@ namespace Jellyfin.Plugin.JellyBridge.Tasks;
 public class SyncTask : IScheduledTask
 {
     private readonly DebugLogger<SyncTask> _logger;
-    private readonly SyncService _syncService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ITaskManager _taskManager;
-    private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
-    private readonly CleanupService _cleanupService;
 
 
     public SyncTask(
         ILogger<SyncTask> logger,
-        SyncService syncService,
-        ITaskManager taskManager,
-        PlaceholderVideoGenerator placeholderVideoGenerator,
-        CleanupService cleanupService)
+        IServiceScopeFactory scopeFactory,
+        ITaskManager taskManager)
     {
         _logger = new DebugLogger<SyncTask>(logger);
-        _syncService = syncService;
+        _scopeFactory = scopeFactory;
         _taskManager = taskManager;
-        _placeholderVideoGenerator = placeholderVideoGenerator;
-        _cleanupService = cleanupService;
         _logger.LogInformation("SyncTask constructor called - task initialized");
     }
 
@@ -47,23 +42,29 @@ public class SyncTask : IScheduledTask
         try
         {
             _logger.LogInformation("Starting interval sync task");
-            
+
+            // Create a fresh DI scope for this execution so services are not
+            // affected by scope disposal in Jellyfin 10.11.5+ (ObjectDisposedException fix)
+            using var scope = _scopeFactory.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<SyncService>();
+            var cleanupService = scope.ServiceProvider.GetRequiredService<CleanupService>();
+
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<(CleanupResult?, SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
             {
                 CleanupResult? cleanupResult = null;
                 SyncJellyseerrResult? syncFromResult = null;
                 SyncJellyfinResult? syncToResult = null;
-                
+
                 // Initial report to indicate the task has started
                 progress.Report(10);
 
                 // Step 1: Sync discover from Jellyseerr
                 _logger.LogDebug("Step 1: Syncing discover from Jellyseerr...");
-                
+
                 try
                 {
-                    syncFromResult = await _syncService.SyncFromJellyseerr();
+                    syncFromResult = await syncService.SyncFromJellyseerr();
                 }
                 catch (Exception ex)
                 {
@@ -77,13 +78,13 @@ public class SyncTask : IScheduledTask
                 } finally {
                     progress.Report(40);
                 }
-                
+
                 // Step 2: Sync favorites to Jellyseerr
                 _logger.LogDebug("Step 2: Syncing favorites to Jellyseerr...");
-                
+
                 try
                 {
-                    syncToResult = await _syncService.SyncToJellyseerr();
+                    syncToResult = await syncService.SyncToJellyseerr();
                 }
                 catch (Exception ex)
                 {
@@ -95,40 +96,34 @@ public class SyncTask : IScheduledTask
                         Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}"
                     };
                 } finally {
-                    progress.Report(90);
+                    progress.Report(70);
                 }
-                
+
                 // Step 3: Cleanup metadata after sync operations
                 _logger.LogDebug("Step 3: Cleaning up metadata...");
-                
+
                 try
                 {
-                    cleanupResult = await _cleanupService.CleanupMetadataAsync();
+                    cleanupResult = await cleanupService.CleanupMetadataAsync();
                     _logger.LogDebug("Step 3: Cleanup completed successfully");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error during metadata cleanup");
-                    // Continue with sync operations even if cleanup fails
                 }
                 finally
                 {
                     progress.Report(90);
                 }
 
-                // Show results of sync operations in logs for debugging
+                // Show results and apply refresh
                 try {
                     if (syncToResult != null)
-                    {
                         _logger.LogInformation("Sync to Jellyseerr result: {Result}", syncToResult.ToString());
-                    }
                     if (syncFromResult != null)
-                    {
                         _logger.LogInformation("Sync from Jellyseerr result: {Result}", syncFromResult.ToString());
-                    }
 
-                    // Apply refresh operations after both syncs are complete
-                    await _syncService.ApplyRefreshAsync(syncToResult, syncFromResult, cleanupResult);
+                    await syncService.ApplyRefreshAsync(syncToResult, syncFromResult, cleanupResult);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error applying refresh operations");
                 } finally {
