@@ -197,7 +197,13 @@ The plugin provides a comprehensive web-based configuration interface with the f
 
 ## 📣 Release Notes
 
-### Version 2.3 🆕
+### Version 3.0 🆕
+
+- Fixed compatibility bug causing crashes with Jellyfin 10.11.9 and later.
+- Bugs listed in [PR #31](https://github.com/kinggeorges12/JellyBridge/pull/31).
+- Revised the versioning schema to use the last two version numbers to indicate major and minor versions of Jellyfin, e.g., v3.0.**11.9** indicates compatibility with Jellyfin 10.**11.9** and later.
+
+### Version 2.3 ✨
 
 - Request Only First Season: Option to request only the first season of a TV series instead of the entire series. This can be enabled in the Manage Discover Library section of the plugin configuration.
 
