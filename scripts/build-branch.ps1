@@ -149,6 +149,7 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
+    #@{ JellyfinVersion = "10.11.5"; SubVersion = "11"; MinTargetAbi = "10.11.5.0"; Framework = "net9.0"; },
     @{ JellyfinVersion = "10.11.0"; SubVersion = "11"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
     @{ JellyfinVersion = "10.10.7"; SubVersion = "10"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
 )
@@ -185,10 +186,11 @@ foreach ($t in $targets) {
         "--warnaserror",
         "-p:JellyfinVersion=$jf"
     )
+    dotnet clean src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj | Out-Null
     $buildOutput = dotnet @buildArgs 2>&1
     Write-Host "Build output: $buildOutput" -ForegroundColor DarkGray
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "[X] Build failed for Jellyfin $jf"
+        Write-Error "[X] Build failed (Code=$LASTEXITCODE) for Jellyfin $jf"
         exit 1
     }
     Write-Host "[~] Build successful for $jf" -ForegroundColor Green
