@@ -14,6 +14,33 @@
         "targetAbi": "10.11.9.0",
         "version": "2.5.1.11",
         "dependencies": [],
+        "timestamp": "2026-06-10T15:35:39.954Z",
+        "checksum": "465843C6902A80A4591C3CF0AF330397"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v2.5.1 - Automated branch release",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.5.1.11.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "2.5.1.11",
+        "dependencies": [],
+        "timestamp": "2026-06-10T15:35:39.954Z",
+        "checksum": "F2230196FAAE55F0FE1975F2AC40C80F"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v2.5.1 - Automated branch release",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.5.1.10.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "2.5.1.10",
+        "dependencies": [],
+        "timestamp": "2026-06-10T15:35:39.954Z",
+        "checksum": "93DEC7C9AC5A7EF3BC58B58B0FAC2CB0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.9: v2.5.1 - Automated branch release",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-2.5.1.11.zip",
+        "targetAbi": "10.11.9.0",
+        "version": "2.5.1.11",
+        "dependencies": [],
         "timestamp": "2026-06-10T15:34:37.155Z",
         "checksum": "9CC93F839571AF9ACD9B5E40A76667E4"
       },
