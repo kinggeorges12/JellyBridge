@@ -34,8 +34,8 @@ $GitHubToken = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() 
 $Version = $Version.ToString()
 
 # Validate version format (should be like 0.69.0)
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-    Write-Error '[X] Version must be in format X.Y.Z (e.g., 1.2.3)'
+if ($Version -notmatch '^\d+\.\d+$') {
+    Write-Error '[X] Version must be in format X.Y (e.g., 1.2)'
     exit 1
 }
 
@@ -67,8 +67,9 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
-    @{ JellyfinVersion = "10.11.0"; SubVersion = "11"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
-    @{ JellyfinVersion = "10.10.7"; SubVersion = "10"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
+    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
 )
 
 $createdZips = @()
