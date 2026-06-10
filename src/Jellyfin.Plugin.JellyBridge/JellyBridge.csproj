@@ -25,8 +25,8 @@
 
   <!-- Define conditional compilation symbols based on Jellyfin version -->
   <PropertyGroup Condition="'$(JellyfinVersionFlag)' == '10.11.3'">
-    <JELLYFIN_10_11_3>true</JELLYFIN_10_11_3>
-    <DefineConstants>$(DefineConstants);JELLYFIN_10_11_3</DefineConstants>
+    <JELLYFIN_10_11_9>true</JELLYFIN_10_11_9>
+    <DefineConstants>$(DefineConstants);JELLYFIN_10_11_9</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$(JellyfinVersionFlag.StartsWith('10.11.'))">
     <JELLYFIN_10_11>true</JELLYFIN_10_11>

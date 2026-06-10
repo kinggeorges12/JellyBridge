@@ -17,7 +17,7 @@ public class JellyfinIUserManager : WrapperBase<IUserManager>
     /// </summary>
     public IEnumerable<JellyfinUser> GetAllUsers()
     {
-#if JELLYFIN_10_11_3
+#if JELLYFIN_10_11_9
         return Inner.GetUsers().Select(user => new JellyfinUser((dynamic)user));
 #else
         return Inner.Users.Select(user => new JellyfinUser((dynamic)user));
