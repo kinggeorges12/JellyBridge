@@ -149,7 +149,7 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
-    #@{ JellyfinVersion = "10.11.5"; SubVersion = "11"; MinTargetAbi = "10.11.5.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.11.9"; SubVersion = "11"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; },
     @{ JellyfinVersion = "10.11.0"; SubVersion = "11"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
     @{ JellyfinVersion = "10.10.7"; SubVersion = "10"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
 )
