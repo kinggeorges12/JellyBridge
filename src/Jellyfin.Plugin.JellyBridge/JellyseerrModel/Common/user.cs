@@ -52,7 +52,7 @@ public class User
     public UserType UserType { get; set; } = new();
 
     [JsonPropertyName("plexId")]
-    public string? PlexId { get; set; } = null!;
+    public int? PlexId { get; set; }
 
     [JsonPropertyName("jellyfinUserId")]
     public string? JellyfinUserId { get; set; } = null!;
