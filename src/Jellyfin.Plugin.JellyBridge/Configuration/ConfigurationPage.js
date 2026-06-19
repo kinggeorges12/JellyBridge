@@ -1261,6 +1261,9 @@ function initializeAdvancedSettings(page) {
             performCleanupMetadata(page);
         });
     }
+
+    // Initialize custom placeholder controls
+    initializeCustomPlaceholders(page);
 }
 
 function performCleanupMetadata(page) {
@@ -1316,6 +1319,138 @@ function performCleanupMetadata(page) {
                 cleanupButton.disabled = false;
             });
         }
+    });
+}
+
+function initializeCustomPlaceholders(page) {
+    // Load initial status
+    loadCustomPlaceholderStatus(page);
+
+    // Wire upload buttons
+    const btnUploadMovie = page.querySelector('#btnUploadMoviePlaceholder');
+    if (btnUploadMovie) {
+        btnUploadMovie.addEventListener('click', function() {
+            uploadCustomPlaceholder(page, 'movie');
+        });
+    }
+
+    const btnUploadShow = page.querySelector('#btnUploadShowPlaceholder');
+    if (btnUploadShow) {
+        btnUploadShow.addEventListener('click', function() {
+            uploadCustomPlaceholder(page, 'show');
+        });
+    }
+
+    // Wire remove buttons
+    const btnRemoveMovie = page.querySelector('#btnRemoveMoviePlaceholder');
+    if (btnRemoveMovie) {
+        btnRemoveMovie.addEventListener('click', function() {
+            deleteCustomPlaceholder(page, 'movie');
+        });
+    }
+
+    const btnRemoveShow = page.querySelector('#btnRemoveShowPlaceholder');
+    if (btnRemoveShow) {
+        btnRemoveShow.addEventListener('click', function() {
+            deleteCustomPlaceholder(page, 'show');
+        });
+    }
+}
+
+function loadCustomPlaceholderStatus(page) {
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/CustomPlaceholder/Status'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(result) {
+        // Update movie placeholder status
+        var movie = result.movie || {};
+        const movieStatusDiv = page.querySelector('#moviePlaceholderStatus');
+        const btnRemoveMovie = page.querySelector('#btnRemoveMoviePlaceholder');
+        if (movieStatusDiv) {
+            if (movie.hasCustom) {
+                var sizeKb = Math.round((movie.fileSize || 0) / 1024);
+                movieStatusDiv.textContent = 'Custom: ' + movie.fileName + ' (' + sizeKb + ' KB)';
+                if (btnRemoveMovie) btnRemoveMovie.style.display = '';
+            } else {
+                movieStatusDiv.textContent = 'Using default';
+                if (btnRemoveMovie) btnRemoveMovie.style.display = 'none';
+            }
+        }
+
+        // Update show placeholder status
+        var show = result.show || {};
+        const showStatusDiv = page.querySelector('#showPlaceholderStatus');
+        const btnRemoveShow = page.querySelector('#btnRemoveShowPlaceholder');
+        if (showStatusDiv) {
+            if (show.hasCustom) {
+                var sizeKb = Math.round((show.fileSize || 0) / 1024);
+                showStatusDiv.textContent = 'Custom: ' + show.fileName + ' (' + sizeKb + ' KB)';
+                if (btnRemoveShow) btnRemoveShow.style.display = '';
+            } else {
+                showStatusDiv.textContent = 'Using default';
+                if (btnRemoveShow) btnRemoveShow.style.display = 'none';
+            }
+        }
+    }).catch(function(error) {
+        console.warn('Failed to load custom placeholder status: ' + (error?.message || error));
+    });
+}
+
+function uploadCustomPlaceholder(page, type) {
+    const fileInputId = type === 'movie' ? 'customMoviePlaceholderFile' : 'customShowPlaceholderFile';
+    const fileInput = page.querySelector('#' + fileInputId);
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        Dashboard.alert('Please select a file to upload.');
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    // Using fetch instead of ApiClient.ajax because ApiClient.ajax passes non-string data
+    // through paramsToString(), which destroys FormData file content. fetch lets the browser
+    // set the correct multipart/form-data Content-Type with boundary automatically.
+    var uploadUrl = ApiClient.getUrl('JellyBridge/CustomPlaceholder/Upload', { type: type });
+
+    Dashboard.showLoadingMsg();
+    fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Authorization': 'MediaBrowser Token="' + ApiClient.accessToken() + '"'
+        }
+    }).then(function(response) {
+        return response.json().then(function(result) {
+            if (!response.ok) {
+                throw new Error(result?.message || 'Upload failed with status ' + response.status);
+            }
+            return result;
+        });
+    }).then(function(result) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert(result?.message || 'Custom placeholder uploaded successfully.');
+        fileInput.value = '';
+        loadCustomPlaceholderStatus(page);
+    }).catch(function(error) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert('Upload failed: ' + (error?.message || 'Unknown error'));
+    });
+}
+
+function deleteCustomPlaceholder(page, type) {
+    Dashboard.showLoadingMsg();
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/CustomPlaceholder/Delete', { type: type }),
+        type: 'DELETE',
+        dataType: 'json'
+    }).then(function(result) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert(result?.message || 'Custom placeholder removed.');
+        loadCustomPlaceholderStatus(page);
+    }).catch(function(error) {
+        Dashboard.hideLoadingMsg();
+        Dashboard.alert('❌ Delete failed: ' + (error?.message || 'Unknown error'));
     });
 }
 
