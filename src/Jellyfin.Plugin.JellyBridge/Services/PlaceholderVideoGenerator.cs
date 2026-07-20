@@ -1,14 +1,9 @@
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Collections.Concurrent;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
-using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using MediaBrowser.Controller.MediaEncoding;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -110,6 +105,8 @@ public class PlaceholderVideoGenerator
             // Create cached placeholder videos in the configured or system temp path
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
+
+            // Include _custom in cache filename when a custom asset is active to prevent stale cache
             var cachePath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
 
             // Get or create a semaphore for this specific cache path to serialize generation
@@ -312,10 +309,12 @@ public class PlaceholderVideoGenerator
     /// <returns>True if successful, false otherwise</returns>
     private async Task<bool> GeneratePlaceholderVideoAsync(string assetName, string outputPath)
     {
+        var customAssetPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomMoviePromo));
         try
         {
+            // Check for a custom placeholder asset first; fall back to embedded extraction
             var assetPath = await EnsureAssetExtractedAsync(assetName);
-            
+
             if (string.IsNullOrEmpty(assetPath))
             {
                 _logger.LogError("Asset file not found: {AssetName}", assetName);
@@ -339,7 +338,9 @@ public class PlaceholderVideoGenerator
             }
 
             // Build FFmpeg command
-            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
+            // Scale down to 1920x1080 max (only if larger), preserve aspect ratio, ensure even dimensions for yuv420p
+            var vf = "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p";
+            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"{vf}\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
             _logger.LogTrace("Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
@@ -443,6 +444,76 @@ public class PlaceholderVideoGenerator
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Refreshes all existing placeholder videos in the library for the given type.
+    /// Invalidates the cache, regenerates the cached placeholder, and re-copies to all
+    /// library folders that already have a placeholder of that type.
+    /// </summary>
+    /// <param name="type">"movie" or "show"</param>
+    /// <returns>Number of placeholders refreshed</returns>
+    public async Task<int> RefreshAllPlaceholdersAsync()
+    {
+        var refreshedCount = 0;
+
+        foreach (var assetName in new[] { MovieAsset, SeasonAsset })
+        {
+            // Determine which placeholder filename to search for
+            var targetFileName = Path.GetFileNameWithoutExtension(assetName) + AssetExtension;
+
+            try
+            {
+
+                // Scan the library for existing placeholder files
+                var libraryRoot = FolderUtils.GetBaseDirectory();
+                if (string.IsNullOrEmpty(libraryRoot) || !Directory.Exists(libraryRoot))
+                {
+                    _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
+                    return 0;
+                }
+
+                var existingFiles = Directory.GetFiles(libraryRoot, targetFileName, SearchOption.AllDirectories);
+                if (existingFiles.Length == 0)
+                {
+                    _logger.LogDebug("No existing {Type} placeholders found in library to refresh", assetName);
+                    return 0;
+                }
+
+                _logger.LogInformation("Refreshing {Count} existing {Type} placeholder(s) in library", existingFiles.Length, assetName);
+
+                // Regenerate the cached placeholder (with new custom asset or default)
+                var cachedPath = await EnsureCachedPlaceholderAsync(assetName);
+                if (string.IsNullOrEmpty(cachedPath))
+                {
+                    _logger.LogError("Failed to generate new cached placeholder for {Type}, cannot refresh library", assetName);
+                    return 0;
+                }
+
+                // Re-copy to all existing locations
+                foreach (var existingFile in existingFiles)
+                {
+                    try
+                    {
+                        File.Copy(cachedPath, existingFile, overwrite: true);
+                        refreshedCount++;
+                        _logger.LogTrace("Refreshed placeholder: {File}", existingFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to refresh placeholder: {File}", existingFile);
+                    }
+                }
+
+                _logger.LogInformation("Refreshed {Count}/{Total} {Type} placeholders in library",
+                    refreshedCount, existingFiles.Length, assetName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing placeholders for type {Type}", assetName);
+            }
+        }
+        return refreshedCount;
     }
 
     /// <summary>
