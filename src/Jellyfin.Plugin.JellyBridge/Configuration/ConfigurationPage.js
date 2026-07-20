@@ -942,9 +942,9 @@ function performCustomizePromo(page) {
                     appendToResultBox(generatePromoVideosResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('generatePromoVideosResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
+                    Dashboard.alert('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    let resultText = `\nRequest JellyBridge Library Promo Videos Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
                     
                     appendToResultBox(generatePromoVideosResult, resultText);
@@ -954,9 +954,9 @@ function performCustomizePromo(page) {
                 Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
-                appendToResultBox(syncFavoritesResult, "⏰ " + new Date().toLocaleTimeString());
+                appendToResultBox(generatePromoVideosResult, "⏰ " + new Date().toLocaleTimeString());
                 Dashboard.hideLoadingMsg();
-                syncFavoritesButton.disabled = false;
+                customizePromoButton.disabled = false;
             });
         }
     });

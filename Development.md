@@ -175,6 +175,23 @@ git clone https://github.com/jellyseerr/jellyseerr.git codebase/seerr-main
 
 ---
 
+### `convert-permissions.ps1` - Permission Enum Conversion Script
+**Purpose**: Converts the Jellyseerr permission enum from TypeScript into `Permissions.cs`.
+
+**Usage**:
+```powershell
+pwsh -File scripts/convert-permissions.ps1
+```
+
+**What it does**:
+- Reads `codebase/seerr-main/server/lib/permissions.ts`
+- Extracts the exported `Permission` enum
+- Writes `src/Jellyfin.Plugin.JellyBridge/JellyseerrModel/Server/Permissions.cs`
+
+**When to use**: When Jellyseerr updates its permission constants and the generated C# enum needs to stay in sync. Run this after convert-models
+
+---
+
 ### `build-branch.ps1` - Branch Release Script
 **Purpose**: Builds and releases the plugin for a specific branch with automatic versioning.
 

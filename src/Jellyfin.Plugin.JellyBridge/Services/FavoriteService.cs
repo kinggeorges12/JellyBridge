@@ -3,7 +3,6 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Microsoft.Extensions.Logging;
-using System.IO;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -76,6 +75,7 @@ public class FavoriteService
     public async Task<(List<(IJellyfinItem item, JellyseerrMediaRequest request)> processed, List<IJellyfinItem> blocked)> RequestFavorites(
         List<(JellyseerrUser user, IJellyfinItem item)> favoritesWithUser)
     {
+        var userPermissionRequest4k = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UserPermissionRequest4k));
         var requestResults = new List<(IJellyfinItem item, JellyseerrMediaRequest request)>();
         var blockedItems = new List<IJellyfinItem>();
         var successfullyProcessedItems = new HashSet<Guid>(); // Track items that have been successfully requested
@@ -83,12 +83,17 @@ public class FavoriteService
         // Randomize the order of tuples
         var random = new Random();
         var shuffledFavorites = favoritesWithUser
-            .Where(f => f.item != null)
             .OrderBy(_ => random.Next())
             .ToList();
 
         foreach (var (user, item) in shuffledFavorites)
         {
+            if(user == null || item == null)
+            {
+                _logger.LogWarning("Skipping null user or item in favorites list");
+                continue;
+            }
+
             // Skip if this item has already been successfully processed
             if (successfullyProcessedItems.Contains(item.Id))
             {
@@ -103,7 +108,9 @@ public class FavoriteService
                 continue;
             }
             
+            var username = user.JellyfinUsername ?? user.Username ?? "ID " + user.Id.ToString();
             var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
+            var mediaPermission4k = IJellyseerrItem.GetMediaPermission4k(item);
 
             try
             {
@@ -113,9 +120,14 @@ public class FavoriteService
                     ["mediaId"] = tmdbId.Value,
                     ["userId"] = user.Id,
                 };
+
+                if(userPermissionRequest4k)
+                {
+                    requestParams["is4k"] = PermissionHelper.HasPermission(mediaPermission4k, user?.Permissions ?? 0);
+                }
                 
                 _logger.LogTrace("Processing Jellyseerr bridge item: {ItemName} (TMDB ID: {TmdbId}) for user {UserName}", 
-                    item.Name, tmdbId.Value, user.JellyfinUsername ?? user.Username ?? "Unknown");
+                    item.Name, tmdbId.Value, username);
                 
                 var requestResult = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams);
                 var request = requestResult as JellyseerrMediaRequest;
@@ -127,13 +139,13 @@ public class FavoriteService
                     successfullyProcessedItems.Add(item.Id);
                     requestResults.Add((item, request));
                     _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
-                        item.Name, user.JellyfinUsername ?? user.Username ?? "Unknown");
+                        item.Name, username);
                 }
                 else
                 {
                     // API returned error/default object (e.g., quota exceeded, forbidden, etc.)
                     _logger.LogWarning("Failed to create request for {ItemName} on behalf of {UserName} - no valid response from Jellyseerr", 
-                        item.Name, user.JellyfinUsername ?? user.Username ?? "Unknown");
+                        item.Name, username);
                     blockedItems.Add(item);
                 }
             }
