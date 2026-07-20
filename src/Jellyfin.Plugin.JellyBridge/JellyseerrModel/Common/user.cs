@@ -46,13 +46,13 @@ public class User
     public string? ResetPasswordGuid { get; set; } = null!;
 
     [JsonPropertyName("recoveryLinkExpirationDate")]
-    public string? RecoveryLinkExpirationDate { get; set; } = null!;
+    public DateTimeOffset? RecoveryLinkExpirationDate { get; set; } = null!;
 
     [JsonPropertyName("userType")]
     public UserType UserType { get; set; } = new();
 
     [JsonPropertyName("plexId")]
-    public int? PlexId { get; set; }
+    public int? PlexId { get; set; } = null!;
 
     [JsonPropertyName("jellyfinUserId")]
     public string? JellyfinUserId { get; set; } = null!;
