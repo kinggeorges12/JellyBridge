@@ -3,11 +3,8 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using System.Text.Json;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
-using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
-using Jellyfin.Plugin.JellyBridge.Tasks;
 using MediaBrowser.Model.Tasks;
-using System.Linq;
 using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
@@ -55,6 +52,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
+                    UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RequestFirstSeason = config.RequestFirstSeason,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
@@ -66,14 +64,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     MarkMediaPlayed = config.MarkMediaPlayed,
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
 
+                    // Customize Promo Videos
+                    CustomMoviePromo = config.CustomMoviePromo,
+                    CustomShowPromo = config.CustomShowPromo,
+                    DefaultMoviePromo = config.DefaultMoviePromo,
+                    DefaultShowPromo = config.DefaultShowPromo,
+                    PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
+                    JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
+
                     // Advanced Settings
                     EnableStartupSync = config.EnableStartupSync,
                     StartupDelaySeconds = config.StartupDelaySeconds,
                     TaskTimeoutMinutes = config.TaskTimeoutMinutes,
                     RequestTimeout = config.RequestTimeout,
                     RetryAttempts = config.RetryAttempts,
-                    PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
-                    JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
                     EnableDebugLogging = config.EnableDebugLogging,
                     EnableTraceLogging = config.EnableTraceLogging,
 
@@ -136,11 +140,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
                     
+                    // Customize Promo Videos
+                    SetJsonValue<string>(configData, nameof(config.CustomMoviePromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.DefaultMoviePromo), config);
+                    SetJsonValue<string>(configData, nameof(config.CustomShowPromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.DefaultShowPromo), config);
+                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
+                    SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
+
                     // Sort Content
                     SetJsonValue<bool?>(configData, nameof(config.EnableAutomatedSortTask), config);
                     SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
@@ -153,8 +166,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.TaskTimeoutMinutes), config);
                     SetJsonValue<int?>(configData, nameof(config.RequestTimeout), config);
                     SetJsonValue<int?>(configData, nameof(config.RetryAttempts), config);
-                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
-                    SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableDebugLogging), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableTraceLogging), config);
 
