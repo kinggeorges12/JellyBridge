@@ -117,8 +117,6 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 6. **Customize promo video** play a short video when users open JellyBridge content
 7. **Sort & shuffle content** to display a variety of discover content in the discover library
 
-The plugin provides a comprehensive web-based configuration interface with the following sections:
-
 ### 🌉 Main Configuration
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
