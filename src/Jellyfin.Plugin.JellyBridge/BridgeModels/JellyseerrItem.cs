@@ -34,6 +34,21 @@ public interface IJellyseerrItem
     }
 
     /// <summary>
+    /// Get the Jellyseerr media 4k permission for an IJellyfinItem.
+    /// </summary>
+    /// <param name="item">The IJellyfinItem to get the media 4k permission for</param>
+    /// <returns>The Jellyseerr media 4k permission enum</returns>
+    static JellyseerrModel.Permission GetMediaPermission4k(IJellyfinItem item)
+    {
+        return item switch
+        {
+            JellyfinMovie => JellyseerrModel.Permission.REQUEST_4K_MOVIE,
+            JellyfinSeries => JellyseerrModel.Permission.REQUEST_4K_TV,
+            _ => throw new NotSupportedException($"Unsupported item type: {item.GetType().Name}")
+        };
+    }
+
+    /// <summary>
     /// The TMDB ID of the media item.
     /// </summary>
     [JsonIgnore]

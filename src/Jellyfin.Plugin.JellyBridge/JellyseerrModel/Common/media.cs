@@ -63,7 +63,7 @@ public class Media
     public List<MediaRequest> Requests { get; set; } = new();
 
     [JsonPropertyName("watchlists")]
-    public string Watchlists { get; set; } = string.Empty;
+    public string? Watchlists { get; set; } = null!;
 
     [JsonPropertyName("seasons")]
     public List<Season> Seasons { get; set; } = new();
@@ -87,16 +87,16 @@ public class Media
     public DateTimeOffset? MediaAddedAt { get; set; } = null!;
 
     [JsonPropertyName("serviceId")]
-    public string? ServiceId { get; set; } = null!;
+    public int? ServiceId { get; set; } = null!;
 
     [JsonPropertyName("serviceId4k")]
-    public string? ServiceId4k { get; set; } = null!;
+    public int? ServiceId4k { get; set; } = null!;
 
     [JsonPropertyName("externalServiceId")]
-    public string? ExternalServiceId { get; set; } = null!;
+    public int? ExternalServiceId { get; set; } = null!;
 
     [JsonPropertyName("externalServiceId4k")]
-    public string? ExternalServiceId4k { get; set; } = null!;
+    public int? ExternalServiceId4k { get; set; } = null!;
 
     [JsonPropertyName("externalServiceSlug")]
     public string? ExternalServiceSlug { get; set; } = null!;

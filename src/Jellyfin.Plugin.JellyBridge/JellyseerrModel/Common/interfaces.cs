@@ -450,7 +450,7 @@ public class TmdbTvEpisodeResult
     public int Id { get; set; }
 
     [JsonPropertyName("air_date")]
-    public object AirDate { get; set; } = null!;
+    public string AirDate { get; set; } = string.Empty;
 
     [JsonPropertyName("episode_number")]
     public int EpisodeNumber { get; set; }

@@ -1,14 +1,9 @@
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Collections.Concurrent;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
-using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using MediaBrowser.Controller.MediaEncoding;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -27,12 +22,11 @@ public class PlaceholderVideoGenerator
 
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
-    private readonly string _assetsPath;
+    private readonly string _assetPath;
     private readonly string _placeholderPath;
     
     // Asset file names for different media types
     private static readonly string MovieAsset = "movie.png";
-    private static readonly string ShowAsset = "show.png";
     private static readonly string SeasonAsset = "S00E9999.png";
     
     // Season folder name
@@ -45,17 +39,12 @@ public class PlaceholderVideoGenerator
     {
         _logger = new DebugLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
-
         // Get the configured temp folder, defaulting to system temp path if not set
         var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
         // Assets are embedded in the plugin assembly
-        _assetsPath = Path.Combine(jellyBridgeTempDirectory, "assets");
-        Directory.CreateDirectory(_assetsPath);
+        _assetPath = Path.Combine(jellyBridgeTempDirectory, "assets");
         _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
-        Directory.CreateDirectory(_placeholderPath);
-        
-        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
-            _mediaEncoder.EncoderPath, _assetsPath, _placeholderPath);
+        InvalidateCachedPlaceholders();
     }
 
     /// <summary>
@@ -110,6 +99,8 @@ public class PlaceholderVideoGenerator
             // Create cached placeholder videos in the configured or system temp path
             var videoDuration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PlaceholderDurationSeconds));
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
+
+            // Include _custom in cache filename when a custom asset is active to prevent stale cache
             var cachePath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
 
             // Get or create a semaphore for this specific cache path to serialize generation
@@ -247,51 +238,82 @@ public class PlaceholderVideoGenerator
     /// <returns>Path to the extracted asset file, or null if failed</returns>
     private async Task<string?> EnsureAssetExtractedAsync(string assetName)
     {
+        var assetFilepath = Path.Combine(_assetPath, assetName);
         // Get or create a semaphore for this specific asset to serialize extraction
         var semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
         
         await semaphore.WaitAsync();
         try
         {
-            var assetPath = Path.Combine(_assetsPath, assetName);
-            
             // After acquiring the lock, check if file was already created by another task
-            if (File.Exists(assetPath))
+            if (!File.Exists(assetFilepath))
             {
-                _logger.LogTrace("Asset already extracted: {AssetPath}", assetPath);
-                return assetPath;
+                // Check for custom asset configuration and file exists
+                var usingConfigDefault = false;
+                var customAssetPath = string.Empty;
+                if (assetName == MovieAsset)
+                {
+                    usingConfigDefault = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.DefaultMoviePromo));
+                    customAssetPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomMoviePromo));
+                } else if (assetName == SeasonAsset)
+                {
+                    usingConfigDefault = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.DefaultShowPromo));
+                    customAssetPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomShowPromo));
+                }
+                // Ensure custom asset is usable
+                var usingCustomAsset = true;
+                if (!usingConfigDefault)
+                {
+                    if (string.IsNullOrEmpty(customAssetPath) || !File.Exists(customAssetPath))
+                    {
+                        usingCustomAsset = false;
+                        _logger.LogWarning("Custom asset for {AssetName} is not configured or does not exist: {CustomAssetPath}", assetName, customAssetPath);
+                    }
+                }
+
+                // Build asset
+                if (usingCustomAsset)
+                {
+                    _logger.LogTrace("Using custom asset for {AssetName}: {CustomAssetPath}", assetName, customAssetPath);
+                    File.Copy(customAssetPath, assetFilepath, overwrite: true);
+                    _logger.LogTrace("Copied custom asset to {AssetPath}", assetFilepath);
+                }
+                else
+                {
+                    _logger.LogTrace("Using default asset for {AssetName}: {assetFilepath}", assetName, assetFilepath);
+                
+                    // Construct the embedded resource name programmatically
+                    // Pattern: {RootNamespace}.{FolderPath}.{FileName}
+                    // Example: Jellyfin.Plugin.JellyBridge.Assets.movie.png
+                    // Embedded resources use RootNamespace from csproj, which matches the root of the type namespace
+                    var assembly = typeof(PlaceholderVideoGenerator).Assembly;
+                    
+                    // Get root namespace from a type in the root namespace (e.g., Plugin class)
+                    var rootNamespace = typeof(Plugin).Namespace ?? throw new InvalidOperationException("Plugin.Namespace is null");
+                    
+                    // Construct resource name: RootNamespace.Assets.assetName
+                    var resourceName = $"{rootNamespace}.Assets.{assetName}";
+                    
+                    _logger.LogTrace("Looking for embedded resource: {ResourceName} (root namespace: {RootNamespace})", 
+                        resourceName, rootNamespace);
+                    
+                    using var stream = assembly.GetManifestResourceStream(resourceName);
+                    
+                    if (stream == null)
+                    {
+                        var allResources = assembly.GetManifestResourceNames();
+                        var errorMessage = $"Embedded asset not found: {assetName}. Tried: {resourceName}. Available resources: {string.Join(", ", allResources)}";
+                        throw new InvalidOperationException(errorMessage);
+                    }
+                    
+                    using var fileStream = File.Create(assetFilepath);
+                    await stream.CopyToAsync(fileStream);
+                    await fileStream.FlushAsync();
+                    
+                    _logger.LogTrace("Extracted embedded asset: {AssetPath}", assetFilepath);
+                }
             }
-            
-            // Construct the embedded resource name programmatically
-            // Pattern: {RootNamespace}.{FolderPath}.{FileName}
-            // Example: Jellyfin.Plugin.JellyBridge.Assets.movie.png
-            // Embedded resources use RootNamespace from csproj, which matches the root of the type namespace
-            var assembly = typeof(PlaceholderVideoGenerator).Assembly;
-            
-            // Get root namespace from a type in the root namespace (e.g., Plugin class)
-            var rootNamespace = typeof(Plugin).Namespace ?? throw new InvalidOperationException("Plugin.Namespace is null");
-            
-            // Construct resource name: RootNamespace.Assets.assetName
-            var resourceName = $"{rootNamespace}.Assets.{assetName}";
-            
-            _logger.LogTrace("Looking for embedded resource: {ResourceName} (root namespace: {RootNamespace})", 
-                resourceName, rootNamespace);
-            
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            
-            if (stream == null)
-            {
-                var allResources = assembly.GetManifestResourceNames();
-                var errorMessage = $"Embedded asset not found: {assetName}. Tried: {resourceName}. Available resources: {string.Join(", ", allResources)}";
-                throw new InvalidOperationException(errorMessage);
-            }
-            
-            using var fileStream = File.Create(assetPath);
-            await stream.CopyToAsync(fileStream);
-            await fileStream.FlushAsync();
-            
-            _logger.LogTrace("Extracted embedded asset: {AssetPath}", assetPath);
-            return assetPath;
+            return assetFilepath;
         }
         catch (Exception ex)
         {
@@ -314,8 +336,9 @@ public class PlaceholderVideoGenerator
     {
         try
         {
+            // Check for a custom placeholder asset first; fall back to embedded extraction
             var assetPath = await EnsureAssetExtractedAsync(assetName);
-            
+
             if (string.IsNullOrEmpty(assetPath))
             {
                 _logger.LogError("Asset file not found: {AssetName}", assetName);
@@ -339,7 +362,9 @@ public class PlaceholderVideoGenerator
             }
 
             // Build FFmpeg command
-            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
+            // Scale down to 1920x1080 max (only if larger), preserve aspect ratio, ensure even dimensions for yuv420p
+            var vf = "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p";
+            var arguments = $"-loop 1 -i \"{assetPath}\" -t {videoDuration} -vf \"{vf}\" -c:v libx264 -pix_fmt yuv420p -movflags +faststart \"{outputPath}\"";
 
             _logger.LogTrace("Generating placeholder video: {AssetName} -> {OutputPath}", 
                 assetName, outputPath);
@@ -446,60 +471,72 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
-    /// Deletes placeholder video files from the specified directory and its subfolders.
+    /// Refreshes all existing placeholder videos in the library for the given type.
+    /// Invalidates the cache, regenerates the cached placeholder, and re-copies to all
+    /// library folders that already have a placeholder of that type.
     /// </summary>
-    /// <param name="bridgeFolderPath">The bridge folder path to clean up</param>
-    /// <returns>Number of placeholder files deleted</returns>
-    public async Task<int> DeletePlaceholderVideosAsync(string bridgeFolderPath)
+    /// <param name="type">"movie" or "show"</param>
+    /// <returns>Number of placeholders refreshed</returns>
+    public async Task<int> RefreshAllPlaceholdersAsync()
     {
-        var deletedCount = 0;
-        var placeholderFiles = new[] { 
-            Path.GetFileNameWithoutExtension(MovieAsset) + AssetExtension,
-            Path.GetFileNameWithoutExtension(ShowAsset) + AssetExtension, 
-            Path.GetFileNameWithoutExtension(SeasonAsset) + AssetExtension
-        };
+        var refreshedCount = 0;
 
-        try
+        foreach (var assetName in new[] { MovieAsset, SeasonAsset })
         {
-            if (string.IsNullOrEmpty(bridgeFolderPath) || !Directory.Exists(bridgeFolderPath))
-            {
-                throw new InvalidOperationException($"Bridge folder does not exist: {bridgeFolderPath}");
-            }
+            // Determine which placeholder filename to search for
+            var targetFileName = Path.GetFileNameWithoutExtension(assetName) + AssetExtension;
 
-            _logger.LogDebug("Cleaning up placeholder videos in: {BridgeFolderPath}", bridgeFolderPath);
-
-            // Delete placeholder files in current directory and all subdirectories
-            foreach (var placeholderFile in placeholderFiles)
+            try
             {
-                var searchPattern = $"*{placeholderFile}";
-                var files = Directory.GetFiles(bridgeFolderPath, searchPattern, SearchOption.AllDirectories);
-                
-                foreach (var filePath in files)
+
+                // Scan the library for existing placeholder files
+                var libraryRoot = FolderUtils.GetBaseDirectory();
+                if (!Directory.Exists(libraryRoot))
                 {
-                    try
-                    {
-                        await Task.Run(() => File.Delete(filePath));
-                        _logger.LogTrace("Deleted placeholder file: {FilePath}", filePath);
-                        deletedCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to delete placeholder file: {FilePath}", filePath);
-                    }
+                    _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
+                    return 0;
                 }
-            }
 
-            if (deletedCount > 0)
+                var existingFiles = Directory.GetFiles(libraryRoot, targetFileName, SearchOption.AllDirectories);
+                if (existingFiles.Length == 0)
+                {
+                    _logger.LogDebug("No existing {Type} placeholders found in library to refresh", assetName);
+                    return 0;
+                }
+
+                _logger.LogInformation("Refreshing {Count} existing {Type} placeholder(s) in library", existingFiles.Length, assetName);
+
+                InvalidateCachedPlaceholders();
+
+                // Regenerate the cached placeholder (with new custom asset or default)
+                var cachedPath = await EnsureCachedPlaceholderAsync(assetName);
+                if (string.IsNullOrEmpty(cachedPath))
+                {
+                    _logger.LogError("Failed to generate new cached placeholder for {Type}, cannot refresh library", assetName);
+                    return 0;
+                }
+
+                _logger.LogInformation("Refreshed {Count}/{Total} {Type} placeholders in library",
+                    refreshedCount, existingFiles.Length, assetName);
+            }
+            catch (Exception ex)
             {
-                _logger.LogDebug("Deleted {DeletedCount} placeholder video files from {BridgeFolderPath}", 
-                    deletedCount, bridgeFolderPath);
+                _logger.LogError(ex, "Error refreshing placeholders for type {Type}", assetName);
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error cleaning up placeholder videos in {BridgeFolderPath}", bridgeFolderPath);
-        }
+        return refreshedCount;
+    }
 
-        return deletedCount;
+    /// <summary>
+    /// Invalidates the cached placeholder videos by deleting the temp directories and recreating them.
+    /// </summary>
+    private void InvalidateCachedPlaceholders()
+    {
+        Directory.Delete(_assetPath, recursive: true);
+        Directory.Delete(_placeholderPath, recursive: true);
+        Directory.CreateDirectory(_assetPath);
+        Directory.CreateDirectory(_placeholderPath);
+        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
+            _mediaEncoder.EncoderPath, _assetPath, _placeholderPath);
     }
 }

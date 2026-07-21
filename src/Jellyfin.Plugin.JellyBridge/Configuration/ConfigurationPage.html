@@ -674,6 +674,17 @@
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
+                                <input id="UserPermissionRequest4k" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Request 4k Content</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">By default, all requests will be for non-4k content. Enable this option to request 4k content for users with the Request 4K Movies or Request 4K Shows permissions in Jellyseerr.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
                                 <input id="RequestFirstSeason" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Request Only First Season</span>
                                 <span class="checkboxOutline">
@@ -746,6 +757,65 @@
                                 <span>⭐ Request JellyBridge Library Favorites in Jellyseerr</span>
                             </button>
                             <div id="syncFavoritesResult" class="testResult emby-textarea"></div>
+                        </div>
+
+                    </details>
+
+                    <br>
+
+                    <details id="customPromoVideos">
+                        <summary>Customize Promo Videos</summary>
+                        <div class="fieldDescription">
+                            Upload a custom image (PNG/JPG) to replace the default promo image. The image will be converted to a video using the duration setting above. Changes take effect immediately for all existing items in the library.
+                        </div>
+
+                        <div id="moviePromoStatus" class="fieldDescription">Using default</div>
+                        <div class="inputContainer">
+                            <input id="CustomMoviePromo" type="text" is="emby-input" label="Movie Promo Path" />
+                            <div class="fieldDescription">Path to the movie promo file used for placeholder video generation.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="DefaultMoviePromo" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Default Movie Promo</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="showPromoStatus" class="fieldDescription">Using default</div>
+                        <div class="inputContainer">
+                            <input id="CustomShowPromo" type="text" is="emby-input" label="Show Promo Path" />
+                            <div class="fieldDescription">Path to the show promo file used for placeholder video generation.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="DefaultShowPromo" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Default Show Promo</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="inputContainer">
+                            <input id="PlaceholderDurationSeconds" type="number" is="emby-input" min="1" max="3600" label="Video Duration (seconds)" />
+                            <div class="fieldDescription">Length of generated promo videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <input id="JellyBridgeTempDirectory" type="text" is="emby-input" label="Temp Directory" />
+                            <div class="fieldDescription">Directory for temporary files during placeholder video generation. Defaults to the system temp folder. Useful if you have limited space in your temp directory.</div>
+                        </div>
+
+                        <div>
+                            <button is="emby-button" type="button" id="generatePromoVideos" class="raised button block emby-button">
+                                <span>🎥 Generate Promo Videos</span>
+                            </button>
+                            <div id="generatePromoVideosResult" class="testResult emby-textarea"></div>
                         </div>
 
                     </details>
@@ -849,16 +919,6 @@
                         <div class="inputContainer">
                             <input id="RetryAttempts" type="number" is="emby-input" min="0" max="100" label="Retry Attempts"/>
                             <div class="fieldDescription">Number of retry attempts for failed API requests to Jellyseerr.</div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <input id="PlaceholderDurationSeconds" type="number" is="emby-input" min="1" max="3600" label="Placeholder Video Duration (seconds)"/>
-                            <div class="fieldDescription">Length of generated placeholder videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <input id="JellyBridgeTempDirectory" type="text" is="emby-input" label="Temp Directory"/>
-                            <div class="fieldDescription">Directory for temporary files during placeholder video generation. Defaults to the system temp folder. Useful if you have limited space in your temp directory.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
