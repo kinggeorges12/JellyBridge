@@ -1,7 +1,10 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Jellyfin.Plugin.JellyBridge.Services;
+using Jellyfin.Plugin.JellyBridge.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.JellyBridge.Utils;
-using Jellyfin.Plugin.JellyBridge.Configuration;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
@@ -10,32 +13,48 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     public class CustomizePromoController : ControllerBase
     {
         private readonly DebugLogger<CustomizePromoController> _logger;
-        private readonly Services.PlaceholderVideoGenerator _placeholderVideoGenerator;
+        private readonly PlaceholderVideoGenerator _placeholderVideoGenerator;
 
-        public CustomizePromoController(ILoggerFactory loggerFactory, Services.PlaceholderVideoGenerator placeholderVideoGenerator)
+        public CustomizePromoController(ILoggerFactory loggerFactory, PlaceholderVideoGenerator placeholderVideoGenerator)
         {
             _logger = new DebugLogger<CustomizePromoController>(loggerFactory.CreateLogger<CustomizePromoController>());
             _placeholderVideoGenerator = placeholderVideoGenerator;
         }
 
         /// <summary>
-        /// Generate custom promo videos for the library.
+        ///     Generate custom promo videos for all items.
         /// </summary>
+        /// <returns></returns>
         [HttpPost("PromoVideos")]
         public async Task<IActionResult> Generate()
         {
             _logger.LogDebug("Custom promo videos generation requested");
-
+            
             try
             {
-                // Perform the actual video generation logic here
-                var numRefreshed = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync();
-
-                return Ok(new
+                var (successfulItems, failedItems) = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync();
+                
+                var response = new
                 {
                     success = true,
-                    message = "Custom promo videos generated successfully"
-                });
+                    message = $"Custom promo videos generated successfully for {successfulItems.Count} items.",
+                    generatedCount = successfulItems.Count,
+                    failedCount = failedItems.Count
+                };
+
+                if (failedItems.Count > 0)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        message = $"Custom promo videos generated successfully for {successfulItems.Count} items. Failed for {failedItems.Count} items.",
+                        generatedCount = successfulItems.Count,
+                        failedCount = failedItems.Count,
+                        failedItems = failedItems
+                    });
+                }
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -50,62 +69,60 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Get status of custom promo images for both types.
+        ///     Download the generated promo video for a specific type (movies or series).
         /// </summary>
-        [HttpGet("PromoVideos")]
-        public async Task<IActionResult> Status([FromQuery] string? movie = null, [FromQuery] string? show = null)
+        /// <param name="type">The type of promo video to download (movies or series).</param>
+        /// <returns>The promo video file.</returns>
+        [HttpGet("PromoVideos/{type}")]
+        public async Task<IActionResult> DownloadPromoVideo(string type)
         {
-            _logger.LogDebug("Custom placeholder status requested");
-
+            _logger.LogDebug($"{type} promo video requested");
+            
             try
             {
-                var config = Plugin.GetConfiguration();
-                var customMovie = movie ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomMoviePromo));
-                var customShow = show ?? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomShowPromo));
-                config.CustomMoviePromo = customMovie;
-                config.CustomShowPromo = customShow;
-
-                return Ok(new
+                var filePath = string.Empty;
+                
+                if (string.Equals(type, "movies", StringComparison.OrdinalIgnoreCase))
                 {
-                    success = true,
-                    movie = GetAssetStatus(customMovie),
-                    show = GetAssetStatus(customShow)
-                });
+                    filePath = await _placeholderVideoGenerator.GetMoviesPlaceholderAsync();
+                }
+                else if (string.Equals(type, "series", StringComparison.OrdinalIgnoreCase))
+                {
+                    filePath = await _placeholderVideoGenerator.GetSeriesPlaceholderAsync();
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid type. Must be 'movies' or 'series'."
+                    });
+                }
+
+                if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"No promo video found for type: {type}"
+                    });
+                }
+
+                return PhysicalFile(
+                    filePath,
+                    "video/mp4",
+                    enableRangeProcessing: true
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Custom placeholder status check failed");
+                _logger.LogError(ex, "Failed to get {Type} promo video", type);
                 return StatusCode(500, new
                 {
                     success = false,
-                    message = $"Status check failed: {ex.Message}",
-                    details = $"Exception: {ex.GetType().Name} - {ex.Message}"
+                    message = ex.Message
                 });
             }
         }
-
-        /// <summary>
-        /// Gets the status of a custom asset file.
-        /// </summary>
-        private object GetAssetStatus(string filePath)
-        {
-            if (string.IsNullOrEmpty(filePath))
-            {
-                return new { hasCustom = false, fileName = (string?)null, fileSize = (long?)null };
-            }
-            if (System.IO.File.Exists(filePath))
-            {
-                var fileInfo = new FileInfo(filePath);
-                return new { hasCustom = true, fileName = fileInfo.Name, fileSize = (long?)fileInfo.Length };
-            }
-            else
-            {
-                // Config says there's a custom asset but file is missing — clean up
-                _logger.LogDebug("Custom asset file missing, config will be stale until next save: {filePath}", filePath);
-            }
-
-            return new { hasCustom = false, fileName = (string?)null, fileSize = (long?)null };
-        }
-
     }
 }

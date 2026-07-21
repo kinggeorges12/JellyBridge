@@ -5,13 +5,13 @@
 1. Add a modal dialog when the network options are double-clicked from the active or available network multiselect. Options include "Add to Selected Networks" (if in available) or "Remove from Selected Networks" (if active).
 2. Faster refreshes that target only the metadata items that have been changed.
 3. Change the smart sort to include cast and directors as criteria, and watched media.
-4. Allow users to upload a custom picture or video for placeholder videos.
-5. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
+4. Fetch additional content from Jellyseerr before the built-in Jellyfin metadata refresh.
 
 ## Completed Features
 1. Extract the request favorites function from the sync task. The favorites function can be triggered directly from the Favorite event handler in Jellyfin. See [Issue #12](https://github.com/kinggeorges12/JellyBridge/issues/12#issuecomment-3533119223).
 2. Support for Jellyfin 10.11.\*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
 3. Change sort order based on user preference or implement a random sort order plugin.
+4. Allow users to upload a custom image for promo videos.
 
 ## Contributing
 
@@ -269,9 +269,8 @@ pwsh -File scripts/build-release.ps1 -Version "1.0.0" -Changelog "Release descri
 
 ```
 Jellyfin.Plugin.JellyBridge/
-├── Assets/                       # Image assets to generate placeholder videos
+├── Assets/                       # Image assets to generate promo videos
 │   ├── movie.png
-│   ├── S00E9999.png
 │   ├── season.png
 │   └── show.png
 ├── Attributes/                   # Plugin attributes
@@ -287,6 +286,7 @@ Jellyfin.Plugin.JellyBridge/
 │   └── PluginConfiguration.cs
 ├── Controllers/                  # REST API controllers
 │   ├── AdvancedSettingsController.cs
+│   ├── CustomizePromoController.cs
 │   ├── GeneralSettingsController.cs
 │   ├── ImportDiscoverContentController.cs
 │   ├── ManageDiscoverLibraryController.cs

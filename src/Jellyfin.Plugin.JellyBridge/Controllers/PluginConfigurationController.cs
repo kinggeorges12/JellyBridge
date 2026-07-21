@@ -65,11 +65,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SortTaskIntervalHours = config.SortTaskIntervalHours,
 
                     // Customize Promo Videos
-                    CustomMoviePromo = config.CustomMoviePromo,
-                    CustomShowPromo = config.CustomShowPromo,
-                    DefaultMoviePromo = config.DefaultMoviePromo,
-                    DefaultShowPromo = config.DefaultShowPromo,
-                    PlaceholderDurationSeconds = config.PlaceholderDurationSeconds,
+                    CustomMoviesPromo = config.CustomMoviesPromo,
+                    CustomSeriesPromo = config.CustomSeriesPromo,
+                    DefaultMoviesPromo = config.DefaultMoviesPromo,
+                    DefaultSeriesPromo = config.DefaultSeriesPromo,
+                    PromoVideoDurationSeconds = config.PromoVideoDurationSeconds,
                     JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
 
                     // Advanced Settings
@@ -147,11 +147,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
                     
                     // Customize Promo Videos
-                    SetJsonValue<string>(configData, nameof(config.CustomMoviePromo), config);
-                    SetJsonValue<bool?>(configData, nameof(config.DefaultMoviePromo), config);
-                    SetJsonValue<string>(configData, nameof(config.CustomShowPromo), config);
-                    SetJsonValue<bool?>(configData, nameof(config.DefaultShowPromo), config);
-                    SetJsonValue<int?>(configData, nameof(config.PlaceholderDurationSeconds), config);
+                    SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.DefaultMoviesPromo), config);
+                    SetJsonValue<string>(configData, nameof(config.CustomSeriesPromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.DefaultSeriesPromo), config);
+                    SetJsonValue<int?>(configData, nameof(config.PromoVideoDurationSeconds), config);
                     SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
 
                     // Sort Content
