@@ -265,12 +265,12 @@ public class PlaceholderVideoGenerator
                 if (assetName == MovieAsset)
                 {
                     useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultMoviesPromo");
-                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomMoviesPromo") ?? string.Empty;
+                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomMoviesPromo");
                 }
                 else if (assetName == SeasonAsset)
                 {
                     useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultSeriesPromo");
-                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomSeriesPromo") ?? string.Empty;
+                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomSeriesPromo");
                 }
                 
                 // Determine if we should use a custom asset
