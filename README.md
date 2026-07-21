@@ -155,14 +155,15 @@ The plugin includes a modern, responsive web interface for configuration. Follow
   - **Generate Network Folders**: Button to create the folder structure for all selected networks
 - **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
 
-### 🎥 Generate Promo Videos
+### 🎥 Customize Promo Videos
 
-![Generate Promo Videos](Screenshots/Promo.png)
+![Customize Promo Videos](Screenshots/Promo.png)
 
 - **Custom Movies & Series Promo**: Select an image file to generate the promo video for movies and series content.
 - **Default Movies & Series Promo**: The pre-packaged promo video for JellyBridge
 - **Promo Video Duration**: A short video to teach users how to request the discover content
 - **Temp Directory**: Storage for generating promo video files, usually the operating system default
+- **Generate Promo Videos**: Replace existing promo videos with the custom or default for all movies and series
 
 *Note: The plugin generates promo videos for movies and series from Jellyseerr. The custom promo image generates a short, customizable promo video using Jellyfin's FFmpeg.*
 
