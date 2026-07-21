@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.22.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.22 - handling some edge cases with video generation",
+        "dependencies": [],
+        "targetAbi": "10.11.9.0",
+        "checksum": "580F5BD2E5CDF3CF2E1C78F9DD6E1536",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.11.9.zip",
+        "timestamp": "2026-07-21T21:27:33.526Z"
+      },
+      {
+        "version": "3.22.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.22 - handling some edge cases with video generation",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "6D3D8EF66B39FF36C768766A9592B495",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.11.0.zip",
+        "timestamp": "2026-07-21T21:27:33.526Z"
+      },
+      {
+        "version": "3.22.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.22 - handling some edge cases with video generation",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "1A6140C5FF005C19654733573E7E3ECD",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.10.7.zip",
+        "timestamp": "2026-07-21T21:27:33.526Z"
+      },
+      {
         "version": "3.21.11.9",
         "changelog": "Jellyfin 10.11.9: v3.21 - fixing default asset retrieval",
         "dependencies": [],

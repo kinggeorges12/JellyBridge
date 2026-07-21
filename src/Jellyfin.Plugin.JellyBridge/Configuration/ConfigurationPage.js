@@ -1695,10 +1695,25 @@ function initializeNumberInputScrollPrevention(page) {
 
 // Open a directory browser dialog to select a folder and set the input value
 function browseFolder(inputElement, title, includeFiles = false) {
+    // Create the dialog box
     const directoryBrowser = new Dashboard.DirectoryBrowser();
+
+    // Get the current value from the input element
+    let currentPath = inputElement.value || inputElement.placeholder || "";
+    // If includeFiles is true, we're browsing for a file, so navigate to the parent directory
+    if (includeFiles && currentPath) {
+        // Find the last slash and remove everything after it
+        const lastSlashIndex = Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\'));
+        if (lastSlashIndex > 0) {
+            currentPath = currentPath.substring(0, lastSlashIndex);
+        } else {
+            currentPath = '';
+        }
+    }
+    // Show the directory browser dialog
     directoryBrowser.show({
         header: title || "Select a Folder",
-        path: inputElement.value || inputElement.placeholder || "",
+        path: currentPath,
         includeDirectories: true,
         includeFiles: includeFiles,
         callback: function(path) {
