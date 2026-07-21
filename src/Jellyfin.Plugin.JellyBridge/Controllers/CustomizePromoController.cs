@@ -22,39 +22,32 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        ///     Generate custom promo videos for all items.
+        ///     Generate custom promo videos for movies and series.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A JSON response indicating the success or failure of the operation.</returns>
         [HttpPost("PromoVideos")]
         public async Task<IActionResult> Generate()
         {
             _logger.LogDebug("Custom promo videos generation requested");
-            
             try
             {
                 var (successfulItems, failedItems) = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync();
                 
-                var response = new
-                {
-                    success = true,
-                    message = $"Custom promo videos generated successfully for {successfulItems.Count} items.",
-                    generatedCount = successfulItems.Count,
-                    failedCount = failedItems.Count
-                };
-
+                // Build the result message
+                string resultMessage = $"Custom promo videos generated successfully for {successfulItems.Count} items.";
                 if (failedItems.Count > 0)
                 {
-                    return Ok(new
-                    {
-                        success = true,
-                        message = $"Custom promo videos generated successfully for {successfulItems.Count} items. Failed for {failedItems.Count} items.",
-                        generatedCount = successfulItems.Count,
-                        failedCount = failedItems.Count,
-                        failedItems = failedItems
-                    });
+                    resultMessage += $"\nFailed for {failedItems.Count} items:\n" + string.Join("\n", failedItems);
                 }
-
-                return Ok(response);
+                
+                return Ok(new
+                {
+                    success = true,
+                    result = resultMessage,
+                    generated = successfulItems.Count,
+                    failed = failedItems.Count,
+                    failedItems = failedItems.Count > 0 ? failedItems : null
+                });
             }
             catch (Exception ex)
             {

@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.20.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.20 - fixing promo controller post return values",
+        "dependencies": [],
+        "targetAbi": "10.11.9.0",
+        "checksum": "038C7A2C0F371E62EE81C0EEB1491AE2",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.11.9.zip",
+        "timestamp": "2026-07-21T20:42:55.194Z"
+      },
+      {
+        "version": "3.20.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.20 - fixing promo controller post return values",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "146A818EC70D913B51C24C9F1CFBB458",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.11.0.zip",
+        "timestamp": "2026-07-21T20:42:55.194Z"
+      },
+      {
+        "version": "3.20.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.20 - fixing promo controller post return values",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "04F42FD20891EBB8B8FEDFEED3B8E425",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.10.7.zip",
+        "timestamp": "2026-07-21T20:42:55.194Z"
+      },
+      {
         "version": "3.19.11.9",
         "changelog": "Jellyfin 10.11.9: v3.19 - fixing asset management for defaults",
         "dependencies": [],
