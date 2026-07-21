@@ -153,7 +153,7 @@ public class BridgeService
     public async Task CreateIgnoreFileAsync(string ignoreFilePath, string? fileContent)
     {
         var semaphore = _fileSemaphores.GetOrAdd(ignoreFilePath, _ => new SemaphoreSlim(1, 1));
-        await semaphore.WaitAsync();
+        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
         try
         {
             // Comment out each line of the JSON content

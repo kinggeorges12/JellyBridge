@@ -20,6 +20,10 @@ public class PlaceholderVideoGenerator
     // Semaphores to serialize cache file generation per cache path (prevents race conditions)
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _cacheGenerationSemaphores = new();
 
+    // Semaphore to serialize invalidation of cached placeholders (prevents race conditions)
+    private static readonly SemaphoreSlim _invalidationSemaphore = new SemaphoreSlim(1, 1);
+
+
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
     private readonly string _assetPath;
@@ -51,7 +55,7 @@ public class PlaceholderVideoGenerator
         // Assets are embedded in the plugin assembly
         _assetPath = Path.Combine(jellyBridgeTempDirectory, "assets");
         _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
-        InvalidateCachedPlaceholders();
+        InvalidateCachedPlaceholdersAsync().Wait();
     }
 
     /// <summary>
@@ -113,7 +117,7 @@ public class PlaceholderVideoGenerator
             // Get or create a semaphore for this specific cache path to serialize generation
             var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
             
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
             try
             {
                 // Double-check pattern: after acquiring the lock, check if file was already created by another task
@@ -248,7 +252,7 @@ public class PlaceholderVideoGenerator
         string assetFilepath = Path.Combine(_assetPath, assetName);
         SemaphoreSlim semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
         
-        await semaphore.WaitAsync();
+        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
         try
         {
             if (!File.Exists(assetFilepath))
@@ -304,8 +308,12 @@ public class PlaceholderVideoGenerator
                     // Get root namespace from a type in the root namespace (e.g., Plugin class)
                     var rootNamespace = typeof(Plugin).Namespace ?? throw new InvalidOperationException("Plugin.Namespace is null");
                     
+                    // Map the asset name to the correct folder structure
+                    // For example, "movie.png" should be mapped to "Assets/movie.png"
+                    var mappedAssetName = EmbeddedAsset.TryGetValue(assetName, out var value) ? value : assetName;
+
                     // Construct resource name: RootNamespace.Assets.assetName
-                    var resourceName = $"{rootNamespace}.Assets.{assetName}";
+                    var resourceName = $"{rootNamespace}.Assets.{mappedAssetName}";
                     
                     _logger.LogTrace("Looking for embedded resource: {ResourceName} (root namespace: {RootNamespace})", 
                         resourceName, rootNamespace);
@@ -315,7 +323,7 @@ public class PlaceholderVideoGenerator
                     if (stream == null)
                     {
                         var allResources = assembly.GetManifestResourceNames();
-                        var errorMessage = $"Embedded asset not found: {assetName}. Tried: {resourceName}. Available resources: {string.Join(", ", allResources)}";
+                        var errorMessage = $"Embedded asset not found: {mappedAssetName}. Tried: {resourceName}. Available resources: {string.Join(", ", allResources)}";
                         throw new InvalidOperationException(errorMessage);
                     }
                     
@@ -534,7 +542,7 @@ public class PlaceholderVideoGenerator
         }
 
         // Invalidate cache once at the start
-        InvalidateCachedPlaceholders();
+        await InvalidateCachedPlaceholdersAsync();
 
         // Process each asset type (movies and series)
         string[] assetTypes = new string[] { MovieAsset, SeasonAsset };
@@ -637,19 +645,27 @@ public class PlaceholderVideoGenerator
     /// <summary>
     /// Invalidates the cached placeholder videos by deleting the temp directories and recreating them.
     /// </summary>
-    private void InvalidateCachedPlaceholders()
+    private async Task InvalidateCachedPlaceholdersAsync()
     {
-        if (Directory.Exists(_assetPath))
+        await _invalidationSemaphore.WaitAsync(60*1000); // Wait up to 60 seconds to acquire the semaphore
+        try
         {
-            Directory.Delete(_assetPath, recursive: true);
+            if (Directory.Exists(_assetPath))
+            {
+                Directory.Delete(_assetPath, recursive: true);
+            }
+            if (Directory.Exists(_placeholderPath))
+            {
+                Directory.Delete(_placeholderPath, recursive: true);
+            }
+            Directory.CreateDirectory(_assetPath);
+            Directory.CreateDirectory(_placeholderPath);
+            _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
+                _mediaEncoder.EncoderPath, _assetPath, _placeholderPath);
         }
-        if (Directory.Exists(_placeholderPath))
+        finally
         {
-            Directory.Delete(_placeholderPath, recursive: true);
+            _invalidationSemaphore.Release();
         }
-        Directory.CreateDirectory(_assetPath);
-        Directory.CreateDirectory(_placeholderPath);
-        _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
-            _mediaEncoder.EncoderPath, _assetPath, _placeholderPath);
     }
 }
