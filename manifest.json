@@ -9,139 +9,31 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "version": "3.22.11.9",
-        "changelog": "Jellyfin 10.11.9: v3.22 - handling some edge cases with video generation",
+        "version": "3.2.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.2 - Added new section Customize Promo Videos, redesigned the Import Discover Content section for user-centric design, and added an option to Request 4k Content. Special thank to @feeadftth for the PR for promo videos and to all the users who submitted bugs and suggestions to the Github Issues.",
         "dependencies": [],
         "targetAbi": "10.11.9.0",
-        "checksum": "580F5BD2E5CDF3CF2E1C78F9DD6E1536",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.11.9.zip",
-        "timestamp": "2026-07-21T21:27:33.526Z"
+        "checksum": "DE15C6645363B747416F59AFA216C436",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.2/JellyBridge-3.2.11.9.zip",
+        "timestamp": "2026-07-21T21:53:41.524Z"
       },
       {
-        "version": "3.22.11.0",
-        "changelog": "Jellyfin 10.11.0: v3.22 - handling some edge cases with video generation",
+        "version": "3.2.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.2 - Added new section Customize Promo Videos, redesigned the Import Discover Content section for user-centric design, and added an option to Request 4k Content. Special thank to @feeadftth for the PR for promo videos and to all the users who submitted bugs and suggestions to the Github Issues.",
         "dependencies": [],
         "targetAbi": "10.11.0.0",
-        "checksum": "6D3D8EF66B39FF36C768766A9592B495",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.11.0.zip",
-        "timestamp": "2026-07-21T21:27:33.526Z"
+        "checksum": "0B867AD4FAFB5D8A5B5D3CFC6F754AD0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.2/JellyBridge-3.2.11.0.zip",
+        "timestamp": "2026-07-21T21:53:41.524Z"
       },
       {
-        "version": "3.22.10.7",
-        "changelog": "Jellyfin 10.10.7: v3.22 - handling some edge cases with video generation",
+        "version": "3.2.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.2 - Added new section Customize Promo Videos, redesigned the Import Discover Content section for user-centric design, and added an option to Request 4k Content. Special thank to @feeadftth for the PR for promo videos and to all the users who submitted bugs and suggestions to the Github Issues.",
         "dependencies": [],
         "targetAbi": "10.10.0.0",
-        "checksum": "1A6140C5FF005C19654733573E7E3ECD",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.22.10.7.zip",
-        "timestamp": "2026-07-21T21:27:33.526Z"
-      },
-      {
-        "version": "3.21.11.9",
-        "changelog": "Jellyfin 10.11.9: v3.21 - fixing default asset retrieval",
-        "dependencies": [],
-        "targetAbi": "10.11.9.0",
-        "checksum": "D23AC36C4EF7784BEA4A3FBE8C3C4496",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.11.9.zip",
-        "timestamp": "2026-07-21T21:11:05.821Z"
-      },
-      {
-        "version": "3.21.11.0",
-        "changelog": "Jellyfin 10.11.0: v3.21 - fixing default asset retrieval",
-        "dependencies": [],
-        "targetAbi": "10.11.0.0",
-        "checksum": "9889A4F78DDB0394C8BD14831F37B0D6",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.11.0.zip",
-        "timestamp": "2026-07-21T21:11:05.821Z"
-      },
-      {
-        "version": "3.21.10.7",
-        "changelog": "Jellyfin 10.10.7: v3.21 - fixing default asset retrieval",
-        "dependencies": [],
-        "targetAbi": "10.10.0.0",
-        "checksum": "27D1979DAE3348BBD638315D4CC23BD6",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.10.7.zip",
-        "timestamp": "2026-07-21T21:11:05.821Z"
-      },
-      {
-        "version": "3.20.11.9",
-        "changelog": "Jellyfin 10.11.9: v3.20 - fixing promo controller post return values",
-        "dependencies": [],
-        "targetAbi": "10.11.9.0",
-        "checksum": "038C7A2C0F371E62EE81C0EEB1491AE2",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.11.9.zip",
-        "timestamp": "2026-07-21T20:42:55.194Z"
-      },
-      {
-        "version": "3.20.11.0",
-        "changelog": "Jellyfin 10.11.0: v3.20 - fixing promo controller post return values",
-        "dependencies": [],
-        "targetAbi": "10.11.0.0",
-        "checksum": "146A818EC70D913B51C24C9F1CFBB458",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.11.0.zip",
-        "timestamp": "2026-07-21T20:42:55.194Z"
-      },
-      {
-        "version": "3.20.10.7",
-        "changelog": "Jellyfin 10.10.7: v3.20 - fixing promo controller post return values",
-        "dependencies": [],
-        "targetAbi": "10.10.0.0",
-        "checksum": "04F42FD20891EBB8B8FEDFEED3B8E425",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.20.10.7.zip",
-        "timestamp": "2026-07-21T20:42:55.194Z"
-      },
-      {
-        "version": "3.19.11.9",
-        "changelog": "Jellyfin 10.11.9: v3.19 - fixing asset management for defaults",
-        "dependencies": [],
-        "targetAbi": "10.11.9.0",
-        "checksum": "088BAFCBFEDF8FF0D383E68920CC6DCC",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.11.9.zip",
-        "timestamp": "2026-07-21T20:33:49.132Z"
-      },
-      {
-        "version": "3.19.11.0",
-        "changelog": "Jellyfin 10.11.0: v3.19 - fixing asset management for defaults",
-        "dependencies": [],
-        "targetAbi": "10.11.0.0",
-        "checksum": "F0F48E7E54B98632A77482F69A725B9C",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.11.0.zip",
-        "timestamp": "2026-07-21T20:33:49.132Z"
-      },
-      {
-        "version": "3.19.10.7",
-        "changelog": "Jellyfin 10.10.7: v3.19 - fixing asset management for defaults",
-        "dependencies": [],
-        "targetAbi": "10.10.0.0",
-        "checksum": "E423FBEAC34AEA7B832629D43EC1DB57",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.10.7.zip",
-        "timestamp": "2026-07-21T20:33:49.132Z"
-      },
-      {
-        "version": "3.18.11.9",
-        "changelog": "Jellyfin 10.11.9: v3.18 - had an oopsies, testing recovery",
-        "dependencies": [],
-        "targetAbi": "10.11.9.0",
-        "checksum": "143DB1DC61FA48785849C945395506D8",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.11.9.zip",
-        "timestamp": "2026-07-21T20:23:37.519Z"
-      },
-      {
-        "version": "3.18.11.0",
-        "changelog": "Jellyfin 10.11.0: v3.18 - had an oopsies, testing recovery",
-        "dependencies": [],
-        "targetAbi": "10.11.0.0",
-        "checksum": "D8FAE74DE06F1F7D4C5FC136A25DC4CF",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.11.0.zip",
-        "timestamp": "2026-07-21T20:23:37.519Z"
-      },
-      {
-        "version": "3.18.10.7",
-        "changelog": "Jellyfin 10.10.7: v3.18 - had an oopsies, testing recovery",
-        "dependencies": [],
-        "targetAbi": "10.10.0.0",
-        "checksum": "B41E548FCAC9084A5DAD4E1A8C33D53E",
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.10.7.zip",
-        "timestamp": "2026-07-21T20:23:37.519Z"
+        "checksum": "D3688E02B045A8CBC0F46B3342BB4974",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.2/JellyBridge-3.2.10.7.zip",
+        "timestamp": "2026-07-21T21:53:41.524Z"
       },
       {
         "timestamp": "2026-06-17T21:07:22.698Z",
