@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.19.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.19 - fixing asset management for defaults",
+        "dependencies": [],
+        "targetAbi": "10.11.9.0",
+        "checksum": "088BAFCBFEDF8FF0D383E68920CC6DCC",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.11.9.zip",
+        "timestamp": "2026-07-21T20:33:49.132Z"
+      },
+      {
+        "version": "3.19.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.19 - fixing asset management for defaults",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "F0F48E7E54B98632A77482F69A725B9C",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.11.0.zip",
+        "timestamp": "2026-07-21T20:33:49.132Z"
+      },
+      {
+        "version": "3.19.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.19 - fixing asset management for defaults",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "E423FBEAC34AEA7B832629D43EC1DB57",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.19.10.7.zip",
+        "timestamp": "2026-07-21T20:33:49.132Z"
+      },
+      {
         "version": "3.18.11.9",
         "changelog": "Jellyfin 10.11.9: v3.18 - had an oopsies, testing recovery",
         "dependencies": [],
