@@ -6,8 +6,6 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr (and Seerr\*) for seamless movie and series discovery and download requests.
 
-\* [Seerr v3.0.0 has recently released](https://docs.seerr.dev/blog/seerr-release) as the next iteration of Jellyseerr v2.7.3. The API appears to be unchanged, and my tests have not found any compatibility problems. Enjoy the new release! Please submit any issues with Seerr to this project, and I will try to expedite a fix. As for our documentation, I will wait until the next major update to switch to the new name.
-
 ## ✨ Features
 
 - **Native Jellyfin Support**: Whether you use Android TV or Kodi to sync videos and favorites with Jellyfin, this plugin has you covered
@@ -199,7 +197,14 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 
 ## 📣 Release Notes
 
-### Version 3.0 🆕
+### Version 3.2 🆕
+
+- New Promo Videos feature submitted in [PR #26](https://github.com/kinggeorges12/JellyBridge/pull/26).
+- Updated the network selection UI in the Import Discover Content section with a more user-friendly design.
+- The Manage Discover Library section has a new option Request 4k Content that examines user-level permissions to determine whether to request 4k content from Jellyseerr.
+- Added folder buttons to open paths on the configuration page using the Jellyfin file browser.
+
+### Version 3.0 ✨
 
 - Fixed compatibility bug causing crashes with Jellyfin 10.11.9 and later.
 - Bugs listed in [PR #31](https://github.com/kinggeorges12/JellyBridge/pull/31).
@@ -233,6 +238,8 @@ After installing the new version, you may need to update the plugin configuratio
 **🙏 A Note to Early Testers**: Thank you! I have fixed a lot of bugs on the backend with the v1.3.0.\* release, and some new features! I hope the flurry of issues does not stop you from checking out the new release. I tested this release on both 10.10.7 and 10.11.1 releases. Please continue submitting issues with new feature ideas and reporting bugs.
 
 ## 🖇️ Compatibility
+
+\* [Seerr v3.0.0 has recently released](https://docs.seerr.dev/blog/seerr-release) as the next iteration of Jellyseerr v2.7.3. The API appears to be unchanged, and my tests have not found any compatibility problems. Enjoy the new release! Please submit any issues with Seerr to this project, and I will try to expedite a fix. As for our documentation, I will wait until the next major update to switch to the new name.
 
 This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3 and Seerr 3.0.1. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.6, or Jellyseerr versions before 2.7.3.
 
