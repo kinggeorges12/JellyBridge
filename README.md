@@ -39,12 +39,6 @@ Browse all discovered movies and series from Jellyseerr networks with thumbnails
 To see the intended order, set the JellyBridge library sort to **Play count** (Ascending). This works using the task to sort discover content, which updates play counts to create a dynamic browsing order.
 ![JellyBridge Sorting](Screenshots/Sorting.png)
 
-### Placeholder Videos
-
-The plugin generates placeholder videos for movies and series that aren't yet available in your Jellyfin libraries. These placeholder videos are created using FFmpeg with configurable duration settings.
-
-![Placeholder Videos](Screenshots/Placeholder.png)
-
 ### Jellyseerr Integration
 
 The plugin seamlessly integrates with Jellyseerr to manage download requests and track availability of movies and series.
@@ -120,7 +114,8 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 3. **Test the connection** to ensure Jellyseerr is accessible
 4. **Import discover content** to browse movies and series from Jellyseerr
 5. **Mark movies or series as favorites** in Jellyfin to automatically request downloads
-6. **Customize sorting** to show users a variety of discover content
+6. **Customize promo video** play a short video when users open JellyBridge content
+7. **Sort & shuffle content** to display a variety of discover content in the discover library
 
 The plugin provides a comprehensive web-based configuration interface with the following sections:
 
@@ -164,6 +159,17 @@ The plugin provides a comprehensive web-based configuration interface with the f
   - **Generate Network Folders**: Button to create the folder structure for all selected networks
 - **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
 
+### 🎥 Generate Promo Videos
+
+![Generate Promo Videos](Screenshots/Promo.png)
+
+- **Custom Movies & Series Promo**: Select an image file to generate the promo video for movies and series content.
+- **Default Movies & Series Promo**: The pre-packaged promo video for JellyBridge
+- **Promo Video Duration**: A short video to teach users how to request the discover content
+- **Temp Directory**: Storage for generating promo video files, usually the operating system default
+
+*Note: The plugin generates promo videos for movies and series from Jellyseerr. The custom promo image generates a short, customizable promo video using Jellyfin's FFmpeg.*
+
 ### 🔀 Sort Discover Content
 ![Sort Discover Content](Screenshots/Sort.png)
 
@@ -188,8 +194,6 @@ The plugin provides a comprehensive web-based configuration interface with the f
 - **Task Queue Timeout (minutes)**: How long to wait for queued JellyBridge tasks to start behind running tasks
 - **Request Timeout (seconds)**: Jellyseerr API requests wait time
 - **Retry Attempts**: Number of retry attempts for failed API requests to Jellyseerr
-- **Placeholder Video Duration (seconds)**: A short video teaching users how to request the discover content
-- **Temp Directory**: Path for generating placeholder files, usually the operating system default
 - **Enable Debug Logging**: Normal logging
 - **Enable Trace Logging**: Huge logs
 - **Cleanup Metadata**: Button to manually clean up metadata in the JellyBridge library

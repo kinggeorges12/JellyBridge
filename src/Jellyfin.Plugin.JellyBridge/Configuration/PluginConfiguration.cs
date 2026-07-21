@@ -68,11 +68,11 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(LibraryPrefix), string.Empty },
 
         // Customize Promo Videos
-        { nameof(CustomMoviePromo), string.Empty },
-        { nameof(DefaultMoviePromo), true },
-        { nameof(CustomShowPromo), string.Empty },
-        { nameof(DefaultShowPromo), true },
-        { nameof(PlaceholderDurationSeconds), 10 },
+        { nameof(CustomMoviesPromo), string.Empty },
+        { nameof(DefaultMoviesPromo), true },
+        { nameof(CustomSeriesPromo), string.Empty },
+        { nameof(DefaultSeriesPromo), true },
+        { nameof(PromoVideoDurationSeconds), 10 },
         { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
 
         // Sort Discover Content
@@ -208,28 +208,28 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the file name of the custom movie promo image (stored in plugin data folder).
     /// Empty string means use the built-in asset.
     /// </summary>
-    public string CustomMoviePromo { get; set; } = string.Empty;
+    public string CustomMoviesPromo { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether to use the default movie promo image (built-in asset).
     /// </summary>
-    public bool? DefaultMoviePromo { get; set; }
+    public bool? DefaultMoviesPromo { get; set; }
 
     /// <summary>
     /// Gets or sets the file name of the custom show promo image (stored in plugin data folder).
     /// Empty string means use the built-in asset.
     /// </summary>
-    public string CustomShowPromo { get; set; } = string.Empty;
+    public string CustomSeriesPromo { get; set; } = string.Empty;
     
     /// <summary>
     /// Gets or sets whether to use the default show promo image (built-in asset).
     /// </summary>
-    public bool? DefaultShowPromo { get; set; }
+    public bool? DefaultSeriesPromo { get; set; }
 
     /// <summary>
     /// Gets or sets the default duration (in seconds) for generated placeholder videos.
     /// </summary>
-    public int? PlaceholderDurationSeconds { get; set; }
+    public int? PromoVideoDurationSeconds { get; set; }
 
     /// <summary>
     /// Gets or sets the temporary folder path for generating placeholder videos.

@@ -5,7 +5,7 @@ release/
 # Copilot agent instructions and commands
 .github/agents/
 .github/commands/
-.github/*
+.github/*.*
 bin/
 obj/
 debug/
