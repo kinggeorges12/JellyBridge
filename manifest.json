@@ -36,33 +36,6 @@
         "timestamp": "2026-07-21T17:28:58.478Z"
       },
       {
-        "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.2.11.9.zip",
-        "targetAbi": "10.11.9.0",
-        "timestamp": "2026-07-20T20:19:24.305Z",
-        "changelog": "Jellyfin 10.11.9: v3.2 - Github user @feeadftth added code for using custom placeholders. Also added option to request 4k video based on user permission.",
-        "version": "3.2.11.9",
-        "checksum": "010265A132E7146194422E7D60684585"
-      },
-      {
-        "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.2.11.0.zip",
-        "targetAbi": "10.11.0.0",
-        "timestamp": "2026-07-20T20:19:24.305Z",
-        "changelog": "Jellyfin 10.11.0: v3.2 - Github user @feeadftth added code for using custom placeholders. Also added option to request 4k video based on user permission.",
-        "version": "3.2.11.0",
-        "checksum": "34116E43EBEF88565C136FBD21685D3D"
-      },
-      {
-        "dependencies": [],
-        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.2.10.7.zip",
-        "targetAbi": "10.10.0.0",
-        "timestamp": "2026-07-20T20:19:24.305Z",
-        "changelog": "Jellyfin 10.10.7: v3.2 - Github user @feeadftth added code for using custom placeholders. Also added option to request 4k video based on user permission.",
-        "version": "3.2.10.7",
-        "checksum": "725FC900E2619C961231271D6A94C483"
-      },
-      {
         "timestamp": "2026-06-17T21:07:22.698Z",
         "targetAbi": "10.11.9.0",
         "checksum": "FEE4A6A36EB60FF447132981A03DDF14",
