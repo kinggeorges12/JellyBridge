@@ -236,7 +236,7 @@ public class PlaceholderVideoGenerator
             return false;
         }
     }
-
+    
     /// <summary>
     /// Ensures an embedded asset is extracted to the temp directory.
     /// Uses a semaphore per asset name to prevent race conditions when multiple tasks try to extract the same asset simultaneously.
@@ -245,41 +245,47 @@ public class PlaceholderVideoGenerator
     /// <returns>Path to the extracted asset file, or null if failed</returns>
     private async Task<string?> EnsureAssetExtractedAsync(string assetName)
     {
-        var assetFilepath = Path.Combine(_assetPath, assetName);
-        // Get or create a semaphore for this specific asset to serialize extraction
-        var semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
+        string assetFilepath = Path.Combine(_assetPath, assetName);
+        SemaphoreSlim semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
         
         await semaphore.WaitAsync();
         try
         {
-            // After acquiring the lock, check if file was already created by another task
             if (!File.Exists(assetFilepath))
             {
-                // Check for custom asset configuration and file exists
-                var usingConfigDefault = false;
-                var customAssetPath = string.Empty;
+                bool useDefaultAsset = false;
+                bool useCustomAsset = false;
+                string customAssetPath = string.Empty;
+                
+                // Get configuration for this asset type
                 if (assetName == MovieAsset)
                 {
-                    usingConfigDefault = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.DefaultMoviesPromo));
-                    customAssetPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomMoviesPromo));
-                } else if (assetName == SeasonAsset)
-                {
-                    usingConfigDefault = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.DefaultSeriesPromo));
-                    customAssetPath = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.CustomSeriesPromo));
+                    useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultMoviesPromo");
+                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomMoviesPromo") ?? string.Empty;
                 }
-                // Ensure custom asset is usable
-                var usingCustomAsset = true;
-                if (!usingConfigDefault)
+                else if (assetName == SeasonAsset)
                 {
-                    if (string.IsNullOrEmpty(customAssetPath) || !File.Exists(customAssetPath))
+                    useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultSeriesPromo");
+                    customAssetPath = Plugin.GetConfigOrDefault<string>("CustomSeriesPromo") ?? string.Empty;
+                }
+                
+                // Determine if we should use a custom asset
+                if (!useDefaultAsset)
+                {
+                    if (!string.IsNullOrEmpty(customAssetPath) && File.Exists(customAssetPath))
                     {
-                        usingCustomAsset = false;
-                        _logger.LogWarning("Custom asset for {AssetName} is not configured or does not exist: {CustomAssetPath}", assetName, customAssetPath);
+                        useCustomAsset = true;
+                    }
+                    else
+                    {
+                        useCustomAsset = false;
+                        _logger.LogWarning("Custom asset for {AssetName} is not configured or does not exist: {CustomAssetPath}", 
+                            assetName, customAssetPath);
                     }
                 }
-
-                // Build asset
-                if (usingCustomAsset)
+                
+                // Build asset (custom or embedded)
+                if (useCustomAsset)
                 {
                     _logger.LogTrace("Using custom asset for {AssetName}: {CustomAssetPath}", assetName, customAssetPath);
                     File.Copy(customAssetPath, assetFilepath, overwrite: true);
@@ -322,9 +328,9 @@ public class PlaceholderVideoGenerator
             }
             return assetFilepath;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogError(ex, "Failed to extract asset: {AssetName}", assetName);
+            _logger.LogError(exception, "Failed to extract asset: {AssetName}", assetName);
             return null;
         }
         finally
