@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.18.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.18 - had an oopsies, testing recovery",
+        "dependencies": [],
+        "targetAbi": "10.11.9.0",
+        "checksum": "143DB1DC61FA48785849C945395506D8",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.11.9.zip",
+        "timestamp": "2026-07-21T20:23:37.519Z"
+      },
+      {
+        "version": "3.18.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.18 - had an oopsies, testing recovery",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "D8FAE74DE06F1F7D4C5FC136A25DC4CF",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.11.0.zip",
+        "timestamp": "2026-07-21T20:23:37.519Z"
+      },
+      {
+        "version": "3.18.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.18 - had an oopsies, testing recovery",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "B41E548FCAC9084A5DAD4E1A8C33D53E",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.18.10.7.zip",
+        "timestamp": "2026-07-21T20:23:37.519Z"
+      },
+      {
         "timestamp": "2026-06-17T21:07:22.698Z",
         "targetAbi": "10.11.9.0",
         "checksum": "FEE4A6A36EB60FF447132981A03DDF14",
