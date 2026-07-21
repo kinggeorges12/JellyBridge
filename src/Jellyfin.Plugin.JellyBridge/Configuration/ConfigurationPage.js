@@ -28,6 +28,9 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
+            // Initialize upload promo video
+            initializeUploadPromo(page);
+            
             // Initialize import discover content settings including network interface and sync buttons
             initializeImportContent(page);
             
@@ -283,6 +286,8 @@ function performTestConnection(page) {
     const url = safeParseString(page.querySelector('#JellyseerrUrl'));
     const apiKey = safeParseString(page.querySelector('#ApiKey'));
     const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    const CustomMoviePromo = safeParseString(page.querySelector('#CustomMoviePromo'));
+    const CustomShowPromo = safeParseString(page.querySelector('#CustomShowPromo'));
     const jellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
 
     // Validate URL format if provided
@@ -294,7 +299,15 @@ function performTestConnection(page) {
     // Validate Library Directory
     if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
-    // Validate Library Directory
+    // Validate Custom Movie Promo
+    let isDefaultMoviePromo = nullIfDefault(page.querySelector('#DefaultMoviePromo').checked, config.ConfigDefaults.DefaultMoviePromo);
+    let isDefaultShowPromo = nullIfDefault(page.querySelector('#DefaultShowPromo').checked, config.ConfigDefaults.DefaultShowPromo);
+    if (!isDefaultMoviePromo && !validateField(page, 'CustomMoviePromo', validators.windowsFolder, 'Custom Movie Promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    // Validate Custom Show Promo
+    if (!isDefaultShowPromo && !validateField(page, 'CustomShowPromo', validators.windowsFolder, 'Custom Show Promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    // Validate Temp Directory
     if (!validateField(page, 'JellyBridgeTempDirectory', validators.windowsFolder, 'Temp Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
     testButton.disabled = true;
@@ -304,6 +317,8 @@ function performTestConnection(page) {
         JellyseerrUrl: url,
         ApiKey: apiKey,
         LibraryDirectory: libraryDirectory,
+        CustomMoviePromo: isDefaultMoviePromo ? null : CustomMoviePromo,
+        CustomShowPromo: isDefaultShowPromo ? null : CustomShowPromo,
         JellyBridgeTempDirectory: jellyBridgeTempDirectory
     };
 
@@ -828,6 +843,126 @@ function loadRegions(page) {
 }
 
 // ==========================================
+// CUSTOMIZE PROMO VIDEO FUNCTIONS
+// ==========================================
+
+
+function initializeUploadPromo(page) {
+    // Load initial status
+    setInputField(page, 'CustomMoviePromo');
+    setInputField(page, 'DefaultMoviePromo', true);
+    setInputField(page, 'CustomShowPromo');
+    setInputField(page, 'DefaultShowPromo', true);
+    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
+    if (placeholderDurationInput) {
+        placeholderDurationInput.addEventListener('input', function() {
+            if (this.value && parseInt(this.value) < 1) {
+                this.value = '1';
+            }
+        });
+    }
+    setInputField(page, 'JellyBridgeTempDirectory');
+
+    loadPromoVideos(page);
+    
+    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    const customizePromoButton = page.querySelector('#generatePromoVideos');
+    customizePromoButton.addEventListener('click', function() {
+        performCustomizePromo(page);
+    });
+}
+
+function loadPromoVideos(page) {
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/PromoVideos'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function(result) {
+        // Update movie placeholder status
+        var movie = result.movie || {};
+        const movieStatusDiv = page.querySelector('#moviePromoStatus');
+        if (movieStatusDiv) {
+            if (movie.hasCustom) {
+                var sizeKb = Math.round((movie.fileSize || 0) / 1024);
+                movieStatusDiv.textContent = 'Custom: ' + movie.fileName + ' (' + sizeKb + ' KB)';
+            } else {
+                movieStatusDiv.textContent = 'Using default';
+            }
+        }
+
+        // Update show placeholder status
+        var show = result.show || {};
+        const showStatusDiv = page.querySelector('#showPromoStatus');
+        if (showStatusDiv) {
+            if (show.hasCustom) {
+                var sizeKb = Math.round((show.fileSize || 0) / 1024);
+                showStatusDiv.textContent = 'Custom: ' + show.fileName + ' (' + sizeKb + ' KB)';
+            } else {
+                showStatusDiv.textContent = 'Using default';
+            }
+        }
+    }).catch(function(error) {
+        Dashboard.alert('❌ Failed to load custom placeholder status: ' + (error?.message || error));
+    });
+}
+
+function performCustomizePromo(page) {
+    const customizePromoButton = page.querySelector('#generatePromoVideos');
+    
+    // Show confirmation dialog for saving settings before requesting content
+    Dashboard.confirm({
+        title: 'Confirm Save',
+        text: 'Settings will be saved before generating JellyBridge Library promo videos.',
+        confirmText: '💾 Save & Request ⭐',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            customizePromoButton.disabled = true;
+            // Save settings first, then request content
+            Dashboard.showLoadingMsg();
+            
+            const generatePromoVideosResult = page.querySelector('#generatePromoVideosResult');
+            savePluginConfiguration(page).then(function(result) {
+                // Show loading message in the request result textbox
+                generatePromoVideosResult.style.display = 'block';
+                appendToResultBox(generatePromoVideosResult, '🔄 Generating JellyBridge Library Promo Videos...', true);
+                appendToResultBox(generatePromoVideosResult, "⏳ " + new Date().toLocaleTimeString());
+                
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                // Request content if confirmed
+                Dashboard.showLoadingMsg();
+                return ApiClient.ajax({
+                    url: ApiClient.getUrl('JellyBridge/PromoVideos'),
+                    type: 'POST',
+                    data: '{}',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(syncResult) {
+                    appendToResultBox(generatePromoVideosResult, '\n' + (syncResult.result || 'No result available'));
+                    scrollToElement('generatePromoVideosResult');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
+                    
+                    let resultText = `\nRequest JellyBridge Library Promo Videos Results:\n`;
+                    resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
+                    
+                    appendToResultBox(generatePromoVideosResult, resultText);
+                    scrollToElement('generatePromoVideosResult');
+                });
+            }).catch(function(error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                scrollToElement('jellyBridgeConfigurationForm');
+            }).finally(function() {
+                appendToResultBox(generatePromoVideosResult, "⏰ " + new Date().toLocaleTimeString());
+                Dashboard.hideLoadingMsg();
+                customizePromoButton.disabled = false;
+            });
+        }
+    });
+}
+
+// ==========================================
 // SORT CONTENT FUNCTIONS
 // ==========================================
 
@@ -950,6 +1085,7 @@ function initializeManageLibrary(page) {
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'ResponsiveFavoriteRequests', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
+    setInputField(page, 'UserPermissionRequest4k', true);
     setInputField(page, 'RequestFirstSeason', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
@@ -1191,15 +1327,6 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
     setInputField(page, 'PlaceholderDurationSeconds');
-    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
-    if (placeholderDurationInput) {
-        placeholderDurationInput.addEventListener('input', function() {
-            if (this.value && parseInt(this.value) < 1) {
-                this.value = '1';
-            }
-        });
-    }
-    setInputField(page, 'JellyBridgeTempDirectory');
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'TaskTimeoutMinutes');
@@ -1446,17 +1573,22 @@ function performPluginReset(page) {
                 ExcludeFromMainLibraries: null,
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
+                UserPermissionRequest4k: null,
                 RequestFirstSeason: null,
                 ManageJellyseerrLibrary: null,
+                CustomMoviePromo: null,
+                DefaultMoviePromo: null,
+                CustomShowPromo: null,
+                DefaultShowPromo: null,
+                PlaceholderDurationSeconds: null,
+                JellyBridgeTempDirectory: '',
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
                 TaskTimeoutMinutes: null,
                 EnableDebugLogging: null,
                 EnableTraceLogging: null,
                 Region: '',
-                NetworkMap: null,
-                PlaceholderDurationSeconds: null,
-                JellyBridgeTempDirectory: ''
+                NetworkMap: null
             };
             
             // Send reset configuration to the plugin
@@ -1591,6 +1723,7 @@ function savePluginConfiguration(page) {
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
+    form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
@@ -1604,12 +1737,16 @@ function savePluginConfiguration(page) {
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.CustomMoviePromo = safeParseString(page.querySelector('#CustomMoviePromo'));
+    form.DefaultMoviePromo = nullIfDefault(page.querySelector('#DefaultMoviePromo').checked, config.ConfigDefaults.DefaultMoviePromo);
+    form.CustomShowPromo = safeParseString(page.querySelector('#CustomShowPromo'));
+    form.DefaultShowPromo = nullIfDefault(page.querySelector('#DefaultShowPromo').checked, config.ConfigDefaults.DefaultShowPromo);
+    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+    form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
-    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
-    form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
     

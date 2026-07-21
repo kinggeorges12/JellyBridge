@@ -41,19 +41,30 @@ public class DiscoverService
     public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync()
     {
         var config = Plugin.GetConfiguration();
-        var networkMap = config?.NetworkMap ?? new List<JellyseerrNetwork>();
+        var networkMap = config?.NetworkMap;
         var allMovies = new List<JellyseerrMovie>();
         var allShows = new List<JellyseerrShow>();
+
+        if (networkMap == null || !networkMap.Any())
+        {
+            networkMap = new List<JellyseerrNetwork>();
+            _logger.LogDebug("No networks configured in NetworkMap. Searching all networks in the default region.");
+            networkMap.Add(new JellyseerrNetwork { Id = 0, Name = "All", Country = "Default", DisplayPriority = 0 });
+        }
         
         foreach (var network in networkMap)
         {
-            _logger.LogTrace("Fetching discover content for network: {NetworkName} (ID: {NetworkId}, Country: {Country}, Priority: {DisplayPriority})", network.Name, network.Id, network.Country, network.DisplayPriority);
+            _logger.LogTrace("Fetching discover content for network: {NetworkName} (ID: {NetworkId}, Region: {Country}, Priority: {DisplayPriority})", network.Name, network.Id, network.Country, network.DisplayPriority);
             
-            // Add network Id and Country parameters to query parameters
-            var networkParameters = new Dictionary<string, object> {
-                ["watchRegion"] = network.Country,
-                ["watchProviders"] = network.Id
-            };
+            var networkParameters = new Dictionary<string, object> {};
+            if(network.Id != 0)
+            {
+                // Add network Id and Country parameters to query parameters
+                networkParameters = new Dictionary<string, object> {
+                    ["watchRegion"] = network.Country,
+                    ["watchProviders"] = network.Id
+                };
+            }
 
             // Debug: Log the parameters being used
             _logger.LogTrace("Calling discover endpoints with parameters: {Parameters}", 

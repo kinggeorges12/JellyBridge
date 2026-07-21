@@ -14,7 +14,7 @@ public class Episode
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("airDate")]
-    public object AirDate { get; set; } = null!;
+    public string AirDate { get; set; } = string.Empty;
 
     [JsonPropertyName("episodeNumber")]
     public int EpisodeNumber { get; set; }

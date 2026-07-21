@@ -286,6 +286,24 @@ function isBasicType(typeName) {
     return basicTypes.includes(typeName);
 }
 
+function isNullishTypeNode(typeNode) {
+    if (!typeNode) return false;
+
+    if (
+        typeNode.kind === ts.SyntaxKind.NullKeyword ||
+        typeNode.kind === ts.SyntaxKind.UndefinedKeyword
+    ) {
+        return true;
+    }
+
+    return (
+        typeNode.kind === ts.SyntaxKind.LiteralType &&
+        typeNode.literal &&
+        (typeNode.literal.kind === ts.SyntaxKind.NullKeyword ||
+            typeNode.literal.kind === ts.SyntaxKind.UndefinedKeyword)
+    );
+}
+
         // Function to find source file for a missing class/type
         function findSourceFileForType(typeName, searchDirs) {
             for (const searchDir of searchDirs) {
@@ -420,6 +438,15 @@ function isBasicType(typeName) {
                             isOptional = true;
                         }
                         
+                        // Also check if the type is a union with null or undefined (e.g., "number | null")
+                        // This should be treated the same as optional/nullable
+                        if (!isOptional && member.type && member.type.kind === ts.SyntaxKind.UnionType) {
+                            const unionTypes = member.type.types;
+                            if (unionTypes.some((t) => isNullishTypeNode(t))) {
+                                isOptional = true;
+                            }
+                        }
+                        
                         // Get TypeORM decorators from source code using regex (TypeScript compiler doesn't parse decorators correctly)
                         let isPrimaryKey = false;
                         let isColumn = false;
@@ -522,13 +549,11 @@ function isBasicType(typeName) {
                                 csharpType = 'string';
                             } else if (member.type.kind === ts.SyntaxKind.BooleanKeyword) {
                                 csharpType = 'bool';
-                            }
-                            
-                            if (member.type.kind === ts.SyntaxKind.UnionType) {
+                            } else if (member.type.kind === ts.SyntaxKind.UnionType) {
                                 // Handle union types (usually for optional properties)
                                 const unionTypes = member.type.types;
-                                if (unionTypes.length === 2 && unionTypes.some(t => t.kind === ts.SyntaxKind.NullKeyword)) {
-                                    const nonNullType = unionTypes.find(t => t.kind !== ts.SyntaxKind.NullKeyword);
+                                if (unionTypes.length === 2 && unionTypes.some((t) => isNullishTypeNode(t))) {
+                                    const nonNullType = unionTypes.find((t) => !isNullishTypeNode(t));
                                     if (nonNullType.kind === ts.SyntaxKind.TypeReference) {
                                         csharpType = convertTypeScriptTypeToCSharp(nonNullType, '', missingTypes, propertyName, className) + '?';
                                     } else if (nonNullType.kind === ts.SyntaxKind.NumberKeyword) {
@@ -555,11 +580,29 @@ function isBasicType(typeName) {
                         
                         // Override csharpType based on columnType from @Column decorator only for basic types
                         // Don't override if we already have a specific TypeScript type (like MediaType enum)
-                        if (isColumn && columnType && member.type && (
-                            member.type.kind === ts.SyntaxKind.StringKeyword ||
-                            member.type.kind === ts.SyntaxKind.NumberKeyword ||
-                            member.type.kind === ts.SyntaxKind.BooleanKeyword
-                        )) {
+                        // Also treat unions like number|null as basic so column type mapping still applies.
+                        let isBasicColumnType = false;
+                        if (member.type) {
+                            if (
+                                member.type.kind === ts.SyntaxKind.StringKeyword ||
+                                member.type.kind === ts.SyntaxKind.NumberKeyword ||
+                                member.type.kind === ts.SyntaxKind.BooleanKeyword
+                            ) {
+                                isBasicColumnType = true;
+                            } else if (member.type.kind === ts.SyntaxKind.UnionType) {
+                                const nonNullTypes = member.type.types.filter((t) => !isNullishTypeNode(t));
+                                if (
+                                    nonNullTypes.length === 1 &&
+                                    (nonNullTypes[0].kind === ts.SyntaxKind.StringKeyword ||
+                                        nonNullTypes[0].kind === ts.SyntaxKind.NumberKeyword ||
+                                        nonNullTypes[0].kind === ts.SyntaxKind.BooleanKeyword)
+                                ) {
+                                    isBasicColumnType = true;
+                                }
+                            }
+                        }
+
+                        if (isColumn && columnType && member.type && isBasicColumnType) {
                             switch (columnType) {
                                 case 'integer':
                                 case 'int':
@@ -707,7 +750,7 @@ function isBasicType(typeName) {
                             // Check if this is a union type with string literals
                             if (propertyType.kind === ts.SyntaxKind.UnionType) {
                                 const unionTypes = propertyType.types;
-                                const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+                                const nonNullTypes = unionTypes.filter((t) => !isNullishTypeNode(t));
                                 
                                 if (nonNullTypes.length >= 2 && 
                                     nonNullTypes.every(t => t.kind === ts.SyntaxKind.LiteralType && t.literal.kind === ts.SyntaxKind.StringLiteral)) {
@@ -1166,7 +1209,7 @@ function convertTypeAliasToClass(typeAliasNode, sourceFile, missingTypes = new S
     if (typeNode.kind === ts.SyntaxKind.UnionType) {
         // Handle union type aliases - create a static class with constants
         const unionTypes = typeNode.types;
-        const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+        const nonNullTypes = unionTypes.filter((t) => !isNullishTypeNode(t));
         
         if (nonNullTypes.length >= 2 && 
             nonNullTypes.every(t => t.kind === ts.SyntaxKind.LiteralType && t.literal.kind === ts.SyntaxKind.StringLiteral)) {
@@ -1377,7 +1420,7 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
                 
                 if (actualElementType.kind === ts.SyntaxKind.UnionType) {
                     const unionTypes = actualElementType.types;
-                    const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+                    const nonNullTypes = unionTypes.filter((t) => !isNullishTypeNode(t));
                     
                     if (nonNullTypes.length >= 2) {
                         const unionTypeNames = nonNullTypes.map(t => {
@@ -1518,7 +1561,7 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
         case ts.SyntaxKind.UnionType:
             // For union types, try to find a common base type or use the first non-null type
             const unionTypes = typeNode.types;
-            const nonNullTypes = unionTypes.filter(t => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword);
+            const nonNullTypes = unionTypes.filter((t) => !isNullishTypeNode(t));
             console.log('DEBUG: UnionType - propertyName:', propertyName, 'parentClassName:', parentClassName, 'nonNullTypes.length:', nonNullTypes.length);
             
             if (nonNullTypes.length >= 2) {

@@ -61,10 +61,19 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
         { nameof(RemoveRequestedFromFavorites), false },
+        { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(LibraryPrefix), string.Empty },
+
+        // Customize Promo Videos
+        { nameof(CustomMoviePromo), string.Empty },
+        { nameof(DefaultMoviePromo), true },
+        { nameof(CustomShowPromo), string.Empty },
+        { nameof(DefaultShowPromo), true },
+        { nameof(PlaceholderDurationSeconds), 10 },
+        { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
 
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
@@ -76,8 +85,6 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(TaskTimeoutMinutes), 10 },
         { nameof(RequestTimeout), 60 },
         { nameof(RetryAttempts), 3 },
-        { nameof(PlaceholderDurationSeconds), 10 },
-        { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
         { nameof(EnableDebugLogging), false },
         { nameof(EnableTraceLogging), false },
     };
@@ -172,6 +179,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? RemoveRequestedFromFavorites { get; set; }
 
     /// <summary>
+    /// When enabled, requests will use the 4k permissions of the user, rather than requesting the default non-4k content.
+    /// </summary>
+    public bool? UserPermissionRequest4k { get; set; }
+
+    /// <summary>
     /// When enabled, requests will only be made for the first season of a show.
     /// </summary>
     public bool? RequestFirstSeason { get; set; }
@@ -190,6 +202,40 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
     public string LibraryPrefix { get; set; } = string.Empty;
+
+    // ===== Customize Promo Videos =====
+    /// <summary>
+    /// Gets or sets the file name of the custom movie promo image (stored in plugin data folder).
+    /// Empty string means use the built-in asset.
+    /// </summary>
+    public string CustomMoviePromo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether to use the default movie promo image (built-in asset).
+    /// </summary>
+    public bool? DefaultMoviePromo { get; set; }
+
+    /// <summary>
+    /// Gets or sets the file name of the custom show promo image (stored in plugin data folder).
+    /// Empty string means use the built-in asset.
+    /// </summary>
+    public string CustomShowPromo { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets whether to use the default show promo image (built-in asset).
+    /// </summary>
+    public bool? DefaultShowPromo { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default duration (in seconds) for generated placeholder videos.
+    /// </summary>
+    public int? PlaceholderDurationSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the temporary folder path for generating placeholder videos.
+    /// If empty, the system temp folder will be used.
+    /// </summary>
+    public string JellyBridgeTempDirectory { get; set; } = string.Empty;
 
     // ===== Sort Discover Content =====
     /// <summary>
@@ -224,17 +270,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the number of retry attempts.
     /// </summary>
     public int? RetryAttempts { get; set; }
-
-    /// <summary>
-    /// Gets or sets the default duration (in seconds) for generated placeholder videos.
-    /// </summary>
-    public int? PlaceholderDurationSeconds { get; set; }
-
-    /// <summary>
-    /// Gets or sets the temporary folder path for generating placeholder videos.
-    /// If empty, the system temp folder will be used.
-    /// </summary>
-    public string JellyBridgeTempDirectory { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether to enable debug logging.

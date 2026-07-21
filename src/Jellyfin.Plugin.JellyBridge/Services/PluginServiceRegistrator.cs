@@ -67,8 +67,9 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<Controllers.GeneralSettingsController>();
             serviceCollection.AddScoped<Controllers.TaskStatusController>();
             serviceCollection.AddScoped<Controllers.ImportDiscoverContentController>();
-            serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.ManageDiscoverLibraryController>();
+            serviceCollection.AddScoped<Controllers.CustomizePromoController>();
+            serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
         }
     }

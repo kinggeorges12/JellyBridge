@@ -1,13 +1,14 @@
+# Only used for feature release
+release/
 # Ignore all dot folders and files except .github/workflows
-.*
 !.github/workflows/
 # Copilot agent instructions and commands
 .github/agents/
 .github/commands/
+.github/*
 bin/
 obj/
 debug/
-release/
 # User-specific files
 *.user*
 *.suo
