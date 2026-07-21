@@ -1,5 +1,5 @@
 # Only used for feature release
-release/
+#release/
 # Ignore all dot folders and files except .github/workflows
 !.github/workflows/
 # Copilot agent instructions and commands
