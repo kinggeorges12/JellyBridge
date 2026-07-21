@@ -95,12 +95,10 @@
     <EmbeddedResource Include="Configuration\ConfigurationPage.js" />
     <None Remove="Assets\movie.png" />
     <EmbeddedResource Include="Assets\movie.png" />
-    <!--<None Remove="Assets\show.png" />-->
-    <!--<EmbeddedResource Include="Assets\show.png" />-->
+    <None Remove="Assets\show.png" />
+    <EmbeddedResource Include="Assets\show.png" />
     <!--<None Remove="Assets\season.png" />-->
     <!--<EmbeddedResource Include="Assets\season.png" />-->
-    <None Remove="Assets\S00E9999.png" />
-    <EmbeddedResource Include="Assets\S00E9999.png" />
   </ItemGroup>
 
 </Project>

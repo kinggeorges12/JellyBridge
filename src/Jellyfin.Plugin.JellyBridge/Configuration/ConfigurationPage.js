@@ -37,6 +37,9 @@ export default function (view) {
             // Initialize manage discover library settings
             initializeManageLibrary(page);
             
+            // Initialize upload promo video
+            initializeUploadPromo(page);
+            
             // Initialize sort content settings
             initializeSortContent(page);
             
@@ -210,6 +213,13 @@ function initializeGeneralSettings(page) {
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'EnableStartupSync', true);
     
+    const fileInputField = page.querySelector('#LibraryDirectory');
+    const fileBrowserButton = page.querySelector('#browseLibraryDirectory');
+    fileBrowserButton.addEventListener("click", function() {
+        browseFolder(fileInputField, "Select JellyBridge Library Directory");
+    });
+
+    
     // Test connection button functionality
     const testButton = page.querySelector('#testConnection');
     testButton.addEventListener('click', function () {
@@ -261,24 +271,6 @@ function initializeGeneralSettings(page) {
         e.preventDefault();
         return false;
     });
-
-    // Disable dependent fields when automated task is disabled
-    const isEnabledCheckbox = page.querySelector('#IsEnabled');
-    if (isEnabledCheckbox) {
-        isEnabledCheckbox.addEventListener('change', function() {
-            updateAutoTaskDependencies();
-        });
-    }
-    // Initialize dependency state on load
-    updateAutoTaskDependencies();
-    
-    // Add click handlers to scroll to the IsEnabled checkbox when disabled fields are clicked
-    const syncIntervalContainer = page.querySelector('#SyncIntervalHoursContainer');
-    
-    // Set up scroll handlers for containers that depend on IsEnabled
-    const dependentContainers = [syncIntervalContainer].filter(Boolean);
-    
-    setupDisabledScrollHandlers('#IsEnabled', dependentContainers);
 }
 
 function performTestConnection(page) {
@@ -286,8 +278,8 @@ function performTestConnection(page) {
     const url = safeParseString(page.querySelector('#JellyseerrUrl'));
     const apiKey = safeParseString(page.querySelector('#ApiKey'));
     const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
-    const CustomMoviePromo = safeParseString(page.querySelector('#CustomMoviePromo'));
-    const CustomShowPromo = safeParseString(page.querySelector('#CustomShowPromo'));
+    const CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
+    const CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
     const jellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
 
     // Validate URL format if provided
@@ -299,13 +291,13 @@ function performTestConnection(page) {
     // Validate Library Directory
     if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
-    // Validate Custom Movie Promo
-    let isDefaultMoviePromo = nullIfDefault(page.querySelector('#DefaultMoviePromo').checked, config.ConfigDefaults.DefaultMoviePromo);
-    let isDefaultShowPromo = nullIfDefault(page.querySelector('#DefaultShowPromo').checked, config.ConfigDefaults.DefaultShowPromo);
-    if (!isDefaultMoviePromo && !validateField(page, 'CustomMoviePromo', validators.windowsFolder, 'Custom Movie Promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+    // Validate Custom Movies promo
+    let isDefaultMoviesPromo = page.querySelector('#DefaultMoviesPromo').checked;
+    if (!isDefaultMoviesPromo && !validateField(page, 'CustomMoviesPromo', validators.windowsFolder, 'Custom Movies promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
-    // Validate Custom Show Promo
-    if (!isDefaultShowPromo && !validateField(page, 'CustomShowPromo', validators.windowsFolder, 'Custom Show Promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+    // Validate Custom Series promo
+    let isDefaultSeriesPromo = page.querySelector('#DefaultSeriesPromo').checked;
+    if (!isDefaultSeriesPromo && !validateField(page, 'CustomSeriesPromo', validators.windowsFolder, 'Custom Series promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
 
     // Validate Temp Directory
     if (!validateField(page, 'JellyBridgeTempDirectory', validators.windowsFolder, 'Temp Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
@@ -317,8 +309,8 @@ function performTestConnection(page) {
         JellyseerrUrl: url,
         ApiKey: apiKey,
         LibraryDirectory: libraryDirectory,
-        CustomMoviePromo: isDefaultMoviePromo ? null : CustomMoviePromo,
-        CustomShowPromo: isDefaultShowPromo ? null : CustomShowPromo,
+        CustomMoviesPromo: isDefaultMoviesPromo ? null : CustomMoviesPromo,
+        CustomSeriesPromo: isDefaultSeriesPromo ? null : CustomSeriesPromo,
         JellyBridgeTempDirectory: jellyBridgeTempDirectory
     };
 
@@ -849,21 +841,39 @@ function loadRegions(page) {
 
 function initializeUploadPromo(page) {
     // Load initial status
-    setInputField(page, 'CustomMoviePromo');
-    setInputField(page, 'DefaultMoviePromo', true);
-    setInputField(page, 'CustomShowPromo');
-    setInputField(page, 'DefaultShowPromo', true);
-    const placeholderDurationInput = page.querySelector('#PlaceholderDurationSeconds');
-    if (placeholderDurationInput) {
-        placeholderDurationInput.addEventListener('input', function() {
+    setInputField(page, 'CustomMoviesPromo');
+    const CustomMoviesPromo = page.querySelector('#CustomMoviesPromo');
+    const browseCustomMoviesPromo = page.querySelector('#browseCustomMoviesPromo');
+    browseCustomMoviesPromo.addEventListener("click", function() {
+        browseFolder(CustomMoviesPromo, "Select an Image File for the Movie Promo Video", true);
+    });
+    setInputField(page, 'DefaultMoviesPromo', true);
+
+    setInputField(page, 'CustomSeriesPromo');
+    const CustomSeriesPromo = page.querySelector('#CustomSeriesPromo');
+    const browseCustomSeriesPromo = page.querySelector('#browseCustomSeriesPromo');
+    browseCustomSeriesPromo.addEventListener("click", function() {
+        browseFolder(CustomSeriesPromo, "Select an Image File for the Series Promo Video", true);
+    });
+    setInputField(page, 'DefaultSeriesPromo', true);
+
+    setInputField(page, 'JellyBridgeTempDirectory');
+    const JellyBridgeTempDirectory = page.querySelector('#JellyBridgeTempDirectory');
+    const browseJellyBridgeTempDirectory = page.querySelector('#browseJellyBridgeTempDirectory');
+    browseJellyBridgeTempDirectory.addEventListener("click", function() {
+        browseFolder(JellyBridgeTempDirectory, "Select Promo Video Temp Directory");
+    });
+
+    loadPromoVideos(page);
+
+    const inputPromoVideoDurationSeconds = page.querySelector('#PromoVideoDurationSeconds');
+    if (inputPromoVideoDurationSeconds) {
+        inputPromoVideoDurationSeconds.addEventListener('input', function() {
             if (this.value && parseInt(this.value) < 1) {
                 this.value = '1';
             }
         });
     }
-    setInputField(page, 'JellyBridgeTempDirectory');
-
-    loadPromoVideos(page);
     
     // Request JellyBridge Library Favorites in Jellyseerr button functionality
     const customizePromoButton = page.querySelector('#generatePromoVideos');
@@ -873,37 +883,21 @@ function initializeUploadPromo(page) {
 }
 
 function loadPromoVideos(page) {
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyBridge/PromoVideos'),
-        type: 'GET',
-        dataType: 'json'
-    }).then(function(result) {
-        // Update movie placeholder status
-        var movie = result.movie || {};
-        const movieStatusDiv = page.querySelector('#moviePromoStatus');
-        if (movieStatusDiv) {
-            if (movie.hasCustom) {
-                var sizeKb = Math.round((movie.fileSize || 0) / 1024);
-                movieStatusDiv.textContent = 'Custom: ' + movie.fileName + ' (' + sizeKb + ' KB)';
-            } else {
-                movieStatusDiv.textContent = 'Using default';
-            }
-        }
+    const promoUrl = ApiClient.getUrl('JellyBridge/PromoVideos');
+    
+    const moviesPromoVideo = document.getElementById('moviesPromoVideo');
+    // Add cache-busting parameter
+    const moviesUrl = `${promoUrl}/movies?t=${Date.now()}`;
+    moviesPromoVideo.innerHTML = `<source src="${moviesUrl}" type="video/mp4">`
+        + 'Your browser does not support the video tag.';
+    moviesPromoVideo.load();
 
-        // Update show placeholder status
-        var show = result.show || {};
-        const showStatusDiv = page.querySelector('#showPromoStatus');
-        if (showStatusDiv) {
-            if (show.hasCustom) {
-                var sizeKb = Math.round((show.fileSize || 0) / 1024);
-                showStatusDiv.textContent = 'Custom: ' + show.fileName + ' (' + sizeKb + ' KB)';
-            } else {
-                showStatusDiv.textContent = 'Using default';
-            }
-        }
-    }).catch(function(error) {
-        Dashboard.alert('❌ Failed to load custom placeholder status: ' + (error?.message || error));
-    });
+    const seriesPromoVideo = document.getElementById('seriesPromoVideo');
+    // Add cache-busting parameter
+    const seriesUrl = `${promoUrl}/series?t=${Date.now()}`;
+    seriesPromoVideo.innerHTML = `<source src="${seriesUrl}" type="video/mp4">`
+        + 'Your browser does not support the video tag.';
+    seriesPromoVideo.load();
 }
 
 function performCustomizePromo(page) {
@@ -913,7 +907,7 @@ function performCustomizePromo(page) {
     Dashboard.confirm({
         title: 'Confirm Save',
         text: 'Settings will be saved before generating JellyBridge Library promo videos.',
-        confirmText: '💾 Save & Request ⭐',
+        confirmText: '💾 Save & Generate 🎥',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
@@ -941,6 +935,7 @@ function performCustomizePromo(page) {
                 }).then(function(syncResult) {
                     appendToResultBox(generatePromoVideosResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('generatePromoVideosResult');
+                    loadPromoVideos(page);
                 }).catch(function(error) {
                     Dashboard.alert('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
                     
@@ -991,23 +986,6 @@ function initializeSortContent(page) {
     setInputField(page, 'EnableAutomatedSortTask', true);
     setInputField(page, 'MarkMediaPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
-
-    // Initialize sort task dependency state
-    updateSortTaskDependencies();
-    
-    // Add event listener for EnableAutomatedSortTask checkbox
-    const enableAutomatedSortTaskCheckbox = page.querySelector('#EnableAutomatedSortTask');
-    if (enableAutomatedSortTaskCheckbox) {
-        enableAutomatedSortTaskCheckbox.addEventListener('change', function() {
-            updateSortTaskDependencies();
-        });
-    }
-    
-    // Add scroll handler for SortTaskIntervalHours
-    const sortTaskIntervalContainer = page.querySelector('#SortTaskIntervalHoursContainer');
-    if (sortTaskIntervalContainer) {
-        setupDisabledScrollHandlers('#EnableAutomatedSortTask', [sortTaskIntervalContainer]);
-    }
 
     // Add sort content button functionality
     const sortButton = page.querySelector('#sortContent');
@@ -1091,32 +1069,6 @@ function initializeManageLibrary(page) {
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
     
-    updateNetworkFolderOptionsState();
-    updateAddDuplicateContentState();
-    
-    // Add event listener for UseNetworkFolders checkbox
-    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
-    if (useNetworkFoldersCheckbox) {
-        useNetworkFoldersCheckbox.addEventListener('change', function() {
-            updateNetworkFolderOptionsState();
-            updateAddDuplicateContentState();
-        });
-    }
-    
-    // Add event listener for AddDuplicateContent checkbox
-    const addDuplicateContentCheckbox = page.querySelector('#AddDuplicateContent');
-    if (addDuplicateContentCheckbox) {
-        addDuplicateContentCheckbox.addEventListener('change', function() {
-            updateAddDuplicateContentState();
-        });
-    }
-    
-    // Add scroll handler for AddDuplicateContent
-    const addDuplicateContentContainer = page.querySelector('#AddDuplicateContentContainer');
-    if (addDuplicateContentContainer) {
-        setupDisabledScrollHandlers('#UseNetworkFolders', [addDuplicateContentContainer]);
-    }
-    
     // Request JellyBridge Library Favorites in Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     syncFavoritesButton.addEventListener('click', function() {
@@ -1136,79 +1088,6 @@ function initializeManageLibrary(page) {
             performGenerateNetworkFolders(page);
         });
     }
-}
-
-function updateNetworkFolderOptionsState() {
-    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
-    const libraryPrefixInput = document.querySelector('#LibraryPrefix');
-    const libraryPrefixContainer = document.querySelector('#LibraryPrefixContainer');
-    const networkFolderOptionsDetails = document.querySelector('#networkFolderOptionsDetails');
-    const generateNetworkFoldersContainer = document.querySelector('#generateNetworkFoldersContainer');
-    const generateNetworkFoldersButton = document.querySelector('#generateNetworkFolders');
-    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
-    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
-    
-    const isEnabled = useNetworkFoldersCheckbox.checked;
-    
-    // Apply disabled state to the details element (makes it grayish)
-    if (networkFolderOptionsDetails) {
-        if (isEnabled) {
-            networkFolderOptionsDetails.classList.remove('disabled');
-        } else {
-            networkFolderOptionsDetails.classList.add('disabled');
-        }
-    }
-    
-    // Disable/enable Generate Network Folders button
-    if (generateNetworkFoldersButton) {
-        generateNetworkFoldersButton.disabled = !isEnabled;
-        // Apply disabled styling to the container
-        if (generateNetworkFoldersContainer) {
-            if (isEnabled) {
-                generateNetworkFoldersContainer.classList.remove('disabled');
-            } else {
-                generateNetworkFoldersContainer.classList.add('disabled');
-            }
-        }
-    }
-    
-    // Apply disabled state styling (this will handle the disabled property and styling)
-    applyDisabledState(libraryPrefixInput, libraryPrefixContainer, isEnabled);
-    // addDuplicateContent disabled state is handled by updateAddDuplicateContentState
-    
-    // Add click handler to scroll to required checkbox when disabled field is clicked
-    if (libraryPrefixContainer && useNetworkFoldersCheckbox) {
-        addScrollToCheckboxHandler(libraryPrefixContainer, useNetworkFoldersCheckbox);
-    }
-    
-    // Add click handler for add duplicate content container
-    if (addDuplicateContentContainer && useNetworkFoldersCheckbox) {
-        addScrollToCheckboxHandler(addDuplicateContentContainer, useNetworkFoldersCheckbox);
-    }
-    
-    // Add click handler for generate network folders container/button
-    if (generateNetworkFoldersContainer && useNetworkFoldersCheckbox) {
-        addScrollToCheckboxHandler(generateNetworkFoldersContainer, useNetworkFoldersCheckbox);
-    }
-}
-
-// Update controls that depend on UseNetworkFolders being enabled
-function updateAddDuplicateContentState() {
-    const useNetworkFoldersCheckbox = document.querySelector('#UseNetworkFolders');
-    const addDuplicateContentCheckbox = document.querySelector('#AddDuplicateContent');
-    const addDuplicateContentContainer = document.querySelector('#AddDuplicateContentContainer');
-    const addDuplicateContentWarning = document.querySelector('#addDuplicateContentWarning');
-    
-    const isUseNetworkFoldersEnabled = useNetworkFoldersCheckbox ? !!useNetworkFoldersCheckbox.checked : false;
-    const isAddDuplicateContentEnabled = addDuplicateContentCheckbox ? !!addDuplicateContentCheckbox.checked : false;
-    
-    // Show/hide warning message
-    if (addDuplicateContentWarning) {
-        addDuplicateContentWarning.style.display = isAddDuplicateContentEnabled ? 'block' : 'none';
-    }
-    
-    // Apply disabled state styling
-    applyDisabledState(addDuplicateContentCheckbox, addDuplicateContentContainer, isUseNetworkFoldersEnabled);
 }
 
 function performGenerateNetworkFolders(page) {
@@ -1326,52 +1205,12 @@ function initializeAdvancedSettings(page) {
     // Set advanced settings form values with null handling
     setInputField(page, 'RequestTimeout');
     setInputField(page, 'RetryAttempts');
-    setInputField(page, 'PlaceholderDurationSeconds');
+    setInputField(page, 'PromoVideoDurationSeconds');
     setInputField(page, 'EnableStartupSync', true);
     setInputField(page, 'StartupDelaySeconds');
     setInputField(page, 'TaskTimeoutMinutes');
     setInputField(page, 'EnableDebugLogging', true);
     setInputField(page, 'EnableTraceLogging', true);
-    
-    // Initialize startup delay state
-    updateStartupDelayState();
-    
-    // Initialize trace logging state
-    updateTraceLoggingState();
-    
-    // Initialize startup sync description
-    updateStartupSyncDescription();
-    
-    // Add event listener for AutoSyncOnStartup checkbox
-    const autoSyncOnStartupCheckbox = page.querySelector('#EnableStartupSync');
-    if (autoSyncOnStartupCheckbox) {
-        autoSyncOnStartupCheckbox.addEventListener('change', function() {
-            updateStartupDelayState();
-        });
-    }
-    
-    // Set up scroll handler for startup delay container
-    const startupDelaySecondsContainer = page.querySelector('#StartupDelaySecondsContainer');
-    const enableStartupSyncCheckboxForHandler = page.querySelector('#EnableStartupSync');
-    if (startupDelaySecondsContainer && enableStartupSyncCheckboxForHandler) {
-        addScrollToCheckboxHandler(startupDelaySecondsContainer, enableStartupSyncCheckboxForHandler);
-    }
-    
-    // Add event listener for EnableDebugLogging checkbox
-    const enableDebugLoggingCheckbox = page.querySelector('#EnableDebugLogging');
-    if (enableDebugLoggingCheckbox) {
-        enableDebugLoggingCheckbox.addEventListener('change', function() {
-            updateTraceLoggingState();
-        });
-    }
-    
-    // Add event listener for Use Network Folders checkbox
-    const useNetworkFoldersCheckbox = page.querySelector('#UseNetworkFolders');
-    if (useNetworkFoldersCheckbox) {
-        useNetworkFoldersCheckbox.addEventListener('change', function() {
-            updateNetworkFolderOptionsState();
-        });
-    }
     
     // Library Prefix real-time validation
     const libraryPrefixInput = page.querySelector('#LibraryPrefix');
@@ -1446,66 +1285,6 @@ function performCleanupMetadata(page) {
     });
 }
 
-function updateStartupDelayState() {
-    const autoSyncOnStartupCheckbox = document.querySelector('#EnableStartupSync');
-    const startupDelaySecondsInput = document.querySelector('#StartupDelaySeconds');
-    const startupDelaySecondsContainer = document.querySelector('#StartupDelaySecondsContainer');
-    
-    const isAutoSyncEnabled = autoSyncOnStartupCheckbox && autoSyncOnStartupCheckbox.checked;
-    
-    // Apply disabled state styling
-    applyDisabledState(startupDelaySecondsInput, startupDelaySecondsContainer, isAutoSyncEnabled);
-}
-
-function updateTraceLoggingState() {
-    const enableDebugLoggingCheckbox = document.querySelector('#EnableDebugLogging');
-    const enableTraceLoggingCheckbox = document.querySelector('#EnableTraceLogging');
-    const enableTraceLoggingContainer = document.querySelector('#EnableTraceLoggingContainer');
-    
-    const isDebugLoggingEnabled = enableDebugLoggingCheckbox && enableDebugLoggingCheckbox.checked;
-    
-    // Apply disabled state styling
-    applyDisabledState(enableTraceLoggingCheckbox, enableTraceLoggingContainer, isDebugLoggingEnabled);
-    
-    // Add click handler to scroll to required checkbox when disabled field is clicked
-    if (enableTraceLoggingContainer && enableDebugLoggingCheckbox) {
-        addScrollToCheckboxHandler(enableTraceLoggingContainer, enableDebugLoggingCheckbox);
-    }
-}
-
-// Update controls that depend on the automated sort task being enabled
-function updateSortTaskDependencies() {
-    const enableAutomatedSortTaskCheckbox = document.querySelector('#EnableAutomatedSortTask');
-    const sortTaskIntervalInput = document.querySelector('#SortTaskIntervalHours');
-    const sortTaskIntervalContainer = document.querySelector('#SortTaskIntervalHoursContainer');
-    
-    const isSortTaskEnabled = enableAutomatedSortTaskCheckbox ? !!enableAutomatedSortTaskCheckbox.checked : true;
-    
-    // Apply disabled state styling
-    applyDisabledState(sortTaskIntervalInput, sortTaskIntervalContainer, isSortTaskEnabled);
-    
-    // Update startup sync description to show enabled tasks
-    updateStartupSyncDescription();
-}
-
-// Update controls that depend on the automated task being enabled
-function updateAutoTaskDependencies() {
-    const pluginEnabledCheckbox = document.querySelector('#IsEnabled');
-    const syncIntervalInput = document.querySelector('#SyncIntervalHours');
-    const syncIntervalContainer = document.querySelector('#SyncIntervalHoursContainer');
-
-    const isPluginEnabled = pluginEnabledCheckbox ? !!pluginEnabledCheckbox.checked : true;
-
-    // Apply disabled state styling
-    applyDisabledState(syncIntervalInput, syncIntervalContainer, isPluginEnabled);
-
-    // Update startup delay to reflect current state
-    updateStartupDelayState();
-    
-    // Update startup sync description to show enabled tasks
-    updateStartupSyncDescription();
-}
-
 // Update the startup sync description to list only enabled tasks
 function updateStartupSyncDescription() {
     const descriptionElement = document.querySelector('#enableStartupSyncDescription');
@@ -1576,11 +1355,11 @@ function performPluginReset(page) {
                 UserPermissionRequest4k: null,
                 RequestFirstSeason: null,
                 ManageJellyseerrLibrary: null,
-                CustomMoviePromo: null,
-                DefaultMoviePromo: null,
-                CustomShowPromo: null,
-                DefaultShowPromo: null,
-                PlaceholderDurationSeconds: null,
+                CustomMoviesPromo: null,
+                DefaultMoviesPromo: null,
+                CustomSeriesPromo: null,
+                DefaultSeriesPromo: null,
+                PromoVideoDurationSeconds: null,
                 JellyBridgeTempDirectory: '',
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
@@ -1704,7 +1483,7 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
-        if (!validateField(page, 'PlaceholderDurationSeconds', validators.int, 'Placeholder Duration must be a positive integer').isValid) return;
+        if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
         if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
         return true;
     }
@@ -1737,11 +1516,11 @@ function savePluginConfiguration(page) {
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
-    form.CustomMoviePromo = safeParseString(page.querySelector('#CustomMoviePromo'));
-    form.DefaultMoviePromo = nullIfDefault(page.querySelector('#DefaultMoviePromo').checked, config.ConfigDefaults.DefaultMoviePromo);
-    form.CustomShowPromo = safeParseString(page.querySelector('#CustomShowPromo'));
-    form.DefaultShowPromo = nullIfDefault(page.querySelector('#DefaultShowPromo').checked, config.ConfigDefaults.DefaultShowPromo);
-    form.PlaceholderDurationSeconds = safeParseInt(page.querySelector('#PlaceholderDurationSeconds'));
+    form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
+    form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
+    form.CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
+    form.DefaultSeriesPromo = nullIfDefault(page.querySelector('#DefaultSeriesPromo').checked, config.ConfigDefaults.DefaultSeriesPromo);
+    form.PromoVideoDurationSeconds = safeParseInt(page.querySelector('#PromoVideoDurationSeconds'));
     form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
@@ -1769,6 +1548,86 @@ function savePluginConfiguration(page) {
 }
 
 // ==========================================
+// DEPENDENCY CHECKBOXES
+// ==========================================
+
+function initDependentCheckboxes(page) {
+    // Find all dependent elements
+    const dependentElementsOn = page.querySelectorAll('[data-depends-on]');
+    const dependentElementsOff = page.querySelectorAll('[data-depends-off]');
+    
+    // Loop through each dependent element
+    dependentElementsOn.forEach(function(element) {
+        const checkboxId = element.getAttribute('data-depends-on');
+        const checkbox = page.querySelector(`#${checkboxId}`) || document.getElementById(checkboxId);
+        
+        if (!checkbox) {
+            console.warn(`Checkbox "${checkboxId}" not found`);
+            return;
+        }
+        
+        // Add change listener to the checkbox
+        checkbox.addEventListener('change', function() {
+            updateStartupSyncDescription();
+            toggleDependentElement(element, this.checked);
+        });
+        
+        // Add click listener to the dependent element when disabled
+        element.addEventListener('click', function(e) {
+            if (this.classList.contains('disabled')) {
+                e.preventDefault();
+                e.stopPropagation();
+                scrollToCheckboxAndHighlight(checkbox);
+            }
+        });
+        
+        // Set initial state
+        toggleDependentElement(element, checkbox.checked);
+    });
+    
+    // Loop through each dependent element
+    dependentElementsOff.forEach(function(element) {
+        const checkboxId = element.getAttribute('data-depends-off');
+        const checkbox = page.querySelector(`#${checkboxId}`) || document.getElementById(checkboxId);
+        
+        if (!checkbox) {
+            console.warn(`Checkbox "${checkboxId}" not found`);
+            return;
+        }
+        
+        // Add change listener to the checkbox
+        checkbox.addEventListener('change', function() {
+            updateStartupSyncDescription();
+            toggleDependentElement(element, !this.checked);
+        });
+        
+        // Add click listener to the dependent element when disabled
+        element.addEventListener('click', function(e) {
+            if (this.classList.contains('disabled')) {
+                e.preventDefault();
+                e.stopPropagation();
+                scrollToCheckboxAndHighlight(checkbox);
+            }
+        });
+        
+        // Set initial state
+        toggleDependentElement(element, !checkbox.checked);
+    });
+}
+
+// Simple toggle function
+function toggleDependentElement(element, isChecked) {
+    const shouldDisable = !isChecked; // Disabled when unchecked
+    
+    if (shouldDisable) {
+        element.classList.add('disabled');
+    } else {
+        element.classList.remove('disabled');
+    }
+}
+
+
+// ==========================================
 // GLOBAL SETTINGS FUNCTIONS
 // ==========================================
 
@@ -1780,12 +1639,14 @@ function initializeGlobalSettings(page) {
     initializeLinkSpans(page);
     // Initialize number input scroll prevention
     initializeNumberInputScrollPrevention(page);
+    // Initialize dependent checkboxes
+    initDependentCheckboxes(page);
 }
 
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
     // List of detail section IDs
-    const detailIds = ['librarySetupInstructions', 'troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
+    const detailIds = ['librarySetupInstructions', 'troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'customPromoVideos', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
     
     detailIds.forEach(detailId => {
         const detailsElement = page.querySelector(`#${detailId}`);
@@ -1835,40 +1696,32 @@ function initializeNumberInputScrollPrevention(page) {
 // UTILITY FUNCTIONS
 // ==========================================
 
-// Apply disabled state styling to an input element and optionally its container
-// element: The input/checkbox element to disable/enable
-// container: Optional container element to also apply disabled styling to
-// isEnabled: Whether the element should be enabled (true) or disabled (false)
-function applyDisabledState(element, container, isEnabled) {
-    if (!element) return;
-    
-    element.disabled = !isEnabled;
-    
-    // Apply/remove disabled class styling
-    if (isEnabled) {
-        element.classList.remove('disabled');
-        if (container) {
-            container.classList.remove('disabled');
-        }
-    } else {
-        element.classList.add('disabled');
-        if (container) {
-            container.classList.add('disabled');
-        }
-    }
-}
+// Open a directory browser dialog to select a folder and set the input value
+function browseFolder(inputElement, title, includeFiles = false) {
+    // Create the dialog box
+    const directoryBrowser = new Dashboard.DirectoryBrowser();
 
-// Set up scroll handlers for multiple dependent containers that scroll to the same target checkbox
-// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
-// dependentContainers: Array of container elements that should trigger scroll when disabled
-function setupDisabledScrollHandlers(targetCheckboxSelector, dependentContainers) {
-    if (!Array.isArray(dependentContainers)) {
-        dependentContainers = [dependentContainers];
+    // Get the current value from the input element
+    let currentPath = inputElement.value || inputElement.placeholder || "";
+    // If includeFiles is true, we're browsing for a file, so navigate to the parent directory
+    if (includeFiles && currentPath) {
+        // Find the last slash and remove everything after it
+        const lastSlashIndex = Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\'));
+        if (lastSlashIndex > 0) {
+            currentPath = currentPath.substring(0, lastSlashIndex);
+        } else {
+            currentPath = '';
+        }
     }
-    
-    dependentContainers.forEach(container => {
-        if (container) {
-            addScrollToCheckboxHandler(container, targetCheckboxSelector);
+    // Show the directory browser dialog
+    directoryBrowser.show({
+        header: title || "Select a Folder",
+        path: currentPath,
+        includeDirectories: true,
+        includeFiles: includeFiles,
+        callback: function(path) {
+            inputElement.value = path;
+            directoryBrowser.close();
         }
     });
 }
@@ -1897,33 +1750,6 @@ function scrollToCheckboxAndHighlight(targetCheckbox) {
             }, 1000);
         }
     }
-}
-
-// Add a scroll-to-checkbox handler when a disabled container is clicked
-// containerElement: The container element that should trigger the scroll when disabled
-// targetCheckboxSelector: Query selector string or element for the checkbox to scroll to
-function addScrollToCheckboxHandler(containerElement, targetCheckboxSelector) {
-    if (!containerElement || containerElement.hasAttribute('data-scroll-handler')) {
-        return;
-    }
-    
-    containerElement.setAttribute('data-scroll-handler', 'true');
-    containerElement.addEventListener('click', function(e) {
-        // Check if the container is disabled or contains disabled form elements
-        const isDisabled = containerElement.classList.contains('disabled') || 
-                          containerElement.querySelector('input:disabled, select:disabled, textarea:disabled, button:disabled');
-        
-        if (isDisabled) {
-            // Don't trigger if clicking on a help icon (which should still work)
-            if (e.target.closest('.helpIcon')) {
-                return;
-            }
-            
-            e.preventDefault();
-            e.stopPropagation();
-            scrollToCheckboxAndHighlight(targetCheckboxSelector);
-        }
-    });
 }
 
 // Append text to a result box
