@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.21.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.21 - fixing default asset retrieval",
+        "dependencies": [],
+        "targetAbi": "10.11.9.0",
+        "checksum": "D23AC36C4EF7784BEA4A3FBE8C3C4496",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.11.9.zip",
+        "timestamp": "2026-07-21T21:11:05.821Z"
+      },
+      {
+        "version": "3.21.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.21 - fixing default asset retrieval",
+        "dependencies": [],
+        "targetAbi": "10.11.0.0",
+        "checksum": "9889A4F78DDB0394C8BD14831F37B0D6",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.11.0.zip",
+        "timestamp": "2026-07-21T21:11:05.821Z"
+      },
+      {
+        "version": "3.21.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.21 - fixing default asset retrieval",
+        "dependencies": [],
+        "targetAbi": "10.10.0.0",
+        "checksum": "27D1979DAE3348BBD638315D4CC23BD6",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature/release/JellyBridge-3.21.10.7.zip",
+        "timestamp": "2026-07-21T21:11:05.821Z"
+      },
+      {
         "version": "3.20.11.9",
         "changelog": "Jellyfin 10.11.9: v3.20 - fixing promo controller post return values",
         "dependencies": [],
