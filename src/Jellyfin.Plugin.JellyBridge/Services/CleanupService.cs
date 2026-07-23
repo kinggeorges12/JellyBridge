@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -16,12 +17,14 @@ public class CleanupService
     private readonly DebugLogger<CleanupService> _logger;
     private readonly MetadataService _metadataService;
     private readonly DiscoverService _discoverService;
+    private readonly BridgeService _bridgeService;
 
-    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService)
+    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<CleanupService>(logger);
         _metadataService = metadataService;
         _discoverService = discoverService;
+        _bridgeService = bridgeService;
     }
 
     /// <summary>
@@ -263,7 +266,7 @@ public class CleanupService
             }
         }
 
-        var filteredItems = _discoverService.FilterIgnoredItems(itemsWithoutPlaceholder);
+        var filteredItems = _bridgeService.FilterIgnoredItems(itemsWithoutPlaceholder);
         var created = await _discoverService.CreatePlaceholderVideosAsync(filteredItems);
         return created;
     }

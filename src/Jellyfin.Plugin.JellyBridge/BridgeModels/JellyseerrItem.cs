@@ -114,7 +114,7 @@ public interface IJellyseerrItem
     /// Returns a formatted string representation suitable for folder naming.
     /// Format: "MediaName (Year) [tmdbid-ID] [extraidname-ExtraId]" with dynamic sections based on available values.
     /// </summary>
-    string? ToFolderString()
+    string ToFolderString()
     {
         var parts = new List<string>();
         

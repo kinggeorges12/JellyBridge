@@ -200,8 +200,5 @@ public class JellyseerrMovie
     /// Gets the NFO filename for the movie.
     /// </summary>
     /// <returns>NFO filename string</returns>
-    public static string GetNfoFilename()
-    {
-        return "movie.nfo"; // Static value for movies
-    }
+    public static string GetNfoFilename() => "movie.nfo";
 }
