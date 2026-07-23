@@ -567,15 +567,9 @@ public class BridgeService
         
         var unmatched = new List<IJellyseerrItem>();
 
-        if (useNetworkFolders && addDuplicateContent)
-        {
-            var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetNetworkHashCode()));
-            unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetNetworkHashCode())).ToList();
-        } else {
-            var libIds = new HashSet<int>(libraryMatches.Select(i => i.Id));
-            unmatched = testItems.Where(t => !libIds.Contains(t.Id)).ToList();
-        }
-        _logger.LogDebug("GetNonMatchingJellyseerrItems: {UnmatchedCount} unmatched items", unmatched.Count);
+        var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemHashCode(network: useNetworkFolders && addDuplicateContent)));
+        unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemHashCode(network: useNetworkFolders && addDuplicateContent))).ToList();
+        _logger.LogDebug("{UnmatchedCount} unmatched items", unmatched.Count);
         return unmatched;
     }
 }

@@ -111,8 +111,8 @@ public class DiscoverService
     }
     
     /// <summary>
-    /// Filters duplicate media items from a list using the GetItemHashCode method.
-    /// Returns a list containing only unique items based on their hash code.
+    /// Filters duplicate media items from a list using the hash code.
+    /// Returns a list containing only unique items.
     /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
     /// <param name="items">List of media items to filter</param>
@@ -140,7 +140,7 @@ public class DiscoverService
         foreach (var item in items)
         {
             if (item == null) continue;
-            int hash = item.GetItemHashCode(useNetworkFolders);
+            int hash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
             
             if (seenHashes.Add(hash))
             {
@@ -231,7 +231,7 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Filters duplicate media items from a list using the GetNetworkHashCode method.
+    /// Filters duplicate media items from each library using the folder hash code.
     /// Returns a list containing only unique items based on their hash code.
     /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
