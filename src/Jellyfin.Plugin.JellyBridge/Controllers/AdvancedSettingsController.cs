@@ -86,7 +86,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Recycle all Jellyseerr library data.
+        /// Recycle all JellyBridge library data.
         /// </summary>
         [HttpPost("RecycleLibrary")]
         public async Task<IActionResult> RecycleLibrary()
@@ -142,25 +142,21 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
                     }
                     
-                    _logger.LogDebug("Data deletion completed successfully");
-                    
-                    // Refresh the Jellyseerr library after data deletion
-                    _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
+                    // Refresh the JellyBridge library after data deletion
+                    _logger.LogDebug("Starting JellyBridge library refresh after data deletion...");
 
-                    await _libraryService.ScanAllLibraries();
-                    
                     // Call the refresh method (fire-and-await, no return value)
                     // Update refresh always runs to reload user data (play counts)
-                    await _libraryService.RefreshBridgeLibrary(createMode: true, removeMode: true, refreshImages: true);
-
-                    _logger.LogInformation("Jellyseerr library refresh initiated");
+                    _libraryService.ScanThenRefresh(createMode: true, removeMode: true, refreshImages: true);
+                    
+                    _logger.LogInformation("JellyBridge library refresh initiated");
 
                     return true;
                 }, _logger, "Delete Library Data");
                 
                 return Ok(new { 
                     success = true, 
-                    message = "All Jellyseerr library data has been deleted successfully and library has been refreshed." 
+                    message = "All JellyBridge library data has been deleted successfully and library has been refreshed." 
                 });
             }
             catch (Exception ex)

@@ -362,12 +362,11 @@ public partial class SyncService
         {
             try
             {
-                _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
-                await _libraryService.ScanAllLibraries();
-                
-                _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
-                await _libraryService.RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
-                _logger.LogDebug("Background refresh completed");
+                // Call the refresh method (fire-and-await, no return value)
+                // Update refresh always runs to reload user data (play counts)
+                _libraryService.ScanThenRefresh(createMode: true, removeMode: true, refreshImages: true);
+                    
+                _logger.LogInformation("JellyBridge library refresh initiated");
             }
             catch (Exception ex)
             {
