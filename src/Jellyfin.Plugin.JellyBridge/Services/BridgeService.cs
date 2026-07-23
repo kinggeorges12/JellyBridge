@@ -265,7 +265,7 @@ public class BridgeService
                 continue;
             }
 
-            var normalizedLocations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalizedLocations = new HashSet<string>();
             foreach (var location in library.Locations)
             {
                 var normalized = FolderUtils.GetNormalizedPath(location);
@@ -291,52 +291,44 @@ public class BridgeService
 
     /// <summary>
     /// Reads metadata items from JellyBridge libraries.
-    /// Calls ReadMetadataFolders for each library location and then ReadMetadataAsync to get the items.
-    /// Returns items with their library name, directory, and the item itself.
+    /// Returns a list of BridgeLibrary objects, each containing all items for that library.
     /// </summary>
-    /// <returns>List of tuples containing library name, directory path, and metadata item</returns>
-    public async Task<List<(string libraryName, string directory, IJellyseerrItem item)>> ReadMetadataLibraries()
+    /// <returns>List of BridgeLibrary objects, including an empty library for unmatched items</returns>
+    public async Task<List<BridgeLibrary>> ReadMetadataLibraries()
     {
-        var allMetadataItems = new List<(string libraryName, string directory, IJellyseerrItem item)>();
-        // Map normalized directory paths directly to library names
-        var directoryLibraryMap = new Dictionary<string, (string libraryName, string originalDirectory)>(StringComparer.OrdinalIgnoreCase);
-
         try
         {
-            // Get all JellyBridge libraries with normalized locations
+            // 1. Get all JellyBridge libraries with their locations
             var bridgeLibraryLocations = GetBridgeLibraries();
-            
+            if (!bridgeLibraryLocations.Any())
+            {
+                _logger.LogDebug("No JellyBridge libraries found");
+                return new List<BridgeLibrary>();
+            }
+
+            // 2. Create BridgeLibrary objects with their locations
+            // Use case-sensitive dictionary for Linux compatibility
+            var libraryMap = new Dictionary<string, BridgeLibrary>();
+            foreach (var kvp in bridgeLibraryLocations)
+            {
+                libraryMap[kvp.Key] = new BridgeLibrary(kvp.Key, kvp.Value);
+            }
+
+            // 3. Collect all directories and map them to libraries
             var allMovieDirs = new List<string>();
             var allShowDirs = new List<string>();
-            
-            // Read metadata folders for each library location and track which library each directory belongs to
+
             foreach (var libraryEntry in bridgeLibraryLocations)
             {
                 var libraryName = libraryEntry.Key;
-                
+                var library = libraryMap[libraryName];
+
                 foreach (var libraryLocation in libraryEntry.Value)
                 {
                     try
                     {
                         var (movieDirs, showDirs) = _metadataService.ReadMetadataFolders(libraryLocation);
-                        
-                        // Track which library each directory belongs to (normalize paths for consistent lookup)
-                        var allDirs = new List<string>();
-                        allDirs.AddRange(movieDirs);
-                        allDirs.AddRange(showDirs);
-                        foreach (var dir in allDirs)
-                        {
-                            var normalized = FolderUtils.GetNormalizedPath(dir);
-                            if (!string.IsNullOrEmpty(normalized))
-                            {
-                                directoryLibraryMap[normalized] = (libraryName, dir);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Error normalizing directory path: {Directory}. Skipping this directory.", dir);
-                            }
-                        }
-                        
+
                         allMovieDirs.AddRange(movieDirs);
                         allShowDirs.AddRange(showDirs);
                     }
@@ -350,61 +342,86 @@ public class BridgeService
             if (allMovieDirs.Count == 0 && allShowDirs.Count == 0)
             {
                 _logger.LogDebug("No metadata directories found in any JellyBridge library");
-                return allMetadataItems;
+                return libraryMap.Values.ToList();
             }
 
-            _logger.LogDebug("Found {MovieCount} movie directories and {ShowCount} show directories across all libraries", 
+            _logger.LogDebug("Found {MovieCount} movie directories and {ShowCount} show directories across all libraries",
                 allMovieDirs.Count, allShowDirs.Count);
 
-            // Read metadata items using MetadataService
+            // 4. Read metadata items from all directories
             var (movies, shows) = await _metadataService.ReadMetadataAsync(allMovieDirs, allShowDirs);
-            
-            // Combine movies and shows into a single list of IJellyseerrItem
-            var allItems = new List<IJellyseerrItem>();
-            allItems.AddRange(movies);
-            allItems.AddRange(shows);
-            
-            // Map items to their directories and library names
-            foreach (var item in allItems)
+
+            // 5. Map items to libraries using case-sensitive path matching
+            var unmatchedItems = new List<IJellyseerrItem>();
+
+            foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
             {
                 try
                 {
                     var expectedDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
                     var normalizedExpected = FolderUtils.GetNormalizedPath(expectedDirectory);
-                    
-					if (!string.IsNullOrEmpty(normalizedExpected) && directoryLibraryMap.TryGetValue(normalizedExpected, out var libraryInfo))
-					{
-						allMetadataItems.Add((libraryInfo.libraryName, libraryInfo.originalDirectory, item));
-					}
-					else
-					{
-						// If the item is inside the JellyBridge sync directory but not part of any library, return with empty library name
-						if (FolderUtils.IsPathInSyncDirectory(expectedDirectory))
-						{
-							allMetadataItems.Add((string.Empty, expectedDirectory, item));
-							_logger.LogTrace("Item {MediaName} (Id: {Id}) is in JellyBridge directory but not mapped to a library; assigning empty library name.", item.MediaName, item.Id);
-						}
-						else
-						{
-							_logger.LogWarning("Could not find matching directory/library for item {MediaName} (Id: {Id}). Expected: {ExpectedDirectory}", 
-								item.MediaName, item.Id, expectedDirectory);
-						}
-					}
+
+                    if (string.IsNullOrEmpty(normalizedExpected))
+                    {
+                        _logger.LogWarning("Could not normalize directory for item {MediaName} (Id: {Id}): {ExpectedDirectory}",
+                            item.MediaName, item.Id, expectedDirectory);
+                        continue;
+                    }
+
+                    // Find which library contains this directory (case-sensitive)
+                    var matchedLibrary = libraryMap.Values.FirstOrDefault(lib => lib.ContainsLocation(normalizedExpected));
+
+                    if (matchedLibrary != null)
+                    {
+                        matchedLibrary.Add(item);
+                    }
+                    else if (FolderUtils.IsPathInSyncDirectory(expectedDirectory))
+                    {
+                        unmatchedItems.Add(item);
+                        _logger.LogTrace("Item {MediaName} (Id: {Id}) is in JellyBridge directory but not mapped to a library; will be added to empty library.",
+                            item.MediaName, item.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Could not find matching directory/library for item {MediaName} (Id: {Id}). Expected: {ExpectedDirectory}",
+                            item.MediaName, item.Id, expectedDirectory);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error getting directory/library for item {MediaName} (Id: {Id})", item.MediaName, item.Id);
+                    _logger.LogWarning(ex, "Error getting directory/library for item {MediaName} (Id: {Id})",
+                        item.MediaName, item.Id);
                 }
             }
 
-            _logger.LogDebug("Read {ItemCount} metadata items from libraries", allMetadataItems.Count);
+            // 6. Create the empty library for unmatched items (if any)
+            if (unmatchedItems.Count > 0)
+            {
+                var emptyLibrary = new BridgeLibrary(string.Empty);
+                emptyLibrary.AddRange(unmatchedItems);
+                libraryMap[string.Empty] = emptyLibrary;
+                _logger.LogTrace("Created empty library with {Count} unmatched items", unmatchedItems.Count);
+            }
+
+            // 7. Convert to list and log results
+            var results = libraryMap.Values.ToList();
+            _logger.LogDebug("Read {LibraryCount} libraries with {ItemCount} total items",
+                results.Count, results.Sum(l => l.Count));
+
+            foreach (var library in results)
+            {
+                _logger.LogTrace("Library: {LibraryName} - {MovieCount} movies, {ShowCount} shows at {LocationCount} location(s)",
+                    string.IsNullOrEmpty(library.LibraryName) ? "(Empty)" : library.LibraryName,
+                    library.MovieCount, library.ShowCount, library.Locations.Count);
+            }
+
+            return results;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading metadata libraries");
+            return new List<BridgeLibrary>();
         }
-
-        return allMetadataItems;
     }
 
     /// <summary>
@@ -413,140 +430,176 @@ public class BridgeService
     /// Filters out items that already exist in the same library (by comparing library name and item hash code).
     /// </summary>
     /// <param name="items">List of Jellyseerr items to map</param>
-    /// <returns>List of tuples containing library name, directory, and item</returns>
-    public async Task<List<(string libraryName, string directory, IJellyseerrItem item)>> FilterDuplicatesByLibrary(List<IJellyseerrItem> items)
+    /// <returns>List of unique Jellyseerr items to sync</returns>
+    public async Task<List<IJellyseerrItem>> FilterDuplicatesByLibrary(List<IJellyseerrItem> items)
     {
-        var results = new List<(string libraryName, string directory, IJellyseerrItem item)>();
-        
         if (items == null || items.Count == 0)
         {
-            return results;
+            return new List<IJellyseerrItem>();
         }
 
         try
         {
-            // Get all JellyBridge libraries with normalized locations
-            var bridgeLibraryLocations = GetBridgeLibraries();
-
-            if (!bridgeLibraryLocations.Any())
+            // 1. Read existing metadata (BridgeLibrary objects already contain locations)
+            var existingLibraries = await ReadMetadataLibraries();
+            if (!existingLibraries.Any())
             {
-                _logger.LogDebug("No JellyBridge libraries found, returning empty list");
-                return results;
+                _logger.LogDebug("No JellyBridge libraries found");
+                return new List<IJellyseerrItem>();
             }
 
-            // Flatten library locations into (libraryName, location) pairs
-            var libraryLocationPairs = bridgeLibraryLocations
-                .SelectMany(libraryEntry => 
-                    libraryEntry.Value.Select(location => (libraryName: libraryEntry.Key, location)))
-                .ToList();
+            // 2. Build set of existing items (filtering out ignored items)
+            var existingItemSet = existingLibraries
+                .SelectMany(lib => FilterIgnoredItems(lib.Items)
+                    .Select(item => (lib.LibraryName, item.GetItemHashCode())))
+                .ToHashSet();
 
-            // Map each item to its network folder (normalized), then join with library locations
-            var itemNetworkPairs = items
-                .Where(item => item != null && !string.IsNullOrEmpty(item.NetworkTag))
-                .SelectMany(item =>
+            _logger.LogTrace("Loaded {TotalCount} existing items from metadata across {LibraryCount} libraries (ignored items filtered)",
+                existingItemSet.Count, existingLibraries.Count);
+
+            // 3. Process each item - map to library and deduplicate in one pass
+
+            // Build lookup: normalized path -> library name from existing libraries
+            var locationToLibrary = existingLibraries
+                .Where(lib => !string.IsNullOrEmpty(lib.LibraryName) && lib.Locations.Any())
+                .SelectMany(lib => lib.Locations.Select(path => (Path: path, Library: lib.LibraryName)))
+                .ToDictionary(
+                    x => x.Path,
+                    x => x.Library);
+            var seenItemHashes = new HashSet<int>();
+            var mappedItems = new List<IJellyseerrItem>();
+            var unmatchedItems = new List<(string directory, IJellyseerrItem item)>();
+
+            foreach (var item in items)
+            {
+                if (string.IsNullOrEmpty(item?.NetworkTag))
+                    continue;
+
+                var networkPath = _metadataService.GetNetworkFolder(item.NetworkTag);
+                if (string.IsNullOrEmpty(networkPath))
+                    continue;
+
+                var normalizedPath = FolderUtils.GetNormalizedPath(networkPath);
+                if (string.IsNullOrEmpty(normalizedPath))
+                    continue;
+
+                var directory = _metadataService.GetJellyBridgeItemDirectory(item);
+                if (string.IsNullOrEmpty(directory) || !FolderUtils.IsPathInSyncDirectory(directory))
+                    continue;
+
+                var itemHash = item.GetItemHashCode();
+                var folderHash = item.GetFolderHashCode();
+
+                // Check if this item was already processed in this batch
+                if (!seenItemHashes.Add(itemHash))
                 {
-                    var networkPath = _metadataService.GetNetworkFolder(item.NetworkTag);
-                    if (networkPath != null)
-                    {
-                        var normalizedNetworkPath = FolderUtils.GetNormalizedPath(networkPath);
-                        if (!string.IsNullOrEmpty(normalizedNetworkPath))
-                        {
-                            return new[] { (item: item, networkPath: normalizedNetworkPath) };
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Error normalizing network folder path for item {ItemName}: {NetworkPath}", item?.MediaName, networkPath);
-                        }
-                    }
-                    return Array.Empty<(IJellyseerrItem item, string networkPath)>();
-                })
-                .ToList();
+                    _logger.LogTrace("Filtered duplicate in batch: {MediaName} (ItemHash: {ItemHash})", 
+                        item.MediaName, itemHash);
+                    continue;
+                }
 
-            // Join items with library locations where network folder matches library location (exact match)
-            // Both sides are already normalized
-            var libraryItemPairs = itemNetworkPairs
-                .Join(
-                    libraryLocationPairs,
-                    itemPath => itemPath.networkPath, // No longer nullable after Select
-                    libraryPair => libraryPair.location, // Already normalized from GetBridgeLibraries
-                    (itemPath, libraryPair) => 
+                // Try to match to a library
+                if (locationToLibrary.TryGetValue(normalizedPath, out var libraryName))
+                {
+                    // Check if this item already exists in this library (from metadata)
+                    if (existingItemSet.Contains((libraryName, itemHash)))
                     {
-                        // Get directory for the final result
-                        var directory = _metadataService.GetJellyBridgeItemDirectory(itemPath.item);
-                        return (libraryName: libraryPair.libraryName, directory: directory, item: itemPath.item);
-                    },
-                    StringComparer.OrdinalIgnoreCase)
-                .DistinctBy(pair => (pair.libraryName, pair.directory, pair.item.Id))
-                .ToList();
-            _logger.LogTrace("Joined {Count} item network pairs with {Count} library location pairs", itemNetworkPairs.Count, libraryLocationPairs.Count);
-            //foreach library item pairs logger them
-            foreach (var libraryItemPair in libraryItemPairs) {
-                _logger.LogTrace("LibraryItemPair: {LibraryName}, {Directory}, {ItemHashCode}", libraryItemPair.libraryName, libraryItemPair.directory, libraryItemPair.item.GetItemHashCode());
+                        _logger.LogTrace("Item already exists in library: {MediaName} -> Library: {Library}, ItemHash: {ItemHash}", 
+                            item.MediaName, libraryName, itemHash);
+                        continue;
+                    }
+
+                    mappedItems.Add(item);
+                    _logger.LogTrace("Mapped new item: {MediaName} -> Library: {Library}, Directory: {Directory}, ItemHash: {ItemHash}, FolderHash: {FolderHash}", 
+                        item.MediaName, libraryName, directory, itemHash, folderHash);
+                }
+                else
+                {
+                    // Store for default library assignment
+                    unmatchedItems.Add((directory, item));
+                    _logger.LogTrace("No library match for: {MediaName} -> Directory: {Directory}, ItemHash: {ItemHash}", 
+                        item.MediaName, directory, itemHash);
+                }
             }
 
-			// Get existing metadata items from libraries to filter out duplicates
-			var existingMetadataItems = await ReadMetadataLibraries();
-			
-			// Create a HashSet of (libraryName, directory, itemHashCode) tuples for fast lookup
-			// Use normalized paths to avoid case-sensitivity issues with default comparer
-			var existingItemsSet = new HashSet<(string libraryName, string directory, int itemHashCode)>();
-			foreach (var existingItem in existingMetadataItems)
-			{
-				try
-				{
-					var itemHashCode = existingItem.item.GetItemHashCode();
-					var normalizedDir = FolderUtils.GetNormalizedPath(existingItem.directory);
-					var normalizedLibrary = existingItem.libraryName?.ToLowerInvariant() ?? string.Empty;
-					existingItemsSet.Add((normalizedLibrary, normalizedDir, itemHashCode));
-				}
-				catch (Exception ex)
-				{
-					_logger.LogWarning(ex, "Error preparing duplicate key for existing item {MediaName} in library {LibraryName}", 
-						existingItem.item.MediaName, existingItem.libraryName);
-				}
-			}
-            _logger.LogTrace("Using existing items set with {Count} hashes", existingItemsSet.Count);
+            // 4. Add unmatched items to default library (empty library name)
+            foreach (var (directory, item) in unmatchedItems)
+            {
+                var itemHash = item.GetItemHashCode();
+                var folderHash = item.GetFolderHashCode();
+                
+                // Check if already exists in default library (empty library name)
+                if (existingItemSet.Contains((string.Empty, itemHash)))
+                {
+                    _logger.LogTrace("Item already exists in default library: {MediaName} (ItemHash: {ItemHash})", 
+                        item.MediaName, itemHash);
+                    continue;
+                }
 
-            // Group by library and item hash code to keep only one item per duplicate group
-			var filteredLibraryItemPairs = libraryItemPairs
-                .GroupBy(pair => (pair.libraryName?.ToLowerInvariant() ?? string.Empty, pair.item.GetItemHashCode()))
-                .Select(group => group.First())
-                .ToList();
+                // Also check if it was already added to mappedItems in this batch
+                if (!seenItemHashes.Contains(itemHash))
+                {
+                    mappedItems.Add(item);
+                    _logger.LogTrace("Added unmatched item to default library: {MediaName} -> Directory: {Directory}, ItemHash: {ItemHash}, FolderHash: {FolderHash}", 
+                        item.MediaName, directory, itemHash, folderHash);
+                }
+            }
 
-			results.AddRange(filteredLibraryItemPairs);
-			_logger.LogDebug("Appended {Count} items from libraries after filtering duplicates", filteredLibraryItemPairs.Count);
-
-			// Second step: for items without a matching library location, map them to the default empty library
-			// Include items that are in itemNetworkPairs but not in libraryItemPairs (items that didn't match a library)
-			// Check both directory and item hash code to ensure we don't add duplicates
-			var unmatchedAsDefault = itemNetworkPairs
-				.Select(ip => (
-					libraryName: string.Empty,
-					directory: _metadataService.GetJellyBridgeItemDirectory(ip.item),
-					item: ip.item
-				))
-				.Where(t => !string.IsNullOrEmpty(t.directory) && FolderUtils.IsPathInSyncDirectory(t.directory))
-				.Where(t => !libraryItemPairs.Any(lp => 
-					FolderUtils.ArePathsEqual(lp.directory, t.directory) && 
-					lp.item.GetItemHashCode() == t.item.GetItemHashCode()))
-				.ToList();
-
-			if (unmatchedAsDefault.Count > 0)
-			{
-				results.AddRange(unmatchedAsDefault);
-				_logger.LogDebug("Appended {Count} unmatched items to results with default (empty) library", unmatchedAsDefault.Count);
-			} else {
-				_logger.LogTrace("No unmatched items found to add to results with default (empty) library");
-			}
-
-            _logger.LogTrace("Mapped {TotalCount} items into {ResultCount} library-directory-item tuples after filtering {DuplicateCount} duplicates", 
-                items.Count, results.Count, libraryItemPairs.Count - filteredLibraryItemPairs.Count);
+            _logger.LogDebug("Processed {Total} items -> {Mapped} new items to sync (filtered {Existing} existing + {Duplicates} duplicates)", 
+                items.Count, 
+                mappedItems.Count, 
+                existingItemSet.Count,
+                items.Count - mappedItems.Count - existingItemSet.Count);
+            
+            return mappedItems;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error mapping items to libraries, returning empty list");
+            _logger.LogError(ex, "Error mapping items to libraries");
+            return new List<IJellyseerrItem>();
         }
-        return results;
+    }
+
+    /// <summary>
+    /// Checks if an item is ignored (has .ignore file in its directory).
+    /// </summary>
+    private bool IsItemIgnored(IJellyseerrItem item)
+    {
+        try
+        {
+            var dir = _metadataService.GetJellyBridgeItemDirectory(item);
+            var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
+            return File.Exists(ignorePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not check ignore status for {MediaName}", item?.MediaName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Filters Jellyseerr items that have an ignore file in their target directory.
+    /// Returns only items that do NOT have the ignore file present.
+    /// </summary>
+    public List<IJellyseerrItem> FilterIgnoredItems(List<IJellyseerrItem> items)
+    {
+        if (items == null || items.Count == 0)
+        {
+            return new List<IJellyseerrItem>();
+        }
+
+        var kept = new List<IJellyseerrItem>(items.Count);
+        foreach (var item in items)
+        {
+            if (!IsItemIgnored(item))
+            {
+                kept.Add(item);
+            }
+        }
+
+        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
+        return kept;
     }
     
 

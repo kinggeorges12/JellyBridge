@@ -58,7 +58,7 @@ public static class FolderUtils
         if (string.IsNullOrEmpty(normalizedDirectory) || string.IsNullOrEmpty(normalizedPath))
             return false;
 
-        return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
+        return normalizedPath.StartsWith(normalizedDirectory);
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public static class FolderUtils
         var normalizedPath1 = GetNormalizedPath(path1);
         var normalizedPath2 = GetNormalizedPath(path2);
 
-        return string.Equals(normalizedPath1, normalizedPath2, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(normalizedPath1, normalizedPath2);
     }
 
     /// <summary>

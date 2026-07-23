@@ -131,7 +131,7 @@ public class DiscoverService
             _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
             var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
             // Extract items from library-directory-item tuples into a single flat list
-            uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
+            //uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
             _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
                 uniqueItems.Count, libraryResults.Count);
             return uniqueItems;
@@ -140,7 +140,7 @@ public class DiscoverService
         foreach (var item in items)
         {
             if (item == null) continue;
-            int hash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
+            int hash = item.GetItemHashCode();
             
             if (seenHashes.Add(hash))
             {
@@ -251,7 +251,7 @@ public class DiscoverService
             var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders)));
             foreach (var item in allItems)
             {
-                if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders)))
+                if (!uniqueFolderHashes.Contains(item.GetFolderHashCode()))
                 {
                     duplicates.Add(item);
                 }
@@ -350,38 +350,6 @@ public class DiscoverService
             _logger.LogError(ex, "Error during .ignore file deletion");
             return Task.FromResult(0);
         }
-    }
-
-    /// <summary>
-    /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
-    /// This prevents re-processing items that were created by the plugin itself.
-    /// </summary>
-    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> FilterSyncedLibraryItems(List<JellyMatch> matchedItems, List<IJellyseerrItem> unmatchedItems)
-    {
-        var matched = new List<JellyMatch>();
-        var unmatched = new List<IJellyseerrItem>();
-        unmatched.AddRange(unmatchedItems);
-
-        foreach (var match in matchedItems)
-        {
-            // Keep the match only if it's not in the sync directory
-            if (match != null)
-            {
-                var path = match.JellyfinItem?.Path;
-                if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
-                {
-                    matched.Add(match);
-                } else {
-                    unmatched.Add(match.JellyseerrItem);
-                }
-            }
-        }
-
-        // Apply unique-by-library filtering to unmatched via existing duplicate filter
-        var filteredUnmatched = await FilterDuplicateMedia(unmatched);
-
-        _logger.LogTrace("Matched are removed, unmatched are added to the library: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
-        return (matched, filteredUnmatched);
     }
 
     /// <summary>
@@ -490,39 +458,6 @@ public class DiscoverService
         }
 
         return (newlyIgnored, existingIgnored);
-    }
-
-    /// <summary>
-    /// Filters Jellyseerr items that have an ignore file in their target directory.
-    /// Returns only items that do NOT have the ignore file present.
-    /// </summary>
-    public List<IJellyseerrItem> FilterIgnoredItems(List<IJellyseerrItem> items)
-    {
-        if (items == null || items.Count == 0)
-        {
-            return new List<IJellyseerrItem>();
-        }
-
-        var kept = new List<IJellyseerrItem>(items.Count);
-        foreach (var item in items)
-        {
-            try
-            {
-                var dir = _metadataService.GetJellyBridgeItemDirectory(item);
-                var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
-                if (!File.Exists(ignorePath))
-                {
-                    kept.Add(item);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Could not filter ignored item for {Name}", item?.MediaName);
-            }
-        }
-
-        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
-        return kept;
     }
 
     #endregion
