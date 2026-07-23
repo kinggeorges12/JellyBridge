@@ -244,21 +244,37 @@ public class DiscoverService
         var existingIgnored = new List<IJellyseerrItem>();
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-        if (!(useNetworkFolders && addDuplicateContent))
+        var duplicates = new List<IJellyseerrItem>();
+        if (!useNetworkFolders)
         {
-            _logger.LogDebug("Ignoring duplicate library items: UseNetworkFolders and AddDuplicateContent are both disabled");
+            // Network folders are not used, but we need to filter out localized language duplicates by hash
+            var uniqueHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemHashCode()));
+            foreach (var item in allItems)
+            {
+                if (!uniqueHashes.Contains(item.GetItemHashCode()))
+                {
+                    duplicates.Add(item);
+                }
+            }
+        }
+        else if (useNetworkFolders && !addDuplicateContent)
+        {
+            // Network folders are used, but duplicates are not allowed across networks
+            var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
+            foreach (var item in allItems)
+            {
+                if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
+                {
+                    duplicates.Add(item);
+                }
+            }
+        }
+        else
+        {
+            _logger.LogDebug("Allowing duplicate library items: both UseNetworkFolders and AddDuplicateContent are enabled");
             return (newlyIgnored, existingIgnored);
         }
 
-        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
-        var duplicates = new List<IJellyseerrItem>();
-        foreach (var item in allItems)
-        {
-            if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
-            {
-                duplicates.Add(item);
-            }
-        }
         var ignoreFileTasks = new List<Task>();
 
         foreach (var duplicate in duplicates)
@@ -360,10 +376,10 @@ public class DiscoverService
 
         foreach (var match in matchedItems)
         {
-            var path = match?.JellyfinItem?.Path;
             // Keep the match only if it's not in the sync directory
             if (match != null)
             {
+                var path = match.JellyfinItem?.Path;
                 if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
                 {
                     matched.Add(match);
@@ -376,7 +392,7 @@ public class DiscoverService
         // Apply unique-by-library filtering to unmatched via existing duplicate filter
         var filteredUnmatched = await FilterDuplicateMedia(unmatched);
 
-        _logger.LogTrace("FilterSyncedLibraryItems: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
+        _logger.LogTrace("Matched are removed, unmatched are added to the library: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
         return (matched, filteredUnmatched);
     }
 

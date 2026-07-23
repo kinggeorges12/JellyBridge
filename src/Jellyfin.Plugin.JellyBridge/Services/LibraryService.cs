@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
+using MediaBrowser.Model.Globalization;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -22,13 +23,15 @@ public class LibraryService
     private readonly IDirectoryService _directoryService;
     private readonly JellyfinIProviderManager _providerManager;
     private readonly ITaskManager _taskManager;
-    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager)
+    private readonly ILocalizationManager _localization;
+    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization)
     {
         _logger = new DebugLogger<LibraryService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
         _providerManager = providerManager;
         _taskManager = taskManager;
+        _localization = localization;
     }
 
     /// <summary>
@@ -234,12 +237,15 @@ public class LibraryService
             // Use the same method as the "Scan All Libraries" button
             await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
             
+            // Task is stored as the localized name
+            var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");
+
             // Find the task worker
-            var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "RefreshLibrary");
+            var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == localizedTaskName);
 
             if (taskWorker == null)
             {
-                _logger.LogWarning("RefreshLibrary task not found.");
+                _logger.LogWarning($"{localizedTaskName} task not found.");
                 return false;
             }
 
@@ -289,8 +295,9 @@ public class LibraryService
             {
                 // Create temp directory to force refresh
                 var libraryDir = FolderUtils.GetBaseDirectory();
-                var tempDir = Path.Combine(libraryDir, "Temp");
+                var tempDir = Path.Combine(libraryDir, "_blank");
                 Directory.CreateDirectory(tempDir);
+                File.Create(Path.Combine(tempDir, ".ignore")).Close();
                 
                 _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
                 await ScanAllLibraries();

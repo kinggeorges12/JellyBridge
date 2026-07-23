@@ -102,7 +102,8 @@ public partial class SyncService
 
             // Step 3: Process movies and TV shows
             _logger.LogDebug("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
-            var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(uniqueDiscoverMedia);
+            // Add all folders, then create ignore files for duplicates later
+            var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(discoverMedia);
             // Add items to unified collections
             result.ItemsAdded.AddRange(addedMedia);
             result.ItemsUpdated.AddRange(updatedMedia);
@@ -116,8 +117,8 @@ public partial class SyncService
             result.ItemsHidden.AddRange(newlyIgnoredDuplicates);
 
             // Step 4: Library Scan to find matches and get unmatched items
-            List<JellyMatch> matchedItems = new List<JellyMatch>();
-            List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
+            List<JellyMatch> matchedItems = new List<JellyMatch>(); // Matches get a .ignore file created in their folder
+            List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>(); // Unmatched items are added to the library
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
                 _logger.LogDebug("Step 4: Starting library scan to find matches and get unmatched items");

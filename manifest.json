@@ -9,11 +9,38 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.7.11.9",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.7.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "timestamp": "2026-07-23T06:50:23.977Z",
+        "changelog": "Jellyfin 10.11.9: v3.7 - filtering out the localized duplicates in the ignore items check",
+        "checksum": "3A4FF412117B65318BAF5A09BB3A0703"
+      },
+      {
+        "version": "3.7.11.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.7.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-07-23T06:50:23.977Z",
+        "changelog": "Jellyfin 10.11.0: v3.7 - filtering out the localized duplicates in the ignore items check",
+        "checksum": "F08DDE9652B6A5F25007BD28AC859314"
+      },
+      {
+        "version": "3.7.10.7",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.7.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-07-23T06:50:23.977Z",
+        "changelog": "Jellyfin 10.10.7: v3.7 - filtering out the localized duplicates in the ignore items check",
+        "checksum": "A219F6211562B4565AD678C0C1F13E16"
+      },
+      {
         "version": "3.6.11.9",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.6.11.9.zip",
         "targetAbi": "10.11.9.0",
-        "timestamp": "2026-07-23T05:30:42.390Z",
+        "timestamp": "2026-07-23T05:30:42.39Z",
         "changelog": "Jellyfin 10.11.9: v3.6 - only creating new metadata for unique library items. also testing improvements to the scan media library to avoid getting the error 'JellyBridge is inaccessible or empty, skipping'",
         "checksum": "1B5BDD9263D3C69FF6E703F2938513F9"
       },
@@ -22,7 +49,7 @@
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.6.11.0.zip",
         "targetAbi": "10.11.0.0",
-        "timestamp": "2026-07-23T05:30:42.390Z",
+        "timestamp": "2026-07-23T05:30:42.39Z",
         "changelog": "Jellyfin 10.11.0: v3.6 - only creating new metadata for unique library items. also testing improvements to the scan media library to avoid getting the error 'JellyBridge is inaccessible or empty, skipping'",
         "checksum": "C2C0690AF29A64C69B3D2FEB4E90EFD1"
       },
@@ -31,7 +58,7 @@
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.6.10.7.zip",
         "targetAbi": "10.10.0.0",
-        "timestamp": "2026-07-23T05:30:42.390Z",
+        "timestamp": "2026-07-23T05:30:42.39Z",
         "changelog": "Jellyfin 10.10.7: v3.6 - only creating new metadata for unique library items. also testing improvements to the scan media library to avoid getting the error 'JellyBridge is inaccessible or empty, skipping'",
         "checksum": "ED3CB28FDEF9921ACF0210247307A36F"
       },
