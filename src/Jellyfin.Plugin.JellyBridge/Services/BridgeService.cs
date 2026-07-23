@@ -455,6 +455,8 @@ public class BridgeService
                     x => x.Path,
                     x => x.Library);
 
+            _logger.LogInformation("Built location-to-library lookup with {Count} entries from {LibraryCount} libraries", locationToLibrary.Count, existingLibraries.Count);
+
             // 3. Build set of existing items from metadata (filtering out ignored items)
             // This is the source of truth - items already in JellyBridge libraries
             var existingItemSet = existingLibraries

@@ -109,55 +109,6 @@ public class DiscoverService
         
         return (allMovies, allShows);
     }
-    
-    /// <summary>
-    /// Filters duplicate media items from a list using the hash code.
-    /// Returns a list containing only unique items.
-    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
-    /// </summary>
-    /// <param name="items">List of media items to filter</param>
-    /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
-    public async Task<List<IJellyseerrItem>> FilterDuplicateMedia(List<IJellyseerrItem> items)
-    {
-        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-        
-        var seenHashes = new HashSet<int>();
-        var uniqueItems = new List<IJellyseerrItem>();
-
-        if (useNetworkFolders && addDuplicateContent)
-        {
-            _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
-            var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
-            // Extract items from library-directory-item tuples into a single flat list
-            //uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
-            _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
-                uniqueItems.Count, libraryResults.Count);
-            return uniqueItems;
-        }
-        
-        foreach (var item in items)
-        {
-            if (item == null) continue;
-            int hash = item.GetItemHashCode();
-            
-            if (seenHashes.Add(hash))
-            {
-                uniqueItems.Add(item);
-            }
-            else
-            {
-                _logger.LogTrace("Filtered duplicate item: {MediaName} (Id: {Id}, Hash: {Hash})", 
-                    item.MediaName, item.Id, hash);
-            }
-        }
-        
-        _logger.LogDebug("Filtered {TotalCount} items to {UniqueCount} unique items", 
-            items.Count, uniqueItems.Count);
-        
-        return uniqueItems;
-    }
 
     #endregion
 
