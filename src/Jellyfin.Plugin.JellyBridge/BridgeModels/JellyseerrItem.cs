@@ -136,7 +136,7 @@ public interface IJellyseerrItem
         return string.Join(" ", parts);
     }
 
-    public abstract bool EqualsItem(IJellyfinItem? other);
+    abstract bool EqualsItem(IJellyfinItem? other);
     
     /// <summary>
     /// Returns a hash code for the item that can be used for matching.

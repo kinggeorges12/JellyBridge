@@ -165,7 +165,7 @@ public class JellyseerrMovie
     /// </summary>
     public int GetItemHashCode()
     {
-        return HashCode.Combine(Id, MediaName, Year, MediaType);
+        return HashCode.Combine(Id, ExtraId, MediaType);
     }
     
     /// <summary>
@@ -173,7 +173,7 @@ public class JellyseerrMovie
     /// </summary>
     public int GetItemFolderHashCode()
     {
-        return HashCode.Combine(Id, MediaName, Year, MediaType, NetworkTag);
+        return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
     }
     
     /// <summary>
