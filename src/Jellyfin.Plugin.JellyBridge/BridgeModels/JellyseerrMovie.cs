@@ -161,22 +161,6 @@ public class JellyseerrMovie
     }
     
     /// <summary>
-    /// Returns a hash code for the movie that can be used for matching.
-    /// </summary>
-    public int GetItemHashCode()
-    {
-        return HashCode.Combine(Id, ExtraId, MediaType);
-    }
-    
-    /// <summary>
-    /// Returns a hash code for the movie that includes folder-specific properties.
-    /// </summary>
-    public int GetItemFolderHashCode()
-    {
-        return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
-    }
-    
-    /// <summary>
     /// Generates XML content for the movie in movie.nfo format.
     /// </summary>
     /// <returns>XML string for the movie</returns>

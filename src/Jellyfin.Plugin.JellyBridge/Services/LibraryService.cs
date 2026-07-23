@@ -220,16 +220,25 @@ public class LibraryService
     /// Scans all Jellyfin libraries for first-time plugin initialization.
     /// Uses the same functionality as the "Scan All Libraries" button.
     /// </summary>
-    public async Task<bool?> ScanAllLibraries()
+    public async Task<bool?> ScanAllLibraries(bool force=false)
     {
+        var libraryDir = FolderUtils.GetBaseDirectory();
+        var tempDir = Path.Combine(libraryDir, "_blank");
         try
         {
             var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
 
-            if (!manageJellyseerrLibrary)
+            if (!force && !manageJellyseerrLibrary)
             {
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return null;
+            }
+
+            if (force)
+            {
+                // Create temp directory to force refresh
+                Directory.CreateDirectory(tempDir);
+                File.Create(Path.Combine(tempDir, ".ignore")).Close();
             }
 
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
@@ -284,29 +293,33 @@ public class LibraryService
             _logger.LogError(ex, "Error scanning all libraries for first time");
             return false;
         }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
     }
 
-    public void ScanThenRefresh(bool createMode, bool removeMode, bool refreshImages)
+    /// <summary>
+    /// Scans all libraries and then refreshes the JellyBridge library in the background.
+    /// If force is true, creates an ignore file to run the refresh on an empty library.
+    /// </summary>
+    public void ScanThenRefreshRunner(bool createMode, bool removeMode, bool refreshImages, bool force=false)
     {
         // Fire and forget: First scan, THEN refresh in background
         _ = Task.Run(async () =>
         {
             try
             {
-                // Create temp directory to force refresh
-                var libraryDir = FolderUtils.GetBaseDirectory();
-                var tempDir = Path.Combine(libraryDir, "_blank");
-                Directory.CreateDirectory(tempDir);
-                File.Create(Path.Combine(tempDir, ".ignore")).Close();
                 
                 _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
-                await ScanAllLibraries();
+                await ScanAllLibraries(force: force);
                 
                 _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
                 await RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
                 _logger.LogDebug("Background refresh completed");
-
-                Directory.Delete(tempDir, true);
             }
             catch (Exception ex)
             {

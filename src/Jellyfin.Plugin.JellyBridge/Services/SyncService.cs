@@ -358,22 +358,11 @@ public partial class SyncService
         var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
         var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
 
-        // Fire and forget: First scan, THEN refresh in background
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                // Call the refresh method (fire-and-await, no return value)
-                // Update refresh always runs to reload user data (play counts)
-                _libraryService.ScanThenRefresh(createMode: true, removeMode: true, refreshImages: true);
-                    
-                _logger.LogInformation("JellyBridge library refresh initiated");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in background refresh operations");
-            }
-        });
+        // Call the refresh method (fire-and-await, no return value)
+        // Update refresh always runs to reload user data (play counts)
+        _libraryService.ScanThenRefreshRunner(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+            
+        _logger.LogInformation("JellyBridge library refresh initiated");
     }
 }
 
