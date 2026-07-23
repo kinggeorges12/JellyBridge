@@ -234,7 +234,7 @@ public class LibraryService
             // Use the same method as the "Scan All Libraries" button
             await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
             
-            // 2. Find the task worker
+            // Find the task worker
             var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "RefreshLibrary");
 
             if (taskWorker == null)
@@ -243,7 +243,7 @@ public class LibraryService
                 return false;
             }
 
-            // 3. Wait for it to complete by checking the state
+            // Wait for it to complete by checking the state
             var timeout = DateTime.UtcNow.AddMinutes(30);
             var taskFinished = false;
             while (DateTime.UtcNow < timeout)
@@ -278,5 +278,33 @@ public class LibraryService
             _logger.LogError(ex, "Error scanning all libraries for first time");
             return false;
         }
+    }
+
+    public void ScanThenRefresh(bool createMode, bool removeMode, bool refreshImages)
+    {
+        // Fire and forget: First scan, THEN refresh in background
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                // Create temp directory to force refresh
+                var libraryDir = FolderUtils.GetBaseDirectory();
+                var tempDir = Path.Combine(libraryDir, "Temp");
+                Directory.CreateDirectory(tempDir);
+                
+                _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
+                await ScanAllLibraries();
+                
+                _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
+                await RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+                _logger.LogDebug("Background refresh completed");
+
+                Directory.Delete(tempDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in background refresh operations");
+            }
+        });
     }
 }
