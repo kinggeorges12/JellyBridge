@@ -422,11 +422,16 @@ public class BridgeService
     /// Maps items to libraries by directory.
     /// Uses GetJellyBridgeItemDirectory to map items to directories, then maps directories to libraries.
     /// Filters out items that already exist in the same library (by comparing library name and item hash code).
+    /// Prioritizes existing metadata from JellyBridge libraries over the input items.
     /// </summary>
-    /// <param name="items">List of Jellyseerr items to map</param>
+    /// <param name="items">List of Jellyseerr items to map (from Jellyseerr API)</param>
     /// <returns>List of unique Jellyseerr items to sync</returns>
     public async Task<List<IJellyseerrItem>> FilterDuplicatesByLibrary(List<IJellyseerrItem> items)
     {
+        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        
         if (items == null || items.Count == 0)
         {
             return new List<IJellyseerrItem>();
@@ -434,7 +439,7 @@ public class BridgeService
 
         try
         {
-            // 1. Read existing metadata (BridgeLibrary objects already contain locations)
+            // 1. Read existing metadata from JellyBridge libraries (this is the source of truth)
             var existingLibraries = await ReadMetadataLibraries();
             if (!existingLibraries.Any())
             {
@@ -450,19 +455,29 @@ public class BridgeService
                     x => x.Path,
                     x => x.Library);
 
-            // 3. Build set of existing items (filtering out ignored items)
+            // 3. Build set of existing items from metadata (filtering out ignored items)
+            // This is the source of truth - items already in JellyBridge libraries
             var existingItemSet = existingLibraries
                 .SelectMany(lib => FilterIgnoredItems(lib.Items)
-                    .Select(item => (lib.LibraryName, item.GetItemHashCode())))
+                    .Select(item => (lib.LibraryName, ItemHashCode: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent))))
                 .ToHashSet();
 
             _logger.LogTrace("Loaded {TotalCount} existing items from metadata across {LibraryCount} libraries (ignored items filtered)",
                 existingItemSet.Count, existingLibraries.Count);
 
-            // 4. Process each item - map to library and deduplicate in one pass
-            var seenItemHashes = new HashSet<int>();
+            // 4. Build a set of all existing item hashes (regardless of library) for fast lookup
+            var allExistingHashes = existingItemSet
+                .Select(tuple => tuple.ItemHashCode)
+                .ToHashSet();
+
+            _logger.LogTrace("Found {Count} unique existing item hashes across all libraries", allExistingHashes.Count);
+
+            // 5. Process each input item
+            // Track hashes seen in the input list to filter duplicates within the incoming items
+            var seenInputHashes = new HashSet<int>();
+            // Track hashes already added to the result to prevent duplicates in mappedItems
+            var seenMappedHashes = new HashSet<int>();
             var mappedItems = new List<IJellyseerrItem>();
-            var unmatchedItems = new List<(string directory, IJellyseerrItem item)>();
 
             foreach (var item in items)
             {
@@ -481,25 +496,33 @@ public class BridgeService
                 if (string.IsNullOrEmpty(directory) || !FolderUtils.IsPathInSyncDirectory(directory))
                     continue;
 
-                var itemHash = item.GetItemHashCode();
-                var folderHash = item.GetFolderHashCode();
+                var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
+                var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
 
-                // Check if this item was already processed in this batch
-                if (!seenItemHashes.Add(itemHash))
+                // Check if this item is a duplicate within the incoming items list
+                if (!seenInputHashes.Add(itemHash))
                 {
-                    _logger.LogTrace("Filtered duplicate in batch: {MediaName} (ItemHash: {ItemHash})",
+                    _logger.LogTrace("Filtered duplicate from input list: {MediaName} (ItemHash: {ItemHash})",
                         item.MediaName, itemHash);
                     continue;
                 }
 
-                // Try to match to a library
+                // Check if this item already exists in ANY JellyBridge library
+                if (allExistingHashes.Contains(itemHash))
+                {
+                    _logger.LogTrace("Item already exists in JellyBridge library: {MediaName} (ItemHash: {ItemHash}) (FolderHash: {FolderHash})",
+                        item.MediaName, itemHash, folderHash);
+                    continue;
+                }
+
+                // Try to match to a library location
                 if (locationToLibrary.TryGetValue(normalizedPath, out var libraryName))
                 {
-                    // Check if this item already exists in this library (from metadata)
-                    if (existingItemSet.Contains((libraryName, itemHash)))
+                    // Check if this item was already added to mappedItems
+                    if (!seenMappedHashes.Add(itemHash))
                     {
-                        _logger.LogTrace("Item already exists in library: {MediaName} -> Library: {Library}, ItemHash: {ItemHash}",
-                            item.MediaName, libraryName, itemHash);
+                        _logger.LogTrace("Item already added to result: {MediaName} (ItemHash: {ItemHash})",
+                            item.MediaName, itemHash);
                         continue;
                     }
 
@@ -509,41 +532,27 @@ public class BridgeService
                 }
                 else
                 {
-                    // Store for default library assignment
-                    unmatchedItems.Add((directory, item));
-                    _logger.LogTrace("No library match for: {MediaName} -> Directory: {Directory}, ItemHash: {ItemHash}",
-                        item.MediaName, directory, itemHash);
-                }
-            }
+                    // No matching library location - item will go to default (empty) library
+                    // Check if this item was already added to mappedItems
+                    if (!seenMappedHashes.Add(itemHash))
+                    {
+                        _logger.LogTrace("Item already added to result: {MediaName} (ItemHash: {ItemHash})",
+                            item.MediaName, itemHash);
+                        continue;
+                    }
 
-            // 5. Add unmatched items to default library (empty library name)
-            foreach (var (directory, item) in unmatchedItems)
-            {
-                var itemHash = item.GetItemHashCode();
-                var folderHash = item.GetFolderHashCode();
-
-                // Check if already exists in default library (empty library name)
-                if (existingItemSet.Contains((string.Empty, itemHash)))
-                {
-                    _logger.LogTrace("Item already exists in default library: {MediaName} (ItemHash: {ItemHash})",
-                        item.MediaName, itemHash);
-                    continue;
-                }
-
-                // Also check if it was already added to mappedItems in this batch
-                if (!seenItemHashes.Contains(itemHash))
-                {
                     mappedItems.Add(item);
                     _logger.LogTrace("Added unmatched item to default library: {MediaName} -> Directory: {Directory}, ItemHash: {ItemHash}, FolderHash: {FolderHash}",
                         item.MediaName, directory, itemHash, folderHash);
                 }
             }
 
-            _logger.LogDebug("Processed {Total} items -> {Mapped} new items to sync (filtered {Existing} existing + {Duplicates} duplicates)",
+            _logger.LogDebug("Processed {Total} items -> {Mapped} new items to sync (filtered {Existing} existing, {InputDuplicates} input duplicates, {Other} other)",
                 items.Count,
                 mappedItems.Count,
                 existingItemSet.Count,
-                items.Count - mappedItems.Count - existingItemSet.Count);
+                items.Count - seenInputHashes.Count,
+                items.Count - mappedItems.Count - existingItemSet.Count - (items.Count - seenInputHashes.Count));
 
             return mappedItems;
         }
