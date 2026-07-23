@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
- 
+using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -21,13 +21,14 @@ public class LibraryService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly IDirectoryService _directoryService;
     private readonly JellyfinIProviderManager _providerManager;
-
-    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager)
+    private readonly ITaskManager _taskManager;
+    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager)
     {
         _logger = new DebugLogger<LibraryService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
         _providerManager = providerManager;
+        _taskManager = taskManager;
     }
 
     /// <summary>
@@ -231,8 +232,43 @@ public class LibraryService
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
 
             // Use the same method as the "Scan All Libraries" button
-                    await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+            await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+            
+            // 2. Find the task worker
+            var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "RefreshLibrary");
 
+            if (taskWorker == null)
+            {
+                _logger.LogWarning("RefreshLibrary task not found.");
+                return false;
+            }
+
+            // 3. Wait for it to complete by checking the state
+            var timeout = DateTime.UtcNow.AddMinutes(30);
+            var taskFinished = false;
+            while (DateTime.UtcNow < timeout)
+            {
+                // Use reflection to get the State property
+                var state = taskWorker.State;
+                
+                // If it's not running or queued, it's done
+                if (state != TaskState.Running)
+                {
+                    _logger.LogTrace($"Task completed with state: {state}");
+                    taskFinished = true;
+                    break;
+                }
+                
+                _logger.LogTrace($"Task state: {state}, waiting...");
+                await Task.Delay(1000);
+            }
+
+            if (taskFinished == false)
+            {
+                _logger.LogWarning("Scan timed out after 30 minutes");
+                return false;
+            }
+            
             _logger.LogDebug("Full scan of all libraries completed successfully");
             
             return true;

@@ -346,29 +346,34 @@ public partial class SyncService
     /// </summary>
     public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null, CleanupResult? cleanupResult = null)
     {
-        try
+        var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
+        if (!doRefresh)
         {
-            var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
-            if (doRefresh)
+            _logger.LogDebug("No refresh plan applied");
+            return;
+        }
+
+        var createMode = (cleanupResult?.Refresh?.CreateRefresh == true) || (syncToResult?.Refresh?.CreateRefresh == true) || (syncFromResult?.Refresh?.CreateRefresh == true);
+        var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
+        var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
+
+        // Fire and forget: First scan, THEN refresh in background
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                var createMode = (cleanupResult?.Refresh?.CreateRefresh == true) || (syncToResult?.Refresh?.CreateRefresh == true) || (syncFromResult?.Refresh?.CreateRefresh == true);
-                var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
-                var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
-
+                _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
+                await _libraryService.ScanAllLibraries();
+                
                 _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
-                _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                // Update refresh always runs to reload user data (play counts)
                 await _libraryService.RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
-                _logger.LogDebug("Scan of all libraries completed");
-            } else {
-                _logger.LogDebug("No refresh plan applied");
+                _logger.LogDebug("Background refresh completed");
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error applying post-sync refresh operations");
-        }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in background refresh operations");
+            }
+        });
     }
-
 }
 

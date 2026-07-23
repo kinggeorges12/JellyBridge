@@ -146,12 +146,12 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     // Refresh the Jellyseerr library after data deletion
                     _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
+
+                    await _libraryService.ScanAllLibraries();
                     
                     // Call the refresh method (fire-and-await, no return value)
                     // Update refresh always runs to reload user data (play counts)
                     await _libraryService.RefreshBridgeLibrary(createMode: true, removeMode: true, refreshImages: true);
-
-                    await _libraryService.ScanAllLibraries();
 
                     _logger.LogInformation("Jellyseerr library refresh initiated");
 
