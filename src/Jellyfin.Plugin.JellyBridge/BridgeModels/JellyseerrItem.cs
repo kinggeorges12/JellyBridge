@@ -163,22 +163,6 @@ public interface IJellyseerrItem
     }
     
     /// <summary>
-    /// Returns a hash code for the movie that includes folder-specific properties.
-    /// </summary>
-    int GetNetworkHashCode()
-    {
-        return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
-    }
-    
-    /// <summary>
-    /// Returns a hash code for the movie that includes folder-specific properties.
-    /// </summary>
-    int GetNetworkFolderHashCode()
-    {
-        return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType, NetworkTag);
-    }
-    
-    /// <summary>
     /// Generates XML content for the media item (movie.nfo or tvshow.nfo format).
     /// </summary>
     /// <returns>XML string for the media item</returns>
