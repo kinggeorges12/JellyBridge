@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "3.8.11.9",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.8.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "timestamp": "2026-07-23T08:17:40.862Z",
+        "changelog": "Jellyfin 10.11.9: v3.8 - the filter now removes items that are not the same folder as the one on the unique list",
+        "checksum": "B08D5D13AED118CA48A41F371E2D1F25"
+      },
+      {
+        "version": "3.8.11.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.8.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-07-23T08:17:40.862Z",
+        "changelog": "Jellyfin 10.11.0: v3.8 - the filter now removes items that are not the same folder as the one on the unique list",
+        "checksum": "62433931E5770CDDF1F30714DBD70ED8"
+      },
+      {
+        "version": "3.8.10.7",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.8.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-07-23T08:17:40.862Z",
+        "changelog": "Jellyfin 10.10.7: v3.8 - the filter now removes items that are not the same folder as the one on the unique list",
+        "checksum": "F377CD62EC12BF5BCDCE72683C24E96D"
+      },
+      {
         "version": "3.7.11.9",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.7.11.9.zip",

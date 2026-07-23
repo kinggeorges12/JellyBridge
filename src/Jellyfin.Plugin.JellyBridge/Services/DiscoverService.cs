@@ -140,8 +140,8 @@ public class DiscoverService
         foreach (var item in items)
         {
             if (item == null) continue;
+            int hash = item.GetItemHashCode(useNetworkFolders);
             
-            var hash = item.GetItemHashCode();
             if (seenHashes.Add(hash))
             {
                 uniqueItems.Add(item);
@@ -231,7 +231,7 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Filters duplicate media items from a list using the GetItemFolderHashCode method.
+    /// Filters duplicate media items from a list using the GetNetworkHashCode method.
     /// Returns a list containing only unique items based on their hash code.
     /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
@@ -245,25 +245,13 @@ public class DiscoverService
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         var duplicates = new List<IJellyseerrItem>();
-        if (!useNetworkFolders)
+        if (!useNetworkFolders || (useNetworkFolders && !addDuplicateContent))
         {
             // Network folders are not used, but we need to filter out localized language duplicates by hash
-            var uniqueHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemHashCode()));
+            var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders)));
             foreach (var item in allItems)
             {
-                if (!uniqueHashes.Contains(item.GetItemHashCode()))
-                {
-                    duplicates.Add(item);
-                }
-            }
-        }
-        else if (useNetworkFolders && !addDuplicateContent)
-        {
-            // Network folders are used, but duplicates are not allowed across networks
-            var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
-            foreach (var item in allItems)
-            {
-                if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
+                if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders)))
                 {
                     duplicates.Add(item);
                 }

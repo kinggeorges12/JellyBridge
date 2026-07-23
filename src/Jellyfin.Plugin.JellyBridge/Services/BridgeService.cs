@@ -569,8 +569,8 @@ public class BridgeService
 
         if (useNetworkFolders && addDuplicateContent)
         {
-            var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemFolderHashCode()));
-            unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemFolderHashCode())).ToList();
+            var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetNetworkHashCode()));
+            unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetNetworkHashCode())).ToList();
         } else {
             var libIds = new HashSet<int>(libraryMatches.Select(i => i.Id));
             unmatched = testItems.Where(t => !libIds.Contains(t.Id)).ToList();

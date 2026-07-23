@@ -164,22 +164,6 @@ public class JellyseerrShow
     }
     
     /// <summary>
-    /// Returns a hash code for the show that can be used for matching.
-    /// </summary>
-    public int GetItemHashCode()
-    {
-        return HashCode.Combine(Id, ExtraId, MediaType);
-    }
-    
-    /// <summary>
-    /// Returns a hash code for the show that includes folder-specific properties.
-    /// </summary>
-    public int GetItemFolderHashCode()
-    {
-        return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
-    }
-    
-    /// <summary>
     /// Generates XML content for the TV show in tvshow.nfo format.
     /// </summary>
     /// <returns>XML string for the TV show</returns>
