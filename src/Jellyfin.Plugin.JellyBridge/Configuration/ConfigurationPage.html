@@ -745,9 +745,9 @@
                             <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
                         </div>
 
-                        <details id="networkFolderOptionsDetails" class="detailedInstructions" data-depends-on="UseNetworkFolders">
+                        <details id="networkFolderOptionsDetails" class="detailedInstructions">
                             <summary>Network Folders Setup</summary>
-                            <div>
+                            <div data-depends-on="UseNetworkFolders">
                                 <h4>Instructions</h4>
                                 <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
