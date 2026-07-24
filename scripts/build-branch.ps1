@@ -142,9 +142,9 @@ if (-not (Test-Path $releaseDir)) {
 # Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
 # Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
 $targets = @(
-    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; },
+    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; },
     @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
-    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
+    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; }
 )
 
 $createdZips = @()
@@ -165,7 +165,7 @@ foreach ($t in $targets) {
     $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$ver_sub</AssemblyVersion>"
     $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$ver_sub</FileVersion>"
 
-    Start-Sleep -Milliseconds 1000
+    Start-Sleep -Milliseconds 500
     Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
     Write-Host "[~] Updated version to $ver_sub in project file" -ForegroundColor Green
 

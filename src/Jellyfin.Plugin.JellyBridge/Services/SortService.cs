@@ -563,8 +563,7 @@ public class SortService
                 }
 
                 // Find item by directory path - handles both movies and shows
-                var movieFile = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
-                var baseItem = _libraryManager.FindItemByDirectoryPath(movieFile);
+                var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
 
                 if (baseItem == null)
                 {
