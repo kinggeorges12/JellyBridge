@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "19BD256E2C6F7F721F75F877551820FB",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.24.11.9.zip",
+        "version": "3.24.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.24 - need to include allow items with the same folder to not be ignored",
+        "timestamp": "2026-07-24T08:41:56.731Z"
+      },
+      {
+        "checksum": "3480CE850F3E2F5876B3EC6E6E1A0EE2",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.24.11.0.zip",
+        "version": "3.24.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.24 - need to include allow items with the same folder to not be ignored",
+        "timestamp": "2026-07-24T08:41:56.731Z"
+      },
+      {
+        "checksum": "2E339100A09D4F58CD4F9FA64DE0BD66",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.24.10.7.zip",
+        "version": "3.24.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.24 - need to include allow items with the same folder to not be ignored",
+        "timestamp": "2026-07-24T08:41:56.731Z"
+      },
+      {
         "checksum": "FE888B81CC7822EA8E4728D98FEB847E",
         "targetAbi": "10.11.9.0",
         "dependencies": [],
