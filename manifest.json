@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "2545B80417A6B47DC4DE99D399171EE9",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.20.11.9.zip",
+        "version": "3.20.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.20 - adding checkbox to turn off plugin menu and fixing movie sorting algo",
+        "timestamp": "2026-07-24T06:56:00.281Z"
+      },
+      {
+        "checksum": "1A6590D57900EDC294805D896B161563",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.20.11.0.zip",
+        "version": "3.20.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.20 - adding checkbox to turn off plugin menu and fixing movie sorting algo",
+        "timestamp": "2026-07-24T06:56:00.281Z"
+      },
+      {
+        "checksum": "485EF13F53DF002E9AA5E26E3E384E81",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.20.10.7.zip",
+        "version": "3.20.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.20 - adding checkbox to turn off plugin menu and fixing movie sorting algo",
+        "timestamp": "2026-07-24T06:56:00.281Z"
+      },
+      {
         "checksum": "9113262AC63D1C7CE84926522B53E76A",
         "targetAbi": "10.11.9.0",
         "dependencies": [],
