@@ -45,6 +45,7 @@ public class PlaceholderVideoGenerator
     
     // Asset file extension
     public static readonly string AssetExtension = ".mp4";
+    public static readonly string AssetSearchPattern = "*" + AssetExtension;
 
     public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
     {
@@ -63,7 +64,8 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderMovieAsync(string movieFolderPath)
     {
-        var assetStem = Path.GetFileName(movieFolderPath);
+        // var assetStem = Path.GetFileName(movieFolderPath);
+        var assetStem = Path.GetFileNameWithoutExtension(MovieAsset);
         var targetFilename = assetStem + AssetExtension;
         return await GeneratePlaceholderAsync(movieFolderPath, targetFilename, MovieAsset);
     }
@@ -479,7 +481,7 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
-    /// Deletes all files with AssetExtension in the given folder except the designated asset file.
+    /// Deletes all files with .mp4 extension in the given folder except the designated asset file.
     /// </summary>
     /// <param name="folderPath">The folder to clean up</param>
     /// <param name="fileAsset">The file name (with extension) to keep</param>
@@ -487,8 +489,8 @@ public class PlaceholderVideoGenerator
     {
         if (FolderUtils.FolderExistsThrowNull(folderPath))
         {
-            var allPlaceholders = Directory.GetFiles(folderPath, "*" + AssetExtension, SearchOption.TopDirectoryOnly)
-                .Where(f => !string.Equals(Path.GetFileName(f), fileAsset, StringComparison.OrdinalIgnoreCase));
+            var allPlaceholders = Directory.GetFiles(folderPath, AssetSearchPattern, SearchOption.TopDirectoryOnly)
+                .Where(f => !string.Equals(Path.GetFileName(f), fileAsset));
             foreach (var file in allPlaceholders)
             {
                 try {
@@ -548,11 +550,8 @@ public class PlaceholderVideoGenerator
 
             try
             {
-                // Build search pattern for this asset type
-                string searchPattern = Path.GetFileNameWithoutExtension(assetName) + AssetExtension;
-                
                 // Find all existing placeholder files in the library
-                var existingFiles = Directory.GetFiles(libraryRoot, searchPattern, SearchOption.AllDirectories);
+                var existingFiles = Directory.GetFiles(libraryRoot, AssetSearchPattern, SearchOption.AllDirectories);
                 
                 if (existingFiles.Length == 0)
                 {

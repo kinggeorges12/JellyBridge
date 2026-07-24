@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "896B53C93D6FF3E4B087E3EF141863AC",
+        "timestamp": "2026-07-24T20:50:38.743Z",
+        "version": "3.31.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.31.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.31 - testing jellyfin search for movies",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "F60D18FFFF8A35928AACFE7185E674B9",
+        "timestamp": "2026-07-24T20:50:38.743Z",
+        "version": "3.31.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.31.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.31 - testing jellyfin search for movies",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "2113005E94965C74E695D667BFFE1BA7",
+        "timestamp": "2026-07-24T20:50:38.743Z",
+        "version": "3.31.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.31.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.31 - testing jellyfin search for movies",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "4594BF9FC09D149D97D9690E4AE871E2",
         "timestamp": "2026-07-24T20:29:43.604Z",
         "version": "3.30.11.9",

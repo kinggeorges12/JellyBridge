@@ -334,7 +334,7 @@ public class SortService
                     continue;
                 }
 
-                var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
+                var baseItem = _libraryManager.FindJellyfinItemByPath(folder);
                 if (baseItem == null)
                 {
                     // Item not found - include it with zero play count
@@ -558,13 +558,15 @@ public class SortService
                 }
 
                 // Find item by directory path - handles both movies and shows
-                var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
+                var baseItem = _libraryManager.FindJellyfinItemByPath(folder);
                 if (baseItem == null)
                 {
-                    var fileStem = Path.GetFileName(folder) + PlaceholderVideoGenerator.AssetExtension;
-                    var fullFilepath = Path.Combine(folder, fileStem);
-                    _logger.LogTrace("Trying again: {Path}", fullFilepath);
-                    baseItem = _libraryManager.FindItemByDirectoryPath(fullFilepath);
+                    var availableFiles = Directory.GetFiles(folder, PlaceholderVideoGenerator.AssetSearchPattern, SearchOption.TopDirectoryOnly);
+                    foreach (var file in availableFiles)
+                    {
+                        _logger.LogTrace("Attempting to find {mediaType} item by filepath: {Path}", mediaType, file);
+                        baseItem = _libraryManager.FindJellyfinItemByPath(file);
+                    }
                 }
 
                 if (baseItem == null)
