@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "68AAF397A30C7BEE8CAB7E7917441B32",
+        "timestamp": "2026-07-24T20:19:07.739Z",
+        "version": "3.29.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.29.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.29 - what is a sema for",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "4FD9DD7B1C68591D9085FC0729F8DCD6",
+        "timestamp": "2026-07-24T20:19:07.739Z",
+        "version": "3.29.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.29.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.29 - what is a sema for",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "C0BF47E9BCA6CED5B949E2DC4674EDC7",
+        "timestamp": "2026-07-24T20:19:07.739Z",
+        "version": "3.29.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.29.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.29 - what is a sema for",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "CFD98699BEECF71294AAF5470184F75A",
         "timestamp": "2026-07-24T20:07:48.167Z",
         "version": "3.28.11.9",

@@ -242,10 +242,10 @@ public class PlaceholderVideoGenerator
     private async Task<string?> EnsureAssetExtractedAsync(string assetName)
     {
         string assetFilepath = Path.Combine(_assetPath, assetName);
-        SemaphoreSlim semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
+        SemaphoreSlim extractAssetSemaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
         
         var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
-        await _invalidationSemaphore.WaitAsync(timeout);
+        await extractAssetSemaphore.WaitAsync(timeout);
         try
         {
             if (!File.Exists(assetFilepath))
@@ -336,7 +336,7 @@ public class PlaceholderVideoGenerator
         }
         finally
         {
-            semaphore.Release();
+            extractAssetSemaphore.Release();
         }
     }
 
