@@ -564,7 +564,7 @@ public class PlaceholderVideoGenerator
 
                         // Regenerate based on asset type
                         var parentFolderPath = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(directoryName) ?? string.Empty);
-                        var movieNfoFile = Path.Combine(directoryName, JellyseerrShow.GetNfoFilename());
+                        var movieNfoFile = Path.Combine(directoryName, JellyseerrMovie.GetNfoFilename());
                         var showNfoFile = Path.Combine(parentFolderPath, JellyseerrShow.GetNfoFilename());
                         if (File.Exists(movieNfoFile))
                         {
