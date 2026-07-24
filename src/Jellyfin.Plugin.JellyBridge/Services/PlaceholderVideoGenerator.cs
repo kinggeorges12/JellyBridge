@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using MediaBrowser.Controller.MediaEncoding;
+using Jellyfin.Plugin.JellyBridge.BridgeModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -64,8 +65,9 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderMovieAsync(string movieFolderPath)
     {
-        // var assetStem = Path.GetFileName(movieFolderPath);
-        var assetStem = Path.GetFileNameWithoutExtension(MovieAsset);
+        // After Jellyfin v10.11.3, the filename for movies MUST match the movie folder name with a valid video extension.
+        // var assetStem = Path.GetFileNameWithoutExtension(MovieAsset);
+        var assetStem = Path.GetFileName(movieFolderPath);
         var targetFilename = assetStem + AssetExtension;
         return await GeneratePlaceholderAsync(movieFolderPath, targetFilename, MovieAsset);
     }
@@ -523,115 +525,91 @@ public class PlaceholderVideoGenerator
     /// Refreshes all existing placeholder videos in the library by regenerating them from the current assets.
     /// </summary>
     /// <returns>A tuple containing lists of successful and failed item paths.</returns>
-    public async Task<(List<string> success, List<string> failure)> RefreshAllPlaceholdersAsync()
+    public async Task<(List<string> successMovies, List<string> successSeries,
+        List<string> failures)> RefreshAllPlaceholdersAsync()
     {
-        List<string> success = new List<string>();
-        List<string> failure = new List<string>();
+        List<string> successMovies = new List<string>();
+        List<string> successSeries = new List<string>();
+        List<string> failures = new List<string>();
 
         // Get the library root once
         string libraryRoot = FolderUtils.GetBaseDirectory();
         if (!FolderUtils.FolderExistsThrowNull(libraryRoot))
         {
             _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
-            return (success: success, failure: failure);
+            return (successMovies, successSeries, failures);
         }
 
         // Invalidate cache once at the start
         await InvalidateCachedPlaceholdersAsync();
-
-        // Process each asset type (movies and series)
-        string[] assetTypes = new string[] { MovieAsset, SeasonAsset };
-        
-        foreach (string assetName in assetTypes)
+        try
         {
             List<Task> tasks = new List<Task>();
-            ConcurrentBag<string> taskSuccess = new ConcurrentBag<string>();
+            ConcurrentBag<string> taskSuccessMovies = new ConcurrentBag<string>();
+            ConcurrentBag<string> taskSuccessSeries = new ConcurrentBag<string>();
             ConcurrentBag<string> taskFailure = new ConcurrentBag<string>();
 
-            try
+            // Find all existing placeholder files in the library
+            var existingFiles = Directory.GetFiles(libraryRoot, AssetSearchPattern, SearchOption.AllDirectories);
+
+            // Process each existing placeholder file in parallel
+            foreach (string existingFile in existingFiles)
             {
-                // Find all existing placeholder files in the library
-                var existingFiles = Directory.GetFiles(libraryRoot, AssetSearchPattern, SearchOption.AllDirectories);
-                
-                if (existingFiles.Length == 0)
+                tasks.Add(Task.Run(async delegate
                 {
-                    _logger.LogDebug("No existing {Type} placeholders found in library to refresh", assetName);
-                    continue;
-                }
-
-                _logger.LogInformation("Refreshing {Count} existing {Type} placeholder(s) in library", existingFiles.Length, assetName);
-
-                // Generate the new cached placeholder once for this asset type
-                var cachedPath = await EnsureCachedPlaceholderAsync(assetName);
-                if (string.IsNullOrEmpty(cachedPath))
-                {
-                    _logger.LogError("Failed to generate new cached placeholder for {Type}, cannot refresh library", assetName);
-                    continue;
-                }
-
-                // Process each existing placeholder file in parallel
-                foreach (string existingFile in existingFiles)
-                {
-                    tasks.Add(Task.Run(async delegate
+                    try
                     {
-                        try
+                        // Get the parent directory of the existing placeholder
+                        var directoryName = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(existingFile) ?? string.Empty);
+
+                        // Regenerate based on asset type
+                        var parentFolderPath = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(directoryName) ?? string.Empty);
+                        var movieNfoFile = Path.Combine(directoryName, JellyseerrShow.GetNfoFilename());
+                        var showNfoFile = Path.Combine(parentFolderPath, JellyseerrShow.GetNfoFilename());
+                        if (File.Exists(movieNfoFile))
                         {
-                            // Get the parent directory of the existing placeholder
-                            var directoryName = Path.GetDirectoryName(existingFile);
-                            if (string.IsNullOrEmpty(directoryName))
-                            {
-                                throw new InvalidOperationException("Cannot determine directory for " + existingFile);
-                            }
-
-                            // Regenerate based on asset type
-                            if (assetName == MovieAsset)
-                            {
-                                // For movies, the placeholder is in the movie folder itself
-                                await GeneratePlaceholderMovieAsync(directoryName);
-                            }
-                            else if (assetName == SeasonAsset)
-                            {
-                                // For series, we need to get the show folder (parent of the season folder)
-                                var showFolderPath = Path.GetDirectoryName(directoryName);
-                                if (string.IsNullOrEmpty(showFolderPath))
-                                {
-                                    throw new InvalidOperationException("Cannot determine show directory for " + existingFile);
-                                }
-                                await GeneratePlaceholderSeasonAsync(showFolderPath);
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException("Unknown asset type: " + assetName);
-                            }
-
-                            _logger.LogTrace("Refreshed placeholder: {ExistingFile}", existingFile);
-                            taskSuccess.Add(existingFile);
+                            // For movies, the placeholder is in the movie folder itself
+                            await GeneratePlaceholderMovieAsync(directoryName);
+                            taskSuccessMovies.Add(existingFile);
                         }
-                        catch (Exception ex)
+                        else if (FolderUtils.FolderExistsThrowNull(parentFolderPath) && File.Exists(showNfoFile))
                         {
-                            _logger.LogError(ex, "Failed to refresh placeholder: {ExistingFile}", existingFile);
-                            taskFailure.Add(existingFile);
+                            // For series, we need to get the show folder (parent of the season folder)
+                            await GeneratePlaceholderSeasonAsync(parentFolderPath);
+                            taskSuccessSeries.Add(existingFile);
                         }
-                    }));
-                }
+                        else
+                        {
+                            throw new InvalidOperationException("Unknown asset type for video file: " + existingFile);
+                        }
 
-                // Wait for all parallel tasks to complete for this asset type
-                await Task.WhenAll(tasks);
-
-                // Add results to the overall lists
-                success.AddRange(taskSuccess);
-                failure.AddRange(taskFailure);
-
-                _logger.LogInformation("Refreshed {Count}/{Total} for placeholder: {Type}", 
-                    taskSuccess.Count, tasks.Count, assetName);
+                        _logger.LogTrace("Refreshed placeholder: {ExistingFile}", existingFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to refresh placeholder: {ExistingFile}", existingFile);
+                        taskFailure.Add(existingFile);
+                    }
+                }));
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error refreshing placeholders for asset: {Type}", assetName);
-            }
+
+            // Wait for all parallel tasks to complete for this asset type
+            await Task.WhenAll(tasks);
+
+            // Add results to the overall lists
+            successMovies.AddRange(taskSuccessMovies);
+            successSeries.AddRange(taskSuccessSeries);
+            failures.AddRange(taskFailure);
+
+            _logger.LogDebug("Refreshed {CountMovies} Movies and {CountSeries} Series out of {Total}", 
+                taskSuccessMovies.Count, taskSuccessSeries.Count, tasks.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing placeholders tasks");
         }
 
-        return (success: success, failure: failure);
+        return (successMovies, successSeries, failures);
     }
 
     /// <summary>
