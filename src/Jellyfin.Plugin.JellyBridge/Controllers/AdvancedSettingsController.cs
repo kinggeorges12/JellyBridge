@@ -103,43 +103,34 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     _logger.LogInformation("Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
-                    // Delete all contents inside library directory if it exists
-                    if (System.IO.Directory.Exists(libraryDir))
+                    _logger.LogTrace("Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                    
+                    try
                     {
-                        _logger.LogTrace("Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                        // Get all subdirectories and files
+                        var subdirs = System.IO.Directory.GetDirectories(libraryDir);
+                        var files = System.IO.Directory.GetFiles(libraryDir);
                         
-                        try
+                        // Delete all files in the root directory
+                        foreach (var file in files)
                         {
-                            // Get all subdirectories and files
-                            var subdirs = System.IO.Directory.GetDirectories(libraryDir);
-                            var files = System.IO.Directory.GetFiles(libraryDir);
-                            
-                            // Delete all files in the root directory
-                            foreach (var file in files)
-                            {
-                                System.IO.File.Delete(file);
-                                _logger.LogTrace("Deleted file: {File}", file);
-                            }
-                            
-                            // Delete all subdirectories (recursively)
-                            foreach (var subdir in subdirs)
-                            {
-                                System.IO.Directory.Delete(subdir, true);
-                                _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
-                            }
-                            
-                            _logger.LogInformation("Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
+                            System.IO.File.Delete(file);
+                            _logger.LogTrace("Deleted file: {File}", file);
                         }
-                        catch (Exception ex)
+                        
+                        // Delete all subdirectories (recursively)
+                        foreach (var subdir in subdirs)
                         {
-                            _logger.LogError(ex, "Failed to delete contents of library directory: {LibraryDir}", libraryDir);
-                            throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
+                            System.IO.Directory.Delete(subdir, true);
+                            _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
                         }
+                        
+                        _logger.LogInformation("Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogError("Library directory does not exist: {LibraryDir}", libraryDir);
-                        throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
+                        _logger.LogError(ex, "Failed to delete contents of library directory: {LibraryDir}", libraryDir);
+                        throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
                     }
                     
                     // Refresh the JellyBridge library after data deletion

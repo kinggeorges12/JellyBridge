@@ -202,11 +202,10 @@ public class BridgeService
     {
         // Excludes base directory from shows
         var libraryDirectory = FolderUtils.GetBaseDirectory();
-        var bridgeLibraryPaths = new HashSet<string>();
-        if (!string.IsNullOrEmpty(libraryDirectory))
+        var bridgeLibraryPaths = new HashSet<string>()
         {
-            bridgeLibraryPaths.Add(libraryDirectory);
-        }
+            libraryDirectory
+        };
         var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
         var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
         // Combine movies and shows

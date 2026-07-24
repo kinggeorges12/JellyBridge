@@ -120,16 +120,13 @@ public class CleanupService
                 // Treat null CreatedDate as very old (past cutoff date)
                 if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
                 {
-                    var itemDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var itemDirectory = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
                     
-                    if (Directory.Exists(itemDirectory))
-                    {
-                        var deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
-                        Directory.Delete(itemDirectory, true);
-                        deletedItems.Add(item);
-                        _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
-                            item.MediaType, item.MediaName, deletionReason);
-                    }
+                    var deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
+                    Directory.Delete(itemDirectory, true);
+                    deletedItems.Add(item);
+                    _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
+                        item.MediaType, item.MediaName, deletionReason);
                 }
             }
             catch (Exception ex)
@@ -250,9 +247,7 @@ public class CleanupService
         {
             try
             {
-                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
-                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                    continue;
+                var folderPath = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
                 if (!Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any())
                 {
                     _logger.LogTrace("No placeholder found for {ItemName} at {FolderPath}", item.MediaName, folderPath);

@@ -257,11 +257,10 @@ public class SortService
 
         // Get JellyBridge library directory to exclude from user's library
         var libraryDirectory = FolderUtils.GetBaseDirectory();
-        var bridgeLibraryPaths = new HashSet<string>();
-        if (!string.IsNullOrEmpty(libraryDirectory))
+        var bridgeLibraryPaths = new HashSet<string>()
         {
-            bridgeLibraryPaths.Add(libraryDirectory);
-        }
+            libraryDirectory
+        };
 
         // Get all items from user's library (excluding JellyBridge items)
         List<JellyfinMovie> userMovies;

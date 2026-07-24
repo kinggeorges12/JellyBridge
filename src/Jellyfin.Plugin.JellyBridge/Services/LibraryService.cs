@@ -53,10 +53,6 @@ public class LibraryService
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return queuedCount;
             }
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
-            }
 
             _logger.LogDebug("Starting Jellyseerr library refresh (CreateMode: {CreateMode}, RemoveMode: {RemoveMode})...", createMode, removeMode);
 
@@ -231,9 +227,10 @@ public class LibraryService
         }
 
         // Wait for it to complete by checking the state
-        var timeout = DateTime.UtcNow.AddMinutes(30);
+        var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+        var endTime = DateTime.UtcNow + timeout;
         var taskFinished = false;
-        while (DateTime.UtcNow < timeout)
+        while (DateTime.UtcNow < endTime)
         {
             // get the State property
             var state = taskWorker.State;
@@ -252,7 +249,7 @@ public class LibraryService
 
         if (taskFinished == false)
         {
-            _logger.LogWarning("Scan timed out after 30 minutes");
+            _logger.LogWarning("Scan timed out after {Timeout} minutes", timeout.TotalMinutes);
             return false;
         }
         return taskFinished;
@@ -266,6 +263,7 @@ public class LibraryService
     {
         var libraryDir = FolderUtils.GetBaseDirectory();
         var tempDir = Path.Combine(libraryDir, "_blank");
+        var fileCreated = false;
         try
         {
             var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
@@ -278,9 +276,12 @@ public class LibraryService
 
             if (force)
             {
-                // Create temp directory to force refresh
-                Directory.CreateDirectory(tempDir);
+                if (!FolderUtils.FolderExistsThrowNull(tempDir)){
+                    Directory.CreateDirectory(tempDir);
+                }
+                // Create temp file to force refresh
                 File.Create(Path.Combine(tempDir, ".ignore")).Close();
+                fileCreated = true;
             }
 
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
@@ -302,8 +303,9 @@ public class LibraryService
         }
         finally
         {
-            if (Directory.Exists(tempDir))
+            if(fileCreated)
             {
+                // Clean up temp directory
                 Directory.Delete(tempDir, true);
             }
         }

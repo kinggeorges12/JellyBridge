@@ -69,20 +69,13 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
-    /// Get the season folder path for a show, creating it if it doesn't exist.
+    /// Get the season folder path for a show.
     /// </summary>
     /// <param name="showFolderPath">The path to the show folder.</param>
     /// <returns>The path to the season folder.</returns>
     private string GetSeasonFolder(string showFolderPath)
     {
         var seasonFolderPath = Path.Combine(showFolderPath, SeasonFolderName);
-        
-        // Create season folder if it doesn't exist
-        if (!Directory.Exists(seasonFolderPath))
-        {
-            Directory.CreateDirectory(seasonFolderPath);
-            _logger.LogDebug("Created season folder: '{SeasonFolderPath}'", seasonFolderPath);
-        }
         
         return seasonFolderPath;
     }
@@ -207,12 +200,7 @@ public class PlaceholderVideoGenerator
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(targetDirectory))
-            {
-                return false;
-            }
-
-            if (!Directory.Exists(targetDirectory))
+            if (!FolderUtils.FolderExistsThrowNull(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
             }
@@ -369,9 +357,9 @@ public class PlaceholderVideoGenerator
                 return false;
             }
 
-            // Ensure output directory exists
-            var outputDir = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            // Ensure output directory exists, defaults to throw if directory is null
+            var outputDir = Path.GetDirectoryName(outputPath) ?? string.Empty;
+            if (!FolderUtils.FolderExistsThrowNull(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
             }
@@ -495,7 +483,7 @@ public class PlaceholderVideoGenerator
     /// <param name="fileAsset">The file name (with extension) to keep</param>
     private void DeleteExtraPlaceholders(string folderPath, string fileAsset)
     {
-        if (Directory.Exists(folderPath))
+        if (FolderUtils.FolderExistsThrowNull(folderPath))
         {
             var allPlaceholders = Directory.GetFiles(folderPath, "*" + AssetExtension, SearchOption.TopDirectoryOnly)
                 .Where(f => !string.Equals(Path.GetFileName(f), fileAsset, StringComparison.OrdinalIgnoreCase));
@@ -538,7 +526,7 @@ public class PlaceholderVideoGenerator
 
         // Get the library root once
         string libraryRoot = FolderUtils.GetBaseDirectory();
-        if (!Directory.Exists(libraryRoot))
+        if (!FolderUtils.FolderExistsThrowNull(libraryRoot))
         {
             _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
             return (success: success, failure: failure);
@@ -653,11 +641,11 @@ public class PlaceholderVideoGenerator
         await _invalidationSemaphore.WaitAsync(60*1000); // Wait up to 60 seconds to acquire the semaphore
         try
         {
-            if (Directory.Exists(_assetPath))
+            if (FolderUtils.FolderExistsThrowNull(_assetPath))
             {
                 Directory.Delete(_assetPath, recursive: true);
             }
-            if (Directory.Exists(_placeholderPath))
+            if (FolderUtils.FolderExistsThrowNull(_placeholderPath))
             {
                 Directory.Delete(_placeholderPath, recursive: true);
             }

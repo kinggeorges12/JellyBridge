@@ -10,12 +10,39 @@ namespace Jellyfin.Plugin.JellyBridge.Utils;
 public static class FolderUtils
 {
     /// <summary>
+    /// Check if a folder exists and throw an exception if it does not.
+    /// </summary>
+    /// <param name="folderName">The folder path to check.</param>
+    /// <returns>The folder path if it exists.</returns>
+    public static string GetExistingFolderOrThrow(string folderName)
+    {
+        if (!FolderExistsThrowNull(folderName))
+        {
+            throw new InvalidOperationException($"Directory does not exist: {folderName}");
+        }
+        return folderName;
+    }
+    public static bool FolderExistsThrowNull(string? folderName)
+    {
+        if (string.IsNullOrEmpty(folderName))
+        {
+            throw new InvalidOperationException($"Directory not specified: {folderName}");
+        }
+        else if (GetNormalizedPath(folderName)==GetNormalizedPath("/"))
+        {
+            throw new InvalidOperationException($"Access to root is denied: {folderName}");
+        }
+        return Directory.Exists(folderName);
+    }
+
+    /// <summary>
     /// Get the base directory from settings or return a default.
     /// </summary>
     /// <returns>The configured base directory path</returns>
     public static string GetBaseDirectory()
     {
-        return Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        var syncDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryDirectory));
+        return GetExistingFolderOrThrow(syncDirectory);
     }
 
     /// <summary>
@@ -195,11 +222,14 @@ public static class FolderUtils
                 return (false, "Directory is not configured");
             }
 
-            // Ensure directory exists or can be created
-            Directory.CreateDirectory(testDirectory);
+            if(!FolderUtils.FolderExistsThrowNull(testDirectory))
+            {
+                // Ensure directory exists or can be created
+                Directory.CreateDirectory(testDirectory);
+            }
 
             // Ensure directory was created successfully
-            if (!Directory.Exists(testDirectory))
+            if (!FolderUtils.FolderExistsThrowNull(testDirectory))
             {
                 return (false, $"Directory does not exist: {testDirectory}");
             }

@@ -133,15 +133,10 @@ public class DiscoverService
                 // Get the folder path for this item
                 var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
                 var normalizedFolder = FolderUtils.GetNormalizedPath(folderPath);
-                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
+                if (FolderUtils.FolderExistsThrowNull(normalizedFolder) && !seenFolders.Add(normalizedFolder))
                 {
                     _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
                     continue;
-                }
-                
-                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                {
-                    throw new InvalidOperationException($"Folder does not exist for item: {item.MediaName}");
                 }
                 
                 // Create placeholder video based on media type
@@ -258,47 +253,44 @@ public class DiscoverService
     /// <summary>
     /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
     /// </summary>
-    public Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> DeleteIgnoreFilesAsync(List<JellyMatch> matched)
+    public Task<(List<IJellyseerrItem> newUnignored, List<IJellyseerrItem> existingUnignored)> DeleteIgnoreFilesAsync(List<JellyMatch> matched)
     {
         var syncDirectory = FolderUtils.GetBaseDirectory();
+        List<IJellyseerrItem> existingUnignored = new List<IJellyseerrItem>();
         
         try
         {
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
-            }
-
             _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
             
-            var deletedCount = 0;
-            var ignoreFiles = Directory.GetFiles(syncDirectory, BridgeService.IgnoreFileName, SearchOption.AllDirectories);
-            
-            foreach (var ignoreFile in ignoreFiles)
+            foreach (var matchedItem in matched)
             {
-                try
+                (var jellyseerrItem, _) = matchedItem.ToTuple();
+                var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(jellyseerrItem);
+                var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+                if (File.Exists(ignoreFilePath))
                 {
-                    File.Delete(ignoreFile);
-                    deletedCount++;
-                    _logger.LogDebug("Deleted .ignore file: {IgnoreFile}", ignoreFile);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to delete .ignore file: {IgnoreFile}", ignoreFile);
+                    try
+                    {
+                        File.Delete(ignoreFilePath);
+                        existingUnignored.Add(jellyseerrItem);
+                        _logger.LogDebug("Deleted .ignore file for matched item: {IgnoreFile}", ignoreFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to delete .ignore file for matched item: {IgnoreFile}", ignoreFilePath);
+                    }
                 }
             }
 
             _logger.LogTrace("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
-                deletedCount, ignoreFiles.Length);
+                existingUnignored.Count, matched.Count);
             
-            return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during .ignore file deletion");
-            return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
         }
+        return Task.FromResult((new List<IJellyseerrItem>(), existingUnignored));
     }
 
     /// <summary>

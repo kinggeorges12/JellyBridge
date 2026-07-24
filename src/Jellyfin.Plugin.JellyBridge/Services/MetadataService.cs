@@ -127,10 +127,7 @@ public class MetadataService
 
         try
         {
-            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-            {
-                throw new InvalidOperationException($"Folder path does not exist: {folderPath}");
-            }
+            folderPath = FolderUtils.GetExistingFolderOrThrow(folderPath);
 
             // Get all subdirectories that contain metadata files
             var metadataFiles = Directory.GetFiles(folderPath, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
@@ -194,17 +191,14 @@ public class MetadataService
                 
                 // Generate folder name and get directory path
                 var folderName = GetJellyBridgeItemDirectory(item);
-                var folderExists = Directory.Exists(folderName);
-
-                _logger.LogTrace("Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
-                    folderName, folderExists);
+                var folderAlreadyExists = FolderUtils.FolderExistsThrowNull(folderName);
 
                 // Write metadata
                 var success = await WriteMetadataAsync(item);
                 
                 if (success)
                 {
-                    if (folderExists)
+                    if (folderAlreadyExists)
                     {
                         updatedItems.Add(item);
                         _logger.LogTrace("✅ UPDATED {Type} folder: '{FolderName}'", 
@@ -257,7 +251,7 @@ public class MetadataService
             var targetDirectory = GetJellyBridgeItemDirectory(item);
 
             // Create directory if it doesn't exist
-            if (!Directory.Exists(targetDirectory))
+            if (!FolderUtils.FolderExistsThrowNull(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
                 _logger.LogDebug("Created directory: {TargetDirectory}", targetDirectory);
@@ -309,11 +303,6 @@ public class MetadataService
         var baseDirectory = FolderUtils.GetBaseDirectory();
         var networkMap = config.NetworkMap ?? new List<JellyseerrNetwork>();
         
-        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
-        {
-            throw new InvalidOperationException($"Library Directory does not exist: {baseDirectory}");
-        }
-        
         if (networkMap.Count == 0)
         {
             _logger.LogWarning("No networks configured. No folders will be created.");
@@ -352,7 +341,7 @@ public class MetadataService
                     
                     var networkFolderName = Path.GetFileName(networkFolderPath);
                     
-                    if (Directory.Exists(networkFolderPath))
+                    if (FolderUtils.FolderExistsThrowNull(networkFolderPath))
                     {
                         existingFolders.Add(networkFolderName);
                         _logger.LogTrace("Network folder already exists: {NetworkFolder}", networkFolderPath);
@@ -361,7 +350,7 @@ public class MetadataService
                     {
                         Directory.CreateDirectory(networkFolderPath);
                         createdFolders.Add(networkFolderName);
-                        _logger.LogInformation("Created network folder: {NetworkFolder}", networkFolderPath);
+                        _logger.LogDebug("Created network folder: {NetworkFolder}", networkFolderPath);
                     }
                 }
                 catch (Exception ex)
