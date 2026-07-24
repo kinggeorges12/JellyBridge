@@ -266,7 +266,7 @@ public class CleanupService
             }
         }
 
-        var filteredItems = _bridgeService.FilterIgnoredItems(itemsWithoutPlaceholder);
+        var filteredItems = _bridgeService.FilterAlreadyIgnoredItems(itemsWithoutPlaceholder);
         var created = await _discoverService.CreatePlaceholderVideosAsync(filteredItems);
         return created;
     }

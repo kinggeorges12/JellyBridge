@@ -268,8 +268,8 @@ public class SortService
         List<JellyfinSeries> userSeries;
         try
         {
-            userMovies = _libraryManager.GetUserLibraryItems<JellyfinMovie>(user, bridgeLibraryPaths);
-            userSeries = _libraryManager.GetUserLibraryItems<JellyfinSeries>(user, bridgeLibraryPaths);
+            userMovies = _libraryManager.GetUserLibraryItems<JellyfinMovie>(user: user, excludePaths: bridgeLibraryPaths);
+            userSeries = _libraryManager.GetUserLibraryItems<JellyfinSeries>(user: user, excludePaths: bridgeLibraryPaths);
         }
         catch (Exception ex)
         {

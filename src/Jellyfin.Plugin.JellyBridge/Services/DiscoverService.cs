@@ -28,8 +28,6 @@ public class DiscoverService
         _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
-    
-    #region FromJellyseerr
 
     #region Process
     
@@ -189,7 +187,7 @@ public class DiscoverService
     /// <param name="allItems">List of media items to filter</param>
     /// <param name="uniqueItems">List of unique media items</param>
     /// <returns>Tuple of (newly ignored items, existing ignored items)</returns>
-    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreDuplicateLibraryItems(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
+    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreJellyBridgeDuplicates(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
     {
         var newlyIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
@@ -255,12 +253,12 @@ public class DiscoverService
 
     #endregion
     
-    #region Deleted
+    #region Ignore
 
     /// <summary>
     /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
     /// </summary>
-    public Task<int> DeleteAllIgnoreFilesAsync()
+    public Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> DeleteIgnoreFilesAsync(List<JellyMatch> matched)
     {
         var syncDirectory = FolderUtils.GetBaseDirectory();
         
@@ -269,7 +267,7 @@ public class DiscoverService
             if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
             {
                 _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return Task.FromResult(0);
+                return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
             }
 
             _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
@@ -294,12 +292,12 @@ public class DiscoverService
             _logger.LogTrace("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
                 deletedCount, ignoreFiles.Length);
             
-            return Task.FromResult(deletedCount);
+            return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during .ignore file deletion");
-            return Task.FromResult(0);
+            return Task.FromResult((new List<IJellyseerrItem>(), new List<IJellyseerrItem>()));
         }
     }
 
@@ -410,8 +408,6 @@ public class DiscoverService
 
         return (newlyIgnored, existingIgnored);
     }
-
-    #endregion
 
     #endregion
 }
