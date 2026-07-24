@@ -35,10 +35,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var configForFrontend = new
                 {
                     // General Settings
-                    IsEnabled = config.IsEnabled,
                     JellyseerrUrl = config.JellyseerrUrl,
                     ApiKey = config.ApiKey,
                     LibraryDirectory = config.LibraryDirectory,
+                    IsEnabled = config.IsEnabled,
+                    EnableInMainMenu = config.EnableInMainMenu,
                     SyncIntervalHours = config.SyncIntervalHours,
 
                     // Import Discover Content
@@ -123,10 +124,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Update configuration properties using simplified helper
                     
                     // General Settings
-                    SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
                     SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
                     SetJsonValue<string>(configData, nameof(config.ApiKey), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
+                    SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableInMainMenu), config);
                     SetJsonValue<double?>(configData, nameof(config.SyncIntervalHours), config);
                     
                     // Import Discover Content

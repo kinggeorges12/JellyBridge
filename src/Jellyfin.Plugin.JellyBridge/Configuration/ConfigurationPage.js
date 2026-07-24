@@ -81,11 +81,7 @@ function initializePluginHeader(page) {
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
-        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
-    }
-    // Update header legend with plugin version
-    if (config.PluginVersion) {
-        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+        page.querySelector('#legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
     }
 
     // Start task status polling
@@ -206,10 +202,11 @@ function updateTaskStatusDisplay(page, taskData) {
 
 function initializeGeneralSettings(page) {
     // Set general settings form values with null handling
-    setInputField(page, 'IsEnabled', true);
     setInputField(page, 'JellyseerrUrl');
     setInputField(page, 'ApiKey');
     setInputField(page, 'LibraryDirectory');
+    setInputField(page, 'IsEnabled', true);
+    setInputField(page, 'EnableInMainMenu', true);
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'EnableStartupSync', true);
     
@@ -1336,6 +1333,8 @@ function performPluginReset(page) {
                 JellyseerrUrl: '',
                 ApiKey: '',
                 LibraryDirectory: '',
+                IsEnabled: null,
+                EnableInMainMenu: null,
                 SyncIntervalHours: null,
                 LibraryPrefix: '',
                 RequestTimeout: null,
@@ -1346,7 +1345,6 @@ function performPluginReset(page) {
                 SortOrder: null,
                 MarkMediaPlayed: null,
                 SortTaskIntervalHours: null,
-                IsEnabled: null,
                 UseNetworkFolders: null,
                 AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
@@ -1493,10 +1491,11 @@ function savePluginConfiguration(page) {
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
     form.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
     form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
+    form.EnableInMainMenu = nullIfDefault(page.querySelector('#EnableInMainMenu').checked, config.ConfigDefaults.EnableInMainMenu);
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
     form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);

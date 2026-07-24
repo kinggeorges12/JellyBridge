@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "7F9E30682DC7A93BC1A97C95D285673F",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.14.11.9.zip",
+        "version": "3.14.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.14 - adding menu button",
+        "timestamp": "2026-07-24T05:00:55.323Z"
+      },
+      {
+        "checksum": "3C0EE5D68AF99D748AFCAE6DBB409BC2",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.14.11.0.zip",
+        "version": "3.14.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.14 - adding menu button",
+        "timestamp": "2026-07-24T05:00:55.323Z"
+      },
+      {
+        "checksum": "CDF311B38C437EB9C20BA19CE876D32B",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.14.10.7.zip",
+        "version": "3.14.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.14 - adding menu button",
+        "timestamp": "2026-07-24T05:00:55.323Z"
+      },
+      {
         "checksum": "59EB8DC4954B71D63C37F64DBBCCF959",
         "targetAbi": "10.11.9.0",
         "dependencies": [],
