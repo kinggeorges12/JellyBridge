@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "E05C53E043E831EE89E46AE7CDF7A256",
+        "timestamp": "2026-07-24T19:47:46.662Z",
+        "version": "3.27.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.27.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.27 - updating delete ignore files function to handle the matched jellyseerr items. adding file safety net to prevent accidental deletion of root (/).",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "233DC6DA776BA8D1DFECF8E67AA39747",
+        "timestamp": "2026-07-24T19:47:46.662Z",
+        "version": "3.27.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.27.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.27 - updating delete ignore files function to handle the matched jellyseerr items. adding file safety net to prevent accidental deletion of root (/).",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "71D7F10330EA190846EE40A4B82E3E1C",
+        "timestamp": "2026-07-24T19:47:46.662Z",
+        "version": "3.27.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.27.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.27 - updating delete ignore files function to handle the matched jellyseerr items. adding file safety net to prevent accidental deletion of root (/).",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "23FD53BB56DB67ACDEBCA58C08936838",
         "timestamp": "2026-07-24T18:24:42.711Z",
         "version": "3.26.11.9",
