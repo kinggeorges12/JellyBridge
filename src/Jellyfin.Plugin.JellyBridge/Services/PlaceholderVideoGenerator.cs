@@ -60,28 +60,21 @@ public class PlaceholderVideoGenerator
         InvalidateCachedPlaceholdersAsync().Wait();
     }
 
+    private string GetVideoFilename(string assetName)
+    {
+        var fileStem = Path.GetFileNameWithoutExtension(assetName);
+        return fileStem + AssetExtension;
+    }
+
     /// <summary>
     /// Generate a placeholder video for a movie (asset: movie.png).
     /// </summary>
     public async Task<bool> GeneratePlaceholderMovieAsync(string movieFolderPath)
     {
-        // After Jellyfin v10.11.3, the filename for movies MUST match the movie folder name with a valid video extension.
-        // var assetStem = Path.GetFileNameWithoutExtension(MovieAsset);
-        var assetStem = Path.GetFileName(movieFolderPath);
-        var targetFilename = assetStem + AssetExtension;
+        // This is the approved matching pattern for Jellyfin, although movie.mp4 also works for now.
+        // var assetStem = Path.GetFileName(movieFolderPath);
+        var targetFilename = GetVideoFilename(MovieAsset);
         return await GeneratePlaceholderAsync(movieFolderPath, targetFilename, MovieAsset);
-    }
-
-    /// <summary>
-    /// Get the season folder path for a show.
-    /// </summary>
-    /// <param name="showFolderPath">The path to the show folder.</param>
-    /// <returns>The path to the season folder.</returns>
-    private string GetSeasonFolder(string showFolderPath)
-    {
-        var seasonFolderPath = Path.Combine(showFolderPath, SeasonFolderName);
-        
-        return seasonFolderPath;
     }
 
     /// <summary>
@@ -91,9 +84,8 @@ public class PlaceholderVideoGenerator
     /// <param name="showFolderPath">The path to the show folder.</param>
     public async Task<bool> GeneratePlaceholderSeasonAsync(string showFolderPath)
     {
-        var seasonFolderPath = GetSeasonFolder(showFolderPath);
-        var assetStem = Path.GetFileNameWithoutExtension(SeasonAsset);
-        var targetFile = assetStem + AssetExtension;
+        var seasonFolderPath = Path.Combine(showFolderPath, SeasonFolderName);
+        var targetFile = GetVideoFilename(SeasonAsset);
         return await GeneratePlaceholderAsync(seasonFolderPath, targetFile, SeasonAsset);
     }
 
@@ -563,18 +555,18 @@ public class PlaceholderVideoGenerator
                         var directoryName = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(existingFile) ?? string.Empty);
 
                         // Regenerate based on asset type
-                        var parentFolderPath = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(directoryName) ?? string.Empty);
-                        var movieNfoFile = Path.Combine(directoryName, JellyseerrMovie.GetNfoFilename());
-                        var showNfoFile = Path.Combine(parentFolderPath, JellyseerrShow.GetNfoFilename());
-                        if (File.Exists(movieNfoFile))
+                        var movieFile = Path.Combine(directoryName, GetVideoFilename(MovieAsset));
+                        var seriesFile = Path.Combine(directoryName, GetVideoFilename(SeasonAsset));
+                        if (File.Exists(movieFile))
                         {
                             // For movies, the placeholder is in the movie folder itself
                             await GeneratePlaceholderMovieAsync(directoryName);
                             taskSuccessMovies.Add(existingFile);
                         }
-                        else if (FolderUtils.FolderExistsThrowNull(parentFolderPath) && File.Exists(showNfoFile))
+                        else if (File.Exists(seriesFile))
                         {
                             // For series, we need to get the show folder (parent of the season folder)
+                            var parentFolderPath = FolderUtils.GetExistingFolderOrThrow(Path.GetDirectoryName(directoryName) ?? string.Empty);
                             await GeneratePlaceholderSeasonAsync(parentFolderPath);
                             taskSuccessSeries.Add(existingFile);
                         }
