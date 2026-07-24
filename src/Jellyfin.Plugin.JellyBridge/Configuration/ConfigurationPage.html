@@ -439,10 +439,60 @@
                     max-width: 100%;
                     max-height: 256px;
                 }
+                legend {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                }
+
+                legend span#legend {
+                    white-space: nowrap;
+                    flex: 0 1;
+                    padding: 0 10px;
+                }
+
+                legend span.legend-divider {
+                    border-top: 2px groove rgba(255, 255, 255, .8);
+                    flex: 1 0;
+                }
+
+                legend label.emby-checkbox-label {
+                    white-space: nowrap;
+                    transform: scale(0.85);
+                    align-items: center;
+                    flex: 0 1;
+                    padding-left: 0;
+                }
+
+                legend label.emby-checkbox-label svg,
+                legend label.emby-checkbox-label span.checkboxLabel {
+                    padding-right: 10px;
+                }
+
+                legend label.emby-checkbox-label span.checkboxOutline {
+                    position: relative;
+                    top: 0;
+                    bottom: 0;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
-                    <legend id="legend">JellyBridge Configuration</legend>
+                    <legend>
+                        <span id="legend">JellyBridge Configuration (plugin version: 3.13.11.9)</span>
+                        <span class="legend-divider"></span>
+                        <label id="EnableInMainMenuContainer" class="emby-checkbox-label">
+                            <svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-iguwhy" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="FolderIcon">
+                                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8z"></path>
+                            </svg>
+                            <input id="EnableInMainMenu" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox">
+                            <span class="checkboxLabel">Plugins Menu</span>
+                            <span class="checkboxOutline">
+                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                            </span>
+                        </label>
+                    </legend>
                     
                     <!-- Task Status Progress Bar -->
                     <div id="taskStatusContainer" class="taskStatusContainer">

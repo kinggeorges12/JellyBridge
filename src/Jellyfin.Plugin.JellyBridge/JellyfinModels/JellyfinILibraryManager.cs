@@ -180,22 +180,26 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
     /// Finds an item by its directory path. Tries FindByPath as both folder and non-folder.
     /// For movies, also searches for video files in the directory and finds items by those file paths.
     /// </summary>
-    /// <param name="directoryPath">The directory path to search for</param>
+    /// <param name="itemPath">The item path to search for</param>
     /// <returns>The BaseItem if found, null otherwise</returns>
-    public BaseItem? FindItemByDirectoryPath(string directoryPath)
+    public BaseItem? FindItemByDirectoryPath(string itemPath)
     {
-        // First try FindByPath as folder (for shows)
-        var item = Inner.FindByPath(directoryPath, isFolder: true);
-        if (item != null)
+        var directoryPath = Path.GetDirectoryName(itemPath)?.ToString();
+        if (!string.IsNullOrEmpty(directoryPath))
         {
-            return item;
+            // First try FindByPath as folder (for shows)
+            var show = Inner.FindByPath(directoryPath, isFolder: true);
+            if (show != null)
+            {
+                return show;
+            }
         }
 
         // Try FindByPath as non-folder (for movies)
-        item = Inner.FindByPath(directoryPath, isFolder: false);
-        if (item != null)
+        var movie = Inner.FindByPath(itemPath, isFolder: false);
+        if (movie != null)
         {
-            return item;
+            return movie;
         }
 
         // If FindByPath doesn't work, return null

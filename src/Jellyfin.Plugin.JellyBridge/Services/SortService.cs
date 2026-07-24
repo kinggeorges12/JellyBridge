@@ -108,7 +108,7 @@ public class SortService
                 if (itemInfoMap == null)
                 {
                     _logger.LogWarning("Failed to generate play count map for user {UserName}", user.Username);
-                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(IJellyfinItem? item, string path)>());
+                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(BaseItemKind mediaType, string path)>());
                 }
 
                 // Calculate date mappings from play counts
@@ -129,14 +129,14 @@ public class SortService
             
             // Aggregate results from all users
             var allSuccesses = new List<(IJellyfinItem item, int playCount)>();
+            var allSkipped = new List<(BaseItemKind mediaType, string path)>();
             var allFailures = new List<(BaseItemKind mediaType, string folder)>();
-            var allSkipped = new List<(IJellyfinItem? item, string path)>();
             
             foreach (var userResult in userResults)
             {
                 allSuccesses.AddRange(userResult.successes);
-                allFailures.AddRange(userResult.failures);
                 allSkipped.AddRange(userResult.skipped);
+                allFailures.AddRange(userResult.failures);
             }
             
             result.Success = true;
@@ -144,8 +144,8 @@ public class SortService
             
             // Populate ProcessResult
             result.ItemsSorted = allSuccesses;
-            result.ItemsFailed = allFailures;
             result.ItemsSkipped = allSkipped;
+            result.ItemsFailed = allFailures;
             
             // Set refresh plan if items were sorted
             if (allSuccesses.Count > 0)
@@ -529,13 +529,13 @@ public class SortService
     /// <returns>A tuple containing lists of successes, failures, and skipped items</returns>
     private async Task<(List<(IJellyfinItem item, int playCount)> successes,
         List<(BaseItemKind mediaType, string path)> failures,
-        List<(IJellyfinItem? item, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
+        List<(BaseItemKind mediaType, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
         JellyfinUser user,
         Dictionary<string, (int playCount, BaseItemKind mediaType, DateTime? playDate)> combinedInfoMap)
     {
         var successes = new List<(IJellyfinItem item, int playCount)>();
         var failures = new List<(BaseItemKind mediaType, string path)>();
-        var skipped = new List<(IJellyfinItem? item, string path)>();
+        var skipped = new List<(BaseItemKind mediaType, string path)>();
         
         // Get configuration setting for marking media as played
         var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
@@ -558,34 +558,13 @@ public class SortService
                 if (File.Exists(ignoreFile))
                 {
                     _logger.LogTrace("Item ignored in path: {Path}", ignoreFile);
-                    var skippedBaseItem = _libraryManager.FindItemByDirectoryPath(folder);
-                    IJellyfinItem? skippedWrapper = null;
-                    if (skippedBaseItem != null)
-                    {
-                        try
-                        {
-                            var movieFile = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
-                            var showFile = Path.Combine(folder, JellyseerrShow.GetNfoFilename());
-                            if (mediaType == BaseItemKind.Movie || File.Exists(movieFile))
-                            {
-                                skippedWrapper = JellyfinMovie.FromItem(skippedBaseItem);
-                            }
-                            else if (mediaType == BaseItemKind.Series || File.Exists(showFile))
-                            {
-                                skippedWrapper = JellyfinSeries.FromItem(skippedBaseItem);
-                            }
-                        }
-                        catch
-                        {
-                            // Item type doesn't match, leave as null
-                        }
-                    }
-                    skipped.Add((skippedWrapper, folder));
+                    skipped.Add((mediaType, folder));
                     continue;
                 }
 
                 // Find item by directory path - handles both movies and shows
-                var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
+                var movieFile = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
+                var baseItem = _libraryManager.FindItemByDirectoryPath(movieFile);
 
                 if (baseItem == null)
                 {
