@@ -17,10 +17,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public static readonly Dictionary<string, object> DefaultValues = new()
     {
         // General
-        { nameof(IsEnabled), false },
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(LibraryDirectory), "/data/JellyBridge" },
+        { nameof(IsEnabled), false },
+        { nameof(EnableInMainMenu), true },
         { nameof(SyncIntervalHours), 24.0 },
         { nameof(EnableStartupSync), false },
         { nameof(StartupDelaySeconds), 30 },
@@ -91,11 +92,6 @@ public class PluginConfiguration : BasePluginConfiguration
 
     // ===== General =====
     /// <summary>
-    /// Gets or sets whether the plugin is enabled.
-    /// </summary>
-    public bool? IsEnabled { get; set; }
-
-    /// <summary>
     /// Gets or sets the Jellyseerr base URL.
     /// </summary>
     [Required]
@@ -113,6 +109,16 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether the plugin is enabled.
+    /// </summary>
+    public bool? IsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the plugin is displayedW in the main menu.
+    /// </summary>
+    public bool? EnableInMainMenu { get; set; }
 
     /// <summary>
     /// Gets or sets the sync interval in hours.

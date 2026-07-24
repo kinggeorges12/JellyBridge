@@ -53,7 +53,6 @@ namespace Jellyfin.Plugin.JellyBridge
 
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
         {
-            _logger.LogTrace("Configuration update requested");
             _logger.LogTrace("Configuration update method called - this means the save button was clicked!");
 
             var pluginConfig = (PluginConfiguration)configuration;
@@ -66,11 +65,12 @@ namespace Jellyfin.Plugin.JellyBridge
             //     _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
             // }
             
-            _logger.LogDebug("Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
-                pluginConfig.IsEnabled, 
+            _logger.LogDebug("Configuration details - URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, Enabled: {Enabled}, EnableInMainMenu: {EnableInMainMenu}, SyncInterval: {SyncInterval}", 
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
                 pluginConfig.LibraryDirectory,
+                pluginConfig.IsEnabled, 
+                pluginConfig.EnableInMainMenu,
                 pluginConfig.SyncIntervalHours ?? (double)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
             
             // Persist the updated configuration (including ScheduledTaskTimestamp when applicable)
@@ -124,6 +124,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 {
                     Name = Name,
                     EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.html",
+                    EnableInMainMenu = GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableInMainMenu))
                 },
                 new PluginPageInfo
                 {
