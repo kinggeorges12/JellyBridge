@@ -550,7 +550,7 @@ public class SortService
             {
                 // Check if folder is ignored (has .ignore file)
                 var ignoreFile = Path.Combine(folder, BridgeService.IgnoreFileName);
-                if (File.Exists(ignoreFile))
+                if (System.IO.File.Exists(ignoreFile))
                 {
                     _logger.LogTrace("Item ignored in path: {Path}", ignoreFile);
                     skipped.Add((mediaType, folder));
@@ -561,9 +561,10 @@ public class SortService
                 var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
                 if (baseItem == null)
                 {
-                    var testpath = Path.Combine(folder, "Rambo - First Blood Part II.mp4");
-                    baseItem = _libraryManager.FindItemByDirectoryPath(testpath);
-                    _logger.LogTrace("Rambo - First Blood Part II.mp4: {Path}", testpath);
+                    var fileStem = Path.GetFileName(folder) + PlaceholderVideoGenerator.AssetExtension;
+                    var fullFilepath = Path.Combine(folder, fileStem);
+                    _logger.LogTrace("Trying again: {Path}", fullFilepath);
+                    baseItem = _libraryManager.FindItemByDirectoryPath(fullFilepath);
                 }
 
                 if (baseItem == null)

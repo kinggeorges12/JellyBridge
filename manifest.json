@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "4594BF9FC09D149D97D9690E4AE871E2",
+        "timestamp": "2026-07-24T20:29:43.604Z",
+        "version": "3.30.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.30.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.30 - fix the sort function with full filenames of movies",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "8BBE7E9093EC36496B6972136C694B98",
+        "timestamp": "2026-07-24T20:29:43.604Z",
+        "version": "3.30.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.30.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.30 - fix the sort function with full filenames of movies",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "9FA96FF9267F250AB2A264BECFA4A4E3",
+        "timestamp": "2026-07-24T20:29:43.604Z",
+        "version": "3.30.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.30.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.30 - fix the sort function with full filenames of movies",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "68AAF397A30C7BEE8CAB7E7917441B32",
         "timestamp": "2026-07-24T20:19:07.739Z",
         "version": "3.29.11.9",
