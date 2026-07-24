@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using System;
@@ -208,32 +209,33 @@ public class SortLibraryResult
     
     // Collections
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
-    public List<string> ItemsFailed { get; set; } = new();
+    public List<(BaseItemKind mediaType, string folder)> ItemsFailed { get; set; } = new();
     public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
-    // Total unique items considered for sorting (movies + shows) regardless of user count
-    public int Processed { get; set; }
     
     // Separate items by type
     public List<(IJellyfinItem item, int playCount)> MoviesSorted => ItemsSorted.Where(x => x.item is JellyfinMovie).ToList();
     public List<(IJellyfinItem item, int playCount)> ShowsSorted => ItemsSorted.Where(x => x.item is JellyfinSeries).ToList();
     public List<(IJellyfinItem? item, string path)> MoviesSkipped => ItemsSkipped.Where(x => x.item is JellyfinMovie).ToList();
     public List<(IJellyfinItem? item, string path)> ShowsSkipped => ItemsSkipped.Where(x => x.item is JellyfinSeries).ToList();
-    
-    // For failed items (just paths), we can't easily determine type without item reference
-    // So we'll show total failed count for both columns
+    public List<(BaseItemKind mediaType, string path)> MoviesFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Movie).ToList();
+    public List<(BaseItemKind mediaType, string path)> ShowsFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Series).ToList();
     
     public int MoviesSortedCount => MoviesSorted.Count;
     public int ShowsSortedCount => ShowsSorted.Count;
     public int MoviesSkippedCount => MoviesSkipped.Count;
     public int ShowsSkippedCount => ShowsSkipped.Count;
+    public int MoviesFailedCount => MoviesFailed.Count;
+    public int ShowsFailedCount => ShowsFailed.Count;
     
-    // Processed counts - approximate based on sorted + skipped (failed items can't be categorized)
-    public int MoviesProcessed => MoviesSortedCount + MoviesSkippedCount;
-    public int ShowsProcessed => ShowsSortedCount + ShowsSkippedCount;
+    // Processed counts - approximate based on sorted + skipped
+    public int MoviesProcessed => MoviesSortedCount + MoviesSkippedCount + MoviesFailedCount;
+    public int ShowsProcessed => ShowsSortedCount + ShowsSkippedCount + ShowsFailedCount;
+
 
     public int Sorted => ItemsSorted.Count;
-    public int Failed => ItemsFailed.Count;
     public int Skipped => ItemsSkipped.Count;
+    public int Failed => ItemsFailed.Count;
+    public int Processed => Sorted + Skipped + Failed;
 
     public override string ToString()
     {
@@ -261,10 +263,10 @@ public class SortLibraryResult
         result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{Processed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{Sorted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{Skipped,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{MoviesFailedCount,8}  "}{separator}{$"{ShowsFailedCount,8}  "}{separator}{$"{Failed,8}  "}{separator}");
         
         return result.ToString();
     }
