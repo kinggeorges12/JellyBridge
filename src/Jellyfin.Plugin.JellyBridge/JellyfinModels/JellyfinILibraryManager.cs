@@ -191,6 +191,7 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
             return item;
         }
 
+        // Jellyfin >v10.11.3 do not allow movies by 'movie.mp4' path
         // Try FindByPath as non-folder (for movies)
         item = Inner.FindByPath(directoryPath, isFolder: false);
         if (item != null)

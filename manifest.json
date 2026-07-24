@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "FE888B81CC7822EA8E4728D98FEB847E",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.23.11.9.zip",
+        "version": "3.23.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.23 - changing movie placeholders to the full folder name to allow sorting",
+        "timestamp": "2026-07-24T07:53:26.828Z"
+      },
+      {
+        "checksum": "4E214A20289539BC0AF84B4D37746EAC",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.23.11.0.zip",
+        "version": "3.23.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.23 - changing movie placeholders to the full folder name to allow sorting",
+        "timestamp": "2026-07-24T07:53:26.828Z"
+      },
+      {
+        "checksum": "4136DDAC07BC7DCAABD9B3E87EC8939E",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.23.10.7.zip",
+        "version": "3.23.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.23 - changing movie placeholders to the full folder name to allow sorting",
+        "timestamp": "2026-07-24T07:53:26.828Z"
+      },
+      {
         "checksum": "BB12AD12DEAFB0F994DED87CEE6139FE",
         "targetAbi": "10.10.0.0",
         "dependencies": [],
