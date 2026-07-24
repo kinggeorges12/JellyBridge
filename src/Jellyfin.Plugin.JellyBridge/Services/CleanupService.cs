@@ -238,7 +238,7 @@ public class CleanupService
     }
 
     /// <summary>
-    /// Filters out items with placeholders (by AssetExtension) and creates missing placeholders using DiscoverService.
+    /// Filters out items with placeholders (by extension .mp4) and creates missing placeholders using DiscoverService.
     /// </summary>
     public async Task<List<IJellyseerrItem>> CreateMissingPlaceholderVideosAsync(List<IJellyseerrItem> items)
     {
@@ -248,7 +248,7 @@ public class CleanupService
             try
             {
                 var folderPath = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
-                if (!Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any())
+                if (!Directory.GetFiles(folderPath, PlaceholderVideoGenerator.AssetSearchPattern, SearchOption.AllDirectories).Any())
                 {
                     _logger.LogTrace("No placeholder found for {ItemName} at {FolderPath}", item.MediaName, folderPath);
                     itemsWithoutPlaceholder.Add(item);
