@@ -216,6 +216,48 @@ public class LibraryService
         return queuedCount;
     }
 
+    private async Task<bool> WaitForTaskRefreshLibrary()
+    {
+        // Task is stored as the localized name
+        var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");
+
+        // Find the task worker
+        var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == localizedTaskName);
+
+        if (taskWorker == null)
+        {
+            _logger.LogWarning($"{localizedTaskName} task not found.");
+            return false;
+        }
+
+        // Wait for it to complete by checking the state
+        var timeout = DateTime.UtcNow.AddMinutes(30);
+        var taskFinished = false;
+        while (DateTime.UtcNow < timeout)
+        {
+            // get the State property
+            var state = taskWorker.State;
+            
+            // If it's not running or queued, it's done
+            if (state != TaskState.Running)
+            {
+                _logger.LogTrace($"Task completed with state: {state}");
+                taskFinished = true;
+                break;
+            }
+            
+            _logger.LogTrace($"Task state: {state}, waiting...");
+            await Task.Delay(1000);
+        }
+
+        if (taskFinished == false)
+        {
+            _logger.LogWarning("Scan timed out after 30 minutes");
+            return false;
+        }
+        return taskFinished;
+    }
+
     /// <summary>
     /// Scans all Jellyfin libraries for first-time plugin initialization.
     /// Uses the same functionality as the "Scan All Libraries" button.
@@ -243,46 +285,11 @@ public class LibraryService
 
             _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
 
+            // Wait for scan before and after running a refresh
+            await WaitForTaskRefreshLibrary();
             // Use the same method as the "Scan All Libraries" button
             await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
-            
-            // Task is stored as the localized name
-            var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");
-
-            // Find the task worker
-            var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == localizedTaskName);
-
-            if (taskWorker == null)
-            {
-                _logger.LogWarning($"{localizedTaskName} task not found.");
-                return false;
-            }
-
-            // Wait for it to complete by checking the state
-            var timeout = DateTime.UtcNow.AddMinutes(30);
-            var taskFinished = false;
-            while (DateTime.UtcNow < timeout)
-            {
-                // Use reflection to get the State property
-                var state = taskWorker.State;
-                
-                // If it's not running or queued, it's done
-                if (state != TaskState.Running)
-                {
-                    _logger.LogTrace($"Task completed with state: {state}");
-                    taskFinished = true;
-                    break;
-                }
-                
-                _logger.LogTrace($"Task state: {state}, waiting...");
-                await Task.Delay(1000);
-            }
-
-            if (taskFinished == false)
-            {
-                _logger.LogWarning("Scan timed out after 30 minutes");
-                return false;
-            }
+            await WaitForTaskRefreshLibrary();
             
             _logger.LogDebug("Full scan of all libraries completed successfully");
             

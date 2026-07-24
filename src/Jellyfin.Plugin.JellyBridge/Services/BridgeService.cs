@@ -38,212 +38,7 @@ public class BridgeService
         _metadataService = metadataService;
     }
 
-    /// <summary>
-    /// Overload: Scan providing a flat list of Jellyseerr items. Fetch Jellyfin items from the library.
-    /// Unmatched items returns all Jellyseerr items specific to the Jellymatch Library directory.
-    /// </summary>
-    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> LibraryScanAsync(List<IJellyseerrItem> jellyseerrItems)
-    {
-        var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>();
-        var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>();
-        var jellyfinItems = new List<IJellyfinItem>();
-        jellyfinItems.AddRange(existingMovies);
-        jellyfinItems.AddRange(existingShows);
-        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
-        var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
-        var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
-        return (matches, unmatched);
-    }
-
-    /// <summary>
-    /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
-    /// Unmatched items returns all Jellyseerr items regardless of Library directory.
-    /// </summary>
-    public async Task<(List<JellyMatch> matched, List<IJellyfinItem> unmatched)> LibraryScanAsync(List<IJellyfinItem> jellyfinItems)
-    {
-        var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
-        var jellyseerrItems = new List<IJellyseerrItem>();
-        jellyseerrItems.AddRange(moviesMeta.Cast<IJellyseerrItem>());
-        jellyseerrItems.AddRange(showsMeta.Cast<IJellyseerrItem>());
-        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
-        var matchedJfIds = matches.Select(m => m.JellyfinItem.Id).ToHashSet();
-        var unmatchedJellyfin = jellyfinItems.Where(jf => !matchedJfIds.Contains(jf.Id)).ToList();
-        return (matches, unmatchedJellyfin);
-    }
-
-    /// <summary>
-    /// Core scan: compare provided Jellyfin items against provided Jellyseerr metadata and return matches.
-    /// </summary>
-    private Task<List<JellyMatch>> LibraryScanAsync(List<IJellyfinItem> jellyfinItems, List<IJellyseerrItem> jellyseerrItems)
-    {
-        _logger.LogDebug("Running library scan for {ItemCount} Jellyseerr items against {JfCount} Jellyfin items", jellyseerrItems.Count, jellyfinItems.Count);
-
-        try
-        {
-            // Split Jellyseerr items into movies and shows for existing matcher
-            var jellyseerrMovies = jellyseerrItems.OfType<JellyseerrMovie>().ToList();
-            var jellyseerrShows = jellyseerrItems.OfType<JellyseerrShow>().ToList();
-
-            // Partition Jellyfin items
-            var jellyfinMovies = jellyfinItems.OfType<JellyfinMovie>().ToList();
-            var jellyfinShows = jellyfinItems.OfType<JellyfinSeries>().ToList();
-
-            // Find matches
-            var movieMatches = FindMatches(jellyfinMovies, jellyseerrMovies);
-            var showMatches = FindMatches(jellyfinShows, jellyseerrShows);
-
-            var allMatches = new List<JellyMatch>();
-            allMatches.AddRange(movieMatches);
-            allMatches.AddRange(showMatches);
-
-            _logger.LogDebug("Library scan completed. Matches: {MatchCount}", allMatches.Count);
-            return Task.FromResult(allMatches);
-        }
-        catch (MissingMethodException ex)
-        {
-            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping library scan");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during library scan");
-        }
-
-        return Task.FromResult(new List<JellyMatch>());
-    }
-
-    /// <summary>
-    /// Find matches between existing Jellyfin items and bridge metadata.
-    /// </summary>
-    private List<JellyMatch> FindMatches<TJellyfin, TJellyseerr>(
-        List<TJellyfin> jellyfinItems,
-        List<TJellyseerr> jellyseerrItems)
-        where TJellyfin : IJellyfinItem
-        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
-    {
-        var matches = new List<JellyMatch>();
-
-        foreach (var jellyfinItem in jellyfinItems)
-        {
-            // Finding all items in case we are using network folders and add duplicate content.
-            var matchingJellyseerrItems = jellyseerrItems.Where(bm => bm.EqualsItem(jellyfinItem)).ToList();
-            if (matchingJellyseerrItems.Count > 0)
-            {
-                foreach (var jellyseerrItem in matchingJellyseerrItems)
-                {
-                    _logger.LogTrace("Found match: '{JellyfinItemName}' (Id: {JellyfinItemId}) matches '{JellyseerrItemName}' (Id: {JellyseerrItemId})",
-                        jellyseerrItem.MediaName, jellyseerrItem.Id, jellyfinItem.Name, jellyfinItem.Id);
-                    matches.Add(new JellyMatch(jellyseerrItem, jellyfinItem));
-                }
-            }
-        }
-
-        _logger.LogDebug("Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
-        return matches;
-    }
-
-    /// <summary>
-    /// Creates an ignore file with the specified JSON content.
-    /// Uses a semaphore indexed by filename to prevent concurrent writes to the same file.
-    /// </summary>
-    /// <param name="ignoreFilePath">The full path to the ignore file</param>
-    /// <param name="fileContent">The JSON content to write to the file</param>
-    /// <returns>Task that completes when the file is written</returns>
-    public async Task CreateIgnoreFileAsync(string ignoreFilePath, string? fileContent)
-    {
-        var semaphore = _fileSemaphores.GetOrAdd(ignoreFilePath, _ => new SemaphoreSlim(1, 1));
-        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
-        try
-        {
-            // Comment out each line of the JSON content
-            if (string.IsNullOrEmpty(fileContent))
-            {
-                await File.WriteAllTextAsync(ignoreFilePath, IgnorePattern);
-                return;
-            }
-
-            var lines = fileContent.Split(Environment.NewLine);
-
-            var commentPrefix = "#";
-
-            // Calculate the expected length of the new string
-            var sb = new StringBuilder(fileContent.Length + lines.Length * (commentPrefix.Length + Environment.NewLine.Length) + IgnorePattern.Length + Environment.NewLine.Length);
-
-            foreach (var line in lines)
-            {
-                sb.Append(commentPrefix);
-                sb.AppendLine(line);
-            }
-
-            sb.AppendLine(IgnorePattern);
-
-            await File.WriteAllTextAsync(ignoreFilePath, sb.ToString());
-        }
-        finally
-        {
-            semaphore.Release();
-        }
-    }
-
-    /// <summary>
-    /// Create ignore files for matched items.
-    /// Returns a tuple of (newly ignored items, existing ignored items).
-    /// </summary>
-    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> IgnoreMatchAsync(List<JellyMatch> matches)
-    {
-        var newIgnored = new List<IJellyseerrItem>();
-        var existingIgnored = new List<IJellyseerrItem>();
-        var ignoreFileTasks = new List<Task>();
-
-        foreach (var match in matches)
-        {
-            var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(match.JellyseerrItem);
-            var item = match.JellyfinItem;
-            var ignoreFilePath = Path.Combine(bridgeFolderPath, IgnoreFileName);
-            try
-            {
-                if (File.Exists(ignoreFilePath))
-                {
-                    existingIgnored.Add(match.JellyseerrItem);
-                    _logger.LogTrace("Ignore file already exists for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}",
-                        item.Name, item.Id, ignoreFilePath);
-                }
-                else
-                {
-                    try
-                    {
-                        _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}",
-                            item.Name, item.Id, ignoreFilePath);
-                        var itemJson = item.ToJson(_dtoService);
-                        _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters",
-                            item.Name, itemJson?.Length ?? 0);
-                        ignoreFileTasks.Add(CreateIgnoreFileAsync(ignoreFilePath, itemJson));
-                        newIgnored.Add(match.JellyseerrItem);
-                        _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
-                    }
-                    catch (MissingMethodException ex)
-                    {
-                        _logger.LogWarning(ex, "Using incompatible Jellyfin version. Writing empty ignore file for {ItemName}", item.Name);
-                        await CreateIgnoreFileAsync(ignoreFilePath, "");
-                        newIgnored.Add(match.JellyseerrItem);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.Name);
-            }
-        }
-
-        try
-        {
-            await Task.WhenAll(ignoreFileTasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "One or more tasks failed.");
-        }
-        return (newIgnored, existingIgnored);
-    }
+    #region Read
 
     /// <summary>
     /// Gets all Jellyfin libraries that contain JellyBridge folders (locations within the sync directory).
@@ -395,6 +190,126 @@ public class BridgeService
         }
     }
 
+    #endregion
+
+    #region Match
+
+    /// <summary>
+    /// Overload: Scan providing a flat list of Jellyseerr items. Fetch Jellyfin items from the library.
+    /// Unmatched items returns all Jellyseerr items specific to the Jellymatch Library directory.
+    /// </summary>
+    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> BuildJellyfinMatchesAsync(List<IJellyseerrItem> jellyseerrItems)
+    {
+        // Excludes base directory from shows
+        var libraryDirectory = FolderUtils.GetBaseDirectory();
+        var bridgeLibraryPaths = new HashSet<string>();
+        if (!string.IsNullOrEmpty(libraryDirectory))
+        {
+            bridgeLibraryPaths.Add(libraryDirectory);
+        }
+        var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
+        var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
+        // Combine movies and shows
+        var jellyfinItems = new List<IJellyfinItem>();
+        jellyfinItems.AddRange(existingMovies);
+        jellyfinItems.AddRange(existingShows);
+        // Get matches for jellyseerr items and jellyfin items from non-discover library
+        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
+        var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
+        var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
+        return (matches, unmatched);
+    }
+
+    /// <summary>
+    /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
+    /// Unmatched items returns all Jellyseerr items regardless of Library directory.
+    /// </summary>
+    public async Task<(List<JellyMatch> matched, List<IJellyfinItem> unmatched)> BuildJellyseerrMatchesAsync(List<IJellyfinItem> jellyfinItems)
+    {
+        var (moviesMeta, showsMeta) = await _metadataService.ReadMetadataAsync();
+        var jellyseerrItems = new List<IJellyseerrItem>();
+        jellyseerrItems.AddRange(moviesMeta.Cast<IJellyseerrItem>());
+        jellyseerrItems.AddRange(showsMeta.Cast<IJellyseerrItem>());
+        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
+        var matchedJfIds = matches.Select(m => m.JellyfinItem.Id).ToHashSet();
+        var unmatchedJellyfin = jellyfinItems.Where(jf => !matchedJfIds.Contains(jf.Id)).ToList();
+        return (matches, unmatchedJellyfin);
+    }
+
+    /// <summary>
+    /// Core scan: compare provided Jellyfin items against provided Jellyseerr metadata and return matches.
+    /// </summary>
+    private Task<List<JellyMatch>> LibraryScanAsync(List<IJellyfinItem> jellyfinItems, List<IJellyseerrItem> jellyseerrItems)
+    {
+        _logger.LogDebug("Running library scan for {ItemCount} Jellyseerr items against {JfCount} Jellyfin items", jellyseerrItems.Count, jellyfinItems.Count);
+
+        try
+        {
+            // Split Jellyseerr items into movies and shows for existing matcher
+            var jellyseerrMovies = jellyseerrItems.OfType<JellyseerrMovie>().ToList();
+            var jellyseerrShows = jellyseerrItems.OfType<JellyseerrShow>().ToList();
+
+            // Partition Jellyfin items
+            var jellyfinMovies = jellyfinItems.OfType<JellyfinMovie>().ToList();
+            var jellyfinShows = jellyfinItems.OfType<JellyfinSeries>().ToList();
+
+            // Find matches
+            var movieMatches = FindMatches(jellyfinMovies, jellyseerrMovies);
+            var showMatches = FindMatches(jellyfinShows, jellyseerrShows);
+
+            var allMatches = new List<JellyMatch>();
+            allMatches.AddRange(movieMatches);
+            allMatches.AddRange(showMatches);
+
+            _logger.LogTrace("Library scan completed. Matches: {MatchCount}", allMatches.Count);
+            return Task.FromResult(allMatches);
+        }
+        catch (MissingMethodException ex)
+        {
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping library scan");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during library scan");
+        }
+
+        return Task.FromResult(new List<JellyMatch>());
+    }
+
+    /// <summary>
+    /// Find matches between existing Jellyfin items and bridge metadata.
+    /// </summary>
+    private List<JellyMatch> FindMatches<TJellyfin, TJellyseerr>(
+        List<TJellyfin> jellyfinItems,
+        List<TJellyseerr> jellyseerrItems)
+        where TJellyfin : IJellyfinItem
+        where TJellyseerr : TmdbMediaResult, IJellyseerrItem
+    {
+        var matches = new List<JellyMatch>();
+
+        foreach (var jellyfinItem in jellyfinItems)
+        {
+            // Finding all items in case we are using network folders and add duplicate content.
+            var matchingJellyseerrItems = jellyseerrItems.Where(bm => bm.EqualsItem(jellyfinItem)).ToList();
+            if (matchingJellyseerrItems.Count > 0)
+            {
+                foreach (var jellyseerrItem in matchingJellyseerrItems)
+                {
+                    _logger.LogTrace("Found match: '{JellyfinItemName}' (Id: {JellyfinItemId}) matches '{JellyseerrItemName}' (Id: {JellyseerrItemId})",
+                        jellyseerrItem.MediaName, jellyseerrItem.Id, jellyfinItem.Name, jellyfinItem.Id);
+                    matches.Add(new JellyMatch(jellyseerrItem, jellyfinItem));
+                }
+            }
+        }
+
+        _logger.LogDebug("Found {MatchCount} matches between Jellyfin items and bridge metadata", matches.Count);
+        return matches;
+    }
+
+    #endregion
+
+    #region Filter
+
     /// <summary>
     /// Maps items to libraries by directory.
     /// Filters out items that already exist in their target library or are duplicates in the incoming list.
@@ -435,7 +350,7 @@ public class BridgeService
                 
                 // Get all hashes from this library using the built-in method
                 // Filter ignored items first, then get hashes
-                var filteredItems = FilterIgnoredItems(library.Items);
+                var filteredItems = FilterAlreadyIgnoredItems(library.Items);
                 var hashes = filteredItems
                     .Select(item => (
                         ItemHash: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent),
@@ -589,7 +504,7 @@ public class BridgeService
     /// Filters Jellyseerr items that have an ignore file in their target directory.
     /// Returns only items that do NOT have the ignore file present.
     /// </summary>
-    public List<IJellyseerrItem> FilterIgnoredItems(List<IJellyseerrItem> items)
+    public List<IJellyseerrItem> FilterAlreadyIgnoredItems(List<IJellyseerrItem> items)
     {
         if (items == null || items.Count == 0)
         {
@@ -605,7 +520,7 @@ public class BridgeService
             }
         }
 
-        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
+        _logger.LogTrace("Filtered out items that are already ignored: kept {Kept}/{Total}", kept.Count, items.Count);
         return kept;
     }
 
@@ -628,7 +543,121 @@ public class BridgeService
 
         var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemHashCode(network: useNetworkFolders && addDuplicateContent)));
         unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemHashCode(network: useNetworkFolders && addDuplicateContent))).ToList();
-        _logger.LogDebug("{UnmatchedCount} unmatched items", unmatched.Count);
+        _logger.LogTrace("{UnmatchedCount} unmatched items", unmatched.Count);
         return unmatched;
     }
+
+    #endregion
+
+    #region Create
+    
+
+    /// <summary>
+    /// Creates an ignore file with the specified JSON content.
+    /// Uses a semaphore indexed by filename to prevent concurrent writes to the same file.
+    /// </summary>
+    /// <param name="ignoreFilePath">The full path to the ignore file</param>
+    /// <param name="fileContent">The JSON content to write to the file</param>
+    /// <returns>Task that completes when the file is written</returns>
+    public async Task CreateIgnoreFileAsync(string ignoreFilePath, string? fileContent)
+    {
+        var semaphore = _fileSemaphores.GetOrAdd(ignoreFilePath, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
+        try
+        {
+            // Comment out each line of the JSON content
+            if (string.IsNullOrEmpty(fileContent))
+            {
+                await File.WriteAllTextAsync(ignoreFilePath, IgnorePattern);
+                return;
+            }
+
+            var lines = fileContent.Split(Environment.NewLine);
+
+            var commentPrefix = "#";
+
+            // Calculate the expected length of the new string
+            var sb = new StringBuilder(fileContent.Length + lines.Length * (commentPrefix.Length + Environment.NewLine.Length) + IgnorePattern.Length + Environment.NewLine.Length);
+
+            foreach (var line in lines)
+            {
+                sb.Append(commentPrefix);
+                sb.AppendLine(line);
+            }
+
+            sb.AppendLine(IgnorePattern);
+
+            await File.WriteAllTextAsync(ignoreFilePath, sb.ToString());
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    #endregion
+    #region Delete
+
+    /// <summary>
+    /// Create ignore files for matched items.
+    /// Returns a tuple of (newly ignored items, existing ignored items).
+    /// </summary>
+    public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> IgnoreMatchAsync(List<JellyMatch> matches)
+    {
+        var newIgnored = new List<IJellyseerrItem>();
+        var existingIgnored = new List<IJellyseerrItem>();
+        var ignoreFileTasks = new List<Task>();
+
+        foreach (var match in matches)
+        {
+            var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(match.JellyseerrItem);
+            var item = match.JellyfinItem;
+            var ignoreFilePath = Path.Combine(bridgeFolderPath, IgnoreFileName);
+            try
+            {
+                if (File.Exists(ignoreFilePath))
+                {
+                    existingIgnored.Add(match.JellyseerrItem);
+                    _logger.LogTrace("Ignore file already exists for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}",
+                        item.Name, item.Id, ignoreFilePath);
+                }
+                else
+                {
+                    try
+                    {
+                        _logger.LogTrace("Creating ignore file for {ItemName} (Id: {ItemId}) at {IgnoreFilePath}",
+                            item.Name, item.Id, ignoreFilePath);
+                        var itemJson = item.ToJson(_dtoService);
+                        _logger.LogTrace("Successfully serialized {ItemName} to JSON - JSON length: {JsonLength} characters",
+                            item.Name, itemJson?.Length ?? 0);
+                        ignoreFileTasks.Add(CreateIgnoreFileAsync(ignoreFilePath, itemJson));
+                        newIgnored.Add(match.JellyseerrItem);
+                        _logger.LogTrace("Created ignore file for {ItemName} in {BridgeFolder}", item.Name, bridgeFolderPath);
+                    }
+                    catch (MissingMethodException ex)
+                    {
+                        _logger.LogWarning(ex, "Using incompatible Jellyfin version. Writing empty ignore file for {ItemName}", item.Name);
+                        await CreateIgnoreFileAsync(ignoreFilePath, "");
+                        newIgnored.Add(match.JellyseerrItem);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating ignore file for {ItemName}", item.Name);
+            }
+        }
+
+        try
+        {
+            await Task.WhenAll(ignoreFileTasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more tasks failed.");
+        }
+        return (newIgnored, existingIgnored);
+    }
+
+    #endregion
 }

@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "23FD53BB56DB67ACDEBCA58C08936838",
+        "timestamp": "2026-07-24T18:24:42.711Z",
+        "version": "3.26.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.26.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.26 - build jellyfin matches only for non-jellybridge libraries",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "637594BCCD43D0721DD8E92A6F2A3D1E",
+        "timestamp": "2026-07-24T18:24:42.711Z",
+        "version": "3.26.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.26.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.26 - build jellyfin matches only for non-jellybridge libraries",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "46328636335BAE20DD233D67B391113A",
+        "timestamp": "2026-07-24T18:24:42.711Z",
+        "version": "3.26.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.26.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.26 - build jellyfin matches only for non-jellybridge libraries",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "checksum": "A6DAA900D803CA5FCA6B42D37E0E6D63",
         "targetAbi": "10.11.9.0",
         "dependencies": [],
