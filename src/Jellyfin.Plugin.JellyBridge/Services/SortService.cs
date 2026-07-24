@@ -564,13 +564,13 @@ public class SortService
                     {
                         try
                         {
-                            var movie = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
-                            var show = Path.Combine(folder, JellyseerrShow.GetNfoFilename());
-                            if (mediaType == BaseItemKind.Movie)
+                            var movieFile = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
+                            var showFile = Path.Combine(folder, JellyseerrShow.GetNfoFilename());
+                            if (mediaType == BaseItemKind.Movie || File.Exists(movieFile))
                             {
                                 skippedWrapper = JellyfinMovie.FromItem(skippedBaseItem);
                             }
-                            else if (mediaType == BaseItemKind.Series)
+                            else if (mediaType == BaseItemKind.Series || File.Exists(showFile))
                             {
                                 skippedWrapper = JellyfinSeries.FromItem(skippedBaseItem);
                             }
