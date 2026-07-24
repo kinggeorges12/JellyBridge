@@ -564,6 +564,12 @@ public class SortService
 
                 // Find item by directory path - handles both movies and shows
                 var baseItem = _libraryManager.FindItemByDirectoryPath(folder);
+                if (baseItem == null)
+                {
+                    var testpath = Path.Combine(folder, "Rambo - First Blood Part II.mp4");
+                    baseItem = _libraryManager.FindItemByDirectoryPath(testpath);
+                    _logger.LogTrace("Rambo - First Blood Part II.mp4: {Path}", testpath);
+                }
 
                 if (baseItem == null)
                 {
