@@ -427,8 +427,7 @@ public class BridgeService
 
             // 3. Build a dictionary: library name -> set of existing item hashes in that library
             // Use the BridgeLibrary's built-in ToDeduplicationSet() method
-            var libraryItemHashes = new Dictionary<string, HashSet<int>>();
-            var allExistingItems = new HashSet<int>();
+            var libraryItemHashes = new Dictionary<string, HashSet<(int ItemHash, int FolderHash)>>();
             
             foreach (var library in existingLibraries)
             {
@@ -438,9 +437,11 @@ public class BridgeService
                 // Filter ignored items first, then get hashes
                 var filteredItems = FilterIgnoredItems(library.Items);
                 var hashes = filteredItems
-                    .Select(item => item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent))
+                    .Select(item => (
+                        ItemHash: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent),
+                        FolderHash: item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)
+                    ))
                     .ToHashSet();
-                allExistingItems.UnionWith(hashes);
                 libraryItemHashes[libraryName] = hashes;
                 
                 _logger.LogTrace("Library '{LibraryName}' has {Count} existing items (ignored items filtered)",
@@ -471,8 +472,6 @@ public class BridgeService
                         continue;
                     }
 
-                    var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
-                    var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
                     var isInLibrary = library.ContainsLocation(FolderUtils.GetNormalizedPath(directory));
                     if (!isInLibrary)
                     {
@@ -480,6 +479,20 @@ public class BridgeService
                             item.MediaName, item.Id, string.IsNullOrEmpty(library.LibraryName) ? "(Empty)" : library.LibraryName);
                         continue;
                     }
+
+                    var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
+                    // Check folder hash to determine if the item is already in this exact location in the library
+                    if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingFolders) &&
+                        existingFolders.Any(tuple => tuple.FolderHash == folderHash))
+                    {
+                        seenAnywhere.Add(folderHash);
+                        mappedItems.Add(item);
+                        _logger.LogTrace("Adding existing item to library '{Library}': {MediaName} (FolderHash: {FolderHash})",
+                            library.LibraryName, item.MediaName, folderHash);
+                    }
+
+                    // Look for new items or duplicate items with different folder names
+                    var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
                     if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
                     {
                         _logger.LogTrace("Filtered duplicate from input list (within library '{LibraryName}'): {MediaName} (ItemHash: {ItemHash})",
@@ -492,12 +505,13 @@ public class BridgeService
                             item.MediaName, itemHash);
                         continue;
                     }
+                    
                     // Ensure we capture those items taht are not in a library
                     seenAnywhere.Add(itemHash);
 
                     // Check for duplicates within the current library
-                    if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingHashes) &&
-                        existingHashes.Contains(itemHash))
+                    if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingItems) &&
+                        existingItems.Any(tuple => tuple.ItemHash == itemHash))
                     {
                         _logger.LogTrace("Filtered duplicate from input list: {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
@@ -510,14 +524,32 @@ public class BridgeService
                         library.LibraryName, item.MediaName, itemHash);
                 }
             }
-
+            
+            // Flatten the library list to search all hashes
+            var (allItemHashes, allFolderHashes) = (
+                libraryItemHashes.SelectMany(kvp => kvp.Value.Select(t => t.ItemHash)).ToHashSet(),
+                libraryItemHashes.SelectMany(kvp => kvp.Value.Select(t => t.FolderHash)).ToHashSet()
+            );
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
                 var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
-                if(!seenAnywhere.Contains(itemHash) && !allExistingItems.Contains(itemHash))
+                var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
+                if (seenAnywhere.Contains(itemHash) || seenAnywhere.Contains(folderHash))
                 {
+                    continue; // Already processed in the previous loop
+                }
+                if(allFolderHashes.Contains(folderHash))
+                {
+                    seenAnywhere.Add(folderHash);
                     mappedItems.Add(item);
+                    _logger.LogTrace("Adding item not found in any library  {MediaName} (FolderHash: {folderHash})", item.MediaName, folderHash);
+                }
+                if(!allItemHashes.Contains(itemHash))
+                {
+                    seenAnywhere.Add(itemHash);
+                    mappedItems.Add(item);
+                    _logger.LogTrace("Adding item not found in any library: {MediaName} (ItemHash: {ItemHash})", item.MediaName, itemHash);
                 }
             }
 
