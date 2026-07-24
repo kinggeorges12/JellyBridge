@@ -71,9 +71,6 @@ public class SortService
                 return result;
             }
 
-            // Record total unique items (movies + shows) to display as Processed
-            result.Processed = allItems.Count;
-
             // Apply the play count algorithm for each user separately (each user gets unique sort order)
             // Process all users in parallel for better performance
             var userTasks = users.Select(user => Task.Run(async () =>
@@ -111,7 +108,7 @@ public class SortService
                 if (itemInfoMap == null)
                 {
                     _logger.LogWarning("Failed to generate play count map for user {UserName}", user.Username);
-                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<string>(), skipped: new List<(IJellyfinItem? item, string path)>());
+                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(IJellyfinItem? item, string path)>());
                 }
 
                 // Calculate date mappings from play counts
@@ -132,7 +129,7 @@ public class SortService
             
             // Aggregate results from all users
             var allSuccesses = new List<(IJellyfinItem item, int playCount)>();
-            var allFailures = new List<string>();
+            var allFailures = new List<(BaseItemKind mediaType, string folder)>();
             var allSkipped = new List<(IJellyfinItem? item, string path)>();
             
             foreach (var userResult in userResults)
@@ -196,7 +193,7 @@ public class SortService
 
         if (allItems.Count == 0)
         {
-            _logger.LogDebug("No items found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
@@ -220,7 +217,7 @@ public class SortService
 
         if (totalCount == 0)
         {
-            _logger.LogDebug("No items found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
@@ -254,7 +251,7 @@ public class SortService
     {
         if (allItems == null || allItems.Count == 0)
         {
-            _logger.LogDebug("No items found to update");
+            _logger.LogTrace("No items found to update");
             return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(null);
         }
 
@@ -416,7 +413,7 @@ public class SortService
     {
         if (allItems == null || allItems.Count == 0)
         {
-            _logger.LogDebug("No items found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
@@ -458,7 +455,7 @@ public class SortService
 
         if (totalCount == 0)
         {
-            _logger.LogDebug("No items found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
@@ -531,20 +528,21 @@ public class SortService
     /// <param name="combinedInfoMap">Dictionary mapping folder paths to combined info (play count, media type, and play date)</param>
     /// <returns>A tuple containing lists of successes, failures, and skipped items</returns>
     private async Task<(List<(IJellyfinItem item, int playCount)> successes,
-        List<string> failures,
+        List<(BaseItemKind mediaType, string path)> failures,
         List<(IJellyfinItem? item, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
         JellyfinUser user,
         Dictionary<string, (int playCount, BaseItemKind mediaType, DateTime? playDate)> combinedInfoMap)
     {
         var successes = new List<(IJellyfinItem item, int playCount)>();
-        var failures = new List<string>();
+        var failures = new List<(BaseItemKind mediaType, string path)>();
         var skipped = new List<(IJellyfinItem? item, string path)>();
         
         // Get configuration setting for marking media as played
         var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
 
         // Collect tasks for play count updates and play status marking
-        var playCountTasks = new List<(Task<JellyfinWrapperResult> task, IJellyfinItem item, int playCount, string folder)>();
+        var playCountTasks = new List<(Task<JellyfinWrapperResult> task,
+            IJellyfinItem item, string folder, int playCount, BaseItemKind mediaType)>();
         var playStatusTasks = new List<Task>();
 
         // Create tasks for all items
@@ -556,16 +554,18 @@ public class SortService
             try
             {
                 // Check if folder is ignored (has .ignore file)
-                var ignoreFile = Path.Combine(folder, ".ignore");
+                var ignoreFile = Path.Combine(folder, BridgeService.IgnoreFileName);
                 if (File.Exists(ignoreFile))
                 {
-                    _logger.LogDebug("Item ignored (has .ignore file) for path: {Path}", folder);
+                    _logger.LogTrace("Item ignored in path: {Path}", ignoreFile);
                     var skippedBaseItem = _libraryManager.FindItemByDirectoryPath(folder);
                     IJellyfinItem? skippedWrapper = null;
                     if (skippedBaseItem != null)
                     {
                         try
                         {
+                            var movie = Path.Combine(folder, JellyseerrMovie.GetNfoFilename());
+                            var show = Path.Combine(folder, JellyseerrShow.GetNfoFilename());
                             if (mediaType == BaseItemKind.Movie)
                             {
                                 skippedWrapper = JellyfinMovie.FromItem(skippedBaseItem);
@@ -589,8 +589,8 @@ public class SortService
 
                 if (baseItem == null)
                 {
-                    _logger.LogDebug("Item not found for path: {Path}", folder);
-                    failures.Add(folder);
+                    _logger.LogTrace("Item not found for path: {Path}", folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
@@ -610,20 +610,20 @@ public class SortService
                 catch (ArgumentException)
                 {
                     _logger.LogDebug("Item type mismatch for path: {Path}", folder);
-                    failures.Add(folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
                 if (item == null)
                 {
                     _logger.LogDebug("Could not create wrapper for item at path: {Path}", folder);
-                    failures.Add(folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
                 // Create task for updating play count and last played date
                 var playCountTask = _userDataManager.TryUpdatePlayCountAsync(user, item, assignedPlayCount, assignedPlayDate);
-                playCountTasks.Add((playCountTask, item, assignedPlayCount, folder));
+                playCountTasks.Add((playCountTask, item, folder, assignedPlayCount, mediaType));
 
                 // Create task for marking play status (runs independently, doesn't affect success/failure)
                 var playStatusTask = _userDataManager.MarkItemPlayStatusAsync(user, item, markMediaPlayed);
@@ -632,12 +632,12 @@ public class SortService
             catch (OperationCanceledException)
             {
                 _logger.LogWarning("Operation canceled while processing folder: {Folder}", folder);
-                failures.Add(folder);
+                failures.Add((mediaType, folder));
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to create tasks for folder: {Folder}", folder);
-                failures.Add(folder);
+                failures.Add((mediaType, folder));
             }
         }
 
@@ -660,18 +660,18 @@ public class SortService
         }
 
         // Process results and determine success/failure/skipped based on results
-        foreach (var (task, item, playCount, folder) in playCountTasks)
+        foreach (var (task, item, folder, playCount, mediaType) in playCountTasks)
         {
             if (task.IsFaulted)
             {
                 _logger.LogWarning(task.Exception?.GetBaseException() ?? new Exception("Task faulted with unknown error"),
                     "Failed to update play count for user {UserName}, item: {Path}", user.Username, folder);
-                failures.Add(folder);
+                failures.Add((mediaType, folder));
             }
             else if (task.IsCanceled)
             {
                 _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, folder);
-                failures.Add(folder);
+                failures.Add((mediaType, folder));
             }
             else
             {
@@ -686,7 +686,7 @@ public class SortService
                 {
                     _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}: {Message}", 
                         user.Username, folder, result.Message);
-                    failures.Add(folder);
+                    failures.Add((mediaType, folder));
                 }
             }
         }

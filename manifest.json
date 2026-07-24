@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "34F3089592D1B6FF8B990CF0BA52C81A",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.16.11.9.zip",
+        "version": "3.16.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.16 - fixing sort logging",
+        "timestamp": "2026-07-24T05:46:52.987Z"
+      },
+      {
+        "checksum": "EA4776D23A5E1E2C42651210A46C5C04",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.16.11.0.zip",
+        "version": "3.16.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.16 - fixing sort logging",
+        "timestamp": "2026-07-24T05:46:52.987Z"
+      },
+      {
+        "checksum": "ED0AF7C003763E33113F68501DFF0095",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.16.10.7.zip",
+        "version": "3.16.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.16 - fixing sort logging",
+        "timestamp": "2026-07-24T05:46:52.987Z"
+      },
+      {
         "checksum": "317A015B402C7E4A6C882288174B888B",
         "targetAbi": "10.11.9.0",
         "dependencies": [],
