@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "8A978EDE74E7CA1F00517BC584755E7E",
+        "timestamp": "2026-07-24T22:08:10.744Z",
+        "version": "3.34.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.34.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.34 - fixing file locators for refresh all promos",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "5A2C03D022DD342C8B538003E4B4A24F",
+        "timestamp": "2026-07-24T22:08:10.744Z",
+        "version": "3.34.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.34.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.34 - fixing file locators for refresh all promos",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "702C6DD2D6178C0BCDD022121A1F028A",
+        "timestamp": "2026-07-24T22:08:10.744Z",
+        "version": "3.34.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.34.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.34 - fixing file locators for refresh all promos",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "1CB42C51DB1DB0FBFC747EABCD85B205",
         "timestamp": "2026-07-24T21:31:28.789Z",
         "version": "3.33.11.9",
