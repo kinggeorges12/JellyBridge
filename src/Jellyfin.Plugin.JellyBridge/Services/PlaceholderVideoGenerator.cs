@@ -63,7 +63,9 @@ public class PlaceholderVideoGenerator
     /// </summary>
     public async Task<bool> GeneratePlaceholderMovieAsync(string movieFolderPath)
     {
-        return await GeneratePlaceholderAsync(movieFolderPath, MovieAsset);
+        var assetStem = Path.GetFileName(movieFolderPath);
+        var targetFilename = assetStem + AssetExtension;
+        return await GeneratePlaceholderAsync(movieFolderPath, targetFilename, MovieAsset);
     }
 
     /// <summary>
@@ -93,7 +95,9 @@ public class PlaceholderVideoGenerator
     public async Task<bool> GeneratePlaceholderSeasonAsync(string showFolderPath)
     {
         var seasonFolderPath = GetSeasonFolder(showFolderPath);
-        return await GeneratePlaceholderAsync(seasonFolderPath, SeasonAsset);
+        var assetStem = Path.GetFileNameWithoutExtension(SeasonAsset);
+        var targetFile = assetStem + AssetExtension;
+        return await GeneratePlaceholderAsync(seasonFolderPath, targetFile, SeasonAsset);
     }
 
     /// <summary>
@@ -196,9 +200,10 @@ public class PlaceholderVideoGenerator
     /// Generate a placeholder video from an asset image and ensure it's available in the target directory.
     /// </summary>
     /// <param name="targetDirectory">The target directory to place the placeholder video</param>
+    /// <param name="targetFile">The target file name</param>
     /// <param name="assetName">The asset filename (e.g., "movie.png")</param>
     /// <returns>True if successful, false otherwise</returns>
-    private async Task<bool> GeneratePlaceholderAsync(string targetDirectory, string assetName)
+    private async Task<bool> GeneratePlaceholderAsync(string targetDirectory, string targetFile, string assetName)
     {
         try
         {
@@ -219,9 +224,7 @@ public class PlaceholderVideoGenerator
                 return false;
             }
 
-            // Determine target file name based on asset
-            var assetStem = Path.GetFileNameWithoutExtension(assetName);
-            var targetFile = assetStem + AssetExtension;
+            // Use target file from the movie or season generator
             var targetPath = Path.Combine(targetDirectory, targetFile);
 
             // Copy cached file to target directory
