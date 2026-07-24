@@ -126,6 +126,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 - **Sync Interval (hours)**: How often the plugin automatically syncs content
 - **Test Connection with Jellyseerr**: Verifies that the plugin can successfully connect to your Jellyseerr instance
 - **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time
+- **Plugins Menu**: Displays a link to the JellyBridge configuration page on the sidebar Plugins menu.
 - **Library Setup Instructions**: Click the "(?) Setup" button next to the automated task checkbox to view library setup instructions and troubleshooting.
 
 ### 🔍 Import Discover Content
