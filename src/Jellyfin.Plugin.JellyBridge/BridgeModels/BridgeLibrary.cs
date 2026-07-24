@@ -124,10 +124,14 @@ public class BridgeLibrary
     /// </summary>
     public bool ContainsLocation(string path)
     {
-        if (string.IsNullOrEmpty(path))
-            return false;
-        var normalized = FolderUtils.GetNormalizedPath(path);
-        return !string.IsNullOrEmpty(normalized) && Locations.Contains(normalized);
+        // Search locations to see if path is a subdirectory
+        foreach (var location in Locations)
+        {
+            if (FolderUtils.IsPathInDirectory(location, path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>

@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "59EB8DC4954B71D63C37F64DBBCCF959",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.13.11.9.zip",
+        "version": "3.13.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.13 - filterduplicates by library test",
+        "timestamp": "2026-07-24T00:10:28.968Z"
+      },
+      {
+        "checksum": "0BA8253A2DFF089030287A4D2758A935",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.13.11.0.zip",
+        "version": "3.13.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.13 - filterduplicates by library test",
+        "timestamp": "2026-07-24T00:10:28.968Z"
+      },
+      {
+        "checksum": "3E8789EF7EBCAD6C55413193A9D5EB88",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.13.10.7.zip",
+        "version": "3.13.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.13 - filterduplicates by library test",
+        "timestamp": "2026-07-24T00:10:28.968Z"
+      },
+      {
         "checksum": "D7B4D3943F6A1AA844E77A9F0CC449C7",
         "targetAbi": "10.11.9.0",
         "dependencies": [],

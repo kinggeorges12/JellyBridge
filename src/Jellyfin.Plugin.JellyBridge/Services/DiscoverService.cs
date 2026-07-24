@@ -123,7 +123,7 @@ public class DiscoverService
     {
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
-        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenFolders = new HashSet<string>();
         
         _logger.LogDebug("Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
