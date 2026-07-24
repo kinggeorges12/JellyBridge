@@ -210,13 +210,13 @@ public class SortLibraryResult
     // Collections
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
     public List<(BaseItemKind mediaType, string folder)> ItemsFailed { get; set; } = new();
-    public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
+    public List<(BaseItemKind mediaType, string path)> ItemsSkipped { get; set; } = new();
     
     // Separate items by type
     public List<(IJellyfinItem item, int playCount)> MoviesSorted => ItemsSorted.Where(x => x.item is JellyfinMovie).ToList();
     public List<(IJellyfinItem item, int playCount)> ShowsSorted => ItemsSorted.Where(x => x.item is JellyfinSeries).ToList();
-    public List<(IJellyfinItem? item, string path)> MoviesSkipped => ItemsSkipped.Where(x => x.item is JellyfinMovie).ToList();
-    public List<(IJellyfinItem? item, string path)> ShowsSkipped => ItemsSkipped.Where(x => x.item is JellyfinSeries).ToList();
+    public List<(BaseItemKind mediaType, string path)> MoviesSkipped => ItemsSkipped.Where(x => x.mediaType == BaseItemKind.Movie).ToList();
+    public List<(BaseItemKind mediaType, string path)> ShowsSkipped => ItemsSkipped.Where(x => x.mediaType == BaseItemKind.Series).ToList();
     public List<(BaseItemKind mediaType, string path)> MoviesFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Movie).ToList();
     public List<(BaseItemKind mediaType, string path)> ShowsFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Series).ToList();
     
