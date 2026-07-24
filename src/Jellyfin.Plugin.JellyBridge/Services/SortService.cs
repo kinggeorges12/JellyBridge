@@ -260,11 +260,7 @@ public class SortService
         var bridgeLibraryPaths = new HashSet<string>();
         if (!string.IsNullOrEmpty(libraryDirectory))
         {
-            var normalized = FolderUtils.GetNormalizedPath(libraryDirectory);
-            if (!string.IsNullOrEmpty(normalized))
-            {
-                bridgeLibraryPaths.Add(normalized);
-            }
+            bridgeLibraryPaths.Add(libraryDirectory);
         }
 
         // Get all items from user's library (excluding JellyBridge items)

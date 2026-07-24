@@ -127,7 +127,7 @@ public class BridgeLibrary
         // Search locations to see if path is a subdirectory
         foreach (var location in Locations)
         {
-            if (FolderUtils.IsPathInDirectory(location, path)) {
+            if (FolderUtils.IsPathInDirectory(path, location)) {
                 return true;
             }
         }
