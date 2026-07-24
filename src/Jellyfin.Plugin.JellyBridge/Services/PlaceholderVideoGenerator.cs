@@ -109,19 +109,20 @@ public class PlaceholderVideoGenerator
             var assetStem = Path.GetFileNameWithoutExtension(assetName);
 
             // Include _custom in cache filename when a custom asset is active to prevent stale cache
-            var cachePath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
+            var cacheFilepath = Path.Combine(_placeholderPath, $"{assetStem}_{videoDuration}{AssetExtension}");
 
             // Get or create a semaphore for this specific cache path to serialize generation
-            var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            var semaphore = _cacheGenerationSemaphores.GetOrAdd(cacheFilepath, _ => new SemaphoreSlim(1, 1));
             
-            await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
+            var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+            await semaphore.WaitAsync(timeout);
             try
             {
                 // Double-check pattern: after acquiring the lock, check if file was already created by another task
-                if (File.Exists(cachePath))
+                if (File.Exists(cacheFilepath))
                 {
-                    _logger.LogTrace("Cached placeholder already exists: {CachePath}", cachePath);
-                    return cachePath;
+                    _logger.LogTrace("Cached placeholder already exists: {CacheFile}", cacheFilepath);
+                    return cacheFilepath;
                 }
                 
                 // Wait for the file to be created and have content before releasing the semaphore
@@ -131,39 +132,39 @@ public class PlaceholderVideoGenerator
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
                     _logger.LogTrace("Waiting for cache file to be ready, attempt {Attempt}/{TotalAttempts}: {CachePath}", 
-                        attempt, maxAttempts, cachePath);
+                        attempt, maxAttempts, cacheFilepath);
                     
-                    if (File.Exists(cachePath))
+                    if (File.Exists(cacheFilepath))
                     {
-                        var fileInfo = new FileInfo(cachePath);
+                        var fileInfo = new FileInfo(cacheFilepath);
                         if (fileInfo.Length > 0)
                         {
                             try {
-                                using (FileStream stream = File.Open(cachePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                                using (FileStream stream = File.Open(cacheFilepath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                                 {
                                     _logger.LogTrace("Cache file is ready: {CachePath} ({Size} bytes) (attempt {Attempt}/{TotalAttempts})", 
-                                        cachePath, fileInfo.Length, attempt, maxAttempts);
+                                        cacheFilepath, fileInfo.Length, attempt, maxAttempts);
                                 }
-                                return cachePath;
+                                return cacheFilepath;
                             }
                             catch (Exception)
                             {
-                                _logger.LogTrace("Failed to open cache file, waiting...: {CachePath}", cachePath);
+                                _logger.LogTrace("Failed to open cache file, waiting...: {CachePath}", cacheFilepath);
                             }
                         }
                         else
                         {
-                            _logger.LogTrace("Cache file exists but is empty, waiting...: {CachePath}", cachePath);
+                            _logger.LogTrace("Cache file exists but is empty, waiting...: {CachePath}", cacheFilepath);
                         }
                     }
                     else
                     {
-                        _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cachePath);
+                        _logger.LogTrace("Cached placeholder not found for {Asset}, generating at {CachePath}", assetName, cacheFilepath);
 
-                        var ok = await GeneratePlaceholderVideoAsync(assetName, cachePath);
+                        var ok = await GeneratePlaceholderVideoAsync(assetName, cacheFilepath);
                         if (!ok)
                         {
-                            _logger.LogTrace("Generating video failed, waiting...: {CachePath}", cachePath);
+                            _logger.LogTrace("Generating video failed, waiting...: {CachePath}", cacheFilepath);
                         }
                     }
                     
@@ -173,7 +174,7 @@ public class PlaceholderVideoGenerator
                 }
                 
                 // If we get here, all retry attempts failed
-                _logger.LogError("Cache file was not created after waiting 30 seconds: {CachePath}", cachePath);
+                _logger.LogError("Cache file was not created after waiting 30 seconds: {CachePath}", cacheFilepath);
                 
                 return null;
             }
@@ -243,7 +244,8 @@ public class PlaceholderVideoGenerator
         string assetFilepath = Path.Combine(_assetPath, assetName);
         SemaphoreSlim semaphore = _assetExtractionSemaphores.GetOrAdd(assetName, _ => new SemaphoreSlim(1, 1));
         
-        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
+        var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+        await _invalidationSemaphore.WaitAsync(timeout);
         try
         {
             if (!File.Exists(assetFilepath))
@@ -344,7 +346,7 @@ public class PlaceholderVideoGenerator
     /// <param name="assetName">The asset filename (e.g., "movie.png")</param>
     /// <param name="outputPath">The output video file path</param>
     /// <returns>True if successful, false otherwise</returns>
-    private async Task<bool> GeneratePlaceholderVideoAsync(string assetName, string outputPath)
+    private async Task<bool> GeneratePlaceholderVideoAsync(string assetName, string outputFilepath)
     {
         try
         {
@@ -358,7 +360,7 @@ public class PlaceholderVideoGenerator
             }
 
             // Ensure output directory exists, defaults to throw if directory is null
-            var outputDir = Path.GetDirectoryName(outputPath) ?? string.Empty;
+            var outputDir = Path.GetDirectoryName(outputFilepath) ?? string.Empty;
             if (!FolderUtils.FolderExistsThrowNull(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
@@ -398,7 +400,7 @@ public class PlaceholderVideoGenerator
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
                 "-movflags", "+faststart",
-                outputPath
+                outputFilepath
             };
             foreach (string arg in arguments)
             {
@@ -406,7 +408,7 @@ public class PlaceholderVideoGenerator
             }
 
             _logger.LogTrace("Generating placeholder video: {AssetName} -> {OutputPath}", 
-                assetName, outputPath);
+                assetName, outputFilepath);
             _logger.LogTrace("Asset path: {AssetPath}, Duration: {Duration}", 
                 assetPath, videoDuration);
             _logger.LogTrace("FFmpeg command: {FFmpegPath} {Arguments}", 
@@ -442,21 +444,21 @@ public class PlaceholderVideoGenerator
             if (process.ExitCode == 0)
             {
                 // Verify the output file was created and has content
-                if (!File.Exists(outputPath))
+                if (!File.Exists(outputFilepath))
                 {
-                    _logger.LogError("FFmpeg succeeded but output file does not exist: {OutputPath}", outputPath);
+                    _logger.LogError("FFmpeg succeeded but output file does not exist: {OutputPath}", outputFilepath);
                     return false;
                 }
                 
-                var outputFileInfo = new FileInfo(outputPath);
+                var outputFileInfo = new FileInfo(outputFilepath);
                 if (outputFileInfo.Length == 0)
                 {
-                    _logger.LogError("FFmpeg succeeded but output file is empty: {OutputPath}", outputPath);
+                    _logger.LogError("FFmpeg succeeded but output file is empty: {OutputPath}", outputFilepath);
                     return false;
                 }
                 
                 _logger.LogDebug("Successfully generated placeholder video: {OutputPath} ({Size} bytes)", 
-                    outputPath, outputFileInfo.Length);
+                    outputFilepath, outputFileInfo.Length);
                 _logger.LogTrace("FFmpeg output: {Output}", outputBuilder.ToString());
                 return true;
             }
@@ -471,7 +473,7 @@ public class PlaceholderVideoGenerator
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating placeholder video: {AssetName} -> {OutputPath}", 
-                assetName, outputPath);
+                assetName, outputFilepath);
             return false;
         }
     }
@@ -638,7 +640,8 @@ public class PlaceholderVideoGenerator
     /// </summary>
     private async Task InvalidateCachedPlaceholdersAsync()
     {
-        await _invalidationSemaphore.WaitAsync(60*1000); // Wait up to 60 seconds to acquire the semaphore
+        var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+        await _invalidationSemaphore.WaitAsync(timeout);
         try
         {
             if (FolderUtils.FolderExistsThrowNull(_assetPath))

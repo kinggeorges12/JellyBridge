@@ -561,7 +561,8 @@ public class BridgeService
     public async Task CreateIgnoreFileAsync(string ignoreFilePath, string? fileContent)
     {
         var semaphore = _fileSemaphores.GetOrAdd(ignoreFilePath, _ => new SemaphoreSlim(1, 1));
-        await semaphore.WaitAsync(60 * 1000); // Wait up to 60 seconds to acquire the semaphore
+        var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+        await semaphore.WaitAsync(timeout);
         try
         {
             // Comment out each line of the JSON content

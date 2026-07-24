@@ -28,9 +28,6 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
-            // Initialize upload promo video
-            initializeUploadPromo(page);
-            
             // Initialize import discover content settings including network interface and sync buttons
             initializeImportContent(page);
             
