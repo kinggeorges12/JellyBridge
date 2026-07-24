@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "6854D021C74FF3F698BA9C7104BD271B",
+        "timestamp": "2026-07-24T21:30:04.416Z",
+        "version": "3.32.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.32.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.32 - regeneration promos was overwriting movie promos with series promo",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "D19F790D336D2198F3271A9DD6A55DA3",
+        "timestamp": "2026-07-24T21:30:04.416Z",
+        "version": "3.32.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.32.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.32 - regeneration promos was overwriting movie promos with series promo",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "4DFDD8B507EEEA21EF62515181C4DF30",
+        "timestamp": "2026-07-24T21:30:04.416Z",
+        "version": "3.32.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.32.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.32 - regeneration promos was overwriting movie promos with series promo",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "896B53C93D6FF3E4B087E3EF141863AC",
         "timestamp": "2026-07-24T20:50:38.743Z",
         "version": "3.31.11.9",

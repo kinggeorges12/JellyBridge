@@ -31,20 +31,21 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             _logger.LogDebug("Custom promo videos generation requested");
             try
             {
-                var (successfulItems, failedItems) = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync();
+                var (successfulMovies, successfulSeries, failedItems) = await _placeholderVideoGenerator.RefreshAllPlaceholdersAsync();
                 
                 // Build the result message
-                string resultMessage = $"Custom promo videos generated successfully for {successfulItems.Count} items.";
+                string resultMessage = $"Custom promo videos generated successfully for {successfulMovies.Count} Movies and {successfulSeries.Count} Series.";
                 if (failedItems.Count > 0)
                 {
-                    resultMessage += $"\nFailed for {failedItems.Count} items:\n" + string.Join("\n", failedItems);
+                    resultMessage += $"\nFailures occurred for {failedItems.Count} items:\n" + string.Join("\n", failedItems);
                 }
                 
                 return Ok(new
                 {
                     success = true,
                     result = resultMessage,
-                    generated = successfulItems.Count,
+                    movies = successfulMovies.Count,
+                    series = successfulSeries.Count,
                     failed = failedItems.Count,
                     failedItems = failedItems.Count > 0 ? failedItems : null
                 });
