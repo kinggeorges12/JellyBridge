@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "CFD98699BEECF71294AAF5470184F75A",
+        "timestamp": "2026-07-24T20:07:48.167Z",
+        "version": "3.28.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.28.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.28 - debugging ffmpeg",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "0382E0FAD493FBCDB47D44A97966C293",
+        "timestamp": "2026-07-24T20:07:48.167Z",
+        "version": "3.28.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.28.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.28 - debugging ffmpeg",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "E7AA14114E0F238E860F9DDC013AB176",
+        "timestamp": "2026-07-24T20:07:48.167Z",
+        "version": "3.28.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.28.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.28 - debugging ffmpeg",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "E05C53E043E831EE89E46AE7CDF7A256",
         "timestamp": "2026-07-24T19:47:46.662Z",
         "version": "3.27.11.9",
