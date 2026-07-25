@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "EBF4AE857DC96AC8D7424188EBD8DE26",
+        "timestamp": "2026-07-25T23:35:24.406Z",
+        "version": "3.42.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.42.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.42 - enable library refresh before sort is redundant now since we wait for the existing library refresh to finish.",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "896C1D123C4BE5A4624B49FCED497AAD",
+        "timestamp": "2026-07-25T23:35:24.406Z",
+        "version": "3.42.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.42.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.42 - enable library refresh before sort is redundant now since we wait for the existing library refresh to finish.",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "E34C76DD31B1A1B84A81C321521D0DEE",
+        "timestamp": "2026-07-25T23:35:24.406Z",
+        "version": "3.42.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.42.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.42 - enable library refresh before sort is redundant now since we wait for the existing library refresh to finish.",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "A288E856DD76BC23A2CE9867C57AE8E8",
         "timestamp": "2026-07-25T23:30:22.889Z",
         "version": "3.41.11.9",
