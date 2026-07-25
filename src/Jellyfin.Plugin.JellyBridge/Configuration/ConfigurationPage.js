@@ -51,7 +51,7 @@ export default function (view) {
             
             isInitialized = true;
         }).catch(function (error) {
-            Dashboard.alert('❌ Failed to load configuration: ' + (error?.message || error));
+            DisplayMessage('❌ Failed to load configuration: ' + (error?.message || error));
             scrollToElement('jellyBridgeConfigurationPage');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -263,7 +263,7 @@ function initializeGeneralSettings(page) {
             Dashboard.processPluginConfigurationUpdateResult(result);
             checkTaskStatus(page);
         }).catch(function (error) {
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             scrollToElement('jellyBridgeConfigurationForm');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -390,6 +390,8 @@ function getDefaultLibrarySettings(page) {
 
 function createDefaultLibrary(page) {
     const createButton = page.querySelector('#createDefaultLibrary');
+    const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
+    const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
 
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
@@ -404,8 +406,6 @@ function createDefaultLibrary(page) {
             Dashboard.showLoadingMsg();
 
             savePluginConfiguration(page).then(function (result) {
-                const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
-                const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
                 // Send request for a new library
                 ApiClient.ajax({
                     url: ApiClient.getUrl('Library/VirtualFolders', {
@@ -415,16 +415,14 @@ function createDefaultLibrary(page) {
                     type: 'POST',
                     data: JSON.stringify(getDefaultLibrarySettings(page)),
                     contentType: 'application/json',
-                    dataType: 'json'
                 }).then(function(response) {
-                    Dashboard.alert('✅ Default library created successfully!');
-                    scrollToElement('librarySetupInstructions');
+                    DisplayMessage('✅ Default library created successfully!');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
-                    scrollToElement('librarySetupInstructions');
+                    DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
                 });
+                scrollToElement('librarySetupInstructions');
             }).catch(function (error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
                 createButton.disabled = false;
@@ -488,7 +486,7 @@ function performTestConnection(page) {
         } else if (data && data.message) {
             message = '✅ ' + data.message;
         }
-        Dashboard.alert(message);
+        DisplayMessage(message);
         // Show confirmation dialog for saving settings
         Dashboard.confirm({
                 title: '✅ Connection Success!',
@@ -503,12 +501,12 @@ function performTestConnection(page) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                         checkTaskStatus(page);
                     }).catch(function (error) {
-                        Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                        DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                     }).finally(function() {
                         Dashboard.hideLoadingMsg();
                     });
                 } else {
-                    Dashboard.alert('🚫 Exited without saving');
+                    DisplayMessage('🚫 Exited without saving');
                 }
             });
     }).catch(async function (error) {
@@ -534,21 +532,21 @@ function performTestConnection(page) {
             }
         }
         try{
-        // Show confirmation dialog for opening troubleshooting
-        Dashboard.confirm({
-                title: '🚧 Connection Test Failed',
-                text: `Do you want to try troubleshooting? Error: ${message}`,
-                confirmText: '🤖 Troubleshooting',
-                cancelText: 'Close',
-                primary: "confirm"
-            }, 'Title', (confirmed) => {
-                if (confirmed) {
-                    scrollToElement('troubleshootingDetails');
-                }
-            });
+            // Show confirmation dialog for opening troubleshooting
+            Dashboard.confirm({
+                    title: '🚧 Connection Test Failed',
+                    text: `Do you want to try troubleshooting? Error: ${message}`,
+                    confirmText: '🤖 Troubleshooting',
+                    cancelText: 'Close',
+                    primary: "confirm"
+                }, 'Title', (confirmed) => {
+                    if (confirmed) {
+                        scrollToElement('troubleshootingDetails');
+                    }
+                });
         } finally {
             // Something went wrong
-            Dashboard.alert(message);
+            DisplayMessage(message);
         }
     }).finally(function() {
         Dashboard.hideLoadingMsg();
@@ -640,7 +638,7 @@ function initializeImportContent(page) {
         refreshAvailableButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
-                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                DisplayMessage('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
             }
@@ -648,11 +646,11 @@ function initializeImportContent(page) {
             loadAvailableNetworks(page)
             .then(function(availableNetworks) {
                 if (availableNetworks) {
-                    Dashboard.alert(`✅ Refreshed available networks`);
+                    DisplayMessage(`✅ Refreshed available networks`);
                     scrollToElement('availableNetworksSelectBox');
                 }
             }).catch(function() {
-                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                DisplayMessage('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
                 scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
@@ -694,16 +692,16 @@ function initializeImportContent(page) {
         refreshButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
-                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                DisplayMessage('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
             }
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.alert('✅ Refreshed regions');
+                DisplayMessage('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
             }).catch(function() {
-                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                DisplayMessage('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
                 scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
@@ -748,7 +746,7 @@ function performSyncImportContent(page) {
                     appendToResultBox(syncDiscoverResult, '\n' + (syncData.result || 'No result available'));
                     scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nDiscover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
@@ -757,7 +755,7 @@ function performSyncImportContent(page) {
                     scrollToElement('syncDiscoverResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(syncDiscoverResult, "⏰ " + new Date().toLocaleTimeString());
@@ -878,7 +876,7 @@ function populateSelectWithNetworks(selectElement, networks) {
             selectElement.appendChild(option);
         } else {
             // Invalid network format
-            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
+            DisplayMessage(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
         }
     });
 }
@@ -1103,7 +1101,7 @@ function performCustomizePromo(page) {
                     scrollToElement('generatePromoVideosResult');
                     loadPromoVideos(page);
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nRequest JellyBridge Library Promo Videos Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
@@ -1112,7 +1110,7 @@ function performCustomizePromo(page) {
                     scrollToElement('generatePromoVideosResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(generatePromoVideosResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1200,7 +1198,7 @@ function performSortContent(page) {
                     appendToResultBox(sortContentResult, '\n' + (sortResult.result || 'No result available'));
                     scrollToElement('sortContentResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nSort Content Results:\n`;
                     resultText += `❌ Sort failed: ${error?.message || 'Unknown error'}\n`;
@@ -1209,7 +1207,7 @@ function performSortContent(page) {
                     scrollToElement('sortContentResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(sortContentResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1286,19 +1284,19 @@ function performGenerateNetworkFolders(page) {
                     const ok = !!(response && response.success === true);
                     
                     if (ok) {
-                        Dashboard.alert('✅ Network folders created successfully');
+                        DisplayMessage('✅ Network folders created successfully');
                     } else {
                         let message = response?.message || 'Network folder generation completed';
-                        Dashboard.alert('⚠️ ' + message);
+                        DisplayMessage('⚠️ ' + message);
                     }
                     
                     generateNetworkFoldersButton.disabled = false;
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Failed to generate network folders: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Failed to generate network folders: ' + (error?.message || 'Unknown error'));
                     generateNetworkFoldersButton.disabled = false;
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
                 generateNetworkFoldersButton.disabled = false;
             }).finally(function() {
@@ -1344,7 +1342,7 @@ function performSyncFavorites(page) {
                     appendToResultBox(syncFavoritesResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
@@ -1353,7 +1351,7 @@ function performSyncFavorites(page) {
                     scrollToElement('syncFavoritesResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(syncFavoritesResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1432,7 +1430,7 @@ function performCleanupMetadata(page) {
                     appendToResultBox(cleanupMetadataResult, '\n' + (cleanupData?.result || 'No result available'));
                     scrollToElement('cleanupMetadataResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nCleanup Results:\n`;
                     resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
@@ -1441,7 +1439,7 @@ function performCleanupMetadata(page) {
                     scrollToElement('cleanupMetadataResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(cleanupMetadataResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1546,14 +1544,14 @@ function performPluginReset(page) {
                 contentType: 'application/json',
                 dataType: 'json'
             }).then(function(result) {
-                Dashboard.alert('✅ Plugin configuration has been reset to defaults! ⟳ Refreshing the page...');
+                DisplayMessage('✅ Plugin configuration has been reset to defaults! ⟳ Refreshing the page...');
                 
                 // Reload the page to show default values
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -1610,9 +1608,9 @@ function performRecycleLibraryData(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(result) {
-                    Dashboard.alert('✅ All JellyBridge library data has been deleted successfully.');
+                    DisplayMessage('✅ All JellyBridge library data has been deleted successfully.');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
                 }).finally(function() {
                     Dashboard.hideLoadingMsg();
                     recycleLibraryButton.disabled = false;
@@ -1620,7 +1618,7 @@ function performRecycleLibraryData(page) {
             });
         }).catch(function(error) {
             Dashboard.hideLoadingMsg();
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             scrollToElement('jellyBridgeConfigurationForm');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -1866,6 +1864,11 @@ function initializeNumberInputScrollPrevention(page) {
 // UTILITY FUNCTIONS
 // ==========================================
 
+function DisplayMessage(message){
+    Dashboard.alert(message);
+    console.log(message);
+}
+
 // Open a directory browser dialog to select a folder and set the input value
 function browseFolder(inputElement, title, includeFiles = false) {
     // Create the dialog box
@@ -2098,7 +2101,7 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
     // Check validator function if provided
     if (validator && !validator(field.value)) {
         const message = errorMessage || `${fieldId} is invalid`;
-        Dashboard.alert(`❌ ${message}`);
+        DisplayMessage(`❌ ${message}`);
         scrollToElement(fieldId);
         return { isValid: false, error: message };
     }
@@ -2110,7 +2113,7 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
 function setInputField(page, propertyName, isCheckbox = false) {
     const field = page.querySelector(`#${propertyName}`);
     if (!field) {
-        Dashboard.alert(`❌ Field with ID "${propertyName}" not found`);
+        DisplayMessage(`❌ Field with ID "${propertyName}" not found`);
         return;
     }
     

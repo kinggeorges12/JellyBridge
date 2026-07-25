@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "0662396FA98E49E5B15564C18C730378",
+        "timestamp": "2026-07-25T22:05:57.482Z",
+        "version": "3.39.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.39.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.39 - handling response from create library",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "66F25482BF3726497DF15CB2FD26EF58",
+        "timestamp": "2026-07-25T22:05:57.482Z",
+        "version": "3.39.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.39.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.39 - handling response from create library",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "7414983B4F8817DE90BA24CF6174F4FC",
+        "timestamp": "2026-07-25T22:05:57.482Z",
+        "version": "3.39.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.39.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.39 - handling response from create library",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "9F5AE653E5C61E2BC8E756DFC28D3691",
         "timestamp": "2026-07-25T21:44:27.774Z",
         "version": "3.38.11.9",
