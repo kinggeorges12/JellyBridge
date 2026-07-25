@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "192E9955E342E8357406433898348635",
+        "timestamp": "2026-07-25T21:42:46.025Z",
+        "version": "3.37.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.37.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.37 - fixing create library button",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "183F884A7C4EF8964D4BAC63FE0E13BA",
+        "timestamp": "2026-07-25T21:42:46.025Z",
+        "version": "3.37.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.37.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.37 - fixing create library button",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "52B53014C0C0409B8C4C0D935574BE42",
+        "timestamp": "2026-07-25T21:42:46.025Z",
+        "version": "3.37.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.37.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.37 - fixing create library button",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "793BB1D9E6F42C4BF4730045F72517C2",
         "timestamp": "2026-07-25T21:21:21.168Z",
         "version": "3.36.11.9",
