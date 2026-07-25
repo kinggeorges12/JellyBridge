@@ -226,6 +226,8 @@ public class LibraryService
             return false;
         }
 
+        // Delay start of task to allow it to begin processing
+        await Task.Delay(1000);
         // Wait for it to complete by checking the state
         var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
         var endTime = DateTime.UtcNow + timeout;
