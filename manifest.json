@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "D8BDC601E093C02A70869FC281394AD0",
+        "timestamp": "2026-07-25T21:02:29.266Z",
+        "version": "3.35.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.35.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.35 - adding autosetup for library",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "F00747A99D72D11D839F84F1E15D029F",
+        "timestamp": "2026-07-25T21:02:29.266Z",
+        "version": "3.35.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.35.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.35 - adding autosetup for library",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "2AD24B3145CF01E3316416C69227B27A",
+        "timestamp": "2026-07-25T21:02:29.266Z",
+        "version": "3.35.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.35.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.35 - adding autosetup for library",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "8A978EDE74E7CA1F00517BC584755E7E",
         "timestamp": "2026-07-24T22:08:10.744Z",
         "version": "3.34.11.9",

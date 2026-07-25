@@ -552,10 +552,12 @@
                     <details id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
                         <summary>📚 Library Setup Instructions</summary>
                         <div id="librarySetupInstructionsContent">
-                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings:</p>
+                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings or apply these options automatically with the <span class="link" data-target-page="createDefaultLibrary">✨ Create Default Library</span> button:</p>
                             <ul>
                                 <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                                <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
+                                <li><strong>Display name:</strong> Anything you'd like! I use "Discover"
+                                    <input is="emby-input" type="text" id="LibraryDisplayName" placeholder="Discover"/>
+                                </li>
                                 <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span></li>
                                 <li><strong>Library Settings:</strong> 🔳 Enable real time monitoring</li>
                                 <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
@@ -563,6 +565,11 @@
                                 <li>☑️ <strong>Save artwork into media folders</strong></li>
                                 <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                             </ul>
+                            <div>
+                                <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">
+                                    <span>✨ Create Default Library</span>
+                                </button>
+                            </div>
                             <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Network Folders</i></span></p>
                         </div>
 
