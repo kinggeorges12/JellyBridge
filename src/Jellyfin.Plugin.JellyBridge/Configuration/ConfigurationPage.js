@@ -273,12 +273,9 @@ function initializeGeneralSettings(page) {
     });
 }
 
-function createDefaultLibrary(page) {
+function getDefaultLibrarySettings(page) {
     const config = window.configJellyBridge;
-    const createButton = page.querySelector('#createDefaultLibrary');
-    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory')) || config.ConfigDefaults?.LibraryDirectory;
-    const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
-    const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
+    const libraryDirectory = config.LibraryDirectory || config.ConfigDefaults?.LibraryDirectory;
 
     // These are default options that need to be validated from the server options
     let libraryJson = {
@@ -329,99 +326,109 @@ function createDefaultLibrary(page) {
         }
     };
 
+    // Validate library settings
+    ApiClient.fetch({
+        'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
+        'headers': {'accept': 'application/json'},
+        'dataType': 'json'
+    }).then(function(response) {
+        if (!response) return;
+        
+        // Clean MetadataSavers
+        if (response.MetadataSavers) {
+            const validSaverNames = response.MetadataSavers.map(s => s.Name);
+            libraryJson.LibraryOptions.MetadataSavers = libraryJson.LibraryOptions.MetadataSavers
+                .filter(saver => validSaverNames.includes(saver));
+        }
+        
+        // Clean LocalMetadataReaderOrder
+        if (response.MetadataReaders) {
+            const validReaderNames = response.MetadataReaders.map(r => r.Name);
+            libraryJson.LibraryOptions.LocalMetadataReaderOrder = libraryJson.LibraryOptions.LocalMetadataReaderOrder
+                .filter(reader => validReaderNames.includes(reader));
+        }
+
+        // Disable all subtitle fetchers
+        if (response.SubtitleFetchers) {
+            libraryJson.LibraryOptions.DisabledSubtitleFetchers = response.SubtitleFetchers.map(f => f.Name);
+        }
+        
+        // Clean TypeOptions - remove unavailable fetchers
+        if (response.TypeOptions) {
+            libraryJson.LibraryOptions.TypeOptions = libraryJson.LibraryOptions.TypeOptions
+                .map(typeOption => {
+                    // Find matching server type
+                    const serverType = response.TypeOptions.find(t => t.Type === typeOption.Type);
+                    if (!serverType) return null; // Type not available on server
+                    
+                    // Get available fetchers
+                    const availableFetchers = serverType.MetadataFetchers.map(f => f.Name);
+                    const availableImageFetchers = serverType.ImageFetchers.map(f => f.Name);
+                    
+                    // Filter MetadataFetchers
+                    typeOption.MetadataFetchers = typeOption.MetadataFetchers
+                        .filter(f => availableFetchers.includes(f));
+                    typeOption.MetadataFetcherOrder = typeOption.MetadataFetcherOrder
+                        .filter(f => availableFetchers.includes(f));
+                    
+                    // Filter ImageFetchers
+                    typeOption.ImageFetchers = typeOption.ImageFetchers
+                        .filter(f => availableImageFetchers.includes(f));
+                    typeOption.ImageFetcherOrder = typeOption.ImageFetcherOrder
+                        .filter(f => availableImageFetchers.includes(f));
+                    
+                    return typeOption;
+                })
+                .filter(type => type !== null); // Remove unavailable types
+        }
+    }).catch(function(error) {
+        console.error('❌ Error fetching library options:', error);
+    });
+
+    return libraryJson;
+}
+
+function createDefaultLibrary(page) {
+    const createButton = page.querySelector('#createDefaultLibrary');
+
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
-        title: 'Confirm Create Library',
-        text: 'This will create a default library named "' + libraryDisplayName + '" with the recommended settings. Do you want to proceed?',
+        title: 'Confirm New Library',
+        text: 'This will save the current configuration and create a new library named "' + libraryDisplayName + '" with the recommended settings. Do you want to proceed?',
         confirmText: '✨ Create',
         cancelText: 'Cancel',
         primary: "confirm"
     }, 'Title', (confirmed) => {
         if (confirmed) {
             createButton.disabled = true;
-            // Sort if confirmed
             Dashboard.showLoadingMsg();
-            const params = {
-                refreshLibrary: true,
-                name: libraryDisplayName
-            };
 
-            // Validate library settings
-            ApiClient.fetch({
-                'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
-                'headers': {'accept': 'application/json'},
-                'dataType': 'json'
-            }).then(function(response) {
-                if (!response) return;
-                
-                // Clean MetadataSavers
-                if (response.MetadataSavers) {
-                    const validSaverNames = response.MetadataSavers.map(s => s.Name);
-                    libraryJson.LibraryOptions.MetadataSavers = libraryJson.LibraryOptions.MetadataSavers
-                        .filter(saver => validSaverNames.includes(saver));
-                }
-                
-                // Clean LocalMetadataReaderOrder
-                if (response.MetadataReaders) {
-                    const validReaderNames = response.MetadataReaders.map(r => r.Name);
-                    libraryJson.LibraryOptions.LocalMetadataReaderOrder = libraryJson.LibraryOptions.LocalMetadataReaderOrder
-                        .filter(reader => validReaderNames.includes(reader));
-                }
-
-                // Disable all subtitle fetchers
-                if (response.SubtitleFetchers) {
-                    libraryJson.LibraryOptions.DisabledSubtitleFetchers = response.SubtitleFetchers.map(f => f.Name);
-                }
-                
-                // Clean TypeOptions - remove unavailable fetchers
-                if (response.TypeOptions) {
-                    libraryJson.LibraryOptions.TypeOptions = libraryJson.LibraryOptions.TypeOptions
-                        .map(typeOption => {
-                            // Find matching server type
-                            const serverType = response.TypeOptions.find(t => t.Type === typeOption.Type);
-                            if (!serverType) return null; // Type not available on server
-                            
-                            // Get available fetchers
-                            const availableFetchers = serverType.MetadataFetchers.map(f => f.Name);
-                            const availableImageFetchers = serverType.ImageFetchers.map(f => f.Name);
-                            
-                            // Filter MetadataFetchers
-                            typeOption.MetadataFetchers = typeOption.MetadataFetchers
-                                .filter(f => availableFetchers.includes(f));
-                            typeOption.MetadataFetcherOrder = typeOption.MetadataFetcherOrder
-                                .filter(f => availableFetchers.includes(f));
-                            
-                            // Filter ImageFetchers
-                            typeOption.ImageFetchers = typeOption.ImageFetchers
-                                .filter(f => availableImageFetchers.includes(f));
-                            typeOption.ImageFetcherOrder = typeOption.ImageFetcherOrder
-                                .filter(f => availableImageFetchers.includes(f));
-                            
-                            return typeOption;
-                        })
-                        .filter(type => type !== null); // Remove unavailable types
-                }
-            }).catch(function(error) {
-                console.error('❌ Error fetching library options:', error);
-            });
-
-            // Send request for a new library
-            ApiClient.ajax({
-                url: ApiClient.getUrl('Library/VirtualFolders', params),
-                type: 'POST',
-                data: JSON.stringify(libraryJson),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).then(function(response) {
-                Dashboard.alert('✅ Default library created successfully!');
-                scrollToElement('librarySetupInstructions');
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
-                scrollToElement('librarySetupInstructions');
+            savePluginConfiguration(page).then(function (result) {
+                const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
+                const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
+                // Send request for a new library
+                ApiClient.ajax({
+                    url: ApiClient.getUrl('Library/VirtualFolders', {
+                            refreshLibrary: true,
+                            name: libraryDisplayName
+                        }),
+                    type: 'POST',
+                    data: JSON.stringify(getDefaultLibrarySettings(page)),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function(response) {
+                    Dashboard.alert('✅ Default library created successfully!');
+                    scrollToElement('librarySetupInstructions');
+                }).catch(function(error) {
+                    Dashboard.alert('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
+                    scrollToElement('librarySetupInstructions');
+                });
+            }).catch(function (error) {
+                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
                 createButton.disabled = false;
-            });
+            });;
         }
     });
 }
