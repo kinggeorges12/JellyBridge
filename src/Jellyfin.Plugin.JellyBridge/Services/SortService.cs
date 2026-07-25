@@ -22,15 +22,24 @@ public class SortService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
+    private readonly LibraryService _libraryService;
     private readonly MetadataService _metadataService;
     private readonly BridgeService _bridgeService;
 
-    public SortService(ILogger<SortService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager, MetadataService metadataService, BridgeService bridgeService)
+    public SortService(
+        ILogger<SortService> logger,
+        JellyfinILibraryManager libraryManager,
+        JellyfinIUserDataManager userDataManager,
+        JellyfinIUserManager userManager,
+        LibraryService libraryService,
+        MetadataService metadataService,
+        BridgeService bridgeService)
     {
         _logger = new DebugLogger<SortService>(logger);
         _libraryManager = libraryManager;
         _userDataManager = userDataManager;
         _userManager = userManager;
+        _libraryService = libraryService;
         _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
@@ -46,6 +55,12 @@ public class SortService
         
         try
         {
+            var enableSortLibraryRefresh = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSortLibraryRefresh));
+            if (enableSortLibraryRefresh)
+            {
+                await _libraryService.ScanAllLibraries();
+            }
+
             // Get all users
             var users = _userManager.GetAllUsers().ToList();
             if (users.Count == 0)

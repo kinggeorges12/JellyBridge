@@ -78,9 +78,10 @@ public class PluginConfiguration : BasePluginConfiguration
 
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
+        { nameof(SortTaskIntervalHours), 5.0 },
         { nameof(SortOrder), SortOrderOptions.Random },
         { nameof(MarkMediaPlayed), false },
-        { nameof(SortTaskIntervalHours), 5.0 },
+        { nameof(EnableSortLibraryRefresh), true },
 
         // Advanced Settings
         { nameof(TaskTimeoutMinutes), 10 },
@@ -250,6 +251,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? EnableAutomatedSortTask { get; set; }
 
     /// <summary>
+    /// Gets or sets the interval in hours for the sort task.
+    /// </summary>
+    public double? SortTaskIntervalHours { get; set; }
+
+    /// <summary>
     /// Gets or sets the sort order algorithm to use for discover library content.
     /// </summary>
     public SortOrderOptions? SortOrder { get; set; }
@@ -262,9 +268,9 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? MarkMediaPlayed { get; set; }
 
     /// <summary>
-    /// Gets or sets the interval in hours for the sort task.
+    /// Gets or sets whether to enable the automated task to refresh the sort library.
     /// </summary>
-    public double? SortTaskIntervalHours { get; set; }
+    public bool? EnableSortLibraryRefresh { get; set; }
 
     // ===== Advanced Settings =====
     /// <summary>

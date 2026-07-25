@@ -61,9 +61,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
+                    SortTaskIntervalHours = config.SortTaskIntervalHours,
                     SortOrder = config.SortOrder,
                     MarkMediaPlayed = config.MarkMediaPlayed,
-                    SortTaskIntervalHours = config.SortTaskIntervalHours,
+                    EnableSortLibraryRefresh = config.EnableSortLibraryRefresh,
 
                     // Customize Promo Videos
                     CustomMoviesPromo = config.CustomMoviesPromo,
@@ -158,9 +159,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     // Sort Content
                     SetJsonValue<bool?>(configData, nameof(config.EnableAutomatedSortTask), config);
+                    SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
                     SetJsonValue<SortOrderOptions?>(configData, nameof(config.SortOrder), config);
                     SetJsonValue<bool?>(configData, nameof(config.MarkMediaPlayed), config);
-                    SetJsonValue<double?>(configData, nameof(config.SortTaskIntervalHours), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableSortLibraryRefresh), config);
                     
                     // Advanced Settings
                     SetJsonValue<bool?>(configData, nameof(config.EnableStartupSync), config);
