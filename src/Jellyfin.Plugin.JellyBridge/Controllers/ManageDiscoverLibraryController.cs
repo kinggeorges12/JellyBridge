@@ -14,12 +14,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         private readonly DebugLogger<ManageDiscoverLibraryController> _logger;
         private readonly SyncService _syncService;
         private readonly MetadataService _metadataService;
+        private readonly RefreshService _refreshService;
 
-        public ManageDiscoverLibraryController(ILoggerFactory loggerFactory, SyncService syncService, MetadataService metadataService)
+        public ManageDiscoverLibraryController(ILoggerFactory loggerFactory, SyncService syncService, MetadataService metadataService, RefreshService refreshService)
         {
             _logger = new DebugLogger<ManageDiscoverLibraryController>(loggerFactory.CreateLogger<ManageDiscoverLibraryController>());
             _syncService = syncService;
             _metadataService = metadataService;
+            _refreshService = refreshService;
         }
 
         /// <summary>
@@ -97,7 +99,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogTrace("Starting favorites sync to Jellyseerr...");
                     
                     var syncResult = await _syncService.SyncToJellyseerr();
-                    await _syncService.ApplyRefreshAsync(syncToResult: syncResult);
+                    await _refreshService.ApplyRefreshAsync(syncResult);
                     
                     _logger.LogInformation("Sync favorites completed successfully:\n{SyncResult}", syncResult.ToString());
 

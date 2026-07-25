@@ -40,7 +40,7 @@ public class SortTask : IScheduledTask
 
             using var scope = _scopeFactory.CreateScope();
             var sortService = scope.ServiceProvider.GetRequiredService<SortService>();
-            var libraryService = scope.ServiceProvider.GetRequiredService<LibraryService>();
+            var refreshService = scope.ServiceProvider.GetRequiredService<RefreshService>();
 
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<object?>(async () =>
@@ -55,7 +55,7 @@ public class SortTask : IScheduledTask
                 // Refresh library to reload user data (play counts) if refresh is needed
                 if (sortResult.Refresh != null)
                 {
-                    await libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
+                    await refreshService.RefreshBridgeLibrary(createMode: false, removeMode: false);
                 }
                 
                 progress.Report(100);

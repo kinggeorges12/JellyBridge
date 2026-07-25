@@ -15,12 +15,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         private readonly DebugLogger<ImportDiscoverContentController> _logger;
         private readonly ApiService _apiService;
         private readonly SyncService _syncService;
+        private readonly RefreshService _refreshService;
 
-        public ImportDiscoverContentController(ILoggerFactory loggerFactory, ApiService apiService, SyncService syncService)
+        public ImportDiscoverContentController(ILoggerFactory loggerFactory, ApiService apiService, SyncService syncService, RefreshService refreshService)
         {
             _logger = new DebugLogger<ImportDiscoverContentController>(loggerFactory.CreateLogger<ImportDiscoverContentController>());
             _apiService = apiService;
             _syncService = syncService;
+            _refreshService = refreshService;
         }
 
         [HttpGet("Regions")]
@@ -137,7 +139,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 var result = await Plugin.ExecuteWithLockAsync(async () =>
                 {
                     var syncResult = await _syncService.SyncFromJellyseerr();
-                    await _syncService.ApplyRefreshAsync(syncToResult: null, syncFromResult: syncResult);
+                    await _refreshService.ApplyRefreshAsync(syncResult);
 
                     _logger.LogInformation("Discover sync completed successfully:\n{SyncResult}", syncResult.ToString());
 

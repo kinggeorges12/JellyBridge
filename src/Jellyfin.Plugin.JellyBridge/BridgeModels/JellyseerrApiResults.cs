@@ -7,6 +7,11 @@ using System.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
+public interface RefreshableResult
+{
+    abstract RefreshPlan? Refresh { get; set; }
+}
+
 // ============================================================================
 // SyncFromJellyseerr Operation Results
 // ============================================================================
@@ -14,7 +19,7 @@ namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 /// <summary>
 /// Result of a sync operation to Jellyseerr (creating requests).
 /// </summary>
-public class SyncJellyseerrResult
+public class SyncJellyseerrResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -86,7 +91,7 @@ public class SyncJellyseerrResult
 /// <summary>
 /// Result of a sync operation from Jellyfin (processing favorites).
 /// </summary>
-public class SyncJellyfinResult
+public class SyncJellyfinResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -183,7 +188,7 @@ public class SyncJellyfinResult
 /// <summary>
 /// Result of sorting the discover library by updating play counts.
 /// </summary>
-public class SortLibraryResult
+public class SortLibraryResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -271,7 +276,7 @@ public class SortLibraryResult
 /// <summary>
 /// Result of a cleanup operation.
 /// </summary>
-public class CleanupResult
+public class CleanupResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -382,16 +387,26 @@ public class ListAlias<T, TBase> : ICollection<T> where T : TBase
 /// </summary>
 public class RefreshPlan
 {
+    public bool ScanAllLibraries { get; set; } = false;
     public bool CreateRefresh { get; set; }
     public bool RemoveRefresh { get; set; }
     public bool RefreshImages { get; set; }
     
+    public RefreshPlan()
+    {
+        ScanAllLibraries = CreateRefresh || RemoveRefresh;
+    }
+
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
         var refreshImagesTrue = "☑️ Replace existing images";
         var refreshImagesFalse = "🔳 Replace existing images";
         var refreshImages = RefreshImages ? refreshImagesTrue : refreshImagesFalse;
+        if (ScanAllLibraries)
+        {
+            result.AppendLine($"⟳ Scan All Libraries");
+        }
         if (RemoveRefresh)
         {
             result.AppendLine($"🔄 Search for missing metadata, {refreshImagesFalse}");

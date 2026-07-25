@@ -10,28 +10,73 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
 using MediaBrowser.Model.Globalization;
+using Jellyfin.Plugin.JellyBridge.BridgeModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
 /// Service for managing Jellyfin libraries with JellyBridge.
 /// </summary>
-public class LibraryService
+public class RefreshService
 {
-    private readonly DebugLogger<LibraryService> _logger;
+    private readonly DebugLogger<RefreshService> _logger;
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly IDirectoryService _directoryService;
     private readonly JellyfinIProviderManager _providerManager;
     private readonly ITaskManager _taskManager;
     private readonly ILocalizationManager _localization;
-    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization)
+    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization)
     {
-        _logger = new DebugLogger<LibraryService>(logger);
+        _logger = new DebugLogger<RefreshService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
         _providerManager = providerManager;
         _taskManager = taskManager;
         _localization = localization;
+    }
+
+    /// <summary>
+    /// Applies the post-sync refresh operations using a single sync result.
+    /// - Calls RefreshBridgeLibrary with computed parameters
+    /// </summary>
+    public async Task ApplyRefreshAsync(RefreshableResult? results)
+    {
+        await ApplyRefreshAsync( [results] );
+    }
+
+    /// <summary>
+    /// Applies the post-sync refresh operations based on the two sync results.
+    /// - Calls RefreshBridgeLibrary with computed parameters
+    /// - Then scans all libraries and awaits completion
+    /// </summary>
+    public async Task ApplyRefreshAsync(List<RefreshableResult?> results)
+    {
+        List<RefreshableResult> allResults = results.OfType<RefreshableResult>().ToList();
+        
+        var skipRefresh = allResults.Any(r => r.Refresh == null);
+        if (skipRefresh)
+        {
+            _logger.LogDebug("No refresh plan applied");
+            return;
+        }
+
+        var scanAll = allResults.Any(r => r.Refresh?.ScanAllLibraries == true);
+        var createMode = allResults.Any(r => r.Refresh?.CreateRefresh == true);
+        var removeMode = allResults.Any(r => r.Refresh?.RemoveRefresh == true);
+        var refreshImages = allResults.Any(r => r.Refresh?.RefreshImages == true);
+
+        // Call the refresh method (fire-and-await, no return value)
+        // Update refresh always runs to reload user data (play counts)
+        if (scanAll)
+        {
+            ScanThenRefreshRunner(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+        }
+        else
+        {
+            await RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+        }
+            
+        _logger.LogInformation("JellyBridge library refresh initiated");
     }
 
     /// <summary>
