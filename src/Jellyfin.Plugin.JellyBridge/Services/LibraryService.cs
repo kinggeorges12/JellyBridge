@@ -286,7 +286,7 @@ public class LibraryService
                 fileCreated = true;
             }
 
-            _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
+            _logger.LogDebug("Starting full scan of all Jellyfin libraries...");
 
             // Wait for scan before and after running a refresh
             await WaitForTaskRefreshLibrary();

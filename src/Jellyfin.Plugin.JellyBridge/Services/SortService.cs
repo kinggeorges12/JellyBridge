@@ -58,6 +58,7 @@ public class SortService
             var enableSortLibraryRefresh = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSortLibraryRefresh));
             if (enableSortLibraryRefresh)
             {
+                _logger.LogInformation("Library refresh is enabled. Running a full library refresh before sorting the JellyBridge library...");
                 await _libraryService.ScanAllLibraries();
             }
 
