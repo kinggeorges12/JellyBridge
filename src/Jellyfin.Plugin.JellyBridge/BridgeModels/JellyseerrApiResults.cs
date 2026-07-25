@@ -387,14 +387,14 @@ public class ListAlias<T, TBase> : ICollection<T> where T : TBase
 /// </summary>
 public class RefreshPlan
 {
-    public bool ScanAllLibraries { get; set; } = false;
     public bool CreateRefresh { get; set; }
     public bool RemoveRefresh { get; set; }
     public bool RefreshImages { get; set; }
-    
-    public RefreshPlan()
+    private bool _scanAllLibraries = false;
+    public bool ScanAllLibraries 
     {
-        ScanAllLibraries = CreateRefresh || RemoveRefresh;
+        get => _scanAllLibraries || CreateRefresh || RemoveRefresh;
+        set => _scanAllLibraries = value;
     }
 
     public override string ToString()

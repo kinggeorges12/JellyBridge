@@ -257,7 +257,7 @@ public class RefreshService
         return queuedCount;
     }
 
-    private async Task<bool> WaitForTaskRefreshLibrary()
+    public async Task<bool> WaitForTaskRefreshLibrary()
     {
         // Task is stored as the localized name
         var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");

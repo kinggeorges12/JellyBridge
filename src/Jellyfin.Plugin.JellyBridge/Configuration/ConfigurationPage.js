@@ -407,7 +407,7 @@ function createDefaultLibrary(page) {
 
             savePluginConfiguration(page).then(function (result) {
                 // Send request for a new library
-                ApiClient.ajax({
+                return ApiClient.ajax({
                     url: ApiClient.getUrl('Library/VirtualFolders', {
                             refreshLibrary: true,
                             name: libraryDisplayName
@@ -420,13 +420,14 @@ function createDefaultLibrary(page) {
                 }).catch(function(error) {
                     DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
                 });
+            }).then(function() {
                 scrollToElement('librarySetupInstructions');
             }).catch(function (error) {
                 DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
                 createButton.disabled = false;
-            });;
+            });
         }
     });
 }
