@@ -980,6 +980,18 @@
                             <div class="fieldDescription">This feature changes badges to a 🔵✓ badge. For series: changes the 🔵1 unplayed count badge. For movies: changes from no badge. Disabling this option changes all media to unplayed badge when sorting.</div>
                         </div>
 
+                        <div id="EnableSortLibraryRefreshContainer" class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableSortLibraryRefresh" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Refresh Library before Sorting</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Run a library refresh before the sort task. This ensures that the library is ready and prevents sorting failures.</div>
+                        </div>
+
                         <div>
                             <button is="emby-button" type="button" id="sortContent" class="raised button block emby-button">
                                 <span>🎲 Refresh Discover Library Sort Order</span>

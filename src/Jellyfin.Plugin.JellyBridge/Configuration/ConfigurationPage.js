@@ -1143,8 +1143,9 @@ function initializeSortContent(page) {
     
     // Set sort content form values with null handling
     setInputField(page, 'EnableAutomatedSortTask', true);
-    setInputField(page, 'MarkMediaPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
+    setInputField(page, 'MarkMediaPlayed', true);
+    setInputField(page, 'EnableSortLibraryRefresh', true);
 
     // Add sort content button functionality
     const sortButton = page.querySelector('#sortContent');
@@ -1686,6 +1687,7 @@ function savePluginConfiguration(page) {
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
+    form.EnableSortLibraryRefresh = nullIfDefault(page.querySelector('#EnableSortLibraryRefresh').checked, config.ConfigDefaults.EnableSortLibraryRefresh);
     form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
