@@ -395,8 +395,8 @@ function createDefaultLibrary(page) {
 
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
-        title: 'Confirm New Library',
-        text: 'This will save the current configuration and create a new library named "' + libraryDisplayName + '" with the recommended settings. Do you want to proceed?',
+        title: 'New Library: ' + libraryDisplayName,
+        text: 'Save the current configuration and create a new library named "' + libraryDisplayName + '" with the recommended settings.',
         confirmText: '✨ Create',
         cancelText: 'Cancel',
         primary: "confirm"
