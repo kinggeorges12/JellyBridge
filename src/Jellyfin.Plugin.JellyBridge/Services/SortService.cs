@@ -22,7 +22,7 @@ public class SortService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
-    private readonly LibraryService _libraryService;
+    private readonly RefreshService _refreshService;
     private readonly MetadataService _metadataService;
     private readonly BridgeService _bridgeService;
 
@@ -31,7 +31,7 @@ public class SortService
         JellyfinILibraryManager libraryManager,
         JellyfinIUserDataManager userDataManager,
         JellyfinIUserManager userManager,
-        LibraryService libraryService,
+        RefreshService refreshService,
         MetadataService metadataService,
         BridgeService bridgeService)
     {
@@ -39,7 +39,7 @@ public class SortService
         _libraryManager = libraryManager;
         _userDataManager = userDataManager;
         _userManager = userManager;
-        _libraryService = libraryService;
+        _refreshService = refreshService;
         _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
@@ -59,7 +59,7 @@ public class SortService
             if (enableSortLibraryRefresh)
             {
                 _logger.LogInformation("Library refresh is enabled. Running a full library refresh before sorting the JellyBridge library...");
-                await _libraryService.ScanAllLibraries();
+                await _refreshService.ScanAllLibraries();
             }
 
             // Get all users

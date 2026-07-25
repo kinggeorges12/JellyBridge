@@ -14,13 +14,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     {
         private readonly DebugLogger<SortDiscoverContentController> _logger;
         private readonly SortService _sortService;
-        private readonly LibraryService _libraryService;
+        private readonly RefreshService _refreshService;
 
-        public SortDiscoverContentController(ILoggerFactory loggerFactory, SortService sortService, LibraryService libraryService)
+        public SortDiscoverContentController(ILoggerFactory loggerFactory, SortService sortService, RefreshService refreshService)
         {
             _logger = new DebugLogger<SortDiscoverContentController>(loggerFactory.CreateLogger<SortDiscoverContentController>());
             _sortService = sortService;
-            _libraryService = libraryService;
+            _refreshService = refreshService;
         }
 
         [HttpPost("SortLibrary")]
@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     if (sortResult.Refresh != null) {
                         // Refresh library to reload user data (play counts) - same as SortTask
-                        await _libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
+                        await _refreshService.RefreshBridgeLibrary(createMode: false, removeMode: false);
                         _logger.LogInformation("Library refreshed started for Sort Library");
                     }
 

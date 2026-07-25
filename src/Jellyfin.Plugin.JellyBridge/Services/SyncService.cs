@@ -18,7 +18,7 @@ public partial class SyncService
     private readonly DebugLogger<SyncService> _logger;
     private readonly ApiService _apiService;
     private readonly BridgeService _bridgeService;
-    private readonly LibraryService _libraryService;
+    private readonly RefreshService _refreshService;
     private readonly DiscoverService _discoverService;
     private readonly FavoriteService _favoriteService;
     private readonly MetadataService _metadataService;
@@ -28,7 +28,7 @@ public partial class SyncService
         ILogger<SyncService> logger,
         ApiService apiService,
         BridgeService bridgeService,
-        LibraryService libraryService,
+        RefreshService refreshService,
         DiscoverService discoverService,
         FavoriteService favoriteService,
         MetadataService metadataService)
@@ -36,7 +36,7 @@ public partial class SyncService
         _logger = new DebugLogger<SyncService>(logger);
         _apiService = apiService;
         _bridgeService = bridgeService;
-        _libraryService = libraryService;
+        _refreshService = refreshService;
         _discoverService = discoverService;
         _favoriteService = favoriteService;
         _metadataService = metadataService;
@@ -334,31 +334,6 @@ public partial class SyncService
         }
         
         return result;
-    }
-
-    /// <summary>
-    /// Applies the post-sync refresh operations based on the two sync results.
-    /// - Calls RefreshBridgeLibrary with computed parameters
-    /// - Then scans all libraries and awaits completion
-    /// </summary>
-    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null, CleanupResult? cleanupResult = null)
-    {
-        var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
-        if (!doRefresh)
-        {
-            _logger.LogDebug("No refresh plan applied");
-            return;
-        }
-
-        var createMode = (cleanupResult?.Refresh?.CreateRefresh == true) || (syncToResult?.Refresh?.CreateRefresh == true) || (syncFromResult?.Refresh?.CreateRefresh == true);
-        var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
-        var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
-
-        // Call the refresh method (fire-and-await, no return value)
-        // Update refresh always runs to reload user data (play counts)
-        _libraryService.ScanThenRefreshRunner(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
-            
-        _logger.LogInformation("JellyBridge library refresh initiated");
     }
 }
 

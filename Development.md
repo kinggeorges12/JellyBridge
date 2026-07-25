@@ -317,7 +317,7 @@ Jellyfin.Plugin.JellyBridge/
 │   ├── DiscoverService.cs
 │   ├── FavoriteService.cs
 │   ├── FavoriteEventHandler.cs
-│   ├── LibraryService.cs
+│   ├── RefreshService.cs
 │   ├── MetadataService.cs
 │   ├── PlaceholderVideoGenerator.cs
 │   ├── PluginServiceRegistrator.cs

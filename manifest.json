@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "9EB77BAF6CFD7210570AEDFDDA38F68D",
+        "timestamp": "2026-07-25T23:12:16.565Z",
+        "version": "3.40.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.40.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.40 - centralizing refresh functions",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "08585A29DBBD9E8D7ECC8D82D276C500",
+        "timestamp": "2026-07-25T23:12:16.565Z",
+        "version": "3.40.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.40.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.40 - centralizing refresh functions",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "144C58A5D60E333CA3CA6756442F2DCE",
+        "timestamp": "2026-07-25T23:12:16.565Z",
+        "version": "3.40.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.40.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.40 - centralizing refresh functions",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "0662396FA98E49E5B15564C18C730378",
         "timestamp": "2026-07-25T22:05:57.482Z",
         "version": "3.39.11.9",

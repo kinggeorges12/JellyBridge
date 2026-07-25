@@ -54,7 +54,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddTransient<FavoriteService>();
 
             // Register the library service
-            serviceCollection.AddTransient<LibraryService>();
+            serviceCollection.AddTransient<RefreshService>();
             
             // Register placeholder video generator as transient to avoid early initialization
             serviceCollection.AddTransient<PlaceholderVideoGenerator>();

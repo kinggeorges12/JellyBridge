@@ -12,14 +12,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     public class AdvancedSettingsController : ControllerBase
     {
         private readonly DebugLogger<AdvancedSettingsController> _logger;
-        private readonly LibraryService _libraryService;
+        private readonly RefreshService _refreshService;
         private readonly CleanupService _cleanupService;
         private readonly SyncService _syncService;
 
-        public AdvancedSettingsController(ILoggerFactory loggerFactory, LibraryService libraryService, CleanupService cleanupService, SyncService syncService)
+        public AdvancedSettingsController(ILoggerFactory loggerFactory, RefreshService refreshService, CleanupService cleanupService, SyncService syncService)
         {
             _logger = new DebugLogger<AdvancedSettingsController>(loggerFactory.CreateLogger<AdvancedSettingsController>());
-            _libraryService = libraryService;
+            _refreshService = refreshService;
             _cleanupService = cleanupService;
             _syncService = syncService;
         }
@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         _logger.LogDebug("Applying cleanup refresh plan (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
                             cleanupResult.Refresh.CreateRefresh, cleanupResult.Refresh.RemoveRefresh, cleanupResult.Refresh.RefreshImages);
                         _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                        await _syncService.ApplyRefreshAsync(cleanupResult: cleanupResult);
+                        await _refreshService.ApplyRefreshAsync(cleanupResult);
                         _logger.LogDebug("Scan of all libraries completed");
                     }
 
@@ -138,7 +138,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     // Call the refresh method (fire-and-await, no return value)
                     // Update refresh always runs to reload user data (play counts)
-                    _libraryService.ScanThenRefreshRunner(createMode: true, removeMode: true, refreshImages: true, force: true);
+                    _refreshService.ScanThenRefreshRunner(createMode: true, removeMode: true, refreshImages: true, force: true);
                     
                     _logger.LogInformation("JellyBridge library refresh initiated");
 
