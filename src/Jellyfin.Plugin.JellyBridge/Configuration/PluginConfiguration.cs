@@ -81,7 +81,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(SortTaskIntervalHours), 5.0 },
         { nameof(SortOrder), SortOrderOptions.Random },
         { nameof(MarkMediaPlayed), false },
-        { nameof(EnableSortLibraryRefresh), true },
+        { nameof(EnableSortLibraryRefresh), false },
 
         // Advanced Settings
         { nameof(TaskTimeoutMinutes), 10 },
