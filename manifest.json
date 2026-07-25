@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "A288E856DD76BC23A2CE9867C57AE8E8",
+        "timestamp": "2026-07-25T23:30:22.889Z",
+        "version": "3.41.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.41.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.41 - correctly calculate scan all libraries and wait for task refresh before running refresh library",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "C0B8867D501AD95041945119121AAD09",
+        "timestamp": "2026-07-25T23:30:22.889Z",
+        "version": "3.41.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.41.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.41 - correctly calculate scan all libraries and wait for task refresh before running refresh library",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "BB0F326240C316C221BFA5C9901BAEB7",
+        "timestamp": "2026-07-25T23:30:22.889Z",
+        "version": "3.41.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.41.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.41 - correctly calculate scan all libraries and wait for task refresh before running refresh library",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "9EB77BAF6CFD7210570AEDFDDA38F68D",
         "timestamp": "2026-07-25T23:12:16.565Z",
         "version": "3.40.11.9",
