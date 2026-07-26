@@ -401,7 +401,7 @@ public class BridgeService
                         existingItems.Any(tuple => tuple.FolderHash == folderHash))
                     {
                         mappedItems.Add(item);
-                        _logger.LogTrace("Filtered duplicate from input list: {MediaName} (ItemHash: {ItemHash})",
+                        _logger.LogTrace("Updating existing item from input list: {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
                         continue;
                     }
@@ -414,20 +414,27 @@ public class BridgeService
             }
             
             // Flatten the library list to search all hashes, making sure to include the network for duplicate content if enabled
-            var defaultLibraryHashes = useNetworkFolders && addDuplicateContent ?
+            var unknownLibraryHashes = useNetworkFolders && addDuplicateContent ?
                 libraryItemHashes[string.Empty].Select(t => t.NetworkHash).ToHashSet():
                 libraryItemHashes[string.Empty].Select(t => t.ItemHash).ToHashSet();
-            var defaultFolderHashes = libraryItemHashes[string.Empty].Select(t => t.FolderHash).ToHashSet();
+            var unknownFolderHashes = libraryItemHashes[string.Empty].Select(t => t.FolderHash).ToHashSet();
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
+                if (mappedItems.Contains(item))
+                    continue;
+                    
                 var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
                 var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
+
                 // If not using network folders, check if the item is in other libraries and if its unique, add it.
-                if ((defaultFolderHashes.Contains(folderHash) &&
-                        !seenInAnyLibrary.Contains(folderHash)) ||
-                    (!defaultLibraryHashes.Contains(itemHash) &&
-                        !seenInAnyLibrary.Contains(itemHash)))
+                if (unknownFolderHashes.Contains(folderHash)){
+                    seenInAnyLibrary.Add(itemHash);
+                    seenInAnyLibrary.Add(folderHash);
+                    mappedItems.Add(item);
+                    _logger.LogTrace("Adding item found in default folder: {MediaName} (ItemHash: {ItemHash})", item.MediaName, itemHash);
+                }
+                else if (!unknownLibraryHashes.Contains(itemHash) && !seenInAnyLibrary.Contains(itemHash))
                 {
                     seenInAnyLibrary.Add(itemHash);
                     seenInAnyLibrary.Add(folderHash);
