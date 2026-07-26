@@ -189,22 +189,15 @@ public class DiscoverService
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         var duplicates = new List<IJellyseerrItem>();
-        if (!useNetworkFolders || (useNetworkFolders && !addDuplicateContent))
+        
+        // Network folders are not used, but we need to filter out localized language duplicates by hash
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
+        foreach (var item in allItems)
         {
-            // Network folders are not used, but we need to filter out localized language duplicates by hash
-            var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
-            foreach (var item in allItems)
+            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)))
             {
-                if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)))
-                {
-                    duplicates.Add(item);
-                }
+                duplicates.Add(item);
             }
-        }
-        else
-        {
-            _logger.LogDebug("Allowing duplicate library items: both UseNetworkFolders and AddDuplicateContent are enabled");
-            return (newlyIgnored, existingIgnored);
         }
 
         var ignoreFileTasks = new List<Task>();
