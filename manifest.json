@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "AF49E4D60A3A28B5F2613F69C04BBF7F",
+        "timestamp": "2026-07-26T04:42:21.696Z",
+        "version": "3.46.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.46.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.46 - repair duplicate filtering for network folders",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "6E237FCA208D781BF33E0D527EFEACEF",
+        "timestamp": "2026-07-26T04:42:21.696Z",
+        "version": "3.46.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.46.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.46 - repair duplicate filtering for network folders",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "722F74D61B22F795C97873345F8EAD94",
+        "timestamp": "2026-07-26T04:42:21.696Z",
+        "version": "3.46.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.46.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.46 - repair duplicate filtering for network folders",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "0EE54933174FCE5AAD9856C113789508",
         "timestamp": "2026-07-26T04:34:45.739Z",
         "version": "3.45.11.9",
