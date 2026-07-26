@@ -396,9 +396,9 @@ public class BridgeService
                     }
 
                     // Check for duplicates within the current library, add only if the existing folder hash matches
+                    var existingLibrary = libraryItemHashes[library.LibraryName];
                     var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
-                    if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingItems) &&
-                        existingItems.Any(tuple => tuple.FolderHash == folderHash))
+                    if (existingLibrary.Any(tuple => tuple.FolderHash == folderHash))
                     {
                         mappedItems.Add(item);
                         _logger.LogTrace("Updating existing item from input list: {MediaName} (ItemHash: {ItemHash})",
@@ -406,6 +406,14 @@ public class BridgeService
                         continue;
                     }
 
+                    // If the item is still a duplicate hash, then it has been renamed. skip it!
+                    if (existingLibrary.Any(tuple => tuple.ItemHash == itemHash))
+                    {
+                        _logger.LogTrace("Updating existing item from input list: {MediaName} (ItemHash: {ItemHash})",
+                            item.MediaName, itemHash);
+                        continue;
+                    }
+                    
                     // Item is unique and doesn't exist in its target library - add it
                     mappedItems.Add(item);
                     _logger.LogTrace("Adding new item to library '{Library}': {MediaName} (ItemHash: {ItemHash})",
