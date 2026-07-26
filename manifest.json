@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-26T17:36:35.574Z",
+        "dependencies": [],
+        "checksum": "C35A5A405E51F6DB97E398E2A242BD9C",
+        "version": "3.54.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.54.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.54 - fixing waiting for deleting all jellybridge data"
+      },
+      {
+        "timestamp": "2026-07-26T17:36:35.574Z",
+        "dependencies": [],
+        "checksum": "1EF6076A6D6C7B03C17F6A03B209781E",
+        "version": "3.54.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.54.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.54 - fixing waiting for deleting all jellybridge data"
+      },
+      {
+        "timestamp": "2026-07-26T17:36:35.574Z",
+        "dependencies": [],
+        "checksum": "E44D377E9511EAF9CE0B1BA0D7315ADD",
+        "version": "3.54.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.54.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.54 - fixing waiting for deleting all jellybridge data"
+      },
+      {
         "timestamp": "2026-07-26T17:18:51.379Z",
         "dependencies": [],
         "checksum": "30B503B96EC3FBD57B42AD794236B7F7",
