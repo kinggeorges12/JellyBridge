@@ -352,7 +352,7 @@ public class BridgeService
                 var filteredItems = FilterAlreadyIgnoredItems(library.Items);
                 var hashes = filteredItems
                     .Select(item => (
-                        ItemHash: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent),
+                        ItemHash: item.GetItemHashCode(),
                         FolderHash: item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)
                     ))
                     .ToHashSet();
@@ -406,7 +406,7 @@ public class BridgeService
                     }
 
                     // Look for new items or duplicate items with different folder names
-                    var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
+                    var itemHash = item.GetItemHashCode();
                     if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
                     {
                         _logger.LogTrace("Filtered duplicate from input list (within library '{LibraryName}'): {MediaName} (ItemHash: {ItemHash})",
@@ -447,7 +447,7 @@ public class BridgeService
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
-                var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
+                var itemHash = item.GetItemHashCode();
                 var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
                 if (seenAnywhere.Contains(itemHash) || seenAnywhere.Contains(folderHash))
                 {
