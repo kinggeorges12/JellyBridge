@@ -101,9 +101,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var success = await Plugin.ExecuteWithLockAsync<bool>(async () =>
                 {
-                    _logger.LogInformation("Waiting for the library refresh to complete before sorting the JellyBridge library...");
-                    await _refreshService.WaitForTaskRefreshLibrary();
-
                     _logger.LogInformation("Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
                     _logger.LogTrace("Deleting all contents inside library directory: {LibraryDir}", libraryDir);

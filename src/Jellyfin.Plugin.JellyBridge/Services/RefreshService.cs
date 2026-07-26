@@ -257,19 +257,32 @@ public class RefreshService
         return queuedCount;
     }
 
-    public async Task<bool> WaitForTaskRefreshLibrary()
+    /// <summary>
+    /// Checks if the "Refresh Library" task is currently running.
+    /// </summary>
+    public bool IsTaskRefreshLibraryRunning()
     {
         // Task is stored as the localized name
         var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");
 
         // Find the task worker
         var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == localizedTaskName);
-
         if (taskWorker == null)
         {
             _logger.LogWarning($"{localizedTaskName} task not found.");
             return false;
         }
+
+        // get the State property
+        var state = taskWorker.State;
+        return state == TaskState.Running;
+    }
+
+    /// <summary>
+    /// Waits for the "Refresh Library" task to complete, with a timeout.
+    /// </summary>
+    public async Task<bool> WaitForTaskRefreshLibrary()
+    {
 
         // Delay start of task to allow it to begin processing
         await Task.Delay(1000);
@@ -279,25 +292,18 @@ public class RefreshService
         var taskFinished = false;
         while (DateTime.UtcNow < endTime)
         {
-            // get the State property
-            var state = taskWorker.State;
-            
-            // If it's not running or queued, it's done
-            if (state != TaskState.Running)
+            if(IsTaskRefreshLibraryRunning())
             {
-                _logger.LogTrace($"Task completed with state: {state}");
                 taskFinished = true;
                 break;
             }
-            
-            _logger.LogTrace($"Task state: {state}, waiting...");
+            _logger.LogTrace($"TaskRefreshLibrary is still running, waiting a second...");
             await Task.Delay(1000);
         }
 
         if (taskFinished == false)
         {
             _logger.LogWarning("Scan timed out after {Timeout} minutes", timeout.TotalMinutes);
-            return false;
         }
         return taskFinished;
     }
