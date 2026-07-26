@@ -137,13 +137,10 @@ public class BridgeService
             }
 
             // 5. Create the empty library for unmatched items
-            if (unmatchedItems.Count > 0)
-            {
-                var emptyLibrary = new BridgeLibrary(string.Empty);
-                emptyLibrary.AddRange(unmatchedItems);
-                libraryMap[string.Empty] = emptyLibrary;
-                _logger.LogTrace("Created empty library with {Count} unmatched items", unmatchedItems.Count);
-            }
+            var emptyLibrary = new BridgeLibrary(string.Empty);
+            emptyLibrary.AddRange(unmatchedItems);
+            libraryMap[string.Empty] = emptyLibrary;
+            _logger.LogTrace("Created empty library with {Count} unmatched items", unmatchedItems.Count);
 
             // 6. Convert to list and log results
             var results = libraryMap.Values.ToList();
@@ -311,6 +308,9 @@ public class BridgeService
                 _logger.LogWarning("No JellyBridge libraries found");
                 return new List<IJellyseerrItem>();
             }
+            _logger.LogDebug("Loaded libraries from metadata {LibraryCount}: {LibraryNames}",
+                existingLibraries.Count,
+                string.Join(", ", existingLibraries.Select(kvp => kvp.LibraryName ?? "(Empty)")));
 
             _logger.LogTrace("Built location-to-library lookup with {Count} entries from {LibraryCount} libraries", 
                 existingLibraries.SelectMany(lib => lib.Locations).Count(), existingLibraries.Count);
@@ -378,7 +378,8 @@ public class BridgeService
                     
                     // Ensure we capture those items that are not in a library
                     var itemHash = item.GetItemHashCode();
-                    var seenFirstTime = seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
+                    var seenFirstTime = seenInAnyLibrary.Add(itemHash);
+                    seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
 
                     // Look for new items or duplicate items with different folder names
                     if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
