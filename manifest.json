@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-26T05:28:56.925Z",
+        "targetAbi": "10.11.9.0",
+        "version": "3.51.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.51 - debugging base case",
+        "dependencies": [],
+        "checksum": "AD8B4C06AD34AF2E9B8D8F496872AF20",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.51.11.9.zip"
+      },
+      {
+        "timestamp": "2026-07-26T05:28:56.925Z",
+        "targetAbi": "10.11.0.0",
+        "version": "3.51.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.51 - debugging base case",
+        "dependencies": [],
+        "checksum": "EC377E35C1BAB206207E6B03AB688E07",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.51.11.0.zip"
+      },
+      {
+        "timestamp": "2026-07-26T05:28:56.925Z",
+        "targetAbi": "10.10.0.0",
+        "version": "3.51.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.51 - debugging base case",
+        "dependencies": [],
+        "checksum": "0DB86DF9CDAE341CECFABB12402311BD",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.51.10.7.zip"
+      },
+      {
         "timestamp": "2026-07-26T05:24:18.703Z",
         "targetAbi": "10.11.9.0",
         "version": "3.50.11.9",

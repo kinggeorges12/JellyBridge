@@ -409,7 +409,7 @@ public class BridgeService
                     // If the item is still a duplicate hash, then it has been renamed. skip it!
                     if (existingLibrary.Any(tuple => tuple.ItemHash == itemHash))
                     {
-                        _logger.LogTrace("Updating existing item from input list: {MediaName} (ItemHash: {ItemHash})",
+                        _logger.LogTrace("Skipping duplicate item from input list: {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
                         continue;
                     }
@@ -429,9 +429,6 @@ public class BridgeService
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
-                if (mappedItems.Contains(item))
-                    continue;
-                    
                 var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
                 var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
 
