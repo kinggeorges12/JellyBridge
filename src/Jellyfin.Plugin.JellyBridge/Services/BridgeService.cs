@@ -84,43 +84,15 @@ public class BridgeService
                 libraryMap[kvp.Key] = new BridgeLibrary(kvp.Key, kvp.Value);
             }
 
-            // 3. Collect all directories
-            var allMovieDirs = new List<string>();
-            var allShowDirs = new List<string>();
+            // 3. Read metadata items from all directories
+            // var (movies, shows) = await _metadataService.ReadMetadataAsync(allMovieDirs, allShowDirs);
+            var (movies, shows) = await _metadataService.ReadMetadataAsync();
 
-            foreach (var libraryEntry in bridgeLibraries)
-            {
-                foreach (var libraryLocation in libraryEntry.Value)
-                {
-                    try
-                    {
-                        var (movieDirs, showDirs) = _metadataService.ReadMetadataFolders(libraryLocation);
-                        allMovieDirs.AddRange(movieDirs);
-                        allShowDirs.AddRange(showDirs);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Error reading metadata folders from library location: {Location}", libraryLocation);
-                    }
-                }
-            }
-
-            if (allMovieDirs.Count == 0 && allShowDirs.Count == 0)
-            {
-                _logger.LogDebug("No metadata directories found in any JellyBridge library");
-                return libraryMap.Values.ToList();
-            }
-
-            _logger.LogDebug("Found {MovieCount} movie directories and {ShowCount} show directories across all libraries",
-                allMovieDirs.Count, allShowDirs.Count);
-
-            // 4. Read metadata items from all directories
-            var (movies, shows) = await _metadataService.ReadMetadataAsync(allMovieDirs, allShowDirs);
-
-            // 5. Map items to libraries
+            // 4. Map items to libraries
             var unmatchedItems = new List<IJellyseerrItem>();
+            var allItems = movies.Cast<IJellyseerrItem>().Concat(shows.Cast<IJellyseerrItem>()).ToList();
 
-            foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
+            foreach (var item in allItems)
             {
                 try
                 {
@@ -135,11 +107,15 @@ public class BridgeService
                     }
 
                     // Find which library contains this directory
-                    var matchedLibrary = libraryMap.Values.FirstOrDefault(lib => lib.ContainsLocation(normalizedExpected));
+                    var matchedLibraries = libraryMap.Values.Where(lib => lib.ContainsLocation(normalizedExpected)).ToList();
 
-                    if (matchedLibrary != null)
+                    if (matchedLibraries.Any())
                     {
-                        matchedLibrary.Add(item);
+                        // Add to all matched libraries
+                        foreach (var library in matchedLibraries)
+                        {
+                            library.Add(item);
+                        }
                     }
                     else if (FolderUtils.IsPathInSyncDirectory(expectedDirectory))
                     {
@@ -160,7 +136,7 @@ public class BridgeService
                 }
             }
 
-            // 6. Create the empty library for unmatched items
+            // 5. Create the empty library for unmatched items
             if (unmatchedItems.Count > 0)
             {
                 var emptyLibrary = new BridgeLibrary(string.Empty);
@@ -169,7 +145,7 @@ public class BridgeService
                 _logger.LogTrace("Created empty library with {Count} unmatched items", unmatchedItems.Count);
             }
 
-            // 7. Convert to list and log results
+            // 6. Convert to list and log results
             var results = libraryMap.Values.ToList();
             _logger.LogDebug("Read {LibraryCount} libraries with {ItemCount} total items",
                 results.Count, results.Sum(l => l.Count));
@@ -341,7 +317,7 @@ public class BridgeService
 
             // 3. Build a dictionary: library name -> set of existing item hashes in that library
             // Use the BridgeLibrary's built-in ToDeduplicationSet() method
-            var libraryItemHashes = new Dictionary<string, HashSet<(int ItemHash, int FolderHash)>>();
+            var libraryItemHashes = new Dictionary<string, HashSet<(int ItemHash, int FolderHash, int NetworkHash)>>();
             
             foreach (var library in existingLibraries)
             {
@@ -353,7 +329,8 @@ public class BridgeService
                 var hashes = filteredItems
                     .Select(item => (
                         ItemHash: item.GetItemHashCode(),
-                        FolderHash: item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)
+                        FolderHash: item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent),
+                        NetworkHash: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent)
                     ))
                     .ToHashSet();
                 libraryItemHashes[libraryName] = hashes;
@@ -370,10 +347,15 @@ public class BridgeService
             // Store all mapped items from the libraries
             var mappedItems = new List<IJellyseerrItem>();
             // Track duplicates within the incoming list
-            var seenAnywhere = new HashSet<int>();
+            var seenInAnyLibrary = new HashSet<int>();
 
             foreach (var library in existingLibraries)
             {
+                if (library.LibraryName == string.Empty)
+                {
+                    _logger.LogTrace("Skipping empty library for unmatched items");
+                    continue;
+                }
                 // 4. Process each input item
                 var seenInLibrary = new HashSet<int>(); // Track duplicates within the incoming list
 
@@ -393,40 +375,32 @@ public class BridgeService
                             item.MediaName, item.Id, string.IsNullOrEmpty(library.LibraryName) ? "(Empty)" : library.LibraryName);
                         continue;
                     }
-
-                    var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
-                    // Check folder hash to determine if the item is already in this exact location in the library
-                    if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingFolders) &&
-                        existingFolders.Any(tuple => tuple.FolderHash == folderHash))
-                    {
-                        seenAnywhere.Add(folderHash);
-                        mappedItems.Add(item);
-                        _logger.LogTrace("Adding existing item to library '{Library}': {MediaName} (FolderHash: {FolderHash})",
-                            library.LibraryName, item.MediaName, folderHash);
-                    }
+                    
+                    // Ensure we capture those items that are not in a library
+                    var itemHash = item.GetItemHashCode();
+                    var seenFirstTime = seenInAnyLibrary.Add(itemHash);
+                    seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
 
                     // Look for new items or duplicate items with different folder names
-                    var itemHash = item.GetItemHashCode();
                     if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
                     {
                         _logger.LogTrace("Filtered duplicate from input list (within library '{LibraryName}'): {MediaName} (ItemHash: {ItemHash})",
                             string.IsNullOrEmpty(library.LibraryName) ? "(Empty)" : library.LibraryName, item.MediaName, itemHash);
                         continue;
                     }
-                    else if(!(useNetworkFolders && addDuplicateContent) && !seenAnywhere.Add(itemHash))
+                    else if(!(useNetworkFolders && addDuplicateContent) && !seenFirstTime)
                     {
                         _logger.LogTrace("Filtered duplicate from input list (across libraries): {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
                         continue;
                     }
-                    
-                    // Ensure we capture those items taht are not in a library
-                    seenAnywhere.Add(itemHash);
 
-                    // Check for duplicates within the current library
+                    // Check for duplicates within the current library, add only if the existing folder hash matches
+                    var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
                     if (libraryItemHashes.TryGetValue(library.LibraryName, out var existingItems) &&
-                        existingItems.Any(tuple => tuple.ItemHash == itemHash))
+                        existingItems.Any(tuple => tuple.FolderHash == folderHash))
                     {
+                        mappedItems.Add(item);
                         _logger.LogTrace("Filtered duplicate from input list: {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
                         continue;
@@ -439,29 +413,24 @@ public class BridgeService
                 }
             }
             
-            // Flatten the library list to search all hashes
-            var (allItemHashes, allFolderHashes) = (
-                libraryItemHashes.SelectMany(kvp => kvp.Value.Select(t => t.ItemHash)).ToHashSet(),
-                libraryItemHashes.SelectMany(kvp => kvp.Value.Select(t => t.FolderHash)).ToHashSet()
-            );
+            // Flatten the library list to search all hashes, making sure to include the network for duplicate content if enabled
+            var defaultLibraryHashes = useNetworkFolders && addDuplicateContent ?
+                libraryItemHashes[string.Empty].Select(t => t.NetworkHash).ToHashSet():
+                libraryItemHashes[string.Empty].Select(t => t.ItemHash).ToHashSet();
+            var defaultFolderHashes = libraryItemHashes[string.Empty].Select(t => t.FolderHash).ToHashSet();
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
-                var itemHash = item.GetItemHashCode();
+                var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
                 var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
-                if (seenAnywhere.Contains(itemHash) || seenAnywhere.Contains(folderHash))
+                // If not using network folders, check if the item is in other libraries and if its unique, add it.
+                if ((defaultFolderHashes.Contains(folderHash) &&
+                        !seenInAnyLibrary.Contains(folderHash)) ||
+                    (!defaultLibraryHashes.Contains(itemHash) &&
+                        !seenInAnyLibrary.Contains(itemHash)))
                 {
-                    continue; // Already processed in the previous loop
-                }
-                if(allFolderHashes.Contains(folderHash))
-                {
-                    seenAnywhere.Add(folderHash);
-                    mappedItems.Add(item);
-                    _logger.LogTrace("Adding item not found in any library  {MediaName} (FolderHash: {folderHash})", item.MediaName, folderHash);
-                }
-                if(!allItemHashes.Contains(itemHash))
-                {
-                    seenAnywhere.Add(itemHash);
+                    seenInAnyLibrary.Add(itemHash);
+                    seenInAnyLibrary.Add(folderHash);
                     mappedItems.Add(item);
                     _logger.LogTrace("Adding item not found in any library: {MediaName} (ItemHash: {ItemHash})", item.MediaName, itemHash);
                 }
