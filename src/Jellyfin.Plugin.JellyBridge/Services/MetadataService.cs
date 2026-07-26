@@ -254,7 +254,7 @@ public class MetadataService
             if (!FolderUtils.FolderExistsThrowNull(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
-                _logger.LogDebug("Created directory: {TargetDirectory}", targetDirectory);
+                _logger.LogTrace("Created directory: {TargetDirectory}", targetDirectory);
             }
 
             // Set CreatedDate to current time when writing

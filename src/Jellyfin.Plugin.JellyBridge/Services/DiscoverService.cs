@@ -192,13 +192,6 @@ public class DiscoverService
         
         // Network folders are not used, but we need to filter out localized language duplicates by hash
         var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
-        _logger.LogInformation("Unique items with folder hashes ({Count}): {Hashes}", 
-        uniqueItems.Count,
-        string.Join(",\n", uniqueItems.Select(item => $"{item.MediaName} ({item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)})")));
-
-        _logger.LogInformation("All items with folder hashes ({Count}): {Hashes}", 
-        allItems.Count,
-        string.Join(",\n", allItems.Select(item => $"{item.MediaName} ({item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)})")));
 
         foreach (var item in allItems)
         {
