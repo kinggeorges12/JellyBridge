@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-26T20:04:11.308Z",
+        "dependencies": [],
+        "checksum": "56C82266459C39BCE69E82B697826113",
+        "version": "3.55.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.55.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.55 - always wait for task refresh when running execute with lock"
+      },
+      {
+        "timestamp": "2026-07-26T20:04:11.308Z",
+        "dependencies": [],
+        "checksum": "C754D7ECA4AB24109B74B2B095390A2A",
+        "version": "3.55.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.55.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.55 - always wait for task refresh when running execute with lock"
+      },
+      {
+        "timestamp": "2026-07-26T20:04:11.308Z",
+        "dependencies": [],
+        "checksum": "0270AB6EB16A5E292413836BFE788479",
+        "version": "3.55.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.55.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.55 - always wait for task refresh when running execute with lock"
+      },
+      {
         "timestamp": "2026-07-26T17:36:35.574Z",
         "dependencies": [],
         "checksum": "C35A5A405E51F6DB97E398E2A242BD9C",

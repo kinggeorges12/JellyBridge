@@ -61,11 +61,6 @@ public class SortService
                 _logger.LogInformation("Library refresh is enabled. Running a full library refresh before sorting the JellyBridge library...");
                 await _refreshService.ScanAllLibraries();
             }
-            else
-            {
-                _logger.LogInformation("Waiting for the library refresh to complete before sorting the JellyBridge library...");
-                await _refreshService.WaitForTaskRefreshLibrary();
-            }
 
             // Get all users
             var users = _userManager.GetAllUsers().ToList();
