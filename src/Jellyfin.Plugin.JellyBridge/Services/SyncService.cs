@@ -99,7 +99,7 @@ public partial class SyncService
 
             // Step 2: Filter duplicates for networks
             var uniqueDiscoverMedia = await _bridgeService.FilterDuplicatesByLibrary(discoverMedia);
-            _logger.LogInformation("Step 2: Filtered {OriginalCount} items to {UniqueCount} unique items across networks", 
+            _logger.LogDebug("Step 2: Filtered {OriginalCount} items to {UniqueCount} unique items across networks", 
                 discoverMedia.Count, uniqueDiscoverMedia.Count);
 
             // Step 3: Process movies and TV shows
