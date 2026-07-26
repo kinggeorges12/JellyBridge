@@ -378,8 +378,7 @@ public class BridgeService
                     
                     // Ensure we capture those items that are not in a library
                     var itemHash = item.GetItemHashCode();
-                    var seenFirstTime = seenInAnyLibrary.Add(itemHash);
-                    seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
+                    var seenFirstTime = seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
 
                     // Look for new items or duplicate items with different folder names
                     if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
