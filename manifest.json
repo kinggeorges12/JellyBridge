@@ -10,6 +10,33 @@
     "versions": [
       {
         "dependencies": [],
+        "checksum": "1BB7E3D7C194F6115A95CB0417BC83E8",
+        "timestamp": "2026-07-26T04:54:44.313Z",
+        "version": "3.47.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.47.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: v3.47 - have to check item code vs folder hash",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "3F49F2AA86077D057B43F324B095A84A",
+        "timestamp": "2026-07-26T04:54:44.313Z",
+        "version": "3.47.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.47.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: v3.47 - have to check item code vs folder hash",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "dependencies": [],
+        "checksum": "D22D0364D318BC66756734E08D815DE1",
+        "timestamp": "2026-07-26T04:54:44.313Z",
+        "version": "3.47.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.47.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: v3.47 - have to check item code vs folder hash",
+        "targetAbi": "10.10.0.0"
+      },
+      {
+        "dependencies": [],
         "checksum": "AF49E4D60A3A28B5F2613F69C04BBF7F",
         "timestamp": "2026-07-26T04:42:21.696Z",
         "version": "3.46.11.9",
