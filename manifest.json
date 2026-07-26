@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-26T05:23:35.472Z",
+        "targetAbi": "10.11.9.0",
+        "version": "3.49.11.9",
+        "changelog": "Jellyfin 10.11.9: v3.49 - have to check item code vs folder hash",
+        "dependencies": [],
+        "checksum": "37E4B12E5F53F4A220D4628303117070",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.49.11.9.zip"
+      },
+      {
+        "timestamp": "2026-07-26T05:23:35.472Z",
+        "targetAbi": "10.11.0.0",
+        "version": "3.49.11.0",
+        "changelog": "Jellyfin 10.11.0: v3.49 - have to check item code vs folder hash",
+        "dependencies": [],
+        "checksum": "7DA465FB1A5E7D611505B005C5EE8A40",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.49.11.0.zip"
+      },
+      {
+        "timestamp": "2026-07-26T05:23:35.472Z",
+        "targetAbi": "10.10.0.0",
+        "version": "3.49.10.7",
+        "changelog": "Jellyfin 10.10.7: v3.49 - have to check item code vs folder hash",
+        "dependencies": [],
+        "checksum": "3C35E3D35A6A4051ED3DAC8FEF5A78D0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.49.10.7.zip"
+      },
+      {
         "timestamp": "2026-07-26T05:23:03.018Z",
         "targetAbi": "10.11.9.0",
         "version": "3.48.11.9",

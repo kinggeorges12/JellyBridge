@@ -197,7 +197,7 @@ public class DiscoverService
         string.Join(",\n", uniqueFolderHashes));
 
         _logger.LogInformation("All items with folder hashes ({Count}): {Hashes}", 
-        uniqueFolderHashes.Count,
+        allItems.Count,
         string.Join(",\n", allItems.Select(item => $"{item.MediaName} ({item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)})")));
 
         foreach (var item in allItems)
