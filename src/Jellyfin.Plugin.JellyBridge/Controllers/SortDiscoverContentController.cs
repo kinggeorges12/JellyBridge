@@ -50,7 +50,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         success = sortResult.Success,
                         message = sortResult.Message
                     };
-                }, _logger, "Sort Library");
+                }, _logger, "Sort Library", awaitRefresh: true);
 
                 return Ok(result);
             }

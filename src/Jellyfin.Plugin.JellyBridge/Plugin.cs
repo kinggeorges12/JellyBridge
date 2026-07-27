@@ -160,7 +160,7 @@ namespace Jellyfin.Plugin.JellyBridge
         /// Executes an operation with Jellyfin-style locking that pauses instead of canceling, per operation name.
         /// Only one running and one queued per operation name.
         /// </summary>
-        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
+        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, bool awaitRefresh = false, TimeSpan? timeout = null)
         {
             timeout ??= TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes))); // Use configured task timeout
             var startTime = DateTime.UtcNow;
@@ -172,7 +172,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 lock (_operationSyncLock)
                 {
 
-                    if (Instance._refreshService.IsTaskRefreshLibraryRunning())
+                    if (awaitRefresh && Instance._refreshService.IsTaskRefreshLibraryRunning())
                     {
                         Instance._logger.LogDebug("Waiting for the library refresh to complete before sorting the JellyBridge library...");
                     }
