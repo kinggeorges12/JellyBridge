@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.75 - removing duplicate log for cleanup task",
+        "version": "3.75.11.9",
+        "timestamp": "2026-07-28T17:45:53.336Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.75.11.9.zip",
+        "checksum": "C4CFC12C8A1C2B8F632BCE61B11EF35B",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.75 - removing duplicate log for cleanup task",
+        "version": "3.75.11.0",
+        "timestamp": "2026-07-28T17:45:53.336Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.75.11.0.zip",
+        "checksum": "C615F6046C426830E83CB23730087B9F",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.75 - removing duplicate log for cleanup task",
+        "version": "3.75.10.7",
+        "timestamp": "2026-07-28T17:45:53.336Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.75.10.7.zip",
+        "checksum": "36BB4A4F2E55B05013B1143B80F02127",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.74 - readme updates, fixing sort task refresh trigger",
         "version": "3.74.11.9",
         "timestamp": "2026-07-28T17:16:55.136Z",
