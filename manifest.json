@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T05:12:04.258Z",
+        "dependencies": [],
+        "checksum": "E5ADBE7834187E25CBFDCC0B75FAE5E0",
+        "version": "3.63.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.63.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.63 - adding descriptions to organize"
+      },
+      {
+        "timestamp": "2026-07-28T05:12:04.258Z",
+        "dependencies": [],
+        "checksum": "CFBF804749278A1D4782E2B1AD5CCB83",
+        "version": "3.63.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.63.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.63 - adding descriptions to organize"
+      },
+      {
+        "timestamp": "2026-07-28T05:12:04.258Z",
+        "dependencies": [],
+        "checksum": "1ABF09DB6CD274F54519B4954996889F",
+        "version": "3.63.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.63.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.63 - adding descriptions to organize"
+      },
+      {
         "timestamp": "2026-07-28T05:03:58.426Z",
         "dependencies": [],
         "checksum": "6C4A7709093C0D914423341CA5B99554",
