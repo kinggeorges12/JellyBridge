@@ -85,9 +85,6 @@ public class CleanupService
             
             result.Success = true;
             result.Message = "✅ Cleanup completed successfully";
-
-            // Log the full output using CleanupResult's ToString()
-            _logger.LogInformation("Missing data removed and placeholders rebuilt:\n{CleanupOutput}", result.ToString());
         }
         catch (Exception ex)
         {
