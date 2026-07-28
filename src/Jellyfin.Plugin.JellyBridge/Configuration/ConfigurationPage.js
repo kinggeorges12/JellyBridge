@@ -401,7 +401,7 @@ function createVirtualFolders(page, libraryName, libraryType, directories) {
 }
 
 function createDefaultLibrary(page) {
-    const config = window.configJellyBridge || {};
+    const UseMixedMediaFolders = nullIfDefault(page.querySelector('#UseMixedMediaFolders').checked, config.ConfigDefaults.UseMixedMediaFolders);
     const createButton = page.querySelector('#createDefaultLibrary');
     const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
     const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
@@ -409,8 +409,9 @@ function createDefaultLibrary(page) {
     const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
     const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
     const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
-    const libraryDisplayMessage = config.UseMixedMediaFolders === false ? `a new library "${libraryDisplayName}"` :
-        `new libraries"${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`;
+    const libraryDisplayMessage = UseMixedMediaFolders === false ?
+        `new libraries"${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
+        `a new library "${libraryDisplayName}"`;
 
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
@@ -438,7 +439,7 @@ function createDefaultLibrary(page) {
             }).then(function (response) {
                 // Send request for a new library
                 let apiCalls;
-                if (config.UseMixedMediaFolders === false) {
+                if (UseMixedMediaFolders === false) {
                     apiCalls = Promise.all([
                         createVirtualFolders(page, libraryDisplayName + ' Movies', 'movies', response.movieFolders),
                         createVirtualFolders(page, libraryDisplayName + ' Shows', 'tvshows', response.showFolders)

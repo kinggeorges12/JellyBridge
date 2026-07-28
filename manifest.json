@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T05:18:20.687Z",
+        "dependencies": [],
+        "checksum": "664C16122B9AFC052BB7A2248A1EEAD3",
+        "version": "3.64.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.64.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.64 - fixing library name fetch for create button"
+      },
+      {
+        "timestamp": "2026-07-28T05:18:20.687Z",
+        "dependencies": [],
+        "checksum": "F5E6069415A7E18288939A6500B069FA",
+        "version": "3.64.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.64.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.64 - fixing library name fetch for create button"
+      },
+      {
+        "timestamp": "2026-07-28T05:18:20.687Z",
+        "dependencies": [],
+        "checksum": "C1B0DA667826CDC4D8006FDAAB629593",
+        "version": "3.64.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.64.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.64 - fixing library name fetch for create button"
+      },
+      {
         "timestamp": "2026-07-28T05:12:04.258Z",
         "dependencies": [],
         "checksum": "E5ADBE7834187E25CBFDCC0B75FAE5E0",
