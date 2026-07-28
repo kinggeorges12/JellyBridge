@@ -224,7 +224,7 @@
                     cursor: not-allowed;
                     /* Allow pointer events on container so scroll handlers work */
                 }
-                .hide-depends-on.disabled {
+                .hide-depends.disabled {
                     display: none !important;
                 }
                 
@@ -631,7 +631,7 @@
                             <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div class="checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="UseMixedMediaFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Mixed Movies and Shows</span>
@@ -643,9 +643,13 @@
                             <div class="fieldDescription">Store all media in a single directory. Disabling this setting will create separate folders for Movies and Shows.</div>
                         </div>
                         <div id="LibraryDisplayNameContainer">
-                            <input is="emby-input" type="text" id="LibraryDisplayName" placeholder="Discover" data-depends-on="UseMixedMediaFolders"/>
-                            <input is="emby-input" type="text" id="MovieLibraryDisplayName" placeholder="Discover Movies" data-depends-off="UseMixedMediaFolders"/>
-                            <input is="emby-input" type="text" id="ShowLibraryDisplayName" placeholder="Discover Shows" data-depends-off="UseMixedMediaFolders"/>
+                            <div data-depends-on="UseMixedMediaFolders" class="hide-depends">
+                                <input is="emby-input" type="text" id="LibraryDisplayName" placeholder="Discover"/>
+                            </div>
+                            <div data-depends-off="UseMixedMediaFolders" class="hide-depends">
+                                <input is="emby-input" type="text" id="MovieLibraryDisplayName" placeholder="Discover Movies"/>
+                                <input is="emby-input" type="text" id="ShowLibraryDisplayName" placeholder="Discover Shows"/>
+                            </div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
@@ -689,7 +693,7 @@
                                         </span>
                                     </label>
                                     <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
-                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends-on" data-depends-on="AddDuplicateContent">
+                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends" data-depends-on="AddDuplicateContent">
                                         <strong>💡 Recommended:</strong> If you have already synced discover content, you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the existing data.
                                         <br>
                                         <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
