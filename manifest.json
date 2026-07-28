@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.78 - library creation wasn't waiting for settings",
+        "version": "3.78.11.9",
+        "timestamp": "2026-07-28T19:03:33.174Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.78.11.9.zip",
+        "checksum": "414F25905787D0B59BDFCECCFC5146BC",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.78 - library creation wasn't waiting for settings",
+        "version": "3.78.11.0",
+        "timestamp": "2026-07-28T19:03:33.174Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.78.11.0.zip",
+        "checksum": "D40E3D305AAD18813107999D1169FBD9",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.78 - library creation wasn't waiting for settings",
+        "version": "3.78.10.7",
+        "timestamp": "2026-07-28T19:03:33.174Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.78.10.7.zip",
+        "checksum": "3AEBB11CEC940192A9CA7200ED800E41",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.77 - fixing library creation to disable subtitles",
         "version": "3.77.11.9",
         "timestamp": "2026-07-28T18:32:56.742Z",

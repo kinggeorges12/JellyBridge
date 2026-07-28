@@ -453,7 +453,7 @@ function getDefaultLibrarySettings(page, directories) {
     };
 
     // Validate library settings
-    ApiClient.fetch({
+    return ApiClient.fetch({
         'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
         'headers': {'accept': 'application/json'},
         'dataType': 'json'
@@ -509,29 +509,31 @@ function getDefaultLibrarySettings(page, directories) {
                 })
                 .filter(type => type !== null); // Remove unavailable types
         }
+        return libraryJson;
     }).catch(function(error) {
         console.error('❌ Error fetching library options:', error);
-        return Promise.reject(error);
+        return libraryJson;
     });
-
-    return libraryJson;
 }
 
 function createVirtualFolders(page, libraryName, libraryType, directories) {
-    return ApiClient.ajax({
-        url: ApiClient.getUrl('Library/VirtualFolders', {
+    // Get settings if available, then create the virtual folder
+    return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
+        return ApiClient.ajax({
+            url: ApiClient.getUrl('Library/VirtualFolders', {
                 refreshLibrary: true,
                 name: libraryName,
                 collectionType: libraryType
             }),
-        type: 'POST',
-        data: JSON.stringify(getDefaultLibrarySettings(page, directories)),
-        contentType: 'application/json',
-    }).then(function(response) {
-        DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
-    }).catch(function(error) {
-        DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
-        return Promise.reject(error);
+            type: 'POST',
+            data: JSON.stringify(libraryJson),
+            contentType: 'application/json'
+        }).then(function(response) {
+            DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
+        }).catch(function(error) {
+            DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
+            return Promise.reject(error);
+        });
     });
 }
 
@@ -577,8 +579,8 @@ function createDefaultLibrary(page) {
                 let apiCalls;
                 if (UseMixedMediaLibrary === false) {
                     apiCalls = Promise.all([
-                        createVirtualFolders(page, libraryDisplayName + ' Movies', 'movies', response.movieFolders),
-                        createVirtualFolders(page, libraryDisplayName + ' Shows', 'tvshows', response.showFolders)
+                        createVirtualFolders(page, movieLibraryDisplayName, 'movies', response.movieFolders),
+                        createVirtualFolders(page, showLibraryDisplayName, 'tvshows', response.showFolders)
                     ]);
                 } else {
                     apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
