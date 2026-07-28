@@ -555,9 +555,7 @@
                             <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings or apply these options automatically with the <span class="link" data-target-page="createDefaultLibrary">✨ Create Default Library</span> button:</p>
                             <ul>
                                 <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
-                                <li><strong>Display name:</strong> Anything you'd like! I use "Discover"
-                                    <input is="emby-input" type="text" id="LibraryDisplayName" placeholder="Discover"/>
-                                </li>
+                                <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
                                 <li><strong>Folders:</strong> 📁 Use the default folder <code>/data/JellyBridge</code> OR specify the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span></li>
                                 <li><strong>Library Settings:</strong> 🔳 Enable real time monitoring</li>
                                 <li><strong>Metadata downloaders (TV Shows):</strong> 🔳 Missing Episode Fetcher</li>
@@ -565,11 +563,6 @@
                                 <li>☑️ <strong>Save artwork into media folders</strong></li>
                                 <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                             </ul>
-                            <div>
-                                <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">
-                                    <span>✨ Create Default Library</span>
-                                </button>
-                            </div>
                             <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Network Folders</i></span></p>
                         </div>
 
@@ -649,6 +642,11 @@
                             </label>
                             <div class="fieldDescription">Store all media in a single directory. Disabling this setting will create separate folders for Movies and Shows.</div>
                         </div>
+                        <div id="LibraryDisplayNameContainer">
+                            <input is="emby-input" type="text" id="LibraryDisplayName" placeholder="Discover" data-depends-on="UseMixedMediaFolders"/>
+                            <input is="emby-input" type="text" id="MovieLibraryDisplayName" placeholder="Discover Movies" data-depends-off="UseMixedMediaFolders"/>
+                            <input is="emby-input" type="text" id="ShowLibraryDisplayName" placeholder="Discover Shows" data-depends-off="UseMixedMediaFolders"/>
+                        </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
                             <label class="emby-checkbox-label">
@@ -669,9 +667,8 @@
                                 <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
                                     <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
-                                    <li>Click the <span class="link" data-target-page="generateLibraryFolders">🗂️ Generate Library Folders</span> button below.</li>
-                                    <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
-                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>.</li>
+                                    <li>For each desired library, enter the library name and click <span class="link" data-target-page="createDefaultLibrary">✨ Create Default Library</span>.</li>
+                                    <li>By default, all networks are added to the Jellyfin libraries. Navigate to the Jellyfin libraries and remove unwanted folders in each library.</li>
                                 </ol>
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                                     ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. Alternatively, you can use different libraries for each network provider.
@@ -701,9 +698,9 @@
                             </div>
                         </details>
 
-                        <div id="generateLibraryFoldersContainer" class="fieldDescription">
-                            <button is="emby-button" type="button" id="generateLibraryFolders" class="raised button block emby-button">
-                                <span>🗂️ Generate Library Folders</span>
+                        <div class="fieldDescription">
+                            <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">
+                                <span>✨ Create Default Library</span>
                             </button>
                         </div>
                     </details>

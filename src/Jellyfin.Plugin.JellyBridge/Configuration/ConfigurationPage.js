@@ -393,7 +393,7 @@ function createVirtualFolders(page, libraryName, libraryType, directories) {
         data: JSON.stringify(getDefaultLibrarySettings(page, directories)),
         contentType: 'application/json',
     }).then(function(response) {
-        DisplayMessage('✅ Default library created successfully!');
+        DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
     }).catch(function(error) {
         DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
         return Promise.reject(error);
@@ -404,12 +404,18 @@ function createDefaultLibrary(page) {
     const config = window.configJellyBridge || {};
     const createButton = page.querySelector('#createDefaultLibrary');
     const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
+    const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
+    const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
     const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
+    const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
+    const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
+    const libraryDisplayMessage = config.UseMixedMediaFolders === false ? `a new library "${libraryDisplayName}"` :
+        `new libraries"${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`;
 
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
-        title: 'New Library: ' + libraryDisplayName,
-        text: 'Save the current configuration and create a new library named "' + libraryDisplayName + '" with the recommended settings.',
+        title: 'Confirm New Library',
+        text: 'Save the current configuration and create ' + libraryDisplayMessage + ' with the recommended settings.',
         confirmText: '💾 Save & Create ✨',
         cancelText: 'Cancel',
         primary: "confirm"
@@ -1259,14 +1265,6 @@ function initializeManageLibrary(page) {
     syncFavoritesButton.addEventListener('click', function() {
         performSyncFavorites(page);
     });
-    
-    // Generate Library Folders button functionality
-    const generateLibraryFoldersButton = page.querySelector('#generateLibraryFolders');
-    if (generateLibraryFoldersButton) {
-        generateLibraryFoldersButton.addEventListener('click', function(e) {
-            performGenerateLibraryFolders(page);
-        });
-    }
 }
 
 function generateLibraryFolders(page) {
@@ -1277,51 +1275,6 @@ function generateLibraryFolders(page) {
         data: '{}',
         contentType: 'application/json',
         dataType: 'json'
-    });
-}
-
-function performGenerateLibraryFolders(page) {
-    const generateLibraryFoldersButton = page.querySelector('#generateLibraryFolders');
-    
-    // Show confirmation dialog for saving settings before generating folders
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before generating network folders.',
-        confirmText: '💾 Save & Generate 📁',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            generateLibraryFoldersButton.disabled = true;
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                
-                // Call GenerateLibraryFolders endpoint
-                return generateLibraryFolders(page).then(function(response) {
-                    const ok = !!(response && response.success === true);
-                    
-                    if (ok) {
-                        DisplayMessage('✅ Network folders created successfully');
-                    } else {
-                        let message = response?.message || 'Network folder generation completed';
-                        DisplayMessage('⚠️ ' + message);
-                    }
-                    
-                    generateLibraryFoldersButton.disabled = false;
-                }).catch(function(error) {
-                    DisplayMessage('❌ Failed to generate library folders: ' + (error?.message || 'Unknown error'));
-                    generateLibraryFoldersButton.disabled = false;
-                });
-            }).catch(function(error) {
-                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-                generateLibraryFoldersButton.disabled = false;
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-            });
-        }
     });
 }
 
