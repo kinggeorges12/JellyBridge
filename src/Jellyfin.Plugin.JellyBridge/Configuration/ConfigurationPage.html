@@ -615,8 +615,15 @@
                     <details id="organizeLibrarySettings">
                         <summary>Organize Discover Library</summary>
                         <br>
-                        <div class="fieldDescription" style="margin-bottom: 16px;">
+                        <div class="fieldDescription">
                             Organize the JellyBridge library using a configured directory structure. Configure automatic library refreshing and separate directories for movies and series. With a few extra steps, organize discover content based on the network.
+                        </div>
+                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                            <strong>💡 Recommended:</strong> If you change the options for
+                                <span class="link" data-target-page="UseMixedMediaFoldersContainer">Mixed Movies and Shows</span> or
+                                <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>,
+                                you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span>
+                                to remove the existing data.
                         </div>
 
                         <div id="ManageJellyBridgeLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
@@ -631,7 +638,7 @@
                             <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
 
-                        <div class="checkboxContainer-withDescription">
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseMixedMediaFoldersContainer">
                             <label class="emby-checkbox-label">
                                 <input id="UseMixedMediaFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Mixed Movies and Shows</span>
