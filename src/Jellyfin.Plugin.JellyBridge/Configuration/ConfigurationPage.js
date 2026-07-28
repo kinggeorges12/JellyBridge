@@ -417,6 +417,7 @@ function getDefaultLibrarySettings(page, directories) {
             "SaveLocalMetadata": true,
             "AllowEmbeddedSubtitles": "AllowNone",
             "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
             "EnableTrickplayImageExtraction": false,
             "TypeOptions": [
                 {
@@ -475,7 +476,9 @@ function getDefaultLibrarySettings(page, directories) {
 
         // Disable all subtitle fetchers
         if (response.SubtitleFetchers) {
-            libraryJson.LibraryOptions.DisabledSubtitleFetchers = response.SubtitleFetchers.map(f => f.Name);
+            let subtitleFetcherNames = response.SubtitleFetchers.map(f => f.Name);
+            libraryJson.LibraryOptions.DisabledSubtitleFetchers = subtitleFetcherNames;
+            libraryJson.LibraryOptions.SubtitleFetcherOrder = subtitleFetcherNames;
         }
         
         // Clean TypeOptions - remove unavailable fetchers
