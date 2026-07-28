@@ -119,14 +119,29 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
+- **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time
+- **Plugins Menu**: Displays a link to the JellyBridge configuration page on the sidebar Plugins menu
 - **Jellyseerr URL**: The web address where your Jellyseerr instance is accessible to Jellyfin
 - **API Key**: Authentication key that allows the plugin to communicate with Jellyseerr
-- **Library Directory**: Path where JellyBridge stores its files. Use a dedicated directory for this plugin
+- **Library Directory**: The dedicated directory for this plugin where JellyBridge stores media content and metadata
 - **Enable the Automated Task to Sync Jellyseerr and Jellyfin**: Turns on automatic syncing on a schedule
 - **Sync Interval (hours)**: How often the plugin automatically syncs content
 - **Test Connection with Jellyseerr**: Verifies that the plugin can successfully connect to your Jellyseerr instance
-- **Automated Sync Status**: Displays the current sync status, current progress, last sync time, and next scheduled sync time
-- **Library Setup Instructions**: Click the "(?) Setup" button next to the automated task checkbox to view library setup instructions and troubleshooting.
+- **Library Setup Instructions**: Click the "(?) Setup" button next to the automated task checkbox to view library setup instructions and troubleshooting
+
+### ✨ Organize Discover Library
+
+![Organize Discover Library](Screenshots/Organize.png)
+
+- **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
+- **Mixed Movies and Shows**: Creates a single Jellyfin libraries as Mixed Movies and Shows
+- **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
+- **Network Folders Setup**
+  - **Instructions**: Step-by-step guide for creating network libraries
+  - **Display Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
+  - **Network Folder Prefix**: Prefix attached to the network folder names
+- **Library Name**: Specifies the name when creating a new Jellyfin library
+- **Create Discover Library**: Create a new Jellyfin library using the default settings
 
 ### 🔍 Import Discover Content
 
@@ -136,24 +151,18 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 - **Network Services**: Choose networks to import discover content from
 - **Discover Pages**: The number of pages to import per network
 - **Content Retention Time (days)**: How long to keep discover content before automatic cleanup
-- **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually trigger the task
+- **Import Discover Content from Jellyseerr**: Manually trigger the task to sync media content
 
-### 📁 Manage Discover Library
+### ⭐ Manage Favorite Requests
 
-![Manage Discover Library](Screenshots/Manage.png)
+![Manage Favorite Requests](Screenshots/Manage.png)
 
-- **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
+- **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
+- **Request 4k Content**: Request 4k media content if the Jellyseerr user has permission
 - **Request Only First Season**: New favorited series will only request the first season instead of the entire series
-- **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
-- **Network Folders Setup**
-  - **Instructions**: Step-by-step guide for creating network folders and libraries
-  - **Library Prefix**: Prefix applied to generated network library names
-  - **Show Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
-  - **Generate Network Folders**: Button to create the folder structure for all selected networks
-- **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
+- **Send Discover Library Favorite Requests to Jellyseerr**: Manually trigger the task to sync favorites
 
 ### 🎥 Customize Promo Videos
 
@@ -194,18 +203,26 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 - **Enable Debug Logging**: Normal logging
 - **Enable Trace Logging**: Huge logs
 - **Cleanup Metadata**: Button to manually clean up metadata in the JellyBridge library
-- **Recycle JellyBridge Library Data**: Permanently deletes all data from the JellyBridge library directory and requires confirmation twice
+- **Recycle JellyBridge Library Data**: Permanently deletes all data from the JellyBridge library directory
 
 ## 📣 Release Notes
 
-### Version 3.2 🆕
+### Version 3.3 🆕
+
+- Fixed localization [Issue #46](https://github.com/kinggeorges12/JellyBridge/issues/46) by correctly analyzing the media IDs instead of the media name.
+- Adding new feature from [Issue #37](https://github.com/kinggeorges12/JellyBridge/issues/37) "Mixed Movies and Shows" to allow users to switch from a single library to separate Movies and Shows libraries.
+- Splitting "Manage Discover Library" tab into "Organize Discover Library" and "Manage Favorite Requests".
+- Included new feature Create Discover Library to generate a default JellyBridge library in Jellyfin. Removed the existing button for Generate Network Folders, as the new feature addresses this.
+- Fixing bugs in Generate Promo Videos, Enable the Automated Task to Sort Discover Content, and Recycle JellyBridge Library Data.
+
+### Version 3.2 ✨
 
 - New Promo Videos feature submitted in [PR #26](https://github.com/kinggeorges12/JellyBridge/pull/26).
 - Updated the network selection UI in the Import Discover Content section with a more user-friendly design.
 - The Manage Discover Library section has a new option Request 4k Content that examines user-level permissions to determine whether to request 4k content from Jellyseerr.
 - Added folder buttons to open paths on the configuration page using the Jellyfin file browser.
 
-### Version 3.0 ✨
+### Version 3.0 🎉
 
 - Fixed compatibility bug causing crashes with Jellyfin 10.11.9 and later.
 - Bugs listed in [PR #31](https://github.com/kinggeorges12/JellyBridge/pull/31).
@@ -222,7 +239,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 ### Version 2.0 🎉
 
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
-- Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
+- Manage Discover Library: "Network Folders" setup instructions with "Generate Library Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
 **⚠️ Version Notes**

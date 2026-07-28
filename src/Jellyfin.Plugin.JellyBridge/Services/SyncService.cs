@@ -18,7 +18,7 @@ public partial class SyncService
     private readonly DebugLogger<SyncService> _logger;
     private readonly ApiService _apiService;
     private readonly BridgeService _bridgeService;
-    private readonly LibraryService _libraryService;
+    private readonly RefreshService _refreshService;
     private readonly DiscoverService _discoverService;
     private readonly FavoriteService _favoriteService;
     private readonly MetadataService _metadataService;
@@ -28,7 +28,7 @@ public partial class SyncService
         ILogger<SyncService> logger,
         ApiService apiService,
         BridgeService bridgeService,
-        LibraryService libraryService,
+        RefreshService refreshService,
         DiscoverService discoverService,
         FavoriteService favoriteService,
         MetadataService metadataService)
@@ -36,7 +36,7 @@ public partial class SyncService
         _logger = new DebugLogger<SyncService>(logger);
         _apiService = apiService;
         _bridgeService = bridgeService;
-        _libraryService = libraryService;
+        _refreshService = refreshService;
         _discoverService = discoverService;
         _favoriteService = favoriteService;
         _metadataService = metadataService;
@@ -69,10 +69,10 @@ public partial class SyncService
                 return result;
             }
 
+            _logger.LogDebug("Step 1: Starting Jellyseerr discovery to find movies and TV shows for all networks");
             // Step 1: Fetch movies and TV shows for all networks
             var (discoverMovies, discoverShows) = await _discoverService.FetchDiscoverMediaAsync();
-
-            _logger.LogDebug("Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
+            _logger.LogDebug("Step 1: Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
                 discoverMovies.Count, discoverShows.Count);
 
             // Check if we actually got any data from the API calls
@@ -89,7 +89,7 @@ public partial class SyncService
                 return result;
             }
 
-            _logger.LogDebug("Processing {MovieCount} movies and {ShowCount} shows from Jellyseerr", 
+            _logger.LogDebug("Step 2: Processing {MovieCount} movies and {ShowCount} shows from Jellyseerr", 
                 discoverMovies.Count, discoverShows.Count);
 
             // Combine movies and shows into a single list
@@ -98,78 +98,77 @@ public partial class SyncService
             discoverMedia.AddRange(discoverShows.Cast<IJellyseerrItem>());
 
             // Step 2: Filter duplicates for networks
-            var uniqueDiscoverMedia = await _discoverService.FilterDuplicateMedia(discoverMedia);
+            var uniqueDiscoverMedia = await _bridgeService.FilterDuplicatesByLibrary(discoverMedia);
+            _logger.LogDebug("Step 2: Filtered {OriginalCount} items to {UniqueCount} unique items across networks", 
+                discoverMedia.Count, uniqueDiscoverMedia.Count);
 
             // Step 3: Process movies and TV shows
             _logger.LogDebug("Step 3: 📺 Creating Jellyfin folders and metadata for movies and TV shows from Jellyseerr...");
+            // Add all folders, then create ignore files for duplicates later
             var (addedMedia, updatedMedia) = await _metadataService.CreateFolderMetadataAsync(discoverMedia);
             // Add items to unified collections
             result.ItemsAdded.AddRange(addedMedia);
             result.ItemsUpdated.AddRange(updatedMedia);
 
-            // Step 3.5: Ignore duplicated items for networks with shared libraries
-            var (newlyIgnoredDuplicates, existingIgnoredDuplicates) = await _discoverService.IgnoreDuplicateLibraryItems(discoverMedia, uniqueDiscoverMedia);
-            _logger.LogDebug("Step 3.5: Ignored {IgnoredCount} duplicate library items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
+            // Step 4: Ignore duplicated items in JellyBridge for networks with shared libraries
+            var (newlyIgnoredDuplicates, existingIgnoredDuplicates) = await _discoverService.IgnoreJellyBridgeDuplicates(discoverMedia, uniqueDiscoverMedia);
+            _logger.LogDebug("Step 4: Ignored {IgnoredCount} duplicate JellyBridge items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newlyIgnoredDuplicates.Count + existingIgnoredDuplicates.Count, newlyIgnoredDuplicates.Count, existingIgnoredDuplicates.Count);
 
-            result.ItemsIgnored.AddRange(existingIgnoredDuplicates);
+            result.ItemsSkipped.AddRange(existingIgnoredDuplicates);
             result.ItemsHidden.AddRange(newlyIgnoredDuplicates);
 
-            // Step 4: Library Scan to find matches and get unmatched items
-            List<JellyMatch> matchedItems = new List<JellyMatch>();
-            List<IJellyseerrItem> unmatchedItems = new List<IJellyseerrItem>();
+            // Step 5: Library Scan to find matches and get unmatched items
+            _logger.LogDebug("Step 5: Starting library scan to find matches and get unmatched items");
+            // Run library scan to find matches and get unmatched items
+            // Matched items get a .ignore file created in their folder
+            // Unmatched items get a placeholder file created in their folder
+            // When UseNetworkFolders and AddDuplicateContent are enabled, unmatched items calculates on network directory.
+            (var matchedItems, var unmatchedItems) = await _bridgeService.BuildJellyfinMatchesAsync(uniqueDiscoverMedia);
+            _logger.LogDebug("Step 5: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", matchedItems.Count, unmatchedItems.Count);
+            // Remove any unmatched items that already have an ignore file in their folder
+            unmatchedItems = _bridgeService.FilterAlreadyIgnoredItems(unmatchedItems);
+            _logger.LogDebug("Step 6: Filtered ignored items; remaining unmatched = {UnmatchedCount}", unmatchedItems.Count);
+
+            // Check if user wants to remove matches from libraries outside of the JellyBridge discover library
+            Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> existingIgnored)> ignoreTask;
             var excludeFromMainLibraries = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
             if (excludeFromMainLibraries) {
-                _logger.LogDebug("Step 4: Starting library scan to find matches and get unmatched items");
-                // Run library scan to find matches and get unmatched items
-                // When UseNetworkFolders and AddDuplicateContent are enabled, unmatched items calculates on network directory.
-                (var allMatchedItems, var allUnmatchedItems) = await _bridgeService.LibraryScanAsync(uniqueDiscoverMedia);
-                _logger.LogDebug("Step 4: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", allMatchedItems.Count, unmatchedItems.Count);
-                // Remove matches that point to items already inside the JellyBridge sync directory
-                (matchedItems, unmatchedItems) = await _discoverService.FilterSyncedLibraryItems(allMatchedItems, allUnmatchedItems);
-                _logger.LogDebug("Step 4: Filtered synced items: {SyncedCount}", allUnmatchedItems.Count);
-                // Remove any unmatched items that already have an ignore file in their folder
-                unmatchedItems = _discoverService.FilterIgnoredItems(unmatchedItems);
-                _logger.LogDebug("Step 4: Filtered ignored items; remaining unmatched = {UnmatchedCount}", unmatchedItems.Count);
-            } else {
-                // Step 4.5: If not excluding from main libraries, set unmatched items to discover media
-                unmatchedItems = uniqueDiscoverMedia;
-                _logger.LogDebug("Step 4.5: Including main libraries in JellyBridge");
-                
-                // Delete all existing .ignore files when including main libraries
-                var deletedCount = await _discoverService.DeleteAllIgnoreFilesAsync();
-                _logger.LogDebug("Step 4.5: Deleted {DeletedCount} .ignore files from JellyBridge", deletedCount);
-            } 
+                // Step 7: Create ignore files for matched items and add them to ignored items
+                _logger.LogDebug("Step 7: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
+                    matchedItems.Count);
+                ignoreTask = _bridgeService.IgnoreMatchAsync(matchedItems);
+            }
+            else
+            {
+                // Step 7: If including main libraries, unignore those matched items
+                _logger.LogDebug("Step 7: 🔄 Removing ignore files for {MatchCount} items already in Jellyfin library",
+                    matchedItems.Count);
+                ignoreTask = _discoverService.DeleteIgnoreFilesAsync(matchedItems);
+            }
 
-            // Step 5: Create ignore files for matched items and add them to ignored items
-            _logger.LogDebug("Step 5: 🔄 Creating ignore files for {MatchCount} items already in Jellyfin library",
-                matchedItems.Count);
-            var ignoreTask = _bridgeService.IgnoreMatchAsync(matchedItems);
-
-            // Step 6: Create placeholder videos for unmatched movies
+            // Step 8: Create placeholder videos for unmatched movies
             var unmatchedMovies = unmatchedItems.OfType<JellyseerrMovie>().ToList();
-            _logger.LogDebug("Step 6: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies not in Jellyfin library...", 
+            _logger.LogDebug("Step 8: 🎬 Creating placeholder videos for {UnmatchedMovieCount} unmatched movies not in Jellyfin library...", 
                 unmatchedMovies.Count);
             var placeholderMovieTask = _discoverService.CreatePlaceholderVideosAsync(unmatchedMovies);
 
-            // Step 7: Create season folders for unmatched TV shows
+            // Step 8: Create season folders for unmatched TV shows
             var unmatchedShows = unmatchedItems.OfType<JellyseerrShow>().ToList();
-            _logger.LogDebug("Step 7: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
+            _logger.LogDebug("Step 8: 📺 Creating season folders for {UnmatchedShowCount} TV shows not in Jellyfin library...", unmatchedShows.Count);
             var placeholderShowTask = _discoverService.CreatePlaceholderVideosAsync(unmatchedShows);
             
             await Task.WhenAll(ignoreTask, placeholderMovieTask, placeholderShowTask);
 
-            // Step 5: Get ignore results and add to appropriate collections
+            // Step 7 (again): Gather ignore results and add to appropriate collections
             var (newIgnored, existingIgnored) = await ignoreTask;
-            result.ItemsIgnored.AddRange(existingIgnored);
+            result.ItemsSkipped.AddRange(existingIgnored);
             result.ItemsHidden.AddRange(newIgnored);
-            _logger.LogDebug("Step 5.5: Ignored {IgnoredCount} matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
-                newIgnored.Count + existingIgnored.Count, newIgnored.Count, existingIgnored.Count);
 
-            // Step 8: Filter and ignore items with invalid network IDs
-            _logger.LogDebug("Step 8: 🔍 Filtering and ignoring items with invalid network IDs...");
+            // Step 9: Filter and ignore items with invalid network IDs
+            _logger.LogDebug("Step 9: 🔍 Filtering and ignoring items with invalid network IDs...");
             var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
-            result.ItemsIgnored.AddRange(existingIgnoredNetwork);
+            result.ItemsSkipped.AddRange(existingIgnoredNetwork);
             result.ItemsHidden.AddRange(newIgnoredNetwork);
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
@@ -194,7 +193,7 @@ public partial class SyncService
             result.Message = "✅ Sync from Jellyseerr to Jellyfin completed successfully";
 
             _logger.LogTrace("✅ Sync from Jellyseerr to Jellyfin completed successfully - Movies: {MovieAdded} added, {MovieUpdated} updated, {MovieHidden} hidden | Shows: {ShowAdded} added, {ShowUpdated} updated, {ShowHidden} hidden", 
-                result.MoviesAdded, result.MoviesUpdated, result.MoviesHidden, result.ShowsAdded, result.ShowsUpdated, result.ShowsHidden);
+                result.AddedMovies.Count, result.UpdatedMovies.Count, result.HiddenMovies.Count, result.AddedShows.Count, result.UpdatedShows.Count, result.HiddenShows.Count);
         }
         catch (DirectoryNotFoundException ex)
         {
@@ -338,37 +337,5 @@ public partial class SyncService
         
         return result;
     }
-
-    /// <summary>
-    /// Applies the post-sync refresh operations based on the two sync results.
-    /// - Calls RefreshBridgeLibrary with computed parameters
-    /// - Then scans all libraries and awaits completion
-    /// </summary>
-    public async Task ApplyRefreshAsync(SyncJellyfinResult? syncToResult = null, SyncJellyseerrResult? syncFromResult = null, CleanupResult? cleanupResult = null)
-    {
-        try
-        {
-            var doRefresh = (cleanupResult?.Refresh != null) || (syncToResult?.Refresh != null) || (syncFromResult?.Refresh != null);
-            if (doRefresh)
-            {
-                var createMode = (cleanupResult?.Refresh?.CreateRefresh == true) || (syncToResult?.Refresh?.CreateRefresh == true) || (syncFromResult?.Refresh?.CreateRefresh == true);
-                var removeMode = (cleanupResult?.Refresh?.RemoveRefresh == true) || (syncToResult?.Refresh?.RemoveRefresh == true) || (syncFromResult?.Refresh?.RemoveRefresh == true);
-                var refreshImages = (cleanupResult?.Refresh?.RefreshImages == true) || (syncToResult?.Refresh?.RefreshImages == true) || (syncFromResult?.Refresh?.RefreshImages == true);
-
-                _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
-                _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                // Update refresh always runs to reload user data (play counts)
-                await _libraryService.RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
-                _logger.LogDebug("Scan of all libraries completed");
-            } else {
-                _logger.LogDebug("No refresh plan applied");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error applying post-sync refresh operations");
-        }
-    }
-
 }
 

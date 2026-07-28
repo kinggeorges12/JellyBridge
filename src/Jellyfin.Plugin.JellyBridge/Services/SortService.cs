@@ -22,15 +22,24 @@ public class SortService
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
+    private readonly RefreshService _refreshService;
     private readonly MetadataService _metadataService;
     private readonly BridgeService _bridgeService;
 
-    public SortService(ILogger<SortService> logger, JellyfinILibraryManager libraryManager, JellyfinIUserDataManager userDataManager, JellyfinIUserManager userManager, MetadataService metadataService, BridgeService bridgeService)
+    public SortService(
+        ILogger<SortService> logger,
+        JellyfinILibraryManager libraryManager,
+        JellyfinIUserDataManager userDataManager,
+        JellyfinIUserManager userManager,
+        RefreshService refreshService,
+        MetadataService metadataService,
+        BridgeService bridgeService)
     {
         _logger = new DebugLogger<SortService>(logger);
         _libraryManager = libraryManager;
         _userDataManager = userDataManager;
         _userManager = userManager;
+        _refreshService = refreshService;
         _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
@@ -46,6 +55,13 @@ public class SortService
         
         try
         {
+            var enableSortLibraryRefresh = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSortLibraryRefresh));
+            if (enableSortLibraryRefresh)
+            {
+                _logger.LogInformation("Library refresh is enabled. Running a full library refresh before sorting the JellyBridge library...");
+                await _refreshService.ScanAllLibraries();
+            }
+
             // Get all users
             var users = _userManager.GetAllUsers().ToList();
             if (users.Count == 0)
@@ -62,63 +78,60 @@ public class SortService
             var sortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder));
             result.SortAlgorithm = sortOrder;
 
-            // Get all directories first (same for all users)
-            var allDirectories = await GetAllDirectories();
-            if (allDirectories == null || allDirectories.Count == 0)
+            // Get all items first (same for all users)
+            var allItems = await GetAllItems();
+            if (allItems == null || allItems.Count == 0)
             {
                 result.Success = false;
-                result.Message = "No directories found to update";
+                result.Message = "No items found to update";
                 return result;
             }
-
-            // Record total unique items (movies + shows) to display as Processed
-            result.Processed = allDirectories.Count;
 
             // Apply the play count algorithm for each user separately (each user gets unique sort order)
             // Process all users in parallel for better performance
             var userTasks = users.Select(user => Task.Run(async () =>
             {
                 // Generate play count map for this specific user (different randomization per user)
-                Dictionary<string, (int playCount, BaseItemKind mediaType)>? directoryInfoMap;
+                Dictionary<string, (int playCount, BaseItemKind mediaType)>? itemInfoMap;
                 switch (sortOrder)
                 {
                     case SortOrderOptions.None:
                         _logger.LogDebug("Using None sort order - setting play counts to zero for user {UserName}", user.Username);
-                        directoryInfoMap = playCountZero(allDirectories);
+                        itemInfoMap = playCountZero(allItems);
                         break;
 
                     case SortOrderOptions.Random:
                         _logger.LogDebug("Using Random sort order - randomizing play counts for user {UserName}", user.Username);
-                        directoryInfoMap = playCountRandom(allDirectories);
+                        itemInfoMap = playCountRandom(allItems);
                         break;
 
                     case SortOrderOptions.Smart:
                         _logger.LogDebug("Using Smart sort order - genre-based sorting for user {UserName}", user.Username);
-                        directoryInfoMap = await playCountSmart(user, allDirectories);
+                        itemInfoMap = await playCountSmart(user, allItems);
                         break;
 
                     case SortOrderOptions.Smartish:
                         _logger.LogDebug("Using Smartish sort order - genre-based sorting for user {UserName}", user.Username);
-                        directoryInfoMap = await playCountSmartish(user, allDirectories);
+                        itemInfoMap = await playCountSmartish(user, allItems);
                         break;
 
                     default:
                         _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None for user {UserName}", sortOrder, user.Username);
-                        directoryInfoMap = playCountZero(allDirectories);
+                        itemInfoMap = playCountZero(allItems);
                         break;
                 }
 
-                if (directoryInfoMap == null)
+                if (itemInfoMap == null)
                 {
                     _logger.LogWarning("Failed to generate play count map for user {UserName}", user.Username);
-                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<string>(), skipped: new List<(IJellyfinItem? item, string path)>());
+                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(BaseItemKind mediaType, string path)>());
                 }
 
                 // Calculate date mappings from play counts
-                var dateMapping = CalculatePlayDateMapping(directoryInfoMap);
+                var dateMapping = CalculatePlayDateMapping(itemInfoMap);
 
-                // Combine directory info and date mapping using directory string as the common key
-                var combinedInfoMap = directoryInfoMap.ToDictionary(
+                // Combine item info and date mapping using folder string as the common key
+                var combinedInfoMap = itemInfoMap.ToDictionary(
                     kvp => kvp.Key,
                     kvp => (kvp.Value.playCount, kvp.Value.mediaType, dateMapping.TryGetValue(kvp.Key, out var date) ? date : null)
                 );
@@ -132,17 +145,14 @@ public class SortService
             
             // Aggregate results from all users
             var allSuccesses = new List<(IJellyfinItem item, int playCount)>();
-            var allFailures = new List<string>();
-            var allSkipped = new List<(IJellyfinItem? item, string path)>();
+            var allSkipped = new List<(BaseItemKind mediaType, string path)>();
+            var allFailures = new List<(BaseItemKind mediaType, string folder)>();
             
             foreach (var userResult in userResults)
             {
-                List<(IJellyfinItem item, int playCount)> successes = userResult.successes;
-                List<string> failures = userResult.failures;
-                List<(IJellyfinItem? item, string path)> skipped = userResult.skipped;
-                allSuccesses.AddRange(successes);
-                allFailures.AddRange(failures);
-                allSkipped.AddRange(skipped);
+                allSuccesses.AddRange(userResult.successes);
+                allSkipped.AddRange(userResult.skipped);
+                allFailures.AddRange(userResult.failures);
             }
             
             result.Success = true;
@@ -150,8 +160,8 @@ public class SortService
             
             // Populate ProcessResult
             result.ItemsSorted = allSuccesses;
-            result.ItemsFailed = allFailures;
             result.ItemsSkipped = allSkipped;
+            result.ItemsFailed = allFailures;
             
             // Set refresh plan if items were sorted
             if (allSuccesses.Count > 0)
@@ -175,42 +185,55 @@ public class SortService
     }
 
     /// <summary>
-    /// Gets all directories from the JellyBridge library with their media types.
+    /// Gets all items from the JellyBridge library with their media types.
     /// </summary>
-    /// <returns>A list of (directory, mediaType) tuples, or null if no directories found.</returns>
-    private async Task<List<(string directory, BaseItemKind mediaType)>?> GetAllDirectories()
+    /// <returns>A list of (item, mediaType) tuples, or null if no items found.</returns>
+    private async Task<List<(IJellyseerrItem item, BaseItemKind mediaType)>?> GetAllItems()
     {
-        // Get categorized directories that are actually in Jellyfin libraries
-        var metadataItems = await _bridgeService.ReadMetadataLibraries();
-        var movieDirectories = metadataItems.Where(item => item.item is JellyseerrMovie).Select(item => item.directory).ToList();
-        var showDirectories = metadataItems.Where(item => item.item is JellyseerrShow).Select(item => item.directory).ToList();
-        var totalCount = movieDirectories.Count + showDirectories.Count;
-
-        if (totalCount == 0)
+        // Get categorized items that are actually in Jellyfin libraries
+        var libraries = await _bridgeService.ReadMetadataLibraries();
+        
+        var allItems = new List<(IJellyseerrItem item, BaseItemKind mediaType)>();
+        
+        foreach (var library in libraries)
         {
-            _logger.LogDebug("No directories found to update");
+            foreach (var movie in library.Movies)
+            {
+                allItems.Add((movie, BaseItemKind.Movie));
+            }
+            foreach (var show in library.Shows)
+            {
+                allItems.Add((show, BaseItemKind.Series));
+            }
+        }
+
+        if (allItems.Count == 0)
+        {
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
-        // Combine movies and shows with their media types
-        return movieDirectories.Select(dir => (dir, mediaType: BaseItemKind.Movie))
-            .Concat(showDirectories.Select(dir => (dir, mediaType: BaseItemKind.Series)))
-            .ToList();
+        _logger.LogDebug("Found {MovieCount} movies and {ShowCount} shows across {LibraryCount} libraries",
+            allItems.Count(i => i.mediaType == BaseItemKind.Movie),
+            allItems.Count(i => i.mediaType == BaseItemKind.Series),
+            libraries.Count);
+
+        return allItems;
     }
 
     /// <summary>
-    /// Randomizes play counts by creating shuffled play count values and mapping them to directories.
+    /// Randomizes play counts by creating shuffled play count values and mapping them to items.
     /// Each call generates a new random shuffle, so each user gets a unique sort order.
     /// </summary>
-    /// <param name="allDirectories">List of directories with their media types</param>
-    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
-    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountRandom(List<(string directory, BaseItemKind mediaType)> allDirectories)
+    /// <param name="allItems">List of items with their media types</param>
+    /// <returns>A dictionary mapping folder paths to (playCount, mediaType) tuples, or null if no items found.</returns>
+    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountRandom(List<(IJellyseerrItem item, BaseItemKind mediaType)> allItems)
     {
-        var totalCount = allDirectories.Count;
+        var totalCount = allItems.Count;
 
         if (totalCount == 0)
         {
-            _logger.LogDebug("No directories found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
@@ -223,10 +246,11 @@ public class SortService
             .OrderBy(_ => random.Next())
             .ToList();
 
-        // Create directory info map with play count and media type (for efficient lookup)
-        return allDirectories
-            .Select((item, index) => (item.directory, playCount: playCounts[index], item.mediaType))
-            .ToDictionary(x => x.directory, x => (x.playCount, x.mediaType));
+        // Create item info map with folder path, play count, and media type
+        return allItems
+            .Select((itemData, index) => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item), playCount: playCounts[index], itemData.mediaType))
+            .Where(x => !string.IsNullOrEmpty(x.folder))
+            .ToDictionary(x => x.folder, x => (x.playCount, x.mediaType));
     }
 
     /// <summary>
@@ -235,42 +259,36 @@ public class SortService
     /// For JellyBridge items, sums genre mappings for matching genres, averages them, and adds random value.
     /// </summary>
     /// <param name="user">User to generate smart sort for</param>
-    /// <param name="allDirectories">List of directories with their media types</param>
-    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
+    /// <param name="allItems">List of items with their media types</param>
+    /// <returns>A dictionary mapping folder paths to (playCount, mediaType) tuples, or null if no items found.</returns>
     private Task<Dictionary<string, (int playCount, BaseItemKind mediaType)>?> playCountSmart(
         JellyfinUser user,
-        List<(string directory, BaseItemKind mediaType)> allDirectories)
+        List<(IJellyseerrItem item, BaseItemKind mediaType)> allItems)
     {
-        if (allDirectories == null || allDirectories.Count == 0)
+        if (allItems == null || allItems.Count == 0)
         {
-            _logger.LogDebug("No directories found to update");
+            _logger.LogTrace("No items found to update");
             return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(null);
         }
 
         // Get JellyBridge library directory to exclude from user's library
         var libraryDirectory = FolderUtils.GetBaseDirectory();
-        var bridgeLibraryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrEmpty(libraryDirectory))
+        var bridgeLibraryPaths = new HashSet<string>()
         {
-            var normalized = FolderUtils.GetNormalizedPath(libraryDirectory);
-            if (!string.IsNullOrEmpty(normalized))
-            {
-                bridgeLibraryPaths.Add(normalized);
-            }
-        }
+            libraryDirectory
+        };
 
         // Get all items from user's library (excluding JellyBridge items)
         List<JellyfinMovie> userMovies;
         List<JellyfinSeries> userSeries;
         try
         {
-            userMovies = _libraryManager.GetUserLibraryItems<JellyfinMovie>(user, bridgeLibraryPaths);
-            userSeries = _libraryManager.GetUserLibraryItems<JellyfinSeries>(user, bridgeLibraryPaths);
+            userMovies = _libraryManager.GetUserLibraryItems<JellyfinMovie>(user: user, excludePaths: bridgeLibraryPaths);
+            userSeries = _libraryManager.GetUserLibraryItems<JellyfinSeries>(user: user, excludePaths: bridgeLibraryPaths);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get user library items for smart sort");
-            // Return null so the failure is visible in results (items will be counted as skipped/failed)
             return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(null);
         }
 
@@ -318,19 +336,25 @@ public class SortService
 
         // Get genres for each JellyBridge item and calculate play count
         var result = new Dictionary<string, (int playCount, BaseItemKind mediaType)>();
-        var failedDirectories = new List<(string directory, BaseItemKind mediaType)>();
+        var failedItems = new List<(IJellyseerrItem item, BaseItemKind mediaType)>();
         
-        foreach (var (directory, mediaType) in allDirectories)
+        foreach (var (item, mediaType) in allItems)
         {
             try
             {
-                var baseItem = _libraryManager.FindItemByDirectoryPath(directory);
+                var folder = _metadataService.GetJellyBridgeItemDirectory(item);
+                if (string.IsNullOrEmpty(folder))
+                {
+                    _logger.LogDebug("Item has no folder path: {MediaName}", item.MediaName);
+                    failedItems.Add((item, mediaType));
+                    continue;
+                }
+
+                var baseItem = _libraryManager.FindJellyfinItemByPath(folder);
                 if (baseItem == null)
                 {
-                    // Item not found - directory is likely ignored (similar to .ignore file)
-                    // Include it in result with zero play count so it gets processed and counted as skipped
-                    // This matches Random sort behavior where all directories are included
-                    result[directory] = (0, mediaType);
+                    // Item not found - include it with zero play count
+                    result[folder] = (0, mediaType);
                     continue;
                 }
 
@@ -362,20 +386,20 @@ public class SortService
                 // Add 100 to base count
                 playCount += 100;
                 
-                result[directory] = (playCount, mediaType);
+                result[folder] = (playCount, mediaType);
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to process directory for smart sort: {Directory}", directory);
-                failedDirectories.Add((directory, mediaType));
+                _logger.LogDebug(ex, "Failed to process item for smart sort: {MediaName}", item.MediaName);
+                failedItems.Add((item, mediaType));
             }
         }
 
-        // Apply random sort to all failed directories at once (exceptions only, not null baseItems)
-        if (failedDirectories.Count > 0)
+        // Apply random sort to all failed items at once
+        if (failedItems.Count > 0)
         {
-            _logger.LogDebug("Applying random sort fallback to {Count} failed directories", failedDirectories.Count);
-            var fallbackResult = playCountRandom(failedDirectories);
+            _logger.LogDebug("Applying random sort fallback to {Count} failed items", failedItems.Count);
+            var fallbackResult = playCountRandom(failedItems);
             if (fallbackResult != null)
             {
                 foreach (var kvp in fallbackResult)
@@ -385,28 +409,27 @@ public class SortService
             }
         }
 
-        // Return the dictionary - consistent with playCountRandom which always returns a dictionary when input has items
         return Task.FromResult<Dictionary<string, (int playCount, BaseItemKind mediaType)>?>(result);
     }
 
     /// <summary>
-    /// Smartish sort algorithm that uses playCountSmart and adds a random value from 1 to (max-min) of all directories.
+    /// Smartish sort algorithm that uses playCountSmart and adds a random value from 1 to (max-min) of all items.
     /// </summary>
     /// <param name="user">User to generate smartish sort for</param>
-    /// <param name="allDirectories">List of directories with their media types</param>
-    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
+    /// <param name="allItems">List of items with their media types</param>
+    /// <returns>A dictionary mapping folder paths to (playCount, mediaType) tuples, or null if no items found.</returns>
     private async Task<Dictionary<string, (int playCount, BaseItemKind mediaType)>?> playCountSmartish(
         JellyfinUser user,
-        List<(string directory, BaseItemKind mediaType)> allDirectories)
+        List<(IJellyseerrItem item, BaseItemKind mediaType)> allItems)
     {
-        if (allDirectories == null || allDirectories.Count == 0)
+        if (allItems == null || allItems.Count == 0)
         {
-            _logger.LogDebug("No directories found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
         // Get base play counts from smart sort
-        var smartResult = await playCountSmart(user, allDirectories);
+        var smartResult = await playCountSmart(user, allItems);
         if (smartResult == null || smartResult.Count == 0)
         {
             return null;
@@ -433,24 +456,25 @@ public class SortService
     }
 
     /// <summary>
-    /// Sets play counts to zero by mapping all directories to play count zero.
+    /// Sets play counts to zero by mapping all items to play count zero.
     /// </summary>
-    /// <param name="allDirectories">List of directories with their media types</param>
-    /// <returns>A dictionary mapping directory paths to (playCount, mediaType) tuples, or null if no directories found.</returns>
-    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountZero(List<(string directory, BaseItemKind mediaType)> allDirectories)
+    /// <param name="allItems">List of items with their media types</param>
+    /// <returns>A dictionary mapping folder paths to (playCount, mediaType) tuples, or null if no items found.</returns>
+    private Dictionary<string, (int playCount, BaseItemKind mediaType)>? playCountZero(List<(IJellyseerrItem item, BaseItemKind mediaType)> allItems)
     {
-        var totalCount = allDirectories.Count;
+        var totalCount = allItems.Count;
 
         if (totalCount == 0)
         {
-            _logger.LogDebug("No directories found to update");
+            _logger.LogTrace("No items found to update");
             return null;
         }
 
-        // Create directory info map with play count set to zero and media type (for efficient lookup)
-        return allDirectories
-            .Select(item => (item.directory, playCount: 0, item.mediaType))
-            .ToDictionary(x => x.directory, x => (x.playCount, x.mediaType));
+        // Create item info map with play count set to zero and media type
+        return allItems
+            .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item), playCount: 0, itemData.mediaType))
+            .Where(x => !string.IsNullOrEmpty(x.folder))
+            .ToDictionary(x => x.folder, x => (x.playCount, x.mediaType));
     }
 
     /// <summary>
@@ -460,17 +484,17 @@ public class SortService
     /// Items with the same play count get the same date.
     /// If play count is zero, LastPlayedDate is set to null.
     /// </summary>
-    /// <param name="directoryInfoMap">Dictionary mapping directory paths to play counts and media types</param>
-    /// <returns>Dictionary mapping directory paths to their assigned play dates (null for zero play count)</returns>
-    private Dictionary<string, DateTime?> CalculatePlayDateMapping(Dictionary<string, (int playCount, BaseItemKind mediaType)> directoryInfoMap)
+    /// <param name="itemInfoMap">Dictionary mapping folder paths to play counts and media types</param>
+    /// <returns>Dictionary mapping folder paths to their assigned play dates (null for zero play count)</returns>
+    private Dictionary<string, DateTime?> CalculatePlayDateMapping(Dictionary<string, (int playCount, BaseItemKind mediaType)> itemInfoMap)
     {
-        if (directoryInfoMap == null || directoryInfoMap.Count == 0)
+        if (itemInfoMap == null || itemInfoMap.Count == 0)
         {
             return new Dictionary<string, DateTime?>();
         }
 
         // Get unique play counts sorted in ascending order (lowest to highest), excluding zero
-        var uniquePlayCounts = directoryInfoMap.Values
+        var uniquePlayCounts = itemInfoMap.Values
             .Select(v => v.playCount)
             .Distinct()
             .Where(pc => pc > 0) // Exclude zero play counts
@@ -482,23 +506,18 @@ public class SortService
         // Higher play counts go further back in time - older dates
         // All dates are normalized to midnight (start of day) and explicitly set to UTC for compatibility with UserDataManager.SaveUserData
         var playCountToDateMap = new Dictionary<int, DateTime?>();
-        // Use .Date to normalize to midnight, then explicitly ensure UTC Kind (DateTime.UtcNow.Date preserves UTC Kind, but being explicit)
-        var baseDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1).Date, DateTimeKind.Utc); // Start from yesterday at midnight UTC
+        var baseDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1).Date, DateTimeKind.Utc);
         
         for (int i = 0; i < uniquePlayCounts.Count; i++)
         {
             var playCount = uniquePlayCounts[i];
-            // Days to subtract: current index
-            // This ensures lowest play count (index 0) gets 0 days subtracted (yesterday - most recent), highest gets (uniquePlayCounts.Count - 1) days subtracted (oldest)
             var daysToSubtract = i;
-            // AddDays preserves the DateTime and Kind, so result stays at midnight UTC
             playCountToDateMap[playCount] = baseDate.AddDays(-daysToSubtract);
         }
 
-        // Create directory to date mapping
-        // Zero play count gets null, others get their assigned date
+        // Create folder to date mapping
         var dateMapping = new Dictionary<string, DateTime?>();
-        foreach (var kvp in directoryInfoMap)
+        foreach (var kvp in itemInfoMap)
         {
             if (kvp.Value.playCount == 0)
             {
@@ -517,70 +536,59 @@ public class SortService
     /// Applies the play count algorithm to all discover library items for a single user.
     /// </summary>
     /// <param name="user">User to update play counts for</param>
-    /// <param name="combinedInfoMap">Dictionary mapping directory paths to combined info (play count, media type, and play date)</param>
+    /// <param name="combinedInfoMap">Dictionary mapping folder paths to combined info (play count, media type, and play date)</param>
     /// <returns>A tuple containing lists of successes, failures, and skipped items</returns>
     private async Task<(List<(IJellyfinItem item, int playCount)> successes,
-        List<string> failures,
-        List<(IJellyfinItem? item, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
+        List<(BaseItemKind mediaType, string path)> failures,
+        List<(BaseItemKind mediaType, string path)> skipped)> ApplyPlayCountAlgorithmAsync(
         JellyfinUser user,
         Dictionary<string, (int playCount, BaseItemKind mediaType, DateTime? playDate)> combinedInfoMap)
     {
         var successes = new List<(IJellyfinItem item, int playCount)>();
-        var failures = new List<string>();
-        var skipped = new List<(IJellyfinItem? item, string path)>();
+        var failures = new List<(BaseItemKind mediaType, string path)>();
+        var skipped = new List<(BaseItemKind mediaType, string path)>();
         
         // Get configuration setting for marking media as played
         var markMediaPlayed = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.MarkMediaPlayed));
 
         // Collect tasks for play count updates and play status marking
-        var playCountTasks = new List<(Task<JellyfinWrapperResult> task, IJellyfinItem item, int playCount, string directory)>();
+        var playCountTasks = new List<(Task<JellyfinWrapperResult> task,
+            IJellyfinItem item, string folder, int playCount, BaseItemKind mediaType)>();
         var playStatusTasks = new List<Task>();
 
         // Create tasks for all items
         foreach (var kvp in combinedInfoMap)
         {
-            var directory = kvp.Key;
+            var folder = kvp.Key;
             var (assignedPlayCount, mediaType, assignedPlayDate) = kvp.Value;
 
             try
             {
-                // Check if directory is ignored (has .ignore file)
-                var ignoreFile = Path.Combine(directory, ".ignore");
-                if (File.Exists(ignoreFile))
+                // Check if folder is ignored (has .ignore file)
+                var ignoreFile = Path.Combine(folder, BridgeService.IgnoreFileName);
+                if (System.IO.File.Exists(ignoreFile))
                 {
-                    _logger.LogDebug("Item ignored (has .ignore file) for path: {Path}", directory);
-                    // Try to find the item even if it's skipped (for the result object)
-                    var skippedBaseItem = _libraryManager.FindItemByDirectoryPath(directory);
-                    IJellyfinItem? skippedWrapper = null;
-                    if (skippedBaseItem != null)
-                    {
-                        try
-                        {
-                            if (mediaType == BaseItemKind.Movie)
-                            {
-                                skippedWrapper = JellyfinMovie.FromItem(skippedBaseItem);
-                            }
-                            else if (mediaType == BaseItemKind.Series)
-                            {
-                                skippedWrapper = JellyfinSeries.FromItem(skippedBaseItem);
-                            }
-                        }
-                        catch
-                        {
-                            // Item type doesn't match, leave as null
-                        }
-                    }
-                    skipped.Add((skippedWrapper, directory));
+                    _logger.LogTrace("Item ignored in path: {Path}", ignoreFile);
+                    skipped.Add((mediaType, folder));
                     continue;
                 }
 
                 // Find item by directory path - handles both movies and shows
-                var baseItem = _libraryManager.FindItemByDirectoryPath(directory);
+                var baseItem = _libraryManager.FindJellyfinItemByPath(folder);
+                if (baseItem == null)
+                {
+                    var availableFiles = Directory.GetFiles(folder, PlaceholderVideoGenerator.AssetSearchPattern, SearchOption.TopDirectoryOnly);
+                    foreach (var file in availableFiles)
+                    {
+                        _logger.LogTrace("Attempting to find {mediaType} item by filepath: {Path}", mediaType, file);
+                        baseItem = _libraryManager.FindJellyfinItemByPath(file);
+                    }
+                }
 
                 if (baseItem == null)
                 {
-                    _logger.LogDebug("Item not found for path: {Path}", directory);
-                    failures.Add(directory);
+                    _logger.LogTrace("Item not found for path: {Path}", folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
@@ -599,24 +607,21 @@ public class SortService
                 }
                 catch (ArgumentException)
                 {
-                    _logger.LogDebug("Item type mismatch for path: {Path}", directory);
-                    failures.Add(directory);
+                    _logger.LogDebug("Item type mismatch for path: {Path}", folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
                 if (item == null)
                 {
-                    _logger.LogDebug("Could not create wrapper for item at path: {Path}", directory);
-                    failures.Add(directory);
+                    _logger.LogDebug("Could not create wrapper for item at path: {Path}", folder);
+                    failures.Add((mediaType, folder));
                     continue;
                 }
 
-                string itemName = item.Name;
-
                 // Create task for updating play count and last played date
-                // assignedPlayDate is already extracted from combinedInfoMap above
                 var playCountTask = _userDataManager.TryUpdatePlayCountAsync(user, item, assignedPlayCount, assignedPlayDate);
-                playCountTasks.Add((playCountTask, item, assignedPlayCount, directory));
+                playCountTasks.Add((playCountTask, item, folder, assignedPlayCount, mediaType));
 
                 // Create task for marking play status (runs independently, doesn't affect success/failure)
                 var playStatusTask = _userDataManager.MarkItemPlayStatusAsync(user, item, markMediaPlayed);
@@ -624,54 +629,47 @@ public class SortService
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("Operation canceled while processing directory: {Directory}", directory);
-                failures.Add(directory);
+                _logger.LogWarning("Operation canceled while processing folder: {Folder}", folder);
+                failures.Add((mediaType, folder));
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to create tasks for directory: {Directory}", directory);
-                failures.Add(directory);
+                _logger.LogWarning(ex, "Failed to create tasks for folder: {Folder}", folder);
+                failures.Add((mediaType, folder));
             }
         }
 
         // Await all play count tasks at once
-        // Task.WhenAll waits for all tasks to complete before throwing (if any fail)
-        // Ensure we always process all results even if aggregation fails
         try
         {
             await Task.WhenAll(playCountTasks.Select(t => t.task)).ConfigureAwait(false);
         }
         catch (AggregateException ex)
         {
-            // Log summary of failed tasks, but continue to process all results below
-            // Task.WhenAll already waited for all tasks to complete before throwing
             _logger.LogWarning(ex, "Some play count update tasks failed for user {UserName}. Processing all results individually.", user.Username);
         }
         catch (OperationCanceledException ex)
         {
-            // Cancellation occurred, but all tasks should still be in a final state
             _logger.LogWarning(ex, "Operation canceled while awaiting play count update tasks for user {UserName}. Processing all results individually.", user.Username);
         }
         catch (Exception ex)
         {
-            // Catch any other unexpected exceptions during aggregation
-            // Even if this fails, we still want to process all task results
             _logger.LogError(ex, "Unexpected exception while awaiting play count update tasks for user {UserName}. Processing all results individually.", user.Username);
         }
 
         // Process results and determine success/failure/skipped based on results
-        foreach (var (task, item, playCount, directory) in playCountTasks)
+        foreach (var (task, item, folder, playCount, mediaType) in playCountTasks)
         {
             if (task.IsFaulted)
             {
                 _logger.LogWarning(task.Exception?.GetBaseException() ?? new Exception("Task faulted with unknown error"),
-                    "Failed to update play count for user {UserName}, item: {Path}", user.Username, directory);
-                failures.Add(directory);
+                    "Failed to update play count for user {UserName}, item: {Path}", user.Username, folder);
+                failures.Add((mediaType, folder));
             }
             else if (task.IsCanceled)
             {
-                _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, directory);
-                failures.Add(directory);
+                _logger.LogWarning("Operation canceled while updating play count for user {UserName}, item: {Path}", user.Username, folder);
+                failures.Add((mediaType, folder));
             }
             else
             {
@@ -679,14 +677,14 @@ public class SortService
                 if (result.Success)
                 {
                     _logger.LogTrace("Updated play count and last played date for user {UserName}, item: {ItemName} ({Path}) to {PlayCount}",
-                        user.Username, item.Name, directory, playCount);
+                        user.Username, item.Name, folder, playCount);
                     successes.Add((item, playCount));
                 }
                 else
                 {
                     _logger.LogWarning("Failed to update play count for user {UserName}, item: {Path}: {Message}", 
-                        user.Username, directory, result.Message);
-                    failures.Add(directory);
+                        user.Username, folder, result.Message);
+                    failures.Add((mediaType, folder));
                 }
             }
         }
@@ -698,12 +696,9 @@ public class SortService
         }
         catch (Exception ex)
         {
-            // Log aggregate exception but don't affect success/failure/skipped
             _logger.LogWarning(ex, "Some play status marking tasks failed for user {UserName}", user.Username);
         }
 
         return (successes, failures, skipped);
     }
-
 }
-

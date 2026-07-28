@@ -30,7 +30,6 @@ public class FavoriteService
         _libraryManager = libraryManager;
         _userManager = userManager;
     }
-    #region ToJellyseerr
 
     /// <summary>
     /// Get all user favorites from Jellyfin and filter to only items in the JellyBridge folder.
@@ -358,7 +357,7 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 
             // Find matches between Jellyfin items and Jellyseerr metadata
             var jellyfinItems = requestedFavorites.Select(f => f.item).ToList();
-			var (matches, _) = await _bridgeService.LibraryScanAsync(jellyfinItems);
+			var (matches, _) = await _bridgeService.BuildJellyseerrMatchesAsync(jellyfinItems);
 			_logger.LogDebug("Library scan produced {MatchCount} matches for ignore/unfavorite", matches.Count);
 
             // Create ignore files for all matched Jellyfin items (always done, regardless of RemoveRequestedFromFavorites setting)
@@ -644,8 +643,6 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 
         return results;
     }
-
-    #endregion
 
     #endregion
 

@@ -36,12 +36,18 @@ public class SortTask : IScheduledTask
     {
         try
         {
-            _logger.LogInformation("Starting sort task");
+            var isSortEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
+            if (!isSortEnabled)
+            {
+                _logger.LogDebug("Automated sort task is disabled, skipping execution");
+                return;
+            }
 
             using var scope = _scopeFactory.CreateScope();
             var sortService = scope.ServiceProvider.GetRequiredService<SortService>();
-            var libraryService = scope.ServiceProvider.GetRequiredService<LibraryService>();
-
+            var refreshService = scope.ServiceProvider.GetRequiredService<RefreshService>();
+            _logger.LogInformation("Starting sort task");
+            
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<object?>(async () =>
             {
@@ -55,7 +61,7 @@ public class SortTask : IScheduledTask
                 // Refresh library to reload user data (play counts) if refresh is needed
                 if (sortResult.Refresh != null)
                 {
-                    await libraryService.RefreshBridgeLibrary(createMode: false, removeMode: false);
+                    await refreshService.RefreshBridgeLibrary(createMode: false, removeMode: false);
                 }
                 
                 progress.Report(100);
@@ -74,10 +80,10 @@ public class SortTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
+        var isSortEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
         var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours));
         
-        if (!isEnabled)
+        if (!isSortEnabled)
         {
             _logger.LogDebug("Automated sort task is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();

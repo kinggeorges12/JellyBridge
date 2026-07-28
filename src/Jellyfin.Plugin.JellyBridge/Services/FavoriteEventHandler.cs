@@ -18,7 +18,7 @@ public sealed class FavoriteEventHandler : IHostedService
     private readonly ILogger<FavoriteEventHandler> _logger;
     private readonly JellyfinIUserDataManager _userDataManager;
     private readonly JellyfinIUserManager _userManager;
-    private readonly ManageDiscoverLibraryController _manageDiscoverLibraryController;
+    private readonly ManageFavoriteRequestsController _manageFavoriteRequestsController;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FavoriteEventHandler"/> class.
@@ -30,12 +30,12 @@ public sealed class FavoriteEventHandler : IHostedService
         ILogger<FavoriteEventHandler> logger,
         JellyfinIUserDataManager userDataManager,
         JellyfinIUserManager userManager,
-        ManageDiscoverLibraryController manageDiscoverLibraryController)
+        ManageFavoriteRequestsController manageFavoriteRequestsController)
     {
         _logger = new DebugLogger<FavoriteEventHandler>(logger);
         _userDataManager = userDataManager;
         _userManager = userManager;
-        _manageDiscoverLibraryController = manageDiscoverLibraryController;
+        _manageFavoriteRequestsController = manageFavoriteRequestsController;
     }
 
     /// <inheritdoc />
@@ -110,7 +110,7 @@ public sealed class FavoriteEventHandler : IHostedService
     {
         try
         {
-            var result = await _manageDiscoverLibraryController.SyncFavorites();
+            var result = await _manageFavoriteRequestsController.SyncFavorites();
             _logger.LogInformation("Triggered favorites sync from the event handler. Result: {Result}", result);
         }
         catch (Exception ex)

@@ -12,6 +12,7 @@
 2. Support for Jellyfin 10.11.\*! See [Issue #1](https://github.com/kinggeorges12/JellyBridge/issues/1).
 3. Change sort order based on user preference or implement a random sort order plugin.
 4. Allow users to upload a custom image for promo videos.
+5. Adding new feature from [Issue #37](https://github.com/kinggeorges12/JellyBridge/issues/37) "Mixed Movies and Shows" to allow users to switch from a single library to separate Movies and Shows libraries.
 
 ## Contributing
 
@@ -288,8 +289,9 @@ Jellyfin.Plugin.JellyBridge/
 │   ├── AdvancedSettingsController.cs
 │   ├── CustomizePromoController.cs
 │   ├── GeneralSettingsController.cs
+│   ├── OrganizeDiscoverLibraryController.cs
 │   ├── ImportDiscoverContentController.cs
-│   ├── ManageDiscoverLibraryController.cs
+│   ├── ManageFavoriteRequestsController.cs
 │   ├── PluginConfigurationController.cs
 │   ├── SortDiscoverContentController.cs
 │   └── TaskStatusController.cs
@@ -317,7 +319,7 @@ Jellyfin.Plugin.JellyBridge/
 │   ├── DiscoverService.cs
 │   ├── FavoriteService.cs
 │   ├── FavoriteEventHandler.cs
-│   ├── LibraryService.cs
+│   ├── RefreshService.cs
 │   ├── MetadataService.cs
 │   ├── PlaceholderVideoGenerator.cs
 │   ├── PluginServiceRegistrator.cs

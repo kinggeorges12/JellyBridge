@@ -114,7 +114,7 @@ public interface IJellyseerrItem
     /// Returns a formatted string representation suitable for folder naming.
     /// Format: "MediaName (Year) [tmdbid-ID] [extraidname-ExtraId]" with dynamic sections based on available values.
     /// </summary>
-    string? ToFolderString()
+    string ToFolderString()
     {
         var parts = new List<string>();
         
@@ -136,18 +136,31 @@ public interface IJellyseerrItem
         return string.Join(" ", parts);
     }
 
-    public abstract bool EqualsItem(IJellyfinItem? other);
+    abstract bool EqualsItem(IJellyfinItem? other);
     
     /// <summary>
-    /// Returns a hash code for the item that can be used for matching.
+    /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetItemHashCode();
+    int GetItemHashCode(bool network = false)
+    {
+        if (network)
+        {
+            return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
+        }
+        return HashCode.Combine(Id, ExtraId, MediaType);
+    }
     
     /// <summary>
-    /// Returns a hash code for the item that includes folder-specific properties (Id, MediaName, Year, MediaType, NetworkTag).
-    /// Used for folder-based matching when UseNetworkFolders is enabled.
+    /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetItemFolderHashCode();
+    int GetFolderHashCode(bool network = false)
+    {
+        if (network)
+        {
+            return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType, NetworkTag);
+        }
+        return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType);
+    }
     
     /// <summary>
     /// Generates XML content for the media item (movie.nfo or tvshow.nfo format).

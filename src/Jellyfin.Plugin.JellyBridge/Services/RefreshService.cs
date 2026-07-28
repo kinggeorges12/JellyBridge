@@ -8,26 +8,75 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
- 
+using MediaBrowser.Model.Tasks;
+using MediaBrowser.Model.Globalization;
+using Jellyfin.Plugin.JellyBridge.BridgeModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
 /// <summary>
 /// Service for managing Jellyfin libraries with JellyBridge.
 /// </summary>
-public class LibraryService
+public class RefreshService
 {
-    private readonly DebugLogger<LibraryService> _logger;
+    private readonly DebugLogger<RefreshService> _logger;
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly IDirectoryService _directoryService;
     private readonly JellyfinIProviderManager _providerManager;
-
-    public LibraryService(ILogger<LibraryService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager)
+    private readonly ITaskManager _taskManager;
+    private readonly ILocalizationManager _localization;
+    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization)
     {
-        _logger = new DebugLogger<LibraryService>(logger);
+        _logger = new DebugLogger<RefreshService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
         _providerManager = providerManager;
+        _taskManager = taskManager;
+        _localization = localization;
+    }
+
+    /// <summary>
+    /// Applies the post-sync refresh operations using a single sync result.
+    /// - Calls RefreshBridgeLibrary with computed parameters
+    /// </summary>
+    public async Task ApplyRefreshAsync(RefreshableResult? results)
+    {
+        await ApplyRefreshAsync( [results] );
+    }
+
+    /// <summary>
+    /// Applies the post-sync refresh operations based on the two sync results.
+    /// - Calls RefreshBridgeLibrary with computed parameters
+    /// - Then scans all libraries and awaits completion
+    /// </summary>
+    public async Task ApplyRefreshAsync(List<RefreshableResult?> results)
+    {
+        List<RefreshableResult> allResults = results.OfType<RefreshableResult>().ToList();
+        
+        var skipRefresh = allResults.Any(r => r.Refresh == null);
+        if (skipRefresh)
+        {
+            _logger.LogDebug("No refresh plan applied");
+            return;
+        }
+
+        var scanAll = allResults.Any(r => r.Refresh?.ScanAllLibraries == true);
+        var createMode = allResults.Any(r => r.Refresh?.CreateRefresh == true);
+        var removeMode = allResults.Any(r => r.Refresh?.RemoveRefresh == true);
+        var refreshImages = allResults.Any(r => r.Refresh?.RefreshImages == true);
+
+        // Call the refresh method (fire-and-await, no return value)
+        // Update refresh always runs to reload user data (play counts)
+        if (scanAll)
+        {
+            ScanThenRefreshRunner(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+        }
+        else
+        {
+            await RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+        }
+            
+        _logger.LogInformation("JellyBridge library refresh initiated");
     }
 
     /// <summary>
@@ -43,15 +92,11 @@ public class LibraryService
         {
             var config = Plugin.GetConfiguration();
             var syncDirectory = FolderUtils.GetBaseDirectory();
-            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
+            var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
-            if (!manageJellyseerrLibrary) {
+            if (!manageJellyBridgeLibrary) {
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return queuedCount;
-            }
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                throw new InvalidOperationException($"Sync directory does not exist: {syncDirectory}");
             }
 
             _logger.LogDebug("Starting Jellyseerr library refresh (CreateMode: {CreateMode}, RemoveMode: {RemoveMode})...", createMode, removeMode);
@@ -213,26 +258,93 @@ public class LibraryService
     }
 
     /// <summary>
+    /// Checks if the "Refresh Library" task is currently running.
+    /// </summary>
+    public bool IsTaskRefreshLibraryRunning()
+    {
+        // Task is stored as the localized name
+        var localizedTaskName = _localization.GetLocalizedString("TaskRefreshLibrary");
+
+        // Find the task worker
+        var taskWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.Name == localizedTaskName);
+        if (taskWorker == null)
+        {
+            _logger.LogWarning($"{localizedTaskName} task not found.");
+            return false;
+        }
+
+        // get the State property
+        var state = taskWorker.State;
+        return state == TaskState.Running;
+    }
+
+    /// <summary>
+    /// Waits for the "Refresh Library" task to complete, with a timeout.
+    /// </summary>
+    public async Task<bool> WaitForTaskRefreshLibrary()
+    {
+
+        // Delay start of task to allow it to begin processing
+        await Task.Delay(1000);
+        // Wait for it to complete by checking the state
+        var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
+        var endTime = DateTime.UtcNow + timeout;
+        var taskFinished = false;
+        while (DateTime.UtcNow < endTime)
+        {
+            if(!IsTaskRefreshLibraryRunning())
+            {
+                taskFinished = true;
+                break;
+            }
+            _logger.LogTrace($"TaskRefreshLibrary is still running, waiting a second...");
+            await Task.Delay(1000);
+        }
+
+        if (taskFinished == false)
+        {
+            _logger.LogWarning("Scan timed out after {Timeout} minutes", timeout.TotalMinutes);
+        }
+        return taskFinished;
+    }
+
+    /// <summary>
     /// Scans all Jellyfin libraries for first-time plugin initialization.
     /// Uses the same functionality as the "Scan All Libraries" button.
     /// </summary>
-    public async Task<bool?> ScanAllLibraries()
+    public async Task<bool?> ScanAllLibraries(bool force=false)
     {
+        var libraryDir = FolderUtils.GetBaseDirectory();
+        var tempDir = Path.Combine(libraryDir, "_Recycle_JellyBridge");
+        var fileCreated = false;
         try
         {
-            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
+            var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
-            if (!manageJellyseerrLibrary)
+            if (!force && !manageJellyBridgeLibrary)
             {
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return null;
             }
 
-            _logger.LogDebug("Starting full scan of all Jellyfin libraries for first-time initialization...");
+            if (force)
+            {
+                if (!FolderUtils.FolderExistsThrowNull(tempDir)){
+                    Directory.CreateDirectory(tempDir);
+                }
+                // Create temp file to force refresh
+                File.Create(Path.Combine(tempDir, ".ignore")).Close();
+                fileCreated = true;
+            }
 
+            _logger.LogDebug("Starting full scan of all Jellyfin libraries...");
+
+            // Wait for scan before and after running a refresh
+            await WaitForTaskRefreshLibrary();
             // Use the same method as the "Scan All Libraries" button
-                    await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
-
+            await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+            await WaitForTaskRefreshLibrary();
+            
             _logger.LogDebug("Full scan of all libraries completed successfully");
             
             return true;
@@ -242,5 +354,39 @@ public class LibraryService
             _logger.LogError(ex, "Error scanning all libraries for first time");
             return false;
         }
+        finally
+        {
+            if(fileCreated)
+            {
+                // Clean up temp directory
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Scans all libraries and then refreshes the JellyBridge library in the background.
+    /// If force is true, creates an ignore file to run the refresh on an empty library.
+    /// </summary>
+    public void ScanThenRefreshRunner(bool createMode, bool removeMode, bool refreshImages, bool force=false)
+    {
+        // Fire and forget: First scan, THEN refresh in background
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                
+                _logger.LogDebug("Starting background scan of all Jellyfin libraries...");
+                await ScanAllLibraries(force: force);
+                
+                _logger.LogDebug("Applying refresh plan - CreateMode: {CreateMode}, RemoveMode: {RemoveMode}, RefreshImages: {RefreshImages}", createMode, removeMode, refreshImages);
+                await RefreshBridgeLibrary(createMode: createMode, removeMode: removeMode, refreshImages: refreshImages);
+                _logger.LogDebug("Background refresh completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in background refresh operations");
+            }
+        });
     }
 }

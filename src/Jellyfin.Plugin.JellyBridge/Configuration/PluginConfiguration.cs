@@ -17,10 +17,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public static readonly Dictionary<string, object> DefaultValues = new()
     {
         // General
-        { nameof(IsEnabled), false },
         { nameof(JellyseerrUrl), "http://localhost:5055" },
         { nameof(ApiKey), string.Empty },
         { nameof(LibraryDirectory), "/data/JellyBridge" },
+        { nameof(IsEnabled), false },
+        { nameof(EnableInMainMenu), true },
         { nameof(SyncIntervalHours), 24.0 },
         { nameof(EnableStartupSync), false },
         { nameof(StartupDelaySeconds), 30 },
@@ -57,15 +58,16 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MaxRetentionDays), 30 },
 
         // Library Settings
-        { nameof(ManageJellyseerrLibrary), true },
+        { nameof(ManageJellyBridgeLibrary), true },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
         { nameof(RemoveRequestedFromFavorites), false },
         { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
+        { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
-        { nameof(LibraryPrefix), string.Empty },
+        { nameof(NetworkFolderPrefix), string.Empty },
 
         // Customize Promo Videos
         { nameof(CustomMoviesPromo), string.Empty },
@@ -77,9 +79,10 @@ public class PluginConfiguration : BasePluginConfiguration
 
         // Sort Discover Content
         { nameof(EnableAutomatedSortTask), false },
+        { nameof(SortTaskIntervalHours), 5.0 },
         { nameof(SortOrder), SortOrderOptions.Random },
         { nameof(MarkMediaPlayed), false },
-        { nameof(SortTaskIntervalHours), 5.0 },
+        { nameof(EnableSortLibraryRefresh), false },
 
         // Advanced Settings
         { nameof(TaskTimeoutMinutes), 10 },
@@ -90,11 +93,6 @@ public class PluginConfiguration : BasePluginConfiguration
     };
 
     // ===== General =====
-    /// <summary>
-    /// Gets or sets whether the plugin is enabled.
-    /// </summary>
-    public bool? IsEnabled { get; set; }
-
     /// <summary>
     /// Gets or sets the Jellyseerr base URL.
     /// </summary>
@@ -113,6 +111,16 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether the plugin is enabled.
+    /// </summary>
+    public bool? IsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the plugin is displayedW in the main menu.
+    /// </summary>
+    public bool? EnableInMainMenu { get; set; }
 
     /// <summary>
     /// Gets or sets the sync interval in hours.
@@ -161,7 +169,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyBridge.
     /// </summary>
-    public bool? ManageJellyseerrLibrary { get; set; }
+    public bool? ManageJellyBridgeLibrary { get; set; }
 
     /// <summary>
     /// Gets or sets whether to exclude placeholder shows from main libraries.
@@ -189,6 +197,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? RequestFirstSeason { get; set; }
 
     /// <summary>
+    /// Gets or sets whether to use media type folders for movies and series.
+    /// </summary>
+    public bool? UseMixedMediaLibrary { get; set; }
+
+    /// <summary>
     /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
     public bool? UseNetworkFolders { get; set; }
@@ -201,7 +214,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
-    public string LibraryPrefix { get; set; } = string.Empty;
+    public string NetworkFolderPrefix { get; set; } = string.Empty;
 
     // ===== Customize Promo Videos =====
     /// <summary>
@@ -244,6 +257,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? EnableAutomatedSortTask { get; set; }
 
     /// <summary>
+    /// Gets or sets the interval in hours for the sort task.
+    /// </summary>
+    public double? SortTaskIntervalHours { get; set; }
+
+    /// <summary>
     /// Gets or sets the sort order algorithm to use for discover library content.
     /// </summary>
     public SortOrderOptions? SortOrder { get; set; }
@@ -256,9 +274,9 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? MarkMediaPlayed { get; set; }
 
     /// <summary>
-    /// Gets or sets the interval in hours for the sort task.
+    /// Gets or sets whether to enable the automated task to refresh the sort library.
     /// </summary>
-    public double? SortTaskIntervalHours { get; set; }
+    public bool? EnableSortLibraryRefresh { get; set; }
 
     // ===== Advanced Settings =====
     /// <summary>

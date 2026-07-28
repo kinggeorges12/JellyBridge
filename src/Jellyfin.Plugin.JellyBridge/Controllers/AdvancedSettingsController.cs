@@ -12,14 +12,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     public class AdvancedSettingsController : ControllerBase
     {
         private readonly DebugLogger<AdvancedSettingsController> _logger;
-        private readonly LibraryService _libraryService;
+        private readonly RefreshService _refreshService;
         private readonly CleanupService _cleanupService;
         private readonly SyncService _syncService;
 
-        public AdvancedSettingsController(ILoggerFactory loggerFactory, LibraryService libraryService, CleanupService cleanupService, SyncService syncService)
+        public AdvancedSettingsController(ILoggerFactory loggerFactory, RefreshService refreshService, CleanupService cleanupService, SyncService syncService)
         {
             _logger = new DebugLogger<AdvancedSettingsController>(loggerFactory.CreateLogger<AdvancedSettingsController>());
-            _libraryService = libraryService;
+            _refreshService = refreshService;
             _cleanupService = cleanupService;
             _syncService = syncService;
         }
@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         _logger.LogDebug("Applying cleanup refresh plan (CreateRefresh: {CreateRefresh}, RemoveRefresh: {RemoveRefresh}, RefreshImages: {RefreshImages})", 
                             cleanupResult.Refresh.CreateRefresh, cleanupResult.Refresh.RemoveRefresh, cleanupResult.Refresh.RefreshImages);
                         _logger.LogDebug("Awaiting scan of all Jellyfin libraries...");
-                        await _syncService.ApplyRefreshAsync(cleanupResult: cleanupResult);
+                        await _refreshService.ApplyRefreshAsync(cleanupResult);
                         _logger.LogDebug("Scan of all libraries completed");
                     }
 
@@ -86,7 +86,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Recycle all Jellyseerr library data.
+        /// Recycle all JellyBridge library data.
         /// </summary>
         [HttpPost("RecycleLibrary")]
         public async Task<IActionResult> RecycleLibrary()
@@ -103,64 +103,51 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     _logger.LogInformation("Starting data deletion - Library directory: {LibraryDir}", libraryDir);
                     
-                    // Delete all contents inside library directory if it exists
-                    if (System.IO.Directory.Exists(libraryDir))
+                    _logger.LogTrace("Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                    
+                    try
                     {
-                        _logger.LogTrace("Deleting all contents inside library directory: {LibraryDir}", libraryDir);
+                        // Get all subdirectories and files
+                        var subdirs = System.IO.Directory.GetDirectories(libraryDir);
+                        var files = System.IO.Directory.GetFiles(libraryDir);
                         
-                        try
+                        // Delete all files in the root directory
+                        foreach (var file in files)
                         {
-                            // Get all subdirectories and files
-                            var subdirs = System.IO.Directory.GetDirectories(libraryDir);
-                            var files = System.IO.Directory.GetFiles(libraryDir);
-                            
-                            // Delete all files in the root directory
-                            foreach (var file in files)
-                            {
-                                System.IO.File.Delete(file);
-                                _logger.LogTrace("Deleted file: {File}", file);
-                            }
-                            
-                            // Delete all subdirectories (recursively)
-                            foreach (var subdir in subdirs)
-                            {
-                                System.IO.Directory.Delete(subdir, true);
-                                _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
-                            }
-                            
-                            _logger.LogInformation("Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
+                            System.IO.File.Delete(file);
+                            _logger.LogTrace("Deleted file: {File}", file);
                         }
-                        catch (Exception ex)
+                        
+                        // Delete all subdirectories (recursively)
+                        foreach (var subdir in subdirs)
                         {
-                            _logger.LogError(ex, "Failed to delete contents of library directory: {LibraryDir}", libraryDir);
-                            throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
+                            System.IO.Directory.Delete(subdir, true);
+                            _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
                         }
+                        
+                        _logger.LogInformation("Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogError("Library directory does not exist: {LibraryDir}", libraryDir);
-                        throw new InvalidOperationException($"Library directory does not exist: {libraryDir}");
+                        _logger.LogError(ex, "Failed to delete contents of library directory: {LibraryDir}", libraryDir);
+                        throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
                     }
                     
-                    _logger.LogDebug("Data deletion completed successfully");
-                    
-                    // Refresh the Jellyseerr library after data deletion
-                    _logger.LogDebug("Starting Jellyseerr library refresh after data deletion...");
-                    
+                    // Refresh the JellyBridge library after data deletion
+                    _logger.LogDebug("Starting JellyBridge library refresh after data deletion...");
+
                     // Call the refresh method (fire-and-await, no return value)
                     // Update refresh always runs to reload user data (play counts)
-                    await _libraryService.RefreshBridgeLibrary(createMode: true, removeMode: true, refreshImages: true);
-
-                    await _libraryService.ScanAllLibraries();
-
-                    _logger.LogInformation("Jellyseerr library refresh initiated");
+                    _refreshService.ScanThenRefreshRunner(createMode: false, removeMode: true, refreshImages: false, force: true);
+                    
+                    _logger.LogInformation("JellyBridge library refresh initiated");
 
                     return true;
                 }, _logger, "Delete Library Data");
                 
                 return Ok(new { 
                     success = true, 
-                    message = "All Jellyseerr library data has been deleted successfully and library has been refreshed." 
+                    message = "All JellyBridge library data has been deleted successfully and library has been refreshed." 
                 });
             }
             catch (Exception ex)

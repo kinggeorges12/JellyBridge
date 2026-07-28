@@ -54,7 +54,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddTransient<FavoriteService>();
 
             // Register the library service
-            serviceCollection.AddTransient<LibraryService>();
+            serviceCollection.AddTransient<RefreshService>();
             
             // Register placeholder video generator as transient to avoid early initialization
             serviceCollection.AddTransient<PlaceholderVideoGenerator>();
@@ -66,8 +66,9 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<Controllers.PluginConfigurationController>();
             serviceCollection.AddScoped<Controllers.GeneralSettingsController>();
             serviceCollection.AddScoped<Controllers.TaskStatusController>();
+            serviceCollection.AddScoped<Controllers.OrganizeDiscoverLibraryController>();
             serviceCollection.AddScoped<Controllers.ImportDiscoverContentController>();
-            serviceCollection.AddScoped<Controllers.ManageDiscoverLibraryController>();
+            serviceCollection.AddScoped<Controllers.ManageFavoriteRequestsController>();
             serviceCollection.AddScoped<Controllers.CustomizePromoController>();
             serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();

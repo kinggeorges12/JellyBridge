@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -16,12 +17,14 @@ public class CleanupService
     private readonly DebugLogger<CleanupService> _logger;
     private readonly MetadataService _metadataService;
     private readonly DiscoverService _discoverService;
+    private readonly BridgeService _bridgeService;
 
-    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService)
+    public CleanupService(ILogger<CleanupService> logger, MetadataService metadataService, DiscoverService discoverService, BridgeService bridgeService)
     {
         _logger = new DebugLogger<CleanupService>(logger);
         _metadataService = metadataService;
         _discoverService = discoverService;
+        _bridgeService = bridgeService;
     }
 
     /// <summary>
@@ -82,9 +85,6 @@ public class CleanupService
             
             result.Success = true;
             result.Message = "✅ Cleanup completed successfully";
-
-            // Log the full output using CleanupResult's ToString()
-            _logger.LogInformation("Missing data removed and placeholders rebuilt:\n{CleanupOutput}", result.ToString());
         }
         catch (Exception ex)
         {
@@ -117,16 +117,13 @@ public class CleanupService
                 // Treat null CreatedDate as very old (past cutoff date)
                 if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
                 {
-                    var itemDirectory = _metadataService.GetJellyBridgeItemDirectory(item);
+                    var itemDirectory = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
                     
-                    if (Directory.Exists(itemDirectory))
-                    {
-                        var deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
-                        Directory.Delete(itemDirectory, true);
-                        deletedItems.Add(item);
-                        _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
-                            item.MediaType, item.MediaName, deletionReason);
-                    }
+                    var deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
+                    Directory.Delete(itemDirectory, true);
+                    deletedItems.Add(item);
+                    _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 
+                        item.MediaType, item.MediaName, deletionReason);
                 }
             }
             catch (Exception ex)
@@ -238,7 +235,7 @@ public class CleanupService
     }
 
     /// <summary>
-    /// Filters out items with placeholders (by AssetExtension) and creates missing placeholders using DiscoverService.
+    /// Filters out items with placeholders (by extension .mp4) and creates missing placeholders using DiscoverService.
     /// </summary>
     public async Task<List<IJellyseerrItem>> CreateMissingPlaceholderVideosAsync(List<IJellyseerrItem> items)
     {
@@ -247,10 +244,8 @@ public class CleanupService
         {
             try
             {
-                var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
-                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                    continue;
-                if (!Directory.GetFiles(folderPath, "*" + PlaceholderVideoGenerator.AssetExtension, SearchOption.AllDirectories).Any())
+                var folderPath = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
+                if (!Directory.GetFiles(folderPath, PlaceholderVideoGenerator.AssetSearchPattern, SearchOption.AllDirectories).Any())
                 {
                     _logger.LogTrace("No placeholder found for {ItemName} at {FolderPath}", item.MediaName, folderPath);
                     itemsWithoutPlaceholder.Add(item);
@@ -263,7 +258,7 @@ public class CleanupService
             }
         }
 
-        var filteredItems = _discoverService.FilterIgnoredItems(itemsWithoutPlaceholder);
+        var filteredItems = _bridgeService.FilterAlreadyIgnoredItems(itemsWithoutPlaceholder);
         var created = await _discoverService.CreatePlaceholderVideosAsync(filteredItems);
         return created;
     }

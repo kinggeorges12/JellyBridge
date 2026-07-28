@@ -26,89 +26,12 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
     /// Get existing items of a specific type from the library.
     /// </summary>
     /// <typeparam name="T">The type of Jellyfin wrapper to retrieve (JellyfinMovie, JellyfinSeries)</typeparam>
-    /// <param name="libraryPath">Optional library path to filter by</param>
+    /// <param name="includePaths">Optional set of paths to include in the results</param>
+    /// <param name="excludePaths">Optional set of paths to exclude from the results</param>
     /// <returns>List of existing items</returns>
-    public List<T> GetExistingItems<T>(string? libraryPath = null) where T : class, IJellyfinItem
+    public List<T> GetExistingItems<T>(HashSet<string>? includePaths = null, HashSet<string>? excludePaths = null) where T : class, IJellyfinItem
     {
-        try
-        {
-            // Get the appropriate BaseItemKind for the type
-            if (typeof(T) == typeof(JellyfinMovie))
-            {
-                var itemTypes = new[] { BaseItemKind.Movie };
-                var items = Inner.GetItemList(new InternalItemsQuery
-                {
-                    IncludeItemTypes = itemTypes,
-                    Recursive = true
-                });
-                
-                // Convert BaseItem results to Jellyfin wrapper using factory methods
-                var jellyfinItems = items.Select<BaseItem, T?>(item => 
-                {
-                    if (item is Movie movie)
-                    {
-                        return (T)(object)JellyfinMovie.FromMovie(movie);
-                    }
-                    return null;
-                }).Where(item => item != null).Cast<T>();
-                
-                var filteredItems = jellyfinItems;
-                
-                // Filter by library path if provided
-                if (!string.IsNullOrEmpty(libraryPath))
-                {
-                    filteredItems = filteredItems.Where(item => 
-                        !string.IsNullOrEmpty(item.Path) && 
-                        item.Path.StartsWith(libraryPath, StringComparison.OrdinalIgnoreCase));
-                }
-                
-                return filteredItems.ToList();
-            }
-            else if (typeof(T) == typeof(JellyfinSeries))
-            {
-                var itemTypes = new[] { BaseItemKind.Series };
-                var items = Inner.GetItemList(new InternalItemsQuery
-                {
-                    IncludeItemTypes = itemTypes,
-                    Recursive = true
-                });
-                
-                // Convert BaseItem results to Jellyfin wrapper using factory methods
-                var jellyfinItems = items.Select<BaseItem, T?>(item => 
-                {
-                    if (item is Series series)
-                    {
-                        return (T)(object)JellyfinSeries.FromSeries(series);
-                    }
-                    return null;
-                }).Where(item => item != null).Cast<T>();
-                
-                var filteredItems = jellyfinItems;
-                
-                // Filter by library path if provided
-                if (!string.IsNullOrEmpty(libraryPath))
-                {
-                    filteredItems = filteredItems.Where(item => 
-                        !string.IsNullOrEmpty(item.Path) && 
-                        item.Path.StartsWith(libraryPath, StringComparison.OrdinalIgnoreCase));
-                }
-                
-                return filteredItems.ToList();
-            }
-            else
-            {
-                return new List<T>();
-            }
-        }
-        catch (MissingMethodException)
-        {
-            // Using incompatible Jellyfin version
-        }
-        catch (Exception)
-        {
-            // Error getting existing items
-        }
-        return new List<T>();
+        return GetUserLibraryItems<T>(includePaths: includePaths, excludePaths: excludePaths);
     }
 
     /// <summary>
@@ -116,58 +39,80 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
     /// </summary>
     /// <typeparam name="T">The type of Jellyfin wrapper to retrieve (JellyfinMovie, JellyfinSeries)</typeparam>
     /// <param name="user">The user to get library items for</param>
+    /// <param name="includePaths">Optional set of paths to include in results</param>
     /// <param name="excludePaths">Optional set of paths to exclude from results</param>
     /// <returns>List of user's library items</returns>
-    public List<T> GetUserLibraryItems<T>(JellyfinUser user, HashSet<string>? excludePaths = null) where T : class, IJellyfinItem
+    public List<T> GetUserLibraryItems<T>(JellyfinUser? user = null, HashSet<string>? includePaths = null, HashSet<string>? excludePaths = null) where T : class, IJellyfinItem
     {
         try
         {
-            var result = new List<T>();
-            
-            if (typeof(T) == typeof(JellyfinMovie))
+            IEnumerable<T>? jellyfinItems = null;
+            IReadOnlyList<BaseItem> items;
+
+            // Determine the enum for creating the search query
+            BaseItemKind baseItemKind;
+            if (typeof(T) == typeof(JellyfinSeries)){
+                baseItemKind = BaseItemKind.Series;
+            }
+            else if (typeof(T) == typeof(JellyfinMovie)){
+                baseItemKind = BaseItemKind.Movie;
+            }
+            else
             {
-                var items = Inner.GetItemList(new InternalItemsQuery(user.Inner)
+                throw new InvalidOperationException($"Unsupported type {typeof(T).Name}");
+            }
+
+            // Search the whole library if no user is provided, otherwise search the user's library
+            if (user == null)
+            {
+                items = Inner.GetItemList(new InternalItemsQuery
                 {
-                    IncludeItemTypes = new[] { BaseItemKind.Movie },
+                    IncludeItemTypes = new[] { baseItemKind },
                     Recursive = true
                 });
-                
-                var jellyfinItems = items.Select<BaseItem, T?>(item => 
-                {
-                    if (item is Movie movie)
-                    {
-                        return (T)(object)JellyfinMovie.FromMovie(movie);
-                    }
-                    return null;
-                }).Where(item => item != null && 
-                    (excludePaths == null || item.Path == null || 
-                     !excludePaths.Any(excludePath => FolderUtils.IsPathInDirectory(item.Path, excludePath)))).Cast<T>();
-                
-                result.AddRange(jellyfinItems);
             }
-            else if (typeof(T) == typeof(JellyfinSeries))
+            else
             {
-                var items = Inner.GetItemList(new InternalItemsQuery(user.Inner)
+                items = Inner.GetItemList(new InternalItemsQuery(user.Inner)
                 {
-                    IncludeItemTypes = new[] { BaseItemKind.Series },
+                    IncludeItemTypes = new[] { baseItemKind },
                     Recursive = true
                 });
-                
-                var jellyfinItems = items.Select<BaseItem, T?>(item => 
-                {
-                    if (item is Series series)
-                    {
-                        return (T)(object)JellyfinSeries.FromSeries(series);
-                    }
-                    return null;
-                }).Where(item => item != null && 
-                    (excludePaths == null || item.Path == null || 
-                     !excludePaths.Any(excludePath => FolderUtils.IsPathInDirectory(item.Path, excludePath)))).Cast<T>();
-                
-                result.AddRange(jellyfinItems);
             }
             
-            return result;
+            // Convert the base items to the appropriate Jellyfin wrapper type
+            jellyfinItems = items.Select<BaseItem, T?>(item => 
+            {
+                if (item is Movie movie)
+                {
+                    return (T)(object)JellyfinMovie.FromMovie(movie);
+                }
+                else if (item is Series series)
+                {
+                    return (T)(object)JellyfinSeries.FromSeries(series);
+                }
+                return null;
+            }).Cast<T>();
+            
+            if (jellyfinItems == null)
+            {
+                return new List<T>();
+            }
+            // Filter by library path if provided
+            var filteredItems = jellyfinItems.Where(item =>
+                item != null && 
+                !string.IsNullOrEmpty(item.Path) &&
+                (includePaths == null || 
+                includePaths.Any(includePath => FolderUtils.IsPathInDirectory(item.Path, includePath))) &&
+                (excludePaths == null || 
+                !excludePaths.Any(excludePath => FolderUtils.IsPathInDirectory(item.Path, excludePath)))
+            );
+            
+            return filteredItems.ToList();
+        }
+        catch (MissingMethodException)
+        {
+            // Using incompatible Jellyfin version
         }
         catch (Exception)
         {
@@ -180,19 +125,20 @@ public class JellyfinILibraryManager : WrapperBase<ILibraryManager>
     /// Finds an item by its directory path. Tries FindByPath as both folder and non-folder.
     /// For movies, also searches for video files in the directory and finds items by those file paths.
     /// </summary>
-    /// <param name="directoryPath">The directory path to search for</param>
+    /// <param name="itemPath">The item path to search for</param>
     /// <returns>The BaseItem if found, null otherwise</returns>
-    public BaseItem? FindItemByDirectoryPath(string directoryPath)
+    public BaseItem? FindJellyfinItemByPath(string itemPath)
     {
         // First try FindByPath as folder (for shows)
-        var item = Inner.FindByPath(directoryPath, isFolder: true);
+        var item = Inner.FindByPath(itemPath, isFolder: true);
         if (item != null)
         {
             return item;
         }
 
+        // Jellyfin >v10.11.3 do not allow movies by 'movie.mp4' path
         // Try FindByPath as non-folder (for movies)
-        item = Inner.FindByPath(directoryPath, isFolder: false);
+        item = Inner.FindByPath(itemPath, isFolder: false);
         if (item != null)
         {
             return item;
