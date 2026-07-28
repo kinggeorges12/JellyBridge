@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.70 - adding instructions",
+        "version": "3.70.11.9",
+        "timestamp": "2026-07-28T15:52:39.423Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.70.11.9.zip",
+        "checksum": "E483C322C5FAD4EBBF54B494B2D22F0C",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.70 - adding instructions",
+        "version": "3.70.11.0",
+        "timestamp": "2026-07-28T15:52:39.423Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.70.11.0.zip",
+        "checksum": "2FBCFE6B812DACCC0CE802BB9943BE83",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.70 - adding instructions",
+        "version": "3.70.10.7",
+        "timestamp": "2026-07-28T15:52:39.423Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.70.10.7.zip",
+        "checksum": "C0CA07BC4523FF5A1C1AA405633F4C42",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.69 - enabling force refresh file",
         "version": "3.69.11.9",
         "timestamp": "2026-07-28T15:23:27.302Z",
