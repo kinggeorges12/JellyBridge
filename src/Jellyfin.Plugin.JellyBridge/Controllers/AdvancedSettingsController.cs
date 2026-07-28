@@ -138,7 +138,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     // Call the refresh method (fire-and-await, no return value)
                     // Update refresh always runs to reload user data (play counts)
-                    _refreshService.ScanThenRefreshRunner(createMode: true, removeMode: true, refreshImages: true, force: true);
+                    _refreshService.ScanThenRefreshRunner(createMode: false, removeMode: true, refreshImages: false, force: true);
                     
                     _logger.LogInformation("JellyBridge library refresh initiated");
 

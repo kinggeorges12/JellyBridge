@@ -36,12 +36,18 @@ public class SortTask : IScheduledTask
     {
         try
         {
-            _logger.LogInformation("Starting sort task");
+            var isSortEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
+            if (!isSortEnabled)
+            {
+                _logger.LogDebug("Automated sort task is disabled, skipping execution");
+                return;
+            }
 
             using var scope = _scopeFactory.CreateScope();
             var sortService = scope.ServiceProvider.GetRequiredService<SortService>();
             var refreshService = scope.ServiceProvider.GetRequiredService<RefreshService>();
-
+            _logger.LogInformation("Starting sort task");
+            
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<object?>(async () =>
             {

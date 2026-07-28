@@ -1075,7 +1075,7 @@ function initializeUploadPromo(page) {
         });
     }
     
-    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const customizePromoButton = page.querySelector('#generatePromoVideos');
     customizePromoButton.addEventListener('click', function() {
         performCustomizePromo(page);
@@ -1158,7 +1158,7 @@ function performCustomizePromo(page) {
 }
 
 // ==========================================
-// SORT CONTENT FUNCTIONS
+// SORT DISCOVER CONTENT FUNCTIONS
 // ==========================================
 
 function initializeSortContent(page) {
@@ -1271,7 +1271,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
     
-    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     syncFavoritesButton.addEventListener('click', function() {
         performSyncFavorites(page);
@@ -1325,9 +1325,9 @@ function performSyncFavorites(page) {
                     appendToResultBox(syncFavoritesResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
-                    DisplayMessage('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Send Discover Library Favorite Requests to Jellyseerr failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    let resultText = `\nSend Discover Library Favorite Requests to Jellyseerr Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
                     
                     appendToResultBox(syncFavoritesResult, resultText);
