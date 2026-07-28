@@ -673,7 +673,7 @@
                             <summary>Network Folders Setup</summary>
                             <div data-depends-on="UseNetworkFolders">
                                 <h4>Instructions</h4>
-                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
+                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
                                 <ol>
                                     <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
                                     <li>For each desired library, enter the <span class="link" data-target-page="LibraryDisplayNameContainer">Library Name</span> and click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span>.</li>
@@ -699,8 +699,6 @@
                                     </label>
                                     <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
                                     <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends" data-depends-on="AddDuplicateContent">
-                                        <strong>💡 Recommended:</strong> If you have already synced discover content, you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the existing data.
-                                        <br>
                                         <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
                                     </div>
                                 </div>
