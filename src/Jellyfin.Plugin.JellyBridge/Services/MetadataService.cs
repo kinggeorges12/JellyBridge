@@ -262,7 +262,6 @@ public class MetadataService
             
             // Write JSON metadata - serialize as concrete type to preserve JSON attributes
             var json = JellyBridgeJsonSerializer.Serialize(item);
-            _logger.LogDebug("Serialized metadata for {Item}: {Json}", item.MediaName, json);
             
             var metadataFile = Path.Combine(targetDirectory, IJellyseerrItem.GetMetadataFilename());
             await File.WriteAllTextAsync(metadataFile, json);
