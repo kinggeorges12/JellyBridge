@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T03:59:17.658Z",
+        "dependencies": [],
+        "checksum": "359D0D0BD2089FCB987D58F5EB2391AC",
+        "version": "3.57.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.57.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.57 - adding option for media type folders"
+      },
+      {
+        "timestamp": "2026-07-28T03:59:17.658Z",
+        "dependencies": [],
+        "checksum": "8A103E8CD155DD82580FE1CC413F0F1F",
+        "version": "3.57.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.57.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.57 - adding option for media type folders"
+      },
+      {
+        "timestamp": "2026-07-28T03:59:17.658Z",
+        "dependencies": [],
+        "checksum": "F4B013CAD3526ECCF4E2DA5157F66A81",
+        "version": "3.57.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.57.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.57 - adding option for media type folders"
+      },
+      {
         "timestamp": "2026-07-27T12:02:34.837Z",
         "dependencies": [],
         "checksum": "0F10A8F5098E58C4FB7770AED2D1C30D",

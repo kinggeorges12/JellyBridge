@@ -58,12 +58,13 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MaxRetentionDays), 30 },
 
         // Library Settings
-        { nameof(ManageJellyseerrLibrary), true },
+        { nameof(ManageJellyBridgeLibrary), true },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
         { nameof(RemoveRequestedFromFavorites), false },
         { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
+        { nameof(UseMixedMediaFolders), true },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(LibraryPrefix), string.Empty },
@@ -168,7 +169,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to manage libraries with JellyBridge.
     /// </summary>
-    public bool? ManageJellyseerrLibrary { get; set; }
+    public bool? ManageJellyBridgeLibrary { get; set; }
 
     /// <summary>
     /// Gets or sets whether to exclude placeholder shows from main libraries.
@@ -194,6 +195,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// When enabled, requests will only be made for the first season of a show.
     /// </summary>
     public bool? RequestFirstSeason { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to use media type folders for movies and series.
+    /// </summary>
+    public bool? UseMixedMediaFolders { get; set; }
 
     /// <summary>
     /// Gets or sets whether to use network folders for streaming services.

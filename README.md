@@ -153,7 +153,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
   - **Instructions**: Step-by-step guide for creating network folders and libraries
   - **Library Prefix**: Prefix applied to generated network library names
   - **Show Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
-  - **Generate Network Folders**: Button to create the folder structure for all selected networks
+  - **Generate Library Folders**: Button to create the folder structure for all selected networks
 - **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
 
 ### 🎥 Customize Promo Videos
@@ -223,7 +223,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 ### Version 2.0 🎉
 
 - Sort Discover Content: automated task with interval and algorithm selection (None, Random, Smart, Smartish), on-demand "Refresh Discover Library Sort Order", and optional "Mark Media Played".
-- Manage Discover Library: "Network Folders" setup instructions with "Generate Network Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
+- Manage Discover Library: "Network Folders" setup instructions with "Generate Library Folders" action, optional "Show Discover Content in Multiple Libraries", and configurable "Library Prefix"; fixed content exclusions across multiple libraries; changed favorites cleanup.
 - Advanced & UX: startup run of enabled tasks with delay, task/request timeouts, new "Enable Trace Logging", and an Automated Sync Status bar (running/idle, progress, last/next run).
 
 **⚠️ Version Notes**
