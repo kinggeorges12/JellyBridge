@@ -587,7 +587,8 @@ function createDefaultLibrary(page) {
                 }
                 return apiCalls;
             }).finally(function() {
-                scrollToElement('librarySetupInstructions');
+                // Disable scrolling since there is no output container
+                // scrollToElement('createDefaultLibraryContainer');
                 Dashboard.hideLoadingMsg();
                 createButton.disabled = false;
             });

@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.79 - after library creation don't scroll",
+        "version": "3.79.11.9",
+        "timestamp": "2026-07-28T19:37:21.519Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.79.11.9.zip",
+        "checksum": "002342C1CB5CD622C9BAE105327F89A5",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.79 - after library creation don't scroll",
+        "version": "3.79.11.0",
+        "timestamp": "2026-07-28T19:37:21.519Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.79.11.0.zip",
+        "checksum": "5DD84FD99B792F856C5E416CE0445D14",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.79 - after library creation don't scroll",
+        "version": "3.79.10.7",
+        "timestamp": "2026-07-28T19:37:21.519Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.79.10.7.zip",
+        "checksum": "83E0EA93211605FAF8B9771C8C368CE6",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.78 - library creation wasn't waiting for settings",
         "version": "3.78.11.9",
         "timestamp": "2026-07-28T19:03:33.174Z",
