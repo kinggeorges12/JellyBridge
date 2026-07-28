@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T05:24:27.803Z",
+        "dependencies": [],
+        "checksum": "C4C8BD9F97E53B7F3EEDDC85157BE964",
+        "version": "3.65.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.65.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.65 - fixing bug and organizing config page js"
+      },
+      {
+        "timestamp": "2026-07-28T05:24:27.803Z",
+        "dependencies": [],
+        "checksum": "13F2672B64D3AFC286BFFA4F2DC9BD38",
+        "version": "3.65.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.65.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.65 - fixing bug and organizing config page js"
+      },
+      {
+        "timestamp": "2026-07-28T05:24:27.803Z",
+        "dependencies": [],
+        "checksum": "BECAE2E5DD8B2973C0DC1FCF663CD989",
+        "version": "3.65.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.65.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.65 - fixing bug and organizing config page js"
+      },
+      {
         "timestamp": "2026-07-28T05:18:20.687Z",
         "dependencies": [],
         "checksum": "664C16122B9AFC052BB7A2248A1EEAD3",
