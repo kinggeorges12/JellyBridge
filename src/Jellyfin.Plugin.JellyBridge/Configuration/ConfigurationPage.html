@@ -622,7 +622,7 @@
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             <strong>💡 Recommended:</strong> If you change the options for
-                                <span class="link" data-target-page="UseMixedMediaFoldersContainer">Mixed Movies and Shows</span> or
+                                <span class="link" data-target-page="UseMixedMediaLibraryContainer">Mixed Movies and Shows</span> or
                                 <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>,
                                 you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span>
                                 to remove the existing directories and then
@@ -641,16 +641,16 @@
                             <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
 
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseMixedMediaFoldersContainer">
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseMixedMediaLibraryContainer">
                             <label class="emby-checkbox-label">
-                                <input id="UseMixedMediaFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <input id="UseMixedMediaLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Mixed Movies and Shows</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Store all media in a single directory. Disabling this setting will create separate folders for Movies and Shows.</div>
+                            <div class="fieldDescription">Store all media in a single library. Disabling this setting will create separate libraries for Movies and Shows.</div>
                         </div>
                         
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
@@ -705,11 +705,11 @@
 
                         <div class="fieldDescription" id="createDefaultLibraryContainer">
                             <div id="LibraryDisplayNameContainer">
-                                <div data-depends-on="UseMixedMediaFolders" class="inputContainer hide-depends">
+                                <div data-depends-on="UseMixedMediaLibrary" class="inputContainer hide-depends">
                                     <input is="emby-input" type="text" id="LibraryDisplayName" label="Library Name" placeholder="Discover"/>
                                     <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate a single library for Mixed Movies and Shows in Jellyfin.</div>
                                 </div>
-                                <div data-depends-off="UseMixedMediaFolders" class="inputContainer hide-depends">
+                                <div data-depends-off="UseMixedMediaLibrary" class="inputContainer hide-depends">
                                     <input is="emby-input" type="text" id="MovieLibraryDisplayName" label="Movie Library Name" placeholder="Discover Movies"/>
                                     <input is="emby-input" type="text" id="ShowLibraryDisplayName" label="Show Library Name" placeholder="Discover Shows"/>
                                     <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate separate libraries for Movies and Shows in Jellyfin.</div>

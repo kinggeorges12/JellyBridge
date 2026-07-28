@@ -315,7 +315,7 @@ public class RefreshService
     public async Task<bool?> ScanAllLibraries(bool force=false)
     {
         var libraryDir = FolderUtils.GetBaseDirectory();
-        var tempDir = Path.Combine(libraryDir, ".Recycle_JellyBridge");
+        var tempDir = Path.Combine(libraryDir, "_Recycle_JellyBridge");
         var fileCreated = false;
         try
         {
