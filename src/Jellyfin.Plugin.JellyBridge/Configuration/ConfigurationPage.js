@@ -28,11 +28,14 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
+            // Initialize manage discover library settings
+            initializeOrganizeLibrary(page);
+            
             // Initialize import discover content settings including network interface and sync buttons
             initializeImportContent(page);
             
             // Initialize manage discover library settings
-            initializeManageLibrary(page);
+            initializeManageFavorites(page);
             
             // Initialize upload promo video
             initializeUploadPromo(page);
@@ -248,12 +251,6 @@ function initializeGeneralSettings(page) {
         handleDisplayChange(); // Set initial state
     }
     
-    // Add create default library event listener
-    const createButton = page.querySelector('#createDefaultLibrary');
-    createButton.addEventListener('click', function () {
-        createDefaultLibrary(page);
-    });
-    
     // Add form submit event listener
     const form = page.querySelector('#jellyBridgeConfigurationForm');
     form.addEventListener('submit', function (e) {
@@ -270,6 +267,141 @@ function initializeGeneralSettings(page) {
         });
         e.preventDefault();
         return false;
+    });
+}
+
+function performTestConnection(page) {
+    const testButton = page.querySelector('#testConnection');
+    const url = safeParseString(page.querySelector('#JellyseerrUrl'));
+    const apiKey = safeParseString(page.querySelector('#ApiKey'));
+    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    const CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
+    const CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
+    const jellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
+
+    // Validate URL format if provided
+    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
+    
+    // Validate API Key
+    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
+
+    // Validate Library Directory
+    if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    // Validate Custom Movies promo
+    let isDefaultMoviesPromo = page.querySelector('#DefaultMoviesPromo').checked;
+    if (!isDefaultMoviesPromo && !validateField(page, 'CustomMoviesPromo', validators.windowsFolder, 'Custom Movies promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    // Validate Custom Series promo
+    let isDefaultSeriesPromo = page.querySelector('#DefaultSeriesPromo').checked;
+    if (!isDefaultSeriesPromo && !validateField(page, 'CustomSeriesPromo', validators.windowsFolder, 'Custom Series promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    // Validate Temp Directory
+    if (!validateField(page, 'JellyBridgeTempDirectory', validators.windowsFolder, 'Temp Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
+
+    testButton.disabled = true;
+    Dashboard.showLoadingMsg();
+    
+    const testData = {
+        JellyseerrUrl: url,
+        ApiKey: apiKey,
+        LibraryDirectory: libraryDirectory,
+        CustomMoviesPromo: isDefaultMoviesPromo ? null : CustomMoviesPromo,
+        CustomSeriesPromo: isDefaultSeriesPromo ? null : CustomSeriesPromo,
+        JellyBridgeTempDirectory: jellyBridgeTempDirectory
+    };
+
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/TestConnection'),
+        type: 'POST',
+        data: JSON.stringify(testData),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (data) {
+        // HTTP 200 response means connection test was successful
+        let message = '✅ Connection test successful!';
+        if (data && data.details) {
+            message = '✅ ' + data.details;
+        } else if (data && data.message) {
+            message = '✅ ' + data.message;
+        }
+        DisplayMessage(message);
+        // Show confirmation dialog for saving settings
+        Dashboard.confirm({
+                title: '✅ Connection Success!',
+                text: 'Save connection settings now?',
+                confirmText: '💾 Save',
+                cancelText: 'Cancel',
+                primary: "confirm"
+            }, 'Title', (confirmed) => {
+                if (confirmed) {
+                    // Save the current settings using the reusable function
+                    savePluginConfiguration(page).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        checkTaskStatus(page);
+                    }).catch(function (error) {
+                        DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                    }).finally(function() {
+                        Dashboard.hideLoadingMsg();
+                    });
+                } else {
+                    DisplayMessage('🚫 Exited without saving');
+                }
+            });
+    }).catch(async function (error) {
+        let message = null;
+        try {
+            let errorResponse = await error.json();
+            if (errorResponse) {
+                message = '❌ ';
+                if (errorResponse.message) {
+                    message += errorResponse.message;
+                } else {
+                    message += `Request failed (${errorResponse.status}): ${errorResponse.statusText}`;
+                }
+            } else {
+                message = '❓ Cannot communicate with Jellyfin plugin endpoint';
+            }
+        } catch (e) {
+            let rawText = await error.text();
+            if (rawText) {
+                message = `🚫 ${rawText}`;
+            } else {
+                message = '⛔ Cannot communicate with Jellyfin plugin endpoint';
+            }
+        }
+        try{
+            // Show confirmation dialog for opening troubleshooting
+            Dashboard.confirm({
+                    title: '🚧 Connection Test Failed',
+                    text: `Do you want to try troubleshooting? Error: ${message}`,
+                    confirmText: '🤖 Troubleshooting',
+                    cancelText: 'Close',
+                    primary: "confirm"
+                }, 'Title', (confirmed) => {
+                    if (confirmed) {
+                        scrollToElement('troubleshootingDetails');
+                    }
+                });
+        } finally {
+            // Something went wrong
+            DisplayMessage(message);
+        }
+    }).finally(function() {
+        Dashboard.hideLoadingMsg();
+        testButton.disabled = false;
+    });
+}
+
+// ==========================================
+// ORGANIZE DISCOVER LIBRARY FUNCTIONS
+// ==========================================
+
+function initializeOrganizeLibrary(page) {
+    // Add create default library event listener
+    const createButton = page.querySelector('#createDefaultLibrary');
+    createButton.addEventListener('click', function () {
+        createDefaultLibrary(page);
     });
 }
 
@@ -401,8 +533,9 @@ function createVirtualFolders(page, libraryName, libraryType, directories) {
 }
 
 function createDefaultLibrary(page) {
-    const UseMixedMediaFolders = nullIfDefault(page.querySelector('#UseMixedMediaFolders').checked, config.ConfigDefaults.UseMixedMediaFolders);
     const createButton = page.querySelector('#createDefaultLibrary');
+    const config = window.configJellyBridge || {};
+    const UseMixedMediaFolders = nullIfDefault(page.querySelector('#UseMixedMediaFolders').checked, config.ConfigDefaults.UseMixedMediaFolders);
     const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
     const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
     const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
@@ -454,129 +587,6 @@ function createDefaultLibrary(page) {
                 createButton.disabled = false;
             });
         }
-    });
-}
-
-function performTestConnection(page) {
-    const testButton = page.querySelector('#testConnection');
-    const url = safeParseString(page.querySelector('#JellyseerrUrl'));
-    const apiKey = safeParseString(page.querySelector('#ApiKey'));
-    const libraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
-    const CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
-    const CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
-    const jellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
-
-    // Validate URL format if provided
-    if (!validateField(page, 'JellyseerrUrl', validators.url, 'Jellyseerr URL must start with http:// or https://').isValid) return;
-    
-    // Validate API Key
-    if (!validateField(page, 'ApiKey', validators.notNull, 'API Key is required for connection test').isValid) return;
-
-    // Validate Library Directory
-    if (!validateField(page, 'LibraryDirectory', validators.windowsFolder, 'Library Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
-
-    // Validate Custom Movies promo
-    let isDefaultMoviesPromo = page.querySelector('#DefaultMoviesPromo').checked;
-    if (!isDefaultMoviesPromo && !validateField(page, 'CustomMoviesPromo', validators.windowsFolder, 'Custom Movies promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
-
-    // Validate Custom Series promo
-    let isDefaultSeriesPromo = page.querySelector('#DefaultSeriesPromo').checked;
-    if (!isDefaultSeriesPromo && !validateField(page, 'CustomSeriesPromo', validators.windowsFolder, 'Custom Series promo contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
-
-    // Validate Temp Directory
-    if (!validateField(page, 'JellyBridgeTempDirectory', validators.windowsFolder, 'Temp Directory contains invalid characters. Folders cannot start with a space or contain: * ? " < > |').isValid) return;
-
-    testButton.disabled = true;
-    Dashboard.showLoadingMsg();
-    
-    const testData = {
-        JellyseerrUrl: url,
-        ApiKey: apiKey,
-        LibraryDirectory: libraryDirectory,
-        CustomMoviesPromo: isDefaultMoviesPromo ? null : CustomMoviesPromo,
-        CustomSeriesPromo: isDefaultSeriesPromo ? null : CustomSeriesPromo,
-        JellyBridgeTempDirectory: jellyBridgeTempDirectory
-    };
-
-    ApiClient.ajax({
-        url: ApiClient.getUrl('JellyBridge/TestConnection'),
-        type: 'POST',
-        data: JSON.stringify(testData),
-        contentType: 'application/json',
-        dataType: 'json'
-    }).then(function (data) {
-        // HTTP 200 response means connection test was successful
-        let message = '✅ Connection test successful!';
-        if (data && data.details) {
-            message = '✅ ' + data.details;
-        } else if (data && data.message) {
-            message = '✅ ' + data.message;
-        }
-        DisplayMessage(message);
-        // Show confirmation dialog for saving settings
-        Dashboard.confirm({
-                title: '✅ Connection Success!',
-                text: 'Save connection settings now?',
-                confirmText: '💾 Save',
-                cancelText: 'Cancel',
-                primary: "confirm"
-            }, 'Title', (confirmed) => {
-                if (confirmed) {
-                    // Save the current settings using the reusable function
-                    savePluginConfiguration(page).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        checkTaskStatus(page);
-                    }).catch(function (error) {
-                        DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                    }).finally(function() {
-                        Dashboard.hideLoadingMsg();
-                    });
-                } else {
-                    DisplayMessage('🚫 Exited without saving');
-                }
-            });
-    }).catch(async function (error) {
-        let message = null;
-        try {
-            let errorResponse = await error.json();
-            if (errorResponse) {
-                message = '❌ ';
-                if (errorResponse.message) {
-                    message += errorResponse.message;
-                } else {
-                    message += `Request failed (${errorResponse.status}): ${errorResponse.statusText}`;
-                }
-            } else {
-                message = '❓ Cannot communicate with Jellyfin plugin endpoint';
-            }
-        } catch (e) {
-            let rawText = await error.text();
-            if (rawText) {
-                message = `🚫 ${rawText}`;
-            } else {
-                message = '⛔ Cannot communicate with Jellyfin plugin endpoint';
-            }
-        }
-        try{
-            // Show confirmation dialog for opening troubleshooting
-            Dashboard.confirm({
-                    title: '🚧 Connection Test Failed',
-                    text: `Do you want to try troubleshooting? Error: ${message}`,
-                    confirmText: '🤖 Troubleshooting',
-                    cancelText: 'Close',
-                    primary: "confirm"
-                }, 'Title', (confirmed) => {
-                    if (confirmed) {
-                        scrollToElement('troubleshootingDetails');
-                    }
-                });
-        } finally {
-            // Something went wrong
-            DisplayMessage(message);
-        }
-    }).finally(function() {
-        Dashboard.hideLoadingMsg();
-        testButton.disabled = false;
     });
 }
 
@@ -1248,7 +1258,7 @@ function performSortContent(page) {
 // MANAGE DISCOVER LIBRARY FUNCTIONS
 // ==========================================
 
-function initializeManageLibrary(page) {
+function initializeManageFavorites(page) {
     // Set library settings form values with null handling
     setInputField(page, 'ManageJellyBridgeLibrary', true);
     setInputField(page, 'ExcludeFromMainLibraries', true);
