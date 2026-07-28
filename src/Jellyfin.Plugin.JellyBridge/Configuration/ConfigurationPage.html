@@ -552,7 +552,9 @@
                     <details id="librarySetupInstructions" class="setupInstructions verticalSection" style="display: none;">
                         <summary>📚 Library Setup Instructions</summary>
                         <div id="librarySetupInstructionsContent">
-                            <p>Before enabling this plugin, we recommend that you create an empty library. Use the following settings or apply these options automatically with the <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> button:</p>
+                            <p>Before enabling this plugin, be sure that you have created a Jellyfin library.
+                                Try using the automated feature <span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span>.
+                                This activates automatic metadata downloading through Jellyfin, and ensures unique media in each JellyBridge library. You can create your own library using the recommended settings below:</p>
                             <ul>
                                 <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
                                 <li><strong>Display name:</strong> Anything you'd like! I use "Discover"</li>
@@ -591,12 +593,12 @@
                                 </ul>
                                 <p><i>The Jellyfin library is not displaying images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
-                                    <li>If networks are missing movies and series, try enabling the <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
+                                    <li>If networks are missing movies and series, try enabling the <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> task manually. Wait until all Jellyfin tasks finish.</li>
                                     <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span>.</li>
                                     <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library.</li>
                                     <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">📚 Library Setup Instructions</span>.</li>
                                 </ol>
-                                <p><i>The <span class="link" data-target-page="syncFavorites">⭐ Request JellyBridge Library Favorites in Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
+                                <p><i>The <span class="link" data-target-page="syncFavorites">⭐ Send Discover Library Favorite Requests to Jellyseerr</span> button is not working, and I am seeing an error message.</i></p>
                                 <ol>
                                     <li>Disable CSRF protection in your Jellyseerr instance to allow favorite requests from outside the Jellyseerr interface: Settings → Network → Uncheck <i>Enable CSRF Protection</i>.</li>
                                 </ol>
@@ -624,7 +626,7 @@
                                 <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>,
                                 you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span>
                                 to remove the existing directories and then
-                                <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span>.
+                                <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span>.
                         </div>
 
                         <div id="ManageJellyBridgeLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
@@ -700,20 +702,19 @@
                                 </div>
                             </div>
                         </details>
-                        
-                        <div id="LibraryDisplayNameContainer">
-                            <div data-depends-on="UseMixedMediaFolders" class="inputContainer hide-depends">
-                                <input is="emby-input" type="text" id="LibraryDisplayName" label="Library Name" placeholder="Discover"/>
-                                <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate a single library for Mixed Movies and Shows in Jellyfin.</div>
-                            </div>
-                            <div data-depends-off="UseMixedMediaFolders" class="inputContainer hide-depends">
-                                <input is="emby-input" type="text" id="MovieLibraryDisplayName" label="Movie Library Name" placeholder="Discover Movies"/>
-                                <input is="emby-input" type="text" id="ShowLibraryDisplayName" label="Show Library Name" placeholder="Discover Shows"/>
-                                <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate separate libraries for Movies and Shows in Jellyfin.</div>
-                            </div>
-                        </div>
 
-                        <div class="fieldDescription">
+                        <div class="fieldDescription" id="createDefaultLibraryContainer">
+                            <div id="LibraryDisplayNameContainer">
+                                <div data-depends-on="UseMixedMediaFolders" class="inputContainer hide-depends">
+                                    <input is="emby-input" type="text" id="LibraryDisplayName" label="Library Name" placeholder="Discover"/>
+                                    <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate a single library for Mixed Movies and Shows in Jellyfin.</div>
+                                </div>
+                                <div data-depends-off="UseMixedMediaFolders" class="inputContainer hide-depends">
+                                    <input is="emby-input" type="text" id="MovieLibraryDisplayName" label="Movie Library Name" placeholder="Discover Movies"/>
+                                    <input is="emby-input" type="text" id="ShowLibraryDisplayName" label="Show Library Name" placeholder="Discover Shows"/>
+                                    <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate separate libraries for Movies and Shows in Jellyfin.</div>
+                                </div>
+                            </div>
                             <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">
                                 <span>✨ Create Discover Library</span>
                             </button>
@@ -802,7 +803,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="syncDiscover" class="raised button block emby-button">
-                                <span>📥 Import Discover Content from Jellyseerr into JellyBridge Library</span>
+                                <span>📥 Import Discover Content from Jellyseerr</span>
                             </button>
                             <div id="syncDiscoverResult" class="testResult emby-textarea"></div>
                         </div>
@@ -815,7 +816,7 @@
                         <summary>Manage Favorite Requests</summary>
                         <br>
                         <div class="fieldDescription">
-                            Manage how the JellyBridge library handles favorite requests with Jellyseerr.
+                            Manage how the JellyBridge library handles favorite requests with Jellyseerr. When media content is favorited in Jellyfin, a request is sent to Jellyseerr for the content.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             🙈 Display: JellyBridge hides movie or series items in the library by creating an .ignore file in the item folder.
@@ -883,7 +884,7 @@
 
                         <div>
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
-                                <span>⭐ Request JellyBridge Library Favorites in Jellyseerr</span>
+                                <span>⭐ Send Discover Library Favorite Requests to Jellyseerr</span>
                             </button>
                             <div id="syncFavoritesResult" class="testResult emby-textarea"></div>
                         </div>
@@ -1112,10 +1113,10 @@
                                 <span>🗑️ Recycle JellyBridge Library Data</span>
                             </button>
                             <div class="fieldDescription criticalText">
-                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. This action may result in irreversible data loss. The prompt will ask for confirmation twice to confirm this action.
+                                <strong>☠️ CRITICAL:</strong> This will permanently delete all data from the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.
                             </div>
                             <div class="fieldDescription cautionText">
-                                <strong>⚠️ IMPORTANT:</strong> After deleting library data, you should delete the Jellyfin libraries containing the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
+                                <strong>⚠️ IMPORTANT:</strong> Before deleting library data, you should delete the Jellyfin libraries containing the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Recreate the Jellyfin libraries for JellyBridge using the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>. This repairs the Jellyfin metadata and prevents errors when adding new content.
                             </div>
                         </div>
 

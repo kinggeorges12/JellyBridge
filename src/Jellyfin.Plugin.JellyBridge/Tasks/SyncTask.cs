@@ -41,6 +41,13 @@ public class SyncTask : IScheduledTask
     {
         try
         {
+            var isSyncEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
+            if (!isSyncEnabled)
+            {
+                _logger.LogDebug("Automated sync task is disabled, skipping execution");
+                return;
+            }
+
             _logger.LogInformation("Starting interval sync task");
 
             // Create a fresh DI scope for this execution so services are not

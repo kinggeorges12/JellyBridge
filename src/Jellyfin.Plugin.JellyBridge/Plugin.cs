@@ -82,7 +82,7 @@ namespace Jellyfin.Plugin.JellyBridge
             //     _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
             // }
             
-            _logger.LogDebug("Configuration details - URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, Enabled: {Enabled}, EnableInMainMenu: {EnableInMainMenu}, SyncInterval: {SyncInterval}", 
+            _logger.LogDebug("Configuration details - URL: {Url}, ApiKeySet: {ApiKeySet}, LibraryDir: {LibraryDir}, Enabled: {Enabled}, EnableInMainMenu: {EnableInMainMenu}, SyncInterval: {SyncInterval}", 
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
                 pluginConfig.LibraryDirectory,

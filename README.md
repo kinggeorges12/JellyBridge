@@ -137,7 +137,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 - **Network Services**: Choose networks to import discover content from
 - **Discover Pages**: The number of pages to import per network
 - **Content Retention Time (days)**: How long to keep discover content before automatic cleanup
-- **Import Discover Content from Jellyseerr into JellyBridge Library**: Manually trigger the task
+- **Import Discover Content from Jellyseerr**: Manually trigger the task
 
 ### 📁 Manage Discover Library
 
@@ -154,7 +154,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
   - **Library Prefix**: Prefix applied to generated network library names
   - **Show Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
   - **Generate Library Folders**: Button to create the folder structure for all selected networks
-- **Request JellyBridge Library Favorites in Jellyseerr**: Manually trigger the task
+- **Send Discover Library Favorite Requests to Jellyseerr**: Manually trigger the task
 
 ### 🎥 Customize Promo Videos
 

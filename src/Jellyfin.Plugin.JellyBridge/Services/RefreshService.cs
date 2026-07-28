@@ -292,7 +292,7 @@ public class RefreshService
         var taskFinished = false;
         while (DateTime.UtcNow < endTime)
         {
-            if(IsTaskRefreshLibraryRunning())
+            if(!IsTaskRefreshLibraryRunning())
             {
                 taskFinished = true;
                 break;
@@ -315,7 +315,7 @@ public class RefreshService
     public async Task<bool?> ScanAllLibraries(bool force=false)
     {
         var libraryDir = FolderUtils.GetBaseDirectory();
-        var tempDir = Path.Combine(libraryDir, "_blank");
+        var tempDir = Path.Combine(libraryDir, "_empty");
         var fileCreated = false;
         try
         {
