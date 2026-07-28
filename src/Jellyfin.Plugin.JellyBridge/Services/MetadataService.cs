@@ -418,7 +418,7 @@ public class MetadataService
     /// <returns>Network folder path if enabled, null otherwise</returns>
     public string GetNetworkFolder(string baseDirectory, string? networkName)
     {
-        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.NetworkFolderPrefix));
         var networkFolderName = FolderUtils.SanitizeFileName(networkPrefix + networkName);
         return Path.Combine(baseDirectory, networkFolderName);
     }
