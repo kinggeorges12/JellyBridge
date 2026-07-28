@@ -382,11 +382,12 @@ function getDefaultLibrarySettings(page, directories) {
     return libraryJson;
 }
 
-function createVirtualFolders(page, libraryName, directories) {
+function createVirtualFolders(page, libraryName, libraryType, directories) {
     return ApiClient.ajax({
         url: ApiClient.getUrl('Library/VirtualFolders', {
                 refreshLibrary: true,
-                name: libraryName
+                name: libraryName,
+                collectionType: libraryType
             }),
         type: 'POST',
         data: JSON.stringify(getDefaultLibrarySettings(page, directories)),
@@ -431,13 +432,13 @@ function createDefaultLibrary(page) {
             }).then(function (response) {
                 // Send request for a new library
                 let apiCalls;
-                if (config.UseMediaTypeFolders) {
+                if (config.UseMixedMediaFolders === false) {
                     apiCalls = Promise.all([
-                        createVirtualFolders(page, libraryDisplayName + ' Movies', response.movieFolders),
-                        createVirtualFolders(page, libraryDisplayName + ' Shows', response.showFolders)
+                        createVirtualFolders(page, libraryDisplayName + ' Movies', 'movies', response.movieFolders),
+                        createVirtualFolders(page, libraryDisplayName + ' Shows', 'tvshows', response.showFolders)
                     ]);
                 } else {
-                    apiCalls = createVirtualFolders(page, libraryDisplayName, response.mixedFolders);
+                    apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
                 }
                 return apiCalls;
             }).finally(function() {
