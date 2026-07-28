@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T04:20:02.579Z",
+        "dependencies": [],
+        "checksum": "037E754AF4170E7B5CB21F805AD31C11",
+        "version": "3.59.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.59.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.59 - fixing library creation"
+      },
+      {
+        "timestamp": "2026-07-28T04:20:02.579Z",
+        "dependencies": [],
+        "checksum": "42A1542DA6EE50B0940729F6C1F4F5F1",
+        "version": "3.59.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.59.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.59 - fixing library creation"
+      },
+      {
+        "timestamp": "2026-07-28T04:20:02.579Z",
+        "dependencies": [],
+        "checksum": "0DF0089894B2274DFCFF03BA1D526258",
+        "version": "3.59.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.59.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.59 - fixing library creation"
+      },
+      {
         "timestamp": "2026-07-28T04:10:43.973Z",
         "dependencies": [],
         "checksum": "57AFED7E15B3973FCBC428462C05DA98",
