@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T05:03:58.426Z",
+        "dependencies": [],
+        "checksum": "6C4A7709093C0D914423341CA5B99554",
+        "version": "3.62.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.62.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.62 - relocating library name containers"
+      },
+      {
+        "timestamp": "2026-07-28T05:03:58.426Z",
+        "dependencies": [],
+        "checksum": "C47ED139644B3857D22654C2425D2BCD",
+        "version": "3.62.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.62.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.62 - relocating library name containers"
+      },
+      {
+        "timestamp": "2026-07-28T05:03:58.426Z",
+        "dependencies": [],
+        "checksum": "8E98BD0BD0620EB6386CF6C88A06B692",
+        "version": "3.62.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.62.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.62 - relocating library name containers"
+      },
+      {
         "timestamp": "2026-07-28T04:45:50.055Z",
         "dependencies": [],
         "checksum": "CB6B0640A92861DD5E659D2A46B0CEB9",
