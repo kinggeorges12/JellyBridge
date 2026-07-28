@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RequestFirstSeason = config.RequestFirstSeason,
-                    UseMixedMediaFolders = config.UseMixedMediaFolders,
+                    UseMixedMediaLibrary = config.UseMixedMediaLibrary,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
@@ -146,7 +146,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaFolders), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);

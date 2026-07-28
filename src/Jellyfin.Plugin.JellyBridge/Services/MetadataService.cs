@@ -350,10 +350,10 @@ public class MetadataService
         folders[string.Empty] = new List<string>(); // For mixed media
         
         var baseDirectory = FolderUtils.GetBaseDirectory();
-        var useMixedMediaFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaFolders));
+        var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
 
-        if (!useMixedMediaFolders)
+        if (!useMixedMediaLibrary)
         {
             foreach(var libraryType in new[] { JellyseerrMovie.LibraryType, JellyseerrShow.LibraryType })
             {
@@ -430,7 +430,7 @@ public class MetadataService
     {
         var baseDirectory = FolderUtils.GetBaseDirectory();
         var combinedPath = baseDirectory;
-        var useMixedMediaFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaFolders));
+        var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
 
         if (item == null)
@@ -444,7 +444,7 @@ public class MetadataService
         }
         var itemFolder = FolderUtils.SanitizeFileName(itemString);
 
-        if (!useMixedMediaFolders)
+        if (!useMixedMediaLibrary)
         {
             string? mediaFolder = null;
             if (item is JellyseerrMovie)

@@ -64,7 +64,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RemoveRequestedFromFavorites), false },
         { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
-        { nameof(UseMixedMediaFolders), true },
+        { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(LibraryPrefix), string.Empty },
@@ -199,7 +199,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to use media type folders for movies and series.
     /// </summary>
-    public bool? UseMixedMediaFolders { get; set; }
+    public bool? UseMixedMediaLibrary { get; set; }
 
     /// <summary>
     /// Gets or sets whether to use network folders for streaming services.

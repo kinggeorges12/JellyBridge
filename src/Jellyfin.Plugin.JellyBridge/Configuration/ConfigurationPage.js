@@ -535,14 +535,14 @@ function createVirtualFolders(page, libraryName, libraryType, directories) {
 function createDefaultLibrary(page) {
     const createButton = page.querySelector('#createDefaultLibrary');
     const config = window.configJellyBridge || {};
-    const UseMixedMediaFolders = nullIfDefault(page.querySelector('#UseMixedMediaFolders').checked, config.ConfigDefaults.UseMixedMediaFolders);
+    const UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
     const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
     const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
     const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
     const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
     const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
-    const libraryDisplayMessage = UseMixedMediaFolders === false ?
+    const libraryDisplayMessage = UseMixedMediaLibrary === false ?
         `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
         `a new library "${libraryDisplayName}"`;
 
@@ -572,7 +572,7 @@ function createDefaultLibrary(page) {
             }).then(function (response) {
                 // Send request for a new library
                 let apiCalls;
-                if (UseMixedMediaFolders === false) {
+                if (UseMixedMediaLibrary === false) {
                     apiCalls = Promise.all([
                         createVirtualFolders(page, libraryDisplayName + ' Movies', 'movies', response.movieFolders),
                         createVirtualFolders(page, libraryDisplayName + ' Shows', 'tvshows', response.showFolders)
@@ -1266,7 +1266,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'UserPermissionRequest4k', true);
     setInputField(page, 'RequestFirstSeason', true);
-    setInputField(page, 'UseMixedMediaFolders', true);
+    setInputField(page, 'UseMixedMediaLibrary', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'LibraryPrefix');
@@ -1496,7 +1496,7 @@ function performPluginReset(page) {
                 RemoveRequestedFromFavorites: null,
                 UserPermissionRequest4k: null,
                 RequestFirstSeason: null,
-                UseMixedMediaFolders: null,
+                UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
                 LibraryPrefix: '',
                 AddDuplicateContent: null,
@@ -1661,7 +1661,7 @@ function savePluginConfiguration(page) {
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
     form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
-    form.UseMixedMediaFolders = nullIfDefault(page.querySelector('#UseMixedMediaFolders').checked, config.ConfigDefaults.UseMixedMediaFolders);
+    form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
