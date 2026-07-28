@@ -543,7 +543,7 @@ function createDefaultLibrary(page) {
     const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
     const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
     const libraryDisplayMessage = UseMixedMediaFolders === false ?
-        `new libraries"${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
+        `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
         `a new library "${libraryDisplayName}"`;
 
     // Show confirmation dialog for confirming library creation
