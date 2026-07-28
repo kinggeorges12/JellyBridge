@@ -80,10 +80,10 @@ public class SortTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        var isEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
+        var isSortEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask));
         var intervalHours = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours));
         
-        if (!isEnabled)
+        if (!isSortEnabled)
         {
             _logger.LogDebug("Automated sort task is disabled, returning empty triggers");
             return Array.Empty<TaskTriggerInfo>();

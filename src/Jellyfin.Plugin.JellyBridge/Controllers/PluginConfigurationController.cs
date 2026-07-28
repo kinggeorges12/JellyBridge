@@ -120,8 +120,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var oldEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var oldInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var oldStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
+                    var oldSortTask = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableAutomatedSortTask), config);
                     var oldSortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder), config);
-                    var oldRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
+                    var oldSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Update configuration properties using simplified helper
                     
@@ -179,16 +180,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     var newEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled), config);
                     var newInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SyncIntervalHours), config);
                     var newStartupSync = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync), config);
+                    var newSortTask = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSortLibraryRefresh), config);
                     var newSortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder), config);
-                    var newRandomizeSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
+                    var newSortInterval = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.SortTaskIntervalHours), config);
 
                     // Debug snapshot of old vs new
                     _logger.LogDebug("Config snapshot (old): enabled={OldEnabled}, interval={OldInterval}, autoStartup={OldStartupSync}", oldEnabled, oldInterval, oldStartupSync);
                     _logger.LogDebug("Config snapshot (new): enabled={NewEnabled}, interval={NewInterval}, autoStartup={NewStartupSync}", newEnabled, newInterval, newStartupSync);
             
                     // If the scheduled sync configuration changed, stamp when triggers will be reloaded
-                    var scheduledChanged = oldEnabled != newEnabled || Math.Abs(oldInterval - newInterval) > double.Epsilon;
-                    if (scheduledChanged)
+                    var syncTaskChanged = oldEnabled != newEnabled
+                        || Math.Abs(oldInterval - newInterval) > double.Epsilon;
+                    if (syncTaskChanged)
                     {
                         config.ScheduledTaskTimestamp = DateTimeOffset.UtcNow;
                         _logger.LogDebug("ScheduledTaskTimestamp set pre-save: {Timestamp}", config.ScheduledTaskTimestamp);
@@ -205,11 +208,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         // - the sort task when SortOrder/SortTaskIntervalHours changes
                         var syncWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSync");
                         var startupWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeStartup");
-                        var randomizeSortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSort");
+                        var sortWorker = _taskManager.ScheduledTasks.FirstOrDefault(t => t.ScheduledTask.Key == "JellyBridgeSort");
 
                         // Update scheduled sync task triggers only if IsEnabled or SyncInterval changed
-                        if (scheduledChanged &&
-                            syncWorker != null && syncWorker.ScheduledTask is Tasks.SyncTask syncTask)
+                        if (syncTaskChanged && syncWorker != null && syncWorker.ScheduledTask is Tasks.SyncTask syncTask)
                         {
                             _logger.LogDebug("Reloading sync task triggers due to config change (Enabled/Interval). Old: enabled={OldEnabled}, interval={OldInterval}; New: enabled={NewEnabled}, interval={NewInterval}", oldEnabled, oldInterval, newEnabled, newInterval);
                             
@@ -220,29 +222,29 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         }
 
                         // Update startup task triggers only if EnableStartupSync changed
-                        if (oldStartupSync != newStartupSync && startupWorker != null)
+                        if (oldStartupSync != newStartupSync && startupWorker != null && startupWorker.ScheduledTask is Tasks.StartupTask startupTask)
                         {
                             _logger.LogDebug("Reloading startup task triggers due to EnableStartupSync change. Old={Old}, New={New}", oldStartupSync, newStartupSync);
+                            
                             // Startup task exposes default triggers; always a startup trigger
-                            if (startupWorker.ScheduledTask is Tasks.StartupTask startupTask)
-                            {
-                                var triggers = startupTask.GetDefaultTriggers();
-                                startupWorker.Triggers = triggers.ToList();
-                                startupWorker.ReloadTriggerEvents();
-                                _logger.LogDebug("Startup task triggers reloaded successfully");
-                            }
+                            var triggers = startupTask.GetDefaultTriggers();
+                            startupWorker.Triggers = triggers.ToList();
+                            startupWorker.ReloadTriggerEvents();
+                            _logger.LogDebug("Startup task triggers reloaded successfully");
                         }
 
                         // Update sort task triggers only if SortOrder or SortTaskIntervalHours changed
-                        var sortOrderChanged = oldSortOrder != newSortOrder || Math.Abs(oldRandomizeSortInterval - newRandomizeSortInterval) > double.Epsilon;
-                        if (sortOrderChanged && randomizeSortWorker != null && randomizeSortWorker.ScheduledTask is Tasks.SortTask randomizeSortTask)
+                        var sortTaskChanged = oldSortTask != newSortTask
+                            || oldSortOrder != newSortOrder
+                            || Math.Abs(oldSortInterval - newSortInterval) > double.Epsilon;
+                        if (sortTaskChanged && sortWorker != null && sortWorker.ScheduledTask is Tasks.SortTask createSortTask)
                         {
-                            _logger.LogDebug("Reloading sort task triggers due to config change. Old: sortOrder={OldSortOrder}, interval={OldInterval}; New: sortOrder={NewSortOrder}, interval={NewInterval}", oldSortOrder, oldRandomizeSortInterval, newSortOrder, newRandomizeSortInterval);
+                            _logger.LogDebug("Reloading sort task triggers due to config change. Old: sortOrder={OldSortOrder}, interval={OldInterval}; New: sortOrder={NewSortOrder}, interval={NewInterval}", oldSortOrder, oldSortInterval, newSortOrder, newSortInterval);
                             
-                            var newTriggers = randomizeSortTask.GetDefaultTriggers();
-                            randomizeSortWorker.Triggers = newTriggers.ToList();
-                            randomizeSortWorker.ReloadTriggerEvents();
-                            _logger.LogDebug("Randomize sort task triggers reloaded.");
+                            var newTriggers = createSortTask.GetDefaultTriggers();
+                            sortWorker.Triggers = newTriggers.ToList();
+                            sortWorker.ReloadTriggerEvents();
+                            _logger.LogDebug("Sort task triggers reloaded.");
                         }
                     
                     }

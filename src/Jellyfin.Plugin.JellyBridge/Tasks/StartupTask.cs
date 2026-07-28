@@ -49,12 +49,6 @@ public class StartupTask : IScheduledTask
             
             // Indicate start
             progress.Report(0);
-
-            if (autoSyncOnStartup && startupDelaySeconds > 0)
-            {
-                _logger.LogDebug("Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
-                await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
-            }
             
             if (!autoSyncOnStartup)
             {
@@ -75,6 +69,12 @@ public class StartupTask : IScheduledTask
                 _logger.LogTrace("No automated tasks are enabled - skipping startup execution");
                 progress.Report(100);
                 return;
+            }
+
+            if (startupDelaySeconds > 0)
+            {
+                _logger.LogDebug("Applying startup delay of {StartupDelaySeconds} seconds", startupDelaySeconds);
+                await Task.Delay(TimeSpan.FromSeconds(startupDelaySeconds), cancellationToken);
             }
 
             // Calculate progress ranges: 10% to 100% (90% total), divided equally among tasks

@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.74 - readme updates, fixing sort task refresh trigger",
+        "version": "3.74.11.9",
+        "timestamp": "2026-07-28T17:16:55.136Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.74.11.9.zip",
+        "checksum": "116493D75D27646A05F4F9E6A1BE5404",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.74 - readme updates, fixing sort task refresh trigger",
+        "version": "3.74.11.0",
+        "timestamp": "2026-07-28T17:16:55.136Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.74.11.0.zip",
+        "checksum": "90F3AD5D8B28628F8385E44A291169FC",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.74 - readme updates, fixing sort task refresh trigger",
+        "version": "3.74.10.7",
+        "timestamp": "2026-07-28T17:16:55.136Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.74.10.7.zip",
+        "checksum": "4886BBFA7805CBF57ED8831D8CCDE249",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.73 - prevent linebreaks on links",
         "version": "3.73.11.9",
         "timestamp": "2026-07-28T16:08:49.212Z",
