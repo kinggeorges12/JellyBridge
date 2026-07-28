@@ -288,8 +288,9 @@ Jellyfin.Plugin.JellyBridge/
 │   ├── AdvancedSettingsController.cs
 │   ├── CustomizePromoController.cs
 │   ├── GeneralSettingsController.cs
+│   ├── OrganizeDiscoverLibraryController.cs
 │   ├── ImportDiscoverContentController.cs
-│   ├── ManageDiscoverLibraryController.cs
+│   ├── ManageFavoriteRequestsController.cs
 │   ├── PluginConfigurationController.cs
 │   ├── SortDiscoverContentController.cs
 │   └── TaskStatusController.cs

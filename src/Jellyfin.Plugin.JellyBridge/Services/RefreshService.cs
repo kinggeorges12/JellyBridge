@@ -92,9 +92,9 @@ public class RefreshService
         {
             var config = Plugin.GetConfiguration();
             var syncDirectory = FolderUtils.GetBaseDirectory();
-            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
+            var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
-            if (!manageJellyseerrLibrary) {
+            if (!manageJellyBridgeLibrary) {
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return queuedCount;
             }
@@ -319,9 +319,9 @@ public class RefreshService
         var fileCreated = false;
         try
         {
-            var manageJellyseerrLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyseerrLibrary));
+            var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
-            if (!force && !manageJellyseerrLibrary)
+            if (!force && !manageJellyBridgeLibrary)
             {
                 _logger.LogDebug("Jellyseerr library management is disabled");
                 return null;

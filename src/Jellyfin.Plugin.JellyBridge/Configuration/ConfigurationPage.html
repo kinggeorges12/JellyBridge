@@ -526,7 +526,7 @@
                     <div class="inputContainer file-browser" id="LibraryDirectoryContainer">
                         <input is="emby-input" type="text" id="LibraryDirectory" label="Library Directory" />
                         <button type="button" id="browseLibraryDirectory" is="emby-button">📂</button>
-                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option will refresh any Jellyfin libraries using this folder.</div>
+                        <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> option will refresh any Jellyfin libraries using this folder.</div>
                     </div>
 
                     <div class="checkboxContainer">
@@ -598,7 +598,7 @@
                                 </ul>
                                 <p><i>The Jellyfin library is not displaying images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
-                                    <li>If networks are missing movies and series, try enabling the <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
+                                    <li>If networks are missing movies and series, try enabling the <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> option. Then run the <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr into JellyBridge Library</span> task manually. Wait until all Jellyfin tasks finish.</li>
                                     <li>Click the <strong>Scan All Libraries</strong> button on the <span class="link" data-target-router="/dashboard">Jellyfin dashboard</span>.</li>
                                     <li>If content is still not updating, open the <span class="link" data-target-router="/metadata">Metadata Manager</span> or <span class="link" data-target-router="/dashboard/libraries">Library Manager</span> and refresh metadata for the JellyBridge library.</li>
                                     <li>As a last resort, click <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> and recreate the Jellyfin library according to the <span class="link" data-target-page="librarySetupInstructionsContent">📚 Library Setup Instructions</span>.</li>
@@ -616,6 +616,97 @@
                             <span>🚀 Test Connection with Jellyseerr</span>
                         </button>
                     </div>
+
+                    <br>
+
+                    <details id="organizeLibrarySettings">
+                        <summary>Organize Discover Library</summary>
+                        <br>
+                        <div class="fieldDescription">
+                            Organize the JellyBridge library using a configured directory structure. Configure automatic library refreshing and separate directories for movies and series. With a few extra steps, organize discover content based on the network.
+                        </div>
+
+                        <div id="ManageJellyBridgeLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ManageJellyBridgeLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Automated Library Refresh</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="UseMixedMediaFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Mixed Movies and Shows</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Store all media in a single directory. Disabling this setting will create separate folders for Movies and Shows.</div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Network Folders</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
+                        </div>
+
+                        <details id="networkFolderOptionsDetails" class="detailedInstructions">
+                            <summary>Network Folders Setup</summary>
+                            <div data-depends-on="UseNetworkFolders">
+                                <h4>Instructions</h4>
+                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
+                                <ol>
+                                    <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
+                                    <li>Click the <span class="link" data-target-page="generateLibraryFolders">🗂️ Generate Library Folders</span> button below.</li>
+                                    <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
+                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>.</li>
+                                </ol>
+                                <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
+                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. Alternatively, you can use different libraries for each network provider.
+                                </div>
+
+                                <div class="inputContainer" id="LibraryPrefixContainer">
+                                    <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
+                                    <div class="fieldDescription">Prefix for network library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
+                                </div>
+
+                                <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                        <span class="checkboxLabel">Display Discover Content in Multiple Libraries</span>
+                                        <span class="checkboxOutline">
+                                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                        </span>
+                                    </label>
+                                    <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
+                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends-on" data-depends-on="AddDuplicateContent">
+                                        <strong>💡 Recommended:</strong> If you have already synced discover content, you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the existing data.
+                                        <br>
+                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <div id="generateLibraryFoldersContainer" class="fieldDescription">
+                            <button is="emby-button" type="button" id="generateLibraryFolders" class="raised button block emby-button">
+                                <span>🗂️ Generate Library Folders</span>
+                            </button>
+                        </div>
+                    </details>
 
                     <br>
 
@@ -705,31 +796,19 @@
                         </div>
 
                     </details>
-
+                    
                     <br>
 
-                    <details id="manageLibrarySettings">
-                        <summary>Manage Discover Library</summary>
+                    <details id="manageFavoriteRequests">
+                        <summary>Manage Favorite Requests</summary>
                         <br>
                         <div class="fieldDescription">
-                            Manage how the JellyBridge library interacts with your Jellyfin installation. Configure automatic library refreshing, hide existing Jellyfin items from discover content, and unfavorite requested items. With a few extra steps, organize discover content based on the network.
+                            Manage how the JellyBridge library handles favorite requests with Jellyseerr.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             🙈 Display: JellyBridge hides movie or series items in the library by creating an .ignore file in the item folder.
                             <br>
                             📋 Process: After a request is sent to Jellyseerr, requested items are always marked as unplayed for all users and hidden from all libraries. If you deny all requests for that item in Jellyseerr, the item will repopulate on next sync.
-                        </div>
-
-                        <div id="ManageJellyseerrLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="ManageJellyseerrLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Automated Library Refresh</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -789,63 +868,6 @@
                             </label>
                             <div class="fieldDescription">New favorited series will only request the first season, rather than the default of all seasons. This is useful for users who only want to limit the space used by initial series requests. Any additional season requests must be made from the Jellyseerr interface.</div>
                         </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Network Folders</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyseerrLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
-                        </div>
-
-                        <details id="networkFolderOptionsDetails" class="detailedInstructions">
-                            <summary>Network Folders Setup</summary>
-                            <div data-depends-on="UseNetworkFolders">
-                                <h4>Instructions</h4>
-                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">Sync Discover Content from Jellyseerr to JellyBridge Library</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
-                                <ol>
-                                    <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
-                                    <li>Click the <span class="link" data-target-page="generateNetworkFolders">🗂️ Generate Network Folders</span> button below.</li>
-                                    <li>Create any number of Jellyfin libraries. Each network folder must have a unique Jellyfin library.</li>
-                                    <li>For each library, follow the <span class="link" data-target-page="librarySetupInstructions">📚 Library Setup Instructions</span>.</li>
-                                </ol>
-                                <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. Alternatively, you can use different libraries for each network provider.
-                                </div>
-
-                                <div class="inputContainer" id="LibraryPrefixContainer">
-                                    <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                                    <div class="fieldDescription">Prefix for network library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
-                                </div>
-
-                                <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                        <span class="checkboxLabel">Display Discover Content in Multiple Libraries</span>
-                                        <span class="checkboxOutline">
-                                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                        </span>
-                                    </label>
-                                    <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
-                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends-on" data-depends-on="AddDuplicateContent">
-                                        <strong>💡 Recommended:</strong> If you have already synced discover content, you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the existing data.
-                                        <br>
-                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
-                                    </div>
-                                </div>
-
-                                <div id="generateNetworkFoldersContainer" class="fieldDescription">
-                                    <button is="emby-button" type="button" id="generateNetworkFolders" class="raised button block emby-button">
-                                        <span>🗂️ Generate Network Folders</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </details>
 
                         <div>
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">

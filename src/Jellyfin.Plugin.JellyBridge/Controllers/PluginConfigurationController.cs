@@ -49,12 +49,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     MaxRetentionDays = config.MaxRetentionDays,
 
                     // Manage Discover Library
-                    ManageJellyseerrLibrary = config.ManageJellyseerrLibrary,
+                    ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RequestFirstSeason = config.RequestFirstSeason,
+                    UseMixedMediaFolders = config.UseMixedMediaFolders,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     LibraryPrefix = config.LibraryPrefix,
@@ -139,12 +140,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     
                     // Manage Discover Library
-                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyseerrLibrary), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
