@@ -575,7 +575,7 @@
                                 <ol>
                                     <li><strong>Keep your plugin up to date!</strong> Check the latest release from the Catalog (Jellyfin 10.10) or Plugin (Jellyfin 10.11) page.</li>
                                     <li>Your browser may be caching an old version of the plugin configuration page. <span class="link" data-target-script="cacheBuster">Click here to bust your cache</span> and load the latest changes.</li>
-                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.4. Other versions may not be fully compatible.</li>
+                                    <li>This plugin is tested for Jellyfin versions from 10.10.7 to 10.11.11. Other versions may not be fully compatible.</li>
                                 </ol>
                                 <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button displays an error: Jellyseerr connection error.</i></p>
                                 <ol>
@@ -623,10 +623,14 @@
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             <strong>💡 Recommended:</strong> If you change the options for
                                 <span class="link" data-target-page="UseMixedMediaLibraryContainer">Mixed Movies and Shows</span> or
-                                <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>,
-                                you should <span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span>
-                                to remove the existing directories and then
-                                <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span>.
+                                <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>, complete the following steps:
+                                <ol>
+                                    <li><svg style="height: 0.7em; width: auto; vertical-align: text-bottom;" class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-iguwhy" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="DeleteIcon"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"></path></svg>
+                                        Remove Jellyfin <span class="link" data-target-router="/dashboard/libraries">Libraries</span> that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.</li>
+                                    <li><span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the JellyBridge media content.</li>
+                                    <li><span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span> to create a new Jellyfin library.</li>
+                                    <li><span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> to import media content from Jellyseerr.</li>
+                                </ol>
                         </div>
 
                         <div id="ManageJellyBridgeLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
