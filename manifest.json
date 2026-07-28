@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-07-28T04:10:43.973Z",
+        "dependencies": [],
+        "checksum": "57AFED7E15B3973FCBC428462C05DA98",
+        "version": "3.58.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.58.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "changelog": "Jellyfin 10.11.9: v3.58 - debugging create network folders with media type folders"
+      },
+      {
+        "timestamp": "2026-07-28T04:10:43.973Z",
+        "dependencies": [],
+        "checksum": "53631A3EB16D254C185E5C9775896BDF",
+        "version": "3.58.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.58.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "changelog": "Jellyfin 10.11.0: v3.58 - debugging create network folders with media type folders"
+      },
+      {
+        "timestamp": "2026-07-28T04:10:43.973Z",
+        "dependencies": [],
+        "checksum": "3F7DB9AB11AEC3C79920B6996347938F",
+        "version": "3.58.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.58.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "changelog": "Jellyfin 10.10.7: v3.58 - debugging create network folders with media type folders"
+      },
+      {
         "timestamp": "2026-07-28T03:59:17.658Z",
         "dependencies": [],
         "checksum": "359D0D0BD2089FCB987D58F5EB2391AC",

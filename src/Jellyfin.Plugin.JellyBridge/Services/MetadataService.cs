@@ -345,6 +345,9 @@ public class MetadataService
     public async Task<(List<string> movieFolders, List<string> showFolders, List<string> mixedFolders)> CreateEmptyLibraryFoldersAsync()
     {
         var folders = new Dictionary<string, List<string>>();
+        folders[JellyseerrMovie.LibraryType] = new List<string>();
+        folders[JellyseerrShow.LibraryType] = new List<string>();
+        folders[string.Empty] = new List<string>(); // For mixed media
         
         var baseDirectory = FolderUtils.GetBaseDirectory();
         var useMixedMediaFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaFolders));
@@ -354,7 +357,6 @@ public class MetadataService
         {
             foreach(var libraryType in new[] { JellyseerrMovie.LibraryType, JellyseerrShow.LibraryType })
             {
-                bool createdMediaFolder = false;
                 string mediaFolderPath = Path.Combine(baseDirectory, libraryType);
                 if (FolderUtils.FolderExistsThrowNull(mediaFolderPath))
                 {
@@ -363,7 +365,6 @@ public class MetadataService
                 else
                 {
                     Directory.CreateDirectory(mediaFolderPath);
-                    createdMediaFolder = true;
                     _logger.LogDebug("Created media type folder: {MediaFolder}", mediaFolderPath);
                 }
                 
@@ -371,19 +372,12 @@ public class MetadataService
                 {
                     // Create empty network folders for this media type
                     var (existingNetworkFolders, createdNetworkFolders) = CreateEmptyNetworkFolders(mediaFolderPath);
-                    folders[libraryType] = existingNetworkFolders;
+                    folders[libraryType].AddRange(existingNetworkFolders);
                     folders[libraryType].AddRange(createdNetworkFolders);
                 }
                 else
                 {
-                    if (createdMediaFolder)
-                    {
-                        folders[libraryType].Add(mediaFolderPath);
-                    }
-                    else
-                    {
-                        folders[libraryType].Add(mediaFolderPath);
-                    }
+                    folders[libraryType].Add(mediaFolderPath);
                 }
             }
         }
@@ -409,7 +403,9 @@ public class MetadataService
         
         await Task.CompletedTask; // Satisfy async requirement
         
-        return (movieFolders: folders["movie"], showFolders: folders["show"], mixedFolders: folders[string.Empty]);
+        return (movieFolders: folders[JellyseerrMovie.LibraryType],
+                showFolders: folders[JellyseerrShow.LibraryType],
+                mixedFolders: folders[string.Empty]);
     }
 
     #region Helpers
