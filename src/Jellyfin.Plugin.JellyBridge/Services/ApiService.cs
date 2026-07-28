@@ -520,7 +520,7 @@ public class ApiService
             // Get endpoint configuration
             var endpointConfig = GetEndpoint(endpoint);
             
-            _logger.LogDebug("Making API call to endpoint: {Endpoint}", endpoint);
+            _logger.LogTrace("Making API call to endpoint: {Endpoint}", endpoint);
             
             // Handle endpoint-specific logic
             var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
@@ -552,7 +552,7 @@ public class ApiService
                 int page = 1;
                 do
                 {
-                    _logger.LogDebug("Fetching {Operation} page {Page}", operationName, page);
+                    _logger.LogTrace("Fetching {Operation} page {Page}", operationName, page);
                     
                     // Add page parameter to query parameters
                     var pageParameters = queryParameters != null 
@@ -590,7 +590,6 @@ public class ApiService
                     
                     // Extract the Results property directly from the paginated response
                     var resultsProperty = pageResponse.GetType().GetProperty("Results");
-                    _logger.LogDebug("Results property found: {HasResults}", resultsProperty != null);
                     
                     if (resultsProperty != null)
                     {
@@ -605,12 +604,12 @@ public class ApiService
                                 allItems.Add(item);
                                 itemCount++;
                             }
-                            _logger.LogDebug("Added {Count} items from page {Page}", itemCount, page);
+                            _logger.LogTrace("Added {Count} items from page {Page}", itemCount, page);
                             
                             // Stop pagination if no items were returned from this page
                             if (itemCount == 0)
                             {
-                                _logger.LogDebug("No items returned from page {Page}, stopping pagination", page);
+                                _logger.LogTrace("No items returned from page {Page}, stopping pagination", page);
                                 break;
                             }
                         }

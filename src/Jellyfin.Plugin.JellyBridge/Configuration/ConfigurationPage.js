@@ -28,14 +28,14 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
-            // Initialize upload promo video
-            initializeUploadPromo(page);
+            // Initialize manage discover library settings
+            initializeOrganizeLibrary(page);
             
             // Initialize import discover content settings including network interface and sync buttons
             initializeImportContent(page);
             
             // Initialize manage discover library settings
-            initializeManageLibrary(page);
+            initializeManageFavorites(page);
             
             // Initialize upload promo video
             initializeUploadPromo(page);
@@ -54,7 +54,7 @@ export default function (view) {
             
             isInitialized = true;
         }).catch(function (error) {
-            Dashboard.alert('❌ Failed to load configuration: ' + (error?.message || error));
+            DisplayMessage('❌ Failed to load configuration: ' + (error?.message || error));
             scrollToElement('jellyBridgeConfigurationPage');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -81,11 +81,7 @@ function initializePluginHeader(page) {
 
     // Update header legend with plugin version
     if (config.PluginVersion) {
-        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
-    }
-    // Update header legend with plugin version
-    if (config.PluginVersion) {
-        page.querySelector('legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
+        page.querySelector('#legend').textContent = `JellyBridge Configuration (plugin version: ${config.PluginVersion})`;
     }
 
     // Start task status polling
@@ -206,10 +202,11 @@ function updateTaskStatusDisplay(page, taskData) {
 
 function initializeGeneralSettings(page) {
     // Set general settings form values with null handling
-    setInputField(page, 'IsEnabled', true);
     setInputField(page, 'JellyseerrUrl');
     setInputField(page, 'ApiKey');
     setInputField(page, 'LibraryDirectory');
+    setInputField(page, 'IsEnabled', true);
+    setInputField(page, 'EnableInMainMenu', true);
     setInputField(page, 'SyncIntervalHours');
     setInputField(page, 'EnableStartupSync', true);
     
@@ -263,7 +260,7 @@ function initializeGeneralSettings(page) {
             Dashboard.processPluginConfigurationUpdateResult(result);
             checkTaskStatus(page);
         }).catch(function (error) {
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             scrollToElement('jellyBridgeConfigurationForm');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -328,7 +325,7 @@ function performTestConnection(page) {
         } else if (data && data.message) {
             message = '✅ ' + data.message;
         }
-        Dashboard.alert(message);
+        DisplayMessage(message);
         // Show confirmation dialog for saving settings
         Dashboard.confirm({
                 title: '✅ Connection Success!',
@@ -343,12 +340,12 @@ function performTestConnection(page) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                         checkTaskStatus(page);
                     }).catch(function (error) {
-                        Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                        DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                     }).finally(function() {
                         Dashboard.hideLoadingMsg();
                     });
                 } else {
-                    Dashboard.alert('🚫 Exited without saving');
+                    DisplayMessage('🚫 Exited without saving');
                 }
             });
     }).catch(async function (error) {
@@ -374,25 +371,228 @@ function performTestConnection(page) {
             }
         }
         try{
-        // Show confirmation dialog for opening troubleshooting
-        Dashboard.confirm({
-                title: '🚧 Connection Test Failed',
-                text: `Do you want to try troubleshooting? Error: ${message}`,
-                confirmText: '🤖 Troubleshooting',
-                cancelText: 'Close',
-                primary: "confirm"
-            }, 'Title', (confirmed) => {
-                if (confirmed) {
-                    scrollToElement('troubleshootingDetails');
-                }
-            });
+            // Show confirmation dialog for opening troubleshooting
+            Dashboard.confirm({
+                    title: '🚧 Connection Test Failed',
+                    text: `Do you want to try troubleshooting? Error: ${message}`,
+                    confirmText: '🤖 Troubleshooting',
+                    cancelText: 'Close',
+                    primary: "confirm"
+                }, 'Title', (confirmed) => {
+                    if (confirmed) {
+                        scrollToElement('troubleshootingDetails');
+                    }
+                });
         } finally {
             // Something went wrong
-            Dashboard.alert(message);
+            DisplayMessage(message);
         }
     }).finally(function() {
         Dashboard.hideLoadingMsg();
         testButton.disabled = false;
+    });
+}
+
+// ==========================================
+// ORGANIZE DISCOVER LIBRARY FUNCTIONS
+// ==========================================
+
+function initializeOrganizeLibrary(page) {
+    // Add create default library event listener
+    const createButton = page.querySelector('#createDefaultLibrary');
+    createButton.addEventListener('click', function () {
+        createDefaultLibrary(page);
+    });
+}
+
+function getDefaultLibrarySettings(page, directories) {
+    // These are default options that need to be validated from the server options
+    let libraryJson = {
+        "LibraryOptions": {
+            "Enabled": true,
+            "PathInfos": directories.map(dir => ({ "Path": dir })),
+            "EnableRealtimeMonitor": false,
+            "MetadataSavers": ["Nfo"],
+            "LocalMetadataReaderOrder": ["Nfo"],
+            "SaveLocalMetadata": true,
+            "AllowEmbeddedSubtitles": "AllowNone",
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "EnableTrickplayImageExtraction": false,
+            "TypeOptions": [
+                {
+                    "Type": "Series",
+                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
+                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
+                },
+                {
+                    "Type": "Season",
+                    "MetadataFetchers": ["TheMovieDb", "TheTVDB"],
+                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB"],
+                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
+                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
+                },
+                {
+                    "Type": "Episode",
+                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
+                },
+                {
+                    "Type": "Movie",
+                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
+                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
+                }
+            ]
+        }
+    };
+
+    // Validate library settings
+    return ApiClient.fetch({
+        'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
+        'headers': {'accept': 'application/json'},
+        'dataType': 'json'
+    }).then(function(response) {
+        if (!response) return;
+        
+        // Clean MetadataSavers
+        if (response.MetadataSavers) {
+            const validSaverNames = response.MetadataSavers.map(s => s.Name);
+            libraryJson.LibraryOptions.MetadataSavers = libraryJson.LibraryOptions.MetadataSavers
+                .filter(saver => validSaverNames.includes(saver));
+        }
+        
+        // Clean LocalMetadataReaderOrder
+        if (response.MetadataReaders) {
+            const validReaderNames = response.MetadataReaders.map(r => r.Name);
+            libraryJson.LibraryOptions.LocalMetadataReaderOrder = libraryJson.LibraryOptions.LocalMetadataReaderOrder
+                .filter(reader => validReaderNames.includes(reader));
+        }
+
+        // Disable all subtitle fetchers
+        if (response.SubtitleFetchers) {
+            let subtitleFetcherNames = response.SubtitleFetchers.map(f => f.Name);
+            libraryJson.LibraryOptions.DisabledSubtitleFetchers = subtitleFetcherNames;
+            libraryJson.LibraryOptions.SubtitleFetcherOrder = subtitleFetcherNames;
+        }
+        
+        // Clean TypeOptions - remove unavailable fetchers
+        if (response.TypeOptions) {
+            libraryJson.LibraryOptions.TypeOptions = libraryJson.LibraryOptions.TypeOptions
+                .map(typeOption => {
+                    // Find matching server type
+                    const serverType = response.TypeOptions.find(t => t.Type === typeOption.Type);
+                    if (!serverType) return null; // Type not available on server
+                    
+                    // Get available fetchers
+                    const availableFetchers = serverType.MetadataFetchers.map(f => f.Name);
+                    const availableImageFetchers = serverType.ImageFetchers.map(f => f.Name);
+                    
+                    // Filter MetadataFetchers
+                    typeOption.MetadataFetchers = typeOption.MetadataFetchers
+                        .filter(f => availableFetchers.includes(f));
+                    typeOption.MetadataFetcherOrder = typeOption.MetadataFetcherOrder
+                        .filter(f => availableFetchers.includes(f));
+                    
+                    // Filter ImageFetchers
+                    typeOption.ImageFetchers = typeOption.ImageFetchers
+                        .filter(f => availableImageFetchers.includes(f));
+                    typeOption.ImageFetcherOrder = typeOption.ImageFetcherOrder
+                        .filter(f => availableImageFetchers.includes(f));
+                    
+                    return typeOption;
+                })
+                .filter(type => type !== null); // Remove unavailable types
+        }
+        return libraryJson;
+    }).catch(function(error) {
+        console.error('❌ Error fetching library options:', error);
+        return libraryJson;
+    });
+}
+
+function createVirtualFolders(page, libraryName, libraryType, directories) {
+    // Get settings if available, then create the virtual folder
+    return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
+        return ApiClient.ajax({
+            url: ApiClient.getUrl('Library/VirtualFolders', {
+                refreshLibrary: true,
+                name: libraryName,
+                collectionType: libraryType
+            }),
+            type: 'POST',
+            data: JSON.stringify(libraryJson),
+            contentType: 'application/json'
+        }).then(function(response) {
+            DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
+        }).catch(function(error) {
+            DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
+            return Promise.reject(error);
+        });
+    });
+}
+
+function createDefaultLibrary(page) {
+    const createButton = page.querySelector('#createDefaultLibrary');
+    const config = window.configJellyBridge || {};
+    const UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
+    const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
+    const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
+    const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
+    const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
+    const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
+    const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
+    const libraryDisplayMessage = UseMixedMediaLibrary === false ?
+        `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
+        `a new library "${libraryDisplayName}"`;
+
+    // Show confirmation dialog for confirming library creation
+    Dashboard.confirm({
+        title: 'Confirm New Library',
+        text: 'Save the current configuration and create ' + libraryDisplayMessage + ' with the recommended settings.',
+        confirmText: '💾 Save & Create ✨',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', (confirmed) => {
+        if (confirmed) {
+            createButton.disabled = true;
+            Dashboard.showLoadingMsg();
+
+            savePluginConfiguration(page).catch(function(error) {
+                // Catch config save errors
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                return Promise.reject(error);
+            }).then(function() {
+                // Generate folders before generating libraries
+                return generateLibraryFolders(page)
+                    .catch(function(error) {
+                        DisplayMessage('❌ Failed to create network folders: ' + (error?.message || 'Unknown error'));
+                        return Promise.reject(error);
+                    });
+            }).then(function (response) {
+                // Send request for a new library
+                let apiCalls;
+                if (UseMixedMediaLibrary === false) {
+                    apiCalls = Promise.all([
+                        createVirtualFolders(page, movieLibraryDisplayName, 'movies', response.movieFolders),
+                        createVirtualFolders(page, showLibraryDisplayName, 'tvshows', response.showFolders)
+                    ]);
+                } else {
+                    apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
+                }
+                return apiCalls;
+            }).finally(function() {
+                // Disable scrolling since there is no output container
+                // scrollToElement('createDefaultLibraryContainer');
+                Dashboard.hideLoadingMsg();
+                createButton.disabled = false;
+            });
+        }
     });
 }
 
@@ -480,7 +680,7 @@ function initializeImportContent(page) {
         refreshAvailableButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
-                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                DisplayMessage('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
             }
@@ -488,11 +688,11 @@ function initializeImportContent(page) {
             loadAvailableNetworks(page)
             .then(function(availableNetworks) {
                 if (availableNetworks) {
-                    Dashboard.alert(`✅ Refreshed available networks`);
+                    DisplayMessage(`✅ Refreshed available networks`);
                     scrollToElement('availableNetworksSelectBox');
                 }
             }).catch(function() {
-                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                DisplayMessage('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
                 scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
@@ -506,21 +706,27 @@ function initializeImportContent(page) {
 
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
-    syncButton.addEventListener('click', function () {
-        performSyncImportContent(page);
-    });
+    if (syncButton) {
+        syncButton.addEventListener('click', function () {
+            performSyncImportContent(page);
+        });
+    }
 
     // Add reset plugin config button functionality
     const resetPluginConfigButton = page.querySelector('#resetPluginConfig');
-    resetPluginConfigButton.addEventListener('click', function () {
-        performPluginReset(page);
-    });
+        if (resetPluginConfigButton) {
+        resetPluginConfigButton.addEventListener('click', function () {
+            performPluginReset(page);
+        });
+    }
 
     // Add recycle library data button functionality
     const recycleLibraryButton = page.querySelector('#recycleLibraryData');
-    recycleLibraryButton.addEventListener('click', function () {
-        performRecycleLibraryData(page);
-    });
+        if (recycleLibraryButton) {
+        recycleLibraryButton.addEventListener('click', function () {
+            performRecycleLibraryData(page);
+        });
+    }
 
     // Add refresh networks button functionality
     const refreshButton = page.querySelector('#refreshWatchRegions');
@@ -528,16 +734,16 @@ function initializeImportContent(page) {
         refreshButton.addEventListener('click', function() {
             const config = window.configJellyBridge || {};
             if(config.JellyseerrUrl != page.querySelector('#JellyseerrUrl').value){
-                Dashboard.alert('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
+                DisplayMessage('❗ Jellyseerr connection information has changed. Please save your settings and try again.');
                 scrollToElement('saveConfig');
                 return;
             }
             Dashboard.showLoadingMsg();
             loadRegions(page).then(function() {
-                Dashboard.alert('✅ Refreshed regions');
+                DisplayMessage('✅ Refreshed regions');
                 scrollToElement('selectWatchRegion');
             }).catch(function() {
-                Dashboard.alert('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
+                DisplayMessage('❌ Failed to refresh available networks (try Test Connection to Jellyseerr first)');
                 scrollToElement('testConnection');
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
@@ -582,7 +788,7 @@ function performSyncImportContent(page) {
                     appendToResultBox(syncDiscoverResult, '\n' + (syncData.result || 'No result available'));
                     scrollToElement('syncDiscoverResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Sync failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Sync failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nDiscover Sync Results:\n`;
                     resultText += `❌ Folder structure creation failed: ${error?.message || 'Unknown error'}\n`;
@@ -591,7 +797,7 @@ function performSyncImportContent(page) {
                     scrollToElement('syncDiscoverResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(syncDiscoverResult, "⏰ " + new Date().toLocaleTimeString());
@@ -712,7 +918,7 @@ function populateSelectWithNetworks(selectElement, networks) {
             selectElement.appendChild(option);
         } else {
             // Invalid network format
-            Dashboard.alert(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
+            DisplayMessage(`❌ ERROR: Invalid network format: ${JSON.stringify(network)}. Expected format: { id: number, name: string }`);
         }
     });
 }
@@ -875,7 +1081,7 @@ function initializeUploadPromo(page) {
         });
     }
     
-    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const customizePromoButton = page.querySelector('#generatePromoVideos');
     customizePromoButton.addEventListener('click', function() {
         performCustomizePromo(page);
@@ -937,7 +1143,7 @@ function performCustomizePromo(page) {
                     scrollToElement('generatePromoVideosResult');
                     loadPromoVideos(page);
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Request JellyBridge Library Promo Videos failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nRequest JellyBridge Library Promo Videos Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
@@ -946,7 +1152,7 @@ function performCustomizePromo(page) {
                     scrollToElement('generatePromoVideosResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(generatePromoVideosResult, "⏰ " + new Date().toLocaleTimeString());
@@ -958,7 +1164,7 @@ function performCustomizePromo(page) {
 }
 
 // ==========================================
-// SORT CONTENT FUNCTIONS
+// SORT DISCOVER CONTENT FUNCTIONS
 // ==========================================
 
 function initializeSortContent(page) {
@@ -984,8 +1190,9 @@ function initializeSortContent(page) {
     
     // Set sort content form values with null handling
     setInputField(page, 'EnableAutomatedSortTask', true);
-    setInputField(page, 'MarkMediaPlayed', true);
     setInputField(page, 'SortTaskIntervalHours');
+    setInputField(page, 'MarkMediaPlayed', true);
+    setInputField(page, 'EnableSortLibraryRefresh', true);
 
     // Add sort content button functionality
     const sortButton = page.querySelector('#sortContent');
@@ -1033,7 +1240,7 @@ function performSortContent(page) {
                     appendToResultBox(sortContentResult, '\n' + (sortResult.result || 'No result available'));
                     scrollToElement('sortContentResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Sort content failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nSort Content Results:\n`;
                     resultText += `❌ Sort failed: ${error?.message || 'Unknown error'}\n`;
@@ -1042,7 +1249,7 @@ function performSortContent(page) {
                     scrollToElement('sortContentResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(sortContentResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1057,87 +1264,34 @@ function performSortContent(page) {
 // MANAGE DISCOVER LIBRARY FUNCTIONS
 // ==========================================
 
-function initializeManageLibrary(page) {
+function initializeManageFavorites(page) {
     // Set library settings form values with null handling
-    setInputField(page, 'ManageJellyseerrLibrary', true);
+    setInputField(page, 'ManageJellyBridgeLibrary', true);
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'ResponsiveFavoriteRequests', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'UserPermissionRequest4k', true);
     setInputField(page, 'RequestFirstSeason', true);
+    setInputField(page, 'UseMixedMediaLibrary', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
-    setInputField(page, 'LibraryPrefix');
+    setInputField(page, 'NetworkFolderPrefix');
     
-    // Request JellyBridge Library Favorites in Jellyseerr button functionality
+    // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     syncFavoritesButton.addEventListener('click', function() {
         performSyncFavorites(page);
     });
-    
-    // Generate Network Folders button functionality
-    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
-    if (generateNetworkFoldersButton) {
-        generateNetworkFoldersButton.addEventListener('click', function(e) {
-            // If button is disabled, let the scroll handler take over
-            if (this.disabled) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-            performGenerateNetworkFolders(page);
-        });
-    }
 }
 
-function performGenerateNetworkFolders(page) {
-    const generateNetworkFoldersButton = page.querySelector('#generateNetworkFolders');
-    
-    // Show confirmation dialog for saving settings before generating folders
-    Dashboard.confirm({
-        title: 'Confirm Save',
-        text: 'Settings will be saved before generating network folders.',
-        confirmText: '💾 Save & Generate 📁',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            generateNetworkFoldersButton.disabled = true;
-            Dashboard.showLoadingMsg();
-            
-            savePluginConfiguration(page).then(function(result) {
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                
-                // Call GenerateNetworkFolders endpoint
-                return ApiClient.ajax({
-                    url: ApiClient.getUrl('JellyBridge/GenerateNetworkFolders'),
-                    type: 'POST',
-                    data: '{}',
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).then(function(response) {
-                    const ok = !!(response && response.success === true);
-                    
-                    if (ok) {
-                        Dashboard.alert('✅ Network folders created successfully');
-                    } else {
-                        let message = response?.message || 'Network folder generation completed';
-                        Dashboard.alert('⚠️ ' + message);
-                    }
-                    
-                    generateNetworkFoldersButton.disabled = false;
-                }).catch(function(error) {
-                    Dashboard.alert('❌ Failed to generate network folders: ' + (error?.message || 'Unknown error'));
-                    generateNetworkFoldersButton.disabled = false;
-                });
-            }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                scrollToElement('jellyBridgeConfigurationForm');
-                generateNetworkFoldersButton.disabled = false;
-            }).finally(function() {
-                Dashboard.hideLoadingMsg();
-            });
-        }
+function generateLibraryFolders(page) {
+    // Call GenerateLibraryFolders endpoint
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/GenerateLibraryFolders'),
+        type: 'POST',
+        data: '{}',
+        contentType: 'application/json',
+        dataType: 'json'
     });
 }
 
@@ -1177,16 +1331,16 @@ function performSyncFavorites(page) {
                     appendToResultBox(syncFavoritesResult, '\n' + (syncResult.result || 'No result available'));
                     scrollToElement('syncFavoritesResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Request JellyBridge Library Favorites in Jellyseerr failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Send Discover Library Favorite Requests to Jellyseerr failed: ' + (error?.message || 'Unknown error'));
                     
-                    let resultText = `\nRequest JellyBridge Library Favorites in Jellyseerr Results:\n`;
+                    let resultText = `\nSend Discover Library Favorite Requests to Jellyseerr Results:\n`;
                     resultText += `❌ Request failed: ${error?.message || 'Unknown error'}\n`;
                     
                     appendToResultBox(syncFavoritesResult, resultText);
                     scrollToElement('syncFavoritesResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(syncFavoritesResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1213,10 +1367,10 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'EnableTraceLogging', true);
     
     // Library Prefix real-time validation
-    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
-    if (libraryPrefixInput) {
-        libraryPrefixInput.addEventListener('input', function() {
-            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
+    const networkFolderPrefixInput = page.querySelector('#NetworkFolderPrefix');
+    if (networkFolderPrefixInput) {
+        networkFolderPrefixInput.addEventListener('input', function() {
+            validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
         });
     }
     
@@ -1265,7 +1419,7 @@ function performCleanupMetadata(page) {
                     appendToResultBox(cleanupMetadataResult, '\n' + (cleanupData?.result || 'No result available'));
                     scrollToElement('cleanupMetadataResult');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Cleanup failed: ' + (error?.message || 'Unknown error'));
                     
                     let resultText = `\nCleanup Results:\n`;
                     resultText += `❌ Cleanup failed: ${error?.message || 'Unknown error'}\n`;
@@ -1274,7 +1428,7 @@ function performCleanupMetadata(page) {
                     scrollToElement('cleanupMetadataResult');
                 });
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
                 scrollToElement('jellyBridgeConfigurationForm');
             }).finally(function() {
                 appendToResultBox(cleanupMetadataResult, "⏰ " + new Date().toLocaleTimeString());
@@ -1336,30 +1490,32 @@ function performPluginReset(page) {
                 JellyseerrUrl: '',
                 ApiKey: '',
                 LibraryDirectory: '',
+                IsEnabled: null,
+                EnableInMainMenu: null,
                 SyncIntervalHours: null,
-                LibraryPrefix: '',
                 RequestTimeout: null,
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
-                EnableAutomatedSortTask: null,
-                SortOrder: null,
-                MarkMediaPlayed: null,
-                SortTaskIntervalHours: null,
-                IsEnabled: null,
-                UseNetworkFolders: null,
-                AddDuplicateContent: null,
                 ExcludeFromMainLibraries: null,
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
                 UserPermissionRequest4k: null,
                 RequestFirstSeason: null,
-                ManageJellyseerrLibrary: null,
+                UseMixedMediaLibrary: null,
+                UseNetworkFolders: null,
+                NetworkFolderPrefix: '',
+                AddDuplicateContent: null,
+                ManageJellyBridgeLibrary: null,
                 CustomMoviesPromo: null,
                 DefaultMoviesPromo: null,
                 CustomSeriesPromo: null,
                 DefaultSeriesPromo: null,
                 PromoVideoDurationSeconds: null,
+                EnableAutomatedSortTask: null,
+                SortTaskIntervalHours: null,
+                SortOrder: null,
+                MarkMediaPlayed: null,
                 JellyBridgeTempDirectory: '',
                 EnableStartupSync: null,
                 StartupDelaySeconds: null,
@@ -1378,14 +1534,14 @@ function performPluginReset(page) {
                 contentType: 'application/json',
                 dataType: 'json'
             }).then(function(result) {
-                Dashboard.alert('✅ Plugin configuration has been reset to defaults! ⟳ Refreshing the page...');
+                DisplayMessage('✅ Plugin configuration has been reset to defaults! ⟳ Refreshing the page...');
                 
                 // Reload the page to show default values
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
             }).catch(function(error) {
-                Dashboard.alert('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
+                DisplayMessage('❌ Failed to reset configuration: ' + (error?.message || 'Unknown error'));
             }).finally(function() {
                 Dashboard.hideLoadingMsg();
             });
@@ -1442,9 +1598,9 @@ function performRecycleLibraryData(page) {
                     contentType: 'application/json',
                     dataType: 'json'
                 }).then(function(result) {
-                    Dashboard.alert('✅ All JellyBridge library data has been deleted successfully.');
+                    DisplayMessage('✅ All JellyBridge library data has been deleted successfully.');
                 }).catch(function(error) {
-                    Dashboard.alert('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
+                    DisplayMessage('❌ Failed to delete library data: ' + (error?.message || 'Unknown error'));
                 }).finally(function() {
                     Dashboard.hideLoadingMsg();
                     recycleLibraryButton.disabled = false;
@@ -1452,7 +1608,7 @@ function performRecycleLibraryData(page) {
             });
         }).catch(function(error) {
             Dashboard.hideLoadingMsg();
-            Dashboard.alert('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
+            DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
             scrollToElement('jellyBridgeConfigurationForm');
         }).finally(function() {
             Dashboard.hideLoadingMsg();
@@ -1484,7 +1640,7 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
-        if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
+        if (!validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
         return true;
     }
     
@@ -1493,29 +1649,29 @@ function savePluginConfiguration(page) {
     
     // Update config with current form values
     // Only include checkbox values if they differ from defaults
-    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
     form.JellyseerrUrl = safeParseString(page.querySelector('#JellyseerrUrl'));
     form.ApiKey = safeParseString(page.querySelector('#ApiKey'));
     form.LibraryDirectory = safeParseString(page.querySelector('#LibraryDirectory'));
+    form.IsEnabled = nullIfDefault(page.querySelector('#IsEnabled').checked, config.ConfigDefaults.IsEnabled);
+    form.EnableInMainMenu = nullIfDefault(page.querySelector('#EnableInMainMenu').checked, config.ConfigDefaults.EnableInMainMenu);
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
-    form.ManageJellyseerrLibrary = nullIfDefault(page.querySelector('#ManageJellyseerrLibrary').checked, config.ConfigDefaults.ManageJellyseerrLibrary);
-    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
-    form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
-    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
-    form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
-    form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
-    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
-    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
-    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
-    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
-    form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
-    form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
     form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.ConfigDefaults.Region);
     form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.ManageJellyBridgeLibrary = nullIfDefault(page.querySelector('#ManageJellyBridgeLibrary').checked, config.ConfigDefaults.ManageJellyBridgeLibrary);
+    form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
+    form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
+    form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
+    form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
+    form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
+    form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
+    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
+    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
+    form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
+    form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
     form.CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
@@ -1523,9 +1679,12 @@ function savePluginConfiguration(page) {
     form.PromoVideoDurationSeconds = safeParseInt(page.querySelector('#PromoVideoDurationSeconds'));
     form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);
+    form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
     form.SortOrder = nullIfDefault(page.querySelector('#selectSortOrder').value, config.ConfigDefaults.SortOrder);
     form.MarkMediaPlayed = nullIfDefault(page.querySelector('#MarkMediaPlayed').checked, config.ConfigDefaults.MarkMediaPlayed);
-    form.SortTaskIntervalHours = safeParseDouble(page.querySelector('#SortTaskIntervalHours'));
+    form.EnableSortLibraryRefresh = nullIfDefault(page.querySelector('#EnableSortLibraryRefresh').checked, config.ConfigDefaults.EnableSortLibraryRefresh);
+    form.StartupDelaySeconds = safeParseInt(page.querySelector('#StartupDelaySeconds'));
+    form.TaskTimeoutMinutes = safeParseInt(page.querySelector('#TaskTimeoutMinutes'));
     form.EnableDebugLogging = nullIfDefault(page.querySelector('#EnableDebugLogging').checked, config.ConfigDefaults.EnableDebugLogging);
     form.EnableTraceLogging = nullIfDefault(page.querySelector('#EnableTraceLogging').checked, config.ConfigDefaults.EnableTraceLogging);
     
@@ -1645,28 +1804,23 @@ function initializeGlobalSettings(page) {
 
 // Initialize scroll-to functionality for detail tabs
 function initializeDetailTabScroll(page) {
-    // List of detail section IDs
-    const detailIds = ['librarySetupInstructions', 'troubleshootingDetails', 'syncSettings', 'manageLibrarySettings', 'customPromoVideos', 'sortContentSettings', 'networkFolderOptionsDetails', 'advancedSettings'];
-    
-    detailIds.forEach(detailId => {
-        const detailsElement = page.querySelector(`#${detailId}`);
-        if (detailsElement) {
-            const summaryElement = detailsElement.querySelector('summary');
-            if (summaryElement) {
-                summaryElement.addEventListener('click', function(e) {
-                    // Check if the details is being opened (will be open after the click)
-                    // We need to check before the state changes, so we check if it's currently closed
-                    const wasClosed = !detailsElement.hasAttribute('open');
-                    
-                    // Wait a brief moment for the details to open/close, then check and scroll only if opening
-                    setTimeout(() => {
-                        // Only scroll if the details was closed before (meaning it's being opened)
-                        if (wasClosed && detailsElement.hasAttribute('open')) {
-                            scrollToElement(detailId);
-                        }
-                    }, 50);
-                });
-            }
+    // get all detail sections
+    page.querySelectorAll('details').forEach((detailsElement) => {
+        const summaryElement = detailsElement.querySelector('summary');
+        if (summaryElement) {
+            summaryElement.addEventListener('click', function(e) {
+                // Check if the details is being opened (will be open after the click)
+                // We need to check before the state changes, so we check if it's currently closed
+                const wasClosed = !detailsElement.hasAttribute('open');
+                
+                // Wait a brief moment for the details to open/close, then check and scroll only if opening
+                setTimeout(() => {
+                    // Only scroll if the details was closed before (meaning it's being opened)
+                    if (wasClosed && detailsElement.hasAttribute('open')) {
+                        scrollToElement(detailsElement.id);
+                    }
+                }, 50);
+            });
         }
     });
 }
@@ -1695,6 +1849,11 @@ function initializeNumberInputScrollPrevention(page) {
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
+
+function DisplayMessage(message){
+    Dashboard.alert(message);
+    console.log(message);
+}
 
 // Open a directory browser dialog to select a folder and set the input value
 function browseFolder(inputElement, title, includeFiles = false) {
@@ -1928,7 +2087,7 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
     // Check validator function if provided
     if (validator && !validator(field.value)) {
         const message = errorMessage || `${fieldId} is invalid`;
-        Dashboard.alert(`❌ ${message}`);
+        DisplayMessage(`❌ ${message}`);
         scrollToElement(fieldId);
         return { isValid: false, error: message };
     }
@@ -1940,7 +2099,7 @@ function validateField(form, fieldId, validator = null, errorMessage = null) {
 function setInputField(page, propertyName, isCheckbox = false) {
     const field = page.querySelector(`#${propertyName}`);
     if (!field) {
-        Dashboard.alert(`❌ Field with ID "${propertyName}" not found`);
+        DisplayMessage(`❌ Field with ID "${propertyName}" not found`);
         return;
     }
     

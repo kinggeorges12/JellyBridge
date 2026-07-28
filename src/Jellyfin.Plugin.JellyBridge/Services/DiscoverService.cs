@@ -28,8 +28,6 @@ public class DiscoverService
         _metadataService = metadataService;
         _bridgeService = bridgeService;
     }
-    
-    #region FromJellyseerr
 
     #region Process
     
@@ -109,55 +107,6 @@ public class DiscoverService
         
         return (allMovies, allShows);
     }
-    
-    /// <summary>
-    /// Filters duplicate media items from a list using the GetItemHashCode method.
-    /// Returns a list containing only unique items based on their hash code.
-    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
-    /// </summary>
-    /// <param name="items">List of media items to filter</param>
-    /// <returns>List of unique media items (or original list if duplicates should be kept)</returns>
-    public async Task<List<IJellyseerrItem>> FilterDuplicateMedia(List<IJellyseerrItem> items)
-    {
-        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-        
-        var seenHashes = new HashSet<int>();
-        var uniqueItems = new List<IJellyseerrItem>();
-
-        if (useNetworkFolders && addDuplicateContent)
-        {
-            _logger.LogDebug("Filtering duplicates by library: UseNetworkFolders and AddDuplicateContent are both enabled");
-            var libraryResults = await _bridgeService.FilterDuplicatesByLibrary(items);
-            // Extract items from library-directory-item tuples into a single flat list
-            uniqueItems = libraryResults.Select(tuple => tuple.item).ToList();
-            _logger.LogDebug("Extracted {ItemCount} items from {LibraryCount} library-directory-item tuples", 
-                uniqueItems.Count, libraryResults.Count);
-            return uniqueItems;
-        }
-        
-        foreach (var item in items)
-        {
-            if (item == null) continue;
-            
-            var hash = item.GetItemHashCode();
-            if (seenHashes.Add(hash))
-            {
-                uniqueItems.Add(item);
-            }
-            else
-            {
-                _logger.LogTrace("Filtered duplicate item: {MediaName} (Id: {Id}, Hash: {Hash})", 
-                    item.MediaName, item.Id, hash);
-            }
-        }
-        
-        _logger.LogDebug("Filtered {TotalCount} items to {UniqueCount} unique items", 
-            items.Count, uniqueItems.Count);
-        
-        return uniqueItems;
-    }
 
     #endregion
 
@@ -172,7 +121,7 @@ public class DiscoverService
     {
         var processedItems = new List<TJellyseerr>();
         var tasks = new List<Task>();
-        var seenFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenFolders = new HashSet<string>();
         
         _logger.LogDebug("Processing {UnmatchedCount} unmatched items for placeholder creation", 
             unmatchedItems.Count);
@@ -184,15 +133,10 @@ public class DiscoverService
                 // Get the folder path for this item
                 var folderPath = _metadataService.GetJellyBridgeItemDirectory(item);
                 var normalizedFolder = FolderUtils.GetNormalizedPath(folderPath);
-                if (!string.IsNullOrEmpty(normalizedFolder) && !seenFolders.Add(normalizedFolder))
+                if (FolderUtils.FolderExistsThrowNull(normalizedFolder) && !seenFolders.Add(normalizedFolder))
                 {
                     _logger.LogTrace("Skipping duplicate placeholder for {ItemName} at {FolderPath}", item.MediaName, normalizedFolder);
                     continue;
-                }
-                
-                if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                {
-                    throw new InvalidOperationException($"Folder does not exist for item: {item.MediaName}");
                 }
                 
                 // Create placeholder video based on media type
@@ -231,34 +175,32 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Filters duplicate media items from a list using the GetItemFolderHashCode method.
+    /// Filters duplicate media items from each library using the folder hash code.
     /// Returns a list containing only unique items based on their hash code.
     /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
     /// <param name="allItems">List of media items to filter</param>
     /// <param name="uniqueItems">List of unique media items</param>
     /// <returns>Tuple of (newly ignored items, existing ignored items)</returns>
-    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreDuplicateLibraryItems(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
+    public async Task<(List<IJellyseerrItem> NewlyIgnored, List<IJellyseerrItem> ExistingIgnored)> IgnoreJellyBridgeDuplicates(List<IJellyseerrItem> allItems, List<IJellyseerrItem> uniqueItems)
     {
         var newlyIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
         var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
         var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-        if (!(useNetworkFolders && addDuplicateContent))
-        {
-            _logger.LogDebug("Ignoring duplicate library items: UseNetworkFolders and AddDuplicateContent are both disabled");
-            return (newlyIgnored, existingIgnored);
-        }
-
-        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetItemFolderHashCode()));
         var duplicates = new List<IJellyseerrItem>();
+        
+        // Network folders are not used, but we need to filter out localized language duplicates by hash
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
+
         foreach (var item in allItems)
         {
-            if (!uniqueFolderHashes.Contains(item.GetItemFolderHashCode()))
+            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)))
             {
                 duplicates.Add(item);
             }
         }
+
         var ignoreFileTasks = new List<Task>();
 
         foreach (var duplicate in duplicates)
@@ -300,84 +242,49 @@ public class DiscoverService
 
     #endregion
     
-    #region Deleted
+    #region Ignore
 
     /// <summary>
     /// Recursively deletes all .ignore files from the Jellyseerr bridge directory.
     /// </summary>
-    public Task<int> DeleteAllIgnoreFilesAsync()
+    public Task<(List<IJellyseerrItem> newUnignored, List<IJellyseerrItem> existingUnignored)> DeleteIgnoreFilesAsync(List<JellyMatch> matched)
     {
         var syncDirectory = FolderUtils.GetBaseDirectory();
+        List<IJellyseerrItem> existingUnignored = new List<IJellyseerrItem>();
         
         try
         {
-            if (string.IsNullOrEmpty(syncDirectory) || !Directory.Exists(syncDirectory))
-            {
-                _logger.LogWarning("Sync directory not configured or does not exist: {SyncDirectory}", syncDirectory);
-                return Task.FromResult(0);
-            }
-
             _logger.LogTrace("Starting recursive deletion of .ignore files from: {SyncDirectory}", syncDirectory);
             
-            var deletedCount = 0;
-            var ignoreFiles = Directory.GetFiles(syncDirectory, BridgeService.IgnoreFileName, SearchOption.AllDirectories);
-            
-            foreach (var ignoreFile in ignoreFiles)
+            foreach (var matchedItem in matched)
             {
-                try
+                (var jellyseerrItem, _) = matchedItem.ToTuple();
+                var bridgeFolderPath = _metadataService.GetJellyBridgeItemDirectory(jellyseerrItem);
+                var ignoreFilePath = Path.Combine(bridgeFolderPath, BridgeService.IgnoreFileName);
+                if (File.Exists(ignoreFilePath))
                 {
-                    File.Delete(ignoreFile);
-                    deletedCount++;
-                    _logger.LogDebug("Deleted .ignore file: {IgnoreFile}", ignoreFile);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to delete .ignore file: {IgnoreFile}", ignoreFile);
+                    try
+                    {
+                        File.Delete(ignoreFilePath);
+                        existingUnignored.Add(jellyseerrItem);
+                        _logger.LogDebug("Deleted .ignore file for matched item: {IgnoreFile}", ignoreFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to delete .ignore file for matched item: {IgnoreFile}", ignoreFilePath);
+                    }
                 }
             }
 
             _logger.LogTrace("Completed deletion of .ignore files. Deleted {DeletedCount} files out of {TotalCount} found", 
-                deletedCount, ignoreFiles.Length);
+                existingUnignored.Count, matched.Count);
             
-            return Task.FromResult(deletedCount);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during .ignore file deletion");
-            return Task.FromResult(0);
         }
-    }
-
-    /// <summary>
-    /// Filters out Jellyfin matches that are already inside the JellyBridge sync directory.
-    /// This prevents re-processing items that were created by the plugin itself.
-    /// </summary>
-    public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> FilterSyncedLibraryItems(List<JellyMatch> matchedItems, List<IJellyseerrItem> unmatchedItems)
-    {
-        var matched = new List<JellyMatch>();
-        var unmatched = new List<IJellyseerrItem>();
-        unmatched.AddRange(unmatchedItems);
-
-        foreach (var match in matchedItems)
-        {
-            var path = match?.JellyfinItem?.Path;
-            // Keep the match only if it's not in the sync directory
-            if (match != null)
-            {
-                if (string.IsNullOrEmpty(path) || !FolderUtils.IsPathInSyncDirectory(path))
-                {
-                    matched.Add(match);
-                } else {
-                    unmatched.Add(match.JellyseerrItem);
-                }
-            }
-        }
-
-        // Apply unique-by-library filtering to unmatched via existing duplicate filter
-        var filteredUnmatched = await FilterDuplicateMedia(unmatched);
-
-        _logger.LogTrace("FilterSyncedLibraryItems: matched={Matched}, unmatched={Unmatched}, total={Total}", matched.Count, filteredUnmatched.Count, matchedItems.Count + unmatchedItems.Count);
-        return (matched, filteredUnmatched);
+        return Task.FromResult((new List<IJellyseerrItem>(), existingUnignored));
     }
 
     /// <summary>
@@ -487,41 +394,6 @@ public class DiscoverService
 
         return (newlyIgnored, existingIgnored);
     }
-
-    /// <summary>
-    /// Filters Jellyseerr items that have an ignore file in their target directory.
-    /// Returns only items that do NOT have the ignore file present.
-    /// </summary>
-    public List<IJellyseerrItem> FilterIgnoredItems(List<IJellyseerrItem> items)
-    {
-        if (items == null || items.Count == 0)
-        {
-            return new List<IJellyseerrItem>();
-        }
-
-        var kept = new List<IJellyseerrItem>(items.Count);
-        foreach (var item in items)
-        {
-            try
-            {
-                var dir = _metadataService.GetJellyBridgeItemDirectory(item);
-                var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
-                if (!File.Exists(ignorePath))
-                {
-                    kept.Add(item);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Could not filter ignored item for {Name}", item?.MediaName);
-            }
-        }
-
-        _logger.LogTrace("Filtered out ignored items: kept {Kept}/{Total}", kept.Count, items.Count);
-        return kept;
-    }
-
-    #endregion
 
     #endregion
 }

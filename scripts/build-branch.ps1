@@ -165,7 +165,8 @@ foreach ($t in $targets) {
     $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$ver_sub</AssemblyVersion>"
     $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$ver_sub</FileVersion>"
 
-    Set-Content $csprojPath -Value $csprojContent -NoNewline
+    Start-Sleep -Milliseconds 500
+    Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
     Write-Host "[~] Updated version to $ver_sub in project file" -ForegroundColor Green
 
     ## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)

@@ -127,10 +127,7 @@ public class MetadataService
 
         try
         {
-            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-            {
-                throw new InvalidOperationException($"Folder path does not exist: {folderPath}");
-            }
+            folderPath = FolderUtils.GetExistingFolderOrThrow(folderPath);
 
             // Get all subdirectories that contain metadata files
             var metadataFiles = Directory.GetFiles(folderPath, IJellyseerrItem.GetMetadataFilename(), SearchOption.AllDirectories);
@@ -194,17 +191,14 @@ public class MetadataService
                 
                 // Generate folder name and get directory path
                 var folderName = GetJellyBridgeItemDirectory(item);
-                var folderExists = Directory.Exists(folderName);
-
-                _logger.LogTrace("Folder details - Name: '{FolderName}', Exists: {FolderExists}", 
-                    folderName, folderExists);
+                var folderAlreadyExists = FolderUtils.FolderExistsThrowNull(folderName);
 
                 // Write metadata
                 var success = await WriteMetadataAsync(item);
                 
                 if (success)
                 {
-                    if (folderExists)
+                    if (folderAlreadyExists)
                     {
                         updatedItems.Add(item);
                         _logger.LogTrace("✅ UPDATED {Type} folder: '{FolderName}'", 
@@ -257,10 +251,10 @@ public class MetadataService
             var targetDirectory = GetJellyBridgeItemDirectory(item);
 
             // Create directory if it doesn't exist
-            if (!Directory.Exists(targetDirectory))
+            if (!FolderUtils.FolderExistsThrowNull(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
-                _logger.LogDebug("Created directory: {TargetDirectory}", targetDirectory);
+                _logger.LogTrace("Created directory: {TargetDirectory}", targetDirectory);
             }
 
             // Set CreatedDate to current time when writing
@@ -300,89 +294,118 @@ public class MetadataService
     /// Create empty network folders based on the network configuration.
     /// </summary>
     /// <returns>Tuple containing lists of created and existing folder names</returns>
-    public async Task<(List<string> createdFolders, List<string> existingFolders)> CreateEmptyNetworkFoldersAsync()
+    public (List<string> createdFolders, List<string> existingFolders) CreateEmptyNetworkFolders(string baseDirectory)
     {
         var createdFolders = new List<string>();
         var existingFolders = new List<string>();
-        
-        var config = Plugin.GetConfiguration();
-        var baseDirectory = FolderUtils.GetBaseDirectory();
-        var networkMap = config.NetworkMap ?? new List<JellyseerrNetwork>();
-        
-        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
-        {
-            throw new InvalidOperationException($"Library Directory does not exist: {baseDirectory}");
-        }
-        
-        if (networkMap.Count == 0)
-        {
-            _logger.LogWarning("No networks configured. No folders will be created.");
-            return (createdFolders, existingFolders);
-        }
-        
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        if (!useNetworkFolders)
-        {
-            _logger.LogWarning("UseNetworkFolders is not enabled. No folders will be created.");
-            return (createdFolders, existingFolders);
-        }
-        
-        _logger.LogInformation("Starting network folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
+        var networkMap = Plugin.GetConfiguration().NetworkMap ?? new List<JellyseerrNetwork>();
+        _logger.LogInformation("Starting library folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
             baseDirectory, networkMap.Count);
-        
-        try
+        foreach (var network in networkMap)
         {
-            foreach (var network in networkMap)
+            try
             {
-                try
+                if (string.IsNullOrEmpty(network.Name))
                 {
-                    if (string.IsNullOrEmpty(network.Name))
-                    {
-                        _logger.LogWarning("Skipping network with empty name: {NetworkId}", network.Id);
-                        continue;
-                    }
-                    
-                    // Use GetNetworkFolder which handles the prefix
-                    var networkFolderPath = GetNetworkFolder(network.Name);
-                    if (networkFolderPath == null)
-                    {
-                        _logger.LogWarning("GetNetworkFolder returned null for network: {NetworkName}", network.Name);
-                        continue;
-                    }
-                    
-                    var networkFolderName = Path.GetFileName(networkFolderPath);
-                    
-                    if (Directory.Exists(networkFolderPath))
-                    {
-                        existingFolders.Add(networkFolderName);
-                        _logger.LogTrace("Network folder already exists: {NetworkFolder}", networkFolderPath);
-                    }
-                    else
-                    {
-                        Directory.CreateDirectory(networkFolderPath);
-                        createdFolders.Add(networkFolderName);
-                        _logger.LogInformation("Created network folder: {NetworkFolder}", networkFolderPath);
-                    }
+                    _logger.LogWarning("Skipping network with empty name: {NetworkId}", network.Id);
+                    continue;
                 }
-                catch (Exception ex)
+                
+                // Use GetNetworkFolder which handles the prefix
+                var networkFolderPath = GetNetworkFolder(baseDirectory, network.Name);
+                if (string.IsNullOrEmpty(networkFolderPath))
                 {
-                    _logger.LogError(ex, "Error creating folder for network: {NetworkName}", network.Name);
-                    throw; // Re-throw to fail the entire operation
+                    _logger.LogWarning("Network Folders did not create the network name: {NetworkName}", network.Name);
+                    continue;
+                }
+                
+                if (FolderUtils.FolderExistsThrowNull(networkFolderPath))
+                {
+                    existingFolders.Add(networkFolderPath);
+                    _logger.LogTrace("Network folder already exists: {NetworkFolder}", networkFolderPath);
+                }
+                else
+                {
+                    Directory.CreateDirectory(networkFolderPath);
+                    createdFolders.Add(networkFolderPath);
+                    _logger.LogDebug("Created network folder: {NetworkFolder}", networkFolderPath);
                 }
             }
-            
-            _logger.LogInformation("Network folder generation completed - Created: {Created}, Existing: {Existing}", 
-                createdFolders.Count, existingFolders.Count);
-            
-            await Task.CompletedTask; // Satisfy async requirement
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating network folders");
-            throw;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating folder for network: {NetworkName}", network.Name);
+                throw; // Re-throw to fail the entire operation
+            }
         }
         
+        _logger.LogInformation("Network folder generation completed - Created: {Created}, Existing: {Existing}", 
+            createdFolders.Count, existingFolders.Count);
         return (createdFolders, existingFolders);
+    }
+    public async Task<(List<string> movieFolders, List<string> showFolders, List<string> mixedFolders)> CreateEmptyLibraryFoldersAsync()
+    {
+        var folders = new Dictionary<string, List<string>>();
+        folders[JellyseerrMovie.LibraryType] = new List<string>();
+        folders[JellyseerrShow.LibraryType] = new List<string>();
+        folders[string.Empty] = new List<string>(); // For mixed media
+        
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+
+        if (!useMixedMediaLibrary)
+        {
+            foreach(var libraryType in new[] { JellyseerrMovie.LibraryType, JellyseerrShow.LibraryType })
+            {
+                string mediaFolderPath = Path.Combine(baseDirectory, libraryType);
+                if (FolderUtils.FolderExistsThrowNull(mediaFolderPath))
+                {
+                    _logger.LogTrace("Media type folder already exists: {MediaFolder}", mediaFolderPath);
+                }
+                else
+                {
+                    Directory.CreateDirectory(mediaFolderPath);
+                    _logger.LogDebug("Created media type folder: {MediaFolder}", mediaFolderPath);
+                }
+                
+                if (useNetworkFolders)
+                {
+                    // Create empty network folders for this media type
+                    var (existingNetworkFolders, createdNetworkFolders) = CreateEmptyNetworkFolders(mediaFolderPath);
+                    folders[libraryType].AddRange(existingNetworkFolders);
+                    folders[libraryType].AddRange(createdNetworkFolders);
+                }
+                else
+                {
+                    folders[libraryType].Add(mediaFolderPath);
+                }
+            }
+        }
+        else if (useNetworkFolders)
+        { 
+            var (existingNetworkFolders, createdNetworkFolders) = CreateEmptyNetworkFolders(baseDirectory);
+            folders[string.Empty].AddRange(existingNetworkFolders);
+            folders[string.Empty].AddRange(createdNetworkFolders);
+        }
+        else
+        {
+            if (FolderUtils.FolderExistsThrowNull(baseDirectory))
+            {
+                _logger.LogTrace("Media type folder already exists: {BaseDirectory}", baseDirectory);
+            }
+            else
+            {
+                Directory.CreateDirectory(baseDirectory);
+                _logger.LogDebug("Created media type folder: {BaseDirectory}", baseDirectory);
+            }
+            folders[string.Empty].Add(baseDirectory);
+        }
+        
+        await Task.CompletedTask; // Satisfy async requirement
+        
+        return (movieFolders: folders[JellyseerrMovie.LibraryType],
+                showFolders: folders[JellyseerrShow.LibraryType],
+                mixedFolders: folders[string.Empty]);
     }
 
     #region Helpers
@@ -390,18 +413,13 @@ public class MetadataService
     /// <summary>
     /// Get the network folder path if UseNetworkFolders is enabled, otherwise returns null.
     /// </summary>
+    /// <param name="baseDirectory">The base directory for the network folder</param>
     /// <param name="networkName">The name of the network (from NetworkTag or network.Name)</param>
     /// <returns>Network folder path if enabled, null otherwise</returns>
-    public string? GetNetworkFolder(string? networkName)
+    public string GetNetworkFolder(string baseDirectory, string? networkName)
     {
-        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders)) || string.IsNullOrEmpty(networkName))
-        {
-            return null;
-        }
-        
-        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.LibraryPrefix));
+        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.NetworkFolderPrefix));
         var networkFolderName = FolderUtils.SanitizeFileName(networkPrefix + networkName);
-        var baseDirectory = FolderUtils.GetBaseDirectory();
         return Path.Combine(baseDirectory, networkFolderName);
     }
 
@@ -410,9 +428,14 @@ public class MetadataService
     /// </summary>
     public string GetJellyBridgeItemDirectory(IJellyseerrItem? item = null)
     {
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var combinedPath = baseDirectory;
+        var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
+        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+
         if (item == null)
         {
-            return FolderUtils.GetBaseDirectory();
+            return combinedPath;
         }
         var itemString = item.ToString();
         if (string.IsNullOrEmpty(itemString))
@@ -420,13 +443,36 @@ public class MetadataService
             throw new ArgumentException($"Item {item.GetType().Name} returned null or empty string from ToString()", nameof(item));
         }
         var itemFolder = FolderUtils.SanitizeFileName(itemString);
-        var networkFolder = GetNetworkFolder(item.NetworkTag);
-        if (networkFolder != null)
+
+        if (!useMixedMediaLibrary)
         {
-            return Path.Combine(networkFolder, itemFolder);
+            string? mediaFolder = null;
+            if (item is JellyseerrMovie)
+            {
+                mediaFolder = JellyseerrMovie.LibraryType;
+            }
+            else if (item is JellyseerrShow)
+            {
+                mediaFolder = JellyseerrShow.LibraryType;
+            }
+            if (mediaFolder != null)
+            {
+                baseDirectory = Path.Combine(baseDirectory, mediaFolder);
+            }
         }
-        // If not using network prefix, just store in the base directory with the folder name
-        return Path.Combine(FolderUtils.GetBaseDirectory(), itemFolder);
+
+        if (useNetworkFolders)
+        {
+            var networkFolder = GetNetworkFolder(baseDirectory, item.NetworkTag);
+            combinedPath = Path.Combine(networkFolder, itemFolder);
+        }
+        else
+        {
+            // If not using network prefix, just store in the base directory with the folder name
+            combinedPath = Path.Combine(baseDirectory, itemFolder);
+        }
+        
+        return combinedPath;
     }
 
     #endregion

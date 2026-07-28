@@ -16,13 +16,13 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     {
         private readonly DebugLogger<GeneralSettingsController> _logger;
         private readonly ApiService _apiService;
-        private readonly LibraryService _libraryService;
+        private readonly RefreshService _refreshService;
 
-        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService, LibraryService libraryService)
+        public GeneralSettingsController(ILoggerFactory loggerFactory, ApiService apiService, RefreshService refreshService)
         {
             _logger = new DebugLogger<GeneralSettingsController>(loggerFactory.CreateLogger<GeneralSettingsController>());
             _apiService = apiService;
-            _libraryService = libraryService;
+            _refreshService = refreshService;
         }
 
         [HttpPost("TestConnection")]

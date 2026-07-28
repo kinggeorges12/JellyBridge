@@ -41,6 +41,13 @@ public class SyncTask : IScheduledTask
     {
         try
         {
+            var isSyncEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));
+            if (!isSyncEnabled)
+            {
+                _logger.LogDebug("Automated sync task is disabled, skipping execution");
+                return;
+            }
+
             _logger.LogInformation("Starting interval sync task");
 
             // Create a fresh DI scope for this execution so services are not
@@ -48,6 +55,7 @@ public class SyncTask : IScheduledTask
             using var scope = _scopeFactory.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<SyncService>();
             var cleanupService = scope.ServiceProvider.GetRequiredService<CleanupService>();
+            var refreshService = scope.ServiceProvider.GetRequiredService<RefreshService>();
 
             // Use Jellyfin-style locking that pauses instead of canceling
             await Plugin.ExecuteWithLockAsync<(CleanupResult?, SyncJellyfinResult?, SyncJellyseerrResult?)>(async () =>
@@ -122,8 +130,10 @@ public class SyncTask : IScheduledTask
                         _logger.LogInformation("Sync to Jellyseerr result: {Result}", syncToResult.ToString());
                     if (syncFromResult != null)
                         _logger.LogInformation("Sync from Jellyseerr result: {Result}", syncFromResult.ToString());
+                    if (cleanupResult != null)
+                        _logger.LogDebug("Cleanup result: {Result}", cleanupResult.ToString());
 
-                    await syncService.ApplyRefreshAsync(syncToResult, syncFromResult, cleanupResult);
+                    await refreshService.ApplyRefreshAsync( [syncToResult, syncFromResult, cleanupResult] );
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error applying refresh operations");
                 } finally {

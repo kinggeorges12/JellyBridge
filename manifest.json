@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.3 - Fixed localization issues by correctly analyzing the media IDs instead of the media name. Adding new feature Mixed Movies and Shows to allow users to switch from a single library to separate Movies and Shows libraries. Splitting Manage Discover Library tab into Organize Discover Library and Manage Favorite Requests. Included new feature Create Discover Library to generate a default JellyBridge library in Jellyfin. Refactoring Refresh Service for Jellyfin libraries and Network Folder management. Redesigned Generate Network folders to create media folders. Fixing bugs in Refresh Placeholder and Sort tasks. Forced library refresh after using Recycle JellyBridge library. Safety net added to FolderUtils to prevent accidental deletion of root.",
+        "version": "3.3.11.9",
+        "timestamp": "2026-07-28T20:14:35.904Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.3/JellyBridge-3.3.11.9.zip",
+        "checksum": "5BC3ADC9F95A02AC7B7105590D226048",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.3 - Fixed localization issues by correctly analyzing the media IDs instead of the media name. Adding new feature Mixed Movies and Shows to allow users to switch from a single library to separate Movies and Shows libraries. Splitting Manage Discover Library tab into Organize Discover Library and Manage Favorite Requests. Included new feature Create Discover Library to generate a default JellyBridge library in Jellyfin. Refactoring Refresh Service for Jellyfin libraries and Network Folder management. Redesigned Generate Network folders to create media folders. Fixing bugs in Refresh Placeholder and Sort tasks. Forced library refresh after using Recycle JellyBridge library. Safety net added to FolderUtils to prevent accidental deletion of root.",
+        "version": "3.3.11.0",
+        "timestamp": "2026-07-28T20:14:35.904Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.3/JellyBridge-3.3.11.0.zip",
+        "checksum": "C3B06052C23012C148FBD2E7B4138D01",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.3 - Fixed localization issues by correctly analyzing the media IDs instead of the media name. Adding new feature Mixed Movies and Shows to allow users to switch from a single library to separate Movies and Shows libraries. Splitting Manage Discover Library tab into Organize Discover Library and Manage Favorite Requests. Included new feature Create Discover Library to generate a default JellyBridge library in Jellyfin. Refactoring Refresh Service for Jellyfin libraries and Network Folder management. Redesigned Generate Network folders to create media folders. Fixing bugs in Refresh Placeholder and Sort tasks. Forced library refresh after using Recycle JellyBridge library. Safety net added to FolderUtils to prevent accidental deletion of root.",
+        "version": "3.3.10.7",
+        "timestamp": "2026-07-28T20:14:35.904Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v3.3/JellyBridge-3.3.10.7.zip",
+        "checksum": "7DD8E43A67661408EF59ED01DB195D56",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "version": "3.2.11.9",
         "changelog": "Jellyfin 10.11.9: v3.2 - Added new section Customize Promo Videos, redesigned the Import Discover Content section for user-centric design, and added an option to Request 4k Content. Special thank to @feeadftth for the PR for promo videos and to all the users who submitted bugs and suggestions to the Github Issues.",
         "dependencies": [],

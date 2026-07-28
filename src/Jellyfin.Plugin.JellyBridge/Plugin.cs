@@ -9,19 +9,21 @@ using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
+using Jellyfin.Plugin.JellyBridge.Services;
 
 namespace Jellyfin.Plugin.JellyBridge
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         private readonly DebugLogger<Plugin> _logger;
+        private readonly RefreshService _refreshService;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ITaskManager _taskManager;
 
         public override Guid Id => Guid.Parse("8ecc808c-d6e9-432f-9219-b638fbfb37e6");
         public override string Name => "JellyBridge";
 
-        public static Plugin Instance { get; private set; } = null!;
+        public static Plugin? _instance { get; private set; }
 
         public ILoggerFactory LoggerFactory => _loggerFactory;
 
@@ -30,12 +32,27 @@ namespace Jellyfin.Plugin.JellyBridge
         private static bool _isOperationRunning = false;
         private static readonly Dictionary<string, bool> _isOperationQueuedByName = new Dictionary<string, bool>();
 
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory, ITaskManager taskManager)
+        // Static property that lazily initializes the instance
+        public static Plugin Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new InvalidOperationException("Plugin not initialized. Ensure plugin is properly loaded by Jellyfin.");
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
+
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILoggerFactory loggerFactory, ITaskManager taskManager, RefreshService refreshService)
             : base(applicationPaths, xmlSerializer)
         {
             _loggerFactory = loggerFactory;
             _logger = new DebugLogger<Plugin>(loggerFactory.CreateLogger<Plugin>());
             _taskManager = taskManager;
+            _refreshService = refreshService;
             Instance = this;
 
             _logger.LogInformation("Plugin initialized successfully - Version {Version}", GetType().Assembly.GetName().Version);
@@ -53,7 +70,6 @@ namespace Jellyfin.Plugin.JellyBridge
 
         public override void UpdateConfiguration(BasePluginConfiguration configuration)
         {
-            _logger.LogTrace("Configuration update requested");
             _logger.LogTrace("Configuration update method called - this means the save button was clicked!");
 
             var pluginConfig = (PluginConfiguration)configuration;
@@ -66,11 +82,12 @@ namespace Jellyfin.Plugin.JellyBridge
             //     _logger.LogTrace("Preserved existing RanFirstTime value: {RanFirstTime}", pluginConfig.RanFirstTime);
             // }
             
-            _logger.LogDebug("Configuration details - Enabled: {Enabled}, URL: {Url}, HasApiKey: {HasApiKey}, LibraryDir: {LibraryDir}, SyncInterval: {SyncInterval}", 
-                pluginConfig.IsEnabled, 
+            _logger.LogDebug("Configuration details - URL: {Url}, ApiKeySet: {ApiKeySet}, LibraryDir: {LibraryDir}, Enabled: {Enabled}, EnableInMainMenu: {EnableInMainMenu}, SyncInterval: {SyncInterval}", 
                 pluginConfig.JellyseerrUrl, 
                 !string.IsNullOrEmpty(pluginConfig.ApiKey),
                 pluginConfig.LibraryDirectory,
+                pluginConfig.IsEnabled, 
+                pluginConfig.EnableInMainMenu,
                 pluginConfig.SyncIntervalHours ?? (double)PluginConfiguration.DefaultValues[nameof(pluginConfig.SyncIntervalHours)]);
             
             // Persist the updated configuration (including ScheduledTaskTimestamp when applicable)
@@ -124,6 +141,7 @@ namespace Jellyfin.Plugin.JellyBridge
                 {
                     Name = Name,
                     EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.html",
+                    EnableInMainMenu = GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableInMainMenu))
                 },
                 new PluginPageInfo
                 {
@@ -142,7 +160,7 @@ namespace Jellyfin.Plugin.JellyBridge
         /// Executes an operation with Jellyfin-style locking that pauses instead of canceling, per operation name.
         /// Only one running and one queued per operation name.
         /// </summary>
-        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, TimeSpan? timeout = null)
+        public static async Task<T> ExecuteWithLockAsync<T>(Func<Task<T>> operation, ILogger logger, string operationName, bool awaitRefresh = false, TimeSpan? timeout = null)
         {
             timeout ??= TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes))); // Use configured task timeout
             var startTime = DateTime.UtcNow;
@@ -153,33 +171,43 @@ namespace Jellyfin.Plugin.JellyBridge
             {
                 lock (_operationSyncLock)
                 {
-                    if (!_isOperationRunning)
+
+                    if (awaitRefresh && Instance._refreshService.IsTaskRefreshLibraryRunning())
+                    {
+                        Instance._logger.LogDebug("Waiting for the library refresh to complete before sorting the JellyBridge library...");
+                    }
+                    else if (!_isOperationRunning)
                     {
                         _isOperationRunning = true;
                         _isOperationQueuedByName[operationName] = false;
                         logger.LogTrace("Acquiring global operation lock for {OperationName}", operationName);
                         break;
-                    } else if (!isQueued && _isOperationQueuedByName.TryGetValue(operationName, out var queued))
+                    }
+                    else if (!isQueued && _isOperationQueuedByName.TryGetValue(operationName, out var queued))
                     {
                         if (!queued)
                         {
                             // Not queued, so queue it
                             isQueued = true;
                             _isOperationQueuedByName[operationName] = true;
-                            logger.LogTrace("Queuing operation for {OperationName}", operationName);
+                            logger.LogDebug("Queuing operation for {OperationName}", operationName);
                         } else {
                             // If already queued, skip
                             logger.LogWarning("Operation for {OperationName} is already queued. Skipping duplicate request.", operationName);
                             return default!;
                         }
-                    } else if (DateTime.UtcNow - startTime >= timeout.Value) {
+                    }
+                    else if (DateTime.UtcNow - startTime >= timeout.Value) {
                         _isOperationQueuedByName[operationName] = false;
                         throw new TimeoutException($"Operation '{operationName}' timed out after {timeout.Value.TotalMinutes} minutes waiting for lock");
                     }
+                    else
+                    {
+                        logger.LogDebug("Another operation is running, pausing {OperationName} until it completes", operationName);
+                    }
                 }
                 
-                logger.LogWarning("Another operation is running, pausing {OperationName} until it completes", operationName);
-                await Task.Delay(10000); // Small delay to prevent busy waiting
+                await Task.Delay(3000); // Small delay to prevent busy waiting
             }
 
             try

@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using System;
@@ -6,6 +7,11 @@ using System.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 
+public interface RefreshableResult
+{
+    abstract RefreshPlan? Refresh { get; set; }
+}
+
 // ============================================================================
 // SyncFromJellyseerr Operation Results
 // ============================================================================
@@ -13,7 +19,7 @@ namespace Jellyfin.Plugin.JellyBridge.BridgeModels;
 /// <summary>
 /// Result of a sync operation to Jellyseerr (creating requests).
 /// </summary>
-public class SyncJellyseerrResult
+public class SyncJellyseerrResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -22,14 +28,14 @@ public class SyncJellyseerrResult
         ResultDetails.Processed, 
         ResultDetails.ItemsAdded, 
         ResultDetails.ItemsUpdated, 
-        ResultDetails.ItemsIgnored, 
+        ResultDetails.ItemsSkipped, 
         ResultDetails.ItemsHidden);
     public RefreshPlan? Refresh { get; set; }
     
     // Unified collections
     public List<IJellyseerrItem> ItemsAdded { get; set; } = new();
     public List<IJellyseerrItem> ItemsUpdated { get; set; } = new();
-    public List<IJellyseerrItem> ItemsIgnored { get; set; } = new();
+    public List<IJellyseerrItem> ItemsSkipped { get; set; } = new();
     public List<IJellyseerrItem> ItemsHidden { get; set; } = new();
     
     // Computed properties - filter by type
@@ -37,22 +43,14 @@ public class SyncJellyseerrResult
     public List<JellyseerrShow> AddedShows => ItemsAdded.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> UpdatedMovies => ItemsUpdated.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> UpdatedShows => ItemsUpdated.OfType<JellyseerrShow>().ToList();
-    public List<JellyseerrMovie> IgnoredMovies => ItemsIgnored.OfType<JellyseerrMovie>().ToList();
-    public List<JellyseerrShow> IgnoredShows => ItemsIgnored.OfType<JellyseerrShow>().ToList();
+    public List<JellyseerrMovie> SkippedMovies => ItemsSkipped.OfType<JellyseerrMovie>().ToList();
+    public List<JellyseerrShow> SkippedShows => ItemsSkipped.OfType<JellyseerrShow>().ToList();
     public List<JellyseerrMovie> HiddenMovies => ItemsHidden.OfType<JellyseerrMovie>().ToList();
     public List<JellyseerrShow> HiddenShows => ItemsHidden.OfType<JellyseerrShow>().ToList();
     
     // Count properties for table display
-    public int MoviesProcessed => AddedMovies.Count + UpdatedMovies.Count + IgnoredMovies.Count;
-    public int ShowsProcessed => AddedShows.Count + UpdatedShows.Count + IgnoredShows.Count;
-    public int MoviesAdded => AddedMovies.Count;
-    public int ShowsAdded => AddedShows.Count;
-    public int MoviesUpdated => UpdatedMovies.Count;
-    public int ShowsUpdated => UpdatedShows.Count;
-    public int MoviesIgnored => IgnoredMovies.Count;
-    public int ShowsIgnored => IgnoredShows.Count;
-    public int MoviesHidden => HiddenMovies.Count;
-    public int ShowsHidden => HiddenShows.Count;
+    public int ProcessedMoviesCount => AddedMovies.Count + UpdatedMovies.Count + SkippedMovies.Count;
+    public int ProcessedShowsCount => AddedShows.Count + UpdatedShows.Count + SkippedShows.Count;
 
     public override string ToString()
     {
@@ -76,11 +74,11 @@ public class SyncJellyseerrResult
         result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"➕\t"}{"Added",-10}{separator}{$"{MoviesAdded,8}  "}{separator}{$"{ShowsAdded,8}  "}{separator}{$"{MoviesAdded + ShowsAdded,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🛠️\t"}{"Updated",-10}{separator}{$"{MoviesUpdated,8}  "}{separator}{$"{ShowsUpdated,8}  "}{separator}{$"{MoviesUpdated + ShowsUpdated,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\t"}{"Ignored",-10}{separator}{$"{MoviesIgnored,8}  "}{separator}{$"{ShowsIgnored,8}  "}{separator}{$"{MoviesIgnored + ShowsIgnored,8}  "}{separator}");
-        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{MoviesHidden,8}  "}{separator}{$"{ShowsHidden,8}  "}{separator}{$"{MoviesHidden + ShowsHidden,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{ProcessedMoviesCount,8}  "}{separator}{$"{ProcessedShowsCount,8}  "}{separator}{$"{ProcessedMoviesCount + ProcessedShowsCount,8}  "}{separator}");
+        result.AppendLine($"{separator}{"➕\t"}{"Added",-10}{separator}{$"{AddedMovies.Count,8}  "}{separator}{$"{AddedShows.Count,8}  "}{separator}{$"{AddedMovies.Count + AddedShows.Count,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🛠️\t"}{"Updated",-10}{separator}{$"{UpdatedMovies.Count,8}  "}{separator}{$"{UpdatedShows.Count,8}  "}{separator}{$"{UpdatedMovies.Count + UpdatedShows.Count,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{SkippedMovies.Count,8}  "}{separator}{$"{SkippedShows.Count,8}  "}{separator}{$"{SkippedMovies.Count + SkippedShows.Count,8}  "}{separator}");
+        result.AppendLine($"{separator}{"🙈\t"}{"Hidden",-10}{separator}{$"{HiddenMovies.Count,8}  "}{separator}{$"{HiddenShows.Count,8}  "}{separator}{$"{HiddenMovies.Count + HiddenShows.Count,8}  "}{separator}");
         
         return result.ToString();
     }
@@ -93,7 +91,7 @@ public class SyncJellyseerrResult
 /// <summary>
 /// Result of a sync operation from Jellyfin (processing favorites).
 /// </summary>
-public class SyncJellyfinResult
+public class SyncJellyfinResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -190,7 +188,7 @@ public class SyncJellyfinResult
 /// <summary>
 /// Result of sorting the discover library by updating play counts.
 /// </summary>
-public class SortLibraryResult
+public class SortLibraryResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -208,32 +206,33 @@ public class SortLibraryResult
     
     // Collections
     public List<(IJellyfinItem item, int playCount)> ItemsSorted { get; set; } = new();
-    public List<string> ItemsFailed { get; set; } = new();
-    public List<(IJellyfinItem? item, string path)> ItemsSkipped { get; set; } = new();
-    // Total unique items considered for sorting (movies + shows) regardless of user count
-    public int Processed { get; set; }
+    public List<(BaseItemKind mediaType, string folder)> ItemsFailed { get; set; } = new();
+    public List<(BaseItemKind mediaType, string path)> ItemsSkipped { get; set; } = new();
     
     // Separate items by type
     public List<(IJellyfinItem item, int playCount)> MoviesSorted => ItemsSorted.Where(x => x.item is JellyfinMovie).ToList();
     public List<(IJellyfinItem item, int playCount)> ShowsSorted => ItemsSorted.Where(x => x.item is JellyfinSeries).ToList();
-    public List<(IJellyfinItem? item, string path)> MoviesSkipped => ItemsSkipped.Where(x => x.item is JellyfinMovie).ToList();
-    public List<(IJellyfinItem? item, string path)> ShowsSkipped => ItemsSkipped.Where(x => x.item is JellyfinSeries).ToList();
-    
-    // For failed items (just paths), we can't easily determine type without item reference
-    // So we'll show total failed count for both columns
+    public List<(BaseItemKind mediaType, string path)> MoviesSkipped => ItemsSkipped.Where(x => x.mediaType == BaseItemKind.Movie).ToList();
+    public List<(BaseItemKind mediaType, string path)> ShowsSkipped => ItemsSkipped.Where(x => x.mediaType == BaseItemKind.Series).ToList();
+    public List<(BaseItemKind mediaType, string path)> MoviesFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Movie).ToList();
+    public List<(BaseItemKind mediaType, string path)> ShowsFailed => ItemsFailed.Where(x => x.mediaType == BaseItemKind.Series).ToList();
     
     public int MoviesSortedCount => MoviesSorted.Count;
     public int ShowsSortedCount => ShowsSorted.Count;
     public int MoviesSkippedCount => MoviesSkipped.Count;
     public int ShowsSkippedCount => ShowsSkipped.Count;
+    public int MoviesFailedCount => MoviesFailed.Count;
+    public int ShowsFailedCount => ShowsFailed.Count;
     
-    // Processed counts - approximate based on sorted + skipped (failed items can't be categorized)
-    public int MoviesProcessed => MoviesSortedCount + MoviesSkippedCount;
-    public int ShowsProcessed => ShowsSortedCount + ShowsSkippedCount;
+    // Processed counts - approximate based on sorted + skipped
+    public int MoviesProcessed => MoviesSortedCount + MoviesSkippedCount + MoviesFailedCount;
+    public int ShowsProcessed => ShowsSortedCount + ShowsSkippedCount + ShowsFailedCount;
+
 
     public int Sorted => ItemsSorted.Count;
-    public int Failed => ItemsFailed.Count;
     public int Skipped => ItemsSkipped.Count;
+    public int Failed => ItemsFailed.Count;
+    public int Processed => Sorted + Skipped + Failed;
 
     public override string ToString()
     {
@@ -261,10 +260,10 @@ public class SortLibraryResult
         result.AppendLine($"{separator}{"",-17}{separator}{"  Movies  ",-10}{separator}{"  Series  ",-10}{separator}{"  Total   ",-10}{separator}");
         result.AppendLine($"{rowBorder}");
         // Data rows
-        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{MoviesProcessed + ShowsProcessed,8}  "}{separator}");
-        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{MoviesSortedCount + ShowsSortedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{MoviesSkippedCount + ShowsSkippedCount,8}  "}{separator}");
-        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{Failed,8}  "}{separator}{$"{Failed,8}  "}{separator}{$"{Failed * 2,8}  "}{separator}");
+        result.AppendLine($"{separator}{"📦\t"}{"Processed",-10}{separator}{$"{MoviesProcessed,8}  "}{separator}{$"{ShowsProcessed,8}  "}{separator}{$"{Processed,8}  "}{separator}");
+        result.AppendLine($"{separator}{"✅\t"}{"Sorted",-10}{separator}{$"{MoviesSortedCount,8}  "}{separator}{$"{ShowsSortedCount,8}  "}{separator}{$"{Sorted,8}  "}{separator}");
+        result.AppendLine($"{separator}{"⏭️\t"}{"Skipped",-10}{separator}{$"{MoviesSkippedCount,8}  "}{separator}{$"{ShowsSkippedCount,8}  "}{separator}{$"{Skipped,8}  "}{separator}");
+        result.AppendLine($"{separator}{"❌\t"}{"Failed",-10}{separator}{$"{MoviesFailedCount,8}  "}{separator}{$"{ShowsFailedCount,8}  "}{separator}{$"{Failed,8}  "}{separator}");
         
         return result.ToString();
     }
@@ -277,7 +276,7 @@ public class SortLibraryResult
 /// <summary>
 /// Result of a cleanup operation.
 /// </summary>
-public class CleanupResult
+public class CleanupResult : RefreshableResult
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -391,13 +390,23 @@ public class RefreshPlan
     public bool CreateRefresh { get; set; }
     public bool RemoveRefresh { get; set; }
     public bool RefreshImages { get; set; }
-    
+    private bool _scanAllLibraries = false;
+    public bool ScanAllLibraries 
+    {
+        get => _scanAllLibraries || CreateRefresh || RemoveRefresh;
+        set => _scanAllLibraries = value;
+    }
+
     public override string ToString()
     {
         var result = new System.Text.StringBuilder();
         var refreshImagesTrue = "☑️ Replace existing images";
         var refreshImagesFalse = "🔳 Replace existing images";
         var refreshImages = RefreshImages ? refreshImagesTrue : refreshImagesFalse;
+        if (ScanAllLibraries)
+        {
+            result.AppendLine($"⟳ Scan All Libraries");
+        }
         if (RemoveRefresh)
         {
             result.AppendLine($"🔄 Search for missing metadata, {refreshImagesFalse}");
@@ -417,7 +426,7 @@ public static class ResultDetails
     public const string Processed = "📦 Processed: Number of items processed from Jellyseerr";
     public const string ItemsAdded = "➕ Added: Items added in the JellyBridge library from content in Jellyseerr discover pages";
     public const string ItemsUpdated = "🛠️ Updated: Items updated in the JellyBridge library from content in Jellyseerr discover pages";
-    public const string ItemsIgnored = "⏭️ Ignored: Skipped discover content (folder contains .ignore file)";
+    public const string ItemsSkipped = "⏭️ Skipped: Items not processed from discover content (folder contains .ignore file)";
     public const string ItemsHidden = "🙈 Hidden: Jellyfin items marked with an .ignore file";
     public const string FavoritesProcessed = "❤️ Processed: Total items favorited in Jellyfin";
     public const string FavoritesFound = "🔍 Found: Items favorited in JellyBridge library";
