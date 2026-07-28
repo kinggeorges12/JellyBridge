@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.73 - prevent linebreaks on links",
+        "version": "3.73.11.9",
+        "timestamp": "2026-07-28T16:08:49.212Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.73.11.9.zip",
+        "checksum": "115C6FE8AEFD2DAAF490F34AC845B856",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.73 - prevent linebreaks on links",
+        "version": "3.73.11.0",
+        "timestamp": "2026-07-28T16:08:49.212Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.73.11.0.zip",
+        "checksum": "3C4888D2589F7ACEDB6C0C5BB39AB882",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.73 - prevent linebreaks on links",
+        "version": "3.73.10.7",
+        "timestamp": "2026-07-28T16:08:49.212Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.73.10.7.zip",
+        "checksum": "A41C904A43B39493C07896E7630DF353",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.72 - adding instructions",
         "version": "3.72.11.9",
         "timestamp": "2026-07-28T15:58:04.188Z",
