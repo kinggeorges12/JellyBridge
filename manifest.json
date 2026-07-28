@@ -9,6 +9,33 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "changelog": "Jellyfin 10.11.9: v3.72 - adding instructions",
+        "version": "3.72.11.9",
+        "timestamp": "2026-07-28T15:58:04.188Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.72.11.9.zip",
+        "checksum": "E7F7634506E01FC9FFD48ACC1626F25C",
+        "targetAbi": "10.11.9.0"
+      },
+      {
+        "changelog": "Jellyfin 10.11.0: v3.72 - adding instructions",
+        "version": "3.72.11.0",
+        "timestamp": "2026-07-28T15:58:04.188Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.72.11.0.zip",
+        "checksum": "6422DA55D294D18CE87E24EF17E0B0B6",
+        "targetAbi": "10.11.0.0"
+      },
+      {
+        "changelog": "Jellyfin 10.10.7: v3.72 - adding instructions",
+        "version": "3.72.10.7",
+        "timestamp": "2026-07-28T15:58:04.188Z",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-localization/release/JellyBridge-3.72.10.7.zip",
+        "checksum": "C509E9714DF140213C68546C474626DB",
+        "targetAbi": "10.10.0.0"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.71 - adding instructions",
         "version": "3.71.11.9",
         "timestamp": "2026-07-28T15:54:39.591Z",

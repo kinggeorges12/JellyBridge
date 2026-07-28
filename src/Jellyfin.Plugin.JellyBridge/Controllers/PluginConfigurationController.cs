@@ -58,7 +58,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     UseMixedMediaLibrary = config.UseMixedMediaLibrary,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
-                    LibraryPrefix = config.LibraryPrefix,
+                    NetworkFolderPrefix = config.NetworkFolderPrefix,
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
@@ -149,7 +149,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
-                    SetJsonValue<string>(configData, nameof(config.LibraryPrefix), config);
+                    SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
                     
                     // Customize Promo Videos
                     SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);

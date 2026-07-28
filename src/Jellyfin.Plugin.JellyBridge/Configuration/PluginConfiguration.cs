@@ -67,7 +67,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
         { nameof(AddDuplicateContent), true },
-        { nameof(LibraryPrefix), string.Empty },
+        { nameof(NetworkFolderPrefix), string.Empty },
 
         // Customize Promo Videos
         { nameof(CustomMoviesPromo), string.Empty },
@@ -214,7 +214,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
-    public string LibraryPrefix { get; set; } = string.Empty;
+    public string NetworkFolderPrefix { get; set; } = string.Empty;
 
     // ===== Customize Promo Videos =====
     /// <summary>

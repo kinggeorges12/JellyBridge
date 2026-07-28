@@ -680,12 +680,7 @@
                                     <li>By default, all networks are added to the Jellyfin libraries. Navigate to the Jellyfin libraries and remove unwanted folders in each library.</li>
                                 </ol>
                                 <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. Alternatively, you can use different libraries for each network provider.
-                                </div>
-
-                                <div class="inputContainer" id="LibraryPrefixContainer">
-                                    <input id="LibraryPrefix" type="text" is="emby-input" label="Library Prefix"/>
-                                    <div class="fieldDescription">Prefix for network library names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
+                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.
                                 </div>
 
                                 <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
@@ -701,6 +696,11 @@
                                     <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends" data-depends-on="AddDuplicateContent">
                                         <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
                                     </div>
+                                </div>
+
+                                <div class="inputContainer" id="NetworkFolderPrefixContainer">
+                                    <input id="NetworkFolderPrefix" type="text" is="emby-input" label="Network Folder Prefix"/>
+                                    <div class="fieldDescription">Prefix for network folder names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
                                 </div>
                             </div>
                         </details>

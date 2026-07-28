@@ -1269,7 +1269,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'UseMixedMediaLibrary', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'AddDuplicateContent', true);
-    setInputField(page, 'LibraryPrefix');
+    setInputField(page, 'NetworkFolderPrefix');
     
     // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
@@ -1361,10 +1361,10 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'EnableTraceLogging', true);
     
     // Library Prefix real-time validation
-    const libraryPrefixInput = page.querySelector('#LibraryPrefix');
-    if (libraryPrefixInput) {
-        libraryPrefixInput.addEventListener('input', function() {
-            validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
+    const networkFolderPrefixInput = page.querySelector('#NetworkFolderPrefix');
+    if (networkFolderPrefixInput) {
+        networkFolderPrefixInput.addEventListener('input', function() {
+            validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
         });
     }
     
@@ -1498,7 +1498,7 @@ function performPluginReset(page) {
                 RequestFirstSeason: null,
                 UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
-                LibraryPrefix: '',
+                NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
                 CustomMoviesPromo: null,
@@ -1634,7 +1634,7 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
-        if (!validateField(page, 'LibraryPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
+        if (!validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
         return true;
     }
     
@@ -1664,7 +1664,7 @@ function savePluginConfiguration(page) {
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
-    form.LibraryPrefix = safeParseString(page.querySelector('#LibraryPrefix'), false);
+    form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
