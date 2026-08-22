@@ -42,6 +42,16 @@
     <TargetFramework Condition="$(JellyfinVersionFlag.StartsWith('10.10'))">net8.0</TargetFramework>
   </PropertyGroup>
 
+  <!-- Jellyfin 12.x: net10.0, and its own compile symbol so the 10.11 shims are skipped.
+       Placed after the earlier TargetFramework/flag blocks so it wins evaluation order.
+       Build with: dotnet build -p:JellyfinVersion=12.0.0-rc5 -->
+  <PropertyGroup Condition="$(JellyfinVersion.StartsWith('12.'))">
+    <JellyfinVersionFlag>12.0</JellyfinVersionFlag>
+    <TargetFramework>net10.0</TargetFramework>
+    <JELLYFIN_12>true</JELLYFIN_12>
+    <DefineConstants>$(DefineConstants);JELLYFIN_12</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
