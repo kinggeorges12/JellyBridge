@@ -21,30 +21,30 @@ public abstract class WrapperBase<T> where T : class
     /// </summary>
     protected virtual void InitializeVersionSpecific()
     {
-#if JELLYFIN_10_11
-        // Jellyfin 10.11+ specific initialization
-        InitializeV10_11();
-#else
+#if !JELLYFIN_10_11
         // Jellyfin 10.10.* specific initialization
         InitializeV10_10_7();
+#else
+        // Jellyfin 10.11+ specific initialization
+        InitializeV10_11_Plus();
 #endif
     }
 
-#if JELLYFIN_10_11
-    /// <summary>
-    /// Jellyfin 10.11+ specific initialization.
-    /// </summary>
-    protected virtual void InitializeV10_11()
-    {
-        // Future implementation for 10.11+
-    }
-#else
+#if !JELLYFIN_10_11
     /// <summary>
     /// Jellyfin 10.10.* specific initialization.
     /// </summary>
     protected virtual void InitializeV10_10_7()
     {
         // Current implementation for 10.10.*
+    }
+#else
+    /// <summary>
+    /// Jellyfin 10.11+ specific initialization.
+    /// </summary>
+    protected virtual void InitializeV10_11_Plus()
+    {
+        // Future implementation for 10.11+
     }
 #endif
 }

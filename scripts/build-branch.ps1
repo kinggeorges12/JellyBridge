@@ -1,7 +1,7 @@
 param(
     [string]$Version,
     
-    [string]$Changelog = "Automated branch release",
+    [string]$Changelog = "",
     
     [string]$GitHubUsername = "kinggeorges12",
     
@@ -11,18 +11,33 @@ param(
     [string]$ReleaseType = "minor"
 )
 
+# Make sure to increment the version number, overwriting is not recommended.
+# Check manifest for latest version, and remember the patch and build versions (major.minor.patch.build) are the subversion numbers in the targets below.
+# Usage: ./scripts/build-branch -Version "x.x" -Branch "feature-x" -Changelog "Your changes here"
+
 # Check PowerShell version - require PowerShell 7 or greater
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Error "This script requires PowerShell 7 or greater. Current version: $($PSVersionTable.PSVersion)"
     Write-Host "Please install PowerShell 7 from: https://github.com/PowerShell/PowerShell/releases" -ForegroundColor Yellow
-    Write-Host "Or run with: pwsh -File scripts/publish.ps1 ..." -ForegroundColor Yellow
+    Write-Host "Or run with: pwsh -File scripts/build-branch.ps1 ..." -ForegroundColor Yellow
     exit 1
 }
-
 if($Branch -eq "main") {
     Write-Error '[X] main branch is not allowed to be released'
     exit 1
 }
+
+# Define targets:
+# - JellyfinVersion (Normalized Jellyfin version for csproj compiler)
+# - MinTargetAbi (Jellyfin compatibility resolver)
+# - SubVersion (for JellyBridge patch and build version)
+# Put these in order of highest to lowest Jellyfin version, so users see the most recent as their compatible version.
+$targets = @(
+    @{ JellyfinVersion = "12.0.0-rc7"; SubVersion = "12.0"; MinTargetAbi = "12.0"; },
+    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; },
+    @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; },
+    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; }
+)
 
 # Set base directory (project root) - fully resolved path
 $BaseDir = Split-Path $PSScriptRoot -Parent
@@ -109,7 +124,7 @@ Write-Host "[~] Starting release process for version $Version" -ForegroundColor 
 
 # Set changelog text
 if ([string]::IsNullOrWhiteSpace($Changelog)) {
-    $ChangelogText = "v$Version - AUTO-GENERATED RELEASE: Automated release using publish.ps1 script. This release includes the latest fixes and improvements."
+    $ChangelogText = "v$Version - AUTO-GENERATED RELEASE: Automated release using build-branch.ps1 script."
 } else {
     $ChangelogText = "v$Version - $Changelog"
 }
@@ -139,20 +154,11 @@ if (-not (Test-Path $releaseDir)) {
     New-Item -ItemType Directory -Path $releaseDir | Out-Null
 }
 
-# Define targets: JellyfinVersion, MinTargetAbi, expected framework output folder
-# Put these in order of Jellyfin version, from highest to lowest so users see the most recent as their compatible version.
-$targets = @(
-    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; Framework = "net9.0"; },
-    @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; Framework = "net9.0"; },
-    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; Framework = "net8.0"; }
-)
-
 $createdZips = @()
 $newManifestEntries = @()
 
 foreach ($t in $targets) {
     $jf = $t.JellyfinVersion
-    $fw = $t.Framework
     $minAbi = $t.MinTargetAbi
     $ver_sub = $Version + "." + $t.SubVersion
 
@@ -172,7 +178,7 @@ foreach ($t in $targets) {
     ## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)
     Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -ForegroundColor Yellow
 
-    Write-Host "\n[~] Building for Jellyfin $jf ($fw)" -ForegroundColor Cyan
+    Write-Host "\n[~] Building for Jellyfin $jf" -ForegroundColor Cyan
     $buildArgs = @(
         "build",
         "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj",
@@ -190,7 +196,7 @@ foreach ($t in $targets) {
     Write-Host "[~] Build successful for $jf" -ForegroundColor Green
 
     # Paths
-    $outDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\$fw"
+    $outDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\$jf"
     $dllPath = Join-Path $outDir "JellyBridge.dll"
     if (-not (Test-Path $dllPath)) {
         Write-Error "[X] Expected DLL not found: $dllPath"
@@ -244,8 +250,9 @@ foreach ($t in $targets) {
     $newManifestEntries += $entry
 }
 
-# Update manifest file: prepend both entries
-Write-Host "\nStep 3: Updating $manifestPath with both ABI entries..." -ForegroundColor Yellow
+
+# Update manifest file: prepend all entries
+Write-Host "\nStep 3: Updating $manifestPath with all ABI entries..." -ForegroundColor Yellow
 $manifestArray[0].versions = @($newManifestEntries) + $manifestArray[0].versions
 $manifestArray | ConvertTo-Json -Depth 10 -AsArray | Set-Content $manifestPath -NoNewline
 Write-Host "[~] Updated $manifestPath with multi-ABI entries" -ForegroundColor Green
