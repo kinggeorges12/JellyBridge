@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.5.12.0.zip",
+        "timestamp": "2026-09-07T18:56:59.008Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 12.0.0-rc7: v3.5 - Adding support for v12 release candidates",
+        "targetAbi": "12.0",
+        "checksum": "64F3074DD56DB8B0AF4896E2C30D8A09",
+        "version": "3.5.12.0"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.5.11.9.zip",
+        "timestamp": "2026-09-07T18:56:59.008Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.9: v3.5 - Adding support for v12 release candidates",
+        "targetAbi": "10.11.9.0",
+        "checksum": "C9D2E80A2E01EF7B9E264E8B0CF76728",
+        "version": "3.5.11.9"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.5.11.0.zip",
+        "timestamp": "2026-09-07T18:56:59.008Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: v3.5 - Adding support for v12 release candidates",
+        "targetAbi": "10.11.0.0",
+        "checksum": "A67C995FEB63EBD34395B55051C07B09",
+        "version": "3.5.11.0"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.5.10.7.zip",
+        "timestamp": "2026-09-07T18:56:59.008Z",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: v3.5 - Adding support for v12 release candidates",
+        "targetAbi": "10.10.0.0",
+        "checksum": "B00C0D42F7759B199AB944920750F0E5",
+        "version": "3.5.10.7"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.4.12.0.zip",
         "timestamp": "2026-09-07T18:53:52.734Z",
         "dependencies": [],

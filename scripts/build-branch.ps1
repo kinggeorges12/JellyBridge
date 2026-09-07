@@ -15,6 +15,9 @@ param(
 # Check manifest for latest version, and remember the patch and build versions (major.minor.patch.build) are the subversion numbers in the targets below.
 # Usage: ./scripts/build-branch -Version "x.x" -Branch "feature-x" -Changelog "Your changes here"
 
+# Set error action preference
+$ErrorActionPreference = "Stop"
+
 # Check PowerShell version - require PowerShell 7 or greater
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Error "This script requires PowerShell 7 or greater. Current version: $($PSVersionTable.PSVersion)"
