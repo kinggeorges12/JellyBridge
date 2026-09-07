@@ -166,13 +166,13 @@ public class JellyfinSeries : WrapperBase<Series>, IJellyfinItem
         {
             // Get all episodes for the series by querying children recursively
             // Episodes are children of seasons, which are children of the series
-#if JELLYFIN_10_11
-            // Jellyfin 10.11+ returns IReadOnlyList<BaseItem>
+#if !JELLYFIN_10_11
+            // Jellyfin 10.10.7 returns IList<BaseItem>
             var allEpisodes = Inner.GetRecursiveChildren()
                 .OfType<Episode>()
                 .ToList();
 #else
-            // Jellyfin 10.10.7 returns IList<BaseItem>
+            // Jellyfin 10.11+ returns IReadOnlyList<BaseItem>
             var allEpisodes = Inner.GetRecursiveChildren()
                 .OfType<Episode>()
                 .ToList();
