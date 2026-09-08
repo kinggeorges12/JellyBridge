@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "4.0.12.0",
+        "targetAbi": "12.0.0",
+        "timestamp": "2026-09-08T16:50:17.252Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.0/JellyBridge-4.0.12.0.zip",
+        "checksum": "5DBE1AA6CA652F9C34E4C5520B210B07",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v4.0 - Compatible with Jellyfin v12.0!"
+      },
+      {
+        "version": "4.0.11.9",
+        "targetAbi": "10.11.9.0",
+        "timestamp": "2026-09-08T16:50:17.252Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.0/JellyBridge-4.0.11.9.zip",
+        "checksum": "E3BFE828C6F2ED9A67A76EA43FC5502D",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v4.0 - Compatible with Jellyfin v12.0!"
+      },
+      {
+        "version": "4.0.11.0",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-09-08T16:50:17.252Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.0/JellyBridge-4.0.11.0.zip",
+        "checksum": "02A69C1112A6C7C1118F688F20A23054",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v4.0 - Compatible with Jellyfin v12.0!"
+      },
+      {
+        "version": "4.0.10.7",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-09-08T16:50:17.252Z",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.0/JellyBridge-4.0.10.7.zip",
+        "checksum": "2285A0E548A512FFDA98EE8470DBC32C",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v4.0 - Compatible with Jellyfin v12.0!"
+      },
+      {
         "changelog": "Jellyfin 10.11.9: v3.3 - Fixed localization issues by correctly analyzing the media IDs instead of the media name. Adding new feature Mixed Movies and Shows to allow users to switch from a single library to separate Movies and Shows libraries. Splitting Manage Discover Library tab into Organize Discover Library and Manage Favorite Requests. Included new feature Create Discover Library to generate a default JellyBridge library in Jellyfin. Refactoring Refresh Service for Jellyfin libraries and Network Folder management. Redesigned Generate Network folders to create media folders. Fixing bugs in Refresh Placeholder and Sort tasks. Forced library refresh after using Recycle JellyBridge library. Safety net added to FolderUtils to prevent accidental deletion of root.",
         "version": "3.3.11.9",
         "timestamp": "2026-07-28T20:14:35.904Z",
