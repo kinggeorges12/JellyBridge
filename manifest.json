@@ -9,6 +9,15 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-09-08T02:40:18.885Z",
+        "dependencies": [],
+        "version": "3.8.12.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.8.12.0.zip",
+        "targetAbi": "12.0.0",
+        "checksum": "037513B3A3282D6533AC7402AA629CC5",
+        "changelog": "Jellyfin 12.0.0: jellyBridge v3.8 - including source code in build"
+      },
+      {
         "timestamp": "2026-09-08T02:33:17.093Z",
         "dependencies": [],
         "version": "3.7.12.0",
