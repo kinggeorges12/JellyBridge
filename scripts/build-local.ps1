@@ -12,7 +12,7 @@ param(
 # Load target ABI list
 $ConfigPath = Join-Path $PSScriptRoot "target-abi.psd1"
 if (Test-Path $ConfigPath) {
-    $TargetABIs = Import-PowerShellDataFile $ConfigPath
+    $TargetABIs = (Import-PowerShellDataFile $ConfigPath).TargetABIs
 } else {
     Write-Error "Configuration file not found: $ConfigPath"
     exit 1

@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-09-08T02:52:03.149Z",
+        "dependencies": [],
+        "version": "3.9.12.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.9.12.0.zip",
+        "targetAbi": "12.0.0",
+        "checksum": "FD1E07477EB3377486C9D1DE29F7BAF5",
+        "changelog": "Jellyfin 12.0.0: jellyBridge v3.9 - rebuilding for all releases"
+      },
+      {
+        "timestamp": "2026-09-08T02:52:03.149Z",
+        "dependencies": [],
+        "version": "3.9.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.9.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "checksum": "A7B553550159329C0864B364552740F3",
+        "changelog": "Jellyfin 10.11.9: jellyBridge v3.9 - rebuilding for all releases"
+      },
+      {
+        "timestamp": "2026-09-08T02:52:03.149Z",
+        "dependencies": [],
+        "version": "3.9.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.9.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "checksum": "7BE1EFBE5259E68FF9D7C961F6F096E9",
+        "changelog": "Jellyfin 10.11.0: jellyBridge v3.9 - rebuilding for all releases"
+      },
+      {
+        "timestamp": "2026-09-08T02:52:03.149Z",
+        "dependencies": [],
+        "version": "3.9.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.9.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "checksum": "C17E882E0E8A6205B500917FEDB36C6C",
+        "changelog": "Jellyfin 10.10.7: jellyBridge v3.9 - rebuilding for all releases"
+      },
+      {
         "timestamp": "2026-09-08T02:40:18.885Z",
         "dependencies": [],
         "version": "3.8.12.0",
