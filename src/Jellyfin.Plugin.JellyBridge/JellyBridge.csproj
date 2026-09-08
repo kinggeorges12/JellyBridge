@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>3.6.10.7</AssemblyVersion>
-    <FileVersion>3.6.10.7</FileVersion>
+    <AssemblyVersion>3.7.12.0</AssemblyVersion>
+    <FileVersion>3.7.12.0</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->
@@ -39,7 +39,8 @@
   <!-- Define conditional compilation symbols based on Jellyfin version -->
   <!-- For all versions BEFORE a certain version, use pre-compiler shim "if !VERSION", and after use "#if VERSION" -->
   <PropertyGroup>
-    <OutputPath>bin\$(Configuration)\$(JellyfinVersion)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\..\..\obj\$(Configuration)\$(JellyfinVersion)\</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\..\..\bin\$(Configuration)\$(JellyfinVersion)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <JELLYFIN_12>true</JELLYFIN_12>
     <JELLYFIN_10_11_3>true</JELLYFIN_10_11_3>

@@ -9,17 +9,14 @@ param(
     [string]$DockerPluginPath = "C:\Docker-Test\Jellyfin\.config\plugins"
 )
 
-# Define targets:
-# - JellyfinVersion (Normalized Jellyfin version for csproj compiler)
-# - MinTargetAbi (Jellyfin compatibility resolver)
-# - SubVersion (for JellyBridge patch and build version)
-# Put these in order of highest to lowest Jellyfin version, so users see the most recent as their compatible version.
-$targets = @(
-    @{ JellyfinVersion = "12.0.0-rc7"; SubVersion = "12.0"; MinTargetAbi = "12.0.0.0"; },
-    @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; },
-    @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; },
-    @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; }
-)
+# Load target ABI list
+$ConfigPath = Join-Path $PSScriptRoot "target-abi.psd1"
+if (Test-Path $ConfigPath) {
+    $TargetABIs = Import-PowerShellDataFile $ConfigPath
+} else {
+    Write-Error "Configuration file not found: $ConfigPath"
+    exit 1
+}
 
 # Set error action preference
 $ErrorActionPreference = "Stop"
@@ -37,7 +34,7 @@ try {
     
     # Define paths
     $ProjectPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
-    $OutputDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\local"
+    $OutputDir = "bin\Release\$jf"
     $ManifestPath = "manifest.json"
     
     # Step 1: Clean previous builds if requested
