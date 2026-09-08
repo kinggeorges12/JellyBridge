@@ -207,7 +207,10 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 
 ## 📣 Release Notes
 
-### Version 3.3 🆕
+### Version 4.0 🆕
+- Updated plugin for compatibility with Jellyfin v12.0!
+
+### Version 3.3 ✨
 
 - Fixed localization [Issue #46](https://github.com/kinggeorges12/JellyBridge/issues/46) by correctly analyzing the media IDs instead of the media name.
 - Adding new feature from [Issue #37](https://github.com/kinggeorges12/JellyBridge/issues/37) "Mixed Movies and Shows" to allow users to switch from a single library to separate Movies and Shows libraries.
