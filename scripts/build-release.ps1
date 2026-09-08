@@ -83,7 +83,7 @@ if (-not (Test-Path $releaseDir)) {
 $createdZips = @()
 $newManifestEntries = @()
 
-foreach ($t in $targets) {
+foreach ($t in $TargetABIs) {
     $jf = $t.JellyfinVersion
     $minAbi = $t.MinTargetAbi
     $ver_sub = $Version + "." + $t.SubVersion
