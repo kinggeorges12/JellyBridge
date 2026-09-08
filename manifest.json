@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-09-08T03:13:24.211Z",
+        "dependencies": [],
+        "version": "3.10.12.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.10.12.0.zip",
+        "targetAbi": "12.0.0",
+        "checksum": "FF9E8D0C2210BDC1B60D487C6FDD2A7B",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v3.10 - minor change to embedded resources"
+      },
+      {
+        "timestamp": "2026-09-08T03:13:24.211Z",
+        "dependencies": [],
+        "version": "3.10.11.9",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.10.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "checksum": "9F1A85162F740EED44D9C2A9E3EA4AF4",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v3.10 - minor change to embedded resources"
+      },
+      {
+        "timestamp": "2026-09-08T03:13:24.211Z",
+        "dependencies": [],
+        "version": "3.10.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.10.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "checksum": "281BCAC4E6C3157BF588A854BD3152E3",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v3.10 - minor change to embedded resources"
+      },
+      {
+        "timestamp": "2026-09-08T03:13:24.211Z",
+        "dependencies": [],
+        "version": "3.10.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-12/release/JellyBridge-3.10.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "checksum": "745900D2997DAA47413D74A5466B5A1B",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v3.10 - minor change to embedded resources"
+      },
+      {
         "timestamp": "2026-09-08T02:52:03.149Z",
         "dependencies": [],
         "version": "3.9.12.0",
