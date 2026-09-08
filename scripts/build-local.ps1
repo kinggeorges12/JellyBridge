@@ -9,6 +9,15 @@ param(
     [string]$DockerPluginPath = "C:\Docker-Test\Jellyfin\.config\plugins"
 )
 
+# Load target ABI list
+$ConfigPath = Join-Path $PSScriptRoot "target-abi.psd1"
+if (Test-Path $ConfigPath) {
+    $TargetABIs = (Import-PowerShellDataFile $ConfigPath).TargetABIs
+} else {
+    Write-Error "Configuration file not found: $ConfigPath"
+    exit 1
+}
+
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
@@ -25,7 +34,7 @@ try {
     
     # Define paths
     $ProjectPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
-    $OutputDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0"
+    $OutputDir = "bin\Release\$jf"
     $ManifestPath = "manifest.json"
     
     # Step 1: Clean previous builds if requested
@@ -75,23 +84,17 @@ try {
     # Step 4: Build the project for both target ABIs
     Write-Host "`nStep 4: Building the project for both target ABIs..." -ForegroundColor Yellow
     
-    # Define target ABIs and their corresponding frameworks
-    $targetABIs = @(
-        @{ Version = "10.10.7"; Framework = "net8.0"; OutputDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0" },
-        @{ Version = "10.11.0"; Framework = "net9.0"; OutputDir = "src\Jellyfin.Plugin.JellyBridge\bin\Release\net9.0" }
-    )
-    
     $buildResults = @()
     
-    foreach ($target in $targetABIs) {
-        Write-Host "`nBuilding for Jellyfin $($target.Version) ($($target.Framework))..." -ForegroundColor Cyan
+    foreach ($target in $targets) {
+        Write-Host "`nBuilding for Jellyfin $($target.JellyfinVersion)..." -ForegroundColor Cyan
         
         $buildArgs = @(
             "build", 
             $ProjectPath, 
             "--configuration", "Release", 
             "--warnaserror",
-            "-p:JellyfinVersion=$($target.Version)"
+            "-p:JellyfinVersion=$($target.JellyfinVersion)"
         )
         
         if ($Verbose) {
@@ -100,15 +103,15 @@ try {
         
         $buildOutput = & dotnet $buildArgs 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Build failed for Jellyfin $($target.Version): $buildOutput"
+            Write-Error "Build failed for Jellyfin $($target.JellyfinVersion): $buildOutput"
             exit 1
         }
         
-        Write-Host "✓ Build successful for Jellyfin $($target.Version)" -ForegroundColor Green
+        Write-Host "✓ Build successful for Jellyfin $($target.JellyfinVersion)" -ForegroundColor Green
         
         # Store build result for later use
         $buildResults += @{
-            Version = $target.Version
+            Version = $target.JellyfinVersion
             Framework = $target.Framework
             OutputDir = $target.OutputDir
             DllPath = Join-Path $target.OutputDir "JellyBridge.dll"

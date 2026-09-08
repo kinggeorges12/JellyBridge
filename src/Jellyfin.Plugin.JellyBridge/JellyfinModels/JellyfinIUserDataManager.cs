@@ -7,12 +7,12 @@ using MediaBrowser.Model.Entities;
 using System.Threading;
 using System;
 
-#if JELLYFIN_10_11
-// Jellyfin version 10.11.*
-using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
-#else
+#if !JELLYFIN_10_11
 // Jellyfin version 10.10.*
 using JellyfinUserEntity = Jellyfin.Data.Entities.User;
+#else
+// Jellyfin version 10.11.*
+using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
 #endif
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
@@ -96,7 +96,10 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                 return false;
             }
 
-#if JELLYFIN_10_11
+#if !JELLYFIN_10_11
+            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+            var data = Inner.GetUserData(userEntity, baseItem);
+#else
             // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
             var data = Inner.GetUserData(userEntity, baseItem);
             if (data is null)
@@ -104,9 +107,6 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                 // Should never happen per implementation, but handle nullable signature defensively
                 return false;
             }
-#else
-            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
-            var data = Inner.GetUserData(userEntity, baseItem);
 #endif
             
             // Only update if the item is currently favorited
@@ -134,10 +134,7 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
     {
         var userEntity = user.Inner;
         
-#if JELLYFIN_10_11
-        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable)
-        return Inner.GetUserData(userEntity, item);
-#else
+#if !JELLYFIN_10_11
         // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) but might return new instance
         var data = Inner.GetUserData(userEntity, item);
         // Check if it's actually new/empty by checking if it has been saved (has a Key)
@@ -148,6 +145,9 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
             return null;
         }
         return data;
+#else
+        // Jellyfin 10.11: GetUserData returns UserItemData? (nullable)
+        return Inner.GetUserData(userEntity, item);
 #endif
     }
 
@@ -174,7 +174,10 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                 _ => throw new ArgumentException($"Unsupported item type: {item.GetType().Name}", nameof(item))
             };
             
-#if JELLYFIN_10_11
+#if !JELLYFIN_10_11
+            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
+            var userData = Inner.GetUserData(userEntity, baseItem);
+#else
             // Jellyfin 10.11: GetUserData returns UserItemData? (nullable in signature) but implementation always creates/returns a value
             var userData = Inner.GetUserData(userEntity, baseItem);
             if (userData is null)
@@ -186,9 +189,6 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                     Message = "GetUserData returned null (unexpected)"
                 };
             }
-#else
-            // Jellyfin 10.10: GetUserData returns UserItemData (non-nullable) - always creates/returns a value
-            var userData = Inner.GetUserData(userEntity, baseItem);
 #endif
             
             // GetUserData automatically creates user data if it doesn't exist, so we just set the play count and last played date

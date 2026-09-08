@@ -1,11 +1,11 @@
 using System;
 
-#if JELLYFIN_10_11
-// Jellyfin version 10.11.*
-using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
-#else
+#if !JELLYFIN_10_11
 // Jellyfin version 10.10.*
 using JellyfinUserEntity = Jellyfin.Data.Entities.User;
+#else
+// Jellyfin version 10.11.*
+using JellyfinUserEntity = Jellyfin.Database.Implementations.Entities.User;
 #endif
 
 namespace Jellyfin.Plugin.JellyBridge.JellyfinModels;
