@@ -33,7 +33,7 @@ if($Branch -eq "main") {
 # Load target ABI list
 $ConfigPath = Join-Path $PSScriptRoot "target-abi.psd1"
 if (Test-Path $ConfigPath) {
-    $TargetABIs = Import-PowerShellDataFile $ConfigPath
+    $TargetABIs = (Import-PowerShellDataFile $ConfigPath).TargetABIs
 } else {
     Write-Error "Configuration file not found: $ConfigPath"
     exit 1
@@ -171,7 +171,7 @@ foreach ($t in $TargetABIs) {
     $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$ver_sub</AssemblyVersion>"
     $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$ver_sub</FileVersion>"
 
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 1000
     Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
     Write-Host "[~] Updated version to $ver_sub in project file" -ForegroundColor Green
 
