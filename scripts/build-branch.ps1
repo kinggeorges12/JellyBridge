@@ -124,9 +124,9 @@ Write-Host "[~] Starting release process for version $Version" -ForegroundColor 
 
 # Set changelog text
 if ([string]::IsNullOrWhiteSpace($Changelog)) {
-    $ChangelogText = "jellyBridge v$Version - AUTO-GENERATED RELEASE: Automated release using build-branch.ps1 script."
+    $ChangelogText = "JellyBridge v$Version - AUTO-GENERATED RELEASE: Automated release using build-branch.ps1 script."
 } else {
-    $ChangelogText = "jellyBridge v$Version - $Changelog"
+    $ChangelogText = "JellyBridge v$Version - $Changelog"
 }
 
 Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
