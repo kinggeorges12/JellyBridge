@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>3.9.10.7</AssemblyVersion>
-    <FileVersion>3.9.10.7</FileVersion>
+    <AssemblyVersion>3.10.10.7</AssemblyVersion>
+    <FileVersion>3.10.10.7</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->
@@ -113,23 +113,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <!-- Embedded resources -->
+  <!-- Embed all source files and resources into the DLL -->
   <ItemGroup>
-    <None Remove="Configuration\ConfigurationPage.html" />
-    <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
-    <None Remove="Configuration\ConfigurationPage.js" />
-    <EmbeddedResource Include="Configuration\ConfigurationPage.js" />
-    <None Remove="Assets\movie.png" />
-    <EmbeddedResource Include="Assets\movie.png" />
-    <None Remove="Assets\show.png" />
-    <EmbeddedResource Include="Assets\show.png" />
-    <!--<None Remove="Assets\season.png" />-->
-    <!--<EmbeddedResource Include="Assets\season.png" />-->
-  </ItemGroup>
-
-  <!-- Embed source code and web assets in the DLL -->
-  <ItemGroup>
-    <EmbeddedResource Include="**\*.cs"
+    <EmbeddedResource Include="**\*"
                       Exclude="bin\**;obj\**" />
   </ItemGroup>
 
