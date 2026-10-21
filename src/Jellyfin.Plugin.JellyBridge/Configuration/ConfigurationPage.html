@@ -590,7 +590,7 @@
                                     <li>[Docker] Map the directory in <i>docker-compose.yml</i> > <i>services</i> > <i>Jellyfin</i> > <i>volumes</i>: <code>- /host_mnt/c/ProgramData/Jellyfin/JellyBridge:/data/JellyBridge</code></li>
                                     <li>[Docker] Map the volume in <i>DOCKERFILE</i>: <code>VOLUME /data/JellyBridge</code></li>
                                     <li>[Linux] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> (capitalization is important!): <code>mkdir -p /data/JellyBridge</code></li>
-                                    <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 644 /data/JellyBridge</code></li>
+                                    <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 750 /data/JellyBridge</code></li>
                                 </ul>
                                 <p><i>The Jellyfin library is not displaying images or media, or it is out of sync with the JellyBridge folder contents.</i></p>
                                 <ol>
