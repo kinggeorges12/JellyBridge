@@ -27,13 +27,18 @@ jobs:
       - name: Checkout JellyBridge
         uses: actions/checkout@v7
 
+      - name: Copy root Markdown files into docs
+        run: |
+          mkdir -p docs/md
+          find . -maxdepth 1 -type f -name '*.md' -exec cp -t docs/md/ {} +
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./
+          source: ./docs
           destination: ./_site
 
       - name: Upload artifact
