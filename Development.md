@@ -26,13 +26,20 @@ We welcome contributions! Here's how to get started:
 4. Test thoroughly on 10.11.\* and 10.10.7 docker instances.
 5. Submit a pull request.
 
-## Prerequisites
+## Dependencies
 
-- .NET 8.0 SDK (for Jellyfin 10.10.7)
-- .NET 9.0 SDK (for Jellyfin 10.11.0)
-- Jellyfin 10.10.7 or 10.11.0
-- PowerShell 7 or greater (for build scripts)
-- Visual Studio 2022 or VS Code (optional)
+This plugin uses:
+- **.NET 8.0** - Target framework for Jellyfin 10.10.7
+- **.NET 9.0** - Target framework for Jellyfin 10.11.0
+- **.NET 10.0** - Target framework for Jellyfin 12.0
+- **Jellyfin NuGet** - Plugin SDK packages (version-specific)
+- **ASP.NET Core** - For API endpoints
+- **Microsoft.Extensions** (8.0.1 for net8.0, 9.0.10 for net9.0, 10.0.11 for net10.0) - For dependency injection and logging
+- **Newtonsoft.Json** - For JSON serialization
+- **PowerShell 7 or greater** - For build scripts
+- **VS Code** - IDE, Visual Studio probably also works
+
+The project automatically selects the correct target framework and package versions based on the `JellyfinVersion` build property.
 
 ## Building the Plugin
 
@@ -59,6 +66,11 @@ Recommended to use the `/scripts/build-branch.ps1` PowerShell script.
    For Jellyfin 10.11.0 (net9.0):
    ```bash
    dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror -p:JellyfinVersion=10.11.0
+   ```
+   
+   For Jellyfin 10.11.0 (net9.0):
+   ```bash
+   dotnet build src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj --configuration Release --warnaserror -p:JellyfinVersion=12.0
    ```
 
 4. **Publish a new release**
@@ -105,6 +117,7 @@ After building, copy the DLL to your Jellyfin plugins folder:
 1. Navigate to the build output directory based on your Jellyfin version:
    - Jellyfin 10.10.7: `src\Jellyfin.Plugin.JellyBridge\bin\Release\net8.0\`
    - Jellyfin 10.11.0: `src\Jellyfin.Plugin.JellyBridge\bin\Release\net9.0\`
+   - Jellyfin 12.0: `src\Jellyfin.Plugin.JellyBridge\bin\Release\net10.0\`
 2. Copy the `JellyBridge.dll` file
 3. Place it in your Jellyfin plugins directory:
    - Linux: `/var/lib/jellyfin/plugins/`
@@ -211,7 +224,7 @@ pwsh -File scripts/build-branch.ps1 -Changelog "Description of changes" -Branch 
 
 **What it does**:
 - Auto-calculates version from latest release if not provided
-- Builds for both Jellyfin 10.10.7 (net8.0) and 10.11.0 (net9.0)
+- Builds for Jellyfin 10.10.7 (net8.0) and 10.11.0 (net9.0) and 12.0 (net10.0)
 - Creates release ZIP files with proper ABI targeting
 - Updates manifest.json with new version entries
 - Commits and pushes changes to the specified branch
@@ -258,7 +271,7 @@ pwsh -File scripts/build-release.ps1 -Version "1.0.0" -Changelog "Release descri
 - `-GitHubUsername` (optional): GitHub username (default: "kinggeorges12")
 
 **What it does**:
-- Builds for both Jellyfin 10.10.7 and 10.11.0
+- Builds for Jellyfin 10.10.7 and 10.11.0 and 12.0
 - Creates release ZIP files
 - Updates manifest.json
 - Creates GitHub release (draft or published)
@@ -339,16 +352,3 @@ Jellyfin.Plugin.JellyBridge/
 ├── Plugin.cs                     # Main plugin class
 manifest.json                     # Plugin manifest (in project root)
 ```
-
-## Dependencies
-
-This plugin uses:
-- **.NET 8.0** - Target framework for Jellyfin 10.10.7
-- **.NET 9.0** - Target framework for Jellyfin 10.11.0
-- **Jellyfin 10.10.7 or 10.11.0** - Plugin SDK packages (version-specific)
-- **ASP.NET Core** - For API endpoints
-- **Microsoft.Extensions** (8.0.1 for net8.0, 9.0.10 for net9.0) - For dependency injection and logging
-- **Newtonsoft.Json** - For JSON serialization
-
-The project automatically selects the correct target framework and package versions based on the `JellyfinVersion` build property.
-
