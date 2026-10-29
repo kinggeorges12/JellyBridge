@@ -1,6 +1,6 @@
 ---
 layout: default
-title: JellyBridge
+title: Home
 ---
 
 {% include_relative README.md %}
