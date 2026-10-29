@@ -6,7 +6,7 @@
 
 [![GitHub Stars](https://img.shields.io/github/stars/kinggeorges12/JellyBridge?style=flat-square&logo=github)](https://github.com/kinggeorges12/JellyBridge/stargazers)
 [![Latest Release](https://img.shields.io/github/v/release/kinggeorges12/JellyBridge?style=flat-square)](https://github.com/kinggeorges12/JellyBridge/releases/latest)
-[![License](https://img.shields.io/github/license/kinggeorges12/JellyBridge?style=flat-square)](https://github.com/kinggeorges12/JellyBridge/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/kinggeorges12/JellyBridge?style=flat-square)](LICENSE)
 [![GitHub Pages](https://img.shields.io/badge/docs-GitHub_Pages-blue?style=flat-square&logo=github)](https://kinggeorges12.github.io/JellyBridge/)
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr (and Seerr\*) for seamless movie and series discovery and download requests.
