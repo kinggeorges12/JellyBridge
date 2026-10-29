@@ -1,5 +1,7 @@
 # Development Guide
 
+[![Build](https://github.com/kinggeorges12/JellyBridge/actions/workflows/pages.yml/badge.svg)](https://github.com/kinggeorges12/JellyBridge/actions/workflows/pages.yml)
+
 ## Planned Features
 
 1. Add a modal dialog when the network options are double-clicked from the active or available network multiselect. Options include "Add to Selected Networks" (if in available) or "Remove from Selected Networks" (if active).
