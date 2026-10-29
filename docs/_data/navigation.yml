@@ -2,9 +2,9 @@ main:
   - title: Home
     url: /
   - title: Releases
-    url: /Version.md
+    url: /releases/
   - title: Contribute
-    url: /Development.md
+    url: /develop/
   - title: GitHub
     url: https://github.com/kinggeorges12/JellyBridge
     target: "_blank"
