@@ -1,6 +1,6 @@
 ---
 layout: single
-permalink: /develop/
+permalink: /Development.md
 toc: true
 toc_label: "On this page"
 toc_sticky: true
