@@ -6,4 +6,4 @@ toc_label: "On this page"
 toc_sticky: true
 ---
 
-{% include_relative Version.md %}
+{% include_relative readme/Version.md %}

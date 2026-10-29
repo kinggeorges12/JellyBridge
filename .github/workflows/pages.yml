@@ -27,7 +27,12 @@ jobs:
       - name: Checkout JellyBridge
         uses: actions/checkout@v7
 
-      - name: Copy docs files into base directory
+      - name: Move Markdown files into readme directory
+        run: |
+          mkdir -p readme
+          find docs -maxdepth 1 -type f -name '*.md' -exec mv {} readme/ \;
+
+      - name: Move docs files into base directory
         run: |
           mv docs/* .
           rmdir docs
