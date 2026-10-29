@@ -30,7 +30,16 @@ jobs:
       - name: Move Markdown files into readme directory
         run: |
           mkdir -p readme
-          find . -maxdepth 1 -type f -name '*.md' -exec mv {} readme/ \;
+          find docs -maxdepth 1 -type f -name '*.md' -exec mv {} readme/ \;
+          mv LICENSE readme/LICENSE.txt
+
+      - name: Update links in Markdown files
+        run: |
+          sed -i \
+            -e 's|(Development\.md)|(/development/)|g' \
+            -e 's|(Version\.md)|(/releases/)|g' \
+            -e 's|(LICENSE)|(/license/)|g' \
+            readme/*.md
 
       - name: Move docs files into base directory
         run: |
