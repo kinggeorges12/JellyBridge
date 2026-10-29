@@ -6,4 +6,4 @@ toc_label: "On this page"
 toc_sticky: true
 ---
 
-{% include_relative readme/LICENSE.txt %}
+<pre>{% include_relative readme/LICENSE.txt %}</pre>
