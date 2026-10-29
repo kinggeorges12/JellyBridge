@@ -11,8 +11,8 @@
   <nav class="sidebar-nav">
     <a class="sidebar-nav-item{% if page.title == 'Home' %} active{% endif %}" href="{{ '/' | absolute_url }}">Home</a>
     {% if page.title == 'Home' %}
-    <div class="sidebar-item" style="padding-left:0; padding-right:0;">
-    {% include toc.html html=content h_min=2 h_max=3 class="sidebar-toc" %}
+    <div class="sidebar-item" style="padding:0;">
+    {% include toc.html html=content h_min=2 h_max=3 class="sidebar-nav-item" %}
     </div>
     {% endif %}
 
@@ -27,8 +27,8 @@
         {% if node.layout == "page" %}
           <a class="sidebar-nav-item{% if page.url == node.url %} active{% endif %}" href="{{ node.url | absolute_url }}">{{ node.title }}</a>
           {% if page.url == node.url %}
-            <div class="sidebar-item" style="padding-left:0; padding-right:0;">
-            {% include toc.html html=content h_min=2 h_max=3 class="sidebar-toc" %}
+            <div class="sidebar-item" style="padding:0;">
+            {% include toc.html html=content h_min=2 h_max=3 class="sidebar-nav-item" %}
             </div>
           {% endif %}
         {% endif %}
@@ -36,8 +36,10 @@
     {% endfor %}
   </nav>
     
-    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}">GitHub project</a>
-    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}/releases/tag/{{ site.github.latest_release.tag_name }}">Download {{ site.github.latest_release.tag_name }}</a>
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}"
+        target="_blank" rel="noopener noreferrer">GitHub project</a>
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}/releases/tag/{{ site.github.latest_release.tag_name }}"
+        target="_blank" rel="noopener noreferrer">Download {{ site.github.latest_release.tag_name }}</a>
 
   <div class="sidebar-item">
     <p>
