@@ -7,4 +7,4 @@ toc_label: "On this page"
 toc_sticky: true
 ---
 
-{% include_relative md/Development.md %}
+{% include_relative Development.md %}
