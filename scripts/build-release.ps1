@@ -220,7 +220,7 @@ $headers = @{
     "Accept" = "application/vnd.github.v3+json"
 }
 
-$releaseBody = "## v$Version`n`n$ChangelogText`n`n### Installation:`n1. Download the JellyBridge-$Version-DLL.zip file`n2. Install through Jellyfin plugin catalog or manually place in plugins folder`n3. Restart Jellyfin to load the new version"
+$releaseBody = "## v$Version`n`n$ChangelogText`n`n### Automatic Installation`nAdd this Repository to your Jellyfin Plugins: https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`n### Manual Installation:`n1. Download the JellyBridge-$Version.{JFV}-DLL.zip file prior to your Jellyfin version (JFV)`n2. Unzip the contents into a folder matching the zip name inside the Jellyfin plugins folder`n3. Restart Jellyfin to load the new version"
 
 $body = @{
     tag_name = "v$Version"

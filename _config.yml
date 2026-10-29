@@ -1,19 +1,20 @@
 
-remote_theme: poole/lanyon
+remote_theme: "mmistakes/minimal-mistakes@4.28.1"
 
 title: JellyBridge
-tagline: Request Jellyseerr content from any Jellyfin client!
-description: A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests.
+subtitle: "Request Jellyseerr content from any Jellyfin client!"
+description: "A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests."
 
 url: https://kinggeorges12.github.io
 baseurl: /JellyBridge
-
-author:
-  name: kinggeorges12
-  url: https://github.com/kinggeorges12
 
 repository: kinggeorges12/JellyBridge
 
 plugins:
   - jekyll-remote-theme
   - jekyll-github-metadata
+  - jekyll-include-cache
+
+minimal_mistakes_skin: "dark"
+
+markdown: kramdown
