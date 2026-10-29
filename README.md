@@ -99,10 +99,6 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 
 Access the configuration using the plugin page on the host machine at: `http://localhost:8096/web/#/configurationpage?name=JellyBridge`
 
-### Usage
-
-The plugin includes a modern, responsive web interface for configuration. Follow these steps to get started:
-
 1. **Configure the plugin** through the plugin page with your Jellyseerr credentials and directory paths
 2. **Create discover library** in Jellyfin by following steps for one-time setup, just click on the (?) Setup button
 3. **Test the connection** to ensure Jellyseerr is accessible
@@ -111,7 +107,7 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 6. **Customize promo video** play a short video when users open JellyBridge content
 7. **Sort & shuffle content** to display a variety of discover content in the discover library
 
-### 🌉 Main Configuration
+### 🌉 General Settings
 
 ![Plugin Configuration - General Settings](Screenshots/General.png)
 
@@ -203,26 +199,15 @@ The plugin includes a modern, responsive web interface for configuration. Follow
 
 ## 🧰 Troubleshooting
 
-Check the 🤖 Troubleshooting section link on the bottom of the plugin configuration page. This section contains basic steps, including how to set up the JellyBridge library.
+![Troubleshooting](Screenshots/Troubleshooting.png)
 
+Click the 🤖 Troubleshooting link on the bottom of the plugin configuration page. This section contains basic steps, including how to set up the JellyBridge library.
+
+- Enable Debug or Trace logging from the ⚙️ Advanced Settings to record detailed logs. The plugin integrates with Jellyfin's logging system.
 - For additional help with plugin setup, check out [issues with the debugging tag](https://github.com/kinggeorges12/JellyBridge/issues?q=is%3Aissue%20label%3Adebugging).
 - If the config UI doesn’t reflect the latest changes after an update, force-refresh the page (see Release Notes for steps).
 
 If you encounter any issues with the plugin, please post in the [GitHub Issues](https://github.com/kinggeorges12/JellyBridge/issues) or leave a comment in [GitHub Discussions](https://github.com/kinggeorges12/JellyBridge/discussions).
-
-## 📝 Logging
-
-The plugin integrates with Jellyfin's logging system. Enable debug logging from the advanced options to record detailed logs. Check Jellyfin logs for debugging information:
-
-- Plugin initialization and configuration
-- API calls to Jellyseerr
-- Series sync operations
-- Library management
-- Error messages and warnings
-
-## 🧑‍💻 Development
-
-For detailed development instructions, including building, testing, and contributing, see [Development.md](Development.md).
 
 ## 🅰️ℹ️ AI Disclosure and Use Statement
 
@@ -232,12 +217,10 @@ I used AI tools to assist in the development of this project, mostly using OpenA
 
 I welcome all efforts from the Jellyfin community that wishes to contribute to this project. Anyone who has used AI tools to code knows that it programs at the level of a first year developer, but it does help to structure the code and build prototypes. I ask that everyone keeps this in mind when building code with the LLMs, and run tests on your code. Also, understand that I have spent hundreds of hours working on this project, but I do not expect you to. Please do what you can to contribute and grow your favorite Jellyfin projects.
 
-## 📄 License
-
-This project is open source and available under the GNU General Public License v3.0, see [LICENSE](LICENSE).
-
 ## 📌 Acknowledgments
 
 Thank you to the creator of the [Overseer-Jellyfin Bridge Script](https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged) for the inspiration. Special thanks to the developers of the [Intro Skipper](https://github.com/intro-skipper) and [Custom Tabs](https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs) plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.
 
 And of course, thanks to the developers of [Jellyfin](https://jellyfin.org/) and [Jellyseerr](https://seerr.dev/) for making it all possible.
+
+For detailed development instructions, including building, testing, and contributing, see [Development.md](Development.md).
