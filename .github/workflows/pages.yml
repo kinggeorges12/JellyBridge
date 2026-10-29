@@ -27,6 +27,15 @@ jobs:
       - name: Checkout JellyBridge
         uses: actions/checkout@v4
 
+      - name: Checkout Lanyon theme
+        uses: actions/checkout@v4
+        with:
+          repository: poole/lanyon
+          path: lanyon-source
+
+      - name: Stage Lanyon public assets
+        run: cp -R lanyon-source/public ./public
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
@@ -35,15 +44,6 @@ jobs:
         with:
           source: ./
           destination: ./_site
-
-      - name: Checkout Lanyon theme assets
-        uses: actions/checkout@v4
-        with:
-          repository: poole/lanyon
-          path: lanyon-source
-
-      - name: Copy Lanyon public assets
-        run: cp -R lanyon-source/public ./_site/public
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
