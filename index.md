@@ -1,3 +1,4 @@
+
 ---
 layout: single
 title: JellyBridge
@@ -6,4 +7,4 @@ toc_label: "On this page"
 toc_sticky: true
 ---
 
-{% raw %}{% include_relative README.md %}{% endraw %}
+{% include_relative README.md %}
