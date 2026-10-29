@@ -1,0 +1,7 @@
+main:
+  - title: Home
+    url: /
+  - title: Contribute
+    url: /develop/
+  - title: GitHub
+    url: https://github.com/kinggeorges12/JellyBridge
