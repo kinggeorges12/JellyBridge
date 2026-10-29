@@ -1,3 +1,4 @@
+
 name: Deploy GitHub Pages
 
 on:
@@ -12,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -21,23 +22,32 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout JellyBridge
         uses: actions/checkout@v4
-      
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      
+
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./
           destination: ./_site
-      
+
+      - name: Checkout Lanyon theme assets
+        uses: actions/checkout@v4
+        with:
+          repository: poole/lanyon
+          path: lanyon-source
+
+      - name: Copy Lanyon public assets
+        run: cp -R lanyon-source/public ./_site/public
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
-      
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
