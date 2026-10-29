@@ -1,6 +1,5 @@
 ---
 layout: single
-title: Develop
 permalink: /develop/
 toc: true
 toc_label: "On this page"
