@@ -34,7 +34,9 @@ jobs:
           path: lanyon-source
 
       - name: Stage Lanyon public assets
-        run: cp -R lanyon-source/public ./public
+        run: |
+          cp -R lanyon-source/public ./public
+          rm -rf lanyon-source
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
