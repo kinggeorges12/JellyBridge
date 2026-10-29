@@ -1,6 +1,6 @@
 <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
      styles, `#sidebar-checkbox` for behavior. -->
-<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox" checked>
 
 <!-- Toggleable sidebar -->
 <div class="sidebar" id="sidebar">
@@ -24,14 +24,14 @@
         {% endif %}
       {% endif %}
     {% endfor %}
-
-    <a class="sidebar-nav-item" href="{{ site.github.repo }}/archive/v{{ site.version }}.zip">Download</a>
-    <a class="sidebar-nav-item" href="{{ site.github.repo }}">GitHub project</a>
-    <span class="sidebar-nav-item">Currently v{{ site.version }}</span>
     <div class="sidebar-item">
     <p>Contents</p>
     {% include toc.html html=content h_min=2 h_max=3 class="sidebar-toc" %}
     </div>
+    
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}/releases/tag/v{{ site.github.latest_release.tag_name }}">Download</a>
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}">GitHub project</a>
+    <span class="sidebar-nav-item">Currently {{ site.github.latest_release.tag_name }}</span>
   </nav>
 
   <div class="sidebar-item">
