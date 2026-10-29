@@ -10,15 +10,16 @@
 
   <nav class="sidebar-nav">
     <a class="sidebar-nav-item{% if page.title == 'Home' %} active{% endif %}" href="{{ '/' | absolute_url }}">Home</a>
+    {% if page.title == 'Home' %}
+    <div class="sidebar-item" style="padding-left:0; padding-right:0;">
+    {% include toc.html html=content h_min=2 h_max=3 class="sidebar-toc" %}
+    </div>
+    {% endif %}
 
     {% comment %}
       The code below dynamically generates a sidebar nav of pages with
       `layout: page` in the front-matter. See readme for usage.
     {% endcomment %}
-    
-    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}/releases/tag/{{ site.github.latest_release.tag_name }}">Download</a>
-    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}">GitHub project</a>
-    <span class="sidebar-nav-item">Currently {{ site.github.latest_release.tag_name }}</span>
 
     {% assign pages_list = site.pages | sort:"url" %}
     {% for node in pages_list %}
@@ -34,6 +35,9 @@
       {% endif %}
     {% endfor %}
   </nav>
+    
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}">GitHub project</a>
+    <a class="sidebar-nav-item" href="{{ site.github.repository_url }}/releases/tag/{{ site.github.latest_release.tag_name }}">Download {{ site.github.latest_release.tag_name }}</a>
 
   <div class="sidebar-item">
     <p>
