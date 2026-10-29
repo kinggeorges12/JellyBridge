@@ -1,6 +1,6 @@
 ---
 layout: single
-permalink: /releases/
+permalink: /Version.md
 toc: true
 toc_label: "On this page"
 toc_sticky: true
