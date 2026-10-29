@@ -36,9 +36,9 @@ jobs:
       - name: Update links in Markdown files
         run: |
           sed -i \
-            -e 's|(Development\.md)|(/development/)|g' \
-            -e 's|(Version\.md)|(/releases/)|g' \
-            -e 's|(LICENSE)|(/license/)|g' \
+            -e 's|(Development\.md)|(/JellyBridge/development/)|g' \
+            -e 's|(Version\.md)|(/JellyBridge/releases/)|g' \
+            -e 's|(LICENSE)|(/JellyBridge/license/)|g' \
             readme/*.md
 
       - name: Move docs files into base directory

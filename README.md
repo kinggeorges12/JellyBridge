@@ -70,8 +70,6 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
 
 ## 📦 Installation
 
-### Method 1: Automatic Installation (Recommended)
-
 ![Jellyfin Catalog](Screenshots/Catalog.png)
 
 1. **Add Plugin Repository to Jellyfin:**
@@ -96,13 +94,6 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    ![Version Guide](Screenshots/Versioning.png)
 
 3. **Configure the plugin** through the admin interface
-
-### Method 2: Manual Installation
-
-1. Download the plugin ZIP file from the [releases](../../releases)
-2. Extract the contents to your Jellyfin plugins directory
-3. Restart Jellyfin
-4. Configure the plugin through the web interface
 
 ## 🛠️ Configuration
 

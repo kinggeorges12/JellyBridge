@@ -1,5 +1,6 @@
 ---
 layout: single
+permalink: /license/
 toc: true
 toc_label: "On this page"
 toc_sticky: true
