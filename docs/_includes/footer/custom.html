@@ -29,7 +29,8 @@
 
     if (!entries.length) return;
 
-    const getOffset = () => masthead.getBoundingClientRect().height;
+    const getOffset = () =>
+        masthead.getBoundingClientRect().height + 1;
 
     entries.forEach(({ heading }) => {
       heading.style.scrollMarginTop = `${getOffset()}px`;
