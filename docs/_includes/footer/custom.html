@@ -1,16 +1,33 @@
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const masthead = document.querySelector(".masthead");
-  if (!masthead || !window.Gumshoe) return;
+(() => {
+  function initializeGumshoe() {
+    if (!window.Gumshoe) return;
 
-  new Gumshoe("nav.toc a", {
-    navClass: "active",
-    contentClass: "active",
-    nested: false,
-    nestedClass: "active",
-    offset: masthead.offsetHeight,
-    reflow: true,
-    events: true
-  });
-});
+    document.querySelectorAll("nav.toc a").forEach(link => {
+      const id = decodeURIComponent(link.hash.slice(1));
+      const heading = document.getElementById(id);
+      if (heading) {
+        heading.style.scrollMarginTop =
+          `${document.querySelector(".masthead")?.offsetHeight || 0}px`;
+      }
+    });
+
+    new Gumshoe("nav.toc a", {
+      navClass: "active",
+      contentClass: "active",
+      nested: false,
+      nestedClass: "active",
+      offset: () =>
+        document.querySelector(".masthead")?.getBoundingClientRect().height || 0,
+      reflow: true,
+      events: true
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeGumshoe);
+  } else {
+    initializeGumshoe();
+  }
+})();
 </script>
