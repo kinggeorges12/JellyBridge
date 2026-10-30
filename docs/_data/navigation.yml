@@ -1,4 +1,7 @@
 main:
+  - title: 🧩GitHub
+    url: https://github.com/kinggeorges12/JellyBridge
+    target: "_blank"
   - title: 🪼Home
     url: /
   - title: 📦Install
@@ -9,6 +12,3 @@ main:
     url: /releases/
   - title: 🔧Contribute
     url: /develop/
-  - title: 🧩GitHub
-    url: https://github.com/kinggeorges12/JellyBridge
-    target: "_blank"
