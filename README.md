@@ -86,14 +86,15 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    - Click "Install"
    - Restart Jellyfin from the Dashboard
 
-   Version Guide:
-   For best compatibility, install the version listed first on the plugin page. The wonky Jellyfin plugin versioning does not let me change the visibility. Please follow the guide below for installing the correct plugin version.
-   - For users of Jellyfin 10.11.9 and later, install the version ending in `.11.9`.
-   - For users of Jellyfin 10.11.0 to 10.11.8, install the version ending in `.11.0`.
-   - For users of Jellyfin 10.10.\*, install the version ending in `.10.7`.
-   ![Version Guide](Screenshots/Versioning.png)
-
 3. **Configure the plugin** through the admin interface
+
+### 🔢 Versions
+For best compatibility, install the version listed first on the plugin page. The wonky Jellyfin plugin versioning does not let me change the visibility. Please follow the guide below for installing the correct plugin version.
+- For users of Jellyfin 12.0 and later, install the version ending in `.12.0`.
+- For users of Jellyfin 10.11.9 and later, install the version ending in `.11.9`.
+- For users of Jellyfin 10.11.0 to 10.11.8, install the version ending in `.11.0`.
+- For users of Jellyfin 10.10.\*, install the version ending in `.10.7`.
+![Version Guide](Screenshots/Versioning.png)
 
 ## 🛠️ Configuration
 
@@ -197,7 +198,7 @@ Access the configuration using the plugin page on the host machine at: `http://l
 - **Cleanup Metadata**: Button to manually clean up metadata in the JellyBridge library
 - **Recycle JellyBridge Library Data**: Permanently deletes all data from the JellyBridge library directory
 
-## 🧰 Troubleshooting
+## 🛟 Troubleshooting
 
 ![Troubleshooting](Screenshots/Troubleshooting.png)
 
