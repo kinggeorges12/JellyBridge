@@ -71,6 +71,18 @@
     }
   });
 })();
+function updateMastheadHeight() {
+  const masthead = document.querySelector(".masthead");
+  if (!masthead) return;
+
+  document.documentElement.style.setProperty(
+    "--masthead-height",
+    masthead.getBoundingClientRect().height + "px"
+  );
+}
+
+window.addEventListener("load", updateMastheadHeight);
+window.addEventListener("resize", updateMastheadHeight);
 </script>
 
 <!-- end custom head snippets -->

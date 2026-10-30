@@ -7,5 +7,5 @@
   background-color: #252A34 !important;
 }
 .toc {
-  top: calc(var(--masthead-height, 100px)+1rem) !important;
+  top: calc(var(--masthead-height)+1rem) !important;
 }
