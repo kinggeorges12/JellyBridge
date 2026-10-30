@@ -243,7 +243,7 @@ public class SonarrSeasonStatistics
     public int TotalEpisodeCount { get; set; }
 
     [JsonPropertyName("sizeOnDisk")]
-    public int SizeOnDisk { get; set; }
+    public long SizeOnDisk { get; set; }
 
     [JsonPropertyName("percentOfEpisodes")]
     public int PercentOfEpisodes { get; set; }
@@ -298,7 +298,7 @@ public class SonarrSeriesStatistics
     public int TotalEpisodeCount { get; set; }
 
     [JsonPropertyName("sizeOnDisk")]
-    public int SizeOnDisk { get; set; }
+    public long SizeOnDisk { get; set; }
 
     [JsonPropertyName("releaseGroups")]
     public List<string> ReleaseGroups { get; set; } = new();
