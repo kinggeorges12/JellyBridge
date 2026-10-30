@@ -7,6 +7,7 @@ description: "A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamle
 
 url: https://kinggeorges12.github.io
 baseurl: /JellyBridge
+logo: "/Screenshots/Icon.svg"
 
 repository: kinggeorges12/JellyBridge
 
