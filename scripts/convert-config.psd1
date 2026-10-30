@@ -13,6 +13,9 @@
     # Regex pattern to identify properties that should be double instead of int
     NumberToDoublePattern = '(?:.*average$|^popularity$|^percent$)'
     
+    # Regex pattern to identify properties that should be long instead of int
+    NumberToLongPattern = '(?:.*Space$|^Size.*)'
+    
     # Define blocked classes that should not be converted
     BlockedClasses = @(
         'ExternalAPI',

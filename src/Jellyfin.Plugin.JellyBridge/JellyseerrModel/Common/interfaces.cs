@@ -419,7 +419,7 @@ public class TmdbVideo
     public string Site { get; set; } = string.Empty;
 
     [JsonPropertyName("size")]
-    public int Size { get; set; }
+    public long Size { get; set; }
 
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;

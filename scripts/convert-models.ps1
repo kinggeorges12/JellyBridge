@@ -11,6 +11,7 @@ if (Test-Path $ConfigPath) {
     $OutputDir = $Config.OutputDir
     $BaseNamespace = $Config.BaseNamespace
     $NumberToDoublePattern = $Config.NumberToDoublePattern
+    $NumberToLongPattern = $Config.NumberToLongPattern
     $BlockedClasses = $Config.BlockedClasses
     $DirectoryPairs = $Config.DirectoryPairs
     $JsonPropertyNaming = $Config.JsonPropertyNaming
@@ -93,6 +94,7 @@ const ts = require('typescript');
 let directoryPairs = [];
 let blockedClasses = [];
 let numberToDoublePattern = '';
+let numberToLongPattern = '';
 let baseNamespace = '';
 let jsonPropertyNaming = null;
 
@@ -102,6 +104,7 @@ try {
     directoryPairs = inputData.directoryPairs || [];
     blockedClasses = inputData.blockedClasses || [];
     numberToDoublePattern = inputData.numberToDoublePattern || '';
+    numberToLongPattern = inputData.numberToLongPattern || '';
     baseNamespace = inputData.baseNamespace || 'Jellyfin.Plugin.JellyBridge.JellyseerrModel';
     jsonPropertyNaming = inputData.jsonPropertyNaming || null;
     
@@ -109,6 +112,14 @@ try {
     if (numberToDoublePattern) {
         const regex = new RegExp(numberToDoublePattern, 'i');
         global.shouldBeDoubleFunction = function(propertyName) {
+            if (!propertyName) return false;
+            return regex.test(propertyName);
+        };
+    }
+    // Set up the long property function using the PowerShell config
+    if (numberToLongPattern) {
+        const regex = new RegExp(numberToLongPattern, 'i');
+        global.shouldBeLongFunction = function(propertyName) {
             if (!propertyName) return false;
             return regex.test(propertyName);
         };
@@ -1403,6 +1414,9 @@ function convertTypeScriptTypeToCSharp(typeNode, sourceFile, missingTypes = new 
             if (typeof global.shouldBeDoubleFunction === 'function' && global.shouldBeDoubleFunction(propertyName)) {
                 return 'double';
             }
+            if (typeof global.shouldBeLongFunction === 'function' && global.shouldBeLongFunction(propertyName)) {
+                return 'long';
+            }
             return 'int';
         case ts.SyntaxKind.BooleanKeyword:
             return 'bool';
@@ -2519,7 +2533,7 @@ $typeDefinition
                         }
                         
                         # Create temporary file with all missing types
-                        $tempFile = Join-Path $env:TEMP "temp_$missingType.ts"
+                        $tempFile = Join-Path $env:TEMP "missingType/temp_$missingType.ts"
                         $tempContent | Out-File -FilePath $tempFile -Encoding UTF8
                         
                         # Use the temporary file for conversion
@@ -2594,6 +2608,7 @@ try {
         directoryPairs = $directoryPairs
         blockedClasses = $blockedClasses
         numberToDoublePattern = $NumberToDoublePattern
+        numberToLongPattern = $NumberToLongPattern
         baseNamespace = $BaseNamespace
         jsonPropertyNaming = $JsonPropertyNaming
     }
@@ -3010,8 +3025,8 @@ try {
         Remove-Item "scripts\convert-with-typescript-compiler.js" -Force
         Write-Host "Removed convert-with-typescript-compiler.js" -ForegroundColor Gray
     }
-    if (Test-Path "$env:TEMP") {
-        Remove-Item "$env:TEMP" -Recurse -Force
+    if (Test-Path (Join-Path "$env:TEMP" "missingType")) {
+        Remove-Item (Join-Path "$env:TEMP" "missingType") -Recurse -Force
         Write-Host "Removed temp directory" -ForegroundColor Gray
     }
     Write-Host "Cleanup completed!" -ForegroundColor Green
