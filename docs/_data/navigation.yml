@@ -1,10 +1,14 @@
 main:
-  - title: Home
+  - title: 🪼Home
     url: /
-  - title: Releases
+  - title: 📦Install
+    url: /#-installation
+  - title: 🛟Help
+    url: /#-troubleshooting
+  - title: ✨Releases
     url: /releases/
-  - title: Contribute
+  - title: 🔧Contribute
     url: /develop/
-  - title: GitHub
+  - title: 🧩GitHub
     url: https://github.com/kinggeorges12/JellyBridge
     target: "_blank"
