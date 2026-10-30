@@ -95,10 +95,10 @@ public class RootFolder
     public string Path { get; set; } = string.Empty;
 
     [JsonPropertyName("freeSpace")]
-    public int FreeSpace { get; set; }
+    public long FreeSpace { get; set; }
 
     [JsonPropertyName("totalSpace")]
-    public int TotalSpace { get; set; }
+    public long TotalSpace { get; set; }
 
     [JsonPropertyName("unmappedFolders")]
     public List<RootFolderUnmappedFolders> UnmappedFolders { get; set; } = new();
@@ -118,13 +118,13 @@ public class QualityProfile
 public class QueueItem
 {
     [JsonPropertyName("size")]
-    public int Size { get; set; }
+    public long Size { get; set; }
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
     [JsonPropertyName("sizeleft")]
-    public int Sizeleft { get; set; }
+    public long Sizeleft { get; set; }
 
     [JsonPropertyName("timeleft")]
     public string Timeleft { get; set; } = string.Empty;

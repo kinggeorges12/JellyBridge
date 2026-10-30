@@ -29,10 +29,10 @@ public class DownloadingItem
     public int ExternalId { get; set; }
 
     [JsonPropertyName("size")]
-    public int Size { get; set; }
+    public long Size { get; set; }
 
     [JsonPropertyName("sizeLeft")]
-    public int SizeLeft { get; set; }
+    public long SizeLeft { get; set; }
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;
