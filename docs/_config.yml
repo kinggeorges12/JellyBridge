@@ -2,7 +2,7 @@
 remote_theme: "mmistakes/minimal-mistakes@4.28.1"
 
 title: JellyBridge
-subtitle: "Request Jellyseerr content from any Jellyfin client!"
+subtitle: "Jellyseerr requests from any Jellyfin client!"
 description: "A Jellyfin plugin that bridges Jellyfin with Jellyseerr for seamless movie and series discovery and download requests."
 
 url: https://kinggeorges12.github.io

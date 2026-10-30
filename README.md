@@ -27,22 +27,22 @@ The plugin integrates seamlessly with Jellyfin, displaying shuffled discover con
 
 Get Jellyfin here: [jellyfin.org](https://jellyfin.org/). For setup, see the official [installation guide](https://jellyfin.org/docs/general/installation/).
 
-### Library View
+### 📖 Library View
 ![Jellyfin Library](Screenshots/Library.png)
 
 The plugin manages libraries and folders in Jellyfin, creating structure for discovered content.
 
-### Items View
+### 📚 Items View
 ![Jellyfin Items with Placeholders](Screenshots/Items.png)
 
 Browse all discovered movies and series from Jellyseerr networks with thumbnails and metadata.
 
-### Sorting
+### 🗃️ Sorting
 
 To see the intended order, set the JellyBridge library sort to **Play count** (Ascending). This works using the task to sort discover content, which updates play counts to create a dynamic browsing order.
 ![JellyBridge Sorting](Screenshots/Sorting.png)
 
-### Jellyseerr Integration
+### 📲 Jellyseerr Integration
 
 The plugin seamlessly integrates with Jellyseerr to manage download requests and track availability of movies and series.
 
@@ -57,7 +57,7 @@ Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official
 After installing Jellyseerr, disable the JellyBridge library to prevent requests from being marked as Available.
 ![Jellyseerr Requests](Screenshots/Jellyseerr.png)
 
-### Kodi Sync Plugin for Jellyfin
+### 📺 Kodi Sync Plugin for Jellyfin
 
 Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
 
