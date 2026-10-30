@@ -6,6 +6,6 @@
 .masthead__inner-wrap {
   background-color: #252A34 !important;
 }
-.toc {
-  top: calc(var(--masthead-height)+1rem) !important;
+.sidebar__right {
+  top: calc(var(--masthead-height)) !important;
 }
