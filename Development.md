@@ -2,6 +2,16 @@
 
 [![Build](https://github.com/kinggeorges12/JellyBridge/actions/workflows/pages.yml/badge.svg)](https://github.com/kinggeorges12/JellyBridge/actions/workflows/pages.yml)
 
+## Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. Fork the repository.
+2. In the scripts directory, use build-branch.ps1 and build-release.ps1 to easily test changes. Be sure to set the GitHubUsername and any required parameters.
+3. Iteratively develop code. Jellyfin and C# can be a bit unforgiving.
+4. Test thoroughly on 10.11.\* and 10.10.7 docker instances.
+5. Submit a pull request.
+
 ## Planned Features
 
 1. Add a modal dialog when the network options are double-clicked from the active or available network multiselect. Options include "Add to Selected Networks" (if in available) or "Remove from Selected Networks" (if active).
@@ -15,16 +25,6 @@
 3. Change sort order based on user preference or implement a random sort order plugin.
 4. Allow users to upload a custom image for promo videos.
 5. Adding new feature from [Issue #37](https://github.com/kinggeorges12/JellyBridge/issues/37) "Mixed Movies and Shows" to allow users to switch from a single library to separate Movies and Shows libraries.
-
-## Contributing
-
-We welcome contributions! Here's how to get started:
-
-1. Fork the repository.
-2. In the scripts directory, use build-branch.ps1 and build-release.ps1 to easily test changes. Be sure to set the GitHubUsername and any required parameters.
-3. Iteratively develop code. Jellyfin and C# can be a bit unforgiving.
-4. Test thoroughly on 10.11.\* and 10.10.7 docker instances.
-5. Submit a pull request.
 
 ## Dependencies
 
