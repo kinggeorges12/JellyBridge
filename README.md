@@ -77,7 +77,10 @@ For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyf
    - Click ⚙️ icon (Jellyfin 11: "Manage Repositories" button)
    - Click "Add Repository" button (Jellyfin 11: "New Repository" button)
    - Enter Repository Name: JellyBridge
-   - Enter Repository URL: `https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`
+   - Enter Repository URL: <button onclick="navigator.clipboard.writeText('https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json')">📋Copy</button>
+   ```
+   https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json
+   ```
    - Click "Add"
 
 2. **Install Plugin:**
