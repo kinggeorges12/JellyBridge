@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.12.0.zip",
+        "timestamp": "2026-10-30T22:59:14.664Z",
+        "targetAbi": "12.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 12.0.0: JellyBridge v4.1 - testing int conversion to long",
+        "version": "4.1.12.0",
+        "checksum": "310E3D11D8E2C05920E979B07CE563B0"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.11.9.zip",
+        "timestamp": "2026-10-30T22:59:14.664Z",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.9: JellyBridge v4.1 - testing int conversion to long",
+        "version": "4.1.11.9",
+        "checksum": "CD80A941FA130DABC6CE03031C73B984"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.11.0.zip",
+        "timestamp": "2026-10-30T22:59:14.664Z",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.11.0: JellyBridge v4.1 - testing int conversion to long",
+        "version": "4.1.11.0",
+        "checksum": "DDC6A2882A5CDD53481C45D0E4A6B127"
+      },
+      {
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.10.7.zip",
+        "timestamp": "2026-10-30T22:59:14.664Z",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "changelog": "Jellyfin 10.10.7: JellyBridge v4.1 - testing int conversion to long",
+        "version": "4.1.10.7",
+        "checksum": "330AFFD7421FC40A2CFAD8FE7C583621"
+      },
+      {
         "version": "4.0.12.0",
         "targetAbi": "12.0.0",
         "timestamp": "2026-09-08T16:50:17.252Z",
