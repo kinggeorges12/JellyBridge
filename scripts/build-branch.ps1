@@ -43,7 +43,8 @@ if (Test-Path $ConfigPath) {
 $BaseDir = Split-Path $PSScriptRoot -Parent
 
 # Where to save zip files
-$releaseDir = Join-Path $BaseDir "release"
+$releasePattern = "release/"
+$releaseDir = Join-Path $BaseDir $releasePattern
 
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
@@ -133,12 +134,27 @@ Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 
 # Switch to the specified branch
 Write-Host "[~] Switching to branch: $Branch" -ForegroundColor Yellow
-git checkout $Branch
+if (git branch --list $branch) {
+    git switch $branch
+} else {
+    git switch -c $branch
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Failed to switch to branch: $Branch"
     exit 1
 }
 Write-Host "[~] Switched to branch: $Branch" -ForegroundColor Green
+
+# Ensure release directory exists
+if (-not (Test-Path $releaseDir)) {
+    New-Item -ItemType Directory -Path $releaseDir | Out-Null
+}
+Write-Host "[~] Removing ignore filter for releases for directory: $releasePattern" -ForegroundColor Yellow
+git add -f "$releasePattern"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "[X] Failed to remove ignore filter: $releasePattern"
+    exit 1
+}
 
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -148,11 +164,6 @@ $manifestPath = "manifest.json"
 
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
-
-# Ensure release directory exists
-if (-not (Test-Path $releaseDir)) {
-    New-Item -ItemType Directory -Path $releaseDir | Out-Null
-}
 
 $createdZips = @()
 $newManifestEntries = @()
