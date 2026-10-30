@@ -21,7 +21,7 @@ A Jellyfin plugin that bridges Jellyfin with Jellyseerr (and Seerr\*) for seamle
 - **Smart Exclusion**: Uses native Jellyfin configuration files to exclude movies and series that already exist in your other Jellyfin libraries
 - **Shuffle Content**: Native support on Android TV for random or smart-sort for browsing discover content, always fresh!
 
-## 🔗 Jellyfin Integration
+## 🧩 Jellyfin Integration
 
 The plugin integrates seamlessly with Jellyfin, displaying shuffled discover content that users can browse and mark as favorites to request downloads. Check the [🖇️ Compatibility](Version.md) page for version-specific information.
 
