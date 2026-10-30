@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 
