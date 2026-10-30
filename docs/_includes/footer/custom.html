@@ -1,57 +1,24 @@
-<script>
+<!--script>
 (() => {
   function initializeGumshoe() {
     if (!window.Gumshoe) return;
 
-    const masthead = document.querySelector(".masthead");
-    if (!masthead) return;
-
-    const getOffset = () => masthead.getBoundingClientRect().height;
-
-    // Adjust heading measurements for Gumshoe's bottom-of-page check.
     document.querySelectorAll("nav.toc a").forEach(link => {
-      if (!link.hash) return;
-
-      let id;
-      try {
-        id = decodeURIComponent(link.hash.slice(1));
-      } catch {
-        return;
-      }
-
+      const id = decodeURIComponent(link.hash.slice(1));
       const heading = document.getElementById(id);
-      if (!heading || heading.__gumshoePatched) return;
-
-      const originalGetBoundingClientRect =
-        heading.getBoundingClientRect.bind(heading);
-
-      heading.getBoundingClientRect = () => {
-        const rect = originalGetBoundingClientRect();
-
-        return new Proxy(rect, {
-          get(target, property) {
-            if (property === "bottom") {
-              return target.bottom + getOffset();
-            }
-
-            return Reflect.get(target, property, target);
-          }
-        });
-      };
-
-      heading.__gumshoePatched = true;
-
-      // Keep native anchor scrolling below the masthead.
-      heading.style.scrollMarginTop = `${getOffset()}px`;
+      if (heading) {
+        heading.style.scrollMarginTop =
+          `${document.querySelector(".masthead")?.offsetHeight || 0}px`;
+      }
     });
 
-    // Initialize Gumshoe with the masthead offset for heading-top detection.
-    new window.Gumshoe("nav.toc a", {
+    new Gumshoe("nav.toc a", {
       navClass: "active",
       contentClass: "active",
       nested: false,
       nestedClass: "active",
-      offset: getOffset,
+      offset: () =>
+        document.querySelector(".masthead")?.getBoundingClientRect().height || 0,
       reflow: true,
       events: true
     });
@@ -63,4 +30,5 @@
     initializeGumshoe();
   }
 })();
-</script>
+
+</script-->
