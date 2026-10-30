@@ -1,0 +1,16 @@
+/* Anchor offset for the masthead */
+html {
+  scroll-padding-top: 2rem;
+}
+[id] {
+  scroll-margin-top: 2rem;
+}
+
+/* Stick masthead to the top */
+.masthead {
+  position: sticky !important;
+  top: 0;
+}
+.masthead__inner-wrap {
+  background-color: #252A34 !important;
+}
