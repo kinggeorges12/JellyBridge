@@ -1,10 +1,76 @@
 <!-- start custom head snippets -->
 
-<link rel="stylesheet" href="{{ '/assets/css/custom.css' | relative_url }}">
-
 <!-- insert favicons. use https://realfavicongenerator.net/ -->
 <link rel="icon" type="image/svg+xml" href="{{ '/Screenshots/Icon.svg' | relative_url }}">
 <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
 <link rel="apple-touch-icon" href="{{ '/Screenshots/Icon.png' | relative_url }}">
+
+<!-- Fixed masthead position -->
+<link rel="stylesheet" href="{{ '/assets/css/custom.css' | relative_url }}">
+<script>
+(() => {
+  function scrollToAnchor(hash) {
+    if (!hash || hash === "#") return;
+
+    let target;
+
+    try {
+      target = document.getElementById(decodeURIComponent(hash.slice(1)));
+    } catch {
+      return;
+    }
+
+    if (!target) return;
+
+    const masthead = document.querySelector(".masthead");
+    const offset = masthead
+      ? masthead.getBoundingClientRect().height
+      : 0;
+
+    const top =
+      target.getBoundingClientRect().top +
+      window.scrollY -
+      offset;
+
+    window.scrollTo({
+      top,
+      behavior: "smooth"
+    });
+  }
+
+  // Intercept all same-page anchor clicks before native navigation.
+  document.addEventListener("click", event => {
+    const link = event.target.closest('a[href*="#"]');
+    if (!link) return;
+
+    const url = new URL(link.href, window.location.href);
+
+    if (
+      url.origin !== location.origin ||
+      url.pathname !== location.pathname ||
+      !url.hash
+    ) return;
+
+    event.preventDefault();
+
+    if (location.hash !== url.hash) {
+      history.pushState(null, "", url.hash);
+    }
+
+    scrollToAnchor(url.hash);
+  }, true);
+
+  // Handle direct links and browser back/forward navigation.
+  window.addEventListener("popstate", () => {
+    scrollToAnchor(location.hash);
+  });
+
+  window.addEventListener("load", () => {
+    if (location.hash) {
+      requestAnimationFrame(() => scrollToAnchor(location.hash));
+    }
+  });
+})();
+</script>
 
 <!-- end custom head snippets -->

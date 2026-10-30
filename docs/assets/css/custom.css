@@ -1,16 +1,11 @@
-/* Anchor offset for the masthead */
-html {
-  scroll-padding-top: 2rem;
-}
-[id] {
-  scroll-margin-top: 2rem;
-}
-
 /* Stick masthead to the top */
 .masthead {
   position: sticky !important;
-  top: 0;
+  top: 0 !important;
 }
 .masthead__inner-wrap {
   background-color: #252A34 !important;
+}
+.toc {
+  top: calc(var(--masthead-height, 100px)+1rem) !important;
 }
