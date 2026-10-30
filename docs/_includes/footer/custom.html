@@ -1,0 +1,16 @@
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const masthead = document.querySelector(".masthead");
+  if (!masthead || !window.Gumshoe) return;
+
+  new Gumshoe("nav.toc a", {
+    navClass: "active",
+    contentClass: "active",
+    nested: false,
+    nestedClass: "active",
+    offset: masthead.offsetHeight,
+    reflow: true,
+    events: true
+  });
+});
+</script>
