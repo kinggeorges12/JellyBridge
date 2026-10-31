@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:52:03.880Z",
+        "checksum": "DE5B83B38B7DDDC07721F5FD357D994B",
+        "version": "4.1.12.0",
+        "targetAbi": "12.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.1/JellyBridge-4.1.12.0.zip",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v4.1 - Bug fix for Jellyseerr API by @corkyluu: error in Jellyseerr sync when downloading files larger than 2GB"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:52:03.880Z",
+        "checksum": "43ED231AFEF8B3BFAC9D3F8CFB38C037",
+        "version": "4.1.11.9",
+        "targetAbi": "10.11.9.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.1/JellyBridge-4.1.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v4.1 - Bug fix for Jellyseerr API by @corkyluu: error in Jellyseerr sync when downloading files larger than 2GB"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:52:03.880Z",
+        "checksum": "66AC34517914F05FF48C125F86CBD157",
+        "version": "4.1.11.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.1/JellyBridge-4.1.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v4.1 - Bug fix for Jellyseerr API by @corkyluu: error in Jellyseerr sync when downloading files larger than 2GB"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:52:03.880Z",
+        "checksum": "29F0E8304A69D71A9FC4AE0C65E280C2",
+        "version": "4.1.10.7",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v4.1/JellyBridge-4.1.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v4.1 - Bug fix for Jellyseerr API by @corkyluu: error in Jellyseerr sync when downloading files larger than 2GB"
+      },
+      {
         "version": "4.0.12.0",
         "targetAbi": "12.0.0",
         "timestamp": "2026-09-08T16:50:17.252Z",

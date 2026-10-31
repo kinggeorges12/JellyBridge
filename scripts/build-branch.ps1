@@ -43,12 +43,13 @@ if (Test-Path $ConfigPath) {
 $BaseDir = Split-Path $PSScriptRoot -Parent
 
 # Where to save zip files
-$releaseDir = Join-Path $BaseDir "release"
+$releasePattern = "release/"
+$releaseDir = Join-Path $BaseDir $releasePattern
 
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
 
-# GitHub API token - read from file
+# GitHub API token - read from file: https://github.com/settings/tokens
 $GitHubToken = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
 
 # Auto-determine version if not provided
@@ -133,12 +134,27 @@ Write-Host "[~] Changelog: $ChangelogText" -ForegroundColor Cyan
 
 # Switch to the specified branch
 Write-Host "[~] Switching to branch: $Branch" -ForegroundColor Yellow
-git checkout $Branch
+if (git branch --list $branch) {
+    git switch $branch
+} else {
+    git switch -c $branch
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Error "[X] Failed to switch to branch: $Branch"
     exit 1
 }
 Write-Host "[~] Switched to branch: $Branch" -ForegroundColor Green
+
+# Ensure release directory exists
+if (-not (Test-Path $releaseDir)) {
+    New-Item -ItemType Directory -Path $releaseDir | Out-Null
+}
+Write-Host "[~] Removing ignore filter for releases for directory: $releasePattern" -ForegroundColor Yellow
+git add -f "$releasePattern"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "[X] Failed to remove ignore filter: $releasePattern"
+    exit 1
+}
 
 # Common data
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -149,17 +165,13 @@ $manifestPath = "manifest.json"
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
-# Ensure release directory exists
-if (-not (Test-Path $releaseDir)) {
-    New-Item -ItemType Directory -Path $releaseDir | Out-Null
-}
-
 $createdZips = @()
 $newManifestEntries = @()
 
 foreach ($t in $TargetABIs) {
     $jf = $t.JellyfinVersion
     $minAbi = $t.MinTargetAbi
+    $netTarget = $t.NetTarget
     $ver_sub = $Version + "." + $t.SubVersion
 
     # Step 1: Update version numbers in project file
@@ -173,21 +185,43 @@ foreach ($t in $TargetABIs) {
 
     Start-Sleep -Milliseconds 1000
     Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
+    Start-Sleep -Milliseconds 1000
     Write-Host "[~] Updated version to $ver_sub in project file" -ForegroundColor Green
 
     ## Step 2: Build, package and register BOTH ABIs (10.10 and 10.11)
     Write-Host "Step 2: Building and packaging for Jellyfin 10.10 and 10.11..." -ForegroundColor Yellow
 
+    # Remove all cached build and restore data
+    #Write-Host "[~] Clearing previous build artifacts..." -ForegroundColor Yellow
+    #Remove-Item "bin\Release\$jf" -Recurse -Force -ErrorAction SilentlyContinue
+
+    # Clean using the same Jellyfin version and configuration
+    Start-Sleep -Milliseconds 1000
+    Write-Host "[~] Cleaning for Jellyfin $jf..." -ForegroundColor Yellow
+    $cleanOutput = & dotnet clean $project "-p:JellyfinVersion=$jf" 2>&1
+
+    # Force a fresh restore for this Jellyfin version
+    Start-Sleep -Milliseconds 1000
+    $restoreOutput = & dotnet restore $project "-p:JellyfinVersion=$jf" $configProperty --force 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        $restoreOutput | ForEach-Object { Write-Host $_ }
+        throw "Restore failed for Jellyfin $jf (exit code $exitCode)"
+    }
+    
+    # Build using the exact same properties, without another restore
+    Start-Sleep -Milliseconds 1000
     Write-Host "\n[~] Building for Jellyfin $jf" -ForegroundColor Cyan
     $buildArgs = @(
         "build",
         "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj",
         "--configuration", "Release",
         "--warnaserror",
-        "-p:JellyfinVersion=$jf"
+        "-p:JellyfinVersion=$jf",
+        "--no-restore"
     )
-    dotnet clean src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj | Out-Null
     $buildOutput = dotnet @buildArgs 2>&1
+    $exitCode = $LASTEXITCODE
     Write-Host "Build output: $buildOutput" -ForegroundColor DarkGray
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[X] Build failed (Code=$LASTEXITCODE) for Jellyfin $jf"
@@ -301,6 +335,12 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "[~] Successfully pushed to GitHub branch '$Branch'" -ForegroundColor Green
+
+$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
+$csprojContent = Get-Content $csprojPath -Raw
+$csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$Version</AssemblyVersion>"
+$csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$Version</FileVersion>"
+Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
 
 # Pop back to original directory
 Pop-Location
