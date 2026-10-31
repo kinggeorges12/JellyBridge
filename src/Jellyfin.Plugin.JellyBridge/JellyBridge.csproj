@@ -28,7 +28,7 @@
     <JellyfinVersionFlag Condition="'$(JellyfinVersionFlag)' == ''">10.11.3</JellyfinVersionFlag>
   </PropertyGroup>
 
-  <!-- Set TargetFramework using 9.0 as default -->
+  <!-- Set TargetFramework using 10.0 as default -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <TargetFramework Condition="$(JellyfinVersionFlag.StartsWith('12.'))">net10.0</TargetFramework>

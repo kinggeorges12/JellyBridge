@@ -5,9 +5,9 @@
 # Put these in order of highest to lowest Jellyfin version, so users see the most recent as their compatible version.
 @{
     TargetABIs = @(
-        @{ JellyfinVersion = "12.0.0"; SubVersion = "12.0"; MinTargetAbi = "12.0.0"; },
-        @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; },
-        @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; },
-        @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; }
+        @{ JellyfinVersion = "12.0.0"; SubVersion = "12.0"; MinTargetAbi = "12.0.0"; NetTarget = "net10.0"; },
+        @{ JellyfinVersion = "10.11.9"; SubVersion = "11.9"; MinTargetAbi = "10.11.9.0"; NetTarget = "net9.0"; },
+        @{ JellyfinVersion = "10.11.0"; SubVersion = "11.0"; MinTargetAbi = "10.11.0.0"; NetTarget = "net9.0"; },
+        @{ JellyfinVersion = "10.10.7"; SubVersion = "10.7"; MinTargetAbi = "10.10.0.0"; NetTarget = "net8.0"; }
     )
 }
