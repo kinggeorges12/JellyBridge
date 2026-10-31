@@ -49,7 +49,7 @@ $releaseDir = Join-Path $BaseDir $releasePattern
 # Push to main project directory (assumes script is run from project root)
 Push-Location $BaseDir
 
-# GitHub API token - read from file: https://github.com/settings/personal-access-tokens
+# GitHub API token - read from file: https://github.com/settings/tokens
 $GitHubToken = Get-Content "github-token.txt" -Raw | ForEach-Object { $_.Trim() }
 
 # Auto-determine version if not provided
