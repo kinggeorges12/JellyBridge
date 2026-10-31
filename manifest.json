@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:12:33.625Z",
+        "checksum": "8D95E324C924A6B551280266F0794D4E",
+        "version": "4.1.12.0",
+        "targetAbi": "12.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.12.0.zip",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v4.1 - testing int conversion to long"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:12:33.625Z",
+        "checksum": "C02D5F7E6ADA1BE2E77000513BB22942",
+        "version": "4.1.11.9",
+        "targetAbi": "10.11.9.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.11.9.zip",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v4.1 - testing int conversion to long"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:12:33.625Z",
+        "checksum": "29D4467C60094A20FB5C946F6691B0A8",
+        "version": "4.1.11.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.11.0.zip",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v4.1 - testing int conversion to long"
+      },
+      {
+        "dependencies": [],
+        "timestamp": "2026-10-31T02:12:33.625Z",
+        "checksum": "922969DE8F5D5FE01D5DF5B09D28556E",
+        "version": "4.1.10.7",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.10.7.zip",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v4.1 - testing int conversion to long"
+      },
+      {
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-intconversion/release/JellyBridge-4.1.12.0.zip",
         "timestamp": "2026-10-30T22:59:14.664Z",
         "targetAbi": "12.0.0",
