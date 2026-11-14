@@ -516,7 +516,33 @@ function getDefaultLibrarySettings(page, directories) {
     });
 }
 
+function findLibraryUsingFolders(directories) {
+    // Returns the name of an existing library that already contains one of the directories
+    const normalize = path => (path || '').replace(/[\\/]+$/, '');
+    const wanted = directories.map(normalize);
+    return ApiClient.fetch({
+        'url': ApiClient.getUrl('Library/VirtualFolders'),
+        'headers': {'accept': 'application/json'},
+        'dataType': 'json'
+    }).then(function(libraries) {
+        const match = (libraries || []).find(library =>
+            (library.Locations || []).some(location => wanted.includes(normalize(location))));
+        return match ? match.Name : null;
+    });
+}
+
 function createVirtualFolders(page, libraryName, libraryType, directories) {
+    // Skip if a library already uses these folders, otherwise Jellyfin creates a duplicate (e.g. "Discover2")
+    return findLibraryUsingFolders(directories).then(function(existingLibrary) {
+        if (existingLibrary) {
+            DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+            return;
+        }
+        return createNewVirtualFolders(page, libraryName, libraryType, directories);
+    });
+}
+
+function createNewVirtualFolders(page, libraryName, libraryType, directories) {
     // Get settings if available, then create the virtual folder
     return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
         return ApiClient.ajax({
