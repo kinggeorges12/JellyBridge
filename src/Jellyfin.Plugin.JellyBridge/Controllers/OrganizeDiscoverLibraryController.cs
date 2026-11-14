@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Services;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
@@ -13,11 +14,24 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     {
         private readonly DebugLogger<OrganizeDiscoverLibraryController> _logger;
         private readonly MetadataService _metadataService;
+        private readonly JellyfinILibraryManager _libraryManager;
 
-        public OrganizeDiscoverLibraryController(ILoggerFactory loggerFactory, MetadataService metadataService)
+        public OrganizeDiscoverLibraryController(ILoggerFactory loggerFactory, MetadataService metadataService, JellyfinILibraryManager libraryManager)
         {
             _logger = new DebugLogger<OrganizeDiscoverLibraryController>(loggerFactory.CreateLogger<OrganizeDiscoverLibraryController>());
             _metadataService = metadataService;
+            _libraryManager = libraryManager;
+        }
+
+        /// <summary>
+        /// Name of an existing library that already uses one of the folders, otherwise null.
+        /// </summary>
+        private string? FindLibraryUsingFolders(List<string> folders)
+        {
+            var wanted = folders.Select(folder => Path.TrimEndingDirectorySeparator(folder)).ToHashSet();
+            return _libraryManager.Inner.GetVirtualFolders()
+                .FirstOrDefault(library => library.Locations?.Any(location => wanted.Contains(Path.TrimEndingDirectorySeparator(location))) == true)
+                ?.Name;
         }
 
         /// <summary>
@@ -55,6 +69,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         movieFolders = movieFolders,
                         showFolders = showFolders,
                         mixedFolders = mixedFolders,
+                        // Libraries that already use these folders, so the page doesn't create a duplicate (e.g. "Discover2")
+                        existingMovieLibrary = FindLibraryUsingFolders(movieFolders),
+                        existingShowLibrary = FindLibraryUsingFolders(showFolders),
+                        existingMixedLibrary = FindLibraryUsingFolders(mixedFolders),
                         totalNetworks = networkMap.Count
                     };
                 }, _logger, "Generate Library Folders");
