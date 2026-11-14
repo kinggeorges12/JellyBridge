@@ -11,5 +11,11 @@ public class JellyseerrDownloadingItem : DownloadingItem
     [JsonPropertyName("mediaType")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public new JellyseerrModel.MediaType MediaType { get; set; }
+
+    /// <summary>
+    /// Estimated completion time as nullable - override because Seerr sends null for stalled downloads
+    /// </summary>
+    [JsonPropertyName("estimatedCompletionTime")]
+    public new DateTimeOffset? EstimatedCompletionTime { get; set; }
 }
 
