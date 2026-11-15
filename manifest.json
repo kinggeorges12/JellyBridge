@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "4E706CCDDD2924753F0351F77660635D",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.12.0.zip",
+        "version": "5.1.12.0",
+        "timestamp": "2026-11-15T21:20:22.570Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "6C32F3BFDDA15D0189C9FCEF68420075",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.11.9.zip",
+        "version": "5.1.11.9",
+        "timestamp": "2026-11-15T21:20:22.570Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "FD893287B4CAC821CF7CCDA24E4FD821",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.11.0.zip",
+        "version": "5.1.11.0",
+        "timestamp": "2026-11-15T21:20:22.570Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "CCC9CD18A29CCC2511D06F11FF4F60D5",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.10.7.zip",
+        "version": "5.1.10.7",
+        "timestamp": "2026-11-15T21:20:22.570Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "62DCA1B18E6BCB3580D60C34FBBA8B20",
         "dependencies": [],
         "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.0/JellyBridge-5.0.12.0.zip",
