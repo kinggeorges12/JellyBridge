@@ -309,6 +309,12 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Git add failed!"
     exit 1
 }
+# Add release files for branch commit (force add to override .gitignore)
+git add -f release/
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Git add failed!"
+    exit 1
+}
 
 # Verify release files are staged
 $stagedReleaseFiles = git diff --cached --name-only -- "release/*.zip"
@@ -344,6 +350,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "[~] Successfully pushed to GitHub branch '$Branch'" -ForegroundColor Green
+
+# Remove release files from git after uploading
+git restore --staged release/
 
 # Pop back to original directory
 Pop-Location
