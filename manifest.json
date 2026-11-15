@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "targetAbi": "12.0.0",
+        "checksum": "62DCA1B18E6BCB3580D60C34FBBA8B20",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.0/JellyBridge-5.0.12.0.zip",
+        "version": "5.0.12.0",
+        "timestamp": "2026-11-15T16:25:34.927Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.0 - All users should upgrade to 5.0 as soon as possible to apply a major security vulnerability fix by @MoFaye. Minor bug fix for Jellyseerr API by @MoFaye: blocklisted items no longer appear in Discover library, and removing all networks now results in a variety of networks from the Jellyseerr sync."
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "5C7EFF1B5988492144FCD504B5D044FE",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.0/JellyBridge-5.0.11.9.zip",
+        "version": "5.0.11.9",
+        "timestamp": "2026-11-15T16:25:34.927Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.0 - All users should upgrade to 5.0 as soon as possible to apply a major security vulnerability fix by @MoFaye. Minor bug fix for Jellyseerr API by @MoFaye: blocklisted items no longer appear in Discover library, and removing all networks now results in a variety of networks from the Jellyseerr sync."
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "D15099D4FDB81D134675ED3A11A23715",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.0/JellyBridge-5.0.11.0.zip",
+        "version": "5.0.11.0",
+        "timestamp": "2026-11-15T16:25:34.927Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.0 - All users should upgrade to 5.0 as soon as possible to apply a major security vulnerability fix by @MoFaye. Minor bug fix for Jellyseerr API by @MoFaye: blocklisted items no longer appear in Discover library, and removing all networks now results in a variety of networks from the Jellyseerr sync."
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "B738E722CCCED58630F4D71D7BC6346A",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.0/JellyBridge-5.0.10.7.zip",
+        "version": "5.0.10.7",
+        "timestamp": "2026-11-15T16:25:34.927Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.0 - All users should upgrade to 5.0 as soon as possible to apply a major security vulnerability fix by @MoFaye. Minor bug fix for Jellyseerr API by @MoFaye: blocklisted items no longer appear in Discover library, and removing all networks now results in a variety of networks from the Jellyseerr sync."
+      },
+      {
         "changelog": "Jellyfin 12.0.0: JellyBridge v4.2 - Bug fix for Jellyseerr API by @MoFaye: Fix ReadRequests failing when a download has no estimated completion time",
         "version": "4.2.12.0",
         "targetAbi": "12.0.0",

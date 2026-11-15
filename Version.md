@@ -6,8 +6,14 @@ This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jell
 
 # 📣 Release Notes
 
-## Version 4.0 🆕
+## Version 5.0 🆕
+- Major security vulnerability patched by @MoFaye that secures endpoints from unauthorized access.
+- Bug fix: skip titles blocklisted in Jellyseerr when importing Discover content [Issue #62](https://github.com/kinggeorges12/JellyBridge/issues/62)
+- Bug fix: Don't hide every Discover item when no networks are selected [Issue #61](https://github.com/kinggeorges12/JellyBridge/issues/61)
+
+## Version 4.0 ✨
 - Updated plugin for compatibility with Jellyfin v12.0!
+- Fix ReadRequests failing when a download has no estimated completion time [Issue #58](https://github.com/kinggeorges12/JellyBridge/issues/58)
 
 ## Version 3.3 ✨
 
