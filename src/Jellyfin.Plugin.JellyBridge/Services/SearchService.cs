@@ -206,6 +206,8 @@ public class SearchService
                 if (item is JellyseerrShow show)
                 {
                     await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrShow> { show }).ConfigureAwait(false);
+                    await discoverService.EnsureSeasonPlaceholdersAsync(new List<JellyseerrShow> { show },
+                        Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders))).ConfigureAwait(false);
                 }
                 else if (item is JellyseerrMovie movie)
                 {
