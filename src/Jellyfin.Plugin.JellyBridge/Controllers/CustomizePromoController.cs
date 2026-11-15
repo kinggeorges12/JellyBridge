@@ -3,12 +3,14 @@ using System.IO;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.JellyBridge.Services;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JellyBridge.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "RequiresElevation")]
     [Route("JellyBridge")]
     public class CustomizePromoController : ControllerBase
     {
@@ -68,6 +70,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// <param name="type">The type of promo video to download (movies or series).</param>
         /// <returns>The promo video file.</returns>
         [HttpGet("PromoVideos/{type}")]
+        [AllowAnonymous]
         public async Task<IActionResult> DownloadPromoVideo(string type)
         {
             _logger.LogDebug($"{type} promo video requested");
