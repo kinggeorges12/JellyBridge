@@ -45,15 +45,16 @@ public class JellyseerrMediaRequest : MediaRequest
         {
             JellyfinMovie => JellyseerrModel.MediaType.MOVIE,
             JellyfinSeries => JellyseerrModel.MediaType.TV,
+            JellyfinSeason => JellyseerrModel.MediaType.TV,
             _ => throw new NotSupportedException($"Unsupported item type: {jellyfinItem.GetType().Name}")
         };
         if (Type != jellyfinType)
             return false;
             
-        // Get TMDB ID from Jellyfin item
-        int? jellyfinTmdbId = null;
+        // Get TMDB ID from Jellyfin item (a season resolves to its series' TMDB id)
+        int? jellyfinTmdbId = jellyfinItem is JellyfinSeason season ? season.GetTmdbId() : null;
         // Try to get TMDB ID from provider IDs
-        if (jellyfinItem.ProviderIds.TryGetValue("Tmdb", out var providerId) && !string.IsNullOrEmpty(providerId))
+        if (!jellyfinTmdbId.HasValue && jellyfinItem.ProviderIds.TryGetValue("Tmdb", out var providerId) && !string.IsNullOrEmpty(providerId))
         {
             if (int.TryParse(providerId, out var id))
             {
