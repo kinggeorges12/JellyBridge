@@ -79,8 +79,8 @@ public class DiscoverService
             // Debug: Log the response data
             _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
             
-            // Add items to lists (no deduplication)
-            foreach (var item in movies)
+            // Add items to lists (no deduplication), skipping titles blocklisted in Jellyseerr since they can't be requested
+            foreach (var item in movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED))
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
@@ -88,7 +88,7 @@ public class DiscoverService
                 allMovies.Add(item);
             }
             
-            foreach (var item in shows)
+            foreach (var item in shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED))
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
