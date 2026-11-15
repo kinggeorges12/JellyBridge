@@ -44,24 +44,26 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     EnableInMainMenu = config.EnableInMainMenu,
                     SyncIntervalHours = config.SyncIntervalHours,
 
+                    // Organize Discover Library
+                    ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
+                    UseMixedMediaLibrary = config.UseMixedMediaLibrary,
+                    UseSeasonPlaceholders = config.UseSeasonPlaceholders,
+                    UseNetworkFolders = config.UseNetworkFolders,
+                    AddDuplicateContent = config.AddDuplicateContent,
+                    NetworkFolderPrefix = config.NetworkFolderPrefix,
+
                     // Import Discover Content
                     Region = config.Region,
                     NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
 
-                    // Manage Discover Library
-                    ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
+                    // Manage Favorite Requests
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
                     UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RequestFirstSeason = config.RequestFirstSeason,
-                    UseMixedMediaLibrary = config.UseMixedMediaLibrary,
-                    UseNetworkFolders = config.UseNetworkFolders,
-                    UseSeasonPlaceholders = config.UseSeasonPlaceholders,
-                    AddDuplicateContent = config.AddDuplicateContent,
-                    NetworkFolderPrefix = config.NetworkFolderPrefix,
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
@@ -131,30 +133,33 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     // General Settings
                     SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
+                    var apiKey = config.ApiKey == PluginConfiguration.ApiKeyMask ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey)) : config.ApiKey;
                     SetJsonValue<string>(configData, nameof(config.ApiKey), config);
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableInMainMenu), config);
                     SetJsonValue<double?>(configData, nameof(config.SyncIntervalHours), config);
                     
+                    // Organize Discover Library
+                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseSeasonPlaceholders), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
+                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
+                    SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
+
                     // Import Discover Content
                     SetJsonValue<string>(configData, nameof(config.Region), config);
                     SetNetworkMap(configData, config);
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
                     
-                    // Manage Discover Library
-                    SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
+                    // Manage Favorite Requests
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseSeasonPlaceholders), config);
-                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
-                    SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
                     
                     // Customize Promo Videos
                     SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);

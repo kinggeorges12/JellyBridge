@@ -10,11 +10,47 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "5ADCA550D58B8ADAC29862156395350B",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.2.12.0.zip",
+        "version": "5.2.12.0",
+        "timestamp": "2026-11-15T22:37:41.975Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.2 - disable sending apikey to config page"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "516E1035469ECF269734DAAE3A17D378",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.2.11.9.zip",
+        "version": "5.2.11.9",
+        "timestamp": "2026-11-15T22:37:41.975Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.2 - disable sending apikey to config page"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "626AF62B80D443D913B19D976B8BE138",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.2.11.0.zip",
+        "version": "5.2.11.0",
+        "timestamp": "2026-11-15T22:37:41.975Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.2 - disable sending apikey to config page"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "805B3104C9F16E7DFDA4CFC146647204",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.2.10.7.zip",
+        "version": "5.2.10.7",
+        "timestamp": "2026-11-15T22:37:41.975Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.2 - disable sending apikey to config page"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "4E706CCDDD2924753F0351F77660635D",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.12.0.zip",
         "version": "5.1.12.0",
-        "timestamp": "2026-11-15T21:20:22.570Z",
+        "timestamp": "2026-11-15T21:20:22.57Z",
         "changelog": "Jellyfin 12.0.0: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
       },
       {
@@ -23,7 +59,7 @@
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.11.9.zip",
         "version": "5.1.11.9",
-        "timestamp": "2026-11-15T21:20:22.570Z",
+        "timestamp": "2026-11-15T21:20:22.57Z",
         "changelog": "Jellyfin 10.11.9: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
       },
       {
@@ -32,7 +68,7 @@
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.11.0.zip",
         "version": "5.1.11.0",
-        "timestamp": "2026-11-15T21:20:22.570Z",
+        "timestamp": "2026-11-15T21:20:22.57Z",
         "changelog": "Jellyfin 10.11.0: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
       },
       {
@@ -41,7 +77,7 @@
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.1.10.7.zip",
         "version": "5.1.10.7",
-        "timestamp": "2026-11-15T21:20:22.570Z",
+        "timestamp": "2026-11-15T21:20:22.57Z",
         "changelog": "Jellyfin 10.10.7: JellyBridge v5.1 - feat: optional season placeholders in the Discover library"
       },
       {
