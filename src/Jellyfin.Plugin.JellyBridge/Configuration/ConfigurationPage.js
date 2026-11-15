@@ -575,15 +575,22 @@ function createDefaultLibrary(page) {
                         return Promise.reject(error);
                     });
             }).then(function (response) {
-                // Send request for a new library
+                // Send request for a new library, unless the endpoint found a library already using the folders
+                const createOnce = (existingLibrary, name, type, folders) => {
+                    if (existingLibrary) {
+                        DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+                        return Promise.resolve();
+                    }
+                    return createVirtualFolders(page, name, type, folders);
+                };
                 let apiCalls;
                 if (UseMixedMediaLibrary === false) {
                     apiCalls = Promise.all([
-                        createVirtualFolders(page, movieLibraryDisplayName, 'movies', response.movieFolders),
-                        createVirtualFolders(page, showLibraryDisplayName, 'tvshows', response.showFolders)
+                        createOnce(response.existingMovieLibrary, movieLibraryDisplayName, 'movies', response.movieFolders),
+                        createOnce(response.existingShowLibrary, showLibraryDisplayName, 'tvshows', response.showFolders)
                     ]);
                 } else {
-                    apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
+                    apiCalls = createOnce(response.existingMixedLibrary, libraryDisplayName, null, response.mixedFolders);
                 }
                 return apiCalls;
             }).finally(function() {
