@@ -27,8 +27,8 @@ public class PlaceholderVideoGenerator
 
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
     private readonly IMediaEncoder _mediaEncoder;
-    private readonly string _assetPath;
-    private readonly string _placeholderPath;
+    private string _assetPath = "";
+    private string _placeholderPath = "";
     
     // Asset file names for different media types
     private static readonly string MovieAsset = "movie.png";
@@ -52,11 +52,7 @@ public class PlaceholderVideoGenerator
     {
         _logger = new DebugLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
-        // Get the configured temp folder, defaulting to system temp path if not set
-        var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
-        // Assets are embedded in the plugin assembly
-        _assetPath = Path.Combine(jellyBridgeTempDirectory, "assets");
-        _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
+        // Set path for cached placeholder videos in the system temp directory
         InvalidateCachedPlaceholdersAsync().Wait();
     }
 
@@ -609,10 +605,17 @@ public class PlaceholderVideoGenerator
     /// </summary>
     private async Task InvalidateCachedPlaceholdersAsync()
     {
+        // Get the configured temp folder, defaulting to system temp path if not set
+        var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
+        // Set timeout to default task timeout
         var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
         await _invalidationSemaphore.WaitAsync(timeout);
         try
         {
+            // Assets are embedded in the plugin assembly
+            _assetPath = Path.Combine(jellyBridgeTempDirectory, "assets");
+            _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
+            // Delete any existing assets and placeholders to ensure a clean state
             if (FolderUtils.FolderExistsThrowNull(_assetPath))
             {
                 Directory.Delete(_assetPath, recursive: true);
