@@ -307,7 +307,12 @@ public class DiscoverService
             return (new List<IJellyseerrItem>(), new List<IJellyseerrItem>());
         }
 
-        var networkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap));
+        // FetchDiscoverMediaAsync searches all networks (Id 0) when no networks are configured, so those items are valid too
+        var networkMap = Plugin.GetConfiguration()?.NetworkMap;
+        if (networkMap == null || !networkMap.Any())
+        {
+            networkMap = new List<JellyseerrNetwork> { new JellyseerrNetwork { Id = 0, Name = "All", Country = "Default", DisplayPriority = 0 } };
+        }
         var newlyIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
         var ignoreFileTasks = new List<Task>();
