@@ -66,6 +66,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RequestFirstSeason), false },
         { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
+        { nameof(UseSeasonPlaceholders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
 
@@ -205,6 +206,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
     public bool? UseNetworkFolders { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to create a placeholder for each requestable season of a show.
+    /// </summary>
+    public bool? UseSeasonPlaceholders { get; set; }
 
     /// <summary>
     /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.

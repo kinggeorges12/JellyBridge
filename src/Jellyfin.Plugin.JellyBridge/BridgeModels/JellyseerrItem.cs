@@ -29,6 +29,7 @@ public interface IJellyseerrItem
         {
             JellyfinMovie => JellyseerrModel.MediaType.MOVIE,
             JellyfinSeries => JellyseerrModel.MediaType.TV,
+            JellyfinSeason => JellyseerrModel.MediaType.TV,
             _ => throw new NotSupportedException($"Unsupported item type: {item.GetType().Name}")
         };
     }
@@ -44,6 +45,7 @@ public interface IJellyseerrItem
         {
             JellyfinMovie => JellyseerrModel.Permission.REQUEST_4K_MOVIE,
             JellyfinSeries => JellyseerrModel.Permission.REQUEST_4K_TV,
+            JellyfinSeason => JellyseerrModel.Permission.REQUEST_4K_TV,
             _ => throw new NotSupportedException($"Unsupported item type: {item.GetType().Name}")
         };
     }
