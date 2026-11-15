@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
 using MediaBrowser.Model.Globalization;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using System.Reflection;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -25,8 +26,10 @@ public class RefreshService
     private readonly JellyfinIProviderManager _providerManager;
     private readonly ITaskManager _taskManager;
     private readonly ILocalizationManager _localization;
-    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization)
+    private readonly IServiceProvider _serviceProvider;
+    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization, IServiceProvider serviceProvider)
     {
+        _serviceProvider = serviceProvider;
         _logger = new DebugLogger<RefreshService>(logger);
         _libraryManager = libraryManager;
         _directoryService = directoryService;
@@ -59,6 +62,9 @@ public class RefreshService
             _logger.LogDebug("No refresh plan applied");
             return;
         }
+
+        // Make Jellyfin see .ignore files created/removed since its last scan
+        ClearDotIgnoreCache();
 
         var scanAll = allResults.Any(r => r.Refresh?.ScanAllLibraries == true);
         var createMode = allResults.Any(r => r.Refresh?.CreateRefresh == true);
@@ -341,6 +347,7 @@ public class RefreshService
 
             // Wait for scan before and after running a refresh
             await WaitForTaskRefreshLibrary();
+            ClearDotIgnoreCache();
             // Use the same method as the "Scan All Libraries" button
             await _libraryManager.Inner.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
             await WaitForTaskRefreshLibrary();
@@ -361,6 +368,72 @@ public class RefreshService
                 // Clean up temp directory
                 Directory.Delete(tempDir, true);
             }
+        }
+    }
+
+    /// <summary>
+    /// Jellyfin 12 caches .ignore lookups per directory (DotIgnoreIgnoreRule). Library scans clear the DI singleton,
+    /// but the library resolver uses separate rule instances (LibraryManager.EntityResolutionIgnoreRules) that are
+    /// never cleared, so a new .ignore (e.g. after a request) is only honoured after a server restart. The rule class
+    /// lives in Emby.Server.Implementations, which plugins can't reference, so it's found by name. Any failure
+    /// (or an older Jellyfin without the cache) is a no-op.
+    /// </summary>
+    public void ClearDotIgnoreCache()
+    {
+        try
+        {
+            var ruleType = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("Emby.Server.Implementations.Library.DotIgnoreIgnoreRule", throwOnError: false))
+                .FirstOrDefault(t => t != null);
+            var clear = ruleType?.GetMethod("ClearDirectoryCache", BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes);
+            if (ruleType == null || clear == null)
+            {
+                _logger.LogDebug("Jellyfin .ignore directory cache not found; skipping cache clear");
+                return;
+            }
+
+            // The library resolver uses its own rule instances (LibraryManager.EntityResolutionIgnoreRules),
+            // separate from the DI singleton used by the library monitor - clear all of them.
+            var rules = new List<object>();
+            var diRule = _serviceProvider.GetService(ruleType);
+            if (diRule != null)
+            {
+                rules.Add(diRule);
+            }
+            var libraryManager = (object)_libraryManager.Inner;
+            var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+            for (var t = libraryManager.GetType(); t != null; t = t.BaseType)
+            {
+                // Only look at fields typed as a rule or an array of (interfaces of) rules, e.g. IResolverIgnoreRule[]
+                foreach (var field in t.GetFields(flags))
+                {
+                    var fieldType = field.FieldType;
+                    if (fieldType.IsAssignableFrom(ruleType) && !fieldType.IsArray && fieldType != typeof(object))
+                    {
+                        var value = field.GetValue(libraryManager);
+                        if (value != null && ruleType.IsInstanceOfType(value))
+                        {
+                            rules.Add(value);
+                        }
+                    }
+                    else if (fieldType.IsArray && fieldType.GetElementType() is Type elementType
+                        && elementType != typeof(object) && elementType.IsAssignableFrom(ruleType)
+                        && field.GetValue(libraryManager) is Array array)
+                    {
+                        rules.AddRange(array.Cast<object?>().Where(o => o != null && ruleType.IsInstanceOfType(o))!);
+                    }
+                }
+            }
+            var distinctRules = rules.Distinct().ToList();
+            foreach (var rule in distinctRules)
+            {
+                clear.Invoke(rule, null);
+            }
+            _logger.LogDebug("Cleared Jellyfin .ignore directory cache ({Count} rule instances)", distinctRules.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not clear Jellyfin .ignore directory cache");
         }
     }
 
