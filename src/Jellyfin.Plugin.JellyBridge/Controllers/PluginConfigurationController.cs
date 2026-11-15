@@ -60,6 +60,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     UseMixedMediaLibrary = config.UseMixedMediaLibrary,
                     UseNetworkFolders = config.UseNetworkFolders,
                     EnableSearchResults = config.EnableSearchResults,
+                    UseSeasonPlaceholders = config.UseSeasonPlaceholders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     NetworkFolderPrefix = config.NetworkFolderPrefix,
 
@@ -153,6 +154,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableSearchResults), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseSeasonPlaceholders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
                     
