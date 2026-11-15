@@ -52,10 +52,31 @@ public class FavoriteService
             .SelectMany(kv => kv.Value.Select(item => (kv.Key, item)))
             .ToList();
 
+        var useSeasonPlaceholders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders));
         var filtered = flattened.Where(fav =>
         {
+            // Seasons can only be requested when season placeholders are enabled
+            if (fav.item is JellyfinSeason && !useSeasonPlaceholders)
+            {
+                return false;
+            }
+
             var path = fav.item?.Path;
-            return !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
+            var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
+            // A missing season of a show in any library can also be favorited to request it
+            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual;
+            if (!inBridgeFolder && !isMissingSeason)
+            {
+                return false;
+            }
+            // Only real seasons (> 0) can be requested; Specials (Season 00) holds the series promo
+            if (fav.item is JellyfinSeason season && (!season.SeasonNumber.HasValue || season.SeasonNumber.Value <= 0))
+            {
+                _logger.LogDebug("Ignoring favorite on season '{SeasonName}' of '{SeriesName}' - only seasons > 0 can be requested",
+                    season.Name, season.SeriesName);
+                return false;
+            }
+            return true;
         }).ToList();
 
         _logger.LogDebug("Filtered favorites to {Count} items in JellyBridge folder (from {Total})",
@@ -84,6 +105,10 @@ public class FavoriteService
         var shuffledFavorites = favoritesWithUser
             .OrderBy(_ => random.Next())
             .ToList();
+
+        // Season favorites are requested after series/movies, combined per user and show
+        var seasonFavorites = shuffledFavorites.Where(f => f.item is JellyfinSeason).ToList();
+        shuffledFavorites = shuffledFavorites.Where(f => f.item is not JellyfinSeason).ToList();
 
         foreach (var (user, item) in shuffledFavorites)
         {
@@ -158,6 +183,8 @@ public class FavoriteService
             }
         }
         
+        await RequestSeasonFavoritesAsync(seasonFavorites, userPermissionRequest4k, requestResults, blockedItems, successfullyProcessedItems);
+
         if (requestResults.Count == 0)
         {
             _logger.LogDebug("No favorited Jellyseerr bridge items found or successfully requested");
@@ -168,6 +195,117 @@ public class FavoriteService
         }
         
         return (requestResults, blockedItems);
+    }
+
+    /// <summary>
+    /// Request favorited seasons, combined into one request per user and show.
+    /// </summary>
+    private async Task RequestSeasonFavoritesAsync(
+        List<(JellyseerrUser user, IJellyfinItem item)> seasonFavorites,
+        bool userPermissionRequest4k,
+        List<(IJellyfinItem item, JellyseerrMediaRequest request)> requestResults,
+        List<IJellyfinItem> blockedItems,
+        HashSet<Guid> successfullyProcessedItems)
+    {
+        if (seasonFavorites.Count == 0)
+        {
+            return;
+        }
+
+        // Season favorites only reach here with season placeholders on, where series requests always cover all seasons
+        var seriesRequestedNow = requestResults
+            .Where(r => r.item is JellyfinSeries)
+            .Select(r => r.item.GetTmdbId())
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToHashSet();
+
+        var assignedSeasonItems = new HashSet<Guid>();
+        var groups = new Dictionary<(int userId, int tmdbId), (JellyseerrUser user, List<JellyfinSeason> seasons)>();
+
+        foreach (var (user, item) in seasonFavorites)
+        {
+            if (user == null || item is not JellyfinSeason season)
+            {
+                continue;
+            }
+            if (successfullyProcessedItems.Contains(season.Id) || !assignedSeasonItems.Add(season.Id))
+            {
+                continue;
+            }
+
+            var tmdbId = season.GetTmdbId();
+            var seasonNumber = season.SeasonNumber;
+            if (!tmdbId.HasValue || !seasonNumber.HasValue || seasonNumber.Value <= 0)
+            {
+                _logger.LogError("Skipping season {SeasonName} of {SeriesName} - no series TMDB ID or season number found",
+                    season.Name, season.SeriesName);
+                continue;
+            }
+
+            if (seriesRequestedNow.Contains(tmdbId.Value))
+            {
+                _logger.LogDebug("Season {SeasonNumber} of {SeriesName} is covered by the series request made in this sync",
+                    seasonNumber.Value, season.SeriesName);
+                continue;
+            }
+
+            var key = (user.Id, tmdbId.Value);
+            if (!groups.TryGetValue(key, out var group))
+            {
+                group = (user, new List<JellyfinSeason>());
+                groups[key] = group;
+            }
+            group.seasons.Add(season);
+        }
+
+        foreach (var ((_, tmdbId), (user, seasons)) in groups)
+        {
+            var username = user.JellyfinUsername ?? user.Username ?? "ID " + user.Id.ToString();
+            var seasonNumbers = seasons.Select(s => s.SeasonNumber!.Value).Distinct().OrderBy(n => n).ToList();
+            var seriesName = seasons[0].SeriesName;
+            try
+            {
+                var requestParams = new Dictionary<string, object>
+                {
+                    ["mediaType"] = "tv",
+                    ["mediaId"] = tmdbId,
+                    ["userId"] = user.Id,
+                    ["seasons"] = seasonNumbers,
+                };
+                if (userPermissionRequest4k)
+                {
+                    requestParams["is4k"] = PermissionHelper.HasPermission(JellyseerrModel.Permission.REQUEST_4K_TV, user.Permissions);
+                }
+
+                _logger.LogDebug("Requesting seasons [{Seasons}] of {SeriesName} (TMDB ID: {TmdbId}) for user {UserName}",
+                    string.Join(", ", seasonNumbers), seriesName, tmdbId, username);
+
+                var request = await _apiService.CallEndpointAsync(JellyseerrEndpoint.CreateRequest, parameters: requestParams) as JellyseerrMediaRequest;
+                if (request != null && request.Id != 0)
+                {
+                    foreach (var season in seasons)
+                    {
+                        successfullyProcessedItems.Add(season.Id);
+                        requestResults.Add((season, request));
+                    }
+                    _logger.LogInformation("Requested seasons [{Seasons}] of {SeriesName} on behalf of {UserName} (request {RequestId})",
+                        string.Join(", ", seasonNumbers), seriesName, username, request.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to request seasons [{Seasons}] of {SeriesName} on behalf of {UserName} - no valid response from Jellyseerr",
+                        string.Join(", ", seasonNumbers), seriesName, username);
+                    blockedItems.AddRange(seasons);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to request seasons [{Seasons}] of {SeriesName} on behalf of {UserName}",
+                    string.Join(", ", seasonNumbers), seriesName, username);
+                blockedItems.AddRange(seasons);
+            }
+        }
     }
 
     #endregion
@@ -290,11 +428,54 @@ public class FavoriteService
                     .Select(r => (r.Media.MediaType, r.Media.TmdbId)));
             var requestedLog = new List<string>();
 
+            // Seasons covered by active TV requests, per TMDB id (-1 = request without season list)
+            var requestedSeasons = new Dictionary<int, HashSet<int>>();
+            foreach (var r in jellyseerrRequests.Where(r => r != null && r.Status != JellyseerrModel.MediaRequestStatus.DECLINED
+                && r.Media != null && r.Media.MediaType == JellyseerrModel.MediaType.TV))
+            {
+                if (!requestedSeasons.TryGetValue(r.Media.TmdbId, out var set))
+                {
+                    set = new HashSet<int>();
+                    requestedSeasons[r.Media.TmdbId] = set;
+                }
+                if (r.Seasons == null || r.Seasons.Count == 0)
+                {
+                    set.Add(-1);
+                }
+                else
+                {
+                    foreach (var s in r.Seasons)
+                    {
+                        set.Add(s.SeasonNumber);
+                    }
+                }
+            }
+
             foreach (var fav in allFavorites)
             {
                 var tmdb = fav.item.GetTmdbId();
                 var type = IJellyseerrItem.GetMediaType(fav.item);
                 var isRequested = tmdb.HasValue && requestedLookup.Contains((type, tmdb.Value));
+                if (fav.item is JellyfinSeason favSeason)
+                {
+                    // A season is requested only when an active request covers that season number
+                    var seasonNumber = favSeason.SeasonNumber;
+                    isRequested = tmdb.HasValue && seasonNumber.HasValue
+                        && requestedSeasons.TryGetValue(tmdb.Value, out var seasonSet)
+                        && (seasonSet.Contains(seasonNumber.Value) || seasonSet.Contains(-1));
+                }
+                else if (isRequested && fav.item is JellyfinSeries && tmdb.HasValue
+                    && requestedSeasons.TryGetValue(tmdb.Value, out var showSeasons) && !showSeasons.Contains(-1))
+                {
+                    // A series that only has season-level requests stays pending while visible season placeholders are unrequested
+                    var openSeasons = GetVisibleSeasonNumbers(fav.item.Path).Where(n => !showSeasons.Contains(n)).ToList();
+                    if (openSeasons.Count > 0)
+                    {
+                        isRequested = false;
+                        _logger.LogTrace("Series {ItemName} has season requests but seasons [{Open}] are not requested yet",
+                            fav.item.Name, string.Join(", ", openSeasons));
+                    }
+                }
                 if (isRequested)
                 {
                     requested.Add(fav);
@@ -322,6 +503,34 @@ public class FavoriteService
         return (requested, pending);
     }
 
+    /// <summary>
+    /// Season numbers (> 0) of the season placeholder folders under a series folder that are not hidden.
+    /// </summary>
+    private static List<int> GetVisibleSeasonNumbers(string? seriesPath)
+    {
+        var result = new List<int>();
+        try
+        {
+            if (string.IsNullOrEmpty(seriesPath) || !Directory.Exists(seriesPath))
+            {
+                return result;
+            }
+            foreach (var dir in Directory.GetDirectories(seriesPath))
+            {
+                var number = PlaceholderVideoGenerator.ParseSeasonFolderNumber(dir);
+                if (number.HasValue && number.Value > 0 && !File.Exists(Path.Combine(dir, BridgeService.IgnoreFileName)))
+                {
+                    result.Add(number.Value);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Treat unreadable folders as having no season placeholders
+        }
+        return result;
+    }
+
     #endregion
 
     // Removed legacy user-data removal code in favor of .ignore marker approach
@@ -336,10 +545,11 @@ public class FavoriteService
     /// Also marks items as unplayed (unwatched) for all users who had favorited them.
     /// Returns the list of newly ignored Jellyseerr items.
     /// </summary>
-public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> cleared)> ClearAndIgnoreRequestedAsync()
+public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> cleared, List<IJellyfinItem> hiddenSeasons)> ClearAndIgnoreRequestedAsync()
     {
         var newIgnored = new List<IJellyseerrItem>();
         var cleared = new List<IJellyseerrItem>();
+        var hiddenSeasons = new List<IJellyfinItem>();
 
         var removeRequested = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RemoveRequestedFromFavorites));
 
@@ -350,6 +560,11 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 			_logger.LogDebug("Fetched {FavoriteCount} favorites for processing", allFavorites.Count);
             var (requestedFavorites, _) = await FilterRequestsFromFavorites(allFavorites);
 			_logger.LogDebug("Identified {RequestedCount} favorites with existing Jellyseerr requests", requestedFavorites.Count);
+
+            // Requested seasons only hide their own season folder, never the whole show
+            var requestedSeasonFavorites = requestedFavorites.Where(f => f.item is JellyfinSeason).ToList();
+            requestedFavorites = requestedFavorites.Where(f => f.item is not JellyfinSeason).ToList();
+            hiddenSeasons.AddRange(await HideRequestedSeasonsAsync(requestedSeasonFavorites, removeRequested));
             // Build lookup of itemId -> users who favorited it
             var itemIdToUsers = requestedFavorites
                 .GroupBy(f => f.item.Id)
@@ -500,7 +715,77 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
             _logger.LogError(ex, "Failed processing favorited items");
         }
 		
-        return (newIgnored, cleared);
+        return (newIgnored, cleared, hiddenSeasons);
+    }
+
+    /// <summary>
+    /// Marker written into .ignore files that hide a requested season (used to undo them for declined requests).
+    /// </summary>
+    public const string SeasonIgnoreMarker = "JellyBridge season request";
+
+    /// <summary>
+    /// Hide requested seasons with an .ignore in their season folder; the show and its other seasons stay visible.
+    /// </summary>
+    private async Task<List<IJellyfinItem>> HideRequestedSeasonsAsync(
+        List<(JellyfinUser user, IJellyfinItem item)> requestedSeasonFavorites, bool removeRequested)
+    {
+        var hidden = new List<IJellyfinItem>();
+        foreach (var group in requestedSeasonFavorites.GroupBy(f => f.item.Id))
+        {
+            if (group.First().item is not JellyfinSeason season)
+            {
+                continue;
+            }
+            try
+            {
+                // A requested missing season has no folder to hide; just clear the favorite
+                if (season.IsVirtual)
+                {
+                    if (removeRequested)
+                    {
+                        foreach (var (user, _) in group)
+                        {
+                            await _userDataManager.TryUnfavoriteAsync(_libraryManager, user, season).ConfigureAwait(false);
+                        }
+                    }
+                    continue;
+                }
+
+                var seasonDir = season.Path;
+                if (string.IsNullOrEmpty(seasonDir) || !Directory.Exists(seasonDir) || !FolderUtils.IsPathInSyncDirectory(seasonDir))
+                {
+                    continue;
+                }
+
+                foreach (var (user, _) in group)
+                {
+                    if (removeRequested)
+                    {
+                        await _userDataManager.TryUnfavoriteAsync(_libraryManager, user, season).ConfigureAwait(false);
+                    }
+                    await _userDataManager.MarkItemPlayStatusAsync(user, season, markAsPlayed: false).ConfigureAwait(false);
+                }
+
+                var ignorePath = Path.Combine(seasonDir, BridgeService.IgnoreFileName);
+                if (!File.Exists(ignorePath))
+                {
+                    var content = string.Join(Environment.NewLine,
+                        SeasonIgnoreMarker,
+                        $"series={season.SeriesName}",
+                        $"tmdbId={season.GetTmdbId()}",
+                        $"season={season.SeasonNumber}");
+                    await _bridgeService.CreateIgnoreFileAsync(ignorePath, content);
+                    hidden.Add(season);
+                    _logger.LogDebug("Hid requested season {SeasonNumber} of {SeriesName}: {IgnorePath}",
+                        season.SeasonNumber, season.SeriesName, ignorePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed hiding requested season {SeasonName} of {SeriesName}", season.Name, season.SeriesName);
+            }
+        }
+        return hidden;
     }
 
     /// <summary>
@@ -529,6 +814,9 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
                 .Where(g => g.All(r => r.Status == JellyseerrModel.MediaRequestStatus.DECLINED))
                 .ToList();
 
+            // Unhide season folders whose requests were all declined
+            declinedItems.AddRange(await UnhideDeclinedSeasonsAsync(allRequests));
+
 			if (fullyDeclinedGroups.Count == 0)
             {
 				_logger.LogTrace("No fully-declined media groups found; nothing to unignore");
@@ -541,8 +829,9 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
                 "Found {DeclinedMediaCount} media with all requests declined; removing .ignore markers",
                 representativeDeclinedRequests.Count);
 
-            declinedItems = await FindJellyseerrFavorites(representativeDeclinedRequests);
-            foreach (var item in declinedItems)
+            var declinedShowItems = await FindJellyseerrFavorites(representativeDeclinedRequests);
+            declinedItems.AddRange(declinedShowItems.Where(i => !declinedItems.Any(d => d.GetType() == i.GetType() && d.Id == i.Id)));
+            foreach (var item in declinedShowItems)
             {
                 try
                 {
@@ -572,6 +861,73 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
         }
 		_logger.LogDebug("Unignore declined requests complete. DeclinedItems={DeclinedCount}", declinedItems.Count);
         return declinedItems;
+    }
+
+    /// <summary>
+    /// Unhide seasons when every request covering them was declined.
+    /// </summary>
+    private async Task<List<IJellyseerrItem>> UnhideDeclinedSeasonsAsync(List<JellyseerrMediaRequest> allRequests)
+    {
+        var unhiddenShows = new List<IJellyseerrItem>();
+        var seasonStatuses = new Dictionary<(int tmdbId, int season), List<JellyseerrModel.MediaRequestStatus>>();
+        foreach (var r in allRequests.Where(r => r?.Media != null && r.Media.TmdbId > 0 && r.Type == JellyseerrModel.MediaType.TV))
+        {
+            foreach (var s in r.Seasons ?? new List<JellyseerrModel.SeasonRequest>())
+            {
+                var key = (r.Media.TmdbId, s.SeasonNumber);
+                if (!seasonStatuses.TryGetValue(key, out var list))
+                {
+                    list = new List<JellyseerrModel.MediaRequestStatus>();
+                    seasonStatuses[key] = list;
+                }
+                list.Add(r.Status);
+            }
+        }
+        var declinedSeasons = seasonStatuses
+            .Where(kv => kv.Value.All(status => status == JellyseerrModel.MediaRequestStatus.DECLINED))
+            .Select(kv => kv.Key)
+            .ToHashSet();
+        if (declinedSeasons.Count == 0)
+        {
+            return unhiddenShows;
+        }
+
+        var (_, shows) = await _metadataService.ReadMetadataAsync();
+        var declinedTmdbIds = declinedSeasons.Select(k => k.tmdbId).ToHashSet();
+        foreach (var show in shows.Where(s => declinedTmdbIds.Contains(s.Id)))
+        {
+            try
+            {
+                var showDir = _metadataService.GetJellyBridgeItemDirectory(show);
+                if (!Directory.Exists(showDir))
+                {
+                    continue;
+                }
+                foreach (var dir in Directory.GetDirectories(showDir))
+                {
+                    var number = PlaceholderVideoGenerator.ParseSeasonFolderNumber(dir);
+                    if (!number.HasValue || !declinedSeasons.Contains((show.Id, number.Value)))
+                    {
+                        continue;
+                    }
+                    var ignorePath = Path.Combine(dir, BridgeService.IgnoreFileName);
+                    if (File.Exists(ignorePath) && (await File.ReadAllTextAsync(ignorePath)).Contains(SeasonIgnoreMarker))
+                    {
+                        File.Delete(ignorePath);
+                        if (!unhiddenShows.Contains(show))
+                        {
+                            unhiddenShows.Add(show);
+                        }
+                        _logger.LogDebug("Removed season .ignore for declined request: {Dir}", dir);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed unhiding declined seasons of {Name}", show.MediaName);
+            }
+        }
+        return unhiddenShows;
     }
 
     private async Task<List<IJellyseerrItem>> FindJellyseerrFavorites(

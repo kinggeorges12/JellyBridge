@@ -47,7 +47,8 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
         {
             var userFavs = libraryManager.Inner.GetItemList(new InternalItemsQuery(user.Inner)
             {
-                IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
+                // Seasons can be favorited to request a single season
+                IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series, BaseItemKind.Season },
                 IsFavorite = true,
                 Recursive = true
             });
@@ -69,6 +70,8 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
                         return (T)(object)JellyfinMovie.FromMovie(movieForBase);
                     else if (item is Series seriesForBase)
                         return (T)(object)JellyfinSeries.FromSeries(seriesForBase);
+                    else if (item is Season seasonForBase)
+                        return (T)(object)JellyfinSeason.FromSeason(seasonForBase);
                 }
                 
                 return null;
@@ -237,6 +240,11 @@ public class JellyfinIUserDataManager : WrapperBase<IUserDataManager>
             else if (item is JellyfinSeries series)
             {
                 result = await Task.Run(() => series.TrySetEpisodePlayCount(user, this, markAsPlayed)).ConfigureAwait(false);
+            }
+            // Handle seasons - season placeholders are only ever reset to not played
+            else if (item is JellyfinSeason season)
+            {
+                result = await Task.Run(() => season.TrySetEpisodePlayCount(user, this, markAsPlayed)).ConfigureAwait(false);
             }
             else
             {

@@ -59,9 +59,12 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             // Register placeholder video generator as a singleton (created on first use) so its constructor
             // doesn't wipe the placeholder cache every time a service or controller resolves it
             serviceCollection.AddSingleton<PlaceholderVideoGenerator>();
+
+            serviceCollection.AddTransient<PlaceholderUserDataService>();
             
             // Register hosted services
             serviceCollection.AddHostedService<FavoriteEventHandler>();
+            serviceCollection.AddHostedService<PlaceholderPlaybackGuard>();
 
             // Register controllers (organized by configuration page sections)
             serviceCollection.AddScoped<Controllers.PluginConfigurationController>();
