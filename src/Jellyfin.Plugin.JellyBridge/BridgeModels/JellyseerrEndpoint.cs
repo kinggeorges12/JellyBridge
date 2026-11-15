@@ -40,5 +40,8 @@ public enum JellyseerrEndpoint
     UserQuota,
 
     // Search endpoint (from server/routes/search.ts)
-    Search
+    Search,
+
+    // TV details endpoint (from server/routes/tv.ts)
+    TvDetails
 }

@@ -706,6 +706,18 @@
                             </div>
                         </details>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseSeasonPlaceholdersContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="UseSeasonPlaceholders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Season Placeholders</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Add a placeholder for each season of a show that can still be requested. Favoriting a season requests only that season. With Jellyfin's "Import missing episodes" enabled, missing seasons of shows in your other libraries can be favorited to request them too. <i>Note: <span class="link" data-target-page="RequestFirstSeasonContainer">Request Only First Season</span> is disabled when this is enabled.</i></div>
+                        </div>
+
                         <div class="fieldDescription" id="createDefaultLibraryContainer">
                             <div id="LibraryDisplayNameContainer">
                                 <div data-depends-on="UseMixedMediaLibrary" class="inputContainer hide-depends">
@@ -884,7 +896,7 @@
                             </label>
                             <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library. <i>Note: Not available with <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>.</i></div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="RequestFirstSeasonContainer" data-depends-off="UseSeasonPlaceholders">
                             <label class="emby-checkbox-label">
                                 <input id="RequestFirstSeason" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
                                 <span class="checkboxLabel">Request Only First Season</span>
