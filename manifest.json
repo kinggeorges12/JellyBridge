@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "checksum": "8CA73076E5F5F6F858C9A8E6D2F5961A",
+        "version": "4.3.12.0",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v4.3 - fix: skip titles blocklisted in Jellyseerr when importing Discover content. don't hide every Discover item when no networks are selected.",
+        "targetAbi": "12.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-discoverfixes/release/JellyBridge-4.3.12.0.zip",
+        "timestamp": "2026-11-15T08:01:48.293Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "3D664C90D63DC6E148C19ABD6AC04265",
+        "version": "4.3.11.9",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v4.3 - fix: skip titles blocklisted in Jellyseerr when importing Discover content. don't hide every Discover item when no networks are selected.",
+        "targetAbi": "10.11.9.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-discoverfixes/release/JellyBridge-4.3.11.9.zip",
+        "timestamp": "2026-11-15T08:01:48.293Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "C4606B5CD5C447ECDA4A1A6F753FBE37",
+        "version": "4.3.11.0",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v4.3 - fix: skip titles blocklisted in Jellyseerr when importing Discover content. don't hide every Discover item when no networks are selected.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-discoverfixes/release/JellyBridge-4.3.11.0.zip",
+        "timestamp": "2026-11-15T08:01:48.293Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "8492865E13A49517200FE3D75FC3893C",
+        "version": "4.3.10.7",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v4.3 - fix: skip titles blocklisted in Jellyseerr when importing Discover content. don't hide every Discover item when no networks are selected.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-discoverfixes/release/JellyBridge-4.3.10.7.zip",
+        "timestamp": "2026-11-15T08:01:48.293Z"
+      },
+      {
         "changelog": "Jellyfin 12.0.0: JellyBridge v4.2 - Bug fix for Jellyseerr API by @MoFaye: Fix ReadRequests failing when a download has no estimated completion time",
         "version": "4.2.12.0",
         "targetAbi": "12.0.0",
