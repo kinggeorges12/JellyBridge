@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <!-- Latest full release Jellyfin version -->
-    <JellyfinVersion>System.Collections.Hashtable System.Collections.Hashtable System.Collections.Hashtable System.Collections.Hashtable[0].JellyfinVersion</JellyfinVersion>
+    <JellyfinVersion>12.0.0</JellyfinVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Jellyfin.Plugin.JellyBridge</RootNamespace>
-    <AssemblyVersion>5.2</AssemblyVersion>
-    <FileVersion>5.2</FileVersion>
+    <AssemblyVersion>5.3</AssemblyVersion>
+    <FileVersion>5.3</FileVersion>
   </PropertyGroup>
 
   <!-- Normalize JellyfinVersion to specific NuGet versions -->

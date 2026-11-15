@@ -299,7 +299,7 @@ Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
 # Set project version numbers back to the base version (without subversion) for future development
 Start-Sleep -Milliseconds 1000
 $csprojContent = Get-Content $csprojPath -Raw
-$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$TargetABIs[0].JellyfinVersion</JellyfinVersion>"
+$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$($TargetABIs[0].JellyfinVersion)</JellyfinVersion>"
 $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$Version</AssemblyVersion>"
 $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$Version</FileVersion>"
 Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop

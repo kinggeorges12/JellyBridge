@@ -38,7 +38,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     // General Settings
                     JellyseerrUrl = config.JellyseerrUrl,
-                    ApiKey = config.ApiKey,
+                    ApiKey = string.IsNullOrEmpty(config.ApiKey) ? string.Empty : PluginConfiguration.ApiKeyMask,
                     LibraryDirectory = config.LibraryDirectory,
                     IsEnabled = config.IsEnabled,
                     EnableInMainMenu = config.EnableInMainMenu,

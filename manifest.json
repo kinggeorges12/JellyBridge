@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "FE358F9B3FDE6E2F2BA426C1AE60283B",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.3.12.0.zip",
+        "version": "5.3.12.0",
+        "timestamp": "2026-11-15T22:39:50.555Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.3 - fixing build branch script"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "350A97FA3907640BC44325AC7DA20447",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.3.11.9.zip",
+        "version": "5.3.11.9",
+        "timestamp": "2026-11-15T22:39:50.555Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.3 - fixing build branch script"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "F3316302D254E618B3CE093E4C35027E",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.3.11.0.zip",
+        "version": "5.3.11.0",
+        "timestamp": "2026-11-15T22:39:50.555Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.3 - fixing build branch script"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "7A79858DAEAC1E10D03664422D53F606",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.3.10.7.zip",
+        "version": "5.3.10.7",
+        "timestamp": "2026-11-15T22:39:50.555Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.3 - fixing build branch script"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "5ADCA550D58B8ADAC29862156395350B",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.2.12.0.zip",
