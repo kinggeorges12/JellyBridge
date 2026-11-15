@@ -1274,6 +1274,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'RequestFirstSeason', true);
     setInputField(page, 'UseMixedMediaLibrary', true);
     setInputField(page, 'UseNetworkFolders', true);
+    setInputField(page, 'EnableSearchResults', true);
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'NetworkFolderPrefix');
     
@@ -1504,6 +1505,7 @@ function performPluginReset(page) {
                 RequestFirstSeason: null,
                 UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
+                EnableSearchResults: null,
                 NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
@@ -1669,6 +1671,7 @@ function savePluginConfiguration(page) {
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
+    form.EnableSearchResults = nullIfDefault(page.querySelector('#EnableSearchResults').checked, config.ConfigDefaults.EnableSearchResults);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);

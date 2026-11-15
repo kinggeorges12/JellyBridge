@@ -254,6 +254,13 @@ public class ApiService
             typeof(List<JellyseerrNetwork>),
             description: "Get TV watch providers"
         ),
+
+        // Search movies, shows and people
+        [JellyseerrEndpoint.Search] = new JellyseerrEndpointConfig(
+            "/api/v1/search",
+            typeof(JellyseerrSearchResponse),
+            description: "Search movies and TV shows"
+        ),
     };
 
     /// <summary>
