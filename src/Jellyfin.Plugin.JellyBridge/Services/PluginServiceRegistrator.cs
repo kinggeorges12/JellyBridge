@@ -62,6 +62,16 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             // Register hosted services
             serviceCollection.AddHostedService<FavoriteEventHandler>();
 
+            // Jellyseerr results in Jellyfin's search; MVC is configured after plugins register, hence PostConfigure
+            serviceCollection.AddSingleton<SearchService>();
+            serviceCollection.AddSingleton<SearchItemFilter>();
+            serviceCollection.AddSingleton<SearchResultsFilter>();
+            serviceCollection.PostConfigure<Microsoft.AspNetCore.Mvc.MvcOptions>(options =>
+            {
+                options.Filters.AddService<SearchItemFilter>(order: -1001);
+                options.Filters.AddService<SearchResultsFilter>(order: -998);
+            });
+
             // Register controllers (organized by configuration page sections)
             serviceCollection.AddScoped<Controllers.PluginConfigurationController>();
             serviceCollection.AddScoped<Controllers.GeneralSettingsController>();

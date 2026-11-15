@@ -37,5 +37,8 @@ public enum JellyseerrEndpoint
     UserList,
 
     // User quota endpoint (from server/routes/user/index.ts)
-    UserQuota
+    UserQuota,
+
+    // Search endpoint (from server/routes/search.ts)
+    Search
 }
