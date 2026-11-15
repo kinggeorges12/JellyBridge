@@ -133,8 +133,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     // General Settings
                     SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
-                    var apiKey = config.ApiKey == PluginConfiguration.ApiKeyMask ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey)) : config.ApiKey;
                     SetJsonValue<string>(configData, nameof(config.ApiKey), config);
+                    config.ApiKey = config.ApiKey == PluginConfiguration.ApiKeyMask ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey)) : config.ApiKey;
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableInMainMenu), config);
