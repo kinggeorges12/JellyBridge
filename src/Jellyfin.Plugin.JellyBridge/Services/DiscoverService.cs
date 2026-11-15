@@ -4,7 +4,9 @@ using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Server;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.IO;
+using System.Security;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -242,6 +244,247 @@ public class DiscoverService
 
     #endregion
     
+    #region Seasons
+
+    private const int SeasonFetchConcurrency = 4;
+    private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mp4", ".mkv", ".avi", ".m4v", ".mov", ".ts", ".m2ts", ".webm", ".wmv", ".mpg", ".mpeg", ".iso"
+    };
+
+    /// <summary>
+    /// Get Seerr TV details (seasons + per-season status). Seerr caches these itself.
+    /// Returns null if Seerr did not return a valid show.
+    /// </summary>
+    public async Task<JellyseerrTvDetails?> GetTvDetailsAsync(int tmdbId)
+    {
+        var result = await _apiService.CallEndpointAsync(JellyseerrEndpoint.TvDetails,
+            templates: new Dictionary<string, string> { ["tmdbId"] = tmdbId.ToString(CultureInfo.InvariantCulture) });
+        if (result is JellyseerrTvDetails details && details.Id > 0)
+        {
+            return details;
+        }
+
+        _logger.LogWarning("Could not read seasons for TV show TMDB {TmdbId} from Jellyseerr; leaving its season placeholders unchanged", tmdbId);
+        return null;
+    }
+
+    /// <summary>
+    /// Ensure every show folder has one "Season NN/SNNE9999.mp4" placeholder per requestable season (NN > 0)
+    /// and remove placeholder-only season folders for seasons that are no longer requestable.
+    /// Season folders hidden with an .ignore file (requested through JellyBridge) are never touched here.
+    /// "Season 00/S00E9999.mp4" (the series promo used for sorting) is not touched either.
+    /// </summary>
+    /// <returns>Number of season placeholders created and season folders removed.</returns>
+    public async Task<(int created, int removed)> EnsureSeasonPlaceholdersAsync(List<JellyseerrShow> shows, bool enabled)
+    {
+        if (!enabled)
+        {
+            return (0, RemoveAllSeasonPlaceholders());
+        }
+
+        var seenFolders = new HashSet<string>();
+        var tasks = new List<Task<(int created, int removed)>>();
+        using var throttle = new SemaphoreSlim(SeasonFetchConcurrency);
+
+        foreach (var show in shows)
+        {
+            try
+            {
+                var showFolder = _metadataService.GetJellyBridgeItemDirectory(show);
+                if (!FolderUtils.FolderExistsThrowNull(showFolder) || !seenFolders.Add(FolderUtils.GetNormalizedPath(showFolder)))
+                {
+                    continue;
+                }
+                if (File.Exists(Path.Combine(showFolder, BridgeService.IgnoreFileName)))
+                {
+                    continue;
+                }
+                tasks.Add(EnsureShowSeasonsAsync(show, showFolder, throttle));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing season placeholders for {ItemName}", show.MediaName);
+            }
+        }
+
+        var created = 0;
+        var removed = 0;
+        try
+        {
+            foreach (var (c, r) in await Task.WhenAll(tasks))
+            {
+                created += c;
+                removed += r;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "One or more season placeholder tasks failed.");
+        }
+
+        _logger.LogDebug("Season placeholders: {Created} created, {Removed} season folders removed for {ShowCount} shows",
+            created, removed, tasks.Count);
+        return (created, removed);
+    }
+
+    private async Task<(int created, int removed)> EnsureShowSeasonsAsync(JellyseerrShow show, string showFolder, SemaphoreSlim throttle)
+    {
+        var created = 0;
+        var removed = 0;
+        try
+        {
+            JellyseerrTvDetails? details;
+            await throttle.WaitAsync();
+            try
+            {
+                details = await GetTvDetailsAsync(show.Id);
+            }
+            finally
+            {
+                throttle.Release();
+            }
+
+            if (details == null)
+            {
+                return (0, 0);
+            }
+
+            var wanted = details.GetRequestableSeasons();
+
+            var wantedNumbers = wanted.Select(s => s.SeasonNumber).ToHashSet();
+
+            foreach (var season in wanted)
+            {
+                var seasonFolder = Path.Combine(showFolder, PlaceholderVideoGenerator.GetSeasonFolderName(season.SeasonNumber));
+                if (File.Exists(Path.Combine(seasonFolder, BridgeService.IgnoreFileName)))
+                {
+                    continue;
+                }
+                var placeholderPath = Path.Combine(seasonFolder, PlaceholderVideoGenerator.GetSeasonPlaceholderFilename(season.SeasonNumber));
+                var isNew = !File.Exists(placeholderPath);
+                if (await _placeholderVideoGenerator.GeneratePlaceholderSeasonNumberAsync(showFolder, season.SeasonNumber, overwrite: false))
+                {
+                    await WriteSeasonNfosAsync(seasonFolder, season);
+                    if (isNew)
+                    {
+                        created++;
+                        _logger.LogTrace("Created season placeholder {Path}", placeholderPath);
+                    }
+                }
+            }
+
+            // Remove placeholder-only season folders that are no longer requestable (e.g. now available or requested elsewhere)
+            foreach (var dir in Directory.GetDirectories(showFolder))
+            {
+                var number = PlaceholderVideoGenerator.ParseSeasonFolderNumber(dir);
+                if (!number.HasValue || number.Value <= 0 || wantedNumbers.Contains(number.Value))
+                {
+                    continue;
+                }
+                if (File.Exists(Path.Combine(dir, BridgeService.IgnoreFileName)))
+                {
+                    continue;
+                }
+                if (!IsPlaceholderOnlySeasonFolder(dir, number.Value))
+                {
+                    _logger.LogWarning("Season folder {Dir} has no placeholder or contains other videos; not removing it", dir);
+                    continue;
+                }
+                Directory.Delete(dir, recursive: true);
+                removed++;
+                _logger.LogTrace("Removed season placeholder folder {Dir} (season no longer requestable)", dir);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ensuring season placeholders for {ItemName}", show.MediaName);
+        }
+        return (created, removed);
+    }
+
+    /// <summary>
+    /// Remove every season placeholder folder in the JellyBridge library, used when season placeholders are off.
+    /// </summary>
+    private int RemoveAllSeasonPlaceholders()
+    {
+        var baseDirectory = FolderUtils.GetBaseDirectory();
+        if (string.IsNullOrEmpty(baseDirectory) || !Directory.Exists(baseDirectory))
+        {
+            return 0;
+        }
+
+        var removed = 0;
+        foreach (var dir in Directory.EnumerateDirectories(baseDirectory, "Season *", SearchOption.AllDirectories).ToList())
+        {
+            var number = PlaceholderVideoGenerator.ParseSeasonFolderNumber(dir);
+            if (!number.HasValue || number.Value <= 0 || !IsPlaceholderOnlySeasonFolder(dir, number.Value))
+            {
+                continue;
+            }
+
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+                removed++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not remove season placeholder folder {Dir}", dir);
+            }
+        }
+
+        return removed;
+    }
+
+    private static bool IsPlaceholderOnlySeasonFolder(string seasonFolder, int seasonNumber)
+    {
+        var placeholderName = PlaceholderVideoGenerator.GetSeasonPlaceholderFilename(seasonNumber);
+        var videos = Directory.GetFiles(seasonFolder, "*", SearchOption.AllDirectories)
+            .Where(f => VideoExtensions.Contains(Path.GetExtension(f)))
+            .ToList();
+        return videos.Count > 0
+            && videos.All(f => string.Equals(Path.GetFileName(f), placeholderName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Write season.nfo (title + number) and an episode NFO for the placeholder so clients show a helpful title.
+    /// Files are only rewritten when their content changes.
+    /// </summary>
+    private static async Task WriteSeasonNfosAsync(string seasonFolder, JellyseerrTvSeason season)
+    {
+        // Seerr/TMDB sometimes returns bare numbers ("1") as season names; use "Season N" for those
+        var hasRealName = !string.IsNullOrWhiteSpace(season.Name) && !season.Name!.Trim().All(char.IsDigit);
+        var title = hasRealName ? season.Name!.Trim() : $"Season {season.SeasonNumber}";
+        var seasonNfo = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n" +
+            "<season>\n" +
+            $"  <title>{SecurityElement.Escape(title)}</title>\n" +
+            $"  <seasonnumber>{season.SeasonNumber}</seasonnumber>\n" +
+            "</season>\n";
+        var episodeNfo = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n" +
+            "<episodedetails>\n" +
+            $"  <title>{SecurityElement.Escape(title)}</title>\n" +
+            $"  <season>{season.SeasonNumber}</season>\n" +
+            "  <episode>9999</episode>\n" +
+            $"  <plot>{SecurityElement.Escape($"JellyBridge placeholder. Add the show to your favorites to request it in Jellyseerr" + (season.EpisodeCount.HasValue ? $" ({season.EpisodeCount} episodes)." : "."))}</plot>\n" +
+            "</episodedetails>\n";
+
+        await WriteIfChangedAsync(Path.Combine(seasonFolder, "season.nfo"), seasonNfo);
+        await WriteIfChangedAsync(Path.Combine(seasonFolder,
+            Path.GetFileNameWithoutExtension(PlaceholderVideoGenerator.GetSeasonPlaceholderFilename(season.SeasonNumber)) + ".nfo"), episodeNfo);
+    }
+
+    private static async Task WriteIfChangedAsync(string path, string content)
+    {
+        if (File.Exists(path) && await File.ReadAllTextAsync(path) == content)
+        {
+            return;
+        }
+        await File.WriteAllTextAsync(path, content);
+    }
+
+    #endregion
+
     #region Ignore
 
     /// <summary>

@@ -254,6 +254,14 @@ public class ApiService
             typeof(List<JellyseerrNetwork>),
             description: "Get TV watch providers"
         ),
+
+        // TV details (seasons + per-season media status)
+        [JellyseerrEndpoint.TvDetails] = new JellyseerrEndpointConfig(
+            "/api/v1/tv/{tmdbId}",
+            typeof(JellyseerrTvDetails),
+            requiresTemplateValues: true,
+            description: "Get TV show details"
+        ),
     };
 
     /// <summary>
@@ -685,7 +693,8 @@ public class ApiService
                 {
                     ["mediaType"] = "", //REQUIRED
                     ["mediaId"] = -1, //REQUIRED
-                    ["seasons"] = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RequestFirstSeason), config) ?
+                    ["seasons"] = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.RequestFirstSeason), config)
+                        && !Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders), config) ?
                         new List<int> { 1 } : "all", // Send [1] for first season, "all" otherwise
                     ["userId"] = 0, //REQUIRED
                     ["is4k"] = false //BUG FIX: This is not required, but the Jellyseerr API allows multiple requests if unspecified.
