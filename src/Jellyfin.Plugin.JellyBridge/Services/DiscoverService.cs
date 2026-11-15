@@ -463,10 +463,10 @@ public class DiscoverService
             "</season>\n";
         var episodeNfo = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n" +
             "<episodedetails>\n" +
-            $"  <title>{SecurityElement.Escape(title)}</title>\n" +
+            $"  <title>{SecurityElement.Escape($"Favorite this season to request {title}")}</title>\n" +
             $"  <season>{season.SeasonNumber}</season>\n" +
             "  <episode>9999</episode>\n" +
-            $"  <plot>{SecurityElement.Escape($"JellyBridge placeholder. Add the show to your favorites to request it in Jellyseerr" + (season.EpisodeCount.HasValue ? $" ({season.EpisodeCount} episodes)." : "."))}</plot>\n" +
+            $"  <plot>{SecurityElement.Escape($"JellyBridge placeholder. Add {title} to your favorites to request it in Jellyseerr" + (season.EpisodeCount.HasValue ? $" ({season.EpisodeCount} episodes)." : "."))}</plot>\n" +
             "</episodedetails>\n";
 
         await WriteIfChangedAsync(Path.Combine(seasonFolder, "season.nfo"), seasonNfo);
