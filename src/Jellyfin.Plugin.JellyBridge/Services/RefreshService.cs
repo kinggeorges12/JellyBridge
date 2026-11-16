@@ -199,6 +199,7 @@ public class RefreshService
                 }
             }
 
+            /*
             // Queue all Remove refreshes first (if removeMode is enabled)
             if (removeMode)
             {
@@ -249,16 +250,26 @@ public class RefreshService
                     }
                 }
             }
-
+            */
             var refreshOptions = removeMode ? refreshOptionsRemove : createMode ? refreshOptionsCreate : refreshOptionsUpdate;
+            var refreshOptionsMessage = removeMode ? "Remove" : createMode ? "Create" : "Update";
             foreach (var (name, folder) in validLibraryFolders)
             {
-                await folder.ValidateChildren(
-                    new Progress<double>(),
-                    refreshOptions,
-                    recursive: true,
-                    allowRemoveRoot: false,
-                    cancellationToken: CancellationToken.None);
+                try
+                {
+                    _providerManager.QueueRefresh(folder.Id, refreshOptions, RefreshPriority.Normal);
+                    await folder.ValidateChildren(
+                        new Progress<double>(),
+                        refreshOptions,
+                        recursive: true,
+                        allowRemoveRoot: false,
+                        cancellationToken: CancellationToken.None);
+                    _logger.LogTrace("Queued {RefreshOptionsMessage} refresh for library: {LibraryName} ({ItemId})", refreshOptionsMessage, name, folder.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error queueing {RefreshOptionsMessage} refresh for library '{LibraryName}'", refreshOptionsMessage, name);
+                }
             }
 
             queuedCount = validLibraryFolders.Count;

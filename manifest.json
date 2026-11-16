@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "C24E64C14736A32A4B4710B619391B91",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.9.12.0.zip",
+        "version": "5.9.12.0",
+        "timestamp": "2026-11-16T04:38:16.634Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.9 - new refresh method added to queue less refreshes."
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "58F203E0AE0E9D24A73492F08C5BD2EA",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.9.11.9.zip",
+        "version": "5.9.11.9",
+        "timestamp": "2026-11-16T04:38:16.634Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.9 - new refresh method added to queue less refreshes."
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "8A763B1674E0FA6B30B6525352BA3D32",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.9.11.0.zip",
+        "version": "5.9.11.0",
+        "timestamp": "2026-11-16T04:38:16.634Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.9 - new refresh method added to queue less refreshes."
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "6DD113F5FE4358541CC5315CF5768186",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.9.10.7.zip",
+        "version": "5.9.10.7",
+        "timestamp": "2026-11-16T04:38:16.634Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.9 - new refresh method added to queue less refreshes."
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "289A276F5BD09C116D7039CA40E78AD0",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.8.12.0.zip",
