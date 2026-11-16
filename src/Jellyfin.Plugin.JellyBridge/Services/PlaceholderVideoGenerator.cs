@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
@@ -24,6 +26,21 @@ public class PlaceholderVideoGenerator
 
     // Semaphore to serialize invalidation of cached placeholders (prevents race conditions)
     private static readonly SemaphoreSlim _invalidationSemaphore = new SemaphoreSlim(1, 1);
+
+    // Title promos: at most two FFmpeg renders at a time, since a sync can touch hundreds of titles
+    private static readonly SemaphoreSlim _titlePromoRenderSemaphore = new SemaphoreSlim(2, 2);
+
+    // Title promos older than this are rendered again (set by Generate Promo Videos)
+    private static DateTime _titlePromosValidAfterUtc = DateTime.MinValue;
+
+    // Overlay with the "favorite to request" note that goes over the title's backdrop
+    private static readonly string TitlePromoOverlayAsset = "promo-overlay.png";
+
+    // Artwork Jellyfin saves next to the media when "Save artwork into media folders" is on; a refresh
+    // can replace backdrop.jpg with a numbered backdrop1.jpg, so numbered names count too
+    private static readonly string[] BackdropPatterns = { "backdrop.*", "fanart.*", "backdrop*.*", "fanart*.*" };
+    private static readonly string[] LogoPatterns = { "logo.*", "clearlogo.*", "logo*.*" };
+    private static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
 
     private readonly DebugLogger<PlaceholderVideoGenerator> _logger;
@@ -247,6 +264,17 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
+    /// Copy to a temporary file next to the target and rename it over the target, so a player or ffprobe reading the old
+    /// placeholder never sees a half-written file.
+    /// </summary>
+    private static void CopyReplacing(string source, string targetPath)
+    {
+        var temp = targetPath + ".jbtmp";
+        File.Copy(source, temp, overwrite: true);
+        File.Move(temp, targetPath, overwrite: true);
+    }
+
+    /// <summary>
     /// Generate a placeholder video from an asset image and ensure it's available in the target directory.
     /// </summary>
     /// <param name="targetDirectory">The target directory to place the placeholder video</param>
@@ -262,15 +290,26 @@ public class PlaceholderVideoGenerator
                 Directory.CreateDirectory(targetDirectory);
             }
 
+            // Use target file from the movie or season generator
+            var targetPath = Path.Combine(targetDirectory, targetFile);
+
+            // Title promo from the title's own artwork; movies keep it in the movie folder, shows above the season folder
+            if (Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+            {
+                var titleFolder = assetName == MovieAsset ? targetDirectory : Path.GetDirectoryName(targetDirectory);
+                if (titleFolder != null && await TryTitlePromoAsync(titleFolder, targetPath, assetName))
+                {
+                    DeleteExtraPlaceholders(targetDirectory, targetFile);
+                    return true;
+                }
+            }
+
             // Ensure cached placeholder exists
             var cachedPath = await EnsureCachedPlaceholderAsync(assetName);
             if (string.IsNullOrEmpty(cachedPath))
             {
                 return false;
             }
-
-            // Use target file from the movie or season generator
-            var targetPath = Path.Combine(targetDirectory, targetFile);
 
             // Skip the copy when the existing placeholder already matches the cached video
             if (!overwrite && File.Exists(targetPath) && new FileInfo(targetPath).Length == new FileInfo(cachedPath).Length)
@@ -281,7 +320,7 @@ public class PlaceholderVideoGenerator
             }
 
             // Copy cached file to target directory
-            File.Copy(cachedPath, targetPath, overwrite: true);
+            CopyReplacing(cachedPath, targetPath);
             _logger.LogTrace("Copied placeholder to {TargetPath} (overwrite enabled)", targetPath);
 
             // Delete all extra placeholders except the designated one
@@ -328,6 +367,10 @@ public class PlaceholderVideoGenerator
                 {
                     useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultSeriesPromo");
                     customAssetPath = Plugin.GetConfigOrDefault<string>("CustomSeriesPromo");
+                }
+                else if (assetName == TitlePromoOverlayAsset)
+                {
+                    useDefaultAsset = true;
                 }
                 
                 // Determine if we should use a custom asset
@@ -600,7 +643,8 @@ public class PlaceholderVideoGenerator
             return (successMovies, successSeries, failures);
         }
 
-        // Invalidate cache once at the start
+        // Invalidate cache once at the start, and render title promos again
+        _titlePromosValidAfterUtc = DateTime.UtcNow;
         await InvalidateCachedPlaceholdersAsync();
         try
         {
@@ -678,6 +722,163 @@ public class PlaceholderVideoGenerator
         }
 
         return (successMovies, successSeries, failures);
+    }
+
+    /// <summary>
+    /// Makes the placeholder from the title's backdrop and logo with the promo overlay on top.
+    /// Returns false when the title has no backdrop yet or rendering fails, so the caller uses the default promo;
+    /// the next sync tries again once Jellyfin has saved the artwork. Renders once per title and artwork change,
+    /// and the season placeholders of a show share one render.
+    /// </summary>
+    private async Task<bool> TryTitlePromoAsync(string titleFolder, string targetPath, string assetName)
+    {
+        try
+        {
+            string? backdrop = FindArtwork(titleFolder, BackdropPatterns);
+            if (backdrop == null)
+            {
+                return false;
+            }
+            var logo = FindArtwork(titleFolder, LogoPatterns);
+            var artworkTime = File.GetLastWriteTimeUtc(backdrop);
+            if (logo != null && File.GetLastWriteTimeUtc(logo) > artworkTime)
+            {
+                artworkTime = File.GetLastWriteTimeUtc(logo);
+            }
+
+            // A file the size of the default promo is the default promo, not a title promo
+            var defaultPromo = await EnsureCachedPlaceholderAsync(assetName);
+            var defaultLength = defaultPromo != null ? new FileInfo(defaultPromo).Length : -1;
+            bool IsCurrent(string path)
+            {
+                var info = new FileInfo(path);
+                return info.Exists && info.Length > 0 && info.Length != defaultLength
+                    && info.LastWriteTimeUtc >= artworkTime && info.LastWriteTimeUtc >= _titlePromosValidAfterUtc;
+            }
+
+            if (IsCurrent(targetPath))
+            {
+                return true;
+            }
+
+            var duration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PromoVideoDurationSeconds));
+            var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(titleFolder)))[..16];
+            var cachePath = Path.Combine(_placeholderPath, $"title_{key}_{duration}{AssetExtension}");
+            var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
+            {
+                var rendered = IsCurrent(cachePath);
+                for (var attempt = 1; !rendered && attempt <= 2; attempt++)
+                {
+                    if (attempt > 1)
+                    {
+                        // Jellyfin may be replacing the artwork right now (backdrop.jpg can come back as backdrop1.jpg), so look again
+                        await Task.Delay(TimeSpan.FromSeconds(2));
+                        backdrop = FindArtwork(titleFolder, BackdropPatterns);
+                        logo = FindArtwork(titleFolder, LogoPatterns);
+                        if (backdrop == null)
+                        {
+                            break;
+                        }
+                    }
+                    rendered = await RenderTitlePromoAsync(backdrop, logo, duration, cachePath);
+                }
+
+                if (!rendered)
+                {
+                    // Keep an existing title promo rather than going back to the default promo; the next sync tries again
+                    var existing = new FileInfo(targetPath);
+                    return existing.Exists && existing.Length > 0 && existing.Length != defaultLength;
+                }
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+
+            CopyReplacing(cachePath, targetPath);
+            File.SetLastWriteTimeUtc(targetPath, DateTime.UtcNow);
+            _logger.LogTrace("Copied title promo to {TargetPath}", targetPath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not make a title promo for {TitleFolder}, using the default promo", titleFolder);
+            return false;
+        }
+    }
+
+    private static string? FindArtwork(string folder, string[] patterns) =>
+        patterns.SelectMany(pattern => Directory.EnumerateFiles(folder, pattern, SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal))
+            .FirstOrDefault(path => ImageExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase)
+                && new FileInfo(path).Length > 0);
+
+    /// <summary>
+    /// Renders a title promo: the backdrop fills the frame, the overlay darkens it and adds the
+    /// "favorite to request" note, and the logo (if any) sits just above the note. The picture is
+    /// composed once and repeated at 2 fps, so the render takes about the same time for any duration.
+    /// </summary>
+    private async Task<bool> RenderTitlePromoAsync(string backdrop, string? logo, int duration, string outputPath)
+    {
+        var overlay = await EnsureAssetExtractedAsync(TitlePromoOverlayAsset);
+        if (overlay == null || duration <= 0)
+        {
+            return false;
+        }
+
+        var arguments = new List<string> { "-y", "-nostdin", "-i", backdrop, "-i", overlay };
+        var filter = "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1[bg];[bg][1:v]overlay=0:0";
+        if (logo != null)
+        {
+            arguments.AddRange(new[] { "-i", logo });
+            filter += "[base];[2:v]scale=760:300:force_original_aspect_ratio=decrease[logo];[base][logo]overlay=x=140:y=630-overlay_h";
+        }
+        // 2 fps: a 1-second promo needs at least two frames, or players like mpv treat it as a still image
+        filter += ",format=yuv420p,loop=loop=-1:size=1,fps=2[v]";
+        arguments.AddRange(new[]
+        {
+            "-filter_complex", filter, "-map", "[v]",
+            "-t", duration.ToString(CultureInfo.InvariantCulture),
+            "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            outputPath
+        });
+
+        await _titlePromoRenderSemaphore.WaitAsync();
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = _mediaEncoder.EncoderPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            foreach (var argument in arguments)
+            {
+                processInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(processInfo) ?? throw new InvalidOperationException("FFmpeg did not start");
+            var errorOutput = process.StandardError.ReadToEndAsync();
+            _ = process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0 || !File.Exists(outputPath) || new FileInfo(outputPath).Length == 0)
+            {
+                _logger.LogWarning("FFmpeg could not render the title promo {OutputPath} (exit code {ExitCode}): {ErrorOutput}",
+                    outputPath, process.ExitCode, await errorOutput);
+                return false;
+            }
+
+            _logger.LogTrace("Rendered title promo {OutputPath}", outputPath);
+            return true;
+        }
+        finally
+        {
+            _titlePromoRenderSemaphore.Release();
+        }
     }
 
     /// <summary>
