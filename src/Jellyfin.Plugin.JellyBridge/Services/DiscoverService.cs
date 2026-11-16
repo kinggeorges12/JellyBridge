@@ -122,6 +122,7 @@ public class DiscoverService
             ?? new List<System.Text.Json.JsonElement>();
 
         var rank = 0;
+        var seen = new HashSet<(string?, int)>();
         foreach (var result in results)
         {
             var mediaType = result.TryGetProperty("mediaType", out var type) ? type.GetString() : null;
@@ -131,7 +132,8 @@ public class DiscoverService
                 "tv" => JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(result.GetRawText()),
                 _ => null,
             };
-            if (item == null || item.Id <= 0)
+            // TMDB's trending pages can repeat a title; the first position counts
+            if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id)))
             {
                 continue;
             }

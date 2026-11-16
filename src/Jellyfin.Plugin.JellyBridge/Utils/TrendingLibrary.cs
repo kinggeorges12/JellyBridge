@@ -5,8 +5,8 @@ namespace Jellyfin.Plugin.JellyBridge.Utils;
 /// <summary>
 /// The optional Trending library: Jellyseerr's trending titles in their own folder, outside the Library Directory, so the
 /// Discover libraries don't include them. The sync, favorite requests, cleanup and sorting run their usual steps a second
-/// time inside <see cref="Enter"/>, where the Library Directory setting points at the trending folder and that folder is
-/// laid out like a mixed library without network folders.
+/// time inside <see cref="Enter"/>, where the Library Directory setting points at the trending folder, that folder is laid
+/// out like a mixed library without network folders, and Discover Pages reads as Trending Pages.
 /// </summary>
 public static class TrendingLibrary
 {
@@ -75,6 +75,8 @@ public static class TrendingLibrary
             nameof(PluginConfiguration.LibraryDirectory) => GetDirectory(),
             nameof(PluginConfiguration.UseMixedMediaLibrary) => true,
             nameof(PluginConfiguration.UseNetworkFolders) => false,
+            // The trending list is paged like the discover lists; at least one page (0 would mean all 500)
+            nameof(PluginConfiguration.MaxDiscoverPages) => Math.Max(1, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TrendingPages))),
             _ => null,
         };
         return value != null;
