@@ -235,7 +235,8 @@ public class SearchService
                     await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrMovie> { movie }).ConfigureAwait(false);
                 }
 
-                var created = await CreateLibraryItemAsync(folder, parent, item is JellyseerrShow, deadline.Token, cancellationToken).ConfigureAwait(false);
+                var created = await CreateLibraryItemAsync(folder, parent, item is JellyseerrShow, deadline.Token, cancellationToken,
+                    () => RefreshTitlePromosAsync(item)).ConfigureAwait(false);
                 _logger.LogInformation("Added {ItemName} to the Discover library from search in {Seconds:0.0} s", item.MediaName, (DateTimeOffset.UtcNow - started).TotalSeconds);
                 return created;
             }
@@ -304,7 +305,8 @@ public class SearchService
             Recursive = true,
         }).FirstOrDefault();
 
-    private async Task<Guid> CreateLibraryItemAsync(string folder, Folder parent, bool isShow, CancellationToken deadline, CancellationToken cancellationToken)
+    private async Task<Guid> CreateLibraryItemAsync(string folder, Folder parent, bool isShow, CancellationToken deadline, CancellationToken cancellationToken,
+        Func<Task>? afterBackgroundRefresh = null)
     {
         // A fresh DirectoryService, a cached listing would not include the files just written
         var directoryService = new DirectoryService(_fileSystem);
@@ -359,6 +361,10 @@ public class SearchService
                     }
 
                     await _providerManager.RefreshFullItem(item, full, CancellationToken.None).ConfigureAwait(false);
+                    if (afterBackgroundRefresh != null)
+                    {
+                        await afterBackgroundRefresh().ConfigureAwait(false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -368,6 +374,31 @@ public class SearchService
         }
 
         return item.Id;
+    }
+
+    /// <summary>
+    /// With title artwork promos on, make the placeholder videos again once the background refresh has saved the rest of the
+    /// artwork (the logo), so they don't have to wait for the next sync.
+    /// </summary>
+    private async Task RefreshTitlePromosAsync(IJellyseerrItem item)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+        {
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var discoverService = scope.ServiceProvider.GetRequiredService<DiscoverService>();
+        if (item is JellyseerrShow show)
+        {
+            await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrShow> { show }).ConfigureAwait(false);
+            await discoverService.EnsureSeasonPlaceholdersAsync(new List<JellyseerrShow> { show },
+                Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders))).ConfigureAwait(false);
+        }
+        else if (item is JellyseerrMovie movie)
+        {
+            await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrMovie> { movie }).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
