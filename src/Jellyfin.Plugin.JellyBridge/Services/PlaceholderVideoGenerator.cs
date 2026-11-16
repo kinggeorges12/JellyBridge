@@ -689,7 +689,12 @@ public class PlaceholderVideoGenerator
         var jellyBridgeTempDirectory = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.JellyBridgeTempDirectory));
         // Set timeout to default task timeout
         var timeout = TimeSpan.FromMinutes(Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.TaskTimeoutMinutes)));
-        await _invalidationSemaphore.WaitAsync(timeout);
+        if (!await _invalidationSemaphore.WaitAsync(timeout))
+        {
+            // Not holding the lock, so don't touch the folders or release it
+            _logger.LogWarning("Timed out after {Timeout} waiting to reset the placeholder cache, skipping the reset", timeout);
+            return;
+        }
         try
         {
             // Assets are embedded in the plugin assembly
