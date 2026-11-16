@@ -770,6 +770,62 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
+    /// Swaps the default promos in a title folder for its title promo once Jellyfin has saved the title's backdrop.
+    /// A sync only makes placeholders for the titles it fetched, so a title that left the fetched pages before its artwork
+    /// arrived would keep the default promo until it is removed. Cheap when there is nothing to do: a few file lookups.
+    /// Returns the number of placeholders replaced.
+    /// </summary>
+    public async Task<int> UpgradeDefaultPromosAsync(string titleFolder)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos))
+            || !Directory.Exists(titleFolder) || FindArtwork(titleFolder, BackdropPatterns) == null)
+        {
+            return 0;
+        }
+
+        var placeholders = new List<(string Path, string Asset)>();
+        var moviePath = Path.Combine(titleFolder, GetVideoFilename(MovieAsset));
+        if (File.Exists(moviePath))
+        {
+            placeholders.Add((moviePath, MovieAsset));
+        }
+        else
+        {
+            foreach (var seasonFolder in Directory.EnumerateDirectories(titleFolder))
+            {
+                if (ParseSeasonFolderNumber(seasonFolder) is not { } seasonNumber)
+                {
+                    continue;
+                }
+                var file = Path.Combine(seasonFolder, seasonNumber == 0 ? GetVideoFilename(SeasonAsset) : GetSeasonPlaceholderFilename(seasonNumber));
+                if (File.Exists(file))
+                {
+                    placeholders.Add((file, SeasonAsset));
+                }
+            }
+        }
+
+        var upgraded = 0;
+        foreach (var (path, asset) in placeholders)
+        {
+            var defaultPromo = await EnsureCachedPlaceholderAsync(asset);
+            if (defaultPromo == null || new FileInfo(path).Length != new FileInfo(defaultPromo).Length)
+            {
+                continue;
+            }
+            if (await TryTitlePromoAsync(titleFolder, path, asset))
+            {
+                upgraded++;
+            }
+        }
+        if (upgraded > 0)
+        {
+            _logger.LogDebug("Replaced {Count} default promos with the title promo in {TitleFolder}", upgraded, titleFolder);
+        }
+        return upgraded;
+    }
+
+    /// <summary>
     /// Makes the placeholder from the title's backdrop and logo with the promo overlay on top.
     /// Returns false when the title has no backdrop yet or rendering fails, so the caller uses the default promo;
     /// the next sync tries again once Jellyfin has saved the artwork. Renders once per title and artwork change,
