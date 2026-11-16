@@ -27,6 +27,7 @@ public class SearchService
     private const int MaxResults = 10;
     private const string PosterBaseUrl = "https://image.tmdb.org/t/p/w342";
     private const string ArtworkBaseUrl = "https://image.tmdb.org/t/p/w780";
+    private const string BackdropBaseUrl = "https://image.tmdb.org/t/p/w1280";
     private const int ArtworkConcurrency = 4;
     private const string TmdbProviderName = "TheMovieDb";
     private static readonly TimeSpan SearchCacheTime = TimeSpan.FromMinutes(10);
@@ -203,6 +204,9 @@ public class SearchService
             try
             {
                 await metadataService.CreateFolderMetadataAsync(new List<IJellyseerrItem> { item }).ConfigureAwait(false);
+
+                // Pictures first, so the placeholder videos made next can use them
+                await SaveArtworkAsync(item, folder, deadline.Token).ConfigureAwait(false);
                 if (item is JellyseerrShow show)
                 {
                     await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrShow> { show }).ConfigureAwait(false);
@@ -214,7 +218,6 @@ public class SearchService
                     await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrMovie> { movie }).ConfigureAwait(false);
                 }
 
-                await SaveArtworkAsync(item, folder, deadline.Token).ConfigureAwait(false);
                 var created = await CreateLibraryItemAsync(folder, parent, item is JellyseerrShow, deadline.Token, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Added {ItemName} to the Discover library from search in {Seconds:0.0} s", item.MediaName, (DateTimeOffset.UtcNow - started).TotalSeconds);
                 return created;
@@ -415,8 +418,9 @@ public class SearchService
     }
 
     /// <summary>
-    /// Save the poster from TMDB as local artwork (folder.jpg, the name Jellyfin itself saves it under), so the item has it
-    /// the moment Jellyfin builds it. Seerr has no season posters; those are saved by <see cref="SaveSeasonPostersAsync"/>.
+    /// Save the poster and backdrop from TMDB as local artwork (folder.jpg and backdrop.jpg, the names Jellyfin itself saves
+    /// them under), so the item has them the moment Jellyfin builds it. Seerr has no season posters; those are saved by
+    /// <see cref="SaveSeasonPostersAsync"/>.
     /// </summary>
     private async Task SaveArtworkAsync(IJellyseerrItem item, string folder, CancellationToken cancellationToken)
     {
@@ -427,6 +431,11 @@ public class SearchService
         if (PosterPath(item) is { Length: > 0 } posterPath)
         {
             files.Add((ArtworkBaseUrl + posterPath, Path.Combine(folder, "folder.jpg")));
+        }
+
+        if (((item as JellyseerrMovie)?.BackdropPath ?? (item as JellyseerrShow)?.BackdropPath) is { Length: > 0 } backdropPath)
+        {
+            files.Add((BackdropBaseUrl + backdropPath, Path.Combine(folder, "backdrop.jpg")));
         }
 
         try
