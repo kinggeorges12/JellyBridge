@@ -100,7 +100,7 @@ public class PlaceholderVideoGenerator
     {
         _logger = new DebugLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
-        // Set path for cached placeholder videos in the system temp directory
+        // Read the temp folder from the config and start with an empty placeholder cache
         InvalidateCachedPlaceholdersAsync().Wait();
     }
 
