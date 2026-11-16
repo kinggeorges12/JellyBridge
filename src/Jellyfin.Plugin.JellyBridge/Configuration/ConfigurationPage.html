@@ -734,6 +734,10 @@
                             <button type="button" id="browseTrendingDirectory" is="emby-button">📂</button>
                             <div class="fieldDescription">Folder for the Trending library. It must be outside the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>, used only for the Trending library, and visible to Jellyfin (for Docker, mount it like the Library Directory). Leave empty to use a folder next to the Library Directory.</div>
                         </div>
+                        <div class="inputContainer" id="TrendingPagesContainer" data-depends-on="UseTrendingLibrary">
+                            <input id="TrendingPages" type="number" is="emby-input" min="1" label="Trending Pages"/>
+                            <div class="fieldDescription">Number of pages to import from Jellyseerr's trending list. Each page has about 20 movies and shows.</div>
+                        </div>
 
                         <div class="fieldDescription" id="createDefaultLibraryContainer">
                             <div id="LibraryDisplayNameContainer">

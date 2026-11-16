@@ -1284,6 +1284,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'UseSeasonPlaceholders', true);
     setInputField(page, 'UseTrendingLibrary', true);
     setInputField(page, 'TrendingDirectory');
+    setInputField(page, 'TrendingPages');
     const trendingDirectoryInput = page.querySelector('#TrendingDirectory');
     const libraryDirectoryInput = page.querySelector('#LibraryDirectory');
     // Empty means a folder next to the Library Directory, named after it
@@ -1528,6 +1529,7 @@ function performPluginReset(page) {
                 UseSeasonPlaceholders: null,
                 UseTrendingLibrary: null,
                 TrendingDirectory: '',
+                TrendingPages: null,
                 NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
@@ -1660,6 +1662,7 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
+        if (!validateField(page, 'TrendingPages', validators.int, 'Trending Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
@@ -1696,6 +1699,7 @@ function savePluginConfiguration(page) {
     form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.UseTrendingLibrary = nullIfDefault(page.querySelector('#UseTrendingLibrary').checked, config.ConfigDefaults.UseTrendingLibrary);
     form.TrendingDirectory = safeParseString(page.querySelector('#TrendingDirectory'));
+    form.TrendingPages = safeParseInt(page.querySelector('#TrendingPages'));
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
