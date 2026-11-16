@@ -9,6 +9,7 @@ using Jellyfin.Plugin.JellyBridge.Configuration;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using MediaBrowser.Controller.MediaEncoding;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
 
@@ -35,6 +36,48 @@ public class PlaceholderVideoGenerator
 
     // Overlay with the "favorite to request" note that goes over the title's backdrop
     private static readonly string TitlePromoOverlayAsset = "promo-overlay.png";
+
+    // Font for the text drawn over the backdrop: Noto Sans, the typeface of the text baked into the overlay, bundled so the
+    // promo looks the same on every server. Its copyright and the SIL Open Font License text are stored inside the font file.
+    private static readonly string TitlePromoFontAsset = "promo-font.ttf";
+
+    // Layout of the 1920x1080 frame, top to bottom like a streaming service's title page: logo, info line, plot, then the
+    // overlay's "favorite to request" note, which starts at y 680. The text block is stacked upwards from just above the
+    // note and the logo moves up to make room; with no text the logo keeps its old place (bottom at y 630).
+    // drawtext puts the top of the text at y; a line of the promo font (Noto Sans, like the overlay) takes about 1.3 x the font size plus the line spacing.
+    private const int PromoTextLeft = 140;
+    private const int PromoTextWidth = 1060;
+    private const int PromoTextBottom = 650;
+    private const int PromoLogoBottom = 630;
+    private const int PromoLogoGap = 30;
+    private const int PromoInfoFontSize = 34;
+    private const int PromoInfoHeight = 33;
+    private const int PromoInfoGap = 22;
+    private const int PromoInfoMaxChars = 58;
+    private const int PromoPlotFontSize = 34;
+    private const int PromoPlotMaxLines = 3;
+    private const int PromoPlotSpacing = 10;
+    private const int PromoPlotLineAdvance = 56;
+    private const int PromoPlotLastLineHeight = 33;
+    private const int PromoBadgeY = 88;
+    private const int PromoBadgeRight = 140;
+    private const int PromoBadgeFontSize = 36;
+    // Plain white with no outline or shadow, like the text baked into the overlay; the overlay darkens the side it sits on
+    private const string PromoTextColor = "white@0.96";
+
+    // TMDB genre ids, for titles Jellyfin has not scanned yet (metadata.json only has the ids)
+    private static readonly Dictionary<int, string> TmdbGenres = new()
+    {
+        { 28, "Action" }, { 12, "Adventure" }, { 16, "Animation" }, { 35, "Comedy" }, { 80, "Crime" }, { 99, "Documentary" },
+        { 18, "Drama" }, { 10751, "Family" }, { 14, "Fantasy" }, { 36, "History" }, { 27, "Horror" }, { 10402, "Music" },
+        { 9648, "Mystery" }, { 10749, "Romance" }, { 878, "Science Fiction" }, { 10770, "TV Movie" }, { 53, "Thriller" },
+        { 10752, "War" }, { 37, "Western" }, { 10759, "Action & Adventure" }, { 10762, "Kids" }, { 10763, "News" },
+        { 10764, "Reality" }, { 10765, "Sci-Fi & Fantasy" }, { 10766, "Soap" }, { 10767, "Talk" }, { 10768, "War & Politics" },
+    };
+
+    // Records the text that went into each rendered title promo, so a title is re-rendered only when its text changes
+    private string _promoTextPath = "";
+    private readonly JellyfinILibraryManager _libraryManager;
 
     // Artwork Jellyfin saves next to the media when "Save artwork into media folders" is on; a refresh
     // can replace backdrop.jpg with a numbered backdrop1.jpg, so numbered names count too
@@ -113,11 +156,12 @@ public class PlaceholderVideoGenerator
         return null;
     }
 
-    public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder)
+    public PlaceholderVideoGenerator(ILogger<PlaceholderVideoGenerator> logger, IMediaEncoder mediaEncoder, JellyfinILibraryManager libraryManager)
     {
         _logger = new DebugLogger<PlaceholderVideoGenerator>(logger);
         _mediaEncoder = mediaEncoder;
-        // Set path for cached placeholder videos in the system temp directory
+        _libraryManager = libraryManager;
+        // Read the temp folder from the config and start with an empty placeholder cache
         InvalidateCachedPlaceholdersAsync().Wait();
     }
 
@@ -368,8 +412,9 @@ public class PlaceholderVideoGenerator
                     useDefaultAsset = Plugin.GetConfigOrDefault<bool>("DefaultSeriesPromo");
                     customAssetPath = Plugin.GetConfigOrDefault<string>("CustomSeriesPromo");
                 }
-                else if (assetName == TitlePromoOverlayAsset)
+                else if (assetName == TitlePromoOverlayAsset || assetName == TitlePromoFontAsset)
                 {
+                    // Always the asset that ships with the plugin; there is no custom font or overlay to choose
                     useDefaultAsset = true;
                 }
                 
@@ -756,19 +801,34 @@ public class PlaceholderVideoGenerator
                     && info.LastWriteTimeUtc >= artworkTime && info.LastWriteTimeUtc >= _titlePromosValidAfterUtc;
             }
 
-            if (IsCurrent(targetPath))
+            var duration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PromoVideoDurationSeconds));
+            var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(titleFolder)))[..16];
+
+            // What the promo should say, from the metadata Jellyfin (or, before its first scan, Jellyseerr) has for this title
+            var promoText = ReadPromoText(titleFolder);
+            var sigFile = Path.Combine(_promoTextPath, $"title_{key}.sig");
+            var renderedText = File.Exists(sigFile) ? File.ReadAllText(sigFile) : null;
+            // "plain" records that drawing text failed for this exact text, so it is not retried until the text changes
+            var textToken = renderedText == "plain|" + promoText.Signature ? "plain" : "text";
+
+            // The text is part of the cache name, so changed text never reuses a render made for the old text
+            var cachePath = Path.Combine(_placeholderPath, $"title_{key}_{duration}_{textToken}_{promoText.Signature}{AssetExtension}");
+
+            // A show's season placeholders all share one render: one that was copied before the current render was made
+            // still shows the old text, even though the signature file already names the new one
+            var cacheTime = File.Exists(cachePath) ? File.GetLastWriteTimeUtc(cachePath) : DateTime.MinValue;
+            if (IsCurrent(targetPath) && renderedText == textToken + "|" + promoText.Signature
+                && File.GetLastWriteTimeUtc(targetPath) >= cacheTime)
             {
                 return true;
             }
 
-            var duration = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.PromoVideoDurationSeconds));
-            var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(titleFolder)))[..16];
-            var cachePath = Path.Combine(_placeholderPath, $"title_{key}_{duration}{AssetExtension}");
             var semaphore = _cacheGenerationSemaphores.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
             await semaphore.WaitAsync();
             try
             {
                 var rendered = IsCurrent(cachePath);
+                var textDrawn = textToken == "text";
                 for (var attempt = 1; !rendered && attempt <= 2; attempt++)
                 {
                     if (attempt > 1)
@@ -782,7 +842,16 @@ public class PlaceholderVideoGenerator
                             break;
                         }
                     }
-                    rendered = await RenderTitlePromoAsync(backdrop, logo, duration, cachePath);
+                    var layout = textToken == "text" ? await BuildTextLayoutAsync(key, promoText) : PromoLayout.Plain;
+                    rendered = await RenderTitlePromoAsync(backdrop, logo, duration, cachePath, layout);
+                    if (!rendered && layout.Filters.Count > 0)
+                    {
+                        // Text needs FFmpeg's drawtext and a readable font; the artwork alone still makes a usable promo
+                        _logger.LogWarning("Rendering the title promo for {TitleFolder} failed with text, retrying without it", titleFolder);
+                        textDrawn = false;
+                        rendered = await RenderTitlePromoAsync(backdrop, logo, duration, cachePath, PromoLayout.Plain);
+                    }
+                    DeletePromoTextFiles(key);
                 }
 
                 if (!rendered)
@@ -791,6 +860,10 @@ public class PlaceholderVideoGenerator
                     var existing = new FileInfo(targetPath);
                     return existing.Exists && existing.Length > 0 && existing.Length != defaultLength;
                 }
+
+                Directory.CreateDirectory(_promoTextPath);
+                File.WriteAllText(sigFile, (textDrawn ? "text|" : "plain|") + promoText.Signature);
+                DeleteOtherTitleRenders(key, cachePath);
             }
             finally
             {
@@ -815,11 +888,11 @@ public class PlaceholderVideoGenerator
                 && new FileInfo(path).Length > 0);
 
     /// <summary>
-    /// Renders a title promo: the backdrop fills the frame, the overlay darkens it and adds the
-    /// "favorite to request" note, and the logo (if any) sits just above the note. The picture is
-    /// composed once and repeated at 2 fps, so the render takes about the same time for any duration.
+    /// Renders a title promo: the backdrop fills the frame, the overlay darkens it and adds the "favorite to request"
+    /// note, and the logo sits above the title's info and plot, which sit above the note.
+    /// The picture is composed once and repeated at 2 fps, so a render costs the same whatever it says.
     /// </summary>
-    private async Task<bool> RenderTitlePromoAsync(string backdrop, string? logo, int duration, string outputPath)
+    private async Task<bool> RenderTitlePromoAsync(string backdrop, string? logo, int duration, string outputPath, PromoLayout layout)
     {
         var overlay = await EnsureAssetExtractedAsync(TitlePromoOverlayAsset);
         if (overlay == null || duration <= 0)
@@ -827,15 +900,24 @@ public class PlaceholderVideoGenerator
             return false;
         }
 
+        // Each stage hands its frame to a labelled pad, so text filters can be appended one at a time
         var arguments = new List<string> { "-y", "-nostdin", "-i", backdrop, "-i", overlay };
-        var filter = "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1[bg];[bg][1:v]overlay=0:0";
+        var filter = "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1[bg];[bg][1:v]overlay=0:0[jb0]";
+        var stage = "jb0";
+        var nextStage = 1;
         if (logo != null)
         {
             arguments.AddRange(new[] { "-i", logo });
-            filter += "[base];[2:v]scale=760:300:force_original_aspect_ratio=decrease[logo];[base][logo]overlay=x=140:y=630-overlay_h";
+            filter += $";[2:v]scale=760:300:force_original_aspect_ratio=decrease[logo];[{stage}][logo]overlay=x=140:y={layout.LogoBottom}-overlay_h[jb{nextStage}]";
+            (stage, nextStage) = ($"jb{nextStage}", nextStage + 1);
+        }
+        foreach (var textFilter in layout.Filters)
+        {
+            filter += $";[{stage}]{textFilter}[jb{nextStage}]";
+            (stage, nextStage) = ($"jb{nextStage}", nextStage + 1);
         }
         // 2 fps: a 1-second promo needs at least two frames, or players like mpv treat it as a still image
-        filter += ",format=yuv420p,loop=loop=-1:size=1,fps=2[v]";
+        filter += $";[{stage}]format=yuv420p,loop=loop=-1:size=1,fps=2[v]";
         arguments.AddRange(new[]
         {
             "-filter_complex", filter, "-map", "[v]",
@@ -882,6 +964,367 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
+    /// The text drawn over a title's backdrop: what the title is and when it comes out.
+    /// All of it comes from metadata the server already has, so drawing it costs nothing at render time.
+    /// </summary>
+    private sealed record TitlePromoText(string? Info, string? Plot, string? Badge)
+    {
+        /// <summary>Changes whenever the drawn text changes, so a promo is only re-rendered when it has to be.</summary>
+        public string Signature { get; init; } = "none";
+    }
+
+    /// <summary>
+    /// The text filters for one promo and where the logo goes above them.
+    /// </summary>
+    private sealed record PromoLayout(IReadOnlyList<string> Filters, int LogoBottom)
+    {
+        public static readonly PromoLayout Plain = new(Array.Empty<string>(), PromoLogoBottom);
+    }
+
+    /// <summary>
+    /// Reads what a title's promo should say. The Jellyfin item that owns the folder is preferred; until Jellyfin has
+    /// scanned the folder (a title opened from search plays before that), the metadata.json the plugin wrote from
+    /// Jellyseerr fills in.
+    /// </summary>
+    private TitlePromoText ReadPromoText(string titleFolder)
+    {
+        var info = (string?)null;
+        var plot = (string?)null;
+        var badge = (string?)null;
+        try
+        {
+            var item = _libraryManager.FindJellyfinItemByPath(titleFolder);
+            var meta = item == null ? ReadJellyseerrMetadata(titleFolder) : null;
+
+            // Shortest and most useful first, so the genres are what gets dropped when the line runs out of room.
+            // No runtime: Jellyfin measures it from the placeholder video (every movie would say 0m), and a show's
+            // runtime is per episode.
+            var parts = new List<string>();
+            var year = item?.ProductionYear ?? meta?.Year;
+            if (year is int y && y > 0)
+            {
+                parts.Add(y.ToString(CultureInfo.InvariantCulture));
+            }
+            // "Ended"/"Continuing" only says something about a show; a movie is simply released or not.
+            // Read through the show so the enum type never has to be named - it moved between Jellyfin versions.
+            if (item is MediaBrowser.Controller.Entities.TV.Series show)
+            {
+                var status = show.Status?.ToString();
+                if (status is "Ended" or "Continuing")
+                {
+                    parts.Add(status == "Continuing" ? "Ongoing" : status);
+                }
+            }
+            var rating = item?.CommunityRating ?? meta?.Rating;
+            if (rating is float r && r > 0)
+            {
+                parts.Add("\u2605 " + r.ToString("0.0", CultureInfo.InvariantCulture));
+            }
+            var genres = item != null ? (item.Genres ?? Array.Empty<string>()) : (meta?.Genres ?? Array.Empty<string>());
+            parts.AddRange(genres.Select(g => g.Trim()).Where(g => g.Length > 0));
+            parts.RemoveAll(part => !CanDrawInPromoFont(part));
+            info = FitOneLine(parts, PromoInfoMaxChars);
+
+            plot = WrapPromoPlot(item != null ? item.Overview : meta?.Overview);
+            if (!CanDrawInPromoFont(plot))
+            {
+                plot = null;
+            }
+
+            badge = UpcomingReleaseText(item != null ? ReleaseDayOf(item.PremiereDate) : meta?.ReleaseDay);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not read the title info for {TitleFolder}, rendering the promo without text", titleFolder);
+        }
+        var text = new TitlePromoText(info, plot, badge);
+        return text with { Signature = PromoTextSignature(text) };
+    }
+
+    private sealed record JellyseerrPromoMetadata(int? Year, float? Rating, string[] Genres, string? Overview, DateTime? ReleaseDay);
+
+    /// <summary>
+    /// The few fields a promo needs from the metadata.json the plugin writes into every title folder. Read directly, so
+    /// an unexpected value in an unrelated field can never stop the promo.
+    /// </summary>
+    private static JellyseerrPromoMetadata? ReadJellyseerrMetadata(string titleFolder)
+    {
+        var file = Path.Combine(titleFolder, IJellyseerrItem.GetMetadataFilename());
+        if (!File.Exists(file))
+        {
+            return null;
+        }
+
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file));
+        var root = doc.RootElement;
+        string? Str(string name) =>
+            root.TryGetProperty(name, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() : null;
+
+        var dateText = Str("releaseDate") ?? Str("firstAirDate");
+        DateTime? releaseDay = DateTime.TryParseExact(dateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d.Date : null;
+        float? rating = root.TryGetProperty("voteAverage", out var va) && va.ValueKind == System.Text.Json.JsonValueKind.Number
+            ? (float)va.GetDouble() : null;
+        var genres = root.TryGetProperty("genreIds", out var ids) && ids.ValueKind == System.Text.Json.JsonValueKind.Array
+            ? ids.EnumerateArray()
+                .Where(id => id.ValueKind == System.Text.Json.JsonValueKind.Number && TmdbGenres.ContainsKey(id.GetInt32()))
+                .Select(id => TmdbGenres[id.GetInt32()]).ToArray()
+            : Array.Empty<string>();
+        return new JellyseerrPromoMetadata(releaseDay?.Year, rating, genres, Str("overview"), releaseDay);
+    }
+
+    /// <summary>
+    /// Whether the bundled font can draw every character of this text. It covers Latin with its accents, Greek,
+    /// Cyrillic and the punctuation used here; a plot in Arabic, Hebrew, Thai or CJK would come out as a row of
+    /// empty boxes, so that text is left off the promo instead.
+    /// </summary>
+    private static bool CanDrawInPromoFont(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        foreach (var ch in text)
+        {
+            if (ch is '\n' or '\r' or '\t')
+            {
+                continue;
+            }
+
+            var supported = ch is (>= '\u0020' and <= '\u024F') or (>= '\u0370' and <= '\u04FF') or (>= '\u2000' and <= '\u206F')
+                or (>= '\u20A0' and <= '\u20CF') or '\u2605';
+            if (!supported)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Joins as many of the parts as fit on one line, keeping the ones that came first.
+    /// </summary>
+    private static string? FitOneLine(List<string> parts, int maxChars)
+    {
+        var line = "";
+        foreach (var part in parts)
+        {
+            var candidate = line.Length == 0 ? part : line + " \u00b7 " + part;
+            if (candidate.Length > maxChars && line.Length > 0)
+            {
+                break;
+            }
+            line = candidate;
+        }
+        return line.Length > 0 ? line : null;
+    }
+
+    /// <summary>
+    /// Wraps the plot into the few lines a promo can carry, ending it with an ellipsis rather than a ragged word.
+    /// Wraps by character count, which is close enough at the size and width used here.
+    /// </summary>
+    private static string? WrapPromoPlot(string? overview)
+    {
+        if (string.IsNullOrWhiteSpace(overview))
+        {
+            return null;
+        }
+        var maxChars = Math.Max(20, (int)(PromoTextWidth / (PromoPlotFontSize * 0.52)));
+        var lines = new List<string>();
+        var line = new StringBuilder();
+        foreach (var word in overview.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (line.Length > 0 && line.Length + 1 + word.Length > maxChars)
+            {
+                lines.Add(line.ToString());
+                line.Clear();
+            }
+            if (line.Length > 0)
+            {
+                line.Append(' ');
+            }
+            line.Append(word);
+        }
+        if (line.Length > 0)
+        {
+            lines.Add(line.ToString());
+        }
+
+        var cut = lines.Count > PromoPlotMaxLines;
+        if (cut)
+        {
+            lines = lines.GetRange(0, PromoPlotMaxLines);
+        }
+        var plot = string.Join("\n", lines);
+        if (cut)
+        {
+            plot = plot.TrimEnd('.', ',', ':', ';') + "\u2026";
+        }
+        return plot.Length > 0 ? plot : null;
+    }
+
+    /// <summary>
+    /// The release day the details page shows. Jellyfin stores the date as local midnight converted to UTC.
+    /// </summary>
+    private static DateTime? ReleaseDayOf(DateTime? premiereDate)
+    {
+        if (premiereDate == null)
+        {
+            return null;
+        }
+        var utc = premiereDate.Value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(premiereDate.Value, DateTimeKind.Utc)
+            : premiereDate.Value.ToUniversalTime();
+        return utc.ToLocalTime().Date;
+    }
+
+    /// <summary>
+    /// "Releases 12 Mar 2027" for a title that has not come out yet, which is the one thing worth knowing about a
+    /// placeholder nobody can watch. Null once it is out, or when no date is known.
+    /// </summary>
+    private static string? UpcomingReleaseText(DateTime? releaseDay)
+    {
+        if (releaseDay == null || releaseDay.Value.Date <= DateTime.Today)
+        {
+            return null;
+        }
+        return "Releases " + releaseDay.Value.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
+    }
+
+    private static string PromoTextSignature(TitlePromoText text)
+    {
+        if (text.Info == null && text.Plot == null && text.Badge == null)
+        {
+            return "none";
+        }
+        // The layout is part of what is drawn, so a change to it re-renders every title once
+        var joined = string.Join("\n", "layout8", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)))[..12].ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Builds the FFmpeg filters that draw a title's text, stacked upwards from just above the "favorite to request"
+    /// note, and works out where the logo goes above them. The text goes into files that drawtext reads with textfile,
+    /// so quotes, newlines and accents in a plot never have to be escaped for the filter graph.
+    /// </summary>
+    private async Task<PromoLayout> BuildTextLayoutAsync(string key, TitlePromoText text)
+    {
+        if (text.Info == null && text.Plot == null && text.Badge == null)
+        {
+            return PromoLayout.Plain;
+        }
+        var font = await EnsureAssetExtractedAsync(TitlePromoFontAsset);
+        if (string.IsNullOrEmpty(font))
+        {
+            return PromoLayout.Plain;
+        }
+
+        var filters = new List<string>();
+        var top = PromoTextBottom;
+        if (!string.IsNullOrEmpty(text.Plot))
+        {
+            var lines = text.Plot.Count(ch => ch == '\n') + 1;
+            top -= ((lines - 1) * PromoPlotLineAdvance) + PromoPlotLastLineHeight;
+            filters.Add(DrawTextFilter(WritePromoTextFile(key, "plot", text.Plot), font, top, PromoPlotFontSize,
+                PromoTextLeft.ToString(CultureInfo.InvariantCulture), lineSpacing: PromoPlotSpacing));
+        }
+        if (!string.IsNullOrEmpty(text.Info))
+        {
+            top -= (top < PromoTextBottom ? PromoInfoGap : 0) + PromoInfoHeight;
+            filters.Add(DrawTextFilter(WritePromoTextFile(key, "info", text.Info), font, top, PromoInfoFontSize,
+                PromoTextLeft.ToString(CultureInfo.InvariantCulture)));
+        }
+        if (!string.IsNullOrEmpty(text.Badge))
+        {
+            // Top right corner, opposite the logo, where nothing else is drawn
+            filters.Add(DrawTextFilter(WritePromoTextFile(key, "badge", text.Badge), font, PromoBadgeY, PromoBadgeFontSize,
+                $"w-tw-{PromoBadgeRight}", boxed: true));
+        }
+        return new PromoLayout(filters, top < PromoTextBottom ? top - PromoLogoGap : PromoLogoBottom);
+    }
+
+    private static string DrawTextFilter(string textFile, string font, int y, int fontSize, string x, int lineSpacing = 0, bool boxed = false)
+    {
+        var filter = $"drawtext=fontfile={FilterGraphPath(font)}:textfile={FilterGraphPath(textFile)}:expansion=none:fontsize={fontSize}"
+            + $":fontcolor={PromoTextColor}:x={x}:y={y}";
+        if (lineSpacing > 0)
+        {
+            filter += $":line_spacing={lineSpacing}";
+        }
+        return boxed ? filter + ":box=1:boxcolor=black@0.6:boxborderw=18" : filter;
+    }
+
+    /// <summary>
+    /// A file path as a drawtext option inside -filter_complex. FFmpeg unescapes such a value twice, once as a filter
+    /// option (where ':' separates options) and once in the filter graph (where ',', ';' and '[' do), so a Windows
+    /// path like C:\ProgramData\... must be escaped for both; plain quoting only survives the first pass.
+    /// </summary>
+    private static string FilterGraphPath(string path)
+    {
+        static string Escape(string value, string special)
+        {
+            var escaped = new StringBuilder(value.Length + 8);
+            foreach (var ch in value)
+            {
+                if (special.Contains(ch, StringComparison.Ordinal))
+                {
+                    escaped.Append('\\');
+                }
+                escaped.Append(ch);
+            }
+            return escaped.ToString();
+        }
+
+        var option = Escape(path.Replace('\\', '/'), "\\':");
+        return Escape(option, "\\'[],;");
+    }
+
+    private string WritePromoTextFile(string key, string name, string content)
+    {
+        var path = Path.Combine(_placeholderPath, $"title_{key}_{name}.txt");
+        File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        return path;
+    }
+
+    private void DeletePromoTextFiles(string key)
+    {
+        foreach (var name in new[] { "plot", "info", "badge" })
+        {
+            try
+            {
+                File.Delete(Path.Combine(_placeholderPath, $"title_{key}_{name}.txt"));
+            }
+            catch (IOException)
+            {
+                // Left for the cache cleanup at the next restart
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes renders of this title made for text or a duration it no longer has, so the cache holds one per title.
+    /// </summary>
+    private void DeleteOtherTitleRenders(string key, string keepPath)
+    {
+        foreach (var path in Directory.EnumerateFiles(_placeholderPath, $"title_{key}_*{AssetExtension}"))
+        {
+            if (!string.Equals(path, keepPath, StringComparison.Ordinal))
+            {
+                try
+                {
+                    File.Delete(path);
+                }
+                catch (IOException)
+                {
+                    // In use by a copy right now; the next restart clears the cache anyway
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Invalidates the cached placeholder videos by deleting the temp directories and recreating them.
     /// </summary>
     private async Task InvalidateCachedPlaceholdersAsync()
@@ -896,6 +1339,8 @@ public class PlaceholderVideoGenerator
             // Assets are embedded in the plugin assembly
             _assetPath = Path.Combine(jellyBridgeTempDirectory, "assets");
             _placeholderPath = Path.Combine(jellyBridgeTempDirectory, "placeholders");
+            // Which text went into each title promo; kept outside the folders below so a restart does not re-render every title
+            _promoTextPath = Path.Combine(jellyBridgeTempDirectory, "promo-text");
             // Delete any existing assets and placeholders to ensure a clean state
             if (FolderUtils.FolderExistsThrowNull(_assetPath))
             {
@@ -907,6 +1352,7 @@ public class PlaceholderVideoGenerator
             }
             Directory.CreateDirectory(_assetPath);
             Directory.CreateDirectory(_placeholderPath);
+            Directory.CreateDirectory(_promoTextPath);
             _logger.LogTrace("FFmpeg path: {FFmpegPath}, Assets path: {AssetsPath}, Placeholder video path: {PlaceholderPath}", 
                 _mediaEncoder.EncoderPath, _assetPath, _placeholderPath);
         }
