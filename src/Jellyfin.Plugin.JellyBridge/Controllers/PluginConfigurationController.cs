@@ -47,7 +47,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
                     UseMixedMediaLibrary = config.UseMixedMediaLibrary,
-                    UseSeasonPlaceholders = config.UseSeasonPlaceholders,
                     UseNetworkFolders = config.UseNetworkFolders,
                     AddDuplicateContent = config.AddDuplicateContent,
                     NetworkFolderPrefix = config.NetworkFolderPrefix,
@@ -61,9 +60,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Manage Favorite Requests
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
                     ResponsiveFavoriteRequests = config.ResponsiveFavoriteRequests,
-                    RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
-                    UserPermissionRequest4k = config.UserPermissionRequest4k,
+                    UseSeasonPlaceholders = config.UseSeasonPlaceholders,
                     RequestFirstSeason = config.RequestFirstSeason,
+                    UserPermissionRequest4k = config.UserPermissionRequest4k,
+                    RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
@@ -142,7 +142,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseSeasonPlaceholders), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
@@ -156,9 +155,10 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Manage Favorite Requests
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
                     SetJsonValue<bool?>(configData, nameof(config.ResponsiveFavoriteRequests), config);
-                    SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseSeasonPlaceholders), config);
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
+                    SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
                     
                     // Customize Promo Videos
                     SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);
