@@ -76,6 +76,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     CustomSeriesPromo = config.CustomSeriesPromo,
                     DefaultMoviesPromo = config.DefaultMoviesPromo,
                     DefaultSeriesPromo = config.DefaultSeriesPromo,
+                    UseTitlePromos = config.UseTitlePromos,
                     PromoVideoDurationSeconds = config.PromoVideoDurationSeconds,
                     JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
 
@@ -163,6 +164,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.DefaultMoviesPromo), config);
                     SetJsonValue<string>(configData, nameof(config.CustomSeriesPromo), config);
                     SetJsonValue<bool?>(configData, nameof(config.DefaultSeriesPromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseTitlePromos), config);
                     SetJsonValue<int?>(configData, nameof(config.PromoVideoDurationSeconds), config);
                     SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
 

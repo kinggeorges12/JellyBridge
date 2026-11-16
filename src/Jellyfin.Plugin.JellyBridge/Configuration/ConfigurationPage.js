@@ -516,7 +516,33 @@ function getDefaultLibrarySettings(page, directories) {
     });
 }
 
+function findLibraryUsingFolders(directories) {
+    // Returns the name of an existing library that already contains one of the directories
+    const normalize = path => (path || '').replace(/[\\/]+$/, '');
+    const wanted = directories.map(normalize);
+    return ApiClient.fetch({
+        'url': ApiClient.getUrl('Library/VirtualFolders'),
+        'headers': {'accept': 'application/json'},
+        'dataType': 'json'
+    }).then(function(libraries) {
+        const match = (libraries || []).find(library =>
+            (library.Locations || []).some(location => wanted.includes(normalize(location))));
+        return match ? match.Name : null;
+    });
+}
+
 function createVirtualFolders(page, libraryName, libraryType, directories) {
+    // Skip if a library already uses these folders, otherwise Jellyfin creates a duplicate (e.g. "Discover2")
+    return findLibraryUsingFolders(directories).then(function(existingLibrary) {
+        if (existingLibrary) {
+            DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+            return;
+        }
+        return createNewVirtualFolders(page, libraryName, libraryType, directories);
+    });
+}
+
+function createNewVirtualFolders(page, libraryName, libraryType, directories) {
     // Get settings if available, then create the virtual folder
     return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
         return ApiClient.ajax({
@@ -1062,6 +1088,7 @@ function initializeUploadPromo(page) {
         browseFolder(CustomSeriesPromo, "Select an Image File for the Series Promo Video", true);
     });
     setInputField(page, 'DefaultSeriesPromo', true);
+    setInputField(page, 'UseTitlePromos', true);
 
     setInputField(page, 'JellyBridgeTempDirectory');
     const JellyBridgeTempDirectory = page.querySelector('#JellyBridgeTempDirectory');
@@ -1515,6 +1542,7 @@ function performPluginReset(page) {
                 DefaultMoviesPromo: null,
                 CustomSeriesPromo: null,
                 DefaultSeriesPromo: null,
+                UseTitlePromos: null,
                 PromoVideoDurationSeconds: null,
                 EnableAutomatedSortTask: null,
                 SortTaskIntervalHours: null,
@@ -1682,6 +1710,7 @@ function savePluginConfiguration(page) {
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
     form.CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
     form.DefaultSeriesPromo = nullIfDefault(page.querySelector('#DefaultSeriesPromo').checked, config.ConfigDefaults.DefaultSeriesPromo);
+    form.UseTitlePromos = nullIfDefault(page.querySelector('#UseTitlePromos').checked, config.ConfigDefaults.UseTitlePromos);
     form.PromoVideoDurationSeconds = safeParseInt(page.querySelector('#PromoVideoDurationSeconds'));
     form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);

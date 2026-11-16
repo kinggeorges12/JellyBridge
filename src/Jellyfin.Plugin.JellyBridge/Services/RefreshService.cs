@@ -56,8 +56,8 @@ public class RefreshService
     {
         List<RefreshableResult> allResults = results.OfType<RefreshableResult>().ToList();
         
-        var skipRefresh = allResults.Any(r => r.Refresh == null);
-        if (skipRefresh)
+        // Refresh when any step asked for it (e.g. a scheduled sync that added items but had no new favorites)
+        if (!allResults.Any(r => r.Refresh != null))
         {
             _logger.LogDebug("No refresh plan applied");
             return;
