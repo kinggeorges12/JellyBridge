@@ -133,8 +133,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     // General Settings
                     SetJsonValue<string>(configData, nameof(config.JellyseerrUrl), config);
-                    SetJsonValue<string>(configData, nameof(config.ApiKey), config);
-                    config.ApiKey = config.ApiKey == PluginConfiguration.ApiKeyMask ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey)) : config.ApiKey;
+                    SetApiKey(configData, config);
                     SetJsonValue<string>(configData, nameof(config.LibraryDirectory), config);
                     SetJsonValue<bool?>(configData, nameof(config.IsEnabled), config);
                     SetJsonValue<bool?>(configData, nameof(config.EnableInMainMenu), config);
@@ -281,6 +280,25 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     details = $"Configuration update failed: {ex.GetType().Name} - {ex.Message}",
                     stackTrace = ex.StackTrace
                 });
+            }
+        }
+
+        /// <summary>
+        /// Handles ApiKey property: supports setting new api key, clearing key with empty string, or preserves existing value.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration object.</param>
+        private void SetApiKey(JsonElement configData, PluginConfiguration config)
+        {
+            if (configData.TryGetProperty(nameof(config.ApiKey), out var apiKeyElement))
+            {
+                if (apiKeyElement.ValueKind == JsonValueKind.String)
+                {
+                    // If the API key is masked, get the actual value from the plugin's configuration
+                    config.ApiKey = apiKeyElement.GetString() == PluginConfiguration.ApiKeyMask
+                        ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey))
+                        : apiKeyElement.GetString() ?? string.Empty;
+                }
             }
         }
 

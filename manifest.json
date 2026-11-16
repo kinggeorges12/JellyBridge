@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "4EEE13BA0B96AC412614998CB4FD01B1",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.5.12.0.zip",
+        "version": "5.5.12.0",
+        "timestamp": "2026-11-16T00:54:50.456Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.5 - custom function to set api key from config to check for mask"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "9152E80F7157771FDFC79B379CC455B3",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.5.11.9.zip",
+        "version": "5.5.11.9",
+        "timestamp": "2026-11-16T00:54:50.456Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.5 - custom function to set api key from config to check for mask"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "3D9517B7625623E4EBC136F0B6018B01",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.5.11.0.zip",
+        "version": "5.5.11.0",
+        "timestamp": "2026-11-16T00:54:50.456Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.5 - custom function to set api key from config to check for mask"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "EFAD92D06738080FA0DD3E6466B42702",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.5.10.7.zip",
+        "version": "5.5.10.7",
+        "timestamp": "2026-11-16T00:54:50.456Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.5 - custom function to set api key from config to check for mask"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "735BDC930C9CBA886435DF3D8C0B405D",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.4.12.0.zip",
