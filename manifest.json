@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "289A276F5BD09C116D7039CA40E78AD0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.8.12.0.zip",
+        "version": "5.8.12.0",
+        "timestamp": "2026-11-16T04:31:31.128Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.8 - running validate children to try to refresh the ignore files"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "A374EDEFA97D21FB7795038C05808150",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.8.11.9.zip",
+        "version": "5.8.11.9",
+        "timestamp": "2026-11-16T04:31:31.128Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.8 - running validate children to try to refresh the ignore files"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "A447A57A96B598EABA14DF301F7822DF",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.8.11.0.zip",
+        "version": "5.8.11.0",
+        "timestamp": "2026-11-16T04:31:31.128Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.8 - running validate children to try to refresh the ignore files"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "35B7B1B1CE277348DC2846353B1F801C",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.8.10.7.zip",
+        "version": "5.8.10.7",
+        "timestamp": "2026-11-16T04:31:31.128Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.8 - running validate children to try to refresh the ignore files"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "5BE453BE0AFF69893180DC3FF0075C3B",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.7.12.0.zip",
