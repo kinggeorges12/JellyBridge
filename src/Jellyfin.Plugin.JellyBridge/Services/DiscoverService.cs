@@ -113,6 +113,31 @@ public class DiscoverService
     #endregion
 
     #region Created
+
+    /// <summary>
+    /// Replaces default promos with title promos for titles whose artwork Jellyfin has saved since their placeholder was made,
+    /// including titles this sync didn't fetch. Returns the number of placeholders replaced.
+    /// </summary>
+    public async Task<int> UpgradeDefaultPromosAsync(IEnumerable<IJellyseerrItem> items)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+        {
+            return 0;
+        }
+        var upgraded = 0;
+        foreach (var item in items)
+        {
+            try
+            {
+                upgraded += await _placeholderVideoGenerator.UpgradeDefaultPromosAsync(_metadataService.GetJellyBridgeItemDirectory(item));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not replace the default promo of {ItemName}", item.MediaName);
+            }
+        }
+        return upgraded;
+    }
     
     /// <summary>
     /// Creates placeholder videos for the provided unmatched items.
