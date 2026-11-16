@@ -308,6 +308,12 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
+    /// When set (for the current async flow), placeholders use the default promo even with title promos on. Search sets it
+    /// so Jellyfin can build a new item without waiting for the title promo render.
+    /// </summary>
+    public static readonly AsyncLocal<bool> DefaultPromosOnly = new();
+
+    /// <summary>
     /// Copy to a temporary file next to the target and rename it over the target, so a player or ffprobe reading the old
     /// placeholder never sees a half-written file.
     /// </summary>
@@ -338,7 +344,7 @@ public class PlaceholderVideoGenerator
             var targetPath = Path.Combine(targetDirectory, targetFile);
 
             // Title promo from the title's own artwork; movies keep it in the movie folder, shows above the season folder
-            if (Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+            if (Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)) && !DefaultPromosOnly.Value)
             {
                 var titleFolder = assetName == MovieAsset ? targetDirectory : Path.GetDirectoryName(targetDirectory);
                 if (titleFolder != null && await TryTitlePromoAsync(titleFolder, targetPath, assetName))
