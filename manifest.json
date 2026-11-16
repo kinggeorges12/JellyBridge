@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-11-16T05:26:25.620Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.10 - adding some refresh fixes from main branch.",
+        "checksum": "532D3B2ABA1CBEFE536F245D5F4E3437",
+        "version": "5.10.12.0",
+        "targetAbi": "12.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.10.12.0.zip",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-11-16T05:26:25.620Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.10 - adding some refresh fixes from main branch.",
+        "checksum": "1520383BEEA0E2AE558A85F6B984A9AD",
+        "version": "5.10.11.9",
+        "targetAbi": "10.11.9.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.10.11.9.zip",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-11-16T05:26:25.620Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.10 - adding some refresh fixes from main branch.",
+        "checksum": "A3915EF32C99F9F994962B7F4ED0BE05",
+        "version": "5.10.11.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.10.11.0.zip",
+        "dependencies": []
+      },
+      {
+        "timestamp": "2026-11-16T05:26:25.620Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.10 - adding some refresh fixes from main branch.",
+        "checksum": "7755E11DC0BA0455ADC5C756F5F5F33B",
+        "version": "5.10.10.7",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.10.10.7.zip",
+        "dependencies": []
+      },
+      {
         "targetAbi": "12.0.0",
         "checksum": "C24E64C14736A32A4B4710B619391B91",
         "dependencies": [],
