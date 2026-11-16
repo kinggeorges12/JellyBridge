@@ -48,7 +48,7 @@ public sealed class PlaceholderPlaybackGuard : IHostedService
     {
         try
         {
-            return FolderUtils.IsPathInSyncDirectory(path);
+            return FolderUtils.IsPathInAnyBridgeDirectory(path);
         }
         catch (Exception)
         {

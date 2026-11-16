@@ -111,6 +111,12 @@ namespace Jellyfin.Plugin.JellyBridge
         /// </summary>
         public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null) where T : notnull
         {
+            // Inside TrendingLibrary.Enter, the folder settings describe the trending folder
+            if (Utils.TrendingLibrary.IsActive && Utils.TrendingLibrary.TryGetOverride(propertyName, out var trendingValue) && trendingValue is T trending)
+            {
+                return trending;
+            }
+
             config ??= GetConfiguration();
             var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
             var rawValue = propertyInfo?.GetValue(config);

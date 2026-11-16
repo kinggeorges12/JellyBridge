@@ -609,8 +609,11 @@ public class PlaceholderVideoGenerator
             ConcurrentBag<string> taskSuccessSeries = new ConcurrentBag<string>();
             ConcurrentBag<string> taskFailure = new ConcurrentBag<string>();
 
-            // Find all existing placeholder files in the library
-            var existingFiles = Directory.GetFiles(libraryRoot, AssetSearchPattern, SearchOption.AllDirectories);
+            // Find all existing placeholder files in the library (and the Trending library, when turned on)
+            var existingFiles = FolderUtils.GetBridgeDirectories()
+                .Where(Directory.Exists)
+                .SelectMany(directory => Directory.GetFiles(directory, AssetSearchPattern, SearchOption.AllDirectories))
+                .ToArray();
 
             // Process each existing placeholder file in parallel
             foreach (string existingFile in existingFiles)

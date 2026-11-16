@@ -573,9 +573,12 @@ function createDefaultLibrary(page) {
     const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
     const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
     const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
-    const libraryDisplayMessage = UseMixedMediaLibrary === false ?
+    const trendingLibraryDisplayNameInput = page.querySelector('#TrendingLibraryDisplayName');
+    const trendingLibraryDisplayName = safeParseString(trendingLibraryDisplayNameInput) || trendingLibraryDisplayNameInput.placeholder;
+    const libraryDisplayMessage = (UseMixedMediaLibrary === false ?
         `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
-        `a new library "${libraryDisplayName}"`;
+        `a new library "${libraryDisplayName}"`) +
+        (page.querySelector('#UseTrendingLibrary').checked ? ` and a Trending library "${trendingLibraryDisplayName}"` : '');
 
     // Show confirmation dialog for confirming library creation
     Dashboard.confirm({
@@ -610,6 +613,10 @@ function createDefaultLibrary(page) {
                     ]);
                 } else {
                     apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
+                }
+                if (response.trendingFolders && response.trendingFolders.length > 0) {
+                    apiCalls = Promise.all([apiCalls,
+                        createVirtualFolders(page, trendingLibraryDisplayName, null, response.trendingFolders)]);
                 }
                 return apiCalls;
             }).finally(function() {
@@ -1301,6 +1308,19 @@ function initializeManageFavorites(page) {
     setInputField(page, 'UseMixedMediaLibrary', true);
     setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'UseSeasonPlaceholders', true);
+    setInputField(page, 'UseTrendingLibrary', true);
+    setInputField(page, 'TrendingDirectory');
+    const trendingDirectoryInput = page.querySelector('#TrendingDirectory');
+    const libraryDirectoryInput = page.querySelector('#LibraryDirectory');
+    // Empty means a folder next to the Library Directory, named after it
+    const showTrendingDirectoryDefault = () => {
+        trendingDirectoryInput.placeholder = (libraryDirectoryInput.value || libraryDirectoryInput.placeholder || '').replace(/[\\/]+$/, '') + ' Trending';
+    };
+    showTrendingDirectoryDefault();
+    libraryDirectoryInput.addEventListener('input', showTrendingDirectoryDefault);
+    page.querySelector('#browseTrendingDirectory').addEventListener('click', function() {
+        browseFolder(trendingDirectoryInput, "Select JellyBridge Trending Directory");
+    });
     setInputField(page, 'AddDuplicateContent', true);
     setInputField(page, 'NetworkFolderPrefix');
     
@@ -1532,6 +1552,8 @@ function performPluginReset(page) {
                 UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
                 UseSeasonPlaceholders: null,
+                UseTrendingLibrary: null,
+                TrendingDirectory: '',
                 NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
@@ -1698,6 +1720,8 @@ function savePluginConfiguration(page) {
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
+    form.UseTrendingLibrary = nullIfDefault(page.querySelector('#UseTrendingLibrary').checked, config.ConfigDefaults.UseTrendingLibrary);
+    form.TrendingDirectory = safeParseString(page.querySelector('#TrendingDirectory'));
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);

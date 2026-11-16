@@ -116,6 +116,35 @@ public static class FolderUtils
     }
 
     /// <summary>
+    /// Gets every folder JellyBridge writes titles to: the Library Directory and, when turned on, the Trending library's
+    /// folder. Unlike <see cref="GetBaseDirectory"/>, this does not depend on <see cref="TrendingLibrary.Enter"/>.
+    /// </summary>
+    public static List<string> GetBridgeDirectories()
+    {
+        var config = Plugin.GetConfiguration();
+        var directories = new List<string>
+        {
+            string.IsNullOrWhiteSpace(config.LibraryDirectory)
+                ? (string)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.LibraryDirectory)]
+                : config.LibraryDirectory
+        };
+        if (TrendingLibrary.GetDirectory() is { } trendingDirectory)
+        {
+            directories.Add(trendingDirectory);
+        }
+
+        return directories;
+    }
+
+    /// <summary>
+    /// Check if a path is within the Library Directory or the Trending library's folder.
+    /// </summary>
+    public static bool IsPathInAnyBridgeDirectory(string? pathToCheck)
+    {
+        return GetBridgeDirectories().Any(directory => IsPathInDirectory(pathToCheck, directory));
+    }
+
+    /// <summary>
     /// Sanitize filename by removing invalid characters.
     /// </summary>
     public static string SanitizeFileName(string fileName)
