@@ -564,6 +564,12 @@ public class DiscoverService
         {
             try
             {
+                // Titles added from search have no network; they stay until the retention cleanup removes them
+                if (item.NetworkId == SearchService.SearchNetworkId)
+                {
+                    continue;
+                }
+
                 // Check if NetworkId is valid
                 if (!item.NetworkId.HasValue)
                 {

@@ -25,6 +25,11 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 public class SearchService
 {
     private const int MaxResults = 10;
+    /// <summary>
+    /// Network id for titles added from search, so the sync doesn't hide them as titles from a network that isn't selected.
+    /// </summary>
+    public const int SearchNetworkId = -1;
+
     private const string PosterBaseUrl = "https://image.tmdb.org/t/p/w342";
     private const string ArtworkBaseUrl = "https://image.tmdb.org/t/p/w780";
     private const string BackdropBaseUrl = "https://image.tmdb.org/t/p/w1280";
@@ -203,6 +208,18 @@ public class SearchService
             _libraryMonitor.ReportFileSystemChangeBeginning(folder);
             try
             {
+                item.NetworkId ??= SearchNetworkId;
+
+                // An older sync may have hidden this title with a .ignore (titles from search had no network then). Search only
+                // offers titles that aren't in any library and can still be requested, so that .ignore is stale
+                var ignoreFile = Path.Combine(folder, BridgeService.IgnoreFileName);
+                if (File.Exists(ignoreFile))
+                {
+                    File.Delete(ignoreFile);
+                    scope.ServiceProvider.GetRequiredService<RefreshService>().ClearDotIgnoreCache();
+                    _logger.LogDebug("Removed the stale .ignore of {ItemName} before adding it from search", item.MediaName);
+                }
+
                 await metadataService.CreateFolderMetadataAsync(new List<IJellyseerrItem> { item }).ConfigureAwait(false);
 
                 // Pictures first, so the placeholder videos made next can use them
