@@ -10,6 +10,42 @@
     "versions": [
       {
         "targetAbi": "12.0.0",
+        "checksum": "5BE453BE0AFF69893180DC3FF0075C3B",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.7.12.0.zip",
+        "version": "5.7.12.0",
+        "timestamp": "2026-11-16T02:12:52.813Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.7 - editing configuration page layout to clarify the seasons request feature"
+      },
+      {
+        "targetAbi": "10.11.9.0",
+        "checksum": "200EBAAB9832C3F1F04B9F21E3B62C66",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.7.11.9.zip",
+        "version": "5.7.11.9",
+        "timestamp": "2026-11-16T02:12:52.813Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.7 - editing configuration page layout to clarify the seasons request feature"
+      },
+      {
+        "targetAbi": "10.11.0.0",
+        "checksum": "BB45F859154474EBE7B946FC7EE8C31F",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.7.11.0.zip",
+        "version": "5.7.11.0",
+        "timestamp": "2026-11-16T02:12:52.813Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.7 - editing configuration page layout to clarify the seasons request feature"
+      },
+      {
+        "targetAbi": "10.10.0.0",
+        "checksum": "C3119583E4F04E4A5FC9D40B9B2885DD",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.7.10.7.zip",
+        "version": "5.7.10.7",
+        "timestamp": "2026-11-16T02:12:52.813Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.7 - editing configuration page layout to clarify the seasons request feature"
+      },
+      {
+        "targetAbi": "12.0.0",
         "checksum": "C751C075638D3644A6DF398A7000FC26",
         "dependencies": [],
         "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.6.12.0.zip",
