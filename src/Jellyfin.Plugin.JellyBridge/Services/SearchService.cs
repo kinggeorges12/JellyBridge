@@ -340,12 +340,6 @@ public class SearchService
         }
         finally
         {
-            if (isShow && !deadline.IsCancellationRequested)
-            {
-                await SaveSeasonPostersAsync(item, deadline).ConfigureAwait(false);
-            }
-
-
             // Full refresh in the background, including a show's seasons and episodes (QueueRefresh only covers the show itself).
             // Also when the client gave up, so the item never stays without metadata.
             var full = new MetadataRefreshOptions(new DirectoryService(_fileSystem))
@@ -357,6 +351,13 @@ public class SearchService
             {
                 try
                 {
+                    // Season posters first: the w780 size is quicker than the originals the full refresh fetches. Done here
+                    // rather than before returning, so opening a show is not held up by them
+                    if (isShow)
+                    {
+                        await SaveSeasonPostersAsync(item, CancellationToken.None).ConfigureAwait(false);
+                    }
+
                     await _providerManager.RefreshFullItem(item, full, CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception ex)
@@ -370,9 +371,9 @@ public class SearchService
     }
 
     /// <summary>
-    /// Give each season of a show its TMDB poster before the open call returns, so the client's first season list has them.
+    /// Give each season of a show its TMDB poster right after it is added, ahead of the slower full refresh.
     /// Uses Jellyfin's own TMDB image provider (the same pick a metadata refresh makes) but skips the metadata providers.
-    /// Whatever is not done within the budget comes from the background refresh.
+    /// Whatever is not done within the budget comes from the full refresh.
     /// </summary>
     private async Task SaveSeasonPostersAsync(BaseItem show, CancellationToken cancellationToken)
     {
