@@ -9,7 +9,43 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
-        "timestamp": "2026-11-16T05:26:25.620Z",
+        "dependencies": [],
+        "checksum": "20508CE735D0EE31338F9EB04ECBC2EF",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.11.12.0.zip",
+        "targetAbi": "12.0.0",
+        "version": "5.11.12.0",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.11 - adding the virtual folder fix from main branch.",
+        "timestamp": "2026-11-16T05:46:19.680Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "F9C5FB58BA354CE13A73136D2340AA57",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.11.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "version": "5.11.11.9",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.11 - adding the virtual folder fix from main branch.",
+        "timestamp": "2026-11-16T05:46:19.680Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "4C89133290166A07F543910B666C73E2",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.11.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "5.11.11.0",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.11 - adding the virtual folder fix from main branch.",
+        "timestamp": "2026-11-16T05:46:19.680Z"
+      },
+      {
+        "dependencies": [],
+        "checksum": "7C302F250CE5718F4360C500308FDED8",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-seasons/release/JellyBridge-5.11.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "5.11.10.7",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.11 - adding the virtual folder fix from main branch.",
+        "timestamp": "2026-11-16T05:46:19.680Z"
+      },
+      {
+        "timestamp": "2026-11-16T05:26:25.62Z",
         "changelog": "Jellyfin 12.0.0: JellyBridge v5.10 - adding some refresh fixes from main branch.",
         "checksum": "532D3B2ABA1CBEFE536F245D5F4E3437",
         "version": "5.10.12.0",
@@ -18,7 +54,7 @@
         "dependencies": []
       },
       {
-        "timestamp": "2026-11-16T05:26:25.620Z",
+        "timestamp": "2026-11-16T05:26:25.62Z",
         "changelog": "Jellyfin 10.11.9: JellyBridge v5.10 - adding some refresh fixes from main branch.",
         "checksum": "1520383BEEA0E2AE558A85F6B984A9AD",
         "version": "5.10.11.9",
@@ -27,7 +63,7 @@
         "dependencies": []
       },
       {
-        "timestamp": "2026-11-16T05:26:25.620Z",
+        "timestamp": "2026-11-16T05:26:25.62Z",
         "changelog": "Jellyfin 10.11.0: JellyBridge v5.10 - adding some refresh fixes from main branch.",
         "checksum": "A3915EF32C99F9F994962B7F4ED0BE05",
         "version": "5.10.11.0",
@@ -36,7 +72,7 @@
         "dependencies": []
       },
       {
-        "timestamp": "2026-11-16T05:26:25.620Z",
+        "timestamp": "2026-11-16T05:26:25.62Z",
         "changelog": "Jellyfin 10.10.7: JellyBridge v5.10 - adding some refresh fixes from main branch.",
         "checksum": "7755E11DC0BA0455ADC5C756F5F5F33B",
         "version": "5.10.10.7",
