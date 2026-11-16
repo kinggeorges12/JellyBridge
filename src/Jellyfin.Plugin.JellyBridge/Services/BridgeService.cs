@@ -173,12 +173,8 @@ public class BridgeService
     /// </summary>
     public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> BuildJellyfinMatchesAsync(List<IJellyseerrItem> jellyseerrItems)
     {
-        // Excludes base directory from shows
-        var libraryDirectory = FolderUtils.GetBaseDirectory();
-        var bridgeLibraryPaths = new HashSet<string>()
-        {
-            libraryDirectory
-        };
+        // Excludes the JellyBridge folders (Discover and Trending) from the existing titles
+        var bridgeLibraryPaths = FolderUtils.GetBridgeDirectories().ToHashSet();
         var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
         var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
         // Combine movies and shows

@@ -229,6 +229,15 @@ public class ApiService
             description: "Discover TV shows"
         ),
         
+        // Trending movies, shows and people in one ranked list; read per item by its mediaType
+        [JellyseerrEndpoint.DiscoverTrending] = new JellyseerrEndpointConfig(
+            "/api/v1/discover/trending",
+            typeof(JellyseerrPaginatedResponse<JsonElement>),
+            returnModel: typeof(List<JsonElement>),
+            isPaginated: true,
+            description: "Discover trending movies and TV shows"
+        ),
+
         // Auth endpoints - use user response
         [JellyseerrEndpoint.AuthMe] = new JellyseerrEndpointConfig(
             "/api/v1/auth/me",

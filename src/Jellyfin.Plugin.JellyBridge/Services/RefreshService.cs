@@ -110,7 +110,7 @@ public class RefreshService
             // Find all libraries that contain JellyBridge folders
             var libraries = _libraryManager.Inner.GetVirtualFolders();
             var bridgeLibraries = libraries.Where(lib => 
-                lib.Locations?.Any(location => FolderUtils.IsPathInSyncDirectory(location)) == true).ToList();
+                lib.Locations?.Any(location => FolderUtils.IsPathInAnyBridgeDirectory(location)) == true).ToList();
 
             if (!bridgeLibraries.Any())
             {

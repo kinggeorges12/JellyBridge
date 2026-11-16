@@ -91,7 +91,7 @@ public sealed class FavoriteEventHandler : IHostedService
             var itemPath = e.Item.Path;
             var isMissingSeason = e.Item is MediaBrowser.Controller.Entities.TV.Season { IsVirtualItem: true }
                 && Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders));
-            if (!isMissingSeason && (string.IsNullOrEmpty(itemPath) || !FolderUtils.IsPathInSyncDirectory(itemPath)))
+            if (!isMissingSeason && (string.IsNullOrEmpty(itemPath) || !FolderUtils.IsPathInAnyBridgeDirectory(itemPath)))
             {
                 _logger.LogTrace("Media item is not in a JellyBridge sync directory. Skipping favorites sync to Jellyseerr. ItemPath={ItemPath}", itemPath);
                 return;

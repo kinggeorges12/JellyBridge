@@ -718,6 +718,23 @@
                             <div class="fieldDescription">Add a placeholder for each season of a show that can still be requested. Favoriting a season requests only that season. With Jellyfin's "Import missing episodes" enabled, missing seasons of shows in your other libraries can be favorited to request them too. <i>Note: <span class="link" data-target-page="RequestFirstSeasonContainer">Request Only First Season</span> is disabled when this is enabled.</i></div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseTrendingLibraryContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="UseTrendingLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Trending Library</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Keep a separate Trending library with Jellyseerr's current trending movies and shows, in addition to the Discover library. Each sync replaces its titles with the current trending list; favoriting a title requests it as usual. Works the same with or without Mixed Movies and Shows. To show the titles in Jellyseerr's order, sort the library by Play count (ascending).</div>
+                        </div>
+                        <div class="inputContainer file-browser" id="TrendingDirectoryContainer" data-depends-on="UseTrendingLibrary">
+                            <input is="emby-input" type="text" id="TrendingDirectory" label="Trending Directory" />
+                            <button type="button" id="browseTrendingDirectory" is="emby-button">📂</button>
+                            <div class="fieldDescription">Folder for the Trending library. It must be outside the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>, used only for the Trending library, and visible to Jellyfin (for Docker, mount it like the Library Directory). Leave empty to use a folder next to the Library Directory.</div>
+                        </div>
+
                         <div class="fieldDescription" id="createDefaultLibraryContainer">
                             <div id="LibraryDisplayNameContainer">
                                 <div data-depends-on="UseMixedMediaLibrary" class="inputContainer hide-depends">
@@ -728,6 +745,10 @@
                                     <input is="emby-input" type="text" id="MovieLibraryDisplayName" label="Movie Library Name" placeholder="Discover Movies"/>
                                     <input is="emby-input" type="text" id="ShowLibraryDisplayName" label="Show Library Name" placeholder="Discover Shows"/>
                                     <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate separate libraries for Movies and Shows in Jellyfin.</div>
+                                </div>
+                                <div data-depends-on="UseTrendingLibrary" class="inputContainer hide-depends">
+                                    <input is="emby-input" type="text" id="TrendingLibraryDisplayName" label="Trending Library Name" placeholder="Trending"/>
+                                    <div class="fieldDescription">With Trending Library on, <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> also generates the Trending library in Jellyfin.</div>
                                 </div>
                             </div>
                             <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">

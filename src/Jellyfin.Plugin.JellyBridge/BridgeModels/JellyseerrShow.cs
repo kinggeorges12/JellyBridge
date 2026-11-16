@@ -119,6 +119,12 @@ public class JellyseerrShow
     public int? NetworkId { get; set; }
 
     /// <summary>
+    /// Position in Jellyseerr's trending list (1 = first), for titles in the Trending library.
+    /// </summary>
+    [JsonPropertyName("trendingRank")]
+    public int? TrendingRank { get; set; }
+
+    /// <summary>
     /// Equality comparison with a JellyfinSeries item.
     /// </summary>
     public bool EqualsSeries(JellyfinSeries? other)
