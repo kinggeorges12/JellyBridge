@@ -61,10 +61,7 @@ public partial class SyncService
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
         // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
-        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", async library =>
-            library.ListType == DiscoverListType.Trending
-                ? await SyncTrendingFromJellyseerrAsync(library)
-                : await SyncFromJellyseerrAsync(() => _discoverService.FetchListAsync(library)),
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", SyncOneLibraryAsync,
             (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
 
         var result = new SyncJellyseerrResult { Success = true };
@@ -92,20 +89,22 @@ public partial class SyncService
     }
 
     /// <summary>
-    /// Sync one Trending library: the same steps as for the other libraries, then remove the titles that are no
-    /// longer trending and set the play counts that sort the library in Jellyseerr's order. Runs inside the
-    /// library loop's scope.
+    /// Sync one library: fetch its list and run the shared sync steps, then the list-specific steps — a Trending
+    /// library removes the titles that are no longer trending, and a non-Legacy library whose "Order in Jellyfin"
+    /// is "Same as the list" gets the play counts that sort it in list order (a Legacy library keeps today's
+    /// behaviour: only the sort task touches its play counts, with the global SortOrder). Runs inside the library
+    /// loop's scope.
     /// </summary>
-    /// <param name="library">The Trending library being synced.</param>
-    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync(DiscoverLibraryConfig library)
+    /// <param name="library">The library being synced.</param>
+    private async Task<SyncJellyseerrResult> SyncOneLibraryAsync(DiscoverLibraryConfig library)
     {
-        var trending = new List<IJellyseerrItem>();
+        var fetched = new List<IJellyseerrItem>();
         var result = await SyncFromJellyseerrAsync(async () =>
         {
             // FetchListAsync routes Trending to the trending fetcher and applies the library's Movies/Series filter
             var (movies, shows) = await _discoverService.FetchListAsync(library);
-            trending.AddRange(movies);
-            trending.AddRange(shows);
+            fetched.AddRange(movies);
+            fetched.AddRange(shows);
             return (movies, shows);
         });
         if (!result.Success)
@@ -113,15 +112,23 @@ public partial class SyncService
             return result;
         }
 
-        var removed = await RemoveStaleTrendingAsync(trending);
-        result.ItemsHidden.AddRange(removed);
-        if (removed.Count > 0)
+        if (library.ListType == DiscoverListType.Trending)
         {
-            result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+            var removed = await RemoveStaleTrendingAsync(fetched);
+            result.ItemsHidden.AddRange(removed);
+            if (removed.Count > 0)
+            {
+                result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+            }
         }
 
-        // Titles Jellyfin hasn't scanned yet get their position on the next sync
-        await _sortService.SortTrendingAsync();
+        if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
+        {
+            // Titles Jellyfin hasn't scanned yet get their position on the next sync. Only this sync's fetched
+            // titles get their rank — anything else (a title that dropped off the list) sorts at the fallback.
+            await _sortService.SortByListAsync(fetched);
+        }
+
         return result;
     }
 

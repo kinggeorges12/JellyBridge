@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Configuration;
 
@@ -222,6 +223,9 @@ public class DiscoverLibraryConfig
 
     /// <summary>
     /// Creates a library from a template (the list type), pre-filling the settings the "More options" section shows.
+    /// Popular defaults to the Smart order; the other lists are only meaningful in their own order, so they default
+    /// to "Same as the list". Top rated starts with a 300-vote floor (decision D1) and new releases with a 30-vote
+    /// floor (decision D2) so a few early votes can't carry a title to the top.
     /// </summary>
     /// <param name="name">The library name.</param>
     /// <param name="listType">The list that fills it.</param>
@@ -237,16 +241,45 @@ public class DiscoverLibraryConfig
             LibraryType = libraryType,
             NetworkIds = listType == DiscoverListType.Trending ? new List<int>() : networkIds ?? new List<int>(),
             IsEnabled = true,
-            Order = DiscoverLibraryOrder.AsList
+            Order = listType == DiscoverListType.Popular ? DiscoverLibraryOrder.Smart : DiscoverLibraryOrder.AsList
         };
 
-        // Templates start Top rated with a vote-count floor so a few early votes can't carry a title to the top.
-        if (listType == DiscoverListType.TopRated)
+        // Template vote floors (D1/D2): Top rated 300, New releases 30. Other lists keep the global Minimum Votes.
+        switch (listType)
         {
-            library.MinimumVotes = (int)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.MinimumVotes)];
+            case DiscoverListType.TopRated:
+                library.MinimumVotes = 300;
+                break;
+            case DiscoverListType.NewReleases:
+                library.MinimumVotes = 30;
+                break;
         }
 
         return library;
+    }
+
+    /// <summary>
+    /// Maps the pre-libraries sort settings onto one library's "Order in Jellyfin" (used by the libraries
+    /// migration, and for the synthesized Legacy library): with the automated sort task off the ordering was left
+    /// to Jellyfin, otherwise it was the global SortOrder (None meant the same as Jellyfin).
+    /// </summary>
+    /// <param name="enableAutomatedSortTask">The old EnableAutomatedSortTask setting.</param>
+    /// <param name="globalSortOrder">The old global SortOrder setting.</param>
+    /// <returns>The order the migration should store.</returns>
+    public static DiscoverLibraryOrder OrderFromLegacySettings(bool enableAutomatedSortTask, SortOrderOptions globalSortOrder)
+    {
+        if (!enableAutomatedSortTask)
+        {
+            return DiscoverLibraryOrder.Jellyfin;
+        }
+
+        return globalSortOrder switch
+        {
+            SortOrderOptions.Random => DiscoverLibraryOrder.Random,
+            SortOrderOptions.Smart => DiscoverLibraryOrder.Smart,
+            SortOrderOptions.Smartish => DiscoverLibraryOrder.Smartish,
+            _ => DiscoverLibraryOrder.Jellyfin
+        };
     }
 
     /// <summary>

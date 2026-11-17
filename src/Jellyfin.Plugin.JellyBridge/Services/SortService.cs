@@ -142,24 +142,20 @@ public class SortService
     /// <summary>
     /// Applies one library's play count algorithm, for every user. Runs inside the library loop's scope.
     /// A Legacy library and the global setting decide the algorithm together; other libraries use their own
-    /// Order (AsList sorting arrives with task 2c).
+    /// Order: AsList sorts by the list ranks, Random/Smart/Smartish and Jellyfin (zero) go through the
+    /// existing play count algorithms (see <see cref="MapLibraryOrder"/>).
     /// </summary>
     private async Task<SortLibraryResult> SortOneLibraryAsync(DiscoverLibraryConfig library, List<JellyfinUser> users, SortOrderOptions globalSortOrder)
     {
         var result = new SortLibraryResult();
 
-        if (library.ListType == DiscoverListType.Trending)
-        {
-            return await SortTrendingAsync();
-        }
-
         if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
         {
-            // "Same as the list" gets its order from the sync's fetch-position play counts; running zero/random here
-            // would wipe that order (same trap as the SortOrder override in 1a fix 2).
-            result.Success = true;
-            result.Message = $"✅ {library.Name}: skipped (order comes from the list)";
-            return result;
+            // "Same as the list": play counts follow the list ranks in metadata.json (the sync refreshes the
+            // ranks of its fetched titles; titles that dropped off fall back to the bottom). A Legacy library
+            // never comes here — its Order stays unset and it keeps sorting by the global SortOrder until the
+            // migration (task 4) maps the old settings onto a real Order.
+            return await SortByListAsync();
         }
 
         // Get all items of this library
@@ -255,8 +251,8 @@ public class SortService
 
     /// <summary>
     /// Maps a library's own order onto the existing play count algorithms. Null means the sort task skips the
-    /// library. "Jellyfin" ordering leaves ordering to Jellyfin (today's "None"); "AsList" gets its order from the
-    /// sync's fetch positions and is skipped before we get here. An unknown value (a future enum member) maps to
+    /// library. "Jellyfin" ordering leaves ordering to Jellyfin (today's "None"); "AsList" sorts by the list ranks
+    /// through <see cref="SortByListAsync"/> before we get here. An unknown value (a future enum member) maps to
     /// null too, so it can never land on the zeroing algorithm by default.
     /// </summary>
     private static SortOrderOptions? MapLibraryOrder(DiscoverLibraryConfig library) => library.OrderOrDefault switch
@@ -269,11 +265,16 @@ public class SortService
     };
 
     /// <summary>
-    /// Set the play counts of a Trending library's titles from their position in Jellyseerr's trending list, for all
-    /// users, so sorting that library by play count (ascending) shows Jellyseerr's order. Call inside the library's
+    /// Set the play counts of a library's titles from their list rank in metadata.json, for all users, so sorting
+    /// that library by play count (ascending) shows the list's own order. Call inside the library's
     /// LibraryScope.Enter.
+    /// When <paramref name="freshlyFetched"/> is given (the sync path), only titles fetched in that sync get their
+    /// rank; every other title falls back to the bottom — ranks in metadata.json survive on disk, and a title that
+    /// dropped off a non-Trending list would otherwise keep its stale rank in the fresh order. Null (the sort task)
+    /// uses the stored ranks as they are.
     /// </summary>
-    public async Task<SortLibraryResult> SortTrendingAsync()
+    /// <param name="freshlyFetched">The items the current sync fetched, or null to trust the stored ranks.</param>
+    public async Task<SortLibraryResult> SortByListAsync(IReadOnlyCollection<IJellyseerrItem>? freshlyFetched = null)
     {
         var result = new SortLibraryResult();
         try
@@ -282,14 +283,17 @@ public class SortService
             if (allItems == null)
             {
                 result.Success = true;
-                result.Message = "No trending titles in Jellyfin yet";
+                result.Message = "No list titles in Jellyfin yet";
                 return result;
             }
+
+            var freshKeys = freshlyFetched?.Select(item => (item.GetType(), item.Id)).ToHashSet();
 
             // Steps of 100 like the other sort orders, so playing a title doesn't change the order
             var itemInfoMap = allItems
                 .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item),
-                    playCount: 100 * (itemData.item.ListRank ?? 1000), itemData.mediaType))
+                    playCount: 100 * ((freshKeys == null || freshKeys.Contains((itemData.item.GetType(), itemData.item.Id))
+                        ? itemData.item.ListRank : null) ?? 1000), itemData.mediaType))
                 .Where(x => !string.IsNullOrEmpty(x.folder))
                 .GroupBy(x => x.folder)
                 .ToDictionary(g => g.Key, g => (g.First().playCount, g.First().mediaType));
@@ -307,14 +311,14 @@ public class SortService
             }
 
             result.Success = true;
-            result.Message = "✅ Trending library sorted";
-            _logger.LogDebug("Set the trending order for {Count} titles", itemInfoMap.Count);
+            result.Message = "✅ Library sorted in list order";
+            _logger.LogDebug("Set the list order for {Count} titles", itemInfoMap.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting the trending order");
+            _logger.LogError(ex, "Error setting the list order");
             result.Success = false;
-            result.Message = $"Error setting the trending order: {ex.Message}";
+            result.Message = $"Error setting the list order: {ex.Message}";
         }
 
         return result;
