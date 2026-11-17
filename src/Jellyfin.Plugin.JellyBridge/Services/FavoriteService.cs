@@ -32,7 +32,9 @@ public class FavoriteService
     }
 
     /// <summary>
-    /// Get all user favorites from Jellyfin and filter to only items in the JellyBridge folder.
+    /// Get all user favorites from Jellyfin and filter to only items in any JellyBridge library folder. The result
+    /// is library-independent on purpose: the favorites-to-requests step runs once for all libraries (decision 8),
+    /// so favorites from every bridge folder must be collected outside the library scope.
     /// </summary>
     /// <returns>The filtered favorites in a flat list of (user, item) pairs</returns>
     public List<(JellyfinUser user, IJellyfinItem item)> GetUserFavorites()
@@ -62,10 +64,14 @@ public class FavoriteService
             }
 
             var path = fav.item?.Path;
-            var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
-            // A missing season of a show can also be favorited to request it (handled once, in the Default library —
-            // any other non-Trending library would request the same virtual season a second time)
-            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual && IsCurrentLibraryDefault();
+            // Favorites are collected for every JellyBridge library at once (the request steps run once outside the
+            // library loop), so the folder check must cover all bridge folders, not just a scoped one.
+            var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInAnyBridgeDirectory(path);
+            // A missing season of a show can also be favorited to request it. Two libraries holding the same show
+            // each have their own virtual season copy; RequestFavorites skips a title whose (media type, TMDB id)
+            // was already requested and RequestSeasonFavoritesAsync merges the seasons per (user, show) with
+            // distinct season numbers, so the same season is never requested twice by one user.
+            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual;
             if (!inBridgeFolder && !isMissingSeason)
             {
                 return false;
@@ -86,14 +92,6 @@ public class FavoriteService
         return filtered;
     }
 
-    /// <summary>
-    /// True when the current code runs inside the Default library's <see cref="LibraryScope"/>. Missing virtual
-    /// seasons are handled only there, so the same season is not requested once per non-Trending library.
-    /// </summary>
-    /// <returns>True when the current library is the Default one.</returns>
-    private static bool IsCurrentLibraryDefault() =>
-        string.Equals(LibraryScope.Current?.Name, DiscoverLibraries.GetDefault()?.Name, StringComparison.OrdinalIgnoreCase);
-
     #region Created
 
     /// <summary>
@@ -108,6 +106,8 @@ public class FavoriteService
         var requestResults = new List<(IJellyfinItem item, JellyseerrMediaRequest request)>();
         var blockedItems = new List<IJellyfinItem>();
         var successfullyProcessedItems = new HashSet<Guid>(); // Track items that have been successfully requested
+        // Decision 8: a title with a copy in two JellyBridge libraries is requested once — track requested media
+        var requestedMedia = new HashSet<(string MediaType, int TmdbId)>();
 
         // Randomize the order of tuples
         var random = new Random();
@@ -144,6 +144,13 @@ public class FavoriteService
             var username = user.JellyfinUsername ?? user.Username ?? "ID " + user.Id.ToString();
             var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
             var mediaPermission4k = IJellyseerrItem.GetMediaPermission4k(item);
+
+            // Skip a second copy of a title already requested in this sync (same title in two libraries)
+            if (!requestedMedia.Add((mediaType, tmdbId.Value)))
+            {
+                _logger.LogDebug("Skipping favorite '{ItemName}' - the same title was already requested from another library in this sync", item.Name);
+                continue;
+            }
 
             try
             {
@@ -590,6 +597,11 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newIgnoredMatches.Count, existingIgnored.Count);
 
+            // Decision 8: hiding must cover every library. A requested title with a copy in another JellyBridge
+            // library gets an .ignore there too, so hiding either copy hides both.
+            var otherLibraryCopies = await IgnoreCopiesInOtherLibrariesAsync(requestedFavorites);
+            newIgnored.AddRange(otherLibraryCopies);
+
             // Collect tasks for unfavoriting and marking as unplayed
             var unfavoriteTasks = new List<(Task<bool>? favoriteTask, Task<JellyfinWrapperResult> playStatusTask, JellyfinUser user, IJellyfinItem item, IJellyseerrItem jellyseerrItem)>();
 
@@ -725,6 +737,66 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
         }
 		
         return (newIgnored, cleared, hiddenSeasons);
+    }
+
+    /// <summary>
+    /// For every requested favorite, write an .ignore file into every other JellyBridge library folder that holds
+    /// the same title (same media type and TMDB id in its metadata.json). The current library's own copy is already
+    /// covered by the match ignore files, so its folder is skipped. Returns the metadata items newly hidden this way.
+    /// </summary>
+    private async Task<List<IJellyseerrItem>> IgnoreCopiesInOtherLibrariesAsync(
+        List<(JellyfinUser user, IJellyfinItem item)> requestedFavorites)
+    {
+        var newlyIgnored = new List<IJellyseerrItem>();
+        var requestedKeys = requestedFavorites
+            .Select(fav => (Type: IJellyseerrItem.GetMediaType(fav.item), TmdbId: fav.item.GetTmdbId() ?? 0))
+            .Where(key => key.TmdbId > 0)
+            .ToHashSet();
+        if (requestedKeys.Count == 0)
+        {
+            return newlyIgnored;
+        }
+
+        var root = DiscoverLibraries.GetRootDirectory();
+        var currentDirectory = FolderUtils.GetNormalizedPath(FolderUtils.GetBaseDirectory());
+        foreach (var library in DiscoverLibraries.GetAll())
+        {
+            if (FolderUtils.ArePathsEqual(library.GetDirectory(root), currentDirectory))
+            {
+                continue;
+            }
+
+            try
+            {
+                // Read that library's metadata through its own scope so folder paths resolve inside it
+                using (LibraryScope.Enter(library))
+                {
+                    var (movies, shows) = await _metadataService.ReadMetadataAsync();
+                    foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
+                    {
+                        var key = (Type: item is JellyseerrMovie ? JellyseerrModel.MediaType.MOVIE : JellyseerrModel.MediaType.TV, TmdbId: item.Id);
+                        if (!requestedKeys.Contains(key))
+                        {
+                            continue;
+                        }
+                        var ignorePath = Path.Combine(_metadataService.GetJellyBridgeItemDirectory(item), BridgeService.IgnoreFileName);
+                        if (!File.Exists(ignorePath))
+                        {
+                            await _bridgeService.CreateIgnoreFileAsync(ignorePath, JellyBridgeJsonSerializer.Serialize(item));
+                            newlyIgnored.Add(item);
+                            _logger.LogDebug("Hid the copy of requested title {ItemName} in library '{Library}': {IgnorePath}",
+                                item.MediaName, library.Name, ignorePath);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed hiding copies of requested titles in library '{Library}'", library.Name);
+            }
+        }
+
+        return newlyIgnored;
     }
 
     /// <summary>

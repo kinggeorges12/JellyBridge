@@ -370,26 +370,34 @@ public partial class SyncService
     }
 
     /// <summary>
-    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items, in the Discover library
-    /// and, when turned on, the Trending library.
+    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items (decision 8: a
+    /// title that has a copy in two libraries is requested once and hides both copies). The request steps run once,
+    /// outside the library loop, over the favorites of every bridge folder (deduped by media type and TMDB id); the
+    /// per-folder hide/ignore steps run once per enabled library inside the loop, so each library's own copy gets
+    /// its .ignore and declined requests lose theirs.
     /// Note: Caller is responsible for locking.
     /// </summary>
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
-        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
-            _logger, "favorites", _ => SyncToJellyseerrAsync(),
-            (library, ex) => new SyncJellyfinResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });
-
-        var result = new SyncJellyfinResult { Success = true };
-        if (perLibrary.Count == 0)
+        if (DiscoverLibraries.GetEnabled().Count == 0)
         {
-            result.Success = false;
-            result.Message = "No enabled Discover libraries";
+            var noneResult = new SyncJellyfinResult { Success = false, Message = "No enabled Discover libraries" };
+            return noneResult;
+        }
+
+        var result = await RequestFavoritesStepAsync();
+        if (!result.Success)
+        {
             return result;
         }
 
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
+            _logger, "favorites hide/ignore", _ => HideIgnoredStepAsync(),
+            (library, ex) => new SyncJellyfinResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });
+
         var failures = new List<string>();
-        var segments = new List<string>();
+        var segments = new List<string> { $"Requests: {result.Message}" };
+        result.Message = string.Empty;
         foreach (var (library, libraryResult) in perLibrary)
         {
             segments.Add($"{library.Name}: {libraryResult.Message}");
@@ -399,10 +407,6 @@ public partial class SyncService
             }
 
             result.Success &= libraryResult.Success;
-            result.ItemsProcessed.AddRange(libraryResult.ItemsProcessed);
-            result.ItemsFound.AddRange(libraryResult.ItemsFound);
-            result.ItemsCreated.AddRange(libraryResult.ItemsCreated);
-            result.ItemsBlocked.AddRange(libraryResult.ItemsBlocked);
             result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
             result.ItemsCleared.AddRange(libraryResult.ItemsCleared);
             result.ItemsUnhidden.AddRange(libraryResult.ItemsUnhidden);
@@ -411,7 +415,7 @@ public partial class SyncService
 
         if (failures.Count > 0)
         {
-            result.Message = $"⚠️ Favorite requests failed for {string.Join("; ", failures)}";
+            result.Message = $"⚠️ Favorite hide/ignore failed for {string.Join("; ", failures)}";
         }
         else
         {
@@ -422,32 +426,37 @@ public partial class SyncService
         return result;
     }
 
-    private async Task<SyncJellyfinResult> SyncToJellyseerrAsync()
+    /// <summary>
+    /// The request steps of the favorites sync, run once for all libraries (outside the library scope): connect to
+    /// Jellyseerr, collect the favorites of every bridge folder and request each favorited (media type, TMDB id)
+    /// exactly once. <see cref="FavoriteService.RequestFavorites"/> skips a second copy of the same title.
+    /// </summary>
+    private async Task<SyncJellyfinResult> RequestFavoritesStepAsync()
     {
         var result = new SyncJellyfinResult();
 
         try
         {
-            _logger.LogDebug("Starting sync from Jellyfin to Jellyseerr...");
+            _logger.LogDebug("Starting favorites-to-requests step for all bridge libraries...");
 
             // Step 0: Test connection first
             var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status);
             if (status == null)
             {
-                _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync from Jellyseerr to Jellyfin");
+                _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync from Jellyfin to Jellyseerr");
                 result.Success = false;
                 result.Message = "🔌 Failed to connect to Jellyseerr API";
                 return result;
             }
-            
-            // Step 1: Get all Jellyfin users and their favorites from JellyBridge folder
-            _logger.LogDebug("Step 1: Getting Jellyfin favorites from JellyBridge folder");
+
+            // Step 1: Get all Jellyfin users and their favorites from every JellyBridge library folder
+            _logger.LogDebug("Step 1: Getting Jellyfin favorites from all JellyBridge folders");
             var bridgeFavoritedItems = _favoriteService.GetUserFavorites();
             _logger.LogDebug("Step 1: Retrieved {Count} favorited bridge items", bridgeFavoritedItems.Count);
-            
+
             // Add items to unified collection
             result.ItemsProcessed.AddRange(bridgeFavoritedItems.Select(fav => fav.item));
-            
+
             // Step 2: Get all Jellyseerr users for request creation
             _logger.LogDebug("Step 2: Fetching Jellyseerr users for request creation");
             var jellyseerrUsersTask = _favoriteService.GetJellyseerrUsersAsync();
@@ -455,7 +464,7 @@ public partial class SyncService
             // Step 3: Filter out items that already have requests in Jellyseerr
             _logger.LogDebug("Step 3: Filtering favorites that already have Jellyseerr requests");
             var filteredFavoritesTask = _favoriteService.FilterRequestsFromFavorites(bridgeFavoritedItems);
-            
+
             await Task.WhenAll(jellyseerrUsersTask, filteredFavoritesTask);
             var jellyseerrUsers = await jellyseerrUsersTask;
             var (requestedFavorites, unrequestedFavorites) = await filteredFavoritesTask;
@@ -468,17 +477,51 @@ public partial class SyncService
             _logger.LogDebug("Step 4: Mapping favorites to Jellyseerr users");
             var unrequestedFavoritesWithJellyseerrUser = _favoriteService.EnsureJellyseerrUser(unrequestedFavorites, jellyseerrUsers);
 
-            // Step 5: Create requests for favorited bridge-only items
+            // Step 5: Create requests for favorited bridge-only items (once per media type + TMDB id)
             _logger.LogDebug("Step 5: Creating Jellyseerr requests for mapped favorites");
             var (requestResults, blockedItems) = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
             // Add requests to unified collection
             // Several favorited seasons of a show share one request
             result.ItemsCreated.AddRange(requestResults.Select(r => r.request).Where(r => r != null).Distinct());
-            
+
             // Add blocked items to unified collection
             result.ItemsBlocked.AddRange(blockedItems);
-            
+
+            result.Success = true;
+            result.Message = $"✅ {requestResults.Count} favorited titles requested";
+
+            _logger.LogDebug("Favorites-to-requests step completed with {ResultCount} successful requests", requestResults.Count);
+        }
+        catch (MissingMethodException ex)
+        {
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping sync to Jellyseerr");
+            result.Success = false;
+            result.Message = "❌ Using incompatible Jellyfin version. Skipping sync to Jellyseerr";
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during favorites-to-requests step");
+            result.Success = false;
+            result.Message = $"❌ Sync to Jellyseerr failed: {ex.Message}";
+            result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The per-folder hide/ignore steps of the favorites sync, run once per library inside the library loop: mark
+    /// requested titles hidden with an .ignore in the current library's folder (plus every other library folder
+    /// that holds the same title), unfavorite them, and remove the .ignore files of declined requests again.
+    /// </summary>
+    private async Task<SyncJellyfinResult> HideIgnoredStepAsync()
+    {
+        var result = new SyncJellyfinResult();
+
+        try
+        {
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
             var (newlyIgnoredItems, clearedItems, hiddenSeasons) = await _favoriteService.ClearAndIgnoreRequestedAsync();
@@ -487,7 +530,7 @@ public partial class SyncService
             _logger.LogDebug("Step 6: Hidden {NewlyIgnored} items and {HiddenSeasons} requested seasons, cleared {ClearedCount} items",
                 newlyIgnoredItems.Count, hiddenSeasons.Count, clearedItems.Count);
 
-            //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
+            // Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             _logger.LogDebug("Step 7: Removing .ignore files for fully declined requests");
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();
             result.ItemsUnhidden.AddRange(declinedItems);
@@ -512,25 +555,25 @@ public partial class SyncService
 
             // Step 9: Save results
             result.Success = true;
-            result.Message = "✅ Sync to Jellyseerr completed successfully";
-            
-            _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
+            result.Message = "✅ hide/ignore completed";
+
+            _logger.LogDebug("Hide/ignore step completed for the current library");
         }
         catch (MissingMethodException ex)
         {
-            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping sync to Jellyseerr");
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping hide/ignore step");
             result.Success = false;
             result.Message = "❌ Using incompatible Jellyfin version. Skipping sync to Jellyseerr";
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during sync to Jellyseerr");
+            _logger.LogError(ex, "Error during hide/ignore step");
             result.Success = false;
             result.Message = $"❌ Sync to Jellyseerr failed: {ex.Message}";
             result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
         }
-        
+
         return result;
     }
 }

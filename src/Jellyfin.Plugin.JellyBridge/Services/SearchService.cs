@@ -112,7 +112,11 @@ public class SearchService
     }
 
     /// <summary>
-    /// True when the user can see a library that holds the JellyBridge folder.
+    /// True when the user can see a library that holds a folder titles opened from search land in. Checked against
+    /// the search-open libraries (decision D3), never the Library Directory root: after the migration the root holds
+    /// every library folder, so a root check would be true for a user who can see only one library (e.g. only
+    /// Trending) that search opens can never add to. The user can see Discover when one of their libraries holds
+    /// either search-open folder.
     /// </summary>
     public bool UserCanSeeDiscover(Guid userId)
     {
@@ -122,10 +126,25 @@ public class SearchService
             return false;
         }
 
-        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var root = DiscoverLibraries.GetRootDirectory();
+        var openFolders = new[]
+            {
+                DiscoverLibraries.GetForSearchOpen(isMovie: true),
+                DiscoverLibraries.GetForSearchOpen(isMovie: false)
+            }
+            .Where(library => library != null)
+            .Select(library => library!.GetDirectory(root))
+            .DistinctBy(FolderUtils.GetNormalizedPath)
+            .ToList();
+        if (openFolders.Count == 0)
+        {
+            return false;
+        }
+
         return _libraryManager.GetUserRootFolder().GetChildren(user, true).OfType<CollectionFolder>()
             .Any(library => library.PhysicalLocations.Any(path =>
-                FolderUtils.IsPathInDirectory(path, baseDirectory) || FolderUtils.IsPathInDirectory(baseDirectory, path)));
+                openFolders.Any(folder =>
+                    FolderUtils.IsPathInDirectory(path, folder) || FolderUtils.IsPathInDirectory(folder, path))));
     }
 
     /// <summary>

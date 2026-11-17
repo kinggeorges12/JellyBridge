@@ -281,6 +281,10 @@ public class BridgeService
     /// <summary>
     /// Maps items to libraries by directory.
     /// Filters out items that already exist in their target library or are duplicates in the incoming list.
+    /// The existing-metadata comparison is library-local: <see cref="ReadMetadataLibraries"/> reads only the current
+    /// library's folder (<see cref="LibraryScope"/>), so a copy of a title that lives in another JellyBridge library
+    /// is not a duplicate — every library keeps its own copy (decision 8). A copy in a real, non-JellyBridge library
+    /// is still a duplicate: <see cref="BuildJellyfinMatchesAsync"/> finds it while excluding every bridge folder.
     /// </summary>
     /// <param name="items">List of Jellyseerr items to map (from Jellyseerr API)</param>
     /// <returns>List of unique Jellyseerr items to sync</returns>
