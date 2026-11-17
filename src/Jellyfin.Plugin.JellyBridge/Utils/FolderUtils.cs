@@ -116,24 +116,13 @@ public static class FolderUtils
     }
 
     /// <summary>
-    /// Gets every folder JellyBridge writes titles to: the Library Directory and, when turned on, the Trending library's
-    /// folder. Unlike <see cref="GetBaseDirectory"/>, this does not depend on <see cref="TrendingLibrary.Enter"/>.
+    /// Gets every folder JellyBridge writes titles to: the folder of every Discover library plus, until the libraries
+    /// migration has run, the Library Directory itself. Unlike <see cref="GetBaseDirectory"/>, this does not depend
+    /// on the current scope.
     /// </summary>
     public static List<string> GetBridgeDirectories()
     {
-        var config = Plugin.GetConfiguration();
-        var directories = new List<string>
-        {
-            string.IsNullOrWhiteSpace(config.LibraryDirectory)
-                ? (string)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.LibraryDirectory)]
-                : config.LibraryDirectory
-        };
-        if (TrendingLibrary.GetDirectory() is { } trendingDirectory)
-        {
-            directories.Add(trendingDirectory);
-        }
-
-        return directories;
+        return DiscoverLibraries.GetAllDirectories();
     }
 
     /// <summary>

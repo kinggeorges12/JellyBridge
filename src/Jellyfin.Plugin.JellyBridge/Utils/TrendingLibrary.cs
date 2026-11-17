@@ -18,9 +18,16 @@ public static class TrendingLibrary
     private static readonly AsyncLocal<bool> _active = new();
 
     /// <summary>
-    /// Gets a value indicating whether the current code runs for the Trending library.
+    /// Gets a value indicating whether the current code runs for the Trending library. True inside <see cref="Enter"/>
+    /// and inside <see cref="LibraryScope.Enter"/> for a library whose list is Trending.
     /// </summary>
-    public static bool IsActive => _active.Value;
+    public static bool IsActive => _active.Value
+        || LibraryScope.Current?.ListType == Configuration.DiscoverListType.Trending;
+
+    /// <summary>
+    /// Gets the legacy standalone trending folder, as the single-library settings configure it.
+    /// </summary>
+    public static string? GetLegacyDirectory() => GetDirectory();
 
     /// <summary>
     /// Gets a value indicating whether the Trending library is turned on.

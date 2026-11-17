@@ -111,12 +111,27 @@ namespace Jellyfin.Plugin.JellyBridge
         /// </summary>
         public static T GetConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null) where T : notnull
         {
+            // Inside LibraryScope.Enter, the folder, network and list settings describe the current library
+            if (Utils.LibraryScope.IsActive && Utils.LibraryScope.TryGetOverride(propertyName, out var libraryValue) && libraryValue is T library)
+            {
+                return library;
+            }
+
             // Inside TrendingLibrary.Enter, the folder settings describe the trending folder
             if (Utils.TrendingLibrary.IsActive && Utils.TrendingLibrary.TryGetOverride(propertyName, out var trendingValue) && trendingValue is T trending)
             {
                 return trending;
             }
 
+            return GetRawConfigOrDefault<T>(propertyName, config);
+        }
+
+        /// <summary>
+        /// Gets a configuration value or its default value, ignoring the per-library and trending overrides. Use it for
+        /// settings that stay global (URLs, schedules) or to read the single-library settings the per-library scope replaces.
+        /// </summary>
+        public static T GetRawConfigOrDefault<T>(string propertyName, PluginConfiguration? config = null) where T : notnull
+        {
             config ??= GetConfiguration();
             var propertyInfo = typeof(PluginConfiguration).GetProperty(propertyName);
             var rawValue = propertyInfo?.GetValue(config);

@@ -54,6 +54,11 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     AddDuplicateContent = config.AddDuplicateContent,
                     NetworkFolderPrefix = config.NetworkFolderPrefix,
 
+                    // Discover Libraries (issue #83)
+                    DiscoverLibraries = config.DiscoverLibraries,
+                    LibrariesMigrationVersion = config.LibrariesMigrationVersion,
+                    ShowLibrariesMigrationNotice = config.ShowLibrariesMigrationNotice,
+
                     // Import Discover Content
                     Region = config.Region,
                     NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
@@ -155,6 +160,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<int?>(configData, nameof(config.TrendingPages), config);
                     SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
                     SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
+                    SetJsonValue<int?>(configData, nameof(config.LibrariesMigrationVersion), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ShowLibrariesMigrationNotice), config);
+                    SetDiscoverLibraries(configData, config);
 
                     // Import Discover Content
                     SetJsonValue<string>(configData, nameof(config.Region), config);
@@ -353,6 +361,41 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogWarning("NetworkMap not provided in payload and existing value is empty. Using defaults.");
                     config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Sets the Discover libraries list from the submitted JSON, keeping the current list when it wasn't provided.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration to update.</param>
+        private void SetDiscoverLibraries(JsonElement configData, PluginConfiguration config)
+        {
+            if (!configData.TryGetProperty(nameof(config.DiscoverLibraries), out var librariesElement))
+            {
+                return;
+            }
+
+            if (librariesElement.ValueKind == JsonValueKind.Null)
+            {
+                config.DiscoverLibraries = new List<DiscoverLibraryConfig>();
+                _logger.LogInformation("DiscoverLibraries explicitly set to null by client (treated as no libraries yet).");
+            }
+            else if (librariesElement.ValueKind == JsonValueKind.Array)
+            {
+                try
+                {
+                    config.DiscoverLibraries = librariesElement.Deserialize<List<DiscoverLibraryConfig>>() ?? new List<DiscoverLibraryConfig>();
+                    _logger.LogTrace("Successfully deserialized DiscoverLibraries as array with {Count} libraries", config.DiscoverLibraries.Count);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to deserialize DiscoverLibraries as array. JSON: {Json}", librariesElement.GetRawText());
+                }
+            }
+            else
+            {
+                _logger.LogWarning("DiscoverLibraries was provided but is not an array; keeping the current libraries.");
             }
         }
 

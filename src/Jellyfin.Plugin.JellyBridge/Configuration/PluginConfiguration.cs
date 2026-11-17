@@ -60,6 +60,8 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MinimumVotes), 30 },
 
         // Library Settings
+        { nameof(LibrariesMigrationVersion), 0 },
+        { nameof(ShowLibrariesMigrationNotice), false },
         { nameof(ManageJellyBridgeLibrary), true },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
@@ -121,10 +123,26 @@ public class PluginConfiguration : BasePluginConfiguration
 
     // ===== Library Settings =====
     /// <summary>
-    /// Gets or sets the library directory.
+    /// Gets or sets the library directory. Every Discover library lives in a subfolder of it.
     /// </summary>
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Discover libraries, each one a subfolder of <see cref="LibraryDirectory"/> and a Jellyfin
+    /// library. Empty until the startup migration turns the previous single-library settings into a first library.
+    /// </summary>
+    public List<DiscoverLibraryConfig> DiscoverLibraries { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the version of the Discover libraries migration that has run (0 = old layout, 1 = migrated).
+    /// </summary>
+    public int? LibrariesMigrationVersion { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the settings page shows the one-time notice about the changes the migration made.
+    /// </summary>
+    public bool? ShowLibrariesMigrationNotice { get; set; }
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
