@@ -307,7 +307,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 library.Name = trimmed;
                 Plugin.Instance?.SaveConfiguration();
                 _logger.LogInformation("Renamed library '{Old}' to '{New}' ({OldPath} -> {NewPath}).", name, trimmed, oldDirectory, newDirectory);
-                return Ok(new { success = true, message = $"Renamed library '{name}' to '{trimmed}'. Rename the Jellyfin library's display name on its settings page to match.", jellyfinLibraryId = jellyfinLibrary?.ItemId });
+                return Ok(new { success = true, message = $"Renamed library '{name}' to '{trimmed}'.", jellyfinLibraryId = jellyfinLibrary?.ItemId });
             });
         }
 
