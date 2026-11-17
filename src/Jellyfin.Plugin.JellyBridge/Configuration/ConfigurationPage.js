@@ -756,6 +756,8 @@ function initializeImportContent(page) {
     // Set Max Discover Pages and Max Retention Days
     setInputField(page, 'MaxDiscoverPages');
     setInputField(page, 'MaxRetentionDays');
+    setInputField(page, 'MinimumRating');
+    setInputField(page, 'MinimumVotes');
 
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
@@ -1548,6 +1550,8 @@ function performPluginReset(page) {
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
+                MinimumRating: null,
+                MinimumVotes: null,
                 ExcludeFromMainLibraries: null,
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
@@ -1695,6 +1699,8 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'TrendingPages', validators.int, 'Trending Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+        if (!validateField(page, 'MinimumRating', (value) => validators.double(value) && !(parseFloat(value) > 10), 'Minimum Rating must be a number from 0 to 10').isValid) return;
+        if (!validateField(page, 'MinimumVotes', validators.int, 'Minimum Votes must be a positive integer').isValid) return;
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
@@ -1719,6 +1725,8 @@ function savePluginConfiguration(page) {
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.MinimumRating = safeParseDouble(page.querySelector('#MinimumRating'));
+    form.MinimumVotes = safeParseInt(page.querySelector('#MinimumVotes'));
     form.ManageJellyBridgeLibrary = nullIfDefault(page.querySelector('#ManageJellyBridgeLibrary').checked, config.ConfigDefaults.ManageJellyBridgeLibrary);
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
