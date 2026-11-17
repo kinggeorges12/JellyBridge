@@ -46,23 +46,26 @@ public class PlaceholderVideoGenerator
     private static readonly string TitlePromoFontAsset = "promo-font.ttf";
 
     // Layout of the 1920x1080 frame, top to bottom like a streaming service's title page: logo, info line, plot, then the
-    // overlay's "favorite to request" note, which starts at y 680. The text block is stacked upwards from just above the
-    // note and the logo moves up to make room; with no text the logo keeps its old place (bottom at y 630).
-    // drawtext puts the top of the text at y; a line of the promo font (Noto Sans, like the overlay) takes about 1.3 x the font size plus the line spacing.
+    // overlay's "favorite to request" note, which starts at y 720. The text block is stacked upwards from 70 px above the
+    // note and the logo moves up to make room (shrinking when a long plot leaves it less than its usual height); with no
+    // text the logo keeps its old place (bottom at y 630).
+    // drawtext puts the top of the text at y; line advances and heights below are measured from Jellyfin's ffmpeg.
     private const int PromoTextLeft = 140;
-    private const int PromoTextWidth = 1060;
+    private const int PromoTextWidth = 1200;
     private const int PromoTextBottom = 650;
     private const int PromoLogoBottom = 630;
     private const int PromoLogoGap = 30;
+    private const int PromoLogoMaxHeight = 300;
+    private const int PromoLogoTop = 80;
     private const int PromoInfoFontSize = 34;
     private const int PromoInfoHeight = 33;
-    private const int PromoInfoGap = 22;
+    private const int PromoInfoGap = 30;
     private const int PromoInfoMaxChars = 58;
-    private const int PromoPlotFontSize = 34;
-    private const int PromoPlotMaxLines = 3;
+    private const int PromoPlotFontSize = 30;
+    private const int PromoPlotMaxLines = 6;
     private const int PromoPlotSpacing = 10;
-    private const int PromoPlotLineAdvance = 56;
-    private const int PromoPlotLastLineHeight = 33;
+    private const int PromoPlotLineAdvance = 51;
+    private const int PromoPlotLastLineHeight = 29;
     private const int PromoBadgeY = 88;
     private const int PromoBadgeRight = 140;
     private const int PromoBadgeFontSize = 36;
@@ -1024,7 +1027,7 @@ public class PlaceholderVideoGenerator
         if (logo != null)
         {
             arguments.AddRange(new[] { "-i", logo });
-            filter += $";[2:v]scale=760:300:force_original_aspect_ratio=decrease[logo];[{stage}][logo]overlay=x=140:y={layout.LogoBottom}-overlay_h[jb{nextStage}]";
+            filter += $";[2:v]scale=760:{layout.LogoMaxHeight}:force_original_aspect_ratio=decrease[logo];[{stage}][logo]overlay=x=140:y={layout.LogoBottom}-overlay_h[jb{nextStage}]";
             (stage, nextStage) = ($"jb{nextStage}", nextStage + 1);
         }
         foreach (var textFilter in layout.Filters)
@@ -1092,7 +1095,7 @@ public class PlaceholderVideoGenerator
     /// <summary>
     /// The text filters for one promo and where the logo goes above them.
     /// </summary>
-    private sealed record PromoLayout(IReadOnlyList<string> Filters, int LogoBottom)
+    private sealed record PromoLayout(IReadOnlyList<string> Filters, int LogoBottom, int LogoMaxHeight = PromoLogoMaxHeight)
     {
         public static readonly PromoLayout Plain = new(Array.Empty<string>(), PromoLogoBottom);
     }
@@ -1237,22 +1240,47 @@ public class PlaceholderVideoGenerator
         return line.Length > 0 ? line : null;
     }
 
-    /// <summary>
-    /// Wraps the plot into the few lines a promo can carry, ending it with an ellipsis rather than a ragged word.
-    /// Wraps by character count, which is close enough at the size and width used here.
-    /// </summary>
-    private static string? WrapPromoPlot(string? overview)
+    // Advance widths of the promo font's printable ASCII characters (U+0020 to U+007E) in 1/1000 em, so the plot wraps to
+    // the width it is drawn at. Other characters count as PromoWideChar, so a line can come out short but never too long.
+    private static readonly short[] PromoAsciiWidths =
     {
-        if (string.IsNullOrWhiteSpace(overview))
+        260, 269, 408, 646, 572, 831, 732, 225, 300, 300, 551, 572, 268, 322, 268, 372, 572, 572, 572, 572, 572, 572, 572, 572,
+        572, 572, 268, 268, 572, 572, 572, 434, 899, 639, 650, 632, 730, 556, 519, 728, 741, 339, 273, 619, 524, 907, 760, 781,
+        605, 781, 622, 549, 556, 731, 600, 930, 586, 566, 572, 329, 372, 329, 572, 444, 281, 561, 615, 480, 615, 564, 344, 615,
+        618, 258, 258, 534, 258, 935, 618, 605, 615, 615, 413, 479, 361, 618, 508, 786, 529, 510, 470, 380, 551, 380, 572
+    };
+    private const int PromoWideChar = 700;
+
+    // A sentence ends at . ! ? or an ellipsis followed by a capital or an opening quote, but not after a short title or
+    // abbreviation such as "Dr." or "St."
+    private static readonly Regex PromoSentenceEnd = new(@"(?<=(?<!\b(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Mt|vs))[.!?\u2026])\s+(?=[\p{Lu}""'\u201C\u2018])", RegexOptions.Compiled);
+
+    private static double PromoTextWidthOf(string text, int fontSize)
+    {
+        var units = 0;
+        foreach (var ch in text)
         {
-            return null;
+            units += ch switch
+            {
+                >= ' ' and <= '~' => PromoAsciiWidths[ch - ' '],
+                '\u2018' or '\u2019' => 175,
+                '\u201C' or '\u201D' => 359,
+                '\u2013' => 500,
+                '\u2014' => 1000,
+                '\u2026' => 791,
+                _ => PromoWideChar
+            };
         }
-        var maxChars = Math.Max(20, (int)(PromoTextWidth / (PromoPlotFontSize * 0.52)));
+        return units * fontSize / 1000.0;
+    }
+
+    private static List<string> WrapPromoLines(IEnumerable<string> words)
+    {
         var lines = new List<string>();
         var line = new StringBuilder();
-        foreach (var word in overview.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var word in words)
         {
-            if (line.Length > 0 && line.Length + 1 + word.Length > maxChars)
+            if (line.Length > 0 && PromoTextWidthOf(line + " " + word, PromoPlotFontSize) > PromoTextWidth)
             {
                 lines.Add(line.ToString());
                 line.Clear();
@@ -1267,18 +1295,41 @@ public class PlaceholderVideoGenerator
         {
             lines.Add(line.ToString());
         }
+        return lines;
+    }
 
-        var cut = lines.Count > PromoPlotMaxLines;
-        if (cut)
+    /// <summary>
+    /// Wraps the plot into the lines a promo can carry. A longer plot ends after its last whole sentence that fits, or with
+    /// an ellipsis when even its first sentence is too long.
+    /// </summary>
+    private static string? WrapPromoPlot(string? overview)
+    {
+        if (string.IsNullOrWhiteSpace(overview))
         {
-            lines = lines.GetRange(0, PromoPlotMaxLines);
+            return null;
         }
-        var plot = string.Join("\n", lines);
-        if (cut)
+        var text = string.Join(' ', overview.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        var lines = WrapPromoLines(text.Split(' '));
+        if (lines.Count <= PromoPlotMaxLines)
         {
-            plot = plot.TrimEnd('.', ',', ':', ';') + "\u2026";
+            return string.Join("\n", lines);
         }
-        return plot.Length > 0 ? plot : null;
+
+        List<string>? fitting = null;
+        var kept = new StringBuilder();
+        foreach (var sentence in PromoSentenceEnd.Split(text))
+        {
+            kept.Append(kept.Length > 0 ? " " : string.Empty).Append(sentence);
+            var candidate = WrapPromoLines(kept.ToString().Split(' '));
+            if (candidate.Count > PromoPlotMaxLines)
+            {
+                break;
+            }
+            fitting = candidate;
+        }
+        return fitting != null
+            ? string.Join("\n", fitting)
+            : string.Join("\n", lines.GetRange(0, PromoPlotMaxLines)).TrimEnd('.', ',', ':', ';') + "\u2026";
     }
 
     /// <summary>
@@ -1316,7 +1367,7 @@ public class PlaceholderVideoGenerator
             return "none";
         }
         // The layout is part of what is drawn, so a change to it re-renders every title once
-        var joined = string.Join("\n", "layout9", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
+        var joined = string.Join("\n", "layout10", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)))[..12].ToLowerInvariant();
     }
 
@@ -1358,7 +1409,8 @@ public class PlaceholderVideoGenerator
             filters.Add(DrawTextFilter(WritePromoTextFile(key, "badge", text.Badge), font, PromoBadgeY, PromoBadgeFontSize,
                 $"w-tw-{PromoBadgeRight}", boxed: true));
         }
-        return new PromoLayout(filters, top < PromoTextBottom ? top - PromoLogoGap : PromoLogoBottom);
+        var logoBottom = top < PromoTextBottom ? top - PromoLogoGap : PromoLogoBottom;
+        return new PromoLayout(filters, logoBottom, Math.Min(PromoLogoMaxHeight, logoBottom - PromoLogoTop));
     }
 
     private static string DrawTextFilter(string textFile, string font, int y, int fontSize, string x, int lineSpacing = 0, bool boxed = false)
