@@ -53,11 +53,15 @@ public class PlaceholderUserDataService
         var changedCount = 0;
         try
         {
-            var baseDirectory = FolderUtils.GetBaseDirectory();
-            var root = _libraryManager.Inner.FindByPath(baseDirectory, isFolder: true);
-            if (root == null)
+            // Every JellyBridge library folder (all Discover libraries), each inside its own Jellyfin library
+            var rootIds = FolderUtils.GetBridgeDirectories()
+                .Select(directory => _libraryManager.Inner.FindByPath(directory, isFolder: true)?.Id ?? Guid.Empty)
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToArray();
+            if (rootIds.Length == 0)
             {
-                _logger.LogDebug("JellyBridge folder is not in a Jellyfin library yet; skipping placeholder user data cleanup");
+                _logger.LogDebug("JellyBridge folders are not in Jellyfin libraries yet; skipping placeholder user data cleanup");
                 return 0;
             }
 
@@ -66,13 +70,13 @@ public class PlaceholderUserDataService
                 var items = _libraryManager.Inner.GetItemList(new InternalItemsQuery(user.Inner)
                 {
                     IncludeItemTypes = new[] { BaseItemKind.Episode, BaseItemKind.Movie },
-                    AncestorIds = new[] { root.Id },
+                    AncestorIds = rootIds,
                     Recursive = true
                 });
 
                 foreach (var item in items.OfType<Video>())
                 {
-                    if (string.IsNullOrEmpty(item.Path) || !FolderUtils.IsPathInDirectory(item.Path, baseDirectory))
+                    if (string.IsNullOrEmpty(item.Path) || !FolderUtils.IsPathInAnyBridgeDirectory(item.Path))
                     {
                         continue;
                     }

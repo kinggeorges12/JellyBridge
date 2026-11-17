@@ -97,7 +97,6 @@ public class RefreshService
         try
         {
             var config = Plugin.GetConfiguration();
-            var syncDirectory = FolderUtils.GetBaseDirectory();
             var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
             if (!manageJellyBridgeLibrary) {

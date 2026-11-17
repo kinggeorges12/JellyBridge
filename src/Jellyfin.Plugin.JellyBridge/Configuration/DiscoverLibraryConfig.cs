@@ -71,6 +71,11 @@ public enum DiscoverLibraryOrder
 public class DiscoverLibraryConfig
 {
     /// <summary>
+    /// Tag given to titles in a Trending library (stored like a network name).
+    /// </summary>
+    public const string TrendingTag = "Trending";
+
+    /// <summary>
     /// Gets or sets the library name, used for the card, the folder and the Jellyfin library. Unique ignoring case.
     /// Characters not allowed in folder names are stripped from the folder name only (see <see cref="FolderName"/>).
     /// </summary>

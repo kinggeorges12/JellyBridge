@@ -150,7 +150,7 @@ public class DiscoverService
             // Ranked among the titles only, and before skipping blocklisted ones so the order matches Jellyseerr's page
             rank++;
             item.TrendingRank = rank;
-            item.NetworkTag = TrendingLibrary.Tag;
+            item.NetworkTag = DiscoverLibraryConfig.TrendingTag;
             if (item is JellyseerrMovie movie && movie.MediaInfo?.Status != MediaStatus.BLACKLISTED)
             {
                 movies.Add(movie);

@@ -60,69 +60,67 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
-        var result = await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync);
-        if (DiscoverLibraries.GetTrending() is { } trendingLibrary)
+        // One pass per enabled library, inside the loop's scope; the fetch function follows the library's list.
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", async library =>
+            library.ListType == DiscoverListType.Trending
+                ? await SyncTrendingFromJellyseerrAsync()
+                : await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync),
+            (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
+
+        var result = new SyncJellyseerrResult { Success = true };
+        if (perLibrary.Count == 0)
         {
-            var trendingResult = await SyncTrendingFromJellyseerrAsync(trendingLibrary);
-            if (!trendingResult.Success)
-            {
-                result.Message = result.Success
-                    ? $"⚠️ Discover library synced, Trending library failed: {trendingResult.Message}"
-                    : $"{result.Message} (Trending library: {trendingResult.Message})";
-            }
-
-            result.Success &= trendingResult.Success;
-
-            result.ItemsAdded.AddRange(trendingResult.ItemsAdded);
-            result.ItemsUpdated.AddRange(trendingResult.ItemsUpdated);
-            result.ItemsSkipped.AddRange(trendingResult.ItemsSkipped);
-            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
-            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+            result.Success = false;
+            result.Message = "No enabled Discover libraries";
+            return result;
         }
 
+        var segments = new List<string>();
+        foreach (var (library, libraryResult) in perLibrary)
+        {
+            segments.Add($"{library.Name}: {libraryResult.Message}");
+            result.Success &= libraryResult.Success;
+            result.ItemsAdded.AddRange(libraryResult.ItemsAdded);
+            result.ItemsUpdated.AddRange(libraryResult.ItemsUpdated);
+            result.ItemsSkipped.AddRange(libraryResult.ItemsSkipped);
+            result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
+            result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
+        }
+
+        result.Message = string.Join("; ", segments);
         return result;
     }
 
     /// <summary>
-    /// Sync the Trending library: the same steps as for the Discover library, run on the trending folder, then remove the
-    /// titles that are no longer trending and set the play counts that sort the library in Jellyseerr's order.
+    /// Sync one Trending library: the same steps as for the other libraries, then remove the titles that are no
+    /// longer trending and set the play counts that sort the library in Jellyseerr's order. Runs inside the
+    /// library loop's scope.
     /// </summary>
-    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync(DiscoverLibraryConfig trendingLibrary)
+    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync()
     {
-        var directory = trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory());
-        if (directory == null)
+        var trending = new List<IJellyseerrItem>();
+        var result = await SyncFromJellyseerrAsync(async () =>
         {
-            _logger.LogWarning("The Trending Directory must be outside the Library Directory; skipping the Trending library");
-            return new SyncJellyseerrResult { Success = false, Message = "📁 The Trending Directory must be outside the Library Directory" };
-        }
-
-        Directory.CreateDirectory(directory);
-        using (LibraryScope.Enter(trendingLibrary))
+            var (movies, shows) = await _discoverService.FetchTrendingMediaAsync();
+            trending.AddRange(movies);
+            trending.AddRange(shows);
+            return (movies, shows);
+        });
+        if (!result.Success)
         {
-            var trending = new List<IJellyseerrItem>();
-            var result = await SyncFromJellyseerrAsync(async () =>
-            {
-                var (movies, shows) = await _discoverService.FetchTrendingMediaAsync();
-                trending.AddRange(movies);
-                trending.AddRange(shows);
-                return (movies, shows);
-            });
-            if (!result.Success)
-            {
-                return result;
-            }
-
-            var removed = await RemoveStaleTrendingAsync(trending);
-            result.ItemsHidden.AddRange(removed);
-            if (removed.Count > 0)
-            {
-                result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
-            }
-
-            // Titles Jellyfin hasn't scanned yet get their position on the next sync
-            await _sortService.SortTrendingAsync();
             return result;
         }
+
+        var removed = await RemoveStaleTrendingAsync(trending);
+        result.ItemsHidden.AddRange(removed);
+        if (removed.Count > 0)
+        {
+            result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+        }
+
+        // Titles Jellyfin hasn't scanned yet get their position on the next sync
+        await _sortService.SortTrendingAsync();
+        return result;
     }
 
     /// <summary>
@@ -378,32 +376,44 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
-        var result = await SyncToJellyseerrAsync();
-        if (DiscoverLibraries.GetTrending() is { } trendingLibrary
-            && Directory.Exists(trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory())))
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
+            _logger, "favorites", _ => SyncToJellyseerrAsync(),
+            (library, ex) => new SyncJellyfinResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });
+
+        var result = new SyncJellyfinResult { Success = true };
+        if (perLibrary.Count == 0)
         {
-            SyncJellyfinResult trendingResult;
-            using (LibraryScope.Enter(trendingLibrary))
+            result.Success = false;
+            result.Message = "No enabled Discover libraries";
+            return result;
+        }
+
+        var failures = new List<string>();
+        foreach (var (library, libraryResult) in perLibrary)
+        {
+            if (!libraryResult.Success)
             {
-                trendingResult = await SyncToJellyseerrAsync();
+                failures.Add($"{library.Name}: {libraryResult.Message}");
             }
 
-            if (!trendingResult.Success)
-            {
-                result.Message = result.Success
-                    ? $"⚠️ Discover library favorites synced, Trending library failed: {trendingResult.Message}"
-                    : $"{result.Message} (Trending library: {trendingResult.Message})";
-            }
+            result.Success &= libraryResult.Success;
+            result.ItemsProcessed.AddRange(libraryResult.ItemsProcessed);
+            result.ItemsFound.AddRange(libraryResult.ItemsFound);
+            result.ItemsCreated.AddRange(libraryResult.ItemsCreated);
+            result.ItemsBlocked.AddRange(libraryResult.ItemsBlocked);
+            result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
+            result.ItemsCleared.AddRange(libraryResult.ItemsCleared);
+            result.ItemsUnhidden.AddRange(libraryResult.ItemsUnhidden);
+            result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
+        }
 
-            result.Success &= trendingResult.Success;
-            result.ItemsProcessed.AddRange(trendingResult.ItemsProcessed);
-            result.ItemsFound.AddRange(trendingResult.ItemsFound);
-            result.ItemsCreated.AddRange(trendingResult.ItemsCreated);
-            result.ItemsBlocked.AddRange(trendingResult.ItemsBlocked);
-            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
-            result.ItemsCleared.AddRange(trendingResult.ItemsCleared);
-            result.ItemsUnhidden.AddRange(trendingResult.ItemsUnhidden);
-            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+        if (failures.Count > 0)
+        {
+            result.Message = $"⚠️ Favorite requests failed for {string.Join("; ", failures)}";
+        }
+        else
+        {
+            result.Message = perLibrary[0].Result.Message;
         }
 
         return result;

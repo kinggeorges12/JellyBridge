@@ -34,28 +34,32 @@ public class CleanupService
     /// </summary>
     public async Task<CleanupResult> CleanupMetadataAsync()
     {
-        var result = await CleanupFolderMetadataAsync();
-        if (DiscoverLibraries.GetTrending() is { } trendingLibrary
-            && Directory.Exists(trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory())))
-        {
-            CleanupResult trendingResult;
-            using (LibraryScope.Enter(trendingLibrary))
-            {
-                trendingResult = await CleanupFolderMetadataAsync();
-            }
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
+            _logger, "cleanup", _ => CleanupFolderMetadataAsync(),
+            (library, ex) => new CleanupResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });
 
-            result.Success &= trendingResult.Success;
-            result.ItemsProcessed.AddRange(trendingResult.ItemsProcessed);
-            result.ItemsDeleted.AddRange(trendingResult.ItemsDeleted);
-            result.ItemsCreated.AddRange(trendingResult.ItemsCreated);
-            result.MoviesCleaned += trendingResult.MoviesCleaned;
-            result.ShowsCleaned += trendingResult.ShowsCleaned;
-            if (trendingResult.Refresh != null)
+        var result = new CleanupResult { Success = true };
+        if (perLibrary.Count == 0)
+        {
+            result.Success = false;
+            result.Message = "No enabled Discover libraries";
+            return result;
+        }
+
+        foreach (var (library, libraryResult) in perLibrary)
+        {
+            result.Success &= libraryResult.Success;
+            result.ItemsProcessed.AddRange(libraryResult.ItemsProcessed);
+            result.ItemsDeleted.AddRange(libraryResult.ItemsDeleted);
+            result.ItemsCreated.AddRange(libraryResult.ItemsCreated);
+            result.MoviesCleaned += libraryResult.MoviesCleaned;
+            result.ShowsCleaned += libraryResult.ShowsCleaned;
+            if (libraryResult.Refresh != null)
             {
                 result.Refresh ??= new RefreshPlan();
-                result.Refresh.CreateRefresh |= trendingResult.Refresh.CreateRefresh;
-                result.Refresh.RemoveRefresh |= trendingResult.Refresh.RemoveRefresh;
-                result.Refresh.RefreshImages |= trendingResult.Refresh.RefreshImages;
+                result.Refresh.CreateRefresh |= libraryResult.Refresh.CreateRefresh;
+                result.Refresh.RemoveRefresh |= libraryResult.Refresh.RemoveRefresh;
+                result.Refresh.RefreshImages |= libraryResult.Refresh.RefreshImages;
             }
         }
 
@@ -63,7 +67,7 @@ public class CleanupService
     }
 
     /// <summary>
-    /// Cleanup of the current JellyBridge folder (the Library Directory, or the trending folder inside TrendingLibrary.Enter).
+    /// Cleanup of one library's folder, which the caller has scoped with LibraryLoop / LibraryScope.Enter.
     /// </summary>
     private async Task<CleanupResult> CleanupFolderMetadataAsync()
     {

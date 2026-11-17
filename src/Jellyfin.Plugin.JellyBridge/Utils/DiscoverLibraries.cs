@@ -40,12 +40,28 @@ public static class DiscoverLibraries
 
         if (stored.Count == 0)
         {
-            Plugin.Instance.LoggerFactory.CreateLogger(typeof(DiscoverLibraries).Name)
-                .LogError("Migration is done but no Discover libraries are configured; nothing will sync.");
+            LogOnce("NoLibrariesConfigured", LogLevel.Error, "Migration is done but no Discover libraries are configured; nothing will sync.");
         }
 
         return stored;
     }
+
+    /// <summary>
+    /// Logs a message the first time it is asked for, then stays quiet — GetBridgeDirectories() runs on every
+    /// playback and favorite event, and repeating the same warning there buries the log.
+    /// </summary>
+    private static void LogOnce(string key, LogLevel level, string message)
+    {
+        if (!_loggedOnceKeys.TryAdd(key, 1))
+        {
+            return;
+        }
+
+        Plugin.Instance?.LoggerFactory?.CreateLogger(typeof(DiscoverLibraries).Name)?.Log(level, message);
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _loggedOnceKeys = new();
+    private static int _loggedSynthesis;
 
     /// <summary>
     /// Gets the enabled libraries the sync should run for.
@@ -109,6 +125,13 @@ public static class DiscoverLibraries
     /// </summary>
     private static List<DiscoverLibraryConfig> SynthesizeLegacy(PluginConfiguration config)
     {
+        if (_loggedSynthesis == 0 && Plugin.Instance?.LoggerFactory != null)
+        {
+            Interlocked.Exchange(ref _loggedSynthesis, 1);
+            Plugin.Instance.LoggerFactory.CreateLogger(typeof(DiscoverLibraries).Name).LogInformation(
+                "Discover libraries migration has not run yet — using libraries synthesized from the single-library settings.");
+        }
+
         var networkMap = Plugin.GetRawConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config);
         var libraries = new List<DiscoverLibraryConfig>
         {
@@ -131,23 +154,52 @@ public static class DiscoverLibraries
             }
         };
 
-        if (Plugin.GetRawConfigOrDefault<bool>(nameof(PluginConfiguration.UseTrendingLibrary), config)
-            && TrendingLibrary.GetLegacyDirectory() is { } trendingDirectory)
+        if (Plugin.GetRawConfigOrDefault<bool>(nameof(PluginConfiguration.UseTrendingLibrary), config))
         {
-            libraries.Add(new()
+            if (LegacyTrendingDirectory(config) is { } trendingDirectory)
             {
-                Name = TrendingLibrary.Tag,
-                ListType = DiscoverListType.Trending,
-                LibraryType = DiscoverLibraryType.All,
-                IsEnabled = true,
-                Order = DiscoverLibraryOrder.AsList,
-                DirectoryOverride = trendingDirectory,
-                // Not Legacy: the trending folder was always a flat mixed folder — exactly what a non-Legacy
-                // library is — so the scope must answer mixed=true and network folders=false, not the global values.
-                Pages = Plugin.GetRawConfigOrDefault<int>(nameof(PluginConfiguration.TrendingPages), config)
-            });
+                libraries.Add(new()
+                {
+                    Name = DiscoverLibraryConfig.TrendingTag,
+                    ListType = DiscoverListType.Trending,
+                    LibraryType = DiscoverLibraryType.All,
+                    IsEnabled = true,
+                    Order = DiscoverLibraryOrder.AsList,
+                    DirectoryOverride = trendingDirectory,
+                    // Not Legacy: the trending folder was always a flat mixed folder — exactly what a non-Legacy
+                    // library is — so the scope must answer mixed=true and network folders=false, not the global values.
+                    Pages = Plugin.GetRawConfigOrDefault<int>(nameof(PluginConfiguration.TrendingPages), config)
+                });
+            }
+            else
+            {
+                // Used to be a visible sync failure ("Trending Directory must be outside the Library Directory");
+                // the library is now simply skipped, so say so once.
+                LogOnce("TrendingOverlap", LogLevel.Warning, "Trending Directory must be outside the Library Directory; Trending library skipped.");
+            }
         }
 
         return libraries;
+    }
+
+    /// <summary>
+    /// Gets the legacy standalone trending folder as the single-library settings configure it: the configured one,
+    /// or "&lt;Library Directory&gt; Trending" next to it. Null when it would overlap the Library Directory.
+    /// </summary>
+    private static string? LegacyTrendingDirectory(PluginConfiguration config)
+    {
+        var libraryDirectory = string.IsNullOrWhiteSpace(config.LibraryDirectory)
+            ? (string)PluginConfiguration.DefaultValues[nameof(PluginConfiguration.LibraryDirectory)]
+            : config.LibraryDirectory;
+        var trendingDirectory = string.IsNullOrWhiteSpace(config.TrendingDirectory)
+            ? FolderUtils.GetNormalizedPath(libraryDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + " " + DiscoverLibraryConfig.TrendingTag
+            : config.TrendingDirectory;
+
+        if (FolderUtils.IsPathInDirectory(trendingDirectory, libraryDirectory) || FolderUtils.IsPathInDirectory(libraryDirectory, trendingDirectory))
+        {
+            return null;
+        }
+
+        return FolderUtils.GetNormalizedPath(trendingDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 }

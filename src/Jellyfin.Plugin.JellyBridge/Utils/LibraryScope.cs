@@ -6,8 +6,8 @@ namespace Jellyfin.Plugin.JellyBridge.Utils;
 /// <summary>
 /// Runs the sync, favorite requests, cleanup and sorting steps for one Discover library. Inside <see cref="Enter"/>,
 /// <see cref="Plugin.GetConfigOrDefault{T}"/> answers with that library's folder, networks, list limits and sort
-/// order instead of the global single-library settings — the way <see cref="TrendingLibrary.Enter"/> did for the
-/// Trending library, generalized to any number of libraries.
+/// order instead of the global single-library settings — generalized from what the Trending library's own scope
+/// did for a single second folder.
 /// </summary>
 public static class LibraryScope
 {
