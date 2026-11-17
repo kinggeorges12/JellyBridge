@@ -72,6 +72,9 @@ $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 # Set manifest file 
 $manifestPath = "manifest.json"
 
+# Read the C# project file to update version numbers
+$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
+
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
@@ -90,7 +93,6 @@ foreach ($t in $TargetABIs) {
 
     # Step 1: Update version numbers in project file
     Write-Host "Step 1: Updating version numbers in project file..." -ForegroundColor Yellow
-    $csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
     $csprojContent = Get-Content $csprojPath -Raw
 
     # Update AssemblyVersion and FileVersion
@@ -186,9 +188,8 @@ Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
 
 # Set project version numbers back to the base version (without subversion) for future development
 Start-Sleep -Milliseconds 1000
-$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
 $csprojContent = Get-Content $csprojPath -Raw
-$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$TargetABIs[0].JellyfinVersion</JellyfinVersion>"
+$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$($TargetABIs[0].JellyfinVersion)</JellyfinVersion>"
 $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$Version</AssemblyVersion>"
 $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$Version</FileVersion>"
 Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
@@ -215,7 +216,7 @@ Write-Host "Step 9: Pushing changes to GitHub..." -ForegroundColor Yellow
 
 # Configure git remote with token for authentication
 if ($GitHubToken) {
-    git remote set-url origin "https://kinggeorges12:$GitHubToken@github.com/kinggeorges12/JellyBridge.git"
+    git remote set-url origin "https://${GitHubUsername}:${GitHubToken}@github.com/${GitHubUsername}/JellyBridge.git"
 }
 
 git push
@@ -232,7 +233,7 @@ $headers = @{
     "Accept" = "application/vnd.github.v3+json"
 }
 
-$releaseBody = "## v$Version`n`n$ChangelogText`n`n### Automatic Installation`nAdd this Repository to your Jellyfin Plugins: https://raw.githubusercontent.com/kinggeorges12/JellyBridge/refs/heads/main/manifest.json`n### Manual Installation:`n1. Download the JellyBridge-$Version.{JFV}-DLL.zip file prior to your Jellyfin version (JFV)`n2. Unzip the contents into a folder matching the zip name inside the Jellyfin plugins folder`n3. Restart Jellyfin to load the new version"
+$releaseBody = "## v$Version`n`n$ChangelogText`n`n### Automatic Installation`nAdd this Repository to your Jellyfin Plugins: https://raw.githubusercontent.com/${GitHubUsername}/JellyBridge/refs/heads/main/manifest.json`n### Manual Installation:`n1. Download the JellyBridge-$Version.{JFV}-DLL.zip file prior to your Jellyfin version (JFV)`n2. Unzip the contents into a folder matching the zip name inside the Jellyfin plugins folder`n3. Restart Jellyfin to load the new version"
 
 $body = @{
     tag_name = "v$Version"

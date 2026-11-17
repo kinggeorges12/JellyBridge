@@ -56,8 +56,8 @@ public class RefreshService
     {
         List<RefreshableResult> allResults = results.OfType<RefreshableResult>().ToList();
         
-        var skipRefresh = allResults.Any(r => r.Refresh == null);
-        if (skipRefresh)
+        // Refresh when any step asked for it (e.g. a scheduled sync that added items but had no new favorites)
+        if (!allResults.Any(r => r.Refresh != null))
         {
             _logger.LogDebug("No refresh plan applied");
             return;
@@ -171,7 +171,7 @@ public class RefreshService
                 refreshOptionsUpdate.MetadataRefreshMode, refreshOptionsUpdate.ImageRefreshMode, refreshOptionsUpdate.ReplaceAllMetadata, refreshOptionsUpdate.ReplaceAllImages, refreshOptionsUpdate.RegenerateTrickplay);
 
             // Collect valid library folders first
-            var validLibraryFolders = new List<(string name, Guid id)>();
+            var validLibraryFolders = new List<(string name, MediaBrowser.Controller.Entities.Folder folder)>();
             foreach (var bridgeLibrary in bridgeLibraries)
             {
                 try
@@ -190,8 +190,8 @@ public class RefreshService
                     {
                         throw new InvalidOperationException("Library folder not found");
                     }
-
-                    validLibraryFolders.Add((bridgeLibrary.Name, libraryFolder.Id));
+                    
+                    validLibraryFolders.Add((bridgeLibrary.Name, (MediaBrowser.Controller.Entities.Folder)libraryFolder));
                 }
                 catch (Exception ex)
                 {
@@ -199,16 +199,17 @@ public class RefreshService
                 }
             }
 
+            /*
             // Queue all Remove refreshes first (if removeMode is enabled)
             if (removeMode)
             {
                 _logger.LogTrace("Queueing Remove refreshes for {Count} libraries", validLibraryFolders.Count);
-                foreach (var (name, id) in validLibraryFolders)
+                foreach (var (name, folder) in validLibraryFolders)
                 {
                     try
                     {
-                        _providerManager.QueueRefresh(id, refreshOptionsRemove, RefreshPriority.High);
-                        _logger.LogTrace("Queued Remove refresh for library: {LibraryName} ({ItemId})", name, id);
+                        _providerManager.QueueRefresh(folder.Id, refreshOptionsRemove, RefreshPriority.High);
+                        _logger.LogTrace("Queued Remove refresh for library: {LibraryName} ({ItemId})", name, folder.Id);
                     }
                     catch (Exception ex)
                     {
@@ -219,12 +220,12 @@ public class RefreshService
 
             // Queue all Update refreshes
             _logger.LogTrace("Queueing Update refreshes for {Count} libraries", validLibraryFolders.Count);
-            foreach (var (name, id) in validLibraryFolders)
+            foreach (var (name, folder) in validLibraryFolders)
             {
                 try
                 {
-                    _providerManager.QueueRefresh(id, refreshOptionsUpdate, RefreshPriority.Normal);
-                    _logger.LogTrace("Queued Update refresh for library: {LibraryName} ({ItemId})", name, id);
+                    _providerManager.QueueRefresh(folder.Id, refreshOptionsUpdate, RefreshPriority.Normal);
+                    _logger.LogTrace("Queued Update refresh for library: {LibraryName} ({ItemId})", name, folder.Id);
                 }
                 catch (Exception ex)
                 {
@@ -236,17 +237,38 @@ public class RefreshService
             if (createMode)
             {
                 _logger.LogTrace("Queueing Create refreshes for {Count} libraries", validLibraryFolders.Count);
-                foreach (var (name, id) in validLibraryFolders)
+                foreach (var (name, folder) in validLibraryFolders)
                 {
                     try
                     {
-                        _providerManager.QueueRefresh(id, refreshOptionsCreate, RefreshPriority.Low);
-                        _logger.LogTrace("Queued Create refresh for library: {LibraryName} ({ItemId})", name, id);
+                        _providerManager.QueueRefresh(folder.Id, refreshOptionsCreate, RefreshPriority.Low);
+                        _logger.LogTrace("Queued Create refresh for library: {LibraryName} ({ItemId})", name, folder.Id);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error queueing Create refresh for library '{LibraryName}'", name);
                     }
+                }
+            }
+            */
+            var refreshOptions = removeMode ? refreshOptionsRemove : createMode ? refreshOptionsCreate : refreshOptionsUpdate;
+            var refreshOptionsMessage = removeMode ? "Remove" : createMode ? "Create" : "Update";
+            foreach (var (name, folder) in validLibraryFolders)
+            {
+                try
+                {
+                    _providerManager.QueueRefresh(folder.Id, refreshOptions, RefreshPriority.Normal);
+                    await folder.ValidateChildren(
+                        new Progress<double>(),
+                        refreshOptions,
+                        recursive: true,
+                        allowRemoveRoot: false,
+                        cancellationToken: CancellationToken.None);
+                    _logger.LogTrace("Queued {RefreshOptionsMessage} refresh for library: {LibraryName} ({ItemId})", refreshOptionsMessage, name, folder.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error queueing {RefreshOptionsMessage} refresh for library '{LibraryName}'", refreshOptionsMessage, name);
                 }
             }
 

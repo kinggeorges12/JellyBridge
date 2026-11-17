@@ -109,6 +109,12 @@ public class PluginConfiguration : BasePluginConfiguration
     [Required]
     public string ApiKey { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Mask for API Key to avoid sending real data to front-end.
+    /// </summary>
+    [Required]
+    public static readonly string ApiKeyMask = "*********************-****-****-****-************";
+
     // ===== Library Settings =====
     /// <summary>
     /// Gets or sets the library directory.

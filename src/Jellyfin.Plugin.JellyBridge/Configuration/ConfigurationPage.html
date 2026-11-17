@@ -587,7 +587,7 @@
                                 <p><i>The <span class="link" data-target-page="testConnection">🚀 Test Connection with Jellyseerr</span> button displays an error: The library directory is not accessible.</i></p>
                                 <ul>
                                     <li>[Windows] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>mkdir "C:\ProgramData\Jellyfin\JellyBridge"</code></li>
-                                    <li>[Docker] Map the directory in <i>docker-compose.yml</i> > <i>services</i> > <i>Jellyfin</i> > <i>volumes</i>: <code>- /host_mnt/c/ProgramData/Jellyfin/JellyBridge:/data/JellyBridge</code></li>
+                                    <li>[Docker] Map the directory in <i>docker-compose.yml</i> → <pre>services → jellyfin-container → volumes</pre>: <code>- /host_mnt/c/ProgramData/Jellyfin/JellyBridge:/data/JellyBridge</code></li>
                                     <li>[Docker] Map the volume in <i>DOCKERFILE</i>: <code>VOLUME /data/JellyBridge</code></li>
                                     <li>[Linux] Create the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> (capitalization is important!): <code>mkdir -p /data/JellyBridge</code></li>
                                     <li>[Linux] Set permissions on the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>: <code>sudo chown [username]:[groupname] /data/JellyBridge && sudo chmod 750 /data/JellyBridge</code></li>
@@ -705,18 +705,6 @@
                                 </div>
                             </div>
                         </details>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseSeasonPlaceholdersContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseSeasonPlaceholders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Season Placeholders</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Add a placeholder for each season of a show that can still be requested. Favoriting a season requests only that season. With Jellyfin's "Import missing episodes" enabled, missing seasons of shows in your other libraries can be favorited to request them too. <i>Note: <span class="link" data-target-page="RequestFirstSeasonContainer">Request Only First Season</span> is disabled when this is enabled.</i></div>
-                        </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseTrendingLibraryContainer">
                             <label class="emby-checkbox-label">
@@ -888,17 +876,30 @@
                             <div class="fieldDescription">Immediately request favorited items for all users from Jellyseerr after any JellyBridge media is favorited. This allows for more responsive favorite requests syncing to Jellyseerr.</div>
                         </div>
                         
-                        <div class="checkboxContainer checkboxContainer-withDescription">
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseSeasonPlaceholdersContainer">
                             <label class="emby-checkbox-label">
-                                <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Favorite Cleanup</span>
+                                <input id="UseSeasonPlaceholders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Request Seasons</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Remove favorited items for all users after the items are requested from Jellyseerr. This is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
+                            <div class="fieldDescription">Add a promo video for each season of a series that is available in Jellyseerr. Request all seasons by favoriting the series, or request an individual season by favoriting a season. When using <span class="link" data-target-page="manageFavoriteRequests">Hide Existing Discover Content</span>, allow users to request missing seasons from other Jellyfin libraries by enabling the <i>Metadata downloaders (TV Shows)</i> → <i>Missing Episode Fetcher</i>.</div>
                         </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="RequestFirstSeasonContainer" data-depends-off="UseSeasonPlaceholders">
+                            <label class="emby-checkbox-label">
+                                <input id="RequestFirstSeason" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Request Only First Season</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">New favorited series will only request the first season, rather than the default of all seasons. This is useful for users who only want to limit the space used by initial series requests. <i>Note: Use the <span class="link" data-target-page="UseSeasonPlaceholders">Request Seasons</span> option to allow users to request additional seasons (not compatible with this option).</i></div>
+                        </div>
+
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="UserPermissionRequest4k" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
@@ -910,18 +911,19 @@
                             </label>
                             <div class="fieldDescription">By default, all requests will be for non-4k content. Enable this option to request 4k content for users with the Request 4K Movies or Request 4K Series permissions in Jellyseerr.</div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="RequestFirstSeasonContainer" data-depends-off="UseSeasonPlaceholders">
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
-                                <input id="RequestFirstSeason" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Request Only First Season</span>
+                                <input id="RemoveRequestedFromFavorites" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Favorite Cleanup</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">New favorited series will only request the first season, rather than the default of all seasons. This is useful for users who only want to limit the space used by initial series requests. Any additional season requests must be made from the Jellyseerr interface.</div>
+                            <div class="fieldDescription">Remove favorited items for all users after the items are requested from Jellyseerr. This is to prevent favorited items from interfering with other plugins like <a target="_blank" href="https://github.com/shemanaev/jellyfin-plugin-media-cleaner">Media Cleaner for Jellyfin</a>.</div>
                         </div>
-
+                        
                         <div>
                             <button is="emby-button" type="button" id="syncFavorites" class="raised button block emby-button">
                                 <span>⭐ Send Discover Library Favorite Requests to Jellyseerr</span>
@@ -1203,7 +1205,7 @@
                     • <a target="_blank" href="https://github.com/feeadftth" style="color: #2196f3;">feeadftth</a> (PR <a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/26" style="color: #2196f3;">#26</a>)
                     • <a target="_blank" href="https://github.com/kennedyshead" style="color: #2196f3;">kennedyshead</a> (PR <a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/22" style="color: #2196f3;">#22</a>)
                     • <a target="_blank" href="https://github.com/corkyluu" style="color: #2196f3;">corkyluu</a> (PR <a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/54" style="color: #2196f3;">#54</a>)
-                    • <a target="_blank" href="https://github.com/MoFaye" style="color: #2196f3;">MoFaye</a> (PR <a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/58" style="color: #2196f3;">#58</a>,<a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/61" style="color: #2196f3;">#61</a>,<a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pull/62" style="color: #2196f3;">#62</a>)
+                    • <a target="_blank" href="https://github.com/MoFaye" style="color: #2196f3;">MoFaye</a> (<a target="_blank" href="https://github.com/kinggeorges12/JellyBridge/pulls?q=author%3AMoFaye" style="color: #2196f3;">❤️ PRs</a>)
                     <br>
                     Thank you to the creator of the <a target="_blank" href="https://github.com/geekfreak21/Overseer-and-Jellyfin-Bridged" style="color: #2196f3;">Overseer-Jellyfin Bridge Script</a> for the inspiration. Special thanks to the developers of the <a target="_blank" href="https://github.com/intro-skipper" style="color: #2196f3;">Intro Skipper</a> and <a target="_blank" href="https://github.com/IAmParadox27/jellyfin-plugin-custom-tabs" style="color: #2196f3;">Custom Tabs</a> plugins for reusing their GPL-licensed code in the UI styling and configuration patterns.
                     <br>
