@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Collections.Concurrent;
@@ -24,6 +25,9 @@ public class PlaceholderVideoGenerator
     
     // Semaphores to serialize cache file generation per cache path (prevents race conditions)
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _cacheGenerationSemaphores = new();
+
+    // Where each cached video was last copied to, so later copies of the same video can be hard links to that file
+    private static readonly ConcurrentDictionary<string, string> _placedCopies = new(StringComparer.Ordinal);
 
     // Semaphore to serialize invalidation of cached placeholders (prevents race conditions)
     private static readonly SemaphoreSlim _invalidationSemaphore = new SemaphoreSlim(1, 1);
@@ -315,13 +319,63 @@ public class PlaceholderVideoGenerator
 
     /// <summary>
     /// Copy to a temporary file next to the target and rename it over the target, so a player or ffprobe reading the old
-    /// placeholder never sees a half-written file.
+    /// placeholder never sees a half-written file. When the same video was already placed elsewhere (another season of
+    /// the show, the same title in another library), the temporary file is a hard link to it instead of a new copy.
     /// </summary>
     private static void CopyReplacing(string source, string targetPath)
     {
         var temp = targetPath + ".jbtmp";
-        File.Copy(source, temp, overwrite: true);
+        File.Delete(temp);
+        if (!(_placedCopies.TryGetValue(source, out var placed) && SameContent(source, placed) && TryCreateHardLink(placed, temp)))
+        {
+            File.Copy(source, temp, overwrite: true);
+        }
         File.Move(temp, targetPath, overwrite: true);
+        // Renaming a link over another link to the same file does nothing and leaves the temporary name behind
+        File.Delete(temp);
+        _placedCopies[source] = targetPath;
+    }
+
+    private static bool SameContent(string first, string second)
+    {
+        try
+        {
+            var a = new FileInfo(first);
+            var b = new FileInfo(second);
+            return a.Exists && b.Exists && a.Length == b.Length && File.ReadAllBytes(first).AsSpan().SequenceEqual(File.ReadAllBytes(second));
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Makes <paramref name="linkPath"/> a hard link to <paramref name="existingPath"/>. False where that isn't possible
+    /// (different volumes, file systems or shares without hard links), and the caller copies instead.
+    /// </summary>
+    private static bool TryCreateHardLink(string existingPath, string linkPath)
+    {
+        try
+        {
+            return OperatingSystem.IsWindows()
+                ? NativeMethods.CreateHardLink(linkPath, existingPath, IntPtr.Zero)
+                : NativeMethods.Link(existingPath, linkPath) == 0;
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    private static class NativeMethods
+    {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);
+
+        [DllImport("libc", EntryPoint = "link", SetLastError = true)]
+        internal static extern int Link(string oldPath, string newPath);
     }
 
     /// <summary>
@@ -981,7 +1035,7 @@ public class PlaceholderVideoGenerator
         {
             "-filter_complex", filter, "-map", "[v]",
             "-t", duration.ToString(CultureInfo.InvariantCulture),
-            "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             outputPath
         });
 
@@ -1259,7 +1313,7 @@ public class PlaceholderVideoGenerator
             return "none";
         }
         // The layout is part of what is drawn, so a change to it re-renders every title once
-        var joined = string.Join("\n", "layout8", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
+        var joined = string.Join("\n", "layout9", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)))[..12].ToLowerInvariant();
     }
 
@@ -1371,6 +1425,7 @@ public class PlaceholderVideoGenerator
         {
             if (!string.Equals(path, keepPath, StringComparison.Ordinal))
             {
+                _placedCopies.TryRemove(path, out _);
                 try
                 {
                     File.Delete(path);
@@ -1409,6 +1464,7 @@ public class PlaceholderVideoGenerator
             {
                 Directory.Delete(_placeholderPath, recursive: true);
             }
+            _placedCopies.Clear();
             Directory.CreateDirectory(_assetPath);
             Directory.CreateDirectory(_placeholderPath);
             Directory.CreateDirectory(_promoTextPath);
