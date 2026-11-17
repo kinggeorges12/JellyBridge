@@ -41,6 +41,16 @@ public class StartupTask : IScheduledTask
             using var scope = _scopeFactory.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<SyncService>();
 
+            // The libraries migration (task 4) runs on every startup, before any sync and even when
+            // EnableStartupSync is off: it returns immediately once the migration is recorded, and while a
+            // half-done journal exists the sync services refuse.
+            var migrationService = scope.ServiceProvider.GetRequiredService<LibraryMigrationService>();
+            await Plugin.ExecuteWithLockAsync(async () =>
+            {
+                await migrationService.RunAsync();
+                return true;
+            }, _logger, "Libraries Migration");
+
             var autoSyncOnStartup = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableStartupSync));
             var startupDelaySeconds = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.StartupDelaySeconds));
             var isSyncEnabled = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.IsEnabled));

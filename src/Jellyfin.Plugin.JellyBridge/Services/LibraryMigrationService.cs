@@ -2,8 +2,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Configuration;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Entities;
+using Microsoft.Extensions.Logging;
 using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Services;
@@ -65,9 +68,16 @@ public sealed class MigrationPlan
     [JsonPropertyName("stagedLibraries")]
     public List<string> StagedLibraries { get; } = new();
 
-    /// <summary>True when the plan has nothing to do (already migrated, nothing configured, or refused after a warning).</summary>
+    /// <summary>True when the planner refused the migration (a target folder exists and is not a JellyBridge folder).
+    /// The executor must then move nothing and save nothing — it logs the warnings and retries next startup.</summary>
+    [JsonPropertyName("aborted")]
+    public bool Aborted { get; set; }
+
+    /// <summary>True when the plan has nothing to do: refused, or no library list could be built. A plan with a
+    /// library list but no moves (a fresh install, an empty folder with no Jellyfin library) is NOT empty — the
+    /// executor still saves the list and version 1, so such a server does not run the legacy synthesis forever.</summary>
     [JsonIgnore]
-    public bool IsEmpty => Libraries.Count == 0 || (Moves.Count == 0 && Repoints.Count == 0);
+    public bool IsEmpty => Aborted || Libraries.Count == 0;
 }
 
 /// <summary>
@@ -81,6 +91,27 @@ public class LibraryMigrationService
 {
     private const string MetadataFileName = "metadata.json";
     private const string IgnoreFileName = ".ignore";
+
+    /// <summary>The resume journal, written beside the Library Directory before the first move and deleted when
+    /// the migration finishes. While it exists on an un-migrated server every sync refuses to run.</summary>
+    public const string JournalFileName = ".jellybridge-migration.json";
+
+    private readonly DebugLogger<LibraryMigrationService> _logger;
+    private readonly SyncService _syncService;
+    private readonly RefreshService _refreshService;
+    private readonly JellyfinILibraryManager _libraryManager;
+
+    public LibraryMigrationService(
+        ILogger<LibraryMigrationService> logger,
+        SyncService syncService,
+        RefreshService refreshService,
+        JellyfinILibraryManager libraryManager)
+    {
+        _logger = new DebugLogger<LibraryMigrationService>(logger);
+        _syncService = syncService;
+        _refreshService = refreshService;
+        _libraryManager = libraryManager;
+    }
 
     /// <summary>
     /// Builds the migration plan for the given configuration and the current Jellyfin libraries.
@@ -245,6 +276,7 @@ public class LibraryMigrationService
             var targetCheck = CheckTarget(source, targetFolder, root, networkFolderNames);
             if (targetCheck == 2)
             {
+                plan.Aborted = true;
                 plan.Warnings.Add($"Cannot migrate: {targetFolder} exists and is not a JellyBridge folder. No files will be moved.");
                 continue;
             }
@@ -322,7 +354,7 @@ public class LibraryMigrationService
         }
 
         // A refused target aborts the whole plan — never move half the library list.
-        if (plan.Warnings.Any(w => w.StartsWith("Cannot migrate", StringComparison.Ordinal)))
+        if (plan.Aborted)
         {
             plan.Moves.Clear();
             plan.Duplicates.Clear();
@@ -356,28 +388,431 @@ public class LibraryMigrationService
 
             if (matched.Count > 1)
             {
-                plan.Warnings.Add($"Several Jellyfin libraries point at {oldPaths[0]}: {string.Join(", ", matched.Select(m => m.Name))}. Only {matched[0].Name} is repointed.");
+                plan.Warnings.Add($"Several Jellyfin libraries point at {oldPaths[0]}: {string.Join(", ", matched.Select(m => m.Name))}. All of them are repointed.");
             }
 
-            // One repoint per path the library actually holds (Network Folders libraries hold one per network),
-            // so the executor adds the new path and removes exactly the old ones.
-            var currentPaths = (matched[0].Locations ?? Array.Empty<string>())
-                .Select(location => location.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
-                .Where(location => oldPaths.Any(old => FolderUtils.ArePathsEqual(location, old) || FolderUtils.IsPathInDirectory(location, old)))
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-            if (currentPaths.Count == 0)
+            // Every library on an old path gets repointed, not only the first — the rest would keep pointing at
+            // an emptied folder. One repoint per path the library actually holds (Network Folders libraries hold
+            // one per network), so the executor adds the new path and removes exactly the old ones.
+            foreach (var matchedLibrary in matched)
             {
-                currentPaths = oldPaths;
-            }
+                var currentPaths = (matchedLibrary.Locations ?? Array.Empty<string>())
+                    .Select(location => location.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                    .Where(location => oldPaths.Any(old => FolderUtils.ArePathsEqual(location, old) || FolderUtils.IsPathInDirectory(location, old)))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                if (currentPaths.Count == 0)
+                {
+                    currentPaths = oldPaths;
+                }
 
-            foreach (var oldPath in currentPaths)
-            {
-                plan.Repoints.Add(new MigrationRepoint(matched[0].Name, oldPath, newPath));
+                foreach (var oldPath in currentPaths)
+                {
+                    plan.Repoints.Add(new MigrationRepoint(matchedLibrary.Name, oldPath, newPath));
+                }
             }
         }
 
         return plan;
+    }
+
+    /// <summary>
+    /// True while a half-finished libraries migration journal exists on an un-migrated server: the discover
+    /// sync, the favorites sync, cleanup and the sort must refuse (4c) — never sync half-migrated folders.
+    /// </summary>
+    public static bool IsMigrationInProgress()
+    {
+        if ((Plugin.GetConfiguration().LibrariesMigrationVersion ?? 0) >= 1)
+        {
+            return false;
+        }
+
+        var root = DiscoverLibraries.GetRootDirectory();
+        return !string.IsNullOrWhiteSpace(root) && File.Exists(Path.Combine(root, JournalFileName));
+    }
+
+    /// <summary>
+    /// Runs the libraries migration once (4b): flush favorites to Jellyseerr on the old layout, journal the plan,
+    /// move every title folder into its library folder, delete the losing duplicate copies, repoint the old
+    /// Jellyfin libraries (add the new path before removing the old one), save the new library list with
+    /// <see cref="PluginConfiguration.LibrariesMigrationVersion"/> 1, delete the journal, remove now-empty legacy
+    /// folders and queue one library scan. A crash mid-migration leaves the journal behind, and the next startup
+    /// resumes from it instead of re-planning. Already-migrated servers return without touching anything.
+    /// The caller must hold <see cref="Plugin.ExecuteWithLockAsync"/>.
+    /// </summary>
+    /// <returns>The outcome; when aborted nothing was moved or saved and the migration retries next startup.</returns>
+    public async Task<MigrationResult> RunAsync()
+    {
+        try
+        {
+            return await RunCoreAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JellyBridge libraries migration failed - it will retry on the next startup.");
+            return new MigrationResult { Aborted = true, Message = ex.Message };
+        }
+    }
+
+    private async Task<MigrationResult> RunCoreAsync()
+    {
+        var config = Plugin.GetConfiguration();
+        var root = DiscoverLibraries.GetRootDirectory();
+        var journalPath = string.IsNullOrWhiteSpace(root) ? null : Path.Combine(root, JournalFileName);
+
+        if ((config.LibrariesMigrationVersion ?? 0) >= 1)
+        {
+            if (journalPath != null && File.Exists(journalPath))
+            {
+                // Crashed between saving the configuration and deleting the journal — the migration is committed.
+                DeleteFileSafe(journalPath);
+            }
+
+            return new MigrationResult { Message = "Already migrated." };
+        }
+
+        MigrationJournal state;
+        if (journalPath == null)
+        {
+            _logger.LogWarning("JellyBridge libraries migration: the Library Directory is not configured; nothing to migrate.");
+            return new MigrationResult { Message = "Library Directory is not configured." };
+        }
+
+        if (File.Exists(journalPath))
+        {
+            var loaded = LoadJournal(journalPath);
+            if (loaded == null)
+            {
+                _logger.LogError("The JellyBridge migration journal ({Journal}) could not be read; nothing will be moved. "
+                    + "Fix or remove the journal manually, then restart.", journalPath);
+                return new MigrationResult { Aborted = true, Message = "Corrupt migration journal." };
+            }
+
+            state = loaded;
+            _logger.LogInformation("Resuming the JellyBridge libraries migration from {Journal}: {Done}/{Total} title moves done, configSaved={ConfigSaved}.",
+                journalPath, state.DoneMoves.Count, state.Plan.Moves.Count, state.ConfigSaved);
+        }
+        else
+        {
+            var newPlan = Plan(config, _libraryManager.Inner.GetVirtualFolders());
+            // On a server with nothing to migrate (a fresh install whose Library Directory does not exist yet)
+            // these lines are routine startup noise, not warnings.
+            foreach (var warning in newPlan.Warnings)
+            {
+                if (newPlan.Aborted || newPlan.Libraries.Count > 0)
+                {
+                    _logger.LogWarning("{Warning}", warning);
+                }
+                else
+                {
+                    _logger.LogInformation("{Warning}", warning);
+                }
+            }
+
+            if (newPlan.Aborted)
+            {
+                _logger.LogWarning("JellyBridge libraries migration refused by the planner - nothing moved, retrying on the next startup.");
+                return new MigrationResult { Aborted = true, Message = string.Join("; ", newPlan.Warnings) };
+            }
+
+            if (newPlan.Libraries.Count == 0)
+            {
+                _logger.LogInformation("JellyBridge libraries migration: nothing to migrate.");
+                return new MigrationResult { Message = "Nothing to migrate." };
+            }
+
+            LogPlan(newPlan);
+
+            // Moved titles get new Jellyfin item ids, so a favorite that was never requested would be lost —
+            // request all favorites first, on the old layout. Only the request step runs: after task 3 the
+            // hide/ignore step computes flat paths, which is wrong for a Network Folders layout, and the next
+            // sync after the migration hides the requested titles in the new layout anyway.
+            var favorites = await _syncService.RequestFavoritesStepAsync();
+            if (!favorites.Success)
+            {
+                _logger.LogWarning("Favorites flush failed ({Message}) - libraries migration aborted, retrying on the next startup.", favorites.Message);
+                return new MigrationResult { Aborted = true, Message = $"Favorites flush failed: {favorites.Message}" };
+            }
+
+            state = new MigrationJournal { Plan = newPlan };
+            SaveJournal(journalPath, state);
+        }
+
+        var plan = state.Plan;
+
+        // Move each title folder (same drive: a rename — artwork, promos, .ignore and NFOs ride along).
+        var doneMoves = new HashSet<string>(state.DoneMoves, StringComparer.Ordinal);
+        foreach (var move in plan.Moves)
+        {
+            if (doneMoves.Contains(move.Source))
+            {
+                continue;
+            }
+
+            MoveTitleFolder(move.Source, move.Target);
+            doneMoves.Add(move.Source);
+            state.DoneMoves.Add(move.Source);
+            SaveJournal(journalPath, state);
+        }
+
+        // Delete the losing duplicate copies (Network Folders with duplicate content).
+        if (!state.DuplicatesDeleted)
+        {
+            foreach (var duplicate in plan.Duplicates)
+            {
+                DeleteDirectorySafe(duplicate, "duplicate copy");
+            }
+
+            state.DuplicatesDeleted = true;
+            SaveJournal(journalPath, state);
+        }
+
+        // Repoint the old Jellyfin libraries — always add the new path before removing the old one.
+        var repointedLibraries = new HashSet<string>(StringComparer.Ordinal);
+        var doneRepoints = new HashSet<string>(state.DoneRepoints, StringComparer.Ordinal);
+        foreach (var repoint in plan.Repoints)
+        {
+            var key = $"{repoint.LibraryName}\n{repoint.OldPath}";
+            if (!doneRepoints.Contains(key))
+            {
+                try
+                {
+                    var locations = (_libraryManager.Inner.GetVirtualFolders()
+                            .FirstOrDefault(folder => string.Equals(folder.Name, repoint.LibraryName, StringComparison.Ordinal))?.Locations
+                            ?? Array.Empty<string>()).ToList();
+                    if (!locations.Any(location => FolderUtils.ArePathsEqual(location, repoint.NewPath)))
+                    {
+                        _libraryManager.Inner.AddMediaPath(repoint.LibraryName, new MediaPathInfo { Path = repoint.NewPath });
+                        _logger.LogInformation("Repoint: added {NewPath} to Jellyfin library {LibraryName}.", repoint.NewPath, repoint.LibraryName);
+                    }
+
+                    if (locations.Any(location => FolderUtils.ArePathsEqual(location, repoint.OldPath)))
+                    {
+                        _libraryManager.Inner.RemoveMediaPath(repoint.LibraryName, repoint.OldPath);
+                        _logger.LogInformation("Repoint: removed {OldPath} from Jellyfin library {LibraryName}.", repoint.OldPath, repoint.LibraryName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Keep the other repoints going; a failed one leaves that library on the old path and the
+                    // warnings above show it. Never remove the old path when adding the new one failed.
+                    _logger.LogError(ex, "Repoint of Jellyfin library {LibraryName} ({OldPath} -> {NewPath}) failed.",
+                        repoint.LibraryName, repoint.OldPath, repoint.NewPath);
+                }
+
+                state.DoneRepoints.Add(key);
+                SaveJournal(journalPath, state);
+            }
+
+            repointedLibraries.Add(repoint.LibraryName);
+        }
+
+        // Save the new library list. The old settings stay untouched in the XML so a downgrade still has them.
+        if (!state.ConfigSaved)
+        {
+            config.DiscoverLibraries = plan.Libraries;
+            config.LibrariesMigrationVersion = 1;
+            if (plan.ShowMigrationNotice)
+            {
+                config.ShowLibrariesMigrationNotice = true;
+            }
+
+            Plugin.Instance.SaveConfiguration();
+            state.ConfigSaved = true;
+            SaveJournal(journalPath, state);
+        }
+
+        // The migration is committed — remove the journal so syncs are no longer refused.
+        DeleteFileSafe(journalPath);
+
+        RemoveEmptyLegacyFolders(config, root, plan);
+
+        // Queue one library scan so the repointed libraries pick the moved titles up.
+        await _refreshService.ScanAllLibraries(force: true);
+
+        _logger.LogInformation(
+            "JellyBridge libraries migration done: {Libraries} libraries, {Titles} titles moved, {Repoints} Jellyfin libraries repointed",
+            plan.Libraries.Count, state.DoneMoves.Count, repointedLibraries.Count);
+        return new MigrationResult
+        {
+            Executed = true,
+            TitlesMoved = state.DoneMoves.Count,
+            DuplicatesDeleted = plan.Duplicates.Count,
+            RepointedLibraries = repointedLibraries.Count,
+            Message = "Migration complete."
+        };
+    }
+
+    /// <summary>Logs the full plan at INFO before anything moves.</summary>
+    private void LogPlan(MigrationPlan plan)
+    {
+        _logger.LogInformation(
+            "JellyBridge libraries migration plan: {Libraries} libraries ({Names}), {Moves} title moves, {Repoints} Jellyfin library repoints, {Duplicates} duplicate copies, {Staged} staged library names.",
+            plan.Libraries.Count,
+            string.Join(", ", plan.Libraries.Select(library => $"{library.Name} ({library.LibraryType}{(library.DefaultOrDefault ? ", default" : string.Empty)})")),
+            plan.Moves.Count, plan.Repoints.Count, plan.Duplicates.Count, plan.StagedLibraries.Count);
+
+        foreach (var group in plan.Moves
+                     .GroupBy(move => (From: Path.GetDirectoryName(move.Source) ?? string.Empty, To: Path.GetDirectoryName(move.Target) ?? string.Empty))
+                     .OrderBy(group => group.Key.From, StringComparer.Ordinal))
+        {
+            _logger.LogInformation("  {From} -> {To}: {Count} titles", group.Key.From, group.Key.To, group.Count());
+        }
+
+        foreach (var repoint in plan.Repoints)
+        {
+            _logger.LogInformation("  repoint {LibraryName}: add {NewPath}, then remove {OldPath}", repoint.LibraryName, repoint.NewPath, repoint.OldPath);
+        }
+
+        foreach (var duplicate in plan.Duplicates)
+        {
+            _logger.LogInformation("  delete duplicate copy {Path}", duplicate);
+        }
+    }
+
+    /// <summary>
+    /// Moves one title folder. <see cref="Directory.Move"/> is a rename on the same filesystem; on cross-device
+    /// <see cref="IOException"/> fall back to copy + delete per folder. A target that already exists (a crash
+    /// between the fallback's copy and delete) gets its contents merged.
+    /// </summary>
+    private void MoveTitleFolder(string source, string target)
+    {
+        if (!Directory.Exists(source))
+        {
+            _logger.LogWarning("Migration move skipped: {Source} no longer exists.", source);
+            return;
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        if (Directory.Exists(target))
+        {
+            CopyDirectoryContents(source, target);
+            DeleteDirectorySafe(source, "moved title folder");
+            return;
+        }
+
+        try
+        {
+            Directory.Move(source, target);
+        }
+        catch (IOException)
+        {
+            CopyDirectoryContents(source, target);
+            DeleteDirectorySafe(source, "moved title folder");
+        }
+    }
+
+    private static void CopyDirectoryContents(string source, string target)
+    {
+        foreach (var file in Directory.EnumerateFiles(source))
+        {
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)), overwrite: true);
+        }
+
+        foreach (var directory in Directory.EnumerateDirectories(source))
+        {
+            var child = Path.Combine(target, Path.GetFileName(directory));
+            Directory.CreateDirectory(child);
+            CopyDirectoryContents(directory, child);
+        }
+    }
+
+    /// <summary>Removes the legacy Movies/Shows folders, the network folders and the old standalone trending
+    /// folder — only when they are empty (a stray the planner left behind keeps the folder and the warning).</summary>
+    private void RemoveEmptyLegacyFolders(PluginConfiguration config, string root, MigrationPlan plan)
+    {
+        var libraryFolders = new HashSet<string>(plan.Libraries.Select(library => Normalize(library.GetDirectory(root))), StringComparer.Ordinal);
+        var moviesSource = Path.Combine(root, "Movies");
+        var showsSource = Path.Combine(root, "Shows");
+        var candidates = new List<string> { moviesSource, showsSource };
+
+        var trendingDirectory = LegacyTrendingDirectory(config, root);
+        if (trendingDirectory != null)
+        {
+            candidates.Add(trendingDirectory);
+        }
+
+        // Network folders sat directly in the sources before task 3 removed the feature.
+#pragma warning disable CS0618
+        var networkPrefix = Plugin.GetRawConfigOrDefault<string>(nameof(PluginConfiguration.NetworkFolderPrefix), config);
+        var networkNames = (Plugin.GetRawConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config) ?? new List<JellyseerrNetwork>())
+            .Where(network => !string.IsNullOrWhiteSpace(network.Name))
+            .Select(network => FolderUtils.SanitizeFileName(networkPrefix + network.Name))
+            .ToList();
+#pragma warning restore CS0618
+        foreach (var networkName in networkNames)
+        {
+            candidates.Add(Path.Combine(root, networkName));
+            candidates.Add(Path.Combine(moviesSource, networkName));
+            candidates.Add(Path.Combine(showsSource, networkName));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (libraryFolders.Contains(Normalize(candidate)) || FolderUtils.ArePathsEqual(candidate, root))
+            {
+                continue;
+            }
+
+            try
+            {
+                if (Directory.Exists(candidate) && !Directory.EnumerateFileSystemEntries(candidate).Any())
+                {
+                    Directory.Delete(candidate);
+                    _logger.LogInformation("Removed now-empty legacy folder {Path}.", candidate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not check or remove legacy folder {Path}.", candidate);
+            }
+        }
+    }
+
+    private static MigrationJournal? LoadJournal(string path)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<MigrationJournal>(File.ReadAllText(path));
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static void SaveJournal(string path, MigrationJournal state)
+    {
+        var temp = path + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true }));
+        File.Move(temp, path, overwrite: true);
+    }
+
+    private void DeleteDirectorySafe(string path, string what)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not delete {What} {Path}.", what, path);
+        }
+    }
+
+    private static void DeleteFileSafe(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception)
+        {
+            // Left behind — the already-migrated check keeps the syncs running, and the next startup retries.
+        }
     }
 
     /// <summary>
@@ -406,14 +841,15 @@ public class LibraryMigrationService
     }
 
     /// <summary>
-    /// True when a Jellyfin library points at the given path (or at a parent/child of it, which is how
-    /// the old Network Folders page created libraries: one library holding every network path).
+    /// True when a Jellyfin library points at the given path or at a folder inside it — the old Network Folders
+    /// page created one library holding every network path. Never matches a library on a parent folder: a server
+    /// whose only Jellyfin library holds /media (everything) is unrelated to the JellyBridge root — naming a
+    /// migrated library after it and adding the library folder to that unrelated library would both be wrong.
     /// </summary>
     private static bool PointsAt(VirtualFolderInfo library, string path)
     {
         return library.Locations?.Any(location =>
             FolderUtils.ArePathsEqual(location, path)
-            || FolderUtils.IsPathInDirectory(path, location)
             || FolderUtils.IsPathInDirectory(location, path)) == true;
     }
 
@@ -577,4 +1013,60 @@ public class LibraryMigrationService
     }
 
     private static string Normalize(string path) => FolderUtils.GetNormalizedPath(path);
+}
+
+/// <summary>Outcome of <see cref="LibraryMigrationService.RunAsync"/>.</summary>
+public sealed class MigrationResult
+{
+    /// <summary>True when the migration ran and saved the library list with version 1.</summary>
+    [JsonPropertyName("executed")]
+    public bool Executed { get; init; }
+
+    /// <summary>True when the migration refused or failed — nothing was moved or saved, and it retries next startup.</summary>
+    [JsonPropertyName("aborted")]
+    public bool Aborted { get; init; }
+
+    /// <summary>Title folders moved (total, including moves done before a crash-and-resume).</summary>
+    [JsonPropertyName("titlesMoved")]
+    public int TitlesMoved { get; init; }
+
+    /// <summary>Duplicate copies deleted (Network Folders with duplicate content).</summary>
+    [JsonPropertyName("duplicatesDeleted")]
+    public int DuplicatesDeleted { get; init; }
+
+    /// <summary>Distinct Jellyfin libraries repointed.</summary>
+    [JsonPropertyName("repointedLibraries")]
+    public int RepointedLibraries { get; init; }
+
+    /// <summary>Short human-readable outcome.</summary>
+    [JsonPropertyName("message")]
+    public string Message { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// The on-disk resume journal (<c>&lt;root&gt;/.jellybridge-migration.json</c>): the plan being executed plus
+/// the per-move and per-repoint done flags. Its existence on an un-migrated server marks the migration
+/// half-done, which makes every sync refuse (4c).
+/// </summary>
+public sealed class MigrationJournal
+{
+    /// <summary>The plan being executed (re-used on resume instead of re-planning).</summary>
+    [JsonPropertyName("plan")]
+    public MigrationPlan Plan { get; set; } = new();
+
+    /// <summary>The move sources completed so far.</summary>
+    [JsonPropertyName("doneMoves")]
+    public List<string> DoneMoves { get; set; } = new();
+
+    /// <summary>True when the duplicate copies were deleted.</summary>
+    [JsonPropertyName("duplicatesDeleted")]
+    public bool DuplicatesDeleted { get; set; }
+
+    /// <summary>The completed repoints, keyed "library name\nold path".</summary>
+    [JsonPropertyName("doneRepoints")]
+    public List<string> DoneRepoints { get; set; } = new();
+
+    /// <summary>True when the library list and <see cref="PluginConfiguration.LibrariesMigrationVersion"/> 1 were saved.</summary>
+    [JsonPropertyName("configSaved")]
+    public bool ConfigSaved { get; set; }
 }

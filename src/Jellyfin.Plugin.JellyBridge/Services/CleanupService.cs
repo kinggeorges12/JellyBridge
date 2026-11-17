@@ -34,6 +34,12 @@ public class CleanupService
     /// </summary>
     public async Task<CleanupResult> CleanupMetadataAsync()
     {
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the cleanup: JellyBridge library migration in progress.");
+            return new CleanupResult { Success = false, Message = "Library migration in progress" };
+        }
+
         var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
             _logger, "cleanup", _ => CleanupFolderMetadataAsync(),
             (library, ex) => new CleanupResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });

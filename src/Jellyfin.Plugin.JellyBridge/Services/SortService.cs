@@ -52,6 +52,14 @@ public class SortService
     public async Task<SortLibraryResult> SortJellyBridge()
     {
         var result = new SortLibraryResult();
+
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the sort: JellyBridge library migration in progress.");
+            result.Success = false;
+            result.Message = "Library migration in progress";
+            return result;
+        }
         
         try
         {

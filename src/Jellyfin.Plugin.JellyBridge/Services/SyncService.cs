@@ -60,6 +60,12 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the discover sync: JellyBridge library migration in progress.");
+            return new SyncJellyseerrResult { Success = false, Message = "Library migration in progress" };
+        }
+
         // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
         var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", SyncOneLibraryAsync,
             (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
@@ -399,6 +405,12 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the favorites sync: JellyBridge library migration in progress.");
+            return new SyncJellyfinResult { Success = false, Message = "Library migration in progress" };
+        }
+
         if (DiscoverLibraries.GetEnabled().Count == 0)
         {
             var noneResult = new SyncJellyfinResult { Success = false, Message = "No enabled Discover libraries" };
@@ -449,9 +461,10 @@ public partial class SyncService
     /// <summary>
     /// The request steps of the favorites sync, run once for all libraries (outside the library scope): connect to
     /// Jellyseerr, collect the favorites of every bridge folder and request each favorited (media type, TMDB id)
-    /// exactly once. <see cref="FavoriteService.RequestFavorites"/> skips a second copy of the same title.
+    /// exactly once. <see cref="FavoriteService.RequestFavorites"/> skips a second copy of the same title. Also
+    /// called by the libraries migration before it moves anything (the moved titles get new item ids).
     /// </summary>
-    private async Task<SyncJellyfinResult> RequestFavoritesStepAsync()
+    public async Task<SyncJellyfinResult> RequestFavoritesStepAsync()
     {
         var result = new SyncJellyfinResult();
 
