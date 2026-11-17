@@ -770,12 +770,12 @@ public class PlaceholderVideoGenerator
     }
 
     /// <summary>
-    /// Swaps the default promos in a title folder for its title promo once Jellyfin has saved the title's backdrop.
-    /// A sync only makes placeholders for the titles it fetched, so a title that left the fetched pages before its artwork
-    /// arrived would keep the default promo until it is removed. Cheap when there is nothing to do: a few file lookups.
-    /// Returns the number of placeholders replaced.
+    /// Redraws the placeholders in a title folder that aren't its current title promo: default promos once Jellyfin has
+    /// saved the title's backdrop, and title promos made for older text or an older look. A sync only makes placeholders
+    /// for the titles it fetched, so a title that left the fetched pages would keep them until it is removed.
+    /// Cheap when there is nothing to do: a few file lookups. Returns the number of placeholders replaced.
     /// </summary>
-    public async Task<int> UpgradeDefaultPromosAsync(string titleFolder)
+    public async Task<int> RedrawStalePromosAsync(string titleFolder)
     {
         if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos))
             || !Directory.Exists(titleFolder) || FindArtwork(titleFolder, BackdropPatterns) == null)
@@ -805,24 +805,21 @@ public class PlaceholderVideoGenerator
             }
         }
 
-        var upgraded = 0;
+        var redrawn = 0;
         foreach (var (path, asset) in placeholders)
         {
-            var defaultPromo = await EnsureCachedPlaceholderAsync(asset);
-            if (defaultPromo == null || new FileInfo(path).Length != new FileInfo(defaultPromo).Length)
+            // A placeholder that is already current is left alone, so only a rewrite counts
+            var before = File.GetLastWriteTimeUtc(path);
+            if (await TryTitlePromoAsync(titleFolder, path, asset) && File.GetLastWriteTimeUtc(path) != before)
             {
-                continue;
-            }
-            if (await TryTitlePromoAsync(titleFolder, path, asset))
-            {
-                upgraded++;
+                redrawn++;
             }
         }
-        if (upgraded > 0)
+        if (redrawn > 0)
         {
-            _logger.LogDebug("Replaced {Count} default promos with the title promo in {TitleFolder}", upgraded, titleFolder);
+            _logger.LogDebug("Redrew {Count} placeholders with the current title promo in {TitleFolder}", redrawn, titleFolder);
         }
-        return upgraded;
+        return redrawn;
     }
 
     /// <summary>
