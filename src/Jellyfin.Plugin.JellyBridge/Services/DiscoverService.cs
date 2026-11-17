@@ -35,10 +35,105 @@ public class DiscoverService
     
 
     /// <summary>
-    /// Fetches discover data for all networks, calling both movies and TV endpoints for each network.
+    /// Fetches the list that fills a Discover library: the trending list for a Trending library, otherwise Discover
+    /// with the list's own sort order and release-date window (New releases, Coming soon, Top rated) or plain
+    /// popularity (Popular). A Movies- or Series-only library gets no titles of the other kind: Discover lists skip
+    /// those endpoint calls, and Trending is filtered after ranking so ranks stay Seerr's positions.
     /// </summary>
+    /// <param name="library">The library whose list and type to fetch for.</param>
+    /// <returns>Tuple containing lists of movies and shows fetched for the library</returns>
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchListAsync(DiscoverLibraryConfig library)
+    {
+        if (library.ListType == DiscoverListType.Trending)
+        {
+            var (trendingMovies, trendingShows) = await FetchTrendingMediaAsync();
+            // Filter after ranking: the ranks are positions in Seerr's single mixed list, and the other kind's
+            // titles still occupied positions in it.
+            if (library.LibraryType == DiscoverLibraryType.Movies)
+            {
+                trendingShows.Clear();
+            }
+            else if (library.LibraryType == DiscoverLibraryType.Series)
+            {
+                trendingMovies.Clear();
+            }
+
+            return (trendingMovies, trendingShows);
+        }
+
+        var (listMovieParameters, listTvParameters) = GetListParameters(library.ListType);
+        return await FetchDiscoverMediaAsync(library.ListType, listMovieParameters, listTvParameters, library.LibraryType);
+    }
+
+    /// <summary>
+    /// The list's own discover parameters (sort order and release-date window), verified against the live Seerr on
+    /// 2026-11-17. Coming soon filters <c>discover/movies</c>/<c>discover/tv</c> by date instead of using the
+    /// <c>upcoming</c> endpoints, because those reject the network parameters. ApiService merges these over the
+    /// endpoints' popularity.desc default, so a sortBy here wins.
+    /// </summary>
+    /// <param name="listType">The list to build parameters for.</param>
+    /// <returns>Extra parameters per endpoint; empty for Popular.</returns>
+    private static (Dictionary<string, object> Movies, Dictionary<string, object> Tv) GetListParameters(DiscoverListType listType)
+    {
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return listType switch
+        {
+            DiscoverListType.NewReleases => (
+                new Dictionary<string, object> { ["sortBy"] = "primary_release_date.desc", ["primaryReleaseDateLte"] = today },
+                new Dictionary<string, object> { ["sortBy"] = "first_air_date.desc", ["firstAirDateLte"] = today }),
+            DiscoverListType.ComingSoon => (
+                new Dictionary<string, object> { ["primaryReleaseDateGte"] = today },
+                new Dictionary<string, object> { ["firstAirDateGte"] = today }),
+            DiscoverListType.TopRated => (
+                new Dictionary<string, object> { ["sortBy"] = "vote_average.desc" },
+                new Dictionary<string, object> { ["sortBy"] = "vote_average.desc" }),
+            _ => (new Dictionary<string, object>(), new Dictionary<string, object>()),
+        };
+    }
+
+    /// <summary>
+    /// The rating parameters to send to the Seerr discover endpoints. With a Minimum Rating set that's the rating and
+    /// vote-count floor; Top rated and New releases also send the library's Minimum Votes on its own when no Minimum
+    /// Rating is set, so a few early votes can't carry a title to the top of those lists. Popular keeps sending
+    /// nothing at rating 0, exactly as before.
+    /// </summary>
+    /// <param name="listType">The list being fetched.</param>
+    /// <returns>The parameters to merge into the network parameters; empty when there is no filter.</returns>
+    private static Dictionary<string, object> GetSeerrRatingParameters(DiscoverListType listType)
+    {
+        var parameters = new Dictionary<string, object>();
+        if (GetRatingFilter() is { } ratingFilter)
+        {
+            // Invariant culture, so a server set to a comma-decimal language still sends 7.5 rather than 7,5
+            parameters["voteAverageGte"] = ratingFilter.MinimumRating.ToString(CultureInfo.InvariantCulture);
+            parameters["voteCountGte"] = ratingFilter.MinimumVotes.ToString(CultureInfo.InvariantCulture);
+        }
+        else if (listType is DiscoverListType.TopRated or DiscoverListType.NewReleases)
+        {
+            var minimumVotes = Math.Max(0, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MinimumVotes)));
+            if (minimumVotes > 0)
+            {
+                parameters["voteCountGte"] = minimumVotes.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return parameters;
+    }
+
+    /// <summary>
+    /// Fetches discover data for all networks, calling both movies and TV endpoints for each network, with the
+    /// current library's list parameters merged in.
+    /// </summary>
+    /// <param name="listType">The list being fetched; decides whether a vote floor is sent without a Minimum Rating.</param>
+    /// <param name="extraMovieParameters">The list's extra parameters for the movies endpoint (sort order, date window).</param>
+    /// <param name="extraTvParameters">The list's extra parameters for the TV endpoint.</param>
+    /// <param name="libraryType">Movies-only libraries skip the TV calls, Series-only libraries the movie calls.</param>
     /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
-    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync()
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync(
+        DiscoverListType listType = DiscoverListType.Popular,
+        Dictionary<string, object>? extraMovieParameters = null,
+        Dictionary<string, object>? extraTvParameters = null,
+        DiscoverLibraryType libraryType = DiscoverLibraryType.All)
     {
         // The current library's networks (LibraryScope.GetNetworks), not the global list — the fetcher runs
         // inside LibraryScope.Enter, and reading config.NetworkMap directly would bypass the scope.
@@ -68,24 +163,44 @@ public class DiscoverService
             }
 
             // Let Jellyseerr leave out titles under the minimum rating, so each page is filled with titles that pass
-            if (GetRatingFilter() is { } ratingFilter)
+            foreach (var (parameter, value) in GetSeerrRatingParameters(listType))
             {
-                // Invariant culture, so a server set to a comma-decimal language still sends 7.5 rather than 7,5
-                networkParameters["voteAverageGte"] = ratingFilter.MinimumRating.ToString(CultureInfo.InvariantCulture);
-                networkParameters["voteCountGte"] = ratingFilter.MinimumVotes.ToString(CultureInfo.InvariantCulture);
+                networkParameters[parameter] = value;
+            }
+
+            // The list's own sort order and date window go on top of the network and rating parameters
+            var movieParameters = new Dictionary<string, object>(networkParameters);
+            foreach (var (parameter, value) in extraMovieParameters ?? new Dictionary<string, object>())
+            {
+                movieParameters[parameter] = value;
+            }
+
+            var tvParameters = new Dictionary<string, object>(networkParameters);
+            foreach (var (parameter, value) in extraTvParameters ?? new Dictionary<string, object>())
+            {
+                tvParameters[parameter] = value;
             }
 
             // Debug: Log the parameters being used
-            _logger.LogTrace("Calling discover endpoints with parameters: {Parameters}", 
-                string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+            _logger.LogTrace("Calling discover endpoints with movie parameters: {MovieParameters} and TV parameters: {TvParameters}", 
+                string.Join(", ", movieParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")),
+                string.Join(", ", tvParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
             
-            // Fetch movies for this network
-            var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: networkParameters);
-            var movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
+            // Fetch movies for this network (a Series-only library's folder holds no movies)
+            var movies = new List<JellyseerrMovie>();
+            if (libraryType != DiscoverLibraryType.Series)
+            {
+                var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: movieParameters);
+                movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
+            }
             
-            // Fetch TV shows for this network
-            var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: networkParameters);
-            var shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
+            // Fetch TV shows for this network (a Movies-only library's folder holds no shows)
+            var shows = new List<JellyseerrShow>();
+            if (libraryType != DiscoverLibraryType.Movies)
+            {
+                var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: tvParameters);
+                shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
+            }
             
             // Debug: Log the response data
             _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);

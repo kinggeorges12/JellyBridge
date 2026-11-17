@@ -60,11 +60,11 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
-        // One pass per enabled library, inside the loop's scope; the fetch function follows the library's list.
+        // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
         var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", async library =>
             library.ListType == DiscoverListType.Trending
-                ? await SyncTrendingFromJellyseerrAsync()
-                : await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync),
+                ? await SyncTrendingFromJellyseerrAsync(library)
+                : await SyncFromJellyseerrAsync(() => _discoverService.FetchListAsync(library)),
             (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
 
         var result = new SyncJellyseerrResult { Success = true };
@@ -96,12 +96,14 @@ public partial class SyncService
     /// longer trending and set the play counts that sort the library in Jellyseerr's order. Runs inside the
     /// library loop's scope.
     /// </summary>
-    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync()
+    /// <param name="library">The Trending library being synced.</param>
+    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync(DiscoverLibraryConfig library)
     {
         var trending = new List<IJellyseerrItem>();
         var result = await SyncFromJellyseerrAsync(async () =>
         {
-            var (movies, shows) = await _discoverService.FetchTrendingMediaAsync();
+            // FetchListAsync routes Trending to the trending fetcher and applies the library's Movies/Series filter
+            var (movies, shows) = await _discoverService.FetchListAsync(library);
             trending.AddRange(movies);
             trending.AddRange(shows);
             return (movies, shows);

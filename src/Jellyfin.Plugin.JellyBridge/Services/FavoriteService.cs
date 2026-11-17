@@ -145,8 +145,10 @@ public class FavoriteService
             var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
             var mediaPermission4k = IJellyseerrItem.GetMediaPermission4k(item);
 
-            // Skip a second copy of a title already requested in this sync (same title in two libraries)
-            if (!requestedMedia.Add((mediaType, tmdbId.Value)))
+            // Skip a second copy of a title already requested in this sync (same title in two libraries).
+            // Only successful requests are in the set (added next to successfullyProcessedItems below), so a
+            // failed request (quota, permission, 4K) doesn't block another user's favorite of the same title.
+            if (requestedMedia.Contains((mediaType, tmdbId.Value)))
             {
                 _logger.LogDebug("Skipping favorite '{ItemName}' - the same title was already requested from another library in this sync", item.Name);
                 continue;
@@ -177,6 +179,7 @@ public class FavoriteService
                 {
                     // Only mark as successfully processed after receiving a valid response
                     successfullyProcessedItems.Add(item.Id);
+                    requestedMedia.Add((mediaType, tmdbId.Value));
                     requestResults.Add((item, request));
                     _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
                         item.Name, username);
@@ -597,10 +600,9 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newIgnoredMatches.Count, existingIgnored.Count);
 
-            // Decision 8: hiding must cover every library. A requested title with a copy in another JellyBridge
-            // library gets an .ignore there too, so hiding either copy hides both.
-            var otherLibraryCopies = await IgnoreCopiesInOtherLibrariesAsync(requestedFavorites);
-            newIgnored.AddRange(otherLibraryCopies);
+            // Decision 8 (hiding either copy hides both) needs no cross-library pass: this whole method runs
+            // once per library, and the match step above reads that library's own metadata.json, so every copy
+            // of a requested title gets its .ignore from its own library's pass.
 
             // Collect tasks for unfavoriting and marking as unplayed
             var unfavoriteTasks = new List<(Task<bool>? favoriteTask, Task<JellyfinWrapperResult> playStatusTask, JellyfinUser user, IJellyfinItem item, IJellyseerrItem jellyseerrItem)>();
@@ -737,66 +739,6 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
         }
 		
         return (newIgnored, cleared, hiddenSeasons);
-    }
-
-    /// <summary>
-    /// For every requested favorite, write an .ignore file into every other JellyBridge library folder that holds
-    /// the same title (same media type and TMDB id in its metadata.json). The current library's own copy is already
-    /// covered by the match ignore files, so its folder is skipped. Returns the metadata items newly hidden this way.
-    /// </summary>
-    private async Task<List<IJellyseerrItem>> IgnoreCopiesInOtherLibrariesAsync(
-        List<(JellyfinUser user, IJellyfinItem item)> requestedFavorites)
-    {
-        var newlyIgnored = new List<IJellyseerrItem>();
-        var requestedKeys = requestedFavorites
-            .Select(fav => (Type: IJellyseerrItem.GetMediaType(fav.item), TmdbId: fav.item.GetTmdbId() ?? 0))
-            .Where(key => key.TmdbId > 0)
-            .ToHashSet();
-        if (requestedKeys.Count == 0)
-        {
-            return newlyIgnored;
-        }
-
-        var root = DiscoverLibraries.GetRootDirectory();
-        var currentDirectory = FolderUtils.GetNormalizedPath(FolderUtils.GetBaseDirectory());
-        foreach (var library in DiscoverLibraries.GetAll())
-        {
-            if (FolderUtils.ArePathsEqual(library.GetDirectory(root), currentDirectory))
-            {
-                continue;
-            }
-
-            try
-            {
-                // Read that library's metadata through its own scope so folder paths resolve inside it
-                using (LibraryScope.Enter(library))
-                {
-                    var (movies, shows) = await _metadataService.ReadMetadataAsync();
-                    foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
-                    {
-                        var key = (Type: item is JellyseerrMovie ? JellyseerrModel.MediaType.MOVIE : JellyseerrModel.MediaType.TV, TmdbId: item.Id);
-                        if (!requestedKeys.Contains(key))
-                        {
-                            continue;
-                        }
-                        var ignorePath = Path.Combine(_metadataService.GetJellyBridgeItemDirectory(item), BridgeService.IgnoreFileName);
-                        if (!File.Exists(ignorePath))
-                        {
-                            await _bridgeService.CreateIgnoreFileAsync(ignorePath, JellyBridgeJsonSerializer.Serialize(item));
-                            newlyIgnored.Add(item);
-                            _logger.LogDebug("Hid the copy of requested title {ItemName} in library '{Library}': {IgnorePath}",
-                                item.MediaName, library.Name, ignorePath);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed hiding copies of requested titles in library '{Library}'", library.Name);
-            }
-        }
-
-        return newlyIgnored;
     }
 
     /// <summary>
