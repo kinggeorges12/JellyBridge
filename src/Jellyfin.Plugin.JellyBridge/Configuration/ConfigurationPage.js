@@ -28,7 +28,10 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
-            // Initialize manage discover library settings
+            // Initialize the Discover libraries cards, status strip and migration banner (5b/5d)
+            initializeDiscoverLibraries(page);
+            
+            // Initialize organize library settings (Automated Library Refresh)
             initializeOrganizeLibrary(page);
             
             // Initialize import discover content settings including network interface and sync buttons
@@ -399,249 +402,364 @@ function performTestConnection(page) {
 
 function initializeOrganizeLibrary(page) {
     setInputField(page, 'ManageJellyBridgeLibrary', true);
-    setInputField(page, 'UseMixedMediaLibrary', true);
-    setInputField(page, 'UseTrendingLibrary', true);
-    setInputField(page, 'TrendingDirectory');
-    setInputField(page, 'TrendingPages');
-    const trendingDirectoryInput = page.querySelector('#TrendingDirectory');
-    const libraryDirectoryInput = page.querySelector('#LibraryDirectory');
-    // Empty means a folder next to the Library Directory, named after it
-    const showTrendingDirectoryDefault = () => {
-        trendingDirectoryInput.placeholder = (libraryDirectoryInput.value || libraryDirectoryInput.placeholder || '').replace(/[\\/]+$/, '') + ' Trending';
-    };
-    showTrendingDirectoryDefault();
-    libraryDirectoryInput.addEventListener('input', showTrendingDirectoryDefault);
-    page.querySelector('#browseTrendingDirectory').addEventListener('click', function() {
-        browseFolder(trendingDirectoryInput, "Select JellyBridge Trending Directory");
-    });
-    // Add create default library event listener
-    const createButton = page.querySelector('#createDefaultLibrary');
-    createButton.addEventListener('click', function () {
-        createDefaultLibrary(page);
+}
+
+// ==========================================
+// DISCOVER LIBRARIES FUNCTIONS (task 5b/5d)
+// ==========================================
+
+// The GET /JellyBridge/Libraries entries [{ library, name, directory, jellyfinLibraryId, jellyfinLibraryName,
+// titleCount }], kept so the toggles can POST the whole list back without a second fetch.
+let discoverLibrariesEntries = [];
+
+function librariesAreMigrated() {
+    const config = window.configJellyBridge || {};
+    return (config.LibrariesMigrationVersion ?? 0) >= 1;
+}
+
+function getLibraryNetworkMap() {
+    const config = window.configJellyBridge || {};
+    if (Array.isArray(config.NetworkMap) && config.NetworkMap.length > 0) {
+        return config.NetworkMap;
+    }
+    return (config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || [];
+}
+
+function libraryListLabel(listType) {
+    switch (listType) {
+        case 'NewReleases': return 'New releases';
+        case 'ComingSoon': return 'Coming soon';
+        case 'Trending': return 'Trending';
+        case 'TopRated': return 'Top rated';
+        default: return 'Popular';
+    }
+}
+
+function libraryOrderLabel(library) {
+    const order = library.order ?? 'AsList';
+    switch (order) {
+        case 'AsList': return 'Seerr order';
+        case 'Jellyfin': return "Jellyfin's own sort";
+        default: return order; // Random / Smart / Smartish
+    }
+}
+
+function librarySummary(entry) {
+    const library = entry.library || {};
+    const parts = [library.libraryType || 'All'];
+    if (library.listType === 'Trending') {
+        parts.push(libraryOrderLabel(library));
+    } else if (Array.isArray(library.networkIds) && library.networkIds.length > 0) {
+        const networkMap = getLibraryNetworkMap();
+        parts.push(library.networkIds.map(id => {
+            const network = networkMap.find(n => n && n.id === id);
+            return network ? network.name : ('#' + id);
+        }).join(', '));
+    } else {
+        parts.push('all networks');
+    }
+    parts.push((entry.titleCount ?? 0) + ' titles');
+    return parts.join(' · ');
+}
+
+function escapeLibraryHtml(text) {
+    return String(text ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+}
+
+function initializeDiscoverLibraries(page) {
+    const syncAllButton = page.querySelector('#syncAllLibraries');
+    if (syncAllButton) {
+        syncAllButton.addEventListener('click', function () {
+            performSyncAllLibraries(page);
+        });
+    }
+
+    const dismissButton = page.querySelector('#dismissLibrariesMigrationBanner');
+    if (dismissButton) {
+        dismissButton.addEventListener('click', function () {
+            dismissLibrariesMigrationNotice(page);
+        });
+    }
+
+    // 5c replaces this placeholder with the template picker.
+    const addLibraryButton = page.querySelector('#addLibraryButton');
+    if (addLibraryButton) {
+        addLibraryButton.addEventListener('click', function () {
+            DisplayMessage('The library picker and editor arrive in the next update.');
+        });
+    }
+
+    loadDiscoverLibraries(page);
+    loadLibraryLastSync(page);
+}
+
+function loadDiscoverLibraries(page) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function (entries) {
+        discoverLibrariesEntries = entries || [];
+        renderDiscoverLibraries(page);
+        renderLibraryStatusStrip(page);
+        renderLibrariesMigrationBanner(page);
+    }).catch(function (error) {
+        DisplayMessage('❌ Failed to load Discover libraries: ' + (error?.message || error));
     });
 }
 
-function getDefaultLibrarySettings(page, directories) {
-    // These are default options that need to be validated from the server options
-    let libraryJson = {
-        "LibraryOptions": {
-            "Enabled": true,
-            "PathInfos": directories.map(dir => ({ "Path": dir })),
-            "EnableRealtimeMonitor": false,
-            "MetadataSavers": ["Nfo"],
-            "LocalMetadataReaderOrder": ["Nfo"],
-            "SaveLocalMetadata": true,
-            "AllowEmbeddedSubtitles": "AllowNone",
-            "DisabledSubtitleFetchers": [],
-            "SubtitleFetcherOrder": [],
-            "EnableTrickplayImageExtraction": false,
-            "TypeOptions": [
-                {
-                    "Type": "Series",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
-                },
-                {
-                    "Type": "Season",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
-                },
-                {
-                    "Type": "Episode",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
-                },
-                {
-                    "Type": "Movie",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
-                }
-            ]
-        }
-    };
+function renderDiscoverLibraries(page) {
+    const listElement = page.querySelector('#discoverLibraryList');
+    const readOnlyNote = page.querySelector('#discoverLibrariesReadOnlyNote');
+    const addLibraryButton = page.querySelector('#addLibraryButton');
+    if (!listElement) return;
 
-    // Validate library settings
-    return ApiClient.fetch({
-        'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
-        'headers': {'accept': 'application/json'},
-        'dataType': 'json'
-    }).then(function(response) {
-        if (!response) return;
-        
-        // Clean MetadataSavers
-        if (response.MetadataSavers) {
-            const validSaverNames = response.MetadataSavers.map(s => s.Name);
-            libraryJson.LibraryOptions.MetadataSavers = libraryJson.LibraryOptions.MetadataSavers
-                .filter(saver => validSaverNames.includes(saver));
-        }
-        
-        // Clean LocalMetadataReaderOrder
-        if (response.MetadataReaders) {
-            const validReaderNames = response.MetadataReaders.map(r => r.Name);
-            libraryJson.LibraryOptions.LocalMetadataReaderOrder = libraryJson.LibraryOptions.LocalMetadataReaderOrder
-                .filter(reader => validReaderNames.includes(reader));
+    const migrated = librariesAreMigrated();
+    if (readOnlyNote) {
+        readOnlyNote.style.display = migrated ? 'none' : 'block';
+    }
+    if (addLibraryButton) {
+        // 5c turns this into the template picker; until then it stays a placeholder either way.
+        addLibraryButton.disabled = true;
+    }
+
+    listElement.innerHTML = '';
+    discoverLibrariesEntries.forEach(function (entry) {
+        const library = entry.library || {};
+        const isDefault = library.isDefault ?? false;
+        const isEnabled = migrated && !isDefault ? (library.isEnabled ?? true) : true;
+
+        const card = document.createElement('div');
+        card.className = 'discoverLibraryCard' + (isEnabled ? '' : ' off');
+        card.setAttribute('data-library-name', entry.name || library.name || '');
+
+        const tags = '<span class="libraryTag">' + escapeLibraryHtml(libraryListLabel(library.listType)) + '</span>'
+            + (isDefault ? '<span class="libraryTag libraryTagDefault">★ Default</span>' : '');
+
+        // emby-checkbox with the page's standard outline markup.
+        const toggleDisabled = !migrated || isDefault;
+        const toggleTitle = !migrated
+            ? 'Libraries become editable after the one-time migration on the next restart'
+            : (isDefault ? 'The Default library is always on' : (isEnabled ? 'Turn this library off' : 'Turn this library on'));
+
+        card.innerHTML =
+            '<div class="discoverLibraryRow">' +
+                '<div class="discoverLibraryInfo">' +
+                    '<span class="discoverLibraryName">' + escapeLibraryHtml(entry.name || library.name) + '</span>' +
+                    tags +
+                    '<div class="discoverLibraryMeta">' + escapeLibraryHtml(librarySummary(entry)) + '</div>' +
+                '</div>' +
+                '<label class="emby-checkbox-label">' +
+                    '<input type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox libraryToggle"' +
+                        (isEnabled ? ' checked' : '') + (toggleDisabled ? ' disabled' : '') + ' title="' + escapeLibraryHtml(toggleTitle) + '" />' +
+                    '<span class="checkboxOutline">' +
+                        '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>' +
+                        '<span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>' +
+                    '</span>' +
+                '</label>' +
+                '<button is="emby-button" type="button" class="libraryGear" disabled title="The library editor arrives in the next update">⚙️</button>' +
+            '</div>';
+
+        if (migrated && !isDefault) {
+            const toggle = card.querySelector('.libraryToggle');
+            toggle.addEventListener('change', function () {
+                saveLibraryToggle(page, entry.name || library.name, this.checked, card);
+            });
         }
 
-        // Disable all subtitle fetchers
-        if (response.SubtitleFetchers) {
-            let subtitleFetcherNames = response.SubtitleFetchers.map(f => f.Name);
-            libraryJson.LibraryOptions.DisabledSubtitleFetchers = subtitleFetcherNames;
-            libraryJson.LibraryOptions.SubtitleFetcherOrder = subtitleFetcherNames;
-        }
-        
-        // Clean TypeOptions - remove unavailable fetchers
-        if (response.TypeOptions) {
-            libraryJson.LibraryOptions.TypeOptions = libraryJson.LibraryOptions.TypeOptions
-                .map(typeOption => {
-                    // Find matching server type
-                    const serverType = response.TypeOptions.find(t => t.Type === typeOption.Type);
-                    if (!serverType) return null; // Type not available on server
-                    
-                    // Get available fetchers
-                    const availableFetchers = serverType.MetadataFetchers.map(f => f.Name);
-                    const availableImageFetchers = serverType.ImageFetchers.map(f => f.Name);
-                    
-                    // Filter MetadataFetchers
-                    typeOption.MetadataFetchers = typeOption.MetadataFetchers
-                        .filter(f => availableFetchers.includes(f));
-                    typeOption.MetadataFetcherOrder = typeOption.MetadataFetcherOrder
-                        .filter(f => availableFetchers.includes(f));
-                    
-                    // Filter ImageFetchers
-                    typeOption.ImageFetchers = typeOption.ImageFetchers
-                        .filter(f => availableImageFetchers.includes(f));
-                    typeOption.ImageFetcherOrder = typeOption.ImageFetcherOrder
-                        .filter(f => availableImageFetchers.includes(f));
-                    
-                    return typeOption;
-                })
-                .filter(type => type !== null); // Remove unavailable types
-        }
-        return libraryJson;
-    }).catch(function(error) {
-        console.error('❌ Error fetching library options:', error);
-        return libraryJson;
+        listElement.appendChild(card);
     });
 }
 
-function findLibraryUsingFolders(directories) {
-    // Returns the name of an existing library that already contains one of the directories
-    const normalize = path => (path || '').replace(/[\\/]+$/, '');
-    const wanted = directories.map(normalize);
-    return ApiClient.fetch({
-        'url': ApiClient.getUrl('Library/VirtualFolders'),
-        'headers': {'accept': 'application/json'},
-        'dataType': 'json'
-    }).then(function(libraries) {
-        const match = (libraries || []).find(library =>
-            (library.Locations || []).some(location => wanted.includes(normalize(location))));
-        return match ? match.Name : null;
+// The on/off toggle POSTs the whole list (names included — the server rejects lists that drop one).
+function saveLibraryToggle(page, libraryName, enabled, card) {
+    const body = discoverLibrariesEntries.map(function (entry) {
+        const library = JSON.parse(JSON.stringify(entry.library || {}));
+        if ((entry.name || library.name) === libraryName) {
+            library.isEnabled = enabled;
+        }
+        if (library.isDefault ?? false) {
+            library.isEnabled = true; // decision 7: Default is always on
+        }
+        return library;
+    });
+
+    if (card) card.classList.add('off');
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'POST',
+        data: JSON.stringify(body),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (result) {
+        discoverLibrariesEntries = (result && result.libraries) || discoverLibrariesEntries;
+        renderDiscoverLibraries(page);
+        renderLibraryStatusStrip(page);
+        DisplayMessage('✅ ' + ((result && result.message) || 'Libraries saved.'));
+    }).catch(async function (error) {
+        let message = error?.message || 'Unknown error';
+        try {
+            const errorBody = await error.json();
+            if (errorBody && errorBody.message) message = errorBody.message;
+        } catch (e) { /* keep the generic message */ }
+        DisplayMessage('❌ Failed to save the library change: ' + message);
+        renderDiscoverLibraries(page); // reset the toggle to the stored state
     });
 }
 
-function createVirtualFolders(page, libraryName, libraryType, directories) {
-    // Skip if a library already uses these folders, otherwise Jellyfin creates a duplicate (e.g. "Discover2")
-    return findLibraryUsingFolders(directories).then(function(existingLibrary) {
-        if (existingLibrary) {
-            DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+function renderLibraryStatusStrip(page) {
+    const activeItem = page.querySelector('#activeLibrariesItem');
+    if (activeItem) {
+        const activeCount = discoverLibrariesEntries.filter(function (entry) {
+            const library = entry.library || {};
+            return (library.isDefault ?? false) || (library.isEnabled ?? true);
+        }).length;
+        activeItem.textContent = activeCount + ' active librar' + (activeCount === 1 ? 'y' : 'ies');
+    }
+    checkSeerrConnection(page);
+}
+
+// Seerr connection: reuse the plugin's TestConnection endpoint with the saved settings (the masked
+// ApiKey is accepted and replaced server-side).
+function checkSeerrConnection(page) {
+    const statusItem = page.querySelector('#seerrStatusItem');
+    if (!statusItem) return;
+    const config = window.configJellyBridge || {};
+    statusItem.textContent = 'Seerr: checking…';
+    statusItem.className = 'libraryStatusItem';
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/TestConnection'),
+        type: 'POST',
+        data: JSON.stringify({
+            JellyseerrUrl: config.JellyseerrUrl || '',
+            ApiKey: config.ApiKey || '',
+            LibraryDirectory: config.LibraryDirectory || ''
+        }),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function () {
+        statusItem.textContent = '● Seerr connected';
+        statusItem.className = 'libraryStatusItem okc';
+    }).catch(function () {
+        statusItem.textContent = '● Seerr not connected';
+        statusItem.className = 'libraryStatusItem err';
+    });
+}
+
+// Last sync: the JellyBridge Sync scheduled task's last result.
+function loadLibraryLastSync(page) {
+    const lastSyncItem = page.querySelector('#lastSyncItem');
+    if (!lastSyncItem || !ApiClient.getScheduledTasks) return;
+    ApiClient.getScheduledTasks().then(function (tasks) {
+        const syncTask = (tasks || []).find(function (task) { return task && task.Name === 'JellyBridge Sync'; });
+        if (!syncTask) {
+            lastSyncItem.textContent = 'Last sync: never';
             return;
         }
-        return createNewVirtualFolders(page, libraryName, libraryType, directories);
+        const lastTime = syncTask.LastExecutionTime || (syncTask.Status && syncTask.Status.EndTime);
+        if (!lastTime) {
+            lastSyncItem.textContent = 'Last sync: never';
+            return;
+        }
+        let label = 'Last sync: ' + new Date(lastTime).toLocaleString();
+        if (syncTask.State === 'Running') {
+            label += ' (running now)';
+            lastSyncItem.className = 'libraryStatusItem warn';
+        } else if (syncTask.Status && syncTask.Status.Status === 'Faulted') {
+            label += ' (failed)';
+            lastSyncItem.className = 'libraryStatusItem err';
+        } else {
+            lastSyncItem.className = 'libraryStatusItem';
+        }
+        lastSyncItem.textContent = label;
+    }).catch(function () {
+        lastSyncItem.textContent = 'Last sync: —';
     });
 }
 
-function createNewVirtualFolders(page, libraryName, libraryType, directories) {
-    // Get settings if available, then create the virtual folder
-    return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
-        return ApiClient.ajax({
-            url: ApiClient.getUrl('Library/VirtualFolders', {
-                refreshLibrary: true,
-                name: libraryName,
-                collectionType: libraryType
-            }),
+function performSyncAllLibraries(page) {
+    const syncAllButton = page.querySelector('#syncAllLibraries');
+    if (!syncAllButton) return;
+
+    Dashboard.confirm({
+        title: 'Sync all libraries',
+        text: 'Run the Discover sync for every enabled library now?',
+        confirmText: '🔄 Sync now',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', function (confirmed) {
+        if (!confirmed) return;
+        syncAllButton.disabled = true;
+        Dashboard.showLoadingMsg();
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyBridge/SyncDiscover'),
             type: 'POST',
-            data: JSON.stringify(libraryJson),
-            contentType: 'application/json'
-        }).then(function(response) {
-            DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
-        }).catch(function(error) {
-            DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
-            return Promise.reject(error);
+            data: '{}',
+            contentType: 'application/json',
+            dataType: 'json'
+        }).then(function (syncData) {
+            DisplayMessage('✅ Sync all: ' + (syncData?.result || syncData?.message || 'started'));
+        }).catch(function (error) {
+            DisplayMessage('❌ Sync all failed: ' + (error?.message || 'Unknown error'));
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
+            syncAllButton.disabled = false;
+            loadDiscoverLibraries(page);
+            loadLibraryLastSync(page);
         });
     });
 }
 
-function createDefaultLibrary(page) {
-    const createButton = page.querySelector('#createDefaultLibrary');
+// One-time notice after the Network Folders migration (5d), plus any manual fixes the migration
+// recorded in LibrariesMigrationIssues (failed Jellyfin library repoints).
+function renderLibrariesMigrationBanner(page) {
+    const banner = page.querySelector('#librariesMigrationBanner');
+    const bannerText = page.querySelector('#librariesMigrationBannerText');
+    if (!banner || !bannerText) return;
+
     const config = window.configJellyBridge || {};
-    const UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
-    const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
-    const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
-    const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
-    const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
-    const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
-    const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
-    const trendingLibraryDisplayNameInput = page.querySelector('#TrendingLibraryDisplayName');
-    const trendingLibraryDisplayName = safeParseString(trendingLibraryDisplayNameInput) || trendingLibraryDisplayNameInput.placeholder;
-    const libraryDisplayMessage = (UseMixedMediaLibrary === false ?
-        `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
-        `a new library "${libraryDisplayName}"`) +
-        (page.querySelector('#UseTrendingLibrary').checked ? ` and a Trending library "${trendingLibraryDisplayName}"` : '');
+    if (!config.ShowLibrariesMigrationNotice) {
+        banner.style.display = 'none';
+        return;
+    }
 
-    // Show confirmation dialog for confirming library creation
-    Dashboard.confirm({
-        title: 'Confirm New Library',
-        text: 'Save the current configuration and create ' + libraryDisplayMessage + ' with the recommended settings.',
-        confirmText: '💾 Save & Create ✨',
-        cancelText: 'Cancel',
-        primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            createButton.disabled = true;
-            Dashboard.showLoadingMsg();
+    const defaultEntry = discoverLibrariesEntries.find(function (entry) {
+        return entry.library && (entry.library.isDefault ?? false);
+    }) || discoverLibrariesEntries[0];
+    const defaultName = (defaultEntry && (defaultEntry.name || defaultEntry.library?.name)) || 'Discover';
 
-            savePluginConfiguration(page).catch(function(error) {
-                // Catch config save errors
-                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                return Promise.reject(error);
-            }).then(function() {
-                // Generate folders before generating libraries
-                return generateLibraryFolders(page)
-                    .catch(function(error) {
-                        DisplayMessage('❌ Failed to create network folders: ' + (error?.message || 'Unknown error'));
-                        return Promise.reject(error);
-                    });
-            }).then(function (response) {
-                // Send request for a new library
-                let apiCalls;
-                if (UseMixedMediaLibrary === false) {
-                    apiCalls = Promise.all([
-                        createVirtualFolders(page, movieLibraryDisplayName, 'movies', response.movieFolders),
-                        createVirtualFolders(page, showLibraryDisplayName, 'tvshows', response.showFolders)
-                    ]);
-                } else {
-                    apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
-                }
-                if (response.trendingFolders && response.trendingFolders.length > 0) {
-                    apiCalls = Promise.all([apiCalls,
-                        createVirtualFolders(page, trendingLibraryDisplayName, null, response.trendingFolders)]);
-                }
-                return apiCalls;
-            }).finally(function() {
-                // Disable scrolling since there is no output container
-                // scrollToElement('createDefaultLibraryContainer');
-                Dashboard.hideLoadingMsg();
-                createButton.disabled = false;
-            });
+    let text = '⚠️ Network Folders was removed. Your titles were moved into the "' + defaultName + '" library.';
+    (config.LibrariesMigrationIssues || []).forEach(function (issue) {
+        text += '<br>⚠️ ' + escapeLibraryHtml(issue);
+    });
+    bannerText.innerHTML = text;
+    banner.style.display = 'block';
+}
+
+function dismissLibrariesMigrationNotice(page) {
+    const dismissButton = page.querySelector('#dismissLibrariesMigrationBanner');
+    if (dismissButton) dismissButton.disabled = true;
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/PluginConfiguration'),
+        type: 'POST',
+        data: JSON.stringify({ ShowLibrariesMigrationNotice: false, LibrariesMigrationIssues: [] }),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (result) {
+        if (result && result.success === false) {
+            throw new Error(result.error || 'Failed to save');
         }
+        const config = window.configJellyBridge || {};
+        config.ShowLibrariesMigrationNotice = false;
+        config.LibrariesMigrationIssues = [];
+        window.configJellyBridge = config;
+        renderLibrariesMigrationBanner(page);
+    }).catch(function (error) {
+        DisplayMessage('❌ Failed to dismiss the notice: ' + (error?.message || 'Unknown error'));
+    }).finally(function () {
+        if (dismissButton) dismissButton.disabled = false;
     });
 }
 
@@ -1333,17 +1451,6 @@ function initializeManageFavorites(page) {
     });
 }
 
-function generateLibraryFolders(page) {
-    // Call GenerateLibraryFolders endpoint
-    return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyBridge/GenerateLibraryFolders'),
-        type: 'POST',
-        data: '{}',
-        contentType: 'application/json',
-        dataType: 'json'
-    });
-}
-
 function performSyncFavorites(page) {
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     
@@ -1546,11 +1653,7 @@ function performPluginReset(page) {
                 UserPermissionRequest4k: null,
                 UseSeasonPlaceholders: null,
                 RequestFirstSeason: null,
-                UseMixedMediaLibrary: null,
                 EnableSearchResults: null,
-                UseTrendingLibrary: null,
-                TrendingDirectory: '',
-                TrendingPages: null,
                 ManageJellyBridgeLibrary: null,
                 CustomMoviesPromo: null,
                 DefaultMoviesPromo: null,
@@ -1682,7 +1785,6 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
-        if (!validateField(page, 'TrendingPages', validators.int, 'Trending Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
         if (!validateField(page, 'MinimumRating', (value) => validators.double(value) && !(parseFloat(value) > 10), 'Minimum Rating must be a number from 0 to 10').isValid) return;
         if (!validateField(page, 'MinimumVotes', validators.int, 'Minimum Votes must be a positive integer').isValid) return;
@@ -1718,11 +1820,7 @@ function savePluginConfiguration(page) {
     form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
     form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
-    form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.EnableSearchResults = nullIfDefault(page.querySelector('#EnableSearchResults').checked, config.ConfigDefaults.EnableSearchResults);
-    form.UseTrendingLibrary = nullIfDefault(page.querySelector('#UseTrendingLibrary').checked, config.ConfigDefaults.UseTrendingLibrary);
-    form.TrendingDirectory = safeParseString(page.querySelector('#TrendingDirectory'));
-    form.TrendingPages = safeParseInt(page.querySelector('#TrendingPages'));
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);

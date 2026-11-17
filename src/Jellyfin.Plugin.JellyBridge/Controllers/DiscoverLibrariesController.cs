@@ -53,7 +53,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// <summary>
         /// Save the whole library list. Validation (each failure → 400 with a message): at least one library,
         /// names unique ignoring case, exactly one Default, Default not Trending, Trending libraries without
-        /// networks.
+        /// networks, usable folder names that don't collide. Names are the identity: a POST that drops a stored
+        /// library is rejected — removals go through Delete and renames through Rename, so folders and Jellyfin
+        /// libraries are never orphaned. The Default library is always saved enabled (decision 7).
         /// </summary>
         /// <param name="libraries">The complete new list.</param>
         [HttpPost("Libraries")]
@@ -66,6 +68,22 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 {
                     return BadRequest(new { success = false, message = error });
                 }
+
+                // Names are the library's identity: a stored name missing from the posted list means the client
+                // deleted or renamed a library, which would orphan its folder and Jellyfin library. New names are
+                // fine (added libraries; the page then calls Create for them).
+                var storedNames = (Plugin.GetConfiguration().DiscoverLibraries ?? new List<DiscoverLibraryConfig>())
+                    .Select(l => l.Name)
+                    .ToList();
+                var postedNames = new HashSet<string>(libraries!.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
+                var droppedName = storedNames.FirstOrDefault(n => !postedNames.Contains(n));
+                if (droppedName != null)
+                {
+                    return BadRequest(new { success = false, message = $"Use Delete to remove '{droppedName}' and Rename to rename it." });
+                }
+
+                // Decision 7: the Default library is always on — force it, whatever the client posted.
+                libraries!.First(l => l.DefaultOrDefault).IsEnabled = true;
 
                 var config = Plugin.GetConfiguration();
                 var previousByName = new Dictionary<string, DiscoverLibraryConfig>(StringComparer.OrdinalIgnoreCase);
@@ -224,6 +242,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 if (DiscoverLibraries.GetAll().Any(l => l != library && string.Equals(l.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
                 {
                     return BadRequest(new { success = false, message = $"Library names must be unique ignoring case: \"{trimmed}\" is already used." });
+                }
+
+                // Same folder-name rules as POST Libraries: the new name must leave a usable folder that no other
+                // library already uses.
+                var newFolderName = FolderUtils.SanitizeFileName(trimmed);
+                if (string.IsNullOrWhiteSpace(newFolderName) || newFolderName == "." || newFolderName == "..")
+                {
+                    return BadRequest(new { success = false, message = $"The name \"{trimmed}\" cannot be used: it leaves no usable folder name." });
+                }
+
+                if (DiscoverLibraries.GetAll().Any(l => l != library && !string.Equals(l.Name, trimmed, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(FolderUtils.SanitizeFileName(l.Name), newFolderName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return BadRequest(new { success = false, message = $"Different library names cannot share a folder: another library already makes the folder \"{newFolderName}\"." });
                 }
 
                 var root = DiscoverLibraries.GetRootDirectory();
@@ -442,6 +474,28 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             if (trendingWithNetworks != null)
             {
                 return $"A Trending library cannot have networks: \"{trendingWithNetworks.Name}\".";
+            }
+
+            // Folder names come from the library name via SanitizeFileName. A name that sanitizes to empty, "."
+            // or ".." would make the library folder the Library Directory itself or its parent (the sync would
+            // write titles straight into it and deleteFiles would delete the root); two different names can also
+            // sanitize to the same folder, so two libraries would share one folder.
+            var folderByOwner = new List<KeyValuePair<string, string>>();
+            foreach (var library in libraries)
+            {
+                var folderName = FolderUtils.SanitizeFileName(library.Name);
+                if (string.IsNullOrWhiteSpace(folderName) || folderName == "." || folderName == "..")
+                {
+                    return $"The name \"{library.Name}\" cannot be used: it leaves no usable folder name.";
+                }
+
+                var clash = folderByOwner.FirstOrDefault(kv => string.Equals(kv.Key, folderName, StringComparison.OrdinalIgnoreCase));
+                if (clash.Key != null)
+                {
+                    return $"Different library names cannot share a folder: \"{clash.Value}\" and \"{library.Name}\" both make the folder \"{folderName}\".";
+                }
+
+                folderByOwner.Add(new KeyValuePair<string, string>(folderName, library.Name));
             }
 
             return null;
