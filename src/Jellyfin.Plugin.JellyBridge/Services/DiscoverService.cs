@@ -168,11 +168,12 @@ public class DiscoverService
 
     /// <summary>
     /// The Minimum Rating and Minimum Votes to import Discover titles with, or null when no Minimum Rating is set.
+    /// The Trending library is never filtered, so it keeps matching Jellyseerr's trending page.
     /// </summary>
     public static (double MinimumRating, int MinimumVotes)? GetRatingFilter()
     {
         var minimumRating = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.MinimumRating));
-        if (minimumRating <= 0)
+        if (minimumRating <= 0 || TrendingLibrary.IsActive)
         {
             return null;
         }
