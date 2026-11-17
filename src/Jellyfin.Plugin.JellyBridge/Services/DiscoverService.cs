@@ -140,6 +140,8 @@ public class DiscoverService
         var networkMap = Utils.LibraryScope.GetNetworks();
         var allMovies = new List<JellyseerrMovie>();
         var allShows = new List<JellyseerrShow>();
+        // This library's titles per network, movies and shows interleaved by page position (task 2b list rank)
+        var perNetwork = new List<List<IJellyseerrItem>>();
 
         if (networkMap == null || !networkMap.Any())
         {
@@ -205,25 +207,20 @@ public class DiscoverService
             // Debug: Log the response data
             _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
             
-            // Add items to lists (no deduplication), skipping titles blocklisted in Jellyseerr since they can't be requested
-            foreach (var item in movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED))
+            // Collect this network's titles, skipping blocklisted ones in Jellyseerr since they can't be requested
+            var networkItems = InterleaveByPosition(
+                movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList(),
+                shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList());
+            foreach (var item in networkItems)
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
                 item.NetworkId = network.Id;
-                allMovies.Add(item);
             }
+            perNetwork.Add(networkItems);
             
-            foreach (var item in shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED))
-            {
-                // Set the network tag for this item
-                item.NetworkTag = network.Name;
-                item.NetworkId = network.Id;
-                allShows.Add(item);
-            }
-            
-            // Only log warning if no items found for either endpoint
-            if (allMovies.Count == 0 && allShows.Count == 0)
+            // Only log warning if this network returned nothing from either endpoint
+            if (networkItems.Count == 0)
             {
                 _logger.LogWarning("No movies or shows returned for network: {NetworkName} (ID: {NetworkId}) [Country: {Country}]", network.Name, network.Id, network.Country);
             }
@@ -231,7 +228,66 @@ public class DiscoverService
             _logger.LogTrace("Retrieved {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
         }
         
+        // Number the titles 1, 2, 3... in list order: merge the networks round-robin (rank 1 of every network, then
+        // rank 2, ...), so every network's top pick beats another network's lower ones. Dedupe by media type and TMDB
+        // id keeps the first, best-ranked copy; only Network Folders with duplicate content wants several copies.
+        var keepDuplicates = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders))
+            && Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        var seenTitles = new HashSet<(JellyseerrModel.MediaType, int)>();
+        var rank = 0;
+        var longestNetwork = perNetwork.Count == 0 ? 0 : perNetwork.Max(list => list.Count);
+        for (var position = 0; position < longestNetwork; position++)
+        {
+            foreach (var networkItems in perNetwork)
+            {
+                if (position >= networkItems.Count)
+                {
+                    continue;
+                }
+                var item = networkItems[position];
+                if (!keepDuplicates && !seenTitles.Add((item.MediaType, item.Id)))
+                {
+                    continue;
+                }
+
+                item.ListRank = ++rank;
+                if (item is JellyseerrMovie movie)
+                {
+                    allMovies.Add(movie);
+                }
+                else if (item is JellyseerrShow show)
+                {
+                    allShows.Add(show);
+                }
+            }
+        }
+
         return (allMovies, allShows);
+    }
+
+    /// <summary>
+    /// Merges one network's movie and show results into one list that alternates page positions (movie 1, show 1,
+    /// movie 2, show 2, ...), so the list's rank mixes the two kinds the way its pages do.
+    /// </summary>
+    /// <param name="movies">The network's movies, in Seerr's order.</param>
+    /// <param name="shows">The network's shows, in Seerr's order.</param>
+    /// <returns>One merged list alternating movies and shows.</returns>
+    private static List<IJellyseerrItem> InterleaveByPosition(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
+    {
+        var merged = new List<IJellyseerrItem>(movies.Count + shows.Count);
+        for (var position = 0; position < Math.Max(movies.Count, shows.Count); position++)
+        {
+            if (position < movies.Count)
+            {
+                merged.Add(movies[position]);
+            }
+            if (position < shows.Count)
+            {
+                merged.Add(shows[position]);
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>
@@ -264,7 +320,7 @@ public class DiscoverService
 
             // Ranked among the titles only, and before skipping blocklisted ones so the order matches Jellyseerr's page
             rank++;
-            item.TrendingRank = rank;
+            item.ListRank = rank;
             item.NetworkTag = DiscoverLibraryConfig.TrendingTag;
             if (item is JellyseerrMovie movie && movie.MediaInfo?.Status != MediaStatus.BLACKLISTED)
             {

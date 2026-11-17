@@ -289,7 +289,7 @@ public class SortService
             // Steps of 100 like the other sort orders, so playing a title doesn't change the order
             var itemInfoMap = allItems
                 .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item),
-                    playCount: 100 * (itemData.item.TrendingRank ?? 1000), itemData.mediaType))
+                    playCount: 100 * (itemData.item.ListRank ?? 1000), itemData.mediaType))
                 .Where(x => !string.IsNullOrEmpty(x.folder))
                 .GroupBy(x => x.folder)
                 .ToDictionary(g => g.Key, g => (g.First().playCount, g.First().mediaType));
