@@ -40,8 +40,9 @@ public class DiscoverService
     /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
     public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync()
     {
-        var config = Plugin.GetConfiguration();
-        var networkMap = config?.NetworkMap;
+        // The current library's networks (LibraryScope.GetNetworks), not the global list — the fetcher runs
+        // inside LibraryScope.Enter, and reading config.NetworkMap directly would bypass the scope.
+        var networkMap = Utils.LibraryScope.GetNetworks();
         var allMovies = new List<JellyseerrMovie>();
         var allShows = new List<JellyseerrShow>();
 
@@ -173,7 +174,7 @@ public class DiscoverService
     public static (double MinimumRating, int MinimumVotes)? GetRatingFilter()
     {
         var minimumRating = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.MinimumRating));
-        if (minimumRating <= 0 || TrendingLibrary.IsActive)
+        if (minimumRating <= 0 || LibraryScope.Current?.ListType == DiscoverListType.Trending)
         {
             return null;
         }
@@ -662,7 +663,7 @@ public class DiscoverService
         }
 
         // FetchDiscoverMediaAsync searches all networks (Id 0) when no networks are configured, so those items are valid too
-        var networkMap = Plugin.GetConfiguration()?.NetworkMap;
+        var networkMap = Utils.LibraryScope.GetNetworks();
         if (networkMap == null || !networkMap.Any())
         {
             networkMap = new List<JellyseerrNetwork> { new JellyseerrNetwork { Id = 0, Name = "All", Country = "Default", DisplayPriority = 0 } };

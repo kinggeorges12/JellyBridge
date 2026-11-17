@@ -1,6 +1,5 @@
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Configuration;
-using static Jellyfin.Plugin.JellyBridge.BridgeModels.BridgeConfiguration;
 
 namespace Jellyfin.Plugin.JellyBridge.Utils;
 
@@ -91,17 +90,8 @@ public static class LibraryScope
             nameof(PluginConfiguration.MaxRetentionDays) => (object?)library.RetentionDays,
             nameof(PluginConfiguration.NetworkMap) => GetNetworks(),
 
-            // A Legacy library sorts by the global SortOrder until the migration maps it; "AsList" orders through the
-            // fetch-position play counts the sync sets, and "Jellyfin" through Jellyfin itself, both None here.
-            nameof(PluginConfiguration.SortOrder) => library.Legacy
-                ? GetGlobal(nameof(PluginConfiguration.SortOrder))
-                : library.OrderOrDefault switch
-                {
-                    DiscoverLibraryOrder.Random => SortOrderOptions.Random,
-                    DiscoverLibraryOrder.Smart => SortOrderOptions.Smart,
-                    DiscoverLibraryOrder.Smartish => SortOrderOptions.Smartish,
-                    _ => SortOrderOptions.None
-                },
+            // SortOrder is deliberately not overridden: task 2c reads the library's Order itself. Returning the
+            // global here would let the sort task zero the fetch-position play counts "AsList" libraries rely on.
 
             _ => null
         };

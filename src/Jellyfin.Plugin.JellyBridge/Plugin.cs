@@ -117,12 +117,6 @@ namespace Jellyfin.Plugin.JellyBridge
                 return library;
             }
 
-            // Inside TrendingLibrary.Enter, the folder settings describe the trending folder
-            if (Utils.TrendingLibrary.IsActive && Utils.TrendingLibrary.TryGetOverride(propertyName, out var trendingValue) && trendingValue is T trending)
-            {
-                return trending;
-            }
-
             return GetRawConfigOrDefault<T>(propertyName, config);
         }
 

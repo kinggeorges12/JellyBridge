@@ -35,10 +35,11 @@ public class CleanupService
     public async Task<CleanupResult> CleanupMetadataAsync()
     {
         var result = await CleanupFolderMetadataAsync();
-        if (TrendingLibrary.GetDirectory() is { } directory && Directory.Exists(directory))
+        if (DiscoverLibraries.GetTrending() is { } trendingLibrary
+            && Directory.Exists(trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory())))
         {
             CleanupResult trendingResult;
-            using (TrendingLibrary.Enter())
+            using (LibraryScope.Enter(trendingLibrary))
             {
                 trendingResult = await CleanupFolderMetadataAsync();
             }

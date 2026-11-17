@@ -61,9 +61,9 @@ public partial class SyncService
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
         var result = await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync);
-        if (TrendingLibrary.IsEnabled)
+        if (DiscoverLibraries.GetTrending() is { } trendingLibrary)
         {
-            var trendingResult = await SyncTrendingFromJellyseerrAsync();
+            var trendingResult = await SyncTrendingFromJellyseerrAsync(trendingLibrary);
             if (!trendingResult.Success)
             {
                 result.Message = result.Success
@@ -87,9 +87,9 @@ public partial class SyncService
     /// Sync the Trending library: the same steps as for the Discover library, run on the trending folder, then remove the
     /// titles that are no longer trending and set the play counts that sort the library in Jellyseerr's order.
     /// </summary>
-    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync()
+    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync(DiscoverLibraryConfig trendingLibrary)
     {
-        var directory = TrendingLibrary.GetDirectory();
+        var directory = trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory());
         if (directory == null)
         {
             _logger.LogWarning("The Trending Directory must be outside the Library Directory; skipping the Trending library");
@@ -97,7 +97,7 @@ public partial class SyncService
         }
 
         Directory.CreateDirectory(directory);
-        using (TrendingLibrary.Enter())
+        using (LibraryScope.Enter(trendingLibrary))
         {
             var trending = new List<IJellyseerrItem>();
             var result = await SyncFromJellyseerrAsync(async () =>
@@ -310,7 +310,7 @@ public partial class SyncService
 
             // Step 9: Filter and ignore items with invalid network IDs
             // (Trending titles have no network)
-            if (!TrendingLibrary.IsActive)
+            if (LibraryScope.Current?.ListType != DiscoverListType.Trending)
             {
                 _logger.LogDebug("Step 9: 🔍 Filtering and ignoring items with invalid network IDs...");
                 var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
@@ -379,10 +379,11 @@ public partial class SyncService
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
         var result = await SyncToJellyseerrAsync();
-        if (TrendingLibrary.GetDirectory() is { } directory && Directory.Exists(directory))
+        if (DiscoverLibraries.GetTrending() is { } trendingLibrary
+            && Directory.Exists(trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory())))
         {
             SyncJellyfinResult trendingResult;
-            using (TrendingLibrary.Enter())
+            using (LibraryScope.Enter(trendingLibrary))
             {
                 trendingResult = await SyncToJellyseerrAsync();
             }

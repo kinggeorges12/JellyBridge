@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JellyBridge.Utils;
 
@@ -18,22 +19,32 @@ public static class DiscoverLibraries
     public const string DefaultName = "Discover";
 
     /// <summary>
-    /// Gets every configured library, or the ones synthesized from the previous single-library settings when the
-    /// migration hasn't persisted any. Never empty; the stored list is returned as stored.
+    /// Gets every configured library. Before the migration (<see
+    /// cref="PluginConfiguration.LibrariesMigrationVersion"/> is 0) this is always the list synthesized from the
+    /// previous single-library settings — a stored list is ignored, so nothing syncs before the folders are moved.
+    /// After it, only the stored list is used and a stored empty list means no libraries (logged, nothing syncs) —
+    /// synthesizing then would sync titles into the Library Directory root.
     /// </summary>
     public static List<DiscoverLibraryConfig> GetAll()
     {
         var config = Plugin.GetConfiguration();
-        var configured = config.DiscoverLibraries
-            ?.Where(library => !string.IsNullOrWhiteSpace(library.Name))
-            .ToList();
 
-        if (configured is { Count: > 0 })
+        if ((config.LibrariesMigrationVersion ?? 0) < 1)
         {
-            return configured;
+            return SynthesizeLegacy(config);
         }
 
-        return SynthesizeLegacy(config);
+        var stored = config.DiscoverLibraries
+            ?.Where(library => !string.IsNullOrWhiteSpace(library.Name))
+            .ToList() ?? new List<DiscoverLibraryConfig>();
+
+        if (stored.Count == 0)
+        {
+            Plugin.Instance.LoggerFactory.CreateLogger(typeof(DiscoverLibraries).Name)
+                .LogError("Migration is done but no Discover libraries are configured; nothing will sync.");
+        }
+
+        return stored;
     }
 
     /// <summary>
@@ -42,6 +53,15 @@ public static class DiscoverLibraries
     public static List<DiscoverLibraryConfig> GetEnabled()
     {
         return GetAll().Where(library => library.EnabledOrDefault).ToList();
+    }
+
+    /// <summary>
+    /// Gets the enabled Trending library, if one exists. Until the loop (task 1c) replaces the last fixed Trending
+    /// call sites, this answers "is the Trending library turned on, and where is its folder".
+    /// </summary>
+    public static DiscoverLibraryConfig? GetTrending()
+    {
+        return GetEnabled().FirstOrDefault(library => library.ListType == DiscoverListType.Trending);
     }
 
     /// <summary>
@@ -122,7 +142,8 @@ public static class DiscoverLibraries
                 IsEnabled = true,
                 Order = DiscoverLibraryOrder.AsList,
                 DirectoryOverride = trendingDirectory,
-                Legacy = true,
+                // Not Legacy: the trending folder was always a flat mixed folder — exactly what a non-Legacy
+                // library is — so the scope must answer mixed=true and network folders=false, not the global values.
                 Pages = Plugin.GetRawConfigOrDefault<int>(nameof(PluginConfiguration.TrendingPages), config)
             });
         }
