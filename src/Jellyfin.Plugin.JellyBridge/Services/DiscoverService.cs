@@ -115,10 +115,10 @@ public class DiscoverService
     #region Created
 
     /// <summary>
-    /// Replaces default promos with title promos for titles whose artwork Jellyfin has saved since their placeholder was made,
-    /// including titles this sync didn't fetch. Returns the number of placeholders replaced.
+    /// Redraws placeholders that aren't their title's current promo (a default promo whose artwork has since arrived, or a
+    /// title promo for older text or an older look), including titles this sync didn't fetch. Returns the number replaced.
     /// </summary>
-    public async Task<int> UpgradeDefaultPromosAsync(IEnumerable<IJellyseerrItem> items)
+    public async Task<int> RedrawStalePromosAsync(IEnumerable<IJellyseerrItem> items)
     {
         if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
         {
@@ -129,11 +129,11 @@ public class DiscoverService
         {
             try
             {
-                upgraded += await _placeholderVideoGenerator.UpgradeDefaultPromosAsync(_metadataService.GetJellyBridgeItemDirectory(item));
+                upgraded += await _placeholderVideoGenerator.RedrawStalePromosAsync(_metadataService.GetJellyBridgeItemDirectory(item));
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not replace the default promo of {ItemName}", item.MediaName);
+                _logger.LogWarning(ex, "Could not redraw the promo of {ItemName}", item.MediaName);
             }
         }
         return upgraded;
