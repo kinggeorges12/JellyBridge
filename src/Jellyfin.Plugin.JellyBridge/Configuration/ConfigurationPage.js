@@ -483,13 +483,8 @@ function initializeDiscoverLibraries(page) {
         });
     }
 
-    // 5c replaces this placeholder with the template picker.
-    const addLibraryButton = page.querySelector('#addLibraryButton');
-    if (addLibraryButton) {
-        addLibraryButton.addEventListener('click', function () {
-            DisplayMessage('The library picker and editor arrive in the next update.');
-        });
-    }
+    // 5c: template picker, inline library editor, and their stable ids.
+    initializeLibraryEditorBindings(page);
 
     loadDiscoverLibraries(page);
     loadLibraryLastSync(page);
@@ -521,8 +516,16 @@ function renderDiscoverLibraries(page) {
         readOnlyNote.style.display = migrated ? 'none' : 'block';
     }
     if (addLibraryButton) {
-        // 5c turns this into the template picker; until then it stays a placeholder either way.
-        addLibraryButton.disabled = true;
+        addLibraryButton.disabled = !migrated;
+    }
+    if (!migrated && libraryEditorDraft) {
+        closeLibraryEditor(page); // editors only exist after the migration
+    }
+
+    // Capture the open editor's current input values before the list (and with it the editor's
+    // current position in the DOM) is rebuilt; attachLibraryEditor puts it back afterwards.
+    if (libraryEditorVisible) {
+        syncLibraryEditorDraft(page);
     }
 
     listElement.innerHTML = '';
@@ -544,6 +547,11 @@ function renderDiscoverLibraries(page) {
             ? 'Libraries become editable after the one-time migration on the next restart'
             : (isDefault ? 'The Default library is always on' : (isEnabled ? 'Turn this library off' : 'Turn this library on'));
 
+        // 5c: a library whose folder/Jellyfin library does not exist yet gets a per-library Create action.
+        const createButton = (migrated && !entry.jellyfinLibraryId)
+            ? '<button is="emby-button" type="button" class="raised button emby-button libraryCreateButton" style="min-width: auto;" title="Create this library\'s folder and Jellyfin library"><span>🏗️ Create library</span></button>'
+            : '';
+
         card.innerHTML =
             '<div class="discoverLibraryRow">' +
                 '<div class="discoverLibraryInfo">' +
@@ -559,7 +567,9 @@ function renderDiscoverLibraries(page) {
                         '<span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>' +
                     '</span>' +
                 '</label>' +
-                '<button is="emby-button" type="button" class="libraryGear" disabled title="The library editor arrives in the next update">⚙️</button>' +
+                createButton +
+                '<button is="emby-button" type="button" class="libraryGear"' + (migrated ? '' : ' disabled') +
+                    ' title="' + escapeLibraryHtml(migrated ? 'Edit this library' : 'Libraries become editable after the one-time migration on the next restart') + '">⚙️</button>' +
             '</div>';
 
         if (migrated && !isDefault) {
@@ -569,8 +579,40 @@ function renderDiscoverLibraries(page) {
             });
         }
 
+        if (migrated) {
+            const gear = card.querySelector('.libraryGear');
+            gear.addEventListener('click', function () {
+                openLibraryEditorFor(page, entry.name || library.name);
+            });
+        }
+
+        if (createButton) {
+            const createBtn = card.querySelector('.libraryCreateButton');
+            createBtn.addEventListener('click', function () {
+                performCreateLibrary(page, entry.name || library.name, this);
+            });
+        }
+
         listElement.appendChild(card);
     });
+
+    // A template/duplicate draft has no saved card yet: render its card marked unsaved so the editor opens inline.
+    if (libraryEditorDraft && libraryEditorDraft.isNew) {
+        const draftCard = document.createElement('div');
+        draftCard.className = 'discoverLibraryCard';
+        draftCard.setAttribute('data-library-name', libraryEditorDraft.library.name || '');
+        draftCard.innerHTML =
+            '<div class="discoverLibraryRow">' +
+                '<div class="discoverLibraryInfo">' +
+                    '<span class="discoverLibraryName">' + escapeLibraryHtml(libraryEditorDraft.library.name) + '</span>' +
+                    '<span class="libraryTag">unsaved</span>' +
+                    '<div class="discoverLibraryMeta">' + escapeLibraryHtml(pendingLibrarySummary(libraryEditorDraft.library)) + '</div>' +
+                '</div>' +
+            '</div>';
+        listElement.appendChild(draftCard);
+    }
+
+    attachLibraryEditor(page);
 }
 
 // The on/off toggle POSTs the whole list (names included — the server rejects lists that drop one).
@@ -764,6 +806,625 @@ function dismissLibrariesMigrationNotice(page) {
 }
 
 // ==========================================
+// LIBRARY TEMPLATE PICKER + EDITOR (task 5c)
+// ==========================================
+
+// The five "+ Add library" templates. Defaults copied per decision 7 and the D1/D2 vote floors are
+// applied in templateLibraryDraft(); order mirrors DiscoverLibraryConfig.ForList (Popular → Smart,
+// everything else → "Same as the list").
+const LIBRARY_TEMPLATES = {
+    Popular: { label: 'Popular', desc: "What's popular on your services", order: 'Smart', networks: true },
+    NewReleases: { label: 'New releases', desc: 'Latest releases, newest first', order: 'AsList', networks: true, minimumVotesFloor: 30 },
+    ComingSoon: { label: 'Coming soon', desc: "Not released yet, most anticipated first", order: 'AsList', networks: true, networksWarning: true },
+    Trending: { label: 'Trending', desc: "Seerr's trending list, in Seerr's order", order: 'AsList', networks: false, noDefault: true },
+    TopRated: { label: 'Top rated', desc: 'Highest TMDB scores, with a vote minimum', order: 'AsList', networks: true, minimumVotesFloor: 300 }
+};
+
+// The open editor: { isNew, originalName, wasDefault, entry, library } — null while closed.
+// libraryEditorOpenName is the saved card the editor sits in; libraryEditorVisible tracks whether
+// the editor DOM is shown so renderDiscoverLibraries knows when to harvest its inputs.
+let libraryEditorDraft = null;
+let libraryEditorOpenName = null;
+let libraryEditorVisible = false;
+let libraryEditorElement = null;
+
+function libraryTypeSuffix(type) {
+    return type === 'Movies' ? ' Movies' : (type === 'Series' ? ' Series' : '');
+}
+
+// Decision 5: Movies/Series appends " Movies"/" Series" to the name; All removes it.
+function withTypeSuffix(name, type) {
+    return String(name || '').replace(/ (Movies|Series)$/, '') + libraryTypeSuffix(type);
+}
+
+// Mirrors FolderUtils.SanitizeFileName closely enough for the folder hint under the name field.
+function sanitizeFolderName(name) {
+    return String(name || '').replace(/[\\/:*?"<>|]/g, '').trim();
+}
+
+// Every known network (global NetworkMap over the shipped defaults), keyed by id.
+function getMergedNetworkMapById() {
+    const config = window.configJellyBridge || {};
+    const byId = new Map();
+    const add = function (network) { if (network && network.id !== undefined) byId.set(network.id, network); };
+    ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || []).forEach(add);
+    (Array.isArray(config.NetworkMap) ? config.NetworkMap : []).forEach(add);
+    return byId;
+}
+
+function pendingLibrarySummary(library) {
+    const parts = [library.libraryType || 'All', libraryListLabel(library.listType)];
+    if (library.listType !== 'Trending') {
+        const byId = getMergedNetworkMapById();
+        const ids = Array.isArray(library.networkIds) ? library.networkIds : [];
+        parts.push(ids.length
+            ? ids.map(function (id) { const n = byId.get(id); return n ? n.name : ('#' + id); }).join(', ')
+            : 'all networks');
+    }
+    parts.push('not saved yet');
+    return parts.join(' · ');
+}
+
+// Call a JellyBridge (or built-in Jellyfin) endpoint with a JSON body; returns the parsed response.
+function librariesApi(method, path, body) {
+    const options = { url: ApiClient.getUrl(path), type: method, dataType: 'json' };
+    if (method !== 'GET') {
+        options.data = body === undefined ? '{}' : (typeof body === 'string' ? body : JSON.stringify(body));
+        options.contentType = 'application/json';
+    }
+    return ApiClient.ajax(options);
+}
+
+// Show the server's { message } from a failed call (errors come back as 400 { message }).
+function handleLibraryError(error, action) {
+    let message = (error && error.message) || 'Unknown error';
+    const bodyPromise = (error && typeof error.json === 'function') ? error.json().catch(function () { return null; }) : Promise.resolve(null);
+    return bodyPromise.then(function (body) {
+        if (body && body.message) message = body.message;
+        DisplayMessage('❌ Failed to ' + action + ': ' + message);
+    });
+}
+
+// Hide the global networks picker, Discover Pages, Minimum Rating/Votes and retention on migrated
+// servers — they live in each library's editor now (the picker element itself is reused, see below).
+function applyGlobalLibraryFieldsVisibility(page) {
+    const migrated = librariesAreMigrated();
+    ['MaxDiscoverPagesContainer', 'MinimumRatingContainer', 'MinimumVotesContainer', 'MaxRetentionDaysContainer'].forEach(function (id) {
+        const element = page.querySelector('#' + id);
+        if (element) element.style.display = migrated ? 'none' : '';
+    });
+    const slot = page.querySelector('#globalNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    const editorSlot = page.querySelector('#libraryEditorNetworksSlot');
+    if (!slot || !container || !editorSlot) return;
+    slot.style.display = migrated ? 'none' : '';
+    if (!editorSlot.contains(container) && container.parentElement !== slot) {
+        slot.appendChild(container);
+    }
+}
+
+function returnNetworksToGlobal(page) {
+    const slot = page.querySelector('#globalNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    if (slot && container && container.parentElement !== slot) slot.appendChild(container);
+}
+
+// One networks picker, moved (not duplicated) into the open editor.
+function populateNetworksForLibrary(page, networkIds) {
+    const byId = getMergedNetworkMapById();
+    const active = (Array.isArray(networkIds) ? networkIds : []).map(function (id) {
+        return byId.get(id) || { id: id, name: 'Network ' + id, displayPriority: 999 };
+    });
+    const activeSelect = page.querySelector('#activeNetworks');
+    populateSelectWithNetworks(activeSelect, active);
+    sortSelectOptions(activeSelect);
+    updateAvailableNetworks(page, Array.from(byId.values()));
+}
+
+function updateLibraryEditorNetworksWarning(page) {
+    const warning = page.querySelector('#libraryEditorNetworksWarning');
+    if (!warning) return;
+    const slot = page.querySelector('#libraryEditorNetworksSlot');
+    const activeCount = slot ? slot.querySelectorAll('#activeNetworks option').length : 0;
+    warning.style.display = (libraryEditorDraft && libraryEditorDraft.library.listType === 'ComingSoon' && activeCount > 0)
+        ? 'block' : 'none';
+}
+
+function libraryEditorCard(page, name) {
+    const cards = page.querySelectorAll('#discoverLibraryList .discoverLibraryCard');
+    for (const card of cards) {
+        if ((card.getAttribute('data-library-name') || '').toLowerCase() === String(name || '').toLowerCase()) return card;
+    }
+    return null;
+}
+
+// Read the editor inputs back into the draft (called before any re-render and before every save).
+function syncLibraryEditorDraft(page) {
+    const draft = libraryEditorDraft;
+    const editor = libraryEditorElement;
+    if (!draft || !editor) return;
+    const lib = draft.library;
+    const q = function (id) { return editor.querySelector(id); };
+    lib.name = (q('#libraryEditorName').value || '').trim();
+    lib.listType = q('#libraryEditorList').value;
+    lib.libraryType = q('#libraryEditorType').value;
+    lib.isDefault = q('#libraryEditorDefault').checked;
+    lib.order = q('#libraryEditorOrder').value;
+    lib.pages = q('#libraryEditorPages').value.trim() === '' ? null : parseInt(q('#libraryEditorPages').value);
+    lib.minimumRating = q('#libraryEditorMinRating').value.trim() === '' ? null : parseFloat(q('#libraryEditorMinRating').value);
+    lib.minimumVotes = q('#libraryEditorMinVotes').value.trim() === '' ? null : parseInt(q('#libraryEditorMinVotes').value);
+    lib.retentionDays = q('#libraryEditorRetention').value.trim() === '' ? null : parseInt(q('#libraryEditorRetention').value);
+    const editorSlot = editor.querySelector('#libraryEditorNetworksSlot');
+    if (lib.listType === 'Trending') {
+        lib.networkIds = [];
+    } else if (page.querySelector('#networkServicesContainer') && editorSlot.contains(page.querySelector('#networkServicesContainer'))) {
+        lib.networkIds = Array.from(page.querySelector('#activeNetworks').options)
+            .map(function (option) { return parseInt(option.value); })
+            .filter(function (id) { return !isNaN(id); });
+    }
+}
+
+// Fill every editor field from the draft, and wire the list-specific visibility.
+function renderLibraryEditorFields(page) {
+    const draft = libraryEditorDraft;
+    const editor = libraryEditorElement;
+    if (!draft || !editor) return;
+    const lib = draft.library;
+    const config = window.configJellyBridge || {};
+    const defaults = config.ConfigDefaults || {};
+    const q = function (id) { return editor.querySelector(id); };
+    const set = function (id, value) { const el = q(id); if (el) el.value = (value === null || value === undefined) ? '' : value; };
+
+    set('#libraryEditorName', lib.name);
+    const hint = q('#libraryEditorFolderHint');
+    if (hint) hint.textContent = sanitizeFolderName(lib.name) || '…';
+    const template = LIBRARY_TEMPLATES[lib.listType] || LIBRARY_TEMPLATES.Popular;
+    q('#libraryEditorList').value = lib.listType;
+    q('#libraryEditorListHelp').textContent = template.desc + '. Changing the list keeps the name and folder; the next sync replaces the content and removes the old list\'s titles right away.';
+    q('#libraryEditorType').value = lib.libraryType || 'All';
+    q('#libraryEditorOrder').value = lib.order || 'AsList';
+
+    const defaultBox = q('#libraryEditorDefault');
+    const defaultHelp = q('#libraryEditorDefaultHelp');
+    if (draft.wasDefault) {
+        defaultBox.checked = true;
+        defaultBox.disabled = true;
+        defaultHelp.textContent = 'To change the Default library, tick Default on another library.';
+    } else if (lib.listType === 'Trending') {
+        lib.isDefault = false;
+        defaultBox.checked = false;
+        defaultBox.disabled = true;
+        defaultHelp.textContent = "Trending can't be the default: search results aren't on its list.";
+    } else {
+        defaultBox.disabled = false;
+        defaultBox.checked = (lib.isDefault ?? false);
+        defaultHelp.textContent = defaultBox.checked
+            ? 'You are making this the Default library; the current one gives the flag up when you save.'
+            : 'Only one library can be the default.';
+    }
+
+    set('#libraryEditorPages', lib.pages);
+    set('#libraryEditorMinRating', lib.minimumRating);
+    set('#libraryEditorMinVotes', lib.minimumVotes);
+    set('#libraryEditorRetention', lib.retentionDays);
+    const placeholders = {
+        '#libraryEditorPages': config.MaxDiscoverPages ?? defaults.MaxDiscoverPages,
+        '#libraryEditorMinRating': config.MinimumRating ?? defaults.MinimumRating,
+        '#libraryEditorMinVotes': config.MinimumVotes ?? defaults.MinimumVotes,
+        '#libraryEditorRetention': config.MaxRetentionDays ?? defaults.MaxRetentionDays
+    };
+    Object.keys(placeholders).forEach(function (id) {
+        const el = q(id);
+        if (el && placeholders[id] !== undefined && placeholders[id] !== null) el.placeholder = String(placeholders[id]);
+    });
+
+    const editorSlot = q('#libraryEditorNetworksSlot');
+    if (template.networks) {
+        editorSlot.style.display = '';
+        editorSlot.appendChild(page.querySelector('#networkServicesContainer'));
+        populateNetworksForLibrary(page, lib.networkIds);
+    } else {
+        editorSlot.style.display = 'none';
+        returnNetworksToGlobal(page); // Trending never gets networks
+    }
+    updateLibraryEditorNetworksWarning(page);
+
+    q('#libraryEditorSync').disabled = !!draft.isNew;
+    q('#libraryEditorSync').title = draft.isNew ? 'Save the library first' : 'Sync only this library now';
+    q('#libraryEditorDelete').style.display = draft.isNew ? 'none' : '';
+    const saveLabel = q('#libraryEditorSave').querySelector('span');
+    if (saveLabel) saveLabel.textContent = draft.isNew ? '💾 Add library' : '💾 Save library';
+}
+
+// Put the editor div where it belongs: inside the open card (or the unsaved draft's card), else parked hidden in its host.
+function attachLibraryEditor(page) {
+    const editor = libraryEditorElement || page.querySelector('#libraryEditor');
+    const host = page.querySelector('#libraryEditorHost');
+    if (!editor || !host) return;
+    libraryEditorElement = editor;
+    if (!libraryEditorDraft) {
+        editor.style.display = 'none';
+        if (editor.parentElement !== host) host.appendChild(editor);
+        libraryEditorVisible = false;
+        return;
+    }
+    let target = host;
+    const card = libraryEditorCard(page, libraryEditorDraft.isNew ? libraryEditorDraft.library.name : libraryEditorOpenName);
+    if (card) {
+        target = card;
+        card.classList.add('open');
+    }
+    if (editor.parentElement !== target) target.appendChild(editor);
+    editor.style.display = 'block';
+    libraryEditorVisible = true;
+    renderLibraryEditorFields(page);
+}
+
+function closeLibraryEditor(page) {
+    const wasNew = libraryEditorDraft && libraryEditorDraft.isNew;
+    const openName = libraryEditorOpenName;
+    libraryEditorDraft = null;
+    libraryEditorOpenName = null;
+    libraryEditorVisible = false;
+    returnNetworksToGlobal(page);
+    const confirmBox = page.querySelector('#libraryEditorDeleteConfirm');
+    if (confirmBox) confirmBox.style.display = 'none';
+    const card = openName ? libraryEditorCard(page, openName) : null;
+    if (card) card.classList.remove('open');
+    attachLibraryEditor(page);
+    if (wasNew) renderDiscoverLibraries(page); // drop the unsaved card
+}
+
+// Gear click: one editor at a time; clicking the open card's gear closes it.
+function openLibraryEditorFor(page, name) {
+    const key = String(name || '').toLowerCase();
+    if (libraryEditorDraft && libraryEditorOpenName && libraryEditorOpenName.toLowerCase() === key) {
+        closeLibraryEditor(page);
+        return;
+    }
+    const entry = discoverLibrariesEntries.find(function (e) {
+        return String(e.name || (e.library && e.library.name) || '').toLowerCase() === key;
+    });
+    if (!entry) return;
+    closeLibraryEditor(page);
+    libraryEditorDraft = {
+        isNew: false,
+        originalName: entry.name || entry.library?.name,
+        wasDefault: !!(entry.library && (entry.library.isDefault ?? false)),
+        entry: entry,
+        library: JSON.parse(JSON.stringify(entry.library || {}))
+    };
+    libraryEditorOpenName = libraryEditorDraft.originalName;
+    attachLibraryEditor(page);
+    scrollToElement('libraryEditor');
+}
+
+// Decision 7 + D1/D2: copy type, networks, pages, rating and retention from the Default library;
+// Trending never gets networks; Top rated floors at 300 votes, New releases at 30.
+function templateLibraryDraft(templateKey) {
+    const template = LIBRARY_TEMPLATES[templateKey];
+    const config = window.configJellyBridge || {};
+    const defaultEntry = discoverLibrariesEntries.find(function (e) { return e.library && (e.library.isDefault ?? false); })
+        || discoverLibrariesEntries[0];
+    const dl = (defaultEntry && defaultEntry.library) || {};
+    const type = dl.libraryType || 'All';
+    const trending = templateKey === 'Trending';
+
+    const used = discoverLibrariesEntries.map(function (e) { return String(e.name || (e.library && e.library.name) || '').toLowerCase(); });
+    let name = withTypeSuffix(template.label, type);
+    for (let n = 2; used.includes(name.toLowerCase()); n++) name = withTypeSuffix(template.label + ' ' + n, type);
+
+    const draft = {
+        name: name,
+        listType: templateKey,
+        libraryType: type,
+        networkIds: trending ? [] : (Array.isArray(dl.networkIds) ? dl.networkIds.slice() : []),
+        isDefault: false,
+        isEnabled: true,
+        pages: dl.pages ?? config.MaxDiscoverPages ?? null,
+        minimumRating: trending ? null : (dl.minimumRating ?? config.MinimumRating ?? null),
+        minimumVotes: trending ? null : (dl.minimumVotes ?? config.MinimumVotes ?? null),
+        retentionDays: trending ? null : (dl.retentionDays ?? config.MaxRetentionDays ?? null),
+        order: template.order
+    };
+    if (template.minimumVotesFloor) draft.minimumVotes = template.minimumVotesFloor;
+    return draft;
+}
+
+function createLibraryFromTemplate(page, templateKey) {
+    if (!LIBRARY_TEMPLATES[templateKey]) return;
+    const picker = page.querySelector('#libraryTemplatePicker');
+    if (picker) picker.style.display = 'none';
+    closeLibraryEditor(page);
+    libraryEditorDraft = { isNew: true, originalName: null, wasDefault: false, entry: null, library: templateLibraryDraft(templateKey) };
+    libraryEditorOpenName = null;
+    renderDiscoverLibraries(page);
+    scrollToElement('libraryEditor');
+}
+
+function postLibrariesList(list) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'POST',
+        data: JSON.stringify(list),
+        contentType: 'application/json',
+        dataType: 'json'
+    });
+}
+
+// Networks the editor moved in but the global NetworkMap doesn't know yet: merge them in, because
+// LibraryScope resolves each library's networkIds against the global NetworkMap.
+function saveEditorNetworkMapUnion(page) {
+    const slot = page.querySelector('#libraryEditorNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    if (!slot || !container || !slot.contains(container)) return Promise.resolve();
+    const options = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    const config = window.configJellyBridge || {};
+    const current = Array.isArray(config.NetworkMap) ? config.NetworkMap : ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || []);
+    const missing = options.filter(function (option) {
+        return option && option.id !== undefined && !current.some(function (network) { return network && network.id === option.id; });
+    });
+    if (missing.length === 0) return Promise.resolve();
+    return librariesApi('POST', 'JellyBridge/PluginConfiguration', { NetworkMap: current.concat(missing) }).then(function (result) {
+        if (result && result.success === false) throw new Error(result.error || 'Failed to save the networks');
+        config.NetworkMap = current.concat(missing);
+        window.configJellyBridge = config;
+    });
+}
+
+// Save paths (5c notes): setting changes + added libraries go through POST Libraries (never a drop
+// or a rename); a new library is then Created; a rename goes to Rename, then the Jellyfin display
+// name via POST /Library/VirtualFolders/Name when a Jellyfin library with the old name exists.
+function saveLibraryEditor(page) {
+    if (!libraryEditorDraft) return;
+    syncLibraryEditorDraft(page);
+    const draft = libraryEditorDraft;
+    const lib = draft.library;
+    if (!lib.name) {
+        DisplayMessage('❌ Every library needs a name.');
+        return;
+    }
+    const edited = {
+        name: lib.name,
+        listType: lib.listType,
+        libraryType: lib.libraryType,
+        networkIds: Array.isArray(lib.networkIds) ? lib.networkIds.slice() : [],
+        isDefault: lib.isDefault ?? false,
+        isEnabled: (lib.isDefault ?? false) ? true : (lib.isEnabled ?? true),
+        pages: lib.pages ?? null,
+        minimumRating: lib.minimumRating ?? null,
+        minimumVotes: lib.minimumVotes ?? null,
+        retentionDays: lib.retentionDays ?? null,
+        order: lib.order ?? 'AsList'
+    };
+    const becomesDefault = !draft.wasDefault && edited.isDefault;
+    const nameChanged = !draft.isNew && lib.name.toLowerCase() !== String(draft.originalName).toLowerCase();
+    const savedEntry = draft.isNew ? null : discoverLibrariesEntries.find(function (e) {
+        return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(draft.originalName).toLowerCase();
+    });
+
+    const list = discoverLibrariesEntries.map(function (entry) {
+        let out = JSON.parse(JSON.stringify(entry.library || {}));
+        if (!draft.isNew && String(entry.name || '').toLowerCase() === String(draft.originalName).toLowerCase()) {
+            const posted = Object.assign({}, edited);
+            if (nameChanged) posted.name = entry.name; // the Rename endpoint renames it after the list saves
+            out = Object.assign(out, posted);
+        }
+        if (becomesDefault) out.isDefault = false;
+        return out;
+    });
+    if (draft.isNew) list.push(edited);
+
+    const saveButton = page.querySelector('#libraryEditorSave');
+    if (saveButton) saveButton.disabled = true;
+    Dashboard.showLoadingMsg();
+
+    postLibrariesList(list).then(function (result) {
+        const message = (result && result.message) || 'Libraries saved.';
+        if (draft.isNew) {
+            return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(lib.name) + '/Create').then(function () { return message; });
+        }
+        if (!nameChanged) return message;
+        return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(draft.originalName) + '/Rename?newName=' + encodeURIComponent(lib.name))
+            .then(function () {
+                if (savedEntry && savedEntry.jellyfinLibraryName) {
+                    return librariesApi('POST', 'Library/VirtualFolders/Name?name=' + encodeURIComponent(savedEntry.jellyfinLibraryName) + '&newName=' + encodeURIComponent(lib.name))
+                        .catch(function () {
+                            DisplayMessage('⚠️ The library renamed, but its Jellyfin display name did not — rename it in the Library Manager to match.');
+                        });
+                }
+                return message;
+            });
+    }).then(function (message) {
+        return saveEditorNetworkMapUnion(page).then(function () { return message; });
+    }).then(function (message) {
+        closeLibraryEditor(page);
+        return loadDiscoverLibraries(page).then(function () {
+            DisplayMessage('✅ ' + message);
+            loadLibraryLastSync(page);
+        });
+    }).catch(function (error) {
+        return handleLibraryError(error, 'save the library "' + lib.name + '"');
+    }).finally(function () {
+        Dashboard.hideLoadingMsg();
+        if (saveButton) saveButton.disabled = false;
+    });
+}
+
+// Duplicate: copies every setting to "<name> copy" (unique ignoring case), opens it unsaved.
+function duplicateLibraryEditorDraft(page) {
+    if (!libraryEditorDraft) return;
+    syncLibraryEditorDraft(page);
+    const src = libraryEditorDraft.library;
+    const used = discoverLibrariesEntries.map(function (e) { return String(e.name || (e.library && e.library.name) || '').toLowerCase(); });
+    used.push(String(src.name || '').toLowerCase());
+    let candidate = src.name + ' copy';
+    for (let n = 2; used.includes(candidate.toLowerCase()); n++) candidate = src.name + ' copy ' + n;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.name = candidate;
+    copy.isDefault = false;
+    copy.lastSyncedListType = null; // a copy has never synced against a list
+    closeLibraryEditor(page);
+    libraryEditorDraft = { isNew: true, originalName: null, wasDefault: false, entry: null, library: copy };
+    libraryEditorOpenName = null;
+    renderDiscoverLibraries(page);
+    scrollToElement('libraryEditor');
+}
+
+function performDeleteLibrary(page, button) {
+    const draft = libraryEditorDraft;
+    if (!draft || draft.isNew) return;
+    const name = draft.originalName;
+    const deleteFiles = page.querySelector('#libraryEditorDeleteFiles').checked;
+    const confirmBox = page.querySelector('#libraryEditorDeleteConfirm');
+    if (confirmBox) confirmBox.style.display = 'none';
+    if (button) button.disabled = true;
+    Dashboard.showLoadingMsg();
+    librariesApi('DELETE', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '?deleteFiles=' + (deleteFiles ? 'true' : 'false'))
+        .then(function (result) {
+            DisplayMessage('✅ ' + ((result && result.message) || ('Deleted library "' + name + '".')));
+            closeLibraryEditor(page);
+            return loadDiscoverLibraries(page);
+        })
+        .catch(function (error) { return handleLibraryError(error, 'delete the library "' + name + '"'); })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+            if (button) button.disabled = false;
+            loadLibraryLastSync(page);
+        });
+}
+
+function performLibrarySyncNow(page) {
+    const draft = libraryEditorDraft;
+    if (!draft || draft.isNew) return;
+    const name = draft.originalName;
+    Dashboard.confirm({
+        title: 'Sync this library',
+        text: 'Run the Discover sync for "' + name + '" now?',
+        confirmText: '🔄 Sync now',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', function (confirmed) {
+        if (!confirmed) return;
+        const button = page.querySelector('#libraryEditorSync');
+        if (button) button.disabled = true;
+        Dashboard.showLoadingMsg();
+        librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Sync')
+            .then(function (result) {
+                const ok = !(result && result.success === false);
+                DisplayMessage((ok ? '✅ ' : '❌ ') + ((result && (result.result || result.message)) || 'Sync finished.'));
+            })
+            .catch(function (error) { return handleLibraryError(error, 'sync the library "' + name + '"'); })
+            .finally(function () {
+                Dashboard.hideLoadingMsg();
+                if (button) button.disabled = false;
+                loadDiscoverLibraries(page);
+                loadLibraryLastSync(page);
+            });
+    });
+}
+
+function performCreateLibrary(page, name, button) {
+    if (button) button.disabled = true;
+    Dashboard.showLoadingMsg();
+    librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Create')
+        .then(function (result) {
+            DisplayMessage('✅ ' + ((result && result.message) || ('Library "' + name + '" is ready.')));
+        })
+        .catch(function (error) { return handleLibraryError(error, 'create the library "' + name + '"'); })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+            loadDiscoverLibraries(page);
+        });
+}
+
+// Bind the static editor, template picker, and their buttons once per page view.
+function initializeLibraryEditorBindings(page) {
+    const picker = page.querySelector('#libraryTemplatePicker');
+    const addLibraryButton = page.querySelector('#addLibraryButton');
+    if (picker && addLibraryButton) {
+        addLibraryButton.addEventListener('click', function () {
+            if (!librariesAreMigrated()) return;
+            picker.style.display = 'block';
+            scrollToElement('libraryTemplatePicker');
+        });
+        picker.querySelectorAll('button.libraryTemplate').forEach(function (button) {
+            button.addEventListener('click', function () {
+                createLibraryFromTemplate(page, this.getAttribute('data-template'));
+            });
+        });
+        const pickerCancel = page.querySelector('#libraryTemplatePickerCancel');
+        if (pickerCancel) {
+            pickerCancel.addEventListener('click', function () { picker.style.display = 'none'; });
+        }
+    }
+
+    const editor = libraryEditorElement = page.querySelector('#libraryEditor');
+    if (!editor) return;
+
+    editor.querySelector('#libraryEditorName').addEventListener('input', function () {
+        const hint = editor.querySelector('#libraryEditorFolderHint');
+        if (hint) hint.textContent = sanitizeFolderName(this.value) || '…';
+    });
+
+    editor.querySelector('#libraryEditorList').addEventListener('change', function () {
+        if (!libraryEditorDraft) return;
+        const defaultBox = editor.querySelector('#libraryEditorDefault');
+        if (this.value === 'Trending' && defaultBox.checked) {
+            DisplayMessage('The Default library cannot use the Trending list. Make another library the default first.');
+            this.value = libraryEditorDraft.library.listType;
+            return;
+        }
+        libraryEditorDraft.library.listType = this.value;
+        if (this.value === 'Trending') libraryEditorDraft.library.networkIds = [];
+        const template = LIBRARY_TEMPLATES[this.value];
+        libraryEditorDraft.library.order = template ? template.order : 'AsList';
+        renderLibraryEditorFields(page);
+    });
+
+    editor.querySelector('#libraryEditorType').addEventListener('change', function () {
+        if (!libraryEditorDraft) return;
+        const nameInput = editor.querySelector('#libraryEditorName');
+        nameInput.value = withTypeSuffix(nameInput.value, this.value);
+        libraryEditorDraft.library.libraryType = this.value;
+        libraryEditorDraft.library.name = nameInput.value.trim();
+        const hint = editor.querySelector('#libraryEditorFolderHint');
+        if (hint) hint.textContent = sanitizeFolderName(nameInput.value) || '…';
+    });
+
+    editor.querySelector('#libraryEditorDefault').addEventListener('change', function () {
+        const help = editor.querySelector('#libraryEditorDefaultHelp');
+        if (help) {
+            help.textContent = this.checked
+                ? 'You are making this the Default library; the current one gives the flag up when you save.'
+                : 'Only one library can be the default.';
+        }
+    });
+
+    // Coming soon + networks warning: moveNetworks mutates the selects without firing change events.
+    const networksSlot = editor.querySelector('#libraryEditorNetworksSlot');
+    const refreshWarningSoon = function () { setTimeout(function () { updateLibraryEditorNetworksWarning(page); }, 0); };
+    networksSlot.addEventListener('click', refreshWarningSoon);
+    networksSlot.addEventListener('dblclick', refreshWarningSoon);
+
+    editor.querySelector('#libraryEditorSave').addEventListener('click', function () { saveLibraryEditor(page); });
+    editor.querySelector('#libraryEditorDuplicate').addEventListener('click', function () { duplicateLibraryEditorDraft(page); });
+    editor.querySelector('#libraryEditorSync').addEventListener('click', function () { performLibrarySyncNow(page); });
+    editor.querySelector('#libraryEditorCancel').addEventListener('click', function () { closeLibraryEditor(page); });
+    editor.querySelector('#libraryEditorDelete').addEventListener('click', function () {
+        if (!libraryEditorDraft || libraryEditorDraft.isNew) return;
+        const confirmBox = editor.querySelector('#libraryEditorDeleteConfirm');
+        confirmBox.style.display = confirmBox.style.display === 'none' ? 'block' : 'none';
+    });
+    editor.querySelector('#libraryEditorDeleteConfirmCancel').addEventListener('click', function () {
+        editor.querySelector('#libraryEditorDeleteConfirm').style.display = 'none';
+    });
+    editor.querySelector('#libraryEditorDeleteConfirmYes').addEventListener('click', function () {
+        performDeleteLibrary(page, this);
+    });
+}
+
+// ==========================================
 // IMPORT DISCOVER CONTENT FUNCTIONS
 // ==========================================
 
@@ -919,6 +1580,10 @@ function initializeImportContent(page) {
             });
         });
     }
+
+    // 5c: on migrated servers each library's editor owns the networks, pages, rating and retention
+    // settings; hide the global ones and park the networks picker in its return slot.
+    applyGlobalLibraryFieldsVisibility(page);
 }
 
 function performSyncImportContent(page) {
@@ -1806,7 +2471,13 @@ function savePluginConfiguration(page) {
     form.EnableInMainMenu = nullIfDefault(page.querySelector('#EnableInMainMenu').checked, config.ConfigDefaults.EnableInMainMenu);
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
     form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.ConfigDefaults.Region);
-    form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    // 5c: on migrated servers the networks picker lives inside the library editor and may hold one
+    // library's subset — keep the saved global NetworkMap (per-library networkIds refer to it).
+    if (librariesAreMigrated()) {
+        form.NetworkMap = Array.isArray(config.NetworkMap) ? config.NetworkMap : ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || null);
+    } else {
+        form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    }
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));

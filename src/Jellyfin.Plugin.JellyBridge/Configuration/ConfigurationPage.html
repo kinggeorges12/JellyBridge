@@ -569,6 +569,66 @@
                     border-color: rgba(155, 155, 155, 0.5);
                     background: transparent;
                 }
+
+                /* Template picker and inline library editor (task 5c) */
+                #libraryTemplatePicker {
+                    border: 1px solid rgba(0, 164, 220, 0.55);
+                    border-radius: 8px;
+                    padding: 12px 14px;
+                    margin: 8px 0;
+                }
+
+                #libraryTemplatePicker .templateGrid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    gap: 8px;
+                    margin: 10px 0;
+                }
+
+                #libraryTemplatePicker button.libraryTemplate {
+                    white-space: normal;
+                    min-height: auto;
+                    height: auto;
+                    padding: 10px;
+                    text-align: left;
+                    line-height: 1.4;
+                }
+
+                #libraryTemplatePicker button.libraryTemplate small {
+                    display: block;
+                    color: #999;
+                    font-size: .8em;
+                    margin-top: 4px;
+                    white-space: normal;
+                }
+
+                .discoverLibraryCard.open {
+                    border-color: rgba(0, 164, 220, 0.6);
+                }
+
+                #libraryEditor {
+                    border: 1px solid rgba(0, 164, 220, 0.6);
+                    border-radius: 8px;
+                    padding: 12px 14px 14px;
+                    margin: 6px 12px 12px;
+                    background-color: rgba(0, 0, 0, 0.12);
+                }
+
+                .libraryEditorActions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 12px;
+                    padding-top: 12px;
+                    border-top: 1px dashed rgba(155, 155, 155, 0.3);
+                }
+
+                #libraryEditorDeleteConfirm {
+                    border: 1px solid #d32f2f;
+                    border-radius: 6px;
+                    padding: 10px 12px;
+                    margin-top: 10px;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -641,7 +701,116 @@
                             <button is="emby-button" type="button" id="syncAllLibraries" class="raised button emby-button"><span>🔄 Sync all</span></button>
                         </div>
                         <div id="discoverLibraryList"></div>
-                        <button is="emby-button" type="button" id="addLibraryButton" class="raised button block emby-button" disabled><span>➕ Add library</span></button>
+                        <div id="libraryEditorHost">
+                            <div id="libraryEditor" style="display: none;">
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" id="libraryEditorName" label="Name" />
+                                    <div class="fieldDescription">Folder <code id="libraryEditorFolderHint"></code> · the Jellyfin library is named the same.</div>
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="libraryEditorList">List</label>
+                                    <select id="libraryEditorList" is="emby-input" class="emby-input emby-select">
+                                        <option value="Popular">Popular</option>
+                                        <option value="NewReleases">New releases</option>
+                                        <option value="ComingSoon">Coming soon</option>
+                                        <option value="Trending">Trending</option>
+                                        <option value="TopRated">Top rated</option>
+                                    </select>
+                                    <div class="fieldDescription" id="libraryEditorListHelp"></div>
+                                </div>
+                                <div id="libraryEditorNetworksSlot"></div>
+                                <div id="libraryEditorNetworksWarning" class="fieldDescription cautionText" style="display: none;">⚠️ Unreleased titles aren't on a streaming service yet, so a network filter leaves this almost empty.</div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="libraryEditorType">Type</label>
+                                    <select id="libraryEditorType" is="emby-input" class="emby-input emby-select">
+                                        <option value="All">All</option>
+                                        <option value="Movies">Movies</option>
+                                        <option value="Series">Series</option>
+                                    </select>
+                                    <div class="fieldDescription">Movies or Series adds the word to the name (e.g. "Popular Movies"); All removes it.</div>
+                                </div>
+                                <details id="libraryEditorMore">
+                                    <summary>More options</summary>
+                                    <br>
+                                    <div class="checkboxContainer checkboxContainer-withDescription">
+                                        <label class="emby-checkbox-label">
+                                            <input id="libraryEditorDefault" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                            <span class="checkboxLabel">Default library — titles opened from search go here</span>
+                                            <span class="checkboxOutline">
+                                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                            </span>
+                                        </label>
+                                        <div class="fieldDescription" id="libraryEditorDefaultHelp">Only one library can be the default.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="libraryEditorOrder">Order in Jellyfin</label>
+                                        <select id="libraryEditorOrder" is="emby-input" class="emby-input emby-select">
+                                            <option value="AsList">Same as the list</option>
+                                            <option value="Smart">Smart</option>
+                                            <option value="Smartish">Smartish</option>
+                                            <option value="Random">Random</option>
+                                            <option value="Jellyfin">Jellyfin's own sort</option>
+                                        </select>
+                                        <div class="fieldDescription">Shows when the library is sorted by <i>Play count</i>. Smart puts each user's favourite genres first.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorPages" type="number" is="emby-input" min="0" label="Pages" />
+                                        <div class="fieldDescription">Pages of 20 titles fetched from Seerr for each type. Leave empty to use the global Discover Pages. Enter 0 to retrieve ALL pages.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorMinRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)" />
+                                        <div class="fieldDescription">Leave empty to use the global Minimum Rating; 0 imports every rating.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorMinVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)" />
+                                        <div class="fieldDescription">Leave empty to use the global Minimum Votes. Used only with a Minimum Rating.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorRetention" type="number" is="emby-input" min="1" label="Keep titles for (days)" />
+                                        <div class="fieldDescription">Days a title stays after leaving the list. Leave empty to use the global Content Retention Time.</div>
+                                    </div>
+                                </details>
+                                <div class="libraryEditorActions">
+                                    <button is="emby-button" type="button" id="libraryEditorSave" class="raised button-submit emby-button"><span>💾 Save library</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorSync" class="raised button emby-button"><span>🔄 Sync now</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorDuplicate" class="raised button emby-button"><span>📄 Duplicate</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorDelete" class="raised button emby-button" style="color: #ff6b6b;"><span>🗑️ Delete</span></button>
+                                    <span style="flex: 1;"></span>
+                                    <button is="emby-button" type="button" id="libraryEditorCancel" class="button emby-button"><span>Close</span></button>
+                                </div>
+                                <div id="libraryEditorDeleteConfirm" style="display: none;">
+                                    <div class="fieldDescription criticalText">Delete this library? Its Jellyfin library is removed too. This cannot be undone.</div>
+                                    <div class="checkboxContainer">
+                                        <label class="emby-checkbox-label">
+                                            <input id="libraryEditorDeleteFiles" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                            <span class="checkboxLabel">Also delete the files</span>
+                                            <span class="checkboxOutline">
+                                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmYes" class="raised button emby-button" style="background-color: #d32f2f; color: white;"><span>🗑️ Delete</span></button>
+                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmCancel" class="button emby-button"><span>Cancel</span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="libraryTemplatePicker" style="display: none;">
+                            <h3 class="sectionTitle" style="margin: 4px 0;">Add a library</h3>
+                            <div class="fieldDescription">Pick a starting point. You can change everything afterwards.</div>
+                            <div class="templateGrid">
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="Popular"><span>🔥 Popular</span><small>What's popular on your services</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="NewReleases"><span>🆕 New releases</span><small>Latest releases, newest first</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="ComingSoon"><span>📅 Coming soon</span><small>Not released yet, most anticipated first</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="Trending"><span>📈 Trending</span><small>Seerr's trending list, in Seerr's order</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="TopRated"><span>🏆 Top rated</span><small>Highest TMDB scores, with a vote minimum</small></button>
+                            </div>
+                            <button is="emby-button" type="button" id="libraryTemplatePickerCancel" class="button emby-button"><span>Cancel</span></button>
+                        </div>
+                        <button is="emby-button" type="button" id="addLibraryButton" class="raised button block emby-button"><span>➕ Add library</span></button>
                     </div>
 
                     <div class="checkboxContainer">
@@ -754,7 +923,7 @@
                         <summary>Import Discover Content</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
+                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items. Once migrated to Discover libraries, the networks, pages, rating and retention settings live inside each library's editor (gear).
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
@@ -772,6 +941,7 @@
                             <div class="fieldDescription">Select your watch region for networks. Click <span class="link" data-target-page="refreshWatchRegions">🔄</span> to load watch regions from Jellyseerr. This determines which watch providers are displayed for movies and series in the available networks list.</div>
                         </div>
 
+                        <div id="globalNetworksSlot"></div>
                         <div id="networkServicesContainer" class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="availableNetworks">Network Services</label>
                             <div class="fieldDescription">
@@ -823,17 +993,17 @@
                             <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 series for each network. This applies to both movies and series discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MinimumRatingContainer">
                             <input id="MinimumRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)"/>
                             <div class="fieldDescription">Only import titles rated at least this high on TMDB (0 to 10, e.g. 7). Leave empty or 0 to import every rating. Titles already in the library below it are removed at the next sync. Titles that are not out yet have no rating, so they are left out while this is set.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MinimumVotesContainer">
                             <input id="MinimumVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)"/>
                             <div class="fieldDescription">Number of TMDB votes a title needs before its rating counts, so a handful of early votes can't carry it over the Minimum Rating. Used only with a Minimum Rating. A higher number such as 300 (TMDB's own Top Rated list) leaves out more new releases.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MaxRetentionDaysContainer">
                             <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Content Retention Time (days)"/>
                             <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. JellyBridge items older than this will be removed after running the import task.</div>
                         </div>
