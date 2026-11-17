@@ -45,6 +45,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     && !string.IsNullOrWhiteSpace(apiKeyElement.GetString())
                     ? apiKeyElement.GetString()
                     : null;
+                apiKey = apiKey == PluginConfiguration.ApiKeyMask ? Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.ApiKey)) : apiKey;
 
                 var libraryDirectory = (requestData.TryGetProperty("LibraryDirectory", out var libraryDirElement)
                     && !string.IsNullOrWhiteSpace(libraryDirElement.GetString())
