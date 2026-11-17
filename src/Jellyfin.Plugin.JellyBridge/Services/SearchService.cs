@@ -74,11 +74,23 @@ public class SearchService
     }
 
     /// <summary>
-    /// Whether Seerr results are added to Jellyfin's search. Network folders are not supported since search results have no network.
+    /// Whether Seerr results are added to Jellyfin's search. Network folders are not supported since search results have no
+    /// network — once the library list has been migrated that is no longer a reason (each library owns its networks); task 3
+    /// removes the old-settings check entirely.
     /// </summary>
-    public static bool IsEnabled =>
-        Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults))
-        && !Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+    public static bool IsEnabled
+    {
+        get
+        {
+            if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults)))
+            {
+                return false;
+            }
+
+            return (Plugin.GetConfiguration().LibrariesMigrationVersion ?? 0) >= 1
+                || !Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+        }
+    }
 
     /// <summary>
     /// True for the id of a search result card.
@@ -187,6 +199,18 @@ public class SearchService
             {
                 return existing.Id;
             }
+
+            // Pick the library to open into (decision D3) and run the whole write inside its scope, so the title
+            // folder, placeholders and artwork all resolve through the scope below.
+            var target = DiscoverLibraries.GetForSearchOpen(item is JellyseerrMovie);
+            if (target == null)
+            {
+                _logger.LogWarning("Cannot add {ItemName} from search: no Discover library is configured", item.MediaName);
+                return null;
+            }
+
+            using var libraryScope = LibraryScope.Enter(target);
+            Directory.CreateDirectory(target.GetDirectory(DiscoverLibraries.GetRootDirectory()));
 
             using var scope = _scopeFactory.CreateScope();
             var metadataService = scope.ServiceProvider.GetRequiredService<MetadataService>();

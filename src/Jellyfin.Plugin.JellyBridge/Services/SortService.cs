@@ -166,12 +166,24 @@ public class SortService
         var allItems = await GetAllItems();
         if (allItems == null || allItems.Count == 0)
         {
-            result.Success = false;
-            result.Message = "No items found to update";
+            // A just-created or not-yet-scanned library has nothing to sort — not a failure, or one new library
+            // would turn every sort run into "Sorting failed".
+            result.Success = true;
+            result.Message = $"✅ {library.Name}: no items yet, skipped";
             return result;
         }
 
         var sortOrder = library.Legacy ? globalSortOrder : MapLibraryOrder(library);
+        if (sortOrder is null)
+        {
+            // A future order value with no play-count algorithm yet: skip it with a warning rather than let it
+            // land on the zeroing algorithm.
+            _logger.LogWarning("Library {LibraryName} has order {Order}, which the sort task does not know yet; skipping it",
+                library.Name, library.OrderOrDefault);
+            result.Success = true;
+            result.Message = $"✅ {library.Name}: skipped (unknown order {library.OrderOrDefault})";
+            return result;
+        }
 
         // Apply the play count algorithm for each user separately (each user gets unique sort order)
         // Process all users in parallel for better performance
@@ -242,15 +254,18 @@ public class SortService
     }
 
     /// <summary>
-    /// Maps a library's own order onto the existing play count algorithms. "Same as the list" and "Jellyfin's sort"
-    /// order through the sync (fetch positions / Jellyfin's own sorting), so no play counts here — task 2c.
+    /// Maps a library's own order onto the existing play count algorithms. Null means the sort task skips the
+    /// library. "Jellyfin" ordering leaves ordering to Jellyfin (today's "None"); "AsList" gets its order from the
+    /// sync's fetch positions and is skipped before we get here. An unknown value (a future enum member) maps to
+    /// null too, so it can never land on the zeroing algorithm by default.
     /// </summary>
-    private static SortOrderOptions MapLibraryOrder(DiscoverLibraryConfig library) => library.OrderOrDefault switch
+    private static SortOrderOptions? MapLibraryOrder(DiscoverLibraryConfig library) => library.OrderOrDefault switch
     {
         DiscoverLibraryOrder.Random => SortOrderOptions.Random,
         DiscoverLibraryOrder.Smart => SortOrderOptions.Smart,
         DiscoverLibraryOrder.Smartish => SortOrderOptions.Smartish,
-        _ => SortOrderOptions.None
+        DiscoverLibraryOrder.Jellyfin => SortOrderOptions.None,
+        _ => null
     };
 
     /// <summary>

@@ -389,8 +389,10 @@ public partial class SyncService
         }
 
         var failures = new List<string>();
+        var segments = new List<string>();
         foreach (var (library, libraryResult) in perLibrary)
         {
+            segments.Add($"{library.Name}: {libraryResult.Message}");
             if (!libraryResult.Success)
             {
                 failures.Add($"{library.Name}: {libraryResult.Message}");
@@ -413,7 +415,8 @@ public partial class SyncService
         }
         else
         {
-            result.Message = perLibrary[0].Result.Message;
+            // One segment per library, like SyncFromJellyseerr's success message
+            result.Message = string.Join("; ", segments);
         }
 
         return result;

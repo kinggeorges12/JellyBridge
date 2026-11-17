@@ -63,8 +63,9 @@ public class FavoriteService
 
             var path = fav.item?.Path;
             var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
-            // A missing season of a show in any library can also be favorited to request it (handled once, with the Discover library)
-            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual && LibraryScope.Current?.ListType != DiscoverListType.Trending;
+            // A missing season of a show can also be favorited to request it (handled once, in the Default library —
+            // any other non-Trending library would request the same virtual season a second time)
+            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual && IsCurrentLibraryDefault();
             if (!inBridgeFolder && !isMissingSeason)
             {
                 return false;
@@ -84,6 +85,14 @@ public class FavoriteService
 
         return filtered;
     }
+
+    /// <summary>
+    /// True when the current code runs inside the Default library's <see cref="LibraryScope"/>. Missing virtual
+    /// seasons are handled only there, so the same season is not requested once per non-Trending library.
+    /// </summary>
+    /// <returns>True when the current library is the Default one.</returns>
+    private static bool IsCurrentLibraryDefault() =>
+        string.Equals(LibraryScope.Current?.Name, DiscoverLibraries.GetDefault()?.Name, StringComparison.OrdinalIgnoreCase);
 
     #region Created
 

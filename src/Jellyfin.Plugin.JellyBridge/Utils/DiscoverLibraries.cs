@@ -57,7 +57,7 @@ public static class DiscoverLibraries
             return;
         }
 
-        Plugin.Instance?.LoggerFactory?.CreateLogger(typeof(DiscoverLibraries).Name)?.Log(level, message);
+        Plugin.Instance?.LoggerFactory?.CreateLogger(typeof(DiscoverLibraries).FullName!)?.Log(level, message);
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _loggedOnceKeys = new();
@@ -82,13 +82,65 @@ public static class DiscoverLibraries
 
     /// <summary>
     /// Gets the default library: titles opened from search land here and it can't be deleted. The stored flag wins;
-    /// without exactly one, the first library is the default.
+    /// when none or several libraries claim it, the first library is the default (the odd case is logged once). Null
+    /// only when no libraries are configured at all.
     /// </summary>
-    public static DiscoverLibraryConfig GetDefault()
+    /// <returns>The default library, or null when no libraries are configured.</returns>
+    public static DiscoverLibraryConfig? GetDefault()
     {
         var libraries = GetAll();
-        return libraries.FirstOrDefault(library => library.DefaultOrDefault) ?? libraries[0];
+        if (libraries.Count == 0)
+        {
+            return null;
+        }
+
+        var flagged = libraries.Where(library => library.DefaultOrDefault).ToList();
+        if (flagged.Count == 1)
+        {
+            return flagged[0];
+        }
+
+        LogOnce(flagged.Count > 1 ? "MultipleDefaultLibraries" : "NoDefaultLibrary", LogLevel.Warning,
+            flagged.Count > 1
+                ? "Several Discover libraries are marked default; using the first one."
+                : "No Discover library is marked default; using the first one.");
+        return libraries[0];
     }
+
+    /// <summary>
+    /// Gets the library a title opened from search should be added to: the default library when its type fits the
+    /// title, otherwise the first enabled library whose type fits, otherwise the default library anyway.
+    /// </summary>
+    /// <param name="isMovie">True to open a movie, false for a series.</param>
+    /// <returns>The library to open into, or null when no libraries are configured.</returns>
+    public static DiscoverLibraryConfig? GetForSearchOpen(bool isMovie)
+    {
+        var defaultLibrary = GetDefault();
+        if (defaultLibrary == null)
+        {
+            return null;
+        }
+
+        if (FitsSearchOpen(defaultLibrary, isMovie))
+        {
+            return defaultLibrary;
+        }
+
+        return GetAll().FirstOrDefault(library => library.EnabledOrDefault && FitsSearchOpen(library, isMovie)) ?? defaultLibrary;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a library's type can hold the given media type.
+    /// </summary>
+    /// <param name="library">The library to check.</param>
+    /// <param name="isMovie">True for a movie, false for a series.</param>
+    /// <returns>True when the library can hold the title.</returns>
+    private static bool FitsSearchOpen(DiscoverLibraryConfig library, bool isMovie) => library.LibraryType switch
+    {
+        DiscoverLibraryType.Movies => isMovie,
+        DiscoverLibraryType.Series => !isMovie,
+        _ => true
+    };
 
     /// <summary>
     /// Gets the Library Directory that holds every library's subfolder. Reads the setting directly, so it is not
@@ -128,7 +180,7 @@ public static class DiscoverLibraries
         if (_loggedSynthesis == 0 && Plugin.Instance?.LoggerFactory != null)
         {
             Interlocked.Exchange(ref _loggedSynthesis, 1);
-            Plugin.Instance.LoggerFactory.CreateLogger(typeof(DiscoverLibraries).Name).LogInformation(
+            Plugin.Instance.LoggerFactory.CreateLogger(typeof(DiscoverLibraries).FullName!).LogInformation(
                 "Discover libraries migration has not run yet — using libraries synthesized from the single-library settings.");
         }
 
