@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "checksum": "F4409284463DC3330BF570A331F7E51B",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.1/JellyBridge-5.1.12.0.zip",
+        "targetAbi": "12.0.0",
+        "version": "5.1.12.0",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.1 - New features by @MoFaye: Request Seasons option available in Manage Favorites Requests (#67). New bug fixes by @MoFaye: force jellyfin to look for new JellyBridge items (#65), promo video generation no longer blocks running tasks (#60, #69, #70), library refresh works more reliably (#71), prevent users from creating a duplicate library when clicking Create Discover Library button. Other security fixes: API key is never passed from the plugin settings to the configuration page (uses a masked value *** on the plugin page).",
+        "timestamp": "2026-11-17T06:03:27.856Z"
+      },
+      {
+        "checksum": "E8B471BCA649A24B5CABBB88B1588807",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.1/JellyBridge-5.1.11.9.zip",
+        "targetAbi": "10.11.9.0",
+        "version": "5.1.11.9",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.1 - New features by @MoFaye: Request Seasons option available in Manage Favorites Requests (#67). New bug fixes by @MoFaye: force jellyfin to look for new JellyBridge items (#65), promo video generation no longer blocks running tasks (#60, #69, #70), library refresh works more reliably (#71), prevent users from creating a duplicate library when clicking Create Discover Library button. Other security fixes: API key is never passed from the plugin settings to the configuration page (uses a masked value *** on the plugin page).",
+        "timestamp": "2026-11-17T06:03:27.856Z"
+      },
+      {
+        "checksum": "95BB6859741B623D420CC70EADD02634",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.1/JellyBridge-5.1.11.0.zip",
+        "targetAbi": "10.11.0.0",
+        "version": "5.1.11.0",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.1 - New features by @MoFaye: Request Seasons option available in Manage Favorites Requests (#67). New bug fixes by @MoFaye: force jellyfin to look for new JellyBridge items (#65), promo video generation no longer blocks running tasks (#60, #69, #70), library refresh works more reliably (#71), prevent users from creating a duplicate library when clicking Create Discover Library button. Other security fixes: API key is never passed from the plugin settings to the configuration page (uses a masked value *** on the plugin page).",
+        "timestamp": "2026-11-17T06:03:27.856Z"
+      },
+      {
+        "checksum": "49B0E97EFC6E33BDC534D3F539560FAE",
+        "dependencies": [],
+        "sourceUrl": "https://github.com/kinggeorges12/JellyBridge/releases/download/v5.1/JellyBridge-5.1.10.7.zip",
+        "targetAbi": "10.10.0.0",
+        "version": "5.1.10.7",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.1 - New features by @MoFaye: Request Seasons option available in Manage Favorites Requests (#67). New bug fixes by @MoFaye: force jellyfin to look for new JellyBridge items (#65), promo video generation no longer blocks running tasks (#60, #69, #70), library refresh works more reliably (#71), prevent users from creating a duplicate library when clicking Create Discover Library button. Other security fixes: API key is never passed from the plugin settings to the configuration page (uses a masked value *** on the plugin page).",
+        "timestamp": "2026-11-17T06:03:27.856Z"
+      },
+      {
         "targetAbi": "12.0.0",
         "checksum": "62DCA1B18E6BCB3580D60C34FBBA8B20",
         "dependencies": [],
