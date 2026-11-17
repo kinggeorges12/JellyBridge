@@ -341,7 +341,7 @@ Write-Host "Step 9: Pushing changes to GitHub branch '$Branch'..." -ForegroundCo
 
 # Configure git remote with token for authentication
 if ($GitHubToken) {
-    git remote set-url origin "https://kinggeorges12:$GitHubToken@github.com/kinggeorges12/JellyBridge.git"
+    git remote set-url origin "https://${GitHubUsername}:${GitHubToken}@github.com/${GitHubUsername}/JellyBridge.git"
 }
 
 # Push to the specified branch, set upstream if needed
