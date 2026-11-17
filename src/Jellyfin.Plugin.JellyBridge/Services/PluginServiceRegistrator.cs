@@ -90,6 +90,7 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
             serviceCollection.AddScoped<Controllers.LibrariesMigrationController>();
+            serviceCollection.AddScoped<Controllers.DiscoverLibrariesController>();
         }
     }
 }

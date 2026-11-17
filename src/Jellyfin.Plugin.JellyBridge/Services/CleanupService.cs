@@ -73,9 +73,24 @@ public class CleanupService
     }
 
     /// <summary>
+    /// Runs the current library's cleanup once with the retention cut-off pinned to <paramref name="syncStart"/>
+    /// instead of the retention days (decision 9: the library's List changed, so titles the sync did not
+    /// (re)fetch go right away, not after the retention days). Search-added titles are exempt. The caller holds
+    /// the sync lock and has entered the library's scope.
+    /// </summary>
+    /// <param name="syncStart">When the sync that detected the list change started.</param>
+    /// <returns>The cleanup result for this library's folder.</returns>
+    public Task<CleanupResult> CleanupListChangeAsync(DateTimeOffset syncStart)
+    {
+        return CleanupFolderMetadataAsync(syncStart);
+    }
+
+    /// <summary>
     /// Cleanup of one library's folder, which the caller has scoped with LibraryLoop / LibraryScope.Enter.
     /// </summary>
-    private async Task<CleanupResult> CleanupFolderMetadataAsync()
+    /// <param name="listChangeCutoff">When set (the list-change pass), titles older than this go regardless
+    /// of the retention days; search-added titles are exempt. Null is the normal retention-based cleanup.</param>
+    private async Task<CleanupResult> CleanupFolderMetadataAsync(DateTimeOffset? listChangeCutoff = null)
     {
         var result = new CleanupResult();
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
@@ -95,7 +110,7 @@ public class CleanupService
             allItems.AddRange(shows.Cast<IJellyseerrItem>());
 
             // Process all items together - only delete items that are older than retention days
-            var deletedItems = DeleteExpiredMedia(allItems);
+            var deletedItems = DeleteExpiredMedia(allItems, listChangeCutoff);
             result.ItemsDeleted.AddRange(deletedItems);
             result.ItemsProcessed.AddRange(allItems);
 
@@ -152,11 +167,14 @@ public class CleanupService
     /// and items below the Minimum Rating / Minimum Votes when those are set.
     /// Note: Items with invalid NetworkIds are not processed here - they should be ignored in DiscoverService.
     /// </summary>
-    private List<IJellyseerrItem> DeleteExpiredMedia(List<IJellyseerrItem> items)
+    /// <param name="items">The library's items.</param>
+    /// <param name="listChangeCutoff">The list-change pass cut-off (see <see cref="CleanupListChangeAsync"/>):
+    /// replaces the retention cut-off, and exempts search-added titles from the age check.</param>
+    private List<IJellyseerrItem> DeleteExpiredMedia(List<IJellyseerrItem> items, DateTimeOffset? listChangeCutoff = null)
     {
         var deletedItems = new List<IJellyseerrItem>();
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
-        var cutoffDate = DateTimeOffset.Now.AddDays(-maxRetentionDays);
+        var cutoffDate = listChangeCutoff ?? DateTimeOffset.Now.AddDays(-maxRetentionDays);
         
         _logger.LogTrace("Processing {ItemCount} items for cleanup (older than {MaxRetentionDays} days, before {CutoffDate})", 
             items.Count, maxRetentionDays, cutoffDate.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -168,6 +186,12 @@ public class CleanupService
                 // Only delete items that are older than the cutoff date
                 // Treat null CreatedDate as very old (past cutoff date)
                 var expired = item.CreatedDate == null || item.CreatedDate.Value < cutoffDate;
+                // Decision 9: the list-change pass removes titles that are not on the new list; search-added
+                // titles (SearchService.SearchNetworkId) never were on a list, so they skip the age check here.
+                if (listChangeCutoff != null && item.NetworkId == SearchService.SearchNetworkId)
+                {
+                    expired = false;
+                }
                 // Titles imported before a Minimum Rating was set (or raised) go at the next cleanup instead of waiting for retention.
                 // Ratings are refreshed in metadata.json whenever a title is fetched again, so this uses the latest known rating.
                 var belowRating = !DiscoverService.MeetsRatingFilter(item);

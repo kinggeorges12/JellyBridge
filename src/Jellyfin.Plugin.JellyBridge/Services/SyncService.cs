@@ -24,6 +24,7 @@ public partial class SyncService
     private readonly MetadataService _metadataService;
     private readonly PlaceholderUserDataService _placeholderUserDataService;
     private readonly SortService _sortService;
+    private readonly CleanupService _cleanupService;
     
 
     public SyncService(
@@ -35,7 +36,8 @@ public partial class SyncService
         FavoriteService favoriteService,
         MetadataService metadataService,
         PlaceholderUserDataService placeholderUserDataService,
-        SortService sortService)
+        SortService sortService,
+        CleanupService cleanupService)
     {
         _placeholderUserDataService = placeholderUserDataService;
         _logger = new DebugLogger<SyncService>(logger);
@@ -46,6 +48,7 @@ public partial class SyncService
         _favoriteService = favoriteService;
         _metadataService = metadataService;
         _sortService = sortService;
+        _cleanupService = cleanupService;
     }
 
     /// <summary>
@@ -95,6 +98,46 @@ public partial class SyncService
     }
 
     /// <summary>
+    /// Sync one named library — the settings page's per-library Sync button (task 5a): the same per-library body
+    /// <see cref="SyncFromJellyseerr"/> runs in the loop, then this library's favorites hide/ignore step, then the
+    /// refresh plan. Note: Caller is responsible for locking.
+    /// </summary>
+    /// <param name="name">The library name, matched ignoring case.</param>
+    /// <returns>The library's sync result; an unknown name fails without touching anything.</returns>
+    public async Task<SyncJellyseerrResult> SyncLibraryAsync(string name)
+    {
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the single-library sync: JellyBridge library migration in progress.");
+            return new SyncJellyseerrResult { Success = false, Message = "Library migration in progress" };
+        }
+
+        var library = DiscoverLibraries.GetAll()
+            .FirstOrDefault(l => string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (library == null)
+        {
+            return new SyncJellyseerrResult { Success = false, Message = $"No Discover library named '{name}'." };
+        }
+
+        var syncResult = await Utils.LibraryLoop.ForLibraryAsync(_logger, "sync", library, SyncOneLibraryAsync,
+            (lib, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {lib.Name} failed: {ex.Message}" });
+
+        // This library's favorites hide/ignore pass, the same step the favorites sync runs per library; a failure
+        // there is logged, but the discover sync's own result is what the endpoint reports.
+        var hideResult = await Utils.LibraryLoop.ForLibraryAsync(
+            _logger, "favorites hide/ignore", library,
+            _ => HideIgnoredStepAsync(),
+            (lib, ex) => new SyncJellyfinResult { Success = false, Message = $"{lib.Name} failed: {ex.Message}" });
+        if (!hideResult.Success)
+        {
+            _logger.LogWarning("Favorites hide/ignore failed for library {Library}: {Message}", library.Name, hideResult.Message);
+        }
+
+        await _refreshService.ApplyRefreshAsync(new List<RefreshableResult?> { syncResult, hideResult });
+        return syncResult;
+    }
+
+    /// <summary>
     /// Sync one library: fetch its list and run the shared sync steps, then the list-specific steps — a Trending
     /// library removes the titles that are no longer trending, and a non-Legacy library whose "Order in Jellyfin"
     /// is "Same as the list" gets the play counts that sort it in list order (a Legacy library keeps today's
@@ -104,6 +147,9 @@ public partial class SyncService
     /// <param name="library">The library being synced.</param>
     private async Task<SyncJellyseerrResult> SyncOneLibraryAsync(DiscoverLibraryConfig library)
     {
+        // Titles this sync fetches get a fresh CreatedDate; a list-change cleanup (below) must tell fetched from
+        // not-fetched by that, so it pins its cut-off to just before the fetch starts.
+        var syncStart = DateTimeOffset.Now;
         var fetched = new List<IJellyseerrItem>();
         var result = await SyncFromJellyseerrAsync(async () =>
         {
@@ -139,12 +185,41 @@ public partial class SyncService
                 result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
             }
         }
+        else if (!library.Legacy && library.ListTypeChangedSinceLastSync)
+        {
+            // Decision 9: the List changed since the last sync — the old list's titles go now, not after the
+            // retention days. Run this library's cleanup once with the retention cut-off pinned to the sync
+            // start: titles this sync (re)fetched have a fresh CreatedDate and stay; the rest are "expired".
+            // The search-added exemption lives in the cleanup itself.
+            var listCleanup = await _cleanupService.CleanupListChangeAsync(syncStart);
+            if (!listCleanup.Success)
+            {
+                result.Success = false;
+                result.Message = $"❌ {library.Name}: list-change cleanup failed: {listCleanup.Message}";
+                return result;
+            }
+
+            if (listCleanup.ItemsDeleted.Count > 0)
+            {
+                _logger.LogInformation("List change: removed {Count} titles no longer on '{LibraryName}' (retention skipped once)",
+                    listCleanup.ItemsDeleted.Count, library.Name);
+                result.ItemsHidden.AddRange(listCleanup.ItemsDeleted);
+                result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+            }
+        }
 
         if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
         {
             // Titles Jellyfin hasn't scanned yet get their position on the next sync. The stored ranks are fresh
             // (ClearStaleListRanksAsync above), so the sync and the sort task order the same way.
             await _sortService.SortByListAsync();
+        }
+
+        // Record the list this sync ran against (decision 9 bookkeeping) so the next sync sees an unchanged list.
+        if (!library.Legacy && library.LastSyncedListType != library.ListType)
+        {
+            library.LastSyncedListType = library.ListType;
+            Plugin.Instance?.SaveConfiguration();
         }
 
         return result;
@@ -166,6 +241,13 @@ public partial class SyncService
         foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
         {
             if (current.Contains((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            // Decision 9: search-added titles (SearchService.SearchNetworkId) are never removed by any
+            // list-based removal — they were never on a list. Only the rating cleanup may remove them.
+            if (item.NetworkId == SearchService.SearchNetworkId)
             {
                 continue;
             }

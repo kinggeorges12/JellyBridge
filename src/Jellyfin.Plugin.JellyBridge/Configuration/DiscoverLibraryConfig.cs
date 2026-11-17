@@ -145,6 +145,15 @@ public class DiscoverLibraryConfig
     public DiscoverLibraryOrder? Order { get; set; }
 
     /// <summary>
+    /// Gets or sets the list this library last synced against. Decision 9: when <see cref="ListType"/> changes,
+    /// the next sync removes the old list's titles right away — the sync compares against this value and writes
+    /// it back at the end of every successful sync. It must survive a restart, so it persists like the other
+    /// settings. Null until a sync first records it (a first sync changes nothing).
+    /// </summary>
+    [JsonPropertyName("lastSyncedListType")]
+    public DiscoverListType? LastSyncedListType { get; set; }
+
+    /// <summary>
     /// Gets or sets a folder that overrides the usual subfolder of the Library Directory. Only used by the libraries
     /// synthesized from pre-library settings until the startup migration moves them into their subfolder; never persisted.
     /// </summary>
@@ -187,6 +196,15 @@ public class DiscoverLibraryConfig
     [XmlIgnore]
     [JsonIgnore]
     public DiscoverLibraryOrder OrderOrDefault => Order ?? DiscoverLibraryOrder.AsList;
+
+    /// <summary>
+    /// Gets a value indicating whether the library's list differs from the one it last synced against
+    /// (decision 9). The sync after the change removes the old list's titles immediately instead of waiting for
+    /// retention. False when no list has been recorded yet — the first sync never removes anything.
+    /// </summary>
+    [XmlIgnore]
+    [JsonIgnore]
+    public bool ListTypeChangedSinceLastSync => LastSyncedListType.HasValue && LastSyncedListType.Value != ListType;
 
     /// <summary>
     /// Gets the folder of this library under the given Library Directory: its subfolder, or the legacy folder a

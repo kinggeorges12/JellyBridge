@@ -55,4 +55,46 @@ public static class LibraryLoop
 
         return results;
     }
+
+    /// <summary>
+    /// Runs <paramref name="body"/> for one library, inside <see cref="LibraryScope.Enter"/>, after making sure
+    /// its folder exists — the same body <see cref="ForEachLibraryAsync"/> runs per library, for the endpoints
+    /// that act on a single library. A throw is logged and reported through <paramref name="onError"/>.
+    /// </summary>
+    /// <param name="logger">Logger for the failure.</param>
+    /// <param name="stepName">Name of the step, for the log message.</param>
+    /// <param name="library">The library to run the step for.</param>
+    /// <param name="body">The step, which sees the library's settings and folder through the scope.</param>
+    /// <param name="onError">Builds the failed result reported when the step threw.</param>
+    /// <returns>The result the step produced or the reported failure.</returns>
+    public static async Task<T> ForLibraryAsync<T>(
+        ILogger logger,
+        string stepName,
+        DiscoverLibraryConfig library,
+        Func<DiscoverLibraryConfig, Task<T>> body,
+        Func<DiscoverLibraryConfig, Exception, T> onError)
+    {
+        try
+        {
+            Directory.CreateDirectory(library.GetDirectory(DiscoverLibraries.GetRootDirectory()));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not create the folder of library '{Library}'; reporting the {Step} as failed for it", library.Name, stepName);
+            return onError(library, ex);
+        }
+
+        try
+        {
+            using (LibraryScope.Enter(library))
+            {
+                return await body(library);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during {Step} for library {Library}: {Error}", stepName, library.Name, ex.Message);
+            return onError(library, ex);
+        }
+    }
 }
