@@ -132,10 +132,6 @@ Access the configuration using the plugin page on the host machine at: `http://l
 - **Automated Library Refresh**: Automatically refreshes all Jellyfin libraries containing the JellyBridge library directory after each sync
 - **Mixed Movies and Shows**: Creates a single Jellyfin libraries as Mixed Movies and Shows
 - **Network Folders**: Creates separate folders for each selected network so you can organize them into different Jellyfin libraries
-- **Network Folders Setup**
-  - **Instructions**: Step-by-step guide for creating network libraries
-  - **Display Discover Content in Multiple Libraries**: Copies content to each JellyBridge library when multiple networks host the same content
-  - **Network Folder Prefix**: Prefix attached to the network folder names
 - **Library Name**: Specifies the name when creating a new Jellyfin library
 - **Create Discover Library**: Create a new Jellyfin library using the default settings
 
@@ -155,9 +151,10 @@ Access the configuration using the plugin page on the host machine at: `http://l
 
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
 - **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
-- **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
-- **Request 4k Content**: Request 4k media content if the Jellyseerr user has permission
+- **Request Seasons**: Allow users to request individual seasons from a series
 - **Request Only First Season**: New favorited series will only request the first season instead of the entire series
+- **Request 4k Content**: Request 4k media content if the Jellyseerr user has permission
+- **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Send Discover Library Favorite Requests to Jellyseerr**: Manually trigger the task to sync favorites
 
 ### 🎥 Customize Promo Videos

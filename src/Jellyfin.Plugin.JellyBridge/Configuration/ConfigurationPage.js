@@ -398,6 +398,12 @@ function performTestConnection(page) {
 // ==========================================
 
 function initializeOrganizeLibrary(page) {
+    setInputField(page, 'ManageJellyBridgeLibrary', true);
+    setInputField(page, 'UseMixedMediaLibrary', true);
+    setInputField(page, 'UseNetworkFolders', true);
+    setInputField(page, 'AddDuplicateContent', true);
+    setInputField(page, 'NetworkFolderPrefix');
+
     // Add create default library event listener
     const createButton = page.querySelector('#createDefaultLibrary');
     createButton.addEventListener('click', function () {
@@ -516,7 +522,33 @@ function getDefaultLibrarySettings(page, directories) {
     });
 }
 
+function findLibraryUsingFolders(directories) {
+    // Returns the name of an existing library that already contains one of the directories
+    const normalize = path => (path || '').replace(/[\\/]+$/, '');
+    const wanted = directories.map(normalize);
+    return ApiClient.fetch({
+        'url': ApiClient.getUrl('Library/VirtualFolders'),
+        'headers': {'accept': 'application/json'},
+        'dataType': 'json'
+    }).then(function(libraries) {
+        const match = (libraries || []).find(library =>
+            (library.Locations || []).some(location => wanted.includes(normalize(location))));
+        return match ? match.Name : null;
+    });
+}
+
 function createVirtualFolders(page, libraryName, libraryType, directories) {
+    // Skip if a library already uses these folders, otherwise Jellyfin creates a duplicate (e.g. "Discover2")
+    return findLibraryUsingFolders(directories).then(function(existingLibrary) {
+        if (existingLibrary) {
+            DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+            return;
+        }
+        return createNewVirtualFolders(page, libraryName, libraryType, directories);
+    });
+}
+
+function createNewVirtualFolders(page, libraryName, libraryType, directories) {
     // Get settings if available, then create the virtual folder
     return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
         return ApiClient.ajax({
@@ -1267,17 +1299,12 @@ function performSortContent(page) {
 
 function initializeManageFavorites(page) {
     // Set library settings form values with null handling
-    setInputField(page, 'ManageJellyBridgeLibrary', true);
     setInputField(page, 'ExcludeFromMainLibraries', true);
     setInputField(page, 'ResponsiveFavoriteRequests', true);
     setInputField(page, 'RemoveRequestedFromFavorites', true);
     setInputField(page, 'UserPermissionRequest4k', true);
-    setInputField(page, 'RequestFirstSeason', true);
-    setInputField(page, 'UseMixedMediaLibrary', true);
-    setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'UseSeasonPlaceholders', true);
-    setInputField(page, 'AddDuplicateContent', true);
-    setInputField(page, 'NetworkFolderPrefix');
+    setInputField(page, 'RequestFirstSeason', true);
     
     // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
@@ -1503,10 +1530,10 @@ function performPluginReset(page) {
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
                 UserPermissionRequest4k: null,
+                UseSeasonPlaceholders: null,
                 RequestFirstSeason: null,
                 UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
-                UseSeasonPlaceholders: null,
                 NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
@@ -1670,10 +1697,10 @@ function savePluginConfiguration(page) {
     form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
     form.RemoveRequestedFromFavorites = nullIfDefault(page.querySelector('#RemoveRequestedFromFavorites').checked, config.ConfigDefaults.RemoveRequestedFromFavorites);
     form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
+    form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
-    form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
