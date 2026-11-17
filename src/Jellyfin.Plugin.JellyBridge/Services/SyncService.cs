@@ -23,6 +23,7 @@ public partial class SyncService
     private readonly FavoriteService _favoriteService;
     private readonly MetadataService _metadataService;
     private readonly PlaceholderUserDataService _placeholderUserDataService;
+    private readonly SortService _sortService;
     
 
     public SyncService(
@@ -33,7 +34,8 @@ public partial class SyncService
         DiscoverService discoverService,
         FavoriteService favoriteService,
         MetadataService metadataService,
-        PlaceholderUserDataService placeholderUserDataService)
+        PlaceholderUserDataService placeholderUserDataService,
+        SortService sortService)
     {
         _placeholderUserDataService = placeholderUserDataService;
         _logger = new DebugLogger<SyncService>(logger);
@@ -43,6 +45,7 @@ public partial class SyncService
         _discoverService = discoverService;
         _favoriteService = favoriteService;
         _metadataService = metadataService;
+        _sortService = sortService;
     }
 
     /// <summary>
@@ -51,10 +54,135 @@ public partial class SyncService
     public bool IsSyncRunning => Plugin.IsOperationRunning;
 
     /// <summary>
-    /// Sync folder structure and JSON metadata files from Jellyseerr to Jellyfin.
+    /// Sync folder structure and JSON metadata files from Jellyseerr to Jellyfin, for the Discover library and, when turned
+    /// on, the Trending library.
     /// Note: Caller is responsible for locking.
     /// </summary>
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
+    {
+        var result = await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync);
+        if (TrendingLibrary.IsEnabled)
+        {
+            var trendingResult = await SyncTrendingFromJellyseerrAsync();
+            if (!trendingResult.Success)
+            {
+                result.Message = result.Success
+                    ? $"⚠️ Discover library synced, Trending library failed: {trendingResult.Message}"
+                    : $"{result.Message} (Trending library: {trendingResult.Message})";
+            }
+
+            result.Success &= trendingResult.Success;
+
+            result.ItemsAdded.AddRange(trendingResult.ItemsAdded);
+            result.ItemsUpdated.AddRange(trendingResult.ItemsUpdated);
+            result.ItemsSkipped.AddRange(trendingResult.ItemsSkipped);
+            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
+            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Sync the Trending library: the same steps as for the Discover library, run on the trending folder, then remove the
+    /// titles that are no longer trending and set the play counts that sort the library in Jellyseerr's order.
+    /// </summary>
+    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync()
+    {
+        var directory = TrendingLibrary.GetDirectory();
+        if (directory == null)
+        {
+            _logger.LogWarning("The Trending Directory must be outside the Library Directory; skipping the Trending library");
+            return new SyncJellyseerrResult { Success = false, Message = "📁 The Trending Directory must be outside the Library Directory" };
+        }
+
+        Directory.CreateDirectory(directory);
+        using (TrendingLibrary.Enter())
+        {
+            var trending = new List<IJellyseerrItem>();
+            var result = await SyncFromJellyseerrAsync(async () =>
+            {
+                var (movies, shows) = await _discoverService.FetchTrendingMediaAsync();
+                trending.AddRange(movies);
+                trending.AddRange(shows);
+                return (movies, shows);
+            });
+            if (!result.Success)
+            {
+                return result;
+            }
+
+            var removed = await RemoveStaleTrendingAsync(trending);
+            result.ItemsHidden.AddRange(removed);
+            if (removed.Count > 0)
+            {
+                result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+            }
+
+            // Titles Jellyfin hasn't scanned yet get their position on the next sync
+            await _sortService.SortTrendingAsync();
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Delete the Trending library's titles that are no longer trending. A title someone favorited stays until the favorites
+    /// sync has requested it (it is hidden then).
+    /// </summary>
+    private async Task<List<IJellyseerrItem>> RemoveStaleTrendingAsync(List<IJellyseerrItem> trending)
+    {
+        var current = trending.Select(item => (item.GetType(), item.Id)).ToHashSet();
+        var favoritePaths = _favoriteService.GetUserFavorites()
+            .Select(favorite => favorite.item?.Path)
+            .Where(path => !string.IsNullOrEmpty(path))
+            .ToList();
+        var (movies, shows) = await _metadataService.ReadMetadataAsync();
+        var removed = new List<IJellyseerrItem>();
+        foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
+        {
+            if (current.Contains((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            try
+            {
+                var folder = _metadataService.GetJellyBridgeItemDirectory(item);
+                var hidden = File.Exists(Path.Combine(folder, BridgeService.IgnoreFileName));
+                if (!hidden && favoritePaths.Any(path => FolderUtils.IsPathInDirectory(path, folder)))
+                {
+                    continue;
+                }
+
+                Directory.Delete(folder, true);
+                removed.Add(item);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Could not remove {ItemName} from the Trending library: {Message}", item.MediaName, ex.Message);
+            }
+        }
+
+        _logger.LogDebug("Removed {Count} titles that are no longer trending", removed.Count);
+        return removed;
+    }
+
+    private static RefreshPlan? MergeRefresh(RefreshPlan? first, RefreshPlan? second)
+    {
+        if (first == null || second == null)
+        {
+            return first ?? second;
+        }
+
+        return new RefreshPlan
+        {
+            CreateRefresh = first.CreateRefresh || second.CreateRefresh,
+            RemoveRefresh = first.RemoveRefresh || second.RemoveRefresh,
+            RefreshImages = first.RefreshImages || second.RefreshImages
+        };
+    }
+
+    private async Task<SyncJellyseerrResult> SyncFromJellyseerrAsync(Func<Task<(List<JellyseerrMovie>, List<JellyseerrShow>)>> fetchMedia)
     {
         var result = new SyncJellyseerrResult();
 
@@ -74,7 +202,7 @@ public partial class SyncService
 
             _logger.LogDebug("Step 1: Starting Jellyseerr discovery to find movies and TV shows for all networks");
             // Step 1: Fetch movies and TV shows for all networks
-            var (discoverMovies, discoverShows) = await _discoverService.FetchDiscoverMediaAsync();
+            var (discoverMovies, discoverShows) = await fetchMedia();
             _logger.LogDebug("Step 1: Retrieved {MovieCount} movies, {ShowCount} TV shows from Jellyseerr",
                 discoverMovies.Count, discoverShows.Count);
 
@@ -181,10 +309,14 @@ public partial class SyncService
             result.ItemsHidden.AddRange(newIgnored);
 
             // Step 9: Filter and ignore items with invalid network IDs
-            _logger.LogDebug("Step 9: 🔍 Filtering and ignoring items with invalid network IDs...");
-            var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
-            result.ItemsSkipped.AddRange(existingIgnoredNetwork);
-            result.ItemsHidden.AddRange(newIgnoredNetwork);
+            // (Trending titles have no network)
+            if (!TrendingLibrary.IsActive)
+            {
+                _logger.LogDebug("Step 9: 🔍 Filtering and ignoring items with invalid network IDs...");
+                var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
+                result.ItemsSkipped.AddRange(existingIgnoredNetwork);
+                result.ItemsHidden.AddRange(newIgnoredNetwork);
+            }
 
             // Step 9: Provide refresh plan back to caller; orchestration occurs after both syncs complete
             // Only set refresh plan if there are added items or hidden items
@@ -240,10 +372,43 @@ public partial class SyncService
     }
 
     /// <summary>
-    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items.
+    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items, in the Discover library
+    /// and, when turned on, the Trending library.
     /// Note: Caller is responsible for locking.
     /// </summary>
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
+    {
+        var result = await SyncToJellyseerrAsync();
+        if (TrendingLibrary.GetDirectory() is { } directory && Directory.Exists(directory))
+        {
+            SyncJellyfinResult trendingResult;
+            using (TrendingLibrary.Enter())
+            {
+                trendingResult = await SyncToJellyseerrAsync();
+            }
+
+            if (!trendingResult.Success)
+            {
+                result.Message = result.Success
+                    ? $"⚠️ Discover library favorites synced, Trending library failed: {trendingResult.Message}"
+                    : $"{result.Message} (Trending library: {trendingResult.Message})";
+            }
+
+            result.Success &= trendingResult.Success;
+            result.ItemsProcessed.AddRange(trendingResult.ItemsProcessed);
+            result.ItemsFound.AddRange(trendingResult.ItemsFound);
+            result.ItemsCreated.AddRange(trendingResult.ItemsCreated);
+            result.ItemsBlocked.AddRange(trendingResult.ItemsBlocked);
+            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
+            result.ItemsCleared.AddRange(trendingResult.ItemsCleared);
+            result.ItemsUnhidden.AddRange(trendingResult.ItemsUnhidden);
+            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+        }
+
+        return result;
+    }
+
+    private async Task<SyncJellyfinResult> SyncToJellyseerrAsync()
     {
         var result = new SyncJellyfinResult();
 

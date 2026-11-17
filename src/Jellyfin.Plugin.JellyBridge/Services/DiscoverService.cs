@@ -110,6 +110,52 @@ public class DiscoverService
         return (allMovies, allShows);
     }
 
+    /// <summary>
+    /// Fetches Jellyseerr's trending list (movies and shows; people are skipped), keeping each title's position in it.
+    /// </summary>
+    /// <returns>Tuple containing lists of trending movies and shows</returns>
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchTrendingMediaAsync()
+    {
+        var movies = new List<JellyseerrMovie>();
+        var shows = new List<JellyseerrShow>();
+        var results = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTrending) as List<System.Text.Json.JsonElement>
+            ?? new List<System.Text.Json.JsonElement>();
+
+        var rank = 0;
+        var seen = new HashSet<(string?, int)>();
+        foreach (var result in results)
+        {
+            var mediaType = result.TryGetProperty("mediaType", out var type) ? type.GetString() : null;
+            IJellyseerrItem? item = mediaType switch
+            {
+                "movie" => JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(result.GetRawText()),
+                "tv" => JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(result.GetRawText()),
+                _ => null,
+            };
+            // TMDB's trending pages can repeat a title; the first position counts
+            if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id)))
+            {
+                continue;
+            }
+
+            // Ranked among the titles only, and before skipping blocklisted ones so the order matches Jellyseerr's page
+            rank++;
+            item.TrendingRank = rank;
+            item.NetworkTag = TrendingLibrary.Tag;
+            if (item is JellyseerrMovie movie && movie.MediaInfo?.Status != MediaStatus.BLACKLISTED)
+            {
+                movies.Add(movie);
+            }
+            else if (item is JellyseerrShow show && show.MediaInfo?.Status != MediaStatus.BLACKLISTED)
+            {
+                shows.Add(show);
+            }
+        }
+
+        _logger.LogDebug("Fetched {MovieCount} trending movies and {ShowCount} trending shows from Jellyseerr", movies.Count, shows.Count);
+        return (movies, shows);
+    }
+
     #endregion
 
     #region Created

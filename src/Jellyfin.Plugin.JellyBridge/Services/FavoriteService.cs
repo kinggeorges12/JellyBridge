@@ -63,8 +63,8 @@ public class FavoriteService
 
             var path = fav.item?.Path;
             var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
-            // A missing season of a show in any library can also be favorited to request it
-            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual;
+            // A missing season of a show in any library can also be favorited to request it (handled once, with the Discover library)
+            var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual && !TrendingLibrary.IsActive;
             if (!inBridgeFolder && !isMissingSeason)
             {
                 return false;

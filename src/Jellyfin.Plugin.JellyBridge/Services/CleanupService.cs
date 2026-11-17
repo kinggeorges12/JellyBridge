@@ -34,6 +34,38 @@ public class CleanupService
     /// </summary>
     public async Task<CleanupResult> CleanupMetadataAsync()
     {
+        var result = await CleanupFolderMetadataAsync();
+        if (TrendingLibrary.GetDirectory() is { } directory && Directory.Exists(directory))
+        {
+            CleanupResult trendingResult;
+            using (TrendingLibrary.Enter())
+            {
+                trendingResult = await CleanupFolderMetadataAsync();
+            }
+
+            result.Success &= trendingResult.Success;
+            result.ItemsProcessed.AddRange(trendingResult.ItemsProcessed);
+            result.ItemsDeleted.AddRange(trendingResult.ItemsDeleted);
+            result.ItemsCreated.AddRange(trendingResult.ItemsCreated);
+            result.MoviesCleaned += trendingResult.MoviesCleaned;
+            result.ShowsCleaned += trendingResult.ShowsCleaned;
+            if (trendingResult.Refresh != null)
+            {
+                result.Refresh ??= new RefreshPlan();
+                result.Refresh.CreateRefresh |= trendingResult.Refresh.CreateRefresh;
+                result.Refresh.RemoveRefresh |= trendingResult.Refresh.RemoveRefresh;
+                result.Refresh.RefreshImages |= trendingResult.Refresh.RefreshImages;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Cleanup of the current JellyBridge folder (the Library Directory, or the trending folder inside TrendingLibrary.Enter).
+    /// </summary>
+    private async Task<CleanupResult> CleanupFolderMetadataAsync()
+    {
         var result = new CleanupResult();
         var maxRetentionDays = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxRetentionDays));
         var cutoffDate = DateTime.Now.AddDays(-maxRetentionDays);

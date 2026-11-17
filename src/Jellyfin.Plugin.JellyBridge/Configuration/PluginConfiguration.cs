@@ -68,6 +68,9 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(UseNetworkFolders), false },
         { nameof(EnableSearchResults), false },
         { nameof(UseSeasonPlaceholders), false },
+        { nameof(UseTrendingLibrary), false },
+        { nameof(TrendingDirectory), string.Empty },
+        { nameof(TrendingPages), 3 },
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
 
@@ -224,6 +227,21 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to create a placeholder for each requestable season of a show.
     /// </summary>
     public bool? UseSeasonPlaceholders { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to keep a separate Trending library with Jellyseerr's trending titles.
+    /// </summary>
+    public bool? UseTrendingLibrary { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder of the Trending library; empty means "&lt;Library Directory&gt; Trending".
+    /// </summary>
+    public string TrendingDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets how many pages of Jellyseerr's trending list (about 20 titles each) the Trending library gets.
+    /// </summary>
+    public int? TrendingPages { get; set; }
 
     /// <summary>
     /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.

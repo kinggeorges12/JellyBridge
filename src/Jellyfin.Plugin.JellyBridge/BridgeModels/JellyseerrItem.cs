@@ -205,4 +205,10 @@ public interface IJellyseerrItem
     /// </summary>
     [JsonIgnore]
     int? NetworkId { get; set; }
+
+    /// <summary>
+    /// Position in Jellyseerr's trending list (1 = first), for titles in the Trending library.
+    /// </summary>
+    [JsonIgnore]
+    int? TrendingRank { get; set; }
 }

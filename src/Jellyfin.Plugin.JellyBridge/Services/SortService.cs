@@ -185,6 +185,57 @@ public class SortService
     }
 
     /// <summary>
+    /// Set the play counts of the Trending library's titles from their position in Jellyseerr's trending list, for all users,
+    /// so sorting that library by play count (ascending) shows Jellyseerr's order. Call inside TrendingLibrary.Enter.
+    /// </summary>
+    public async Task<SortLibraryResult> SortTrendingAsync()
+    {
+        var result = new SortLibraryResult();
+        try
+        {
+            var allItems = await GetAllItems();
+            if (allItems == null)
+            {
+                result.Success = true;
+                result.Message = "No trending titles in Jellyfin yet";
+                return result;
+            }
+
+            // Steps of 100 like the other sort orders, so playing a title doesn't change the order
+            var itemInfoMap = allItems
+                .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item),
+                    playCount: 100 * (itemData.item.TrendingRank ?? 1000), itemData.mediaType))
+                .Where(x => !string.IsNullOrEmpty(x.folder))
+                .GroupBy(x => x.folder)
+                .ToDictionary(g => g.Key, g => (g.First().playCount, g.First().mediaType));
+            var dateMapping = CalculatePlayDateMapping(itemInfoMap);
+            var combinedInfoMap = itemInfoMap.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (kvp.Value.playCount, kvp.Value.mediaType, dateMapping.TryGetValue(kvp.Key, out var date) ? date : null));
+
+            foreach (var user in _userManager.GetAllUsers())
+            {
+                var (successes, failures, skipped) = await ApplyPlayCountAlgorithmAsync(user, combinedInfoMap);
+                result.ItemsSorted.AddRange(successes);
+                result.ItemsFailed.AddRange(failures);
+                result.ItemsSkipped.AddRange(skipped);
+            }
+
+            result.Success = true;
+            result.Message = "✅ Trending library sorted";
+            _logger.LogDebug("Set the trending order for {Count} titles", itemInfoMap.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting the trending order");
+            result.Success = false;
+            result.Message = $"Error setting the trending order: {ex.Message}";
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Gets all items from the JellyBridge library with their media types.
     /// </summary>
     /// <returns>A list of (item, mediaType) tuples, or null if no items found.</returns>
