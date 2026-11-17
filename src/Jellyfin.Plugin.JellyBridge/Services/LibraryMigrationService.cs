@@ -62,12 +62,6 @@ public sealed class MigrationPlan
     [JsonPropertyName("showMigrationNotice")]
     public bool ShowMigrationNotice { get; set; }
 
-    /// <summary>Library names whose target folder collides with a source or an existing title folder, so their
-    /// titles move through a temp folder <c>&lt;root&gt;/.jb-migrate-&lt;name&gt;</c> first and the temp folder
-    /// is renamed at the end.</summary>
-    [JsonPropertyName("stagedLibraries")]
-    public List<string> StagedLibraries { get; } = new();
-
     /// <summary>True when the planner refused the migration (a target folder exists and is not a JellyBridge folder).
     /// The executor must then move nothing and save nothing — it logs the warnings and retries next startup.</summary>
     [JsonPropertyName("aborted")]
@@ -100,17 +94,20 @@ public class LibraryMigrationService
     private readonly SyncService _syncService;
     private readonly RefreshService _refreshService;
     private readonly JellyfinILibraryManager _libraryManager;
+    private readonly FavoriteService _favoriteService;
 
     public LibraryMigrationService(
         ILogger<LibraryMigrationService> logger,
         SyncService syncService,
         RefreshService refreshService,
-        JellyfinILibraryManager libraryManager)
+        JellyfinILibraryManager libraryManager,
+        FavoriteService favoriteService)
     {
         _logger = new DebugLogger<LibraryMigrationService>(logger);
         _syncService = syncService;
         _refreshService = refreshService;
         _libraryManager = libraryManager;
+        _favoriteService = favoriteService;
     }
 
     /// <summary>
@@ -281,13 +278,16 @@ public class LibraryMigrationService
                 continue;
             }
 
-            if (targetCheck == 1 && !plan.StagedLibraries.Contains(owner.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                plan.StagedLibraries.Add(owner.Name);
-            }
-
+            // A target folder equal to the source (separate mode with a library literally named "Movies":
+            // the target root/Movies IS the source) means every title is already in place — no moves.
+            var titlesAlreadyInPlace = FolderUtils.ArePathsEqual(source, targetFolder);
             foreach (var titleFolder in TitleFolders(source))
             {
+                if (titlesAlreadyInPlace)
+                {
+                    continue;
+                }
+
                 planned.Add((titleFolder, Path.Combine(targetFolder, Path.GetFileName(titleFolder)), owner));
             }
 
@@ -359,7 +359,6 @@ public class LibraryMigrationService
             plan.Moves.Clear();
             plan.Duplicates.Clear();
             plan.Repoints.Clear();
-            plan.StagedLibraries.Clear();
             return plan;
         }
 
@@ -432,7 +431,9 @@ public class LibraryMigrationService
     }
 
     /// <summary>
-    /// Runs the libraries migration once (4b): flush favorites to Jellyseerr on the old layout, journal the plan,
+    /// Runs the libraries migration once (4b): flush favorites to Jellyseerr on the old layout (only when the
+    /// server actually has favorites — a server without a reachable Seerr and no favorites must still migrate),
+    /// journal the plan,
     /// move every title folder into its library folder, delete the losing duplicate copies, repoint the old
     /// Jellyfin libraries (add the new path before removing the old one), save the new library list with
     /// <see cref="PluginConfiguration.LibrariesMigrationVersion"/> 1, delete the journal, remove now-empty legacy
@@ -527,11 +528,21 @@ public class LibraryMigrationService
             // request all favorites first, on the old layout. Only the request step runs: after task 3 the
             // hide/ignore step computes flat paths, which is wrong for a Network Folders layout, and the next
             // sync after the migration hides the requested titles in the new layout anyway.
-            var favorites = await _syncService.RequestFavoritesStepAsync();
-            if (!favorites.Success)
+            // The flush needs a reachable Jellyseerr, so run it only when there is actually something to
+            // lose — a server with no Seerr connection and no favorites must still migrate.
+            var favorites = _favoriteService.GetUserFavorites();
+            if (favorites.Count > 0)
             {
-                _logger.LogWarning("Favorites flush failed ({Message}) - libraries migration aborted, retrying on the next startup.", favorites.Message);
-                return new MigrationResult { Aborted = true, Message = $"Favorites flush failed: {favorites.Message}" };
+                var flush = await _syncService.RequestFavoritesStepAsync();
+                if (!flush.Success)
+                {
+                    _logger.LogWarning("Favorites flush failed ({Message}) - libraries migration aborted, retrying on the next startup.", flush.Message);
+                    return new MigrationResult { Aborted = true, Message = $"Favorites flush failed: {flush.Message}" };
+                }
+            }
+            else
+            {
+                _logger.LogInformation("JellyBridge libraries migration: no favorites found; skipping the Jellyseerr favorites flush.");
             }
 
             state = new MigrationJournal { Plan = newPlan };
@@ -570,11 +581,22 @@ public class LibraryMigrationService
         // Repoint the old Jellyfin libraries — always add the new path before removing the old one.
         var repointedLibraries = new HashSet<string>(StringComparer.Ordinal);
         var doneRepoints = new HashSet<string>(state.DoneRepoints, StringComparer.Ordinal);
+        var failedRepoints = new List<string>();
         foreach (var repoint in plan.Repoints)
         {
             var key = $"{repoint.LibraryName}\n{repoint.OldPath}";
             if (!doneRepoints.Contains(key))
             {
+                if (FolderUtils.ArePathsEqual(repoint.OldPath, repoint.NewPath))
+                {
+                    // The library already points at its target folder (e.g. a library named like its old
+                    // folder). Doing nothing is correct; removing the "old" path would leave it with none.
+                    _logger.LogInformation("Repoint skipped for Jellyfin library {LibraryName}: it already points at {Path}.",
+                        repoint.LibraryName, repoint.NewPath);
+                    repointedLibraries.Add(repoint.LibraryName);
+                    continue;
+                }
+
                 try
                 {
                     var locations = (_libraryManager.Inner.GetVirtualFolders()
@@ -594,10 +616,12 @@ public class LibraryMigrationService
                 }
                 catch (Exception ex)
                 {
-                    // Keep the other repoints going; a failed one leaves that library on the old path and the
-                    // warnings above show it. Never remove the old path when adding the new one failed.
+                    // Keep the other repoints going; a failed one leaves that library on the old path. Record it
+                    // in the config (LibrariesMigrationIssues + the banner flag) so the settings page can tell the
+                    // user to fix it by hand. Never remove the old path when adding the new one failed.
                     _logger.LogError(ex, "Repoint of Jellyfin library {LibraryName} ({OldPath} -> {NewPath}) failed.",
                         repoint.LibraryName, repoint.OldPath, repoint.NewPath);
+                    failedRepoints.Add($"Jellyfin library {repoint.LibraryName} still points at {repoint.OldPath}; add {repoint.NewPath} to it");
                 }
 
                 state.DoneRepoints.Add(key);
@@ -605,6 +629,26 @@ public class LibraryMigrationService
             }
 
             repointedLibraries.Add(repoint.LibraryName);
+        }
+
+        // Persist failed repoints so the user sees which Jellyfin libraries still need a hand (the migration
+        // itself keeps going — the titles are already in their new folders).
+        if (failedRepoints.Count > 0)
+        {
+            foreach (var issue in failedRepoints)
+            {
+                if (!config.LibrariesMigrationIssues.Contains(issue, StringComparer.Ordinal))
+                {
+                    config.LibrariesMigrationIssues.Add(issue);
+                }
+            }
+
+            config.ShowLibrariesMigrationNotice = true;
+            if (state.ConfigSaved)
+            {
+                // Resumed run whose config was already saved — store the issues straight away.
+                Plugin.Instance.SaveConfiguration();
+            }
         }
 
         // Save the new library list. The old settings stay untouched in the XML so a downgrade still has them.
@@ -647,10 +691,10 @@ public class LibraryMigrationService
     private void LogPlan(MigrationPlan plan)
     {
         _logger.LogInformation(
-            "JellyBridge libraries migration plan: {Libraries} libraries ({Names}), {Moves} title moves, {Repoints} Jellyfin library repoints, {Duplicates} duplicate copies, {Staged} staged library names.",
+            "JellyBridge libraries migration plan: {Libraries} libraries ({Names}), {Moves} title moves, {Repoints} Jellyfin library repoints, {Duplicates} duplicate copies.",
             plan.Libraries.Count,
             string.Join(", ", plan.Libraries.Select(library => $"{library.Name} ({library.LibraryType}{(library.DefaultOrDefault ? ", default" : string.Empty)})")),
-            plan.Moves.Count, plan.Repoints.Count, plan.Duplicates.Count, plan.StagedLibraries.Count);
+            plan.Moves.Count, plan.Repoints.Count, plan.Duplicates.Count);
 
         foreach (var group in plan.Moves
                      .GroupBy(move => (From: Path.GetDirectoryName(move.Source) ?? string.Empty, To: Path.GetDirectoryName(move.Target) ?? string.Empty))
@@ -677,6 +721,12 @@ public class LibraryMigrationService
     /// </summary>
     private void MoveTitleFolder(string source, string target)
     {
+        if (FolderUtils.ArePathsEqual(source, target))
+        {
+            // The title is already exactly where the migration wants it (a library named like its old folder).
+            return;
+        }
+
         if (!Directory.Exists(source))
         {
             _logger.LogWarning("Migration move skipped: {Source} no longer exists.", source);
@@ -920,9 +970,9 @@ public class LibraryMigrationService
 
     /// <summary>
     /// Checks the library's target folder against the migration sources. 0 = free to move straight in,
-    /// 1 = collides (the target is itself the source of the same titles, or already holds title folders)
-    /// so the titles must be staged through a temp folder, 2 = the target exists, is not a JellyBridge
-    /// folder and is not a source — the plan must abort.
+    /// 1 = collides (the target is itself the source of the same titles, so the titles are already in place,
+    /// or the target already holds title folders the moves merge into), 2 = the target exists, is not a
+    /// JellyBridge folder and is not a source — the plan must abort.
     /// </summary>
     private static int CheckTarget(string sourceFolder, string targetFolder, string root, List<string> networkFolderNames)
     {
@@ -940,6 +990,7 @@ public class LibraryMigrationService
         var titleFolders = TitleFolders(targetFolder);
         if (titleFolders.Count > 0 || titleFolders.Any(folder => networkFolderNames.Contains(Path.GetFileName(folder), StringComparer.Ordinal)))
         {
+            // The moves merge into the folders already there (MoveTitleFolder merges an existing target).
             return 1;
         }
 

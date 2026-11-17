@@ -150,6 +150,13 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? ShowLibrariesMigrationNotice { get; set; }
 
     /// <summary>
+    /// Gets or sets the outstanding Discover libraries migration issues: one human-readable line per Jellyfin
+    /// library repoint that failed during the migration (the library still points at the old folder and needs
+    /// the new path added by hand). Empty after a clean migration; listed by the settings-page banner.
+    /// </summary>
+    public List<string> LibrariesMigrationIssues { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets whether the plugin is enabled.
     /// </summary>
     public bool? IsEnabled { get; set; }

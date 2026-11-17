@@ -55,6 +55,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     DiscoverLibraries = config.DiscoverLibraries,
                     LibrariesMigrationVersion = config.LibrariesMigrationVersion,
                     ShowLibrariesMigrationNotice = config.ShowLibrariesMigrationNotice,
+                    LibrariesMigrationIssues = config.LibrariesMigrationIssues,
 
                     // Import Discover Content
                     Region = config.Region,
@@ -165,6 +166,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         return false;
                     }
 
+                    SetLibrariesMigrationIssues(configData, config);
                     // Import Discover Content
                     SetJsonValue<string>(configData, nameof(config.Region), config);
                     SetNetworkMap(configData, config);
@@ -401,6 +403,44 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             {
                 _logger.LogError(ex, "Failed to deserialize DiscoverLibraries as array. JSON: {Json}", librariesElement.GetRawText());
                 return $"DiscoverLibraries could not be parsed: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Handles LibrariesMigrationIssues: supports explicit null (reset to empty), an array of strings, or
+        /// preserves the existing value when absent. Round-tripped like <see cref="SetDiscoverLibraries"/> so the
+        /// settings page can read the failed-repoint lines and clear them once the user fixed the libraries.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration to update.</param>
+        private void SetLibrariesMigrationIssues(JsonElement configData, PluginConfiguration config)
+        {
+            if (!configData.TryGetProperty(nameof(config.LibrariesMigrationIssues), out var issuesElement))
+            {
+                return;
+            }
+
+            if (issuesElement.ValueKind == JsonValueKind.Null)
+            {
+                config.LibrariesMigrationIssues = new List<string>();
+                _logger.LogInformation("LibrariesMigrationIssues explicitly set to null by client (cleared).");
+                return;
+            }
+
+            if (issuesElement.ValueKind != JsonValueKind.Array)
+            {
+                _logger.LogWarning("LibrariesMigrationIssues must be an array of strings; keeping the existing value.");
+                return;
+            }
+
+            try
+            {
+                config.LibrariesMigrationIssues = issuesElement.Deserialize<List<string>>() ?? new List<string>();
+                _logger.LogTrace("Successfully deserialized LibrariesMigrationIssues as array with {Count} issues", config.LibrariesMigrationIssues.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to deserialize LibrariesMigrationIssues as array. JSON: {Json}", issuesElement.GetRawText());
             }
         }
 
