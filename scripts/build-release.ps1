@@ -72,6 +72,9 @@ $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 # Set manifest file 
 $manifestPath = "manifest.json"
 
+# Read the C# project file to update version numbers
+$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
+
 $manifestArray = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $pluginInfo = $manifestArray[0]
 
@@ -90,7 +93,6 @@ foreach ($t in $TargetABIs) {
 
     # Step 1: Update version numbers in project file
     Write-Host "Step 1: Updating version numbers in project file..." -ForegroundColor Yellow
-    $csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
     $csprojContent = Get-Content $csprojPath -Raw
 
     # Update AssemblyVersion and FileVersion
@@ -186,9 +188,8 @@ Write-Host "Step 8: Committing changes to Git..." -ForegroundColor Yellow
 
 # Set project version numbers back to the base version (without subversion) for future development
 Start-Sleep -Milliseconds 1000
-$csprojPath = "src\Jellyfin.Plugin.JellyBridge\JellyBridge.csproj"
 $csprojContent = Get-Content $csprojPath -Raw
-$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$TargetABIs[0].JellyfinVersion</JellyfinVersion>"
+$csprojContent = $csprojContent -replace '<JellyfinVersion>[^<]*</JellyfinVersion>', "<JellyfinVersion>$($TargetABIs[0].JellyfinVersion)</JellyfinVersion>"
 $csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]*</AssemblyVersion>', "<AssemblyVersion>$Version</AssemblyVersion>"
 $csprojContent = $csprojContent -replace '<FileVersion>[^<]*</FileVersion>', "<FileVersion>$Version</FileVersion>"
 Set-Content $csprojPath -Value $csprojContent -NoNewline -ErrorAction Stop
