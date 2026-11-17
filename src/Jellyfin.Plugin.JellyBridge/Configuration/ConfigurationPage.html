@@ -522,6 +522,20 @@
                     min-width: 0;
                 }
 
+                /* 5c review fix 1: the toggle's label grew to the full row width and squeezed the info to 0px. */
+                .discoverLibraryRow > label {
+                    flex: 0 0 auto;
+                    width: auto;
+                }
+
+                /* 5c review fix 2: plain checkbox on the cards (the emby-checkbox markup never showed the tick
+                   when built via innerHTML). */
+                .libraryToggle {
+                    accent-color: #00a4dc;
+                    width: 20px;
+                    height: 20px;
+                }
+
                 .discoverLibraryName {
                     font-weight: 600;
                 }
@@ -764,7 +778,7 @@
                                     </div>
                                     <div class="inputContainer">
                                         <input id="libraryEditorMinVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)" />
-                                        <div class="fieldDescription">Leave empty to use the global Minimum Votes. Used only with a Minimum Rating.</div>
+                                        <div class="fieldDescription">Leave empty to use the global Minimum Votes. Top rated and New releases always use it; other lists only with a Minimum Rating.</div>
                                     </div>
                                     <div class="inputContainer">
                                         <input id="libraryEditorRetention" type="number" is="emby-input" min="1" label="Keep titles for (days)" />
@@ -777,7 +791,7 @@
                                     <button is="emby-button" type="button" id="libraryEditorDuplicate" class="raised button emby-button"><span>📄 Duplicate</span></button>
                                     <button is="emby-button" type="button" id="libraryEditorDelete" class="raised button emby-button" style="color: #ff6b6b;"><span>🗑️ Delete</span></button>
                                     <span style="flex: 1;"></span>
-                                    <button is="emby-button" type="button" id="libraryEditorCancel" class="button emby-button"><span>Close</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorCancel" class="raised button emby-button"><span>Close</span></button>
                                 </div>
                                 <div id="libraryEditorDeleteConfirm" style="display: none;">
                                     <div class="fieldDescription criticalText">Delete this library? Its Jellyfin library is removed too. This cannot be undone.</div>

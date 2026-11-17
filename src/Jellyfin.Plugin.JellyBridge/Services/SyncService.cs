@@ -25,7 +25,14 @@ public partial class SyncService
     private readonly PlaceholderUserDataService _placeholderUserDataService;
     private readonly SortService _sortService;
     private readonly CleanupService _cleanupService;
-    
+
+    /// <summary>
+    /// UTC time the last successful discover sync finished — scheduled task or either sync endpoint
+    /// (<see cref="SyncFromJellyseerr"/> and <see cref="SyncLibraryAsync"/> both set it). GET
+    /// /JellyBridge/Libraries returns it as lastSync so the settings page also sees endpoint syncs
+    /// (5c review fix 6: the scheduled task's last result misses those).
+    /// </summary>
+    public static DateTime? LastSyncCompleted { get; private set; }
 
     public SyncService(
         ILogger<SyncService> logger,
@@ -94,6 +101,11 @@ public partial class SyncService
         }
 
         result.Message = string.Join("; ", segments);
+        if (result.Success)
+        {
+            LastSyncCompleted = DateTime.UtcNow;
+        }
+
         return result;
     }
 
@@ -134,6 +146,11 @@ public partial class SyncService
         }
 
         await _refreshService.ApplyRefreshAsync(new List<RefreshableResult?> { syncResult, hideResult });
+        if (syncResult.Success)
+        {
+            LastSyncCompleted = DateTime.UtcNow;
+        }
+
         return syncResult;
     }
 

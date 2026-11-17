@@ -41,13 +41,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
         /// <summary>
         /// Get every configured Discover library with its folder path, the Jellyfin library id and name when one
-        /// points at that folder, and its title count on disk (folders holding a metadata.json).
+        /// points at that folder, and its title count on disk (folders holding a metadata.json). Wrapped with the
+        /// <c>lastSync</c> field (<see cref="SyncService.LastSyncCompleted"/> in UTC, 5c review fix 6) so the
+        /// settings page's status strip can show endpoint-initiated syncs, not only the scheduled task's.
         /// </summary>
         [HttpGet("Libraries")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<List<object>> GetLibraries()
+        public ActionResult<object> GetLibraries()
         {
-            return Ok(GetLibrariesValue());
+            return Ok(new { lastSync = SyncService.LastSyncCompleted?.ToString("O"), libraries = GetLibrariesValue() });
         }
 
         /// <summary>
@@ -352,6 +354,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         _logger.LogError(ex, "Could not remove the Jellyfin library {Library}", jellyfinLibrary.Name);
                         return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"The library left the config, but removing Jellyfin library '{jellyfinLibrary.Name}' failed: {ex.Message}" });
                     }
+
+                    // 5c review fix 7: a deleted library's id must not linger in the users' LatestItemsExcludes.
+                    await RemoveFromLatestItemsExcludesAsync(jellyfinLibrary.ItemId);
                 }
 
                 var filesDeleted = false;
@@ -621,6 +626,45 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
+        /// Best-effort counterpart of <see cref="AddToLatestItemsExcludesAsync"/> for a deleted library (5c review
+        /// fix 7): remove its id from every user's LatestItemsExcludes. A stale id is harmless (the library is
+        /// gone), so per-user failures are only logged.
+        /// </summary>
+        private async Task RemoveFromLatestItemsExcludesAsync(string? itemId)
+        {
+            if (string.IsNullOrEmpty(itemId) || !Guid.TryParse(itemId, out var libraryId))
+            {
+                _logger.LogWarning("Could not clean the users' LatestItemsExcludes for the deleted library: no library id.");
+                return;
+            }
+
+#if !JELLYFIN_10_11_3
+            var users = _userManager.Inner.Users;
+#else
+            var users = _userManager.Inner.GetUsers();
+#endif
+            foreach (var user in users)
+            {
+                try
+                {
+                    var configuration = _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration();
+                    var latestItemsExcludes = new List<Guid>(configuration.LatestItemsExcludes ?? Array.Empty<Guid>());
+                    if (!latestItemsExcludes.Remove(libraryId))
+                    {
+                        continue;
+                    }
+
+                    configuration.LatestItemsExcludes = latestItemsExcludes.ToArray();
+                    await _userManager.Inner.UpdateConfigurationAsync(user.Id, configuration);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not remove library {LibraryId} from the LatestItemsExcludes of user {User}", libraryId, user.Username);
+                }
+            }
+        }
+
+        /// <summary>
         /// The GET Libraries payload, for save responses that echo the new state.
         /// </summary>
         private List<object> GetLibrariesValue()
@@ -636,6 +680,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     library,
                     name = library.Name,
                     directory,
+                    // 5c review fix 5: jellyfinLibraryName comes from the path-matched virtual folder even while
+                    // its ItemId is still empty (after a rename the id can lag until the next scan) — the page
+                    // shows "Create library" only when the name is null.
                     jellyfinLibraryId = jellyfinLibrary?.ItemId,
                     jellyfinLibraryName = jellyfinLibrary?.Name,
                     titleCount = CountTitlesOnDisk(directory)

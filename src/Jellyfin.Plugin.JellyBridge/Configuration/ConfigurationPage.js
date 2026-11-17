@@ -486,8 +486,7 @@ function initializeDiscoverLibraries(page) {
     // 5c: template picker, inline library editor, and their stable ids.
     initializeLibraryEditorBindings(page);
 
-    loadDiscoverLibraries(page);
-    loadLibraryLastSync(page);
+    loadDiscoverLibraries(page); // the Libraries payload carries lastSync (5c review fix 6)
 }
 
 function loadDiscoverLibraries(page) {
@@ -495,11 +494,18 @@ function loadDiscoverLibraries(page) {
         url: ApiClient.getUrl('JellyBridge/Libraries'),
         type: 'GET',
         dataType: 'json'
-    }).then(function (entries) {
-        discoverLibrariesEntries = entries || [];
+    }).then(function (data) {
+        // 5c review fix 6: GET Libraries answers { lastSync, libraries } (lastSync = SyncService.LastSyncCompleted,
+        // set by endpoint syncs too — the scheduled task alone missed those). A bare list (older payload) still works.
+        discoverLibrariesEntries = Array.isArray(data) ? data : ((data && data.libraries) || []);
         renderDiscoverLibraries(page);
         renderLibraryStatusStrip(page);
         renderLibrariesMigrationBanner(page);
+        if (Array.isArray(data)) {
+            loadLibraryLastSync(page); // no lastSync in the payload: fall back to the scheduled task's result
+        } else {
+            renderLibraryLastSyncValue(page, data.lastSync);
+        }
     }).catch(function (error) {
         DisplayMessage('❌ Failed to load Discover libraries: ' + (error?.message || error));
     });
@@ -541,14 +547,16 @@ function renderDiscoverLibraries(page) {
         const tags = '<span class="libraryTag">' + escapeLibraryHtml(libraryListLabel(library.listType)) + '</span>'
             + (isDefault ? '<span class="libraryTag libraryTagDefault">★ Default</span>' : '');
 
-        // emby-checkbox with the page's standard outline markup.
+        // 5c review fix 2: a plain checkbox — the emby-checkbox markup built with innerHTML never rendered the
+        // tick. The editor's own static emby checkboxes are unaffected.
         const toggleDisabled = !migrated || isDefault;
         const toggleTitle = !migrated
             ? 'Libraries become editable after the one-time migration on the next restart'
             : (isDefault ? 'The Default library is always on' : (isEnabled ? 'Turn this library off' : 'Turn this library on'));
 
-        // 5c: a library whose folder/Jellyfin library does not exist yet gets a per-library Create action.
-        const createButton = (migrated && !entry.jellyfinLibraryId)
+        // 5c review fix 5: a library shows Create only when it has no Jellyfin library at all — after a rename
+        // the virtual folder can briefly lack its ItemId while jellyfinLibraryName is already there.
+        const createButton = (migrated && !entry.jellyfinLibraryName)
             ? '<button is="emby-button" type="button" class="raised button emby-button libraryCreateButton" style="min-width: auto;" title="Create this library\'s folder and Jellyfin library"><span>🏗️ Create library</span></button>'
             : '';
 
@@ -560,12 +568,8 @@ function renderDiscoverLibraries(page) {
                     '<div class="discoverLibraryMeta">' + escapeLibraryHtml(librarySummary(entry)) + '</div>' +
                 '</div>' +
                 '<label class="emby-checkbox-label">' +
-                    '<input type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox libraryToggle"' +
+                    '<input type="checkbox" class="libraryToggle"' +
                         (isEnabled ? ' checked' : '') + (toggleDisabled ? ' disabled' : '') + ' title="' + escapeLibraryHtml(toggleTitle) + '" />' +
-                    '<span class="checkboxOutline">' +
-                        '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>' +
-                        '<span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>' +
-                    '</span>' +
                 '</label>' +
                 createButton +
                 '<button is="emby-button" type="button" class="libraryGear"' + (migrated ? '' : ' disabled') +
@@ -690,7 +694,17 @@ function checkSeerrConnection(page) {
     });
 }
 
-// Last sync: the JellyBridge Sync scheduled task's last result.
+// Last sync from the GET Libraries payload (5c review fix 6).
+function renderLibraryLastSyncValue(page, lastSync) {
+    const lastSyncItem = page.querySelector('#lastSyncItem');
+    if (!lastSyncItem) return;
+    lastSyncItem.className = 'libraryStatusItem';
+    lastSyncItem.textContent = lastSync
+        ? 'Last sync: ' + new Date(lastSync).toLocaleString()
+        : 'Last sync: never';
+}
+
+// Fallback last sync: the JellyBridge Sync scheduled task's last result (older payload without lastSync).
 function loadLibraryLastSync(page) {
     const lastSyncItem = page.querySelector('#lastSyncItem');
     if (!lastSyncItem || !ApiClient.getScheduledTasks) return;
@@ -742,14 +756,13 @@ function performSyncAllLibraries(page) {
             contentType: 'application/json',
             dataType: 'json'
         }).then(function (syncData) {
-            DisplayMessage('✅ Sync all: ' + (syncData?.result || syncData?.message || 'started'));
+            DisplayMessage(syncOutcomeMessage(syncData, 'Sync all started.'));
         }).catch(function (error) {
             DisplayMessage('❌ Sync all failed: ' + (error?.message || 'Unknown error'));
         }).finally(function() {
             Dashboard.hideLoadingMsg();
             syncAllButton.disabled = false;
-            loadDiscoverLibraries(page);
-            loadLibraryLastSync(page);
+            loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
         });
     });
 }
@@ -883,6 +896,14 @@ function handleLibraryError(error, action) {
         if (body && body.message) message = body.message;
         DisplayMessage('❌ Failed to ' + action + ': ' + message);
     });
+}
+
+// 5c review fix 7: the sync endpoints' messages already carry their own status icon ("✅ Sync from…") —
+// prefixing again read "✅ ✅ Sync from…". Add the icon only when the message has none.
+function syncOutcomeMessage(result, fallback) {
+    const ok = !(result && result.success === false);
+    const text = (result && (result.result || result.message)) || fallback;
+    return /^[\u2705\u274C\u26A0]/.test(text) ? text : (ok ? '✅ ' : '❌ ') + text;
 }
 
 // Hide the global networks picker, Discover Pages, Minimum Rating/Votes and retention on migrated
@@ -1031,7 +1052,12 @@ function renderLibraryEditorFields(page) {
 
     q('#libraryEditorSync').disabled = !!draft.isNew;
     q('#libraryEditorSync').title = draft.isNew ? 'Save the library first' : 'Sync only this library now';
-    q('#libraryEditorDelete').style.display = draft.isNew ? 'none' : '';
+    const deleteButton = q('#libraryEditorDelete');
+    deleteButton.style.display = draft.isNew ? 'none' : '';
+    // 5c review fix 7: Delete on the ★ Default library is blocked by the server — disable it here with the hint.
+    const isDefaultLibrary = draft.wasDefault || !!(lib.isDefault ?? false);
+    deleteButton.disabled = !draft.isNew && isDefaultLibrary;
+    deleteButton.title = isDefaultLibrary ? 'Tick Default on another library first' : 'Delete this library';
     const saveLabel = q('#libraryEditorSave').querySelector('span');
     if (saveLabel) saveLabel.textContent = draft.isNew ? '💾 Add library' : '💾 Save library';
 }
@@ -1197,20 +1223,23 @@ function saveLibraryEditor(page) {
         retentionDays: lib.retentionDays ?? null,
         order: lib.order ?? 'AsList'
     };
-    const becomesDefault = !draft.wasDefault && edited.isDefault;
     const nameChanged = !draft.isNew && lib.name.toLowerCase() !== String(draft.originalName).toLowerCase();
     const savedEntry = draft.isNew ? null : discoverLibrariesEntries.find(function (e) {
         return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(draft.originalName).toLowerCase();
     });
 
+    // 5c review fix 3: moving the ★ Default must never post a list without one — the edited library carries
+    // isDefault: true and every other entry gives the flag up (the old loop cleared it on all entries).
     const list = discoverLibrariesEntries.map(function (entry) {
         let out = JSON.parse(JSON.stringify(entry.library || {}));
         if (!draft.isNew && String(entry.name || '').toLowerCase() === String(draft.originalName).toLowerCase()) {
             const posted = Object.assign({}, edited);
             if (nameChanged) posted.name = entry.name; // the Rename endpoint renames it after the list saves
             out = Object.assign(out, posted);
+            if (edited.isDefault) out.isDefault = true;
+        } else if (edited.isDefault) {
+            out.isDefault = false;
         }
-        if (becomesDefault) out.isDefault = false;
         return out;
     });
     if (draft.isNew) list.push(edited);
@@ -1226,14 +1255,20 @@ function saveLibraryEditor(page) {
         }
         if (!nameChanged) return message;
         return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(draft.originalName) + '/Rename?newName=' + encodeURIComponent(lib.name))
-            .then(function () {
+            .then(function (renameResult) {
+                // 5c review fix 4: show the Rename endpoint's own message (the save message said nothing about it).
+                const renameMessage = (renameResult && renameResult.message) || message;
                 if (savedEntry && savedEntry.jellyfinLibraryName) {
-                    return librariesApi('POST', 'Library/VirtualFolders/Name?name=' + encodeURIComponent(savedEntry.jellyfinLibraryName) + '&newName=' + encodeURIComponent(lib.name))
-                        .catch(function () {
-                            DisplayMessage('⚠️ The library renamed, but its Jellyfin display name did not — rename it in the Library Manager to match.');
-                        });
+                    // 5c review fix 4: POST /Library/VirtualFolders/Name answers 204 with no body — no JSON to
+                    // parse, any 2xx is success; only a real failure gets the warning.
+                    return ApiClient.ajax({
+                        url: ApiClient.getUrl('Library/VirtualFolders/Name?name=' + encodeURIComponent(savedEntry.jellyfinLibraryName) + '&newName=' + encodeURIComponent(lib.name)),
+                        type: 'POST'
+                    }).catch(function () {
+                        DisplayMessage('⚠️ The library renamed, but its Jellyfin display name did not — rename it in the Library Manager to match.');
+                    }).then(function () { return renameMessage; });
                 }
-                return message;
+                return renameMessage;
             });
     }).then(function (message) {
         return saveEditorNetworkMapUnion(page).then(function () { return message; });
@@ -1241,10 +1276,13 @@ function saveLibraryEditor(page) {
         closeLibraryEditor(page);
         return loadDiscoverLibraries(page).then(function () {
             DisplayMessage('✅ ' + message);
-            loadLibraryLastSync(page);
         });
     }).catch(function (error) {
-        return handleLibraryError(error, 'save the library "' + lib.name + '"');
+        // 5c review fix 3: after any save error the cards go back to the stored list (discoverLibrariesEntries)
+        // instead of keeping the draft's stale ★ Default ticks.
+        return handleLibraryError(error, 'save the library "' + lib.name + '"').then(function () {
+            renderDiscoverLibraries(page);
+        });
     }).finally(function () {
         Dashboard.hideLoadingMsg();
         if (saveButton) saveButton.disabled = false;
@@ -1290,7 +1328,6 @@ function performDeleteLibrary(page, button) {
         .finally(function () {
             Dashboard.hideLoadingMsg();
             if (button) button.disabled = false;
-            loadLibraryLastSync(page);
         });
 }
 
@@ -1311,15 +1348,13 @@ function performLibrarySyncNow(page) {
         Dashboard.showLoadingMsg();
         librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Sync')
             .then(function (result) {
-                const ok = !(result && result.success === false);
-                DisplayMessage((ok ? '✅ ' : '❌ ') + ((result && (result.result || result.message)) || 'Sync finished.'));
+                DisplayMessage(syncOutcomeMessage(result, 'Sync finished.'));
             })
             .catch(function (error) { return handleLibraryError(error, 'sync the library "' + name + '"'); })
             .finally(function () {
                 Dashboard.hideLoadingMsg();
                 if (button) button.disabled = false;
-                loadDiscoverLibraries(page);
-                loadLibraryLastSync(page);
+                loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
             });
     });
 }
