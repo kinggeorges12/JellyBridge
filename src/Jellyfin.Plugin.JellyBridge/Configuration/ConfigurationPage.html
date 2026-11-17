@@ -320,12 +320,6 @@
                     margin-top: 16px;
                 }
                 
-                /* Network folder options - padding below instead of above */
-                #networkFolderOptionsDetails {
-                    margin-top: 0;
-                    margin-bottom: 16px;
-                }
-                
                 details.detailedInstructions summary {
                     cursor: pointer;
                     padding: 8px 12px;
@@ -566,7 +560,6 @@
                                 <li>☑️ <strong>Save artwork into media folders</strong></li>
                                 <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                             </ul>
-                            <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Network Folders</i></span></p>
                         </div>
 
                         <details id="troubleshootingDetails" class="detailedInstructions">
@@ -619,12 +612,11 @@
                         <summary>Organize Discover Library</summary>
                         <br>
                         <div class="fieldDescription">
-                            Organize the JellyBridge library using a configured directory structure. Configure automatic library refreshing and separate directories for movies and series. With a few extra steps, organize discover content based on the network.
+                            Organize the JellyBridge library using a configured directory structure. Configure automatic library refreshing and separate directories for movies and series.
                         </div>
                         <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
                             <strong>💡 Recommended:</strong> If you change the options for
-                                <span class="link" data-target-page="UseMixedMediaLibraryContainer">Mixed Movies and Shows</span> or
-                                <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>, complete the following steps:
+                                <span class="link" data-target-page="UseMixedMediaLibraryContainer">Mixed Movies and Shows</span>, complete the following steps:
                                 <ol>
                                     <li><svg style="height: 0.7em; width: auto; vertical-align: text-bottom;" class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-iguwhy" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="DeleteIcon"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"></path></svg>
                                         Remove Jellyfin <span class="link" data-target-router="/dashboard/libraries">Libraries</span> that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.</li>
@@ -658,54 +650,6 @@
                             <div class="fieldDescription">Store all media in a single library. Disabling this setting will create separate libraries for Movies and Shows.</div>
                         </div>
                         
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Network Folders</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
-                        </div>
-
-                        <details id="networkFolderOptionsDetails" class="detailedInstructions">
-                            <summary>Network Folders Setup</summary>
-                            <div data-depends-on="UseNetworkFolders">
-                                <h4>Instructions</h4>
-                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
-                                <ol>
-                                    <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
-                                    <li>For each desired library, enter the <span class="link" data-target-page="LibraryDisplayNameContainer">Library Name</span> and click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span>.</li>
-                                    <li>By default, all networks are added to the Jellyfin libraries. Navigate to the Jellyfin libraries and remove unwanted folders in each library.</li>
-                                </ol>
-                                <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.
-                                </div>
-
-                                <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                        <span class="checkboxLabel">Display Discover Content in Multiple Libraries</span>
-                                        <span class="checkboxOutline">
-                                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                        </span>
-                                    </label>
-                                    <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
-                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends" data-depends-on="AddDuplicateContent">
-                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
-                                    </div>
-                                </div>
-
-                                <div class="inputContainer" id="NetworkFolderPrefixContainer">
-                                    <input id="NetworkFolderPrefix" type="text" is="emby-input" label="Network Folder Prefix"/>
-                                    <div class="fieldDescription">Prefix for network folder names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
-                                </div>
-                            </div>
-                        </details>
-
                         <div class="checkboxContainer checkboxContainer-withDescription" id="UseTrendingLibraryContainer">
                             <label class="emby-checkbox-label">
                                 <input id="UseTrendingLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
@@ -930,7 +874,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library. <i>Note: Not available with <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>.</i></div>
+                            <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">

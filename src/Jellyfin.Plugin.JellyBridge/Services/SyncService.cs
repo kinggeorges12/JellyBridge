@@ -112,6 +112,18 @@ public partial class SyncService
             return result;
         }
 
+        if (!library.Legacy)
+        {
+            // Keep the stored list ranks always fresh: a title that dropped off this list loses its rank in
+            // metadata.json, so the next scheduled sort task (which trusts the stored ranks) puts it at the
+            // fallback like this sync does instead of restoring the stale rank.
+            var clearedRanks = await _metadataService.ClearStaleListRanksAsync(fetched);
+            if (clearedRanks > 0)
+            {
+                _logger.LogDebug("Cleared the stored list rank of {Count} titles no longer on '{LibraryName}'", clearedRanks, library.Name);
+            }
+        }
+
         if (library.ListType == DiscoverListType.Trending)
         {
             var removed = await RemoveStaleTrendingAsync(fetched);
@@ -124,9 +136,9 @@ public partial class SyncService
 
         if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
         {
-            // Titles Jellyfin hasn't scanned yet get their position on the next sync. Only this sync's fetched
-            // titles get their rank — anything else (a title that dropped off the list) sorts at the fallback.
-            await _sortService.SortByListAsync(fetched);
+            // Titles Jellyfin hasn't scanned yet get their position on the next sync. The stored ranks are fresh
+            // (ClearStaleListRanksAsync above), so the sync and the sort task order the same way.
+            await _sortService.SortByListAsync();
         }
 
         return result;
@@ -261,7 +273,6 @@ public partial class SyncService
             // Run library scan to find matches and get unmatched items
             // Matched items get a .ignore file created in their folder
             // Unmatched items get a placeholder file created in their folder
-            // When UseNetworkFolders and AddDuplicateContent are enabled, unmatched items calculates on network directory.
             (var matchedItems, var unmatchedItems) = await _bridgeService.BuildJellyfinMatchesAsync(uniqueDiscoverMedia);
             _logger.LogDebug("Step 5: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", matchedItems.Count, unmatchedItems.Count);
             // Remove any unmatched items that already have an ignore file in their folder

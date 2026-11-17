@@ -143,24 +143,16 @@ public interface IJellyseerrItem
     /// <summary>
     /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetItemHashCode(bool network = false)
+    int GetItemHashCode()
     {
-        if (network)
-        {
-            return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
-        }
         return HashCode.Combine(Id, ExtraId, MediaType);
     }
     
     /// <summary>
     /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetFolderHashCode(bool network = false)
+    int GetFolderHashCode()
     {
-        if (network)
-        {
-            return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType, NetworkTag);
-        }
         return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType);
     }
     

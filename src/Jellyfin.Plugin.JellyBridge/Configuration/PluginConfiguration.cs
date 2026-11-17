@@ -69,14 +69,19 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
         { nameof(UseMixedMediaLibrary), true },
+        // The libraries migration (task 4) reads these three when converting the old layout
+#pragma warning disable CS0618
         { nameof(UseNetworkFolders), false },
+#pragma warning restore CS0618
         { nameof(EnableSearchResults), false },
         { nameof(UseSeasonPlaceholders), false },
         { nameof(UseTrendingLibrary), false },
         { nameof(TrendingDirectory), string.Empty },
         { nameof(TrendingPages), 3 },
+#pragma warning disable CS0618
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
+#pragma warning restore CS0618
 
         // Customize Promo Videos
         { nameof(CustomMoviesPromo), string.Empty },
@@ -247,6 +252,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public bool? UseNetworkFolders { get; set; }
 
     /// <summary>
@@ -277,11 +283,13 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public bool? AddDuplicateContent { get; set; }
 
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public string NetworkFolderPrefix { get; set; } = string.Empty;
 
     // ===== Customize Promo Videos =====

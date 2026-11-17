@@ -400,7 +400,6 @@ function performTestConnection(page) {
 function initializeOrganizeLibrary(page) {
     setInputField(page, 'ManageJellyBridgeLibrary', true);
     setInputField(page, 'UseMixedMediaLibrary', true);
-    setInputField(page, 'UseNetworkFolders', true);
     setInputField(page, 'UseTrendingLibrary', true);
     setInputField(page, 'TrendingDirectory');
     setInputField(page, 'TrendingPages');
@@ -415,9 +414,6 @@ function initializeOrganizeLibrary(page) {
     page.querySelector('#browseTrendingDirectory').addEventListener('click', function() {
         browseFolder(trendingDirectoryInput, "Select JellyBridge Trending Directory");
     });
-    setInputField(page, 'AddDuplicateContent', true);
-    setInputField(page, 'NetworkFolderPrefix');
-
     // Add create default library event listener
     const createButton = page.querySelector('#createDefaultLibrary');
     createButton.addEventListener('click', function () {
@@ -1419,14 +1415,6 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'EnableDebugLogging', true);
     setInputField(page, 'EnableTraceLogging', true);
     
-    // Library Prefix real-time validation
-    const networkFolderPrefixInput = page.querySelector('#NetworkFolderPrefix');
-    if (networkFolderPrefixInput) {
-        networkFolderPrefixInput.addEventListener('input', function() {
-            validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
-        });
-    }
-    
     // Add cleanup metadata button functionality
     const cleanupButton = page.querySelector('#cleanupMetadata');
     if (cleanupButton) {
@@ -1559,13 +1547,10 @@ function performPluginReset(page) {
                 UseSeasonPlaceholders: null,
                 RequestFirstSeason: null,
                 UseMixedMediaLibrary: null,
-                UseNetworkFolders: null,
                 EnableSearchResults: null,
                 UseTrendingLibrary: null,
                 TrendingDirectory: '',
                 TrendingPages: null,
-                NetworkFolderPrefix: '',
-                AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
                 CustomMoviesPromo: null,
                 DefaultMoviesPromo: null,
@@ -1704,7 +1689,6 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
-        if (!validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
         return true;
     }
     
@@ -1735,13 +1719,10 @@ function savePluginConfiguration(page) {
     form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
-    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.EnableSearchResults = nullIfDefault(page.querySelector('#EnableSearchResults').checked, config.ConfigDefaults.EnableSearchResults);
     form.UseTrendingLibrary = nullIfDefault(page.querySelector('#UseTrendingLibrary').checked, config.ConfigDefaults.UseTrendingLibrary);
     form.TrendingDirectory = safeParseString(page.querySelector('#TrendingDirectory'));
     form.TrendingPages = safeParseInt(page.querySelector('#TrendingPages'));
-    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
-    form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);

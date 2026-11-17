@@ -230,9 +230,7 @@ public class DiscoverService
         
         // Number the titles 1, 2, 3... in list order: merge the networks round-robin (rank 1 of every network, then
         // rank 2, ...), so every network's top pick beats another network's lower ones. Dedupe by media type and TMDB
-        // id keeps the first, best-ranked copy; only Network Folders with duplicate content wants several copies.
-        var keepDuplicates = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders))
-            && Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
+        // id keeps the first, best-ranked copy.
         var seenTitles = new HashSet<(JellyseerrModel.MediaType, int)>();
         var rank = 0;
         var longestNetwork = perNetwork.Count == 0 ? 0 : perNetwork.Max(list => list.Count);
@@ -245,7 +243,7 @@ public class DiscoverService
                     continue;
                 }
                 var item = networkItems[position];
-                if (!keepDuplicates && !seenTitles.Add((item.MediaType, item.Id)))
+                if (!seenTitles.Add((item.MediaType, item.Id)))
                 {
                     continue;
                 }
@@ -462,7 +460,6 @@ public class DiscoverService
     /// <summary>
     /// Filters duplicate media items from each library using the folder hash code.
     /// Returns a list containing only unique items based on their hash code.
-    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
     /// <param name="allItems">List of media items to filter</param>
     /// <param name="uniqueItems">List of unique media items</param>
@@ -471,16 +468,14 @@ public class DiscoverService
     {
         var newlyIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         var duplicates = new List<IJellyseerrItem>();
         
-        // Network folders are not used, but we need to filter out localized language duplicates by hash
-        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
+        // Filter out localized language duplicates by hash
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode()));
 
         foreach (var item in allItems)
         {
-            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)))
+            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode()))
             {
                 duplicates.Add(item);
             }

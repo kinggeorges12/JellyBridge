@@ -76,9 +76,8 @@ public static class LibraryScope
             nameof(PluginConfiguration.LibraryDirectory) => library.GetDirectory(DiscoverLibraries.GetRootDirectory()),
 
             // A library's folder is flat, and its networks are the library's own list. A Legacy library keeps the old
-            // mixed/separate and network-folder layout until the migration moves its content into a subfolder.
+            // mixed/separate layout until the migration moves its content into a subfolder.
             nameof(PluginConfiguration.UseMixedMediaLibrary) => library.Legacy ? GetGlobal(nameof(PluginConfiguration.UseMixedMediaLibrary)) : true,
-            nameof(PluginConfiguration.UseNetworkFolders) => library.Legacy ? GetGlobal(nameof(PluginConfiguration.UseNetworkFolders)) : false,
 
             // The trending list is paged like the discover lists; at least one page (0 would mean all 500)
             nameof(PluginConfiguration.MaxDiscoverPages) => library.ListType == DiscoverListType.Trending

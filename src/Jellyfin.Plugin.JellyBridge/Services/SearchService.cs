@@ -82,13 +82,9 @@ public class SearchService
     {
         get
         {
-            if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults)))
-            {
-                return false;
-            }
-
-            return (Plugin.GetConfiguration().LibrariesMigrationVersion ?? 0) >= 1
-                || !Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+            // Network Folders used to disable search (search-added titles had no network folder); the
+            // libraries are flat now, so the setting alone decides.
+            return Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults));
         }
     }
 

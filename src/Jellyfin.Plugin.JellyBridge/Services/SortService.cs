@@ -268,13 +268,11 @@ public class SortService
     /// Set the play counts of a library's titles from their list rank in metadata.json, for all users, so sorting
     /// that library by play count (ascending) shows the list's own order. Call inside the library's
     /// LibraryScope.Enter.
-    /// When <paramref name="freshlyFetched"/> is given (the sync path), only titles fetched in that sync get their
-    /// rank; every other title falls back to the bottom — ranks in metadata.json survive on disk, and a title that
-    /// dropped off a non-Trending list would otherwise keep its stale rank in the fresh order. Null (the sort task)
-    /// uses the stored ranks as they are.
+    /// Trusts the stored ranks: the sync rewrites metadata.json on every run — fetched titles get their fresh rank,
+    /// and titles that dropped off the list have their rank cleared — so both the sync and the scheduled sort task
+    /// order the same way. Titles without a rank fall back to the bottom.
     /// </summary>
-    /// <param name="freshlyFetched">The items the current sync fetched, or null to trust the stored ranks.</param>
-    public async Task<SortLibraryResult> SortByListAsync(IReadOnlyCollection<IJellyseerrItem>? freshlyFetched = null)
+    public async Task<SortLibraryResult> SortByListAsync()
     {
         var result = new SortLibraryResult();
         try
@@ -287,13 +285,10 @@ public class SortService
                 return result;
             }
 
-            var freshKeys = freshlyFetched?.Select(item => (item.GetType(), item.Id)).ToHashSet();
-
             // Steps of 100 like the other sort orders, so playing a title doesn't change the order
             var itemInfoMap = allItems
                 .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item),
-                    playCount: 100 * ((freshKeys == null || freshKeys.Contains((itemData.item.GetType(), itemData.item.Id))
-                        ? itemData.item.ListRank : null) ?? 1000), itemData.mediaType))
+                    playCount: 100 * (itemData.item.ListRank ?? 1000), itemData.mediaType))
                 .Where(x => !string.IsNullOrEmpty(x.folder))
                 .GroupBy(x => x.folder)
                 .ToDictionary(g => g.Key, g => (g.First().playCount, g.First().mediaType));

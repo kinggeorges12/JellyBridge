@@ -47,12 +47,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
                     UseMixedMediaLibrary = config.UseMixedMediaLibrary,
-                    UseNetworkFolders = config.UseNetworkFolders,
                     UseTrendingLibrary = config.UseTrendingLibrary,
                     TrendingDirectory = config.TrendingDirectory,
                     TrendingPages = config.TrendingPages,
-                    AddDuplicateContent = config.AddDuplicateContent,
-                    NetworkFolderPrefix = config.NetworkFolderPrefix,
 
                     // Discover Libraries (issue #83)
                     DiscoverLibraries = config.DiscoverLibraries,
@@ -157,12 +154,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseTrendingLibrary), config);
                     SetJsonValue<string>(configData, nameof(config.TrendingDirectory), config);
                     SetJsonValue<int?>(configData, nameof(config.TrendingPages), config);
-                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
-                    SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
                     SetJsonValue<int?>(configData, nameof(config.LibrariesMigrationVersion), config);
                     SetJsonValue<bool?>(configData, nameof(config.ShowLibrariesMigrationNotice), config);
                     librariesError = SetDiscoverLibraries(configData, config);
