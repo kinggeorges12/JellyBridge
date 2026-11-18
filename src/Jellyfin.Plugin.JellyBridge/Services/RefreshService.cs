@@ -597,7 +597,8 @@ public class RefreshService
                     var descendants = _libraryManager.Inner.GetItemList(new MediaBrowser.Controller.Entities.InternalItemsQuery
                     {
                         AncestorIds = new[] { libraryItemId },
-                        Recursive = true
+                        Recursive = true,
+                        Limit = 1 // only "is there anything?" — never load the whole library
                     });
                     if (descendants.Count > 0)
                     {
