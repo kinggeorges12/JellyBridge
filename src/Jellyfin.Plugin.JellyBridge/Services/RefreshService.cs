@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
 using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.IO;
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using System.Reflection;
 
@@ -22,17 +23,23 @@ public class RefreshService
 {
     private readonly DebugLogger<RefreshService> _logger;
     private readonly JellyfinILibraryManager _libraryManager;
-    private readonly IDirectoryService _directoryService;
+    private readonly IFileSystem _fileSystem;
     private readonly JellyfinIProviderManager _providerManager;
     private readonly ITaskManager _taskManager;
     private readonly ILocalizationManager _localization;
     private readonly IServiceProvider _serviceProvider;
-    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IDirectoryService directoryService, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization, IServiceProvider serviceProvider)
+    // 8b fix 2: the .ignore rule instances + their ClearDirectoryCache method, resolved once on first use —
+    // the fire-and-forget ScanThenRefreshRunner calls the clear after the request scope may already be disposed.
+    // 8c fix 2: static, so every RefreshService instance (the service is AddTransient) shares one resolved
+    // set of rule instances and one failed scope can never poison another instance's clear.
+    private static List<object>? _dotIgnoreRules;
+    private static MethodInfo? _dotIgnoreClear;
+    public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IFileSystem fileSystem, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization, IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         _logger = new DebugLogger<RefreshService>(logger);
         _libraryManager = libraryManager;
-        _directoryService = directoryService;
+        _fileSystem = fileSystem;
         _providerManager = providerManager;
         _taskManager = taskManager;
         _localization = localization;
@@ -397,59 +404,122 @@ public class RefreshService
     {
         try
         {
-            var ruleType = AppDomain.CurrentDomain.GetAssemblies()
-                .Select(a => a.GetType("Emby.Server.Implementations.Library.DotIgnoreIgnoreRule", throwOnError: false))
-                .FirstOrDefault(t => t != null);
-            var clear = ruleType?.GetMethod("ClearDirectoryCache", BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes);
-            if (ruleType == null || clear == null)
+            // 8b fix 2: resolve the rule instances ONCE and keep them. The ScanThenRefreshRunner fires this
+            // in the background, potentially after the request scope it resolved from was disposed — getting
+            // the DI rule again from that scope throws ObjectDisposedException, the clear is silently skipped
+            // and the .ignore cache then goes stale without any sign. The rules live as long as Jellyfin's
+            // LibraryManager, so the first resolution is good for every later call.
+            // 8c-2: a resolve whose DI lookup hit a disposed scope is INCOMPLETE (the DI singleton rule is
+            // missing) — use it once for this call but never cache it, so the next call resolves again and can
+            // pick up the complete set. Only a complete (or genuinely empty) list is process-wide cacheable.
+            List<object> rules;
+            if (_dotIgnoreRules != null)
             {
-                _logger.LogDebug("Jellyfin .ignore directory cache not found; skipping cache clear");
-                return;
+                rules = _dotIgnoreRules;
             }
-
-            // The library resolver uses its own rule instances (LibraryManager.EntityResolutionIgnoreRules),
-            // separate from the DI singleton used by the library monitor - clear all of them.
-            var rules = new List<object>();
-            var diRule = _serviceProvider.GetService(ruleType);
-            if (diRule != null)
+            else
             {
-                rules.Add(diRule);
-            }
-            var libraryManager = (object)_libraryManager.Inner;
-            var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-            for (var t = libraryManager.GetType(); t != null; t = t.BaseType)
-            {
-                // Only look at fields typed as a rule or an array of (interfaces of) rules, e.g. IResolverIgnoreRule[]
-                foreach (var field in t.GetFields(flags))
+                rules = ResolveDotIgnoreRules(out var complete);
+                if (complete)
                 {
-                    var fieldType = field.FieldType;
-                    if (fieldType.IsAssignableFrom(ruleType) && !fieldType.IsArray && fieldType != typeof(object))
-                    {
-                        var value = field.GetValue(libraryManager);
-                        if (value != null && ruleType.IsInstanceOfType(value))
-                        {
-                            rules.Add(value);
-                        }
-                    }
-                    else if (fieldType.IsArray && fieldType.GetElementType() is Type elementType
-                        && elementType != typeof(object) && elementType.IsAssignableFrom(ruleType)
-                        && field.GetValue(libraryManager) is Array array)
-                    {
-                        rules.AddRange(array.Cast<object?>().Where(o => o != null && ruleType.IsInstanceOfType(o))!);
-                    }
+                    _dotIgnoreRules = rules;
+                }
+                else
+                {
+                    _logger.LogDebug("The .ignore rule list was incomplete (dead DI scope); using it once without caching — next clear resolves again");
                 }
             }
-            var distinctRules = rules.Distinct().ToList();
-            foreach (var rule in distinctRules)
+
+            if (rules.Count == 0)
             {
-                clear.Invoke(rule, null);
+                return; // rule class not found (older Jellyfin) — already logged once
             }
-            _logger.LogDebug("Cleared Jellyfin .ignore directory cache ({Count} rule instances)", distinctRules.Count);
+
+            foreach (var rule in rules)
+            {
+                _dotIgnoreClear!.Invoke(rule, null);
+            }
+        }
+        catch (ObjectDisposedException ex)
+        {
+            // Safety net only: 8c fix 2 moved the scope-sensitive GetService inside ResolveDotIgnoreRules,
+            // so a dead scope no longer reaches here. If anything ever does, the rules are resolved and
+            // cached statically and the next call from any scope reuses them.
+            _logger.LogDebug("Skipping the .ignore directory cache clear: the service scope was already disposed ({Message})", ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Could not clear Jellyfin .ignore directory cache");
         }
+    }
+
+    /// <summary>
+    /// Finds the DotIgnoreIgnoreRule instances by reflection (the DI singleton and the library resolver's own)
+    /// for <see cref="ClearDotIgnoreCache"/> to keep — see 8b fix 2. An empty list means the rule class was not
+    /// found (older Jellyfin without the cache).
+    /// </summary>
+    private List<object> ResolveDotIgnoreRules(out bool complete)
+    {
+        complete = true; // 8c-2: false when the DI rule was unreachable, so the caller must not cache
+        var ruleType = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType("Emby.Server.Implementations.Library.DotIgnoreIgnoreRule", throwOnError: false))
+            .FirstOrDefault(t => t != null);
+        var clear = ruleType?.GetMethod("ClearDirectoryCache", BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes);
+        if (ruleType == null || clear == null)
+        {
+            _logger.LogDebug("Jellyfin .ignore directory cache not found; skipping cache clear");
+            return [];
+        }
+        _dotIgnoreClear = clear;
+
+        // The library resolver uses its own rule instances (LibraryManager.EntityResolutionIgnoreRules),
+        // separate from the DI singleton used by the library monitor - clear all of them.
+        // 8c fix 2: only the DI lookup can throw ObjectDisposedException (request scope already disposed);
+        // catch it HERE so the library manager's own rule instances — the ones the resolver really uses —
+        // are still collected and cached even when the first call on an instance comes from a dead scope.
+        var rules = new List<object>();
+        try
+        {
+            var diRule = _serviceProvider.GetService(ruleType);
+            if (diRule != null)
+            {
+                rules.Add(diRule);
+            }
+        }
+        catch (ObjectDisposedException ex)
+        {
+            // 8c-2: the DI singleton is missing from this list — it may still clear this call's caches, but
+            // caching it would freeze the incomplete set for the whole process.
+            complete = false;
+            _logger.LogDebug("The service scope was already disposed; collecting only the library manager's .ignore rule instances ({Message})", ex.Message);
+        }
+        var libraryManager = (object)_libraryManager.Inner;
+        var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+        for (var t = libraryManager.GetType(); t != null; t = t.BaseType)
+        {
+            // Only look at fields typed as a rule or an array of (interfaces of) rules, e.g. IResolverIgnoreRule[]
+            foreach (var field in t.GetFields(flags))
+            {
+                var fieldType = field.FieldType;
+                if (fieldType.IsAssignableFrom(ruleType) && !fieldType.IsArray && fieldType != typeof(object))
+                {
+                    var value = field.GetValue(libraryManager);
+                    if (value != null && ruleType.IsInstanceOfType(value))
+                    {
+                        rules.Add(value);
+                    }
+                }
+                else if (fieldType.IsArray && fieldType.GetElementType() is Type elementType
+                    && elementType != typeof(object) && elementType.IsAssignableFrom(ruleType)
+                    && field.GetValue(libraryManager) is Array array)
+                {
+                    rules.AddRange(array.Cast<object?>().Where(o => o != null && ruleType.IsInstanceOfType(o))!);
+                }
+            }
+        }
+        var distinctRules = rules.Distinct().ToList();
+        _logger.LogDebug("Resolved Jellyfin .ignore directory cache rules ({Count} rule instances)", distinctRules.Count);
+        return distinctRules;
     }
 
     /// <summary>
@@ -479,9 +549,18 @@ public class RefreshService
     }
 
     /// <summary>
+    /// 8b fix 1: a FRESH DirectoryService for every refresh-option build. A DirectoryService caches its
+    /// GetFiles() results for the DirectoryService.RefreshCycle (65 seconds by default), so one long-lived
+    /// instance (DI's default) makes a re-created folder invisible to the refresh of a title that existed
+    /// before — Jellyfin sees no media and unregisters the item instead of adding it back. A new instance
+    /// per refresh has an empty cache and reads the disk.
+    /// </summary>
+    private DirectoryService NewDirectoryService() => new(_fileSystem);
+
+    /// <summary>
     /// Builds the Remove refresh options (search for missing metadata only — detects removed items).
     /// </summary>
-    private MetadataRefreshOptions BuildRemoveRefreshOptions() => new(_directoryService)
+    private MetadataRefreshOptions BuildRemoveRefreshOptions() => new(NewDirectoryService())
     {
         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
         ImageRefreshMode = MetadataRefreshMode.FullRefresh,
@@ -496,7 +575,7 @@ public class RefreshService
     /// <summary>
     /// Builds the Update refresh options (minimal refresh to reload user data like play counts).
     /// </summary>
-    private MetadataRefreshOptions BuildUpdateRefreshOptions() => new(_directoryService)
+    private MetadataRefreshOptions BuildUpdateRefreshOptions() => new(NewDirectoryService())
     {
         MetadataRefreshMode = MetadataRefreshMode.Default,
         ImageRefreshMode = MetadataRefreshMode.Default,
@@ -512,7 +591,7 @@ public class RefreshService
     /// Builds the Create refresh options (replace all metadata for created/updated items).
     /// </summary>
     /// <param name="refreshImages">Whether images are refreshed too.</param>
-    private MetadataRefreshOptions BuildCreateRefreshOptions(bool refreshImages) => new(_directoryService)
+    private MetadataRefreshOptions BuildCreateRefreshOptions(bool refreshImages) => new(NewDirectoryService())
     {
         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
         ImageRefreshMode = MetadataRefreshMode.FullRefresh,

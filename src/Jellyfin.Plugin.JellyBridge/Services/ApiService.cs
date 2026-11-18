@@ -692,6 +692,83 @@ public class ApiService
         }
     }
 
+    /// <summary>
+    /// Fetches exactly ONE page of a paginated endpoint and reports the query's totalPages — unlike the page
+    /// loop of <see cref="CallEndpointAsync"/>, which always runs to the configured maximum. The
+    /// pages-count-visible fetch (task 8) needs this to decide after every page whether the stream has enough
+    /// visible titles yet. Returns an empty list and 0 totalPages when the request failed or the response page
+    /// could not be read (same failure shape as the paginated loop: the caller stops, the sync continues).
+    /// </summary>
+    /// <param name="endpoint">The paginated endpoint to call.</param>
+    /// <param name="page">The 1-based page number to fetch.</param>
+    /// <param name="parameters">Extra query parameters (the list's sort, date, rating and network filters).</param>
+    /// <param name="config">Optional plugin configuration (uses default if not provided).</param>
+    /// <returns>The page's items and Seerr's totalPages for this query (0 when the response carries no page info)</returns>
+    public async Task<(IList Items, int TotalPages)> CallEndpointPageAsync(
+        JellyseerrEndpoint endpoint,
+        int page,
+        Dictionary<string, object>? parameters = null,
+        PluginConfiguration? config = null)
+    {
+        config ??= Plugin.GetConfiguration();
+        var endpointConfig = GetEndpoint(endpoint);
+        var operationName = endpoint.ToString();
+
+        var (queryParameters, templateValues) = HandleEndpointSpecificLogic(endpoint, config);
+        queryParameters = queryParameters?.Concat(parameters ?? Enumerable.Empty<KeyValuePair<string, object>>()).GroupBy(kvp => kvp.Key).ToDictionary(g => g.Key, g => g.Last().Value) ?? parameters;
+
+        // Add the page parameter to query parameters (same as the paginated loop of CallEndpointAsync)
+        var pageParameters = queryParameters != null
+            ? new Dictionary<string, object>(queryParameters) { ["page"] = page }
+            : new Dictionary<string, object> { ["page"] = page };
+
+        var listType = typeof(List<>).MakeGenericType(endpointConfig.ResponseModel.GetGenericArguments()[0]);
+        var items = (IList)Activator.CreateInstance(listType)!;
+        try
+        {
+            var pageRequestMessage = JellyseerrUrlBuilder.BuildEndpointRequest(config.JellyseerrUrl, endpoint, config.ApiKey, parameters: pageParameters, templateValues: templateValues);
+            _logger.LogDebug("Making API request to URL: {Url}", pageRequestMessage.RequestUri);
+
+            var content = await MakeApiRequestAsync(pageRequestMessage, config);
+            if (content == null)
+            {
+                return (items, 0);
+            }
+
+            var pageResponse = JellyBridgeJsonSerializer.Deserialize(content, endpointConfig.ResponseModel);
+            if (pageResponse == null)
+            {
+                _logger.LogWarning("Failed to deserialize {Operation} page {Page} response - got null", operationName, page);
+                return (items, 0);
+            }
+
+            if (pageResponse.GetType().GetProperty("Results")?.GetValue(pageResponse) is IEnumerable results)
+            {
+                foreach (var item in results)
+                {
+                    items.Add(item);
+                }
+            }
+
+            var totalPages = pageResponse.GetType().GetProperty("TotalPages")?.GetValue(pageResponse) as int? ?? 0;
+            _logger.LogTrace("Page {Page} of {Operation}: {ItemCount} items, totalPages {TotalPages}", page, operationName, items.Count, totalPages);
+            return (items, totalPages);
+        }
+        catch (Exception ex)
+        {
+            // Same failure shape as the paginated loop of CallEndpointAsync: the stream stops here, the sync continues.
+            // 8b fix 6: the empty page reads to the fetcher as "the list ended", so say so with the page and the
+            // HTTP status (MakeApiRequestAsync attaches the status to the HttpRequestException it throws).
+            var status = ex is HttpRequestException httpRequestException
+                ? httpRequestException.StatusCode?.ToString() ?? ex.Data["StatusCode"]?.ToString() ?? "no response"
+                : "no response";
+            _logger.LogWarning("Getting {Operation} page {Page} from Jellyseerr failed with status {Status} (retries exhausted) — the fetch treats the list as ended here: {Error}",
+                operationName, page, status, ex.Message);
+            _logger.LogDebug(ex, "Failed to get {Operation} page {Page} from Jellyseerr", endpoint, page);
+            return (items, 0);
+        }
+    }
+
     #endregion
 
     #region Factory Helper Methods

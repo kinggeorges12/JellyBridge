@@ -58,6 +58,9 @@ namespace Jellyfin.Plugin.JellyBridge.Services
 
             // Register the libraries migration service (planner + executor, task 4)
             serviceCollection.AddTransient<LibraryMigrationService>();
+
+            // Register the discover library reconciler (task 9): save applies the change
+            serviceCollection.AddTransient<DiscoverLibraryReconciler>();
             
             // Register placeholder video generator as a singleton (created on first use) so its constructor
             // doesn't wipe the placeholder cache every time a service or controller resolves it

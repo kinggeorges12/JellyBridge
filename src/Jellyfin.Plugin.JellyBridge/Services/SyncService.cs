@@ -25,6 +25,7 @@ public partial class SyncService
     private readonly PlaceholderUserDataService _placeholderUserDataService;
     private readonly SortService _sortService;
     private readonly CleanupService _cleanupService;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// UTC time the last successful discover sync finished — scheduled task or either sync endpoint
@@ -44,7 +45,8 @@ public partial class SyncService
         MetadataService metadataService,
         PlaceholderUserDataService placeholderUserDataService,
         SortService sortService,
-        CleanupService cleanupService)
+        CleanupService cleanupService,
+        IServiceProvider serviceProvider)
     {
         _placeholderUserDataService = placeholderUserDataService;
         _logger = new DebugLogger<SyncService>(logger);
@@ -56,6 +58,44 @@ public partial class SyncService
         _metadataService = metadataService;
         _sortService = sortService;
         _cleanupService = cleanupService;
+        _serviceProvider = serviceProvider;
+    }
+
+    /// <summary>
+    /// Runs the task 9 reconciler for one library when it is registered (transient via the plugin registrator).
+    /// Returns its report so the caller can surface a refused or failed step in the sync message (9a-7); null
+    /// when nothing ran.
+    /// </summary>
+    private async Task<DiscoverLibraryReconciler.ReconcileResult?> ReconcileForSyncAsync(DiscoverLibraryConfig library, bool runSyncAndSort, DiscoverLibraryReconciler.ExcludesCache? excludes = null)
+    {
+        if (library.Legacy)
+        {
+            return null;
+        }
+
+        if (_serviceProvider.GetService(typeof(DiscoverLibraryReconciler)) is not DiscoverLibraryReconciler reconciler)
+        {
+            return null;
+        }
+
+        // 9a-b finding 3: a rename that a save refused (playing) or failed persists PendingRenameFrom — the
+        // safety net passes it as renamedFrom, so the move + re-create that the save could not finish retries
+        // now, before the sync fetches anything into the (still-old-named) folder.
+        var result = await reconciler.ApplyAsync(
+            library,
+            previous: library,
+            isNew: false,
+            renamedFrom: string.IsNullOrWhiteSpace(library.PendingRenameFrom) ? null : library.PendingRenameFrom.Trim(),
+            runSyncAndSort: runSyncAndSort,
+            excludes: excludes);
+        if (!result.Ok)
+        {
+            // 9a-7: the safety net never stays silent.
+            _logger.LogWarning("Reconcile at sync start for library '{Library}' did not fully apply: {Message} (steps: {Steps})",
+                library.Name, result.Message ?? "no message", string.Join(", ", result.Steps));
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -76,8 +116,47 @@ public partial class SyncService
             return new SyncJellyseerrResult { Success = false, Message = "Library migration in progress" };
         }
 
+        // Task 9 safety net: reconcile each library's actual state (folder name, Jellyfin library existence,
+        // name/type) before syncing — structural fixes only, no sync or sort; cheap when nothing differs. Catches
+        // what changed outside the settings page (folder renamed on disk, library deleted in the Jellyfin UI).
+        // It runs for ALL libraries before the per-library loop, because LibraryLoop creates each library's folder
+        // before that library's body runs: a folder renamed on disk was replaced by an empty one first, so the heal
+        // never saw it missing and the sync filled a second copy next to the renamed folder (reconcile-test misc).
+        var reconcileNotes = new Dictionary<string, DiscoverLibraryReconciler.ReconcileResult>(StringComparer.OrdinalIgnoreCase);
+        // 9a finding 4: the whole pass shares one LatestItemsExcludes state — each user's configuration is
+        // read at most once no matter how many libraries a create/re-create touches.
+        var excludesCache = new DiscoverLibraryReconciler.ExcludesCache();
+        foreach (var library in DiscoverLibraries.GetEnabled())
+        {
+            using (LibraryScope.Enter(library))
+            {
+                var note = await ReconcileForSyncAsync(library, runSyncAndSort: false, excludesCache);
+                if (note != null)
+                {
+                    reconcileNotes[library.Name] = note;
+                }
+            }
+        }
+
+        _logger.LogDebug("Excludes: {Reads} user reads", excludesCache.Reads);
+
         // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
-        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", SyncOneLibraryAsync,
+        async Task<SyncJellyseerrResult> ReconciledSyncOneLibraryAsync(DiscoverLibraryConfig library)
+        {
+            // 9a-7: a step the safety net could not apply (e.g. a playback guard refusal) adds one line to this
+            // library's sync segment instead of being invisible.
+            reconcileNotes.TryGetValue(library.Name, out var reconcile);
+            var sync = await SyncOneLibraryAsync(library);
+            if (reconcile is { Ok: false })
+            {
+                sync.Message = $"⚠️ {library.Name} reconcile at sync start: {reconcile.Message ?? string.Join(", ", reconcile.Steps)}. "
+                    + (sync.Message ?? string.Empty);
+            }
+
+            return sync;
+        }
+
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", ReconciledSyncOneLibraryAsync,
             (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
 
         var result = new SyncJellyseerrResult { Success = true };
@@ -100,6 +179,22 @@ public partial class SyncService
             result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
         }
 
+        // 9a-b finding 7: the sync-start safety net does NOT queue the create-mode refresh itself (it would run
+        // on the still-empty folder), and the merged global "Scan All" plan above is skipped while Jellyfin's
+        // Scan Media Library task runs. So a library the safety net (re-)created gets exactly one targeted
+        // refresh queued HERE — after the loop wrote its titles, the same call the endpoint path's
+        // runSyncAndSort=true would have made inside the reconciler.
+        foreach (var library in DiscoverLibraries.GetEnabled())
+        {
+            if (reconcileNotes.TryGetValue(library.Name, out var note)
+                && (note.Steps.Contains("created") || note.Steps.Contains("re-created")))
+            {
+                _refreshService.ClearDotIgnoreCache();
+                await _refreshService.QueueLibraryRefreshAsync(
+                    library.GetDirectory(DiscoverLibraries.GetRootDirectory()), createMode: true, removeMode: false, refreshImages: true);
+            }
+        }
+
         result.Message = string.Join("; ", segments);
         if (result.Success)
         {
@@ -110,9 +205,10 @@ public partial class SyncService
     }
 
     /// <summary>
-    /// Sync one named library — the settings page's per-library Sync button (task 5a): the same per-library body
-    /// <see cref="SyncFromJellyseerr"/> runs in the loop, then this library's favorites hide/ignore step, then the
-    /// refresh plan. Note: Caller is responsible for locking.
+    /// Sync one named library — the settings page's per-library Sync button (task 5a): the task 9 reconciler's
+    /// structural safety net first (no sync — the sync below records the signature), then the same per-library
+    /// body <see cref="SyncFromJellyseerr"/> runs in the loop, then this library's favorites hide/ignore step,
+    /// then the refresh plan. Note: Caller is responsible for locking.
     /// </summary>
     /// <param name="name">The library name, matched ignoring case.</param>
     /// <returns>The library's sync result; an unknown name fails without touching anything.</returns>
@@ -131,6 +227,31 @@ public partial class SyncService
             return new SyncJellyseerrResult { Success = false, Message = $"No Discover library named '{name}'." };
         }
 
+        // Task 9 safety net: the sync entry reconciles before fetching, so a Sync click heals a folder renamed
+        // on disk or a deleted Jellyfin library first. Structural fixes only — this call then syncs anyway.
+        // 9a-7: a refused or failed step is reported on the sync result instead of being invisible.
+        var reconcileNote = await ReconcileForSyncAsync(library, runSyncAndSort: false);
+        var entrySync = await SyncLibraryCoreAsync(library);
+        if (reconcileNote is { Ok: false })
+        {
+            entrySync.Message = $"⚠️ Reconcile before the sync did not fully apply ({reconcileNote.Message ?? string.Join(", ", reconcileNote.Steps)}).\n"
+                + (entrySync.Message ?? string.Empty);
+        }
+
+        return entrySync;
+    }
+
+    /// <summary>
+    /// The single-library sync body without reconciliation — the entry point the task 9 reconciler calls for its
+    /// own sync step (reconcile → sync must never recurse). Note: Caller is responsible for locking.
+    /// </summary>
+    /// <param name="library">The library to sync, refresh and record.</param>
+    /// <param name="skipRefreshQueue">
+    /// 9a-6: the reconciler passes true when it already queued the targeted refresh for this same save (a created
+    /// or re-created library), so one Create ends as exactly ONE refresh instead of two.
+    /// </param>
+    public async Task<SyncJellyseerrResult> SyncLibraryCoreAsync(DiscoverLibraryConfig library, bool skipRefreshQueue = false)
+    {
         var syncResult = await Utils.LibraryLoop.ForLibraryAsync(_logger, "sync", library, SyncOneLibraryAsync,
             (lib, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {lib.Name} failed: {ex.Message}" });
 
@@ -151,7 +272,7 @@ public partial class SyncService
         // empty. The list-order play counts do not need the refresh: SyncOneLibraryAsync already wrote them
         // through the user data manager; the Update options below just reload user data like the old refresh did.
         var refreshPlan = MergeRefresh(syncResult.Refresh, hideResult.Refresh);
-        if (refreshPlan != null)
+        if (refreshPlan != null && !skipRefreshQueue)
         {
             // Make Jellyfin see .ignore files created/removed since its last scan, as ApplyRefreshAsync does.
             _refreshService.ClearDotIgnoreCache();
@@ -181,12 +302,15 @@ public partial class SyncService
         // not-fetched by that, so it pins its cut-off to just before the fetch starts.
         var syncStart = DateTimeOffset.Now;
         var fetched = new List<IJellyseerrItem>();
+        // 8b fix 3/4: the titles the fetch judged hidden are only known inside the fetch lambda — collect them here
+        var hiddenTitles = new List<IJellyseerrItem>();
         var result = await SyncFromJellyseerrAsync(async () =>
         {
             // FetchListAsync routes Trending to the trending fetcher and applies the library's Movies/Series filter
-            var (movies, shows) = await _discoverService.FetchListAsync(library);
+            var (movies, shows, hidden) = await _discoverService.FetchListAsync(library);
             fetched.AddRange(movies);
             fetched.AddRange(shows);
+            hiddenTitles.AddRange(hidden);
             return (movies, shows);
         });
         if (!result.Success)
@@ -206,21 +330,39 @@ public partial class SyncService
             }
         }
 
+        if (hiddenTitles.Count > 0)
+        {
+            // 8b fix 4: a hidden title (its .ignore, or a match in a real library) is still ON the list but
+            // never written, so its CreatedDate would keep aging and retention (CleanupService.
+            // DeleteExpiredMedia) would delete the folder even though the list still holds it. Refresh the
+            // CreatedDate in its existing metadata.json so "still on the list" keeps meaning "keep".
+            var touched = await _metadataService.TouchHiddenCreatedDatesAsync(hiddenTitles);
+            if (touched > 0)
+            {
+                _logger.LogDebug("Refreshed the created date of {Count} hidden titles still on '{LibraryName}'", touched, library.Name);
+            }
+        }
+
         if (library.ListType == DiscoverListType.Trending)
         {
-            var removed = await RemoveStaleTrendingAsync(fetched);
+            // 8b fix 3: the visible fetch excludes hidden titles, but they are on the trending list — pass
+            // them to the stale removal too (its own .ignore guard never deletes a requested copy).
+            var removed = await RemoveStaleTrendingAsync(fetched.Concat(hiddenTitles).ToList());
             result.ItemsHidden.AddRange(removed);
             if (removed.Count > 0)
             {
                 result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
             }
         }
-        else if (!library.Legacy && library.ListTypeChangedSinceLastSync)
+        else if (!library.Legacy && (library.ListTypeChangedSinceLastSync || library.SyncSignatureChangedSinceLastSync))
         {
             // Decision 9: the List changed since the last sync — the old list's titles go now, not after the
-            // retention days. Run this library's cleanup once with the retention cut-off pinned to the sync
-            // start: titles this sync (re)fetched have a fresh CreatedDate and stay; the rest are "expired".
-            // The search-added exemption lives in the cleanup itself.
+            // retention days. Task 9 reviewer item 6: the same immediate cleanup runs for EVERY title-rule
+            // change (fewer Pages, fewer networks, a higher minimum, a type switch), which the signature
+            // comparison catches — otherwise the old titles would linger until retention. Run this library's
+            // cleanup once with the retention cut-off pinned to the sync start: titles this sync (re)fetched
+            // have a fresh CreatedDate and stay; the rest are "expired". A .ignore folder and search-added
+            // titles are exempt inside the cleanup itself (8b fix 4).
             var listCleanup = await _cleanupService.CleanupListChangeAsync(syncStart);
             if (!listCleanup.Success)
             {
@@ -245,10 +387,12 @@ public partial class SyncService
             await _sortService.SortByListAsync();
         }
 
-        // Record the list this sync ran against (decision 9 bookkeeping) so the next sync sees an unchanged list.
-        if (!library.Legacy && library.LastSyncedListType != library.ListType)
+        // Record the list this sync ran against (decision 9 bookkeeping) so the next sync sees an unchanged list,
+        // and task 9's title-rule signature so the reconciler syncs only when a title rule changed since.
+        if (!library.Legacy && (library.LastSyncedListType != library.ListType || library.LastSyncedSignature != library.SyncSignature))
         {
             library.LastSyncedListType = library.ListType;
+            library.LastSyncedSignature = library.SyncSignature;
             Plugin.Instance?.SaveConfiguration();
         }
 
@@ -257,7 +401,8 @@ public partial class SyncService
 
     /// <summary>
     /// Delete the Trending library's titles that are no longer trending. A title someone favorited stays until the favorites
-    /// sync has requested it (it is hidden then).
+    /// sync has requested it (it is hidden then). 8b fix 3: a title the fetch judged HIDDEN but the list still holds is passed
+    /// in with the visible ones, and a folder holding a .ignore is never deleted here.
     /// </summary>
     private async Task<List<IJellyseerrItem>> RemoveStaleTrendingAsync(List<IJellyseerrItem> trending)
     {
@@ -285,8 +430,14 @@ public partial class SyncService
             try
             {
                 var folder = _metadataService.GetJellyBridgeItemDirectory(item);
-                var hidden = File.Exists(Path.Combine(folder, BridgeService.IgnoreFileName));
-                if (!hidden && favoritePaths.Any(path => FolderUtils.IsPathInDirectory(path, folder)))
+                // 8b fix 3: a folder holding a .ignore is a favorited/requested title — never delete it here,
+                // the favorites sync owns that copy.
+                if (File.Exists(Path.Combine(folder, BridgeService.IgnoreFileName)))
+                {
+                    continue;
+                }
+
+                if (favoritePaths.Any(path => FolderUtils.IsPathInDirectory(path, folder)))
                 {
                     continue;
                 }

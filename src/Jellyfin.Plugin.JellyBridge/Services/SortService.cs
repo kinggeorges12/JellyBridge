@@ -148,6 +148,26 @@ public class SortService
     }
 
     /// <summary>
+    /// Sort one library by its own "Order in Jellyfin" (task 9 reviewer item 7): the reconciler's sort step, so a
+    /// save that changes the order applies it in Jellyfin immediately instead of waiting for the sort task.
+    /// </summary>
+    /// <param name="library">The library to re-sort.</param>
+    /// <returns>The per-library sort result.</returns>
+    public async Task<SortLibraryResult> SortLibraryAsync(DiscoverLibraryConfig library)
+    {
+        var users = _userManager.GetAllUsers().ToList();
+        if (users.Count == 0)
+        {
+            return new SortLibraryResult { Success = false, Message = "No users found - cannot update play counts" };
+        }
+
+        var sortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder));
+        return await Utils.LibraryLoop.ForLibraryAsync(
+            _logger, "sort", library, l => SortOneLibraryAsync(l, users, sortOrder),
+            (l, ex) => new SortLibraryResult { Success = false, Message = $"{l.Name}: {ex.Message}" });
+    }
+
+    /// <summary>
     /// Applies one library's play count algorithm, for every user. Runs inside the library loop's scope.
     /// A Legacy library and the global setting decide the algorithm together; other libraries use their own
     /// Order: AsList sorts by the list ranks, Random/Smart/Smartish and Jellyfin (zero) go through the

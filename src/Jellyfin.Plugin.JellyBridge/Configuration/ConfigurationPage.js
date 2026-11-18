@@ -637,6 +637,7 @@ function saveLibraryToggle(page, libraryName, enabled, card) {
     });
 
     if (card) card.classList.add('off');
+    clearLibraryResult();
     startSyncWaitNotice(page);
     ApiClient.ajax({
         url: ApiClient.getUrl('JellyBridge/Libraries'),
@@ -649,7 +650,8 @@ function saveLibraryToggle(page, libraryName, enabled, card) {
         discoverLibrariesEntries = (result && result.libraries) || discoverLibrariesEntries;
         renderDiscoverLibraries(page);
         renderLibraryStatusStrip(page);
-        DisplayMessage('✅ ' + ((result && result.message) || 'Libraries saved.'));
+        const shown = librarySaveResultLine(result, 'Libraries saved.');
+        showLibraryResult(shown.line, shown.details, shown.error);
     }).catch(async function (error) {
         stopSyncWaitNotice(page);
         let message = error?.message || 'Unknown error';
@@ -657,7 +659,7 @@ function saveLibraryToggle(page, libraryName, enabled, card) {
             const errorBody = await error.json();
             if (errorBody && errorBody.message) message = errorBody.message;
         } catch (e) { /* keep the generic message */ }
-        DisplayMessage('❌ Failed to save the library change: ' + message);
+        showLibraryResult('❌ Failed to save the library change: ' + message, '', true);
         renderDiscoverLibraries(page); // reset the toggle to the stored state
     });
 }
@@ -756,7 +758,10 @@ function performSyncAllLibraries(page) {
         if (!confirmed) return;
         syncAllButton.disabled = true;
         Dashboard.showLoadingMsg();
+        clearLibraryResult();
         startSyncWaitNotice(page);
+        let syncAnswer = null;
+        let syncFailure = null;
         ApiClient.ajax({
             url: ApiClient.getUrl('JellyBridge/SyncDiscover'),
             type: 'POST',
@@ -764,14 +769,18 @@ function performSyncAllLibraries(page) {
             contentType: 'application/json',
             dataType: 'json'
         }).then(function (syncData) {
-            DisplayMessage(syncOutcomeMessage(syncData, 'Sync all started.'));
+            syncAnswer = syncData;
         }).catch(function (error) {
-            DisplayMessage('❌ Sync all failed: ' + (error?.message || 'Unknown error'));
-        }).finally(function() {
+            syncFailure = '❌ Sync all failed: ' + (error?.message || 'Unknown error');
+        }).then(function () {
             stopSyncWaitNotice(page);
             Dashboard.hideLoadingMsg();
             syncAllButton.disabled = false;
-            loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
+            // also refreshes lastSync in the strip (5c review fix 6) and the title counts the short line reports
+            return loadDiscoverLibraries(page);
+        }).then(function () {
+            if (syncFailure) showLibraryResult(syncFailure, '', true);
+            else showLibrarySyncResult(syncAnswer, 'Sync all started.');
         });
     });
 }
@@ -903,7 +912,7 @@ function handleLibraryError(error, action) {
     const bodyPromise = (error && typeof error.json === 'function') ? error.json().catch(function () { return null; }) : Promise.resolve(null);
     return bodyPromise.then(function (body) {
         if (body && body.message) message = body.message;
-        DisplayMessage('❌ Failed to ' + action + ': ' + message);
+        showLibraryResult('❌ Failed to ' + action + ': ' + message, '', true);
     });
 }
 
@@ -913,6 +922,97 @@ function syncOutcomeMessage(result, fallback) {
     const ok = !(result && result.success === false);
     const text = (result && (result.result || result.message)) || fallback;
     return /^[\u2705\u274C\u26A0]/.test(text) ? text : (ok ? '✅ ' : '❌ ') + text;
+}
+
+// ---- Task 9b: the result of the last library action ----
+// One short line per library ("Discover ✅ 393 titles · Trending ✅ 55"), errors in full, shown in the status
+// strip area until the next action or a click on ✕ — not a toast that fades. The full text sits in a collapsed
+// "Details". Every library write calls clearLibraryResult() first.
+function clearLibraryResult() {
+    const bar = document.getElementById('libraryResultBar');
+    if (!bar) return;
+    bar.style.display = 'none';
+    bar.classList.remove('err');
+    const text = document.getElementById('libraryResultText');
+    const details = document.getElementById('libraryResultDetailsText');
+    if (text) text.textContent = '';
+    if (details) details.textContent = '';
+}
+
+function showLibraryResult(line, details, isError) {
+    const bar = document.getElementById('libraryResultBar');
+    if (!bar) { DisplayMessage(line); return; }
+    document.getElementById('libraryResultText').textContent = line;
+    const detailsBox = document.getElementById('libraryResultDetails');
+    const detailsText = document.getElementById('libraryResultDetailsText');
+    const full = (details && String(details).trim() && String(details).trim() !== String(line).trim()) ? String(details).trim() : '';
+    detailsText.textContent = full;
+    detailsBox.style.display = full ? '' : 'none';
+    detailsBox.open = false;
+    bar.classList.toggle('err', !!isError);
+    bar.style.display = 'block';
+    console.log(line);
+}
+
+// One line from a POST Libraries answer ({ success, message, results: [{ name, ok, steps, titleCount, message }] }).
+function librarySaveResultLine(result, fallback) {
+    const results = (result && Array.isArray(result.results)) ? result.results : [];
+    const parts = results.map(function (r) {
+        if (r.ok === false) return r.name + ' ❌ ' + (r.message || (r.steps || []).join(', ') || 'failed');
+        return r.name + ' ✅' + ((r.titleCount ?? null) !== null ? ' ' + r.titleCount + ' titles' : '');
+    });
+    const failed = results.some(function (r) { return r.ok === false; }) || (result && result.success === false);
+    const line = parts.length ? parts.join(' · ') : ((failed ? '❌ ' : '✅ ') + ((result && result.message) || fallback));
+    const details = results.map(function (r) {
+        return r.name + ': ' + ((r.steps || []).join(', ') || 'no change') + (r.syncMessage ? ' — ' + r.syncMessage : '') + (r.message ? ' (' + r.message + ')' : '');
+    }).concat((result && result.message) ? ['', result.message] : []).join('\n');
+    return { line: line, details: details, error: failed };
+}
+
+// One line from a sync answer: the message holds one "<name>: <text>" segment per library, so each enabled
+// library gets "Name ✅ N titles" (N from the reloaded list) or its segment in full.
+function librarySyncResultLine(result, fallback, onlyName) {
+    const full = String((result && (result.result || result.message)) || fallback || '');
+    if (onlyName) {
+        // Sync of ONE library: its answer carries no "<name>: " segment, so the page names the library itself.
+        const entry = discoverLibrariesEntries.find(function (e) {
+            return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(onlyName).toLowerCase();
+        });
+        const text = full.split('\n')[0];
+        const ok = !(result && result.success === false) && text.indexOf('✅') >= 0 && text.indexOf('❌') < 0 && text.indexOf('⚠️') < 0;
+        return {
+            line: ok ? (onlyName + ' ✅ ' + ((entry && entry.titleCount) ?? 0) + ' titles') : (onlyName + ' ❌ ' + text),
+            details: full,
+            error: !ok
+        };
+    }
+    const entries = discoverLibrariesEntries.filter(function (entry) {
+        const library = entry.library || {};
+        return (library.isDefault ?? false) || (library.isEnabled ?? true);
+    });
+    const marks = entries.map(function (entry) {
+        const name = entry.name || (entry.library && entry.library.name) || '';
+        return { entry: entry, name: name, at: name ? full.indexOf(name + ': ') : -1 };
+    }).filter(function (m) { return m.at >= 0; }).sort(function (a, b) { return a.at - b.at; });
+    const failedOverall = !!(result && result.success === false);
+    if (!marks.length) {
+        return { line: (failedOverall ? '❌ ' : '✅ ') + (full.split('\n')[0] || fallback || 'Sync finished.'), details: full, error: failedOverall };
+    }
+    let anyError = false;
+    const parts = marks.map(function (m, i) {
+        const start = m.at + m.name.length + 2;
+        const end = i + 1 < marks.length ? marks[i + 1].at : full.length;
+        const text = full.slice(start, end).replace(/;\s*$/, '').trim();
+        const ok = text.indexOf('✅') >= 0 && text.indexOf('❌') < 0 && text.indexOf('⚠️') < 0;
+        if (!ok) anyError = true;
+        return ok ? (m.name + ' ✅ ' + (m.entry.titleCount ?? 0) + ' titles') : (m.name + ' ❌ ' + text);
+    });
+    return { line: parts.join(' · '), details: full, error: anyError || failedOverall };
+}
+
+function showLibrarySyncResult(result, fallback, onlyName) {
+    const r = librarySyncResultLine(result, fallback, onlyName);
+    showLibraryResult(r.line, r.details, r.error);
 }
 
 // Task 7: every write endpoint waits on the sync lock without reporting queue state, so saving a library
@@ -987,7 +1087,6 @@ function watchLibraryFilling(page, name) {
             fillingLibraries.delete(key);
             discoverLibrariesEntries = entries;
             renderDiscoverLibraries(page);
-            if (filled) DisplayMessage('✅ Library "' + name + '" is filling: ' + entry.titleCount + ' titles so far.');
         }).catch(function () { /* network hiccup: retry on the next tick */ });
     }, 5000);
     renderDiscoverLibraries(page);
@@ -1036,6 +1135,26 @@ function updateLibraryEditorNetworksWarning(page) {
     const activeCount = slot ? slot.querySelectorAll('#activeNetworks option').length : 0;
     warning.style.display = (libraryEditorDraft && libraryEditorDraft.library.listType === 'ComingSoon' && activeCount > 0)
         ? 'block' : 'none';
+}
+
+// Task 9b: a rename or a type change makes the server re-create the Jellyfin library (Jellyfin can't change
+// either in place), which resets the watched marks on its placeholders — warn before the save.
+function updateLibraryEditorRecreateWarning(page) {
+    const warning = page.querySelector('#libraryEditorRecreateWarning');
+    if (!warning) return;
+    const draft = libraryEditorDraft;
+    let show = false;
+    if (draft && !draft.isNew) {
+        const stored = discoverLibrariesEntries.find(function (e) {
+            return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(draft.originalName).toLowerCase();
+        });
+        const editor = libraryEditorElement;
+        const nameNow = editor ? (editor.querySelector('#libraryEditorName').value || '').trim() : '';
+        const typeNow = editor ? editor.querySelector('#libraryEditorType').value : '';
+        const storedType = (stored && stored.library && stored.library.libraryType) || 'All';
+        show = !!nameNow && (nameNow.toLowerCase() !== String(draft.originalName).toLowerCase() || typeNow !== storedType);
+    }
+    warning.style.display = show ? 'block' : 'none';
 }
 
 function libraryEditorCard(page, name) {
@@ -1127,15 +1246,23 @@ function renderLibraryEditorFields(page) {
     });
 
     const editorSlot = q('#libraryEditorNetworksSlot');
+    const allOfSeerr = q('#libraryEditorNetworksAll');
     if (template.networks) {
-        editorSlot.style.display = '';
+        // Task 10: no networks = "All of Seerr" + a Customize networks button; the picker stays collapsed until
+        // clicked. A library that already has networks shows the picker open, with its list.
+        const hasNetworks = Array.isArray(lib.networkIds) && lib.networkIds.length > 0;
+        const pickerOpen = hasNetworks || !!draft.networksCustomize;
+        editorSlot.style.display = pickerOpen ? '' : 'none';
+        if (allOfSeerr) allOfSeerr.style.display = pickerOpen ? 'none' : '';
         editorSlot.appendChild(page.querySelector('#networkServicesContainer'));
         populateNetworksForLibrary(page, lib.networkIds);
     } else {
         editorSlot.style.display = 'none';
+        if (allOfSeerr) allOfSeerr.style.display = 'none';
         returnNetworksToGlobal(page); // Trending never gets networks
     }
     updateLibraryEditorNetworksWarning(page);
+    updateLibraryEditorRecreateWarning(page);
 
     q('#libraryEditorSync').disabled = !!draft.isNew;
     q('#libraryEditorSync').title = draft.isNew ? 'Save the library first' : 'Sync only this library now';
@@ -1231,7 +1358,7 @@ function templateLibraryDraft(templateKey) {
         name: name,
         listType: templateKey,
         libraryType: type,
-        networkIds: trending ? [] : (Array.isArray(dl.networkIds) ? dl.networkIds.slice() : []),
+        networkIds: [], // task 10: a new library starts with no networks = Seerr's whole list ("Customize networks" opens the picker)
         isDefault: false,
         isEnabled: true,
         pages: dl.pages ?? config.MaxDiscoverPages ?? null,
@@ -1285,9 +1412,12 @@ function saveEditorNetworkMapUnion(page) {
     });
 }
 
-// Save paths (5c notes): setting changes + added libraries go through POST Libraries (never a drop
-// or a rename); a new library is then Created; a rename goes to Rename, then the Jellyfin display
-// name via POST /Library/VirtualFolders/Name when a Jellyfin library with the old name exists.
+// Save path (task 9b): ONE POST of the whole list. The server's reconciler applies the change — a rename carries
+// the transient `renamedFrom` (old name) on the renamed entry, a new library is simply a new entry (the reconciler
+// creates its folder and Jellyfin library and syncs it), a type change re-creates the Jellyfin library. The page
+// no longer calls Rename / Create / POST /Library/VirtualFolders/Name itself. Networks the editor added to the
+// picker are merged into the global NetworkMap FIRST, because the sync inside the POST resolves networkIds
+// against it.
 function saveLibraryEditor(page) {
     if (!libraryEditorDraft) return;
     syncLibraryEditorDraft(page);
@@ -1311,18 +1441,14 @@ function saveLibraryEditor(page) {
         order: lib.order ?? 'AsList'
     };
     const nameChanged = !draft.isNew && lib.name.toLowerCase() !== String(draft.originalName).toLowerCase();
-    const savedEntry = draft.isNew ? null : discoverLibrariesEntries.find(function (e) {
-        return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(draft.originalName).toLowerCase();
-    });
 
     // 5c review fix 3: moving the ★ Default must never post a list without one — the edited library carries
     // isDefault: true and every other entry gives the flag up (the old loop cleared it on all entries).
     const list = discoverLibrariesEntries.map(function (entry) {
         let out = JSON.parse(JSON.stringify(entry.library || {}));
         if (!draft.isNew && String(entry.name || '').toLowerCase() === String(draft.originalName).toLowerCase()) {
-            const posted = Object.assign({}, edited);
-            if (nameChanged) posted.name = entry.name; // the Rename endpoint renames it after the list saves
-            out = Object.assign(out, posted);
+            out = Object.assign(out, edited);
+            if (nameChanged) out.renamedFrom = entry.name; // transient: the server turns it into the move + re-create
             if (edited.isDefault) out.isDefault = true;
         } else if (edited.isDefault) {
             out.isDefault = false;
@@ -1334,43 +1460,23 @@ function saveLibraryEditor(page) {
     const saveButton = page.querySelector('#libraryEditorSave');
     if (saveButton) saveButton.disabled = true;
     Dashboard.showLoadingMsg();
-    startSyncWaitNotice(page); // task 7: the save/Create wait on the sync lock
+    clearLibraryResult();
+    startSyncWaitNotice(page); // task 7: the save waits on the sync lock
 
-    postLibrariesList(list).then(function (result) {
-        const message = (result && result.message) || 'Libraries saved.';
-        if (draft.isNew) {
-            return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(lib.name) + '/Create').then(function () { return message; });
-        }
-        if (!nameChanged) return message;
-        return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(draft.originalName) + '/Rename?newName=' + encodeURIComponent(lib.name))
-            .then(function (renameResult) {
-                // 5c review fix 4: show the Rename endpoint's own message (the save message said nothing about it).
-                const renameMessage = (renameResult && renameResult.message) || message;
-                if (savedEntry && savedEntry.jellyfinLibraryName) {
-                    // 5c review fix 4: POST /Library/VirtualFolders/Name answers 204 with no body — no JSON to
-                    // parse, any 2xx is success; only a real failure gets the warning.
-                    return ApiClient.ajax({
-                        url: ApiClient.getUrl('Library/VirtualFolders/Name?name=' + encodeURIComponent(savedEntry.jellyfinLibraryName) + '&newName=' + encodeURIComponent(lib.name)),
-                        type: 'POST'
-                    }).catch(function () {
-                        DisplayMessage('⚠️ The library renamed, but its Jellyfin display name did not — rename it in the Library Manager to match.');
-                    }).then(function () { return renameMessage; });
-                }
-                return renameMessage;
-            });
-    }).then(function (message) {
-        return saveEditorNetworkMapUnion(page).then(function () { return message; });
-    }).then(function (message) {
+    saveEditorNetworkMapUnion(page).then(function () {
+        return postLibrariesList(list);
+    }).then(function (result) {
+        const shown = librarySaveResultLine(result, 'Libraries saved.');
         closeLibraryEditor(page);
         return loadDiscoverLibraries(page).then(function () {
-            // Task 7: a newly created library fills itself server-side; the card shows "Filling…" meanwhile.
+            // Task 7: a newly created library fills itself server-side; the card shows \"Filling…\" meanwhile.
             if (draft.isNew) watchLibraryFilling(page, lib.name);
-            DisplayMessage('✅ ' + message);
+            showLibraryResult(shown.line, shown.details, shown.error);
         });
     }).catch(function (error) {
         // 5c review fix 3: after any save error the cards go back to the stored list (discoverLibrariesEntries)
         // instead of keeping the draft's stale ★ Default ticks.
-        return handleLibraryError(error, 'save the library "' + lib.name + '"').then(function () {
+        return handleLibraryError(error, 'save the library \"' + lib.name + '\"').then(function () {
             renderDiscoverLibraries(page);
         });
     }).finally(function () {
@@ -1409,9 +1515,10 @@ function performDeleteLibrary(page, button) {
     if (confirmBox) confirmBox.style.display = 'none';
     if (button) button.disabled = true;
     Dashboard.showLoadingMsg();
+    clearLibraryResult();
     librariesApi('DELETE', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '?deleteFiles=' + (deleteFiles ? 'true' : 'false'))
         .then(function (result) {
-            DisplayMessage('✅ ' + ((result && result.message) || ('Deleted library "' + name + '".')));
+            showLibraryResult('✅ ' + ((result && result.message) || ('Deleted library "' + name + '".')), '', false);
             closeLibraryEditor(page);
             return loadDiscoverLibraries(page);
         })
@@ -1437,17 +1544,22 @@ function performLibrarySyncNow(page) {
         const button = page.querySelector('#libraryEditorSync');
         if (button) button.disabled = true;
         Dashboard.showLoadingMsg();
+        clearLibraryResult();
         startSyncWaitNotice(page); // task 7: the sync waits on the same lock
+        let syncAnswer = null;
+        let failed = false;
         librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Sync')
-            .then(function (result) {
-                DisplayMessage(syncOutcomeMessage(result, 'Sync finished.'));
-            })
-            .catch(function (error) { return handleLibraryError(error, 'sync the library "' + name + '"'); })
-            .finally(function () {
+            .then(function (result) { syncAnswer = result; })
+            .catch(function (error) { failed = true; return handleLibraryError(error, 'sync the library "' + name + '"'); })
+            .then(function () {
                 stopSyncWaitNotice(page);
                 Dashboard.hideLoadingMsg();
                 if (button) button.disabled = false;
-                loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
+                // also refreshes lastSync in the strip (5c review fix 6) and the title count the short line reports
+                return loadDiscoverLibraries(page);
+            })
+            .then(function () {
+                if (!failed) showLibrarySyncResult(syncAnswer, 'Sync finished.', name);
             });
     });
 }
@@ -1455,10 +1567,11 @@ function performLibrarySyncNow(page) {
 function performCreateLibrary(page, name, button) {
     if (button) button.disabled = true;
     Dashboard.showLoadingMsg();
+    clearLibraryResult();
     startSyncWaitNotice(page); // task 7: Create syncs the library before it answers
     librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Create')
         .then(function (result) {
-            DisplayMessage('✅ ' + ((result && result.message) || ('Library "' + name + '" is ready.')));
+            showLibraryResult('✅ ' + ((result && result.message) || ('Library "' + name + '" is ready.')), (result && result.syncMessage) || '', false);
             // Task 7: Create filled the library server-side (sync + targeted refresh); show "Filling…" on
             // the card until the first titles land, re-polling every 5 s for up to 2 min.
             watchLibraryFilling(page, name);
@@ -1492,12 +1605,16 @@ function initializeLibraryEditorBindings(page) {
         }
     }
 
+    const resultClose = page.querySelector('#libraryResultClose');
+    if (resultClose) resultClose.addEventListener('click', function () { clearLibraryResult(); });
+
     const editor = libraryEditorElement = page.querySelector('#libraryEditor');
     if (!editor) return;
 
     editor.querySelector('#libraryEditorName').addEventListener('input', function () {
         const hint = editor.querySelector('#libraryEditorFolderHint');
         if (hint) hint.textContent = sanitizeFolderName(this.value) || '…';
+        updateLibraryEditorRecreateWarning(page);
     });
 
     editor.querySelector('#libraryEditorList').addEventListener('change', function () {
@@ -1523,6 +1640,7 @@ function initializeLibraryEditorBindings(page) {
         libraryEditorDraft.library.name = nameInput.value.trim();
         const hint = editor.querySelector('#libraryEditorFolderHint');
         if (hint) hint.textContent = sanitizeFolderName(nameInput.value) || '…';
+        updateLibraryEditorRecreateWarning(page);
     });
 
     editor.querySelector('#libraryEditorDefault').addEventListener('change', function () {
@@ -1539,6 +1657,13 @@ function initializeLibraryEditorBindings(page) {
     const refreshWarningSoon = function () { setTimeout(function () { updateLibraryEditorNetworksWarning(page); }, 0); };
     networksSlot.addEventListener('click', refreshWarningSoon);
     networksSlot.addEventListener('dblclick', refreshWarningSoon);
+
+    editor.querySelector('#libraryEditorCustomizeNetworks').addEventListener('click', function () {
+        if (!libraryEditorDraft) return;
+        syncLibraryEditorDraft(page);
+        libraryEditorDraft.networksCustomize = true;
+        renderLibraryEditorFields(page);
+    });
 
     editor.querySelector('#libraryEditorSave').addEventListener('click', function () { saveLibraryEditor(page); });
     editor.querySelector('#libraryEditorDuplicate').addEventListener('click', function () { duplicateLibraryEditorDraft(page); });

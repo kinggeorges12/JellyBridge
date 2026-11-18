@@ -12,6 +12,15 @@
                     color: #0088cc;
                     text-decoration: underline;
                 }
+                #jellyBridgeConfigurationPage .jbCostNote {
+                    display: flex;
+                    gap: .45em;
+                    align-items: flex-start;
+                    font-size: .9em;
+                    color: rgba(255,255,255,.78);
+                    margin-top: .55em;
+                    line-height: 1.45;
+                }
                 summary {
                     cursor: pointer;
                     padding: 10px;
@@ -500,6 +509,62 @@
                     color: #ff9800;
                 }
 
+                /* Result of the last Save / Sync / Create / Delete: one short line per library, stays until the next
+                   action or the close button; the full text sits in the collapsed Details (task 9b). */
+                #libraryResultBar {
+                    display: none;
+                    background-color: rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                    border-left: 3px solid #00d4aa;
+                    padding: 8px 12px;
+                    margin: 0 0 12px;
+                    font-size: .95em;
+                }
+
+                #libraryResultBar.err {
+                    border-left-color: #ff6b6b;
+                }
+
+                #libraryResultBar .libraryResultLine {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                }
+
+                #libraryResultBar .libraryResultText {
+                    flex: 1;
+                    overflow-wrap: anywhere;
+                }
+
+                #libraryResultBar .libraryResultClose {
+                    flex: 0 0 auto;
+                    background: none;
+                    border: 0;
+                    color: inherit;
+                    cursor: pointer;
+                    font-size: 1.1em;
+                    line-height: 1;
+                    padding: 2px 6px;
+                    opacity: .7;
+                }
+
+                #libraryResultBar .libraryResultClose:hover {
+                    opacity: 1;
+                }
+
+                #libraryResultBar details {
+                    margin-top: 6px;
+                    font-size: .9em;
+                    opacity: .85;
+                }
+
+                #libraryResultBar pre {
+                    white-space: pre-wrap;
+                    overflow-wrap: anywhere;
+                    margin: 6px 0 0;
+                    font-family: inherit;
+                }
+
                 .discoverLibraryCard {
                     border: 1px solid rgba(155, 155, 155, 0.3);
                     border-radius: 8px;
@@ -605,7 +670,13 @@
                     margin: 10px 0;
                 }
 
+                /* emby-button is display:flex in a row, which squeezed the description into a narrow column next to the
+                   name (task 10): stack name over description, left-aligned, full tile width. */
                 #libraryTemplatePicker button.libraryTemplate {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    justify-content: flex-start;
                     white-space: normal;
                     min-height: auto;
                     height: auto;
@@ -614,8 +685,17 @@
                     line-height: 1.4;
                 }
 
+                #libraryTemplatePicker button.libraryTemplate > span {
+                    display: block;
+                    font-weight: 600;
+                    width: 100%;
+                    text-align: left;
+                }
+
                 #libraryTemplatePicker button.libraryTemplate small {
                     display: block;
+                    width: 100%;
+                    text-align: left;
                     color: #999;
                     font-size: .8em;
                     margin-top: 4px;
@@ -730,6 +810,16 @@
                             <span class="statusSpacer"></span>
                             <button is="emby-button" type="button" id="syncAllLibraries" class="raised button emby-button"><span>🔄 Sync all</span></button>
                         </div>
+                        <div id="libraryResultBar" role="status" aria-live="polite">
+                            <div class="libraryResultLine">
+                                <span class="libraryResultText" id="libraryResultText"></span>
+                                <button type="button" class="libraryResultClose" id="libraryResultClose" title="Dismiss" aria-label="Dismiss">✕</button>
+                            </div>
+                            <details id="libraryResultDetails">
+                                <summary>Details</summary>
+                                <pre id="libraryResultDetailsText"></pre>
+                            </details>
+                        </div>
                         <div id="discoverLibraryList"></div>
                         <div id="libraryEditorHost">
                             <div id="libraryEditor" style="display: none;">
@@ -748,6 +838,11 @@
                                     </select>
                                     <div class="fieldDescription" id="libraryEditorListHelp"></div>
                                 </div>
+                                <div id="libraryEditorNetworksAll" class="inputContainer" style="display: none;">
+                                    <label class="inputLabel">Networks</label>
+                                    <div class="fieldDescription"><strong>All of Seerr</strong> — no network filter, Seerr's whole list.</div>
+                                    <button is="emby-button" type="button" id="libraryEditorCustomizeNetworks" class="raised button emby-button"><span>Customize networks</span></button>
+                                </div>
                                 <div id="libraryEditorNetworksSlot"></div>
                                 <div id="libraryEditorNetworksWarning" class="fieldDescription cautionText" style="display: none;">⚠️ Unreleased titles aren't on a streaming service yet, so a network filter leaves this almost empty.</div>
                                 <div class="inputContainer">
@@ -759,6 +854,7 @@
                                     </select>
                                     <div class="fieldDescription">Movies or Series adds the word to the name (e.g. "Popular Movies"); All removes it.</div>
                                 </div>
+                                <div id="libraryEditorRecreateWarning" class="fieldDescription cautionText" style="display: none; margin-bottom: 1em;">⚠️ Renaming or changing the type re-creates the Jellyfin library (watched marks on its placeholders reset).</div>
                                 <details id="libraryEditorMore">
                                     <summary>More options</summary>
                                     <br>
@@ -786,7 +882,7 @@
                                     </div>
                                     <div class="inputContainer">
                                         <input id="libraryEditorPages" type="number" is="emby-input" min="0" label="Pages" />
-                                        <div class="fieldDescription">Pages of 20 titles fetched from Seerr for each type. Leave empty to use the global Discover Pages. Enter 0 to retrieve ALL pages.</div>
+                                        <div class="fieldDescription">Each page adds 20 titles you can see — for the whole library, across all its networks and kinds. Titles you already requested or have don't count.</div>
                                     </div>
                                     <div class="inputContainer">
                                         <input id="libraryEditorMinRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)" />
@@ -823,7 +919,7 @@
                                     </div>
                                     <div style="display: flex; gap: 8px;">
                                         <button is="emby-button" type="button" id="libraryEditorDeleteConfirmYes" class="raised button emby-button" style="background-color: #d32f2f; color: white;"><span>🗑️ Delete</span></button>
-                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmCancel" class="button emby-button"><span>Cancel</span></button>
+                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmCancel" class="raised button emby-button"><span>Cancel</span></button>
                                     </div>
                                 </div>
                             </div>
@@ -838,7 +934,7 @@
                                 <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="Trending"><span>📈 Trending</span><small>Seerr's trending list, in Seerr's order</small></button>
                                 <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="TopRated"><span>🏆 Top rated</span><small>Highest TMDB scores, with a vote minimum</small></button>
                             </div>
-                            <button is="emby-button" type="button" id="libraryTemplatePickerCancel" class="button emby-button"><span>Cancel</span></button>
+                            <button is="emby-button" type="button" id="libraryTemplatePickerCancel" class="raised button emby-button"><span>Cancel</span></button>
                         </div>
                         <button is="emby-button" type="button" id="addLibraryButton" class="raised button block emby-button"><span>➕ Add library</span></button>
                     </div>
@@ -1216,6 +1312,7 @@
                                 </span>
                             </label>
                             <div class="fieldDescription">Make each promo video from the title's own backdrop and logo, with its year, rating, genres and plot, the release date of upcoming titles, and a note to favorite it to request it. Titles use the promo above until Jellyfin has saved their backdrop, then switch on a later sync. Needs <i>Save artwork into media folders</i> in the library settings of every JellyBridge library.</div>
+                            <div class="jbCostNote"><svg width="18" height="18" viewBox="0 0 24 24" style="flex:none;margin-top:.1em" fill="#e0a030" aria-hidden="true"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg><span>Uses the server's CPU: ffmpeg renders a video for each title (about 0.1–0.25 s each), again when its text changes. The first sync after turning this on takes longer, e.g. ~1–2 min for 450 titles.</span></div>
                         </div>
                         <br>
 
