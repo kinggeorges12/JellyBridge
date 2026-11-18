@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JellyBridge.BridgeModels;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel;
 using Jellyfin.Plugin.JellyBridge.JellyseerrModel.Server;
+using Jellyfin.Plugin.JellyBridge.JellyfinModels;
 using Jellyfin.Plugin.JellyBridge.Utils;
 using Jellyfin.Plugin.JellyBridge.Configuration;
 using Microsoft.Extensions.Logging;
@@ -35,34 +36,66 @@ public class DiscoverService
     
 
     /// <summary>
-    /// Fetches the list that fills a Discover library: the trending list for a Trending library, otherwise Discover
-    /// with the list's own sort order and release-date window (New releases, Coming soon, Top rated) or plain
-    /// popularity (Popular). A Movies- or Series-only library gets no titles of the other kind: Discover lists skip
-    /// those endpoint calls, and Trending is filtered after ranking so ranks stay Seerr's positions.
+    /// Fetches the list that fills a Discover library: the trending list for a Trending library, otherwise
+    /// Discover with the list's own sort order and release-date window (New releases, Coming soon, Top rated) or
+    /// plain popularity (Popular). A Movies- or Series-only library gets no titles of the other kind: Discover
+    /// lists skip those endpoint calls, and Trending is filtered to the library's kind while fetching.
+    /// Task 8 (Mohammad's rule): Pages counts the titles you see. Every stream the library fetches — one per
+    /// media kind it holds times each network, one mixed stream for Trending — keeps fetching Seerr pages until
+    /// it has Pages × 20 visible titles, the list ends, or the cap of 5 × Pages pages per stream is reached. A
+    /// fetched title counts toward the target only when the sync would NOT hide it (see
+    /// <see cref="FilterVisibleAsync"/>); titles past the target are never fetched further nor written, and
+    /// ListRank follows the visible order.
     /// </summary>
     /// <param name="library">The library whose list and type to fetch for.</param>
     /// <returns>Tuple containing lists of movies and shows fetched for the library</returns>
     public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchListAsync(DiscoverLibraryConfig library)
     {
+        // Inside the library's scope this reads the library's own Pages with the global fallback (TrendingPages
+        // for a Trending library); 0 means unlimited — fetch until the list ends, no visible target.
+        var pages = Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MaxDiscoverPages));
+        var state = new VisibleFetchState();
+        List<IJellyseerrItem> visible;
         if (library.ListType == DiscoverListType.Trending)
         {
-            var (trendingMovies, trendingShows) = await FetchTrendingMediaAsync();
-            // Filter after ranking: the ranks are positions in Seerr's single mixed list, and the other kind's
-            // titles still occupied positions in it.
-            if (library.LibraryType == DiscoverLibraryType.Movies)
-            {
-                trendingShows.Clear();
-            }
-            else if (library.LibraryType == DiscoverLibraryType.Series)
-            {
-                trendingMovies.Clear();
-            }
-
-            return (trendingMovies, trendingShows);
+            visible = await FetchTrendingMediaAsync(library.LibraryType, state, pages);
+        }
+        else
+        {
+            var (listMovieParameters, listTvParameters) = GetListParameters(library.ListType);
+            visible = await FetchDiscoverMediaAsync(library.ListType, listMovieParameters, listTvParameters,
+                library.LibraryType, state, pages);
         }
 
-        var (listMovieParameters, listTvParameters) = GetListParameters(library.ListType);
-        return await FetchDiscoverMediaAsync(library.ListType, listMovieParameters, listTvParameters, library.LibraryType);
+        // One INF line per library, Mohammad's format: "Trending Movies: 20 visible titles from 2 Seerr pages
+        // (8 skipped: 5 shows, 3 hidden)" — only the reasons that actually occurred are named.
+        var skipped = state.WrongType + state.Duplicates + state.Blocked + state.BelowRating + state.Hidden;
+        var reasons = new List<string>();
+        if (state.WrongType > 0)
+        {
+            reasons.Add($"{state.WrongType} {(library.LibraryType == DiscoverLibraryType.Movies ? "shows" : "movies")}");
+        }
+        if (state.Duplicates > 0)
+        {
+            reasons.Add($"{state.Duplicates} duplicates");
+        }
+        if (state.Blocked > 0)
+        {
+            reasons.Add($"{state.Blocked} blocklisted");
+        }
+        if (state.BelowRating > 0)
+        {
+            reasons.Add($"{state.BelowRating} below the rating floor");
+        }
+        if (state.Hidden > 0)
+        {
+            reasons.Add($"{state.Hidden} hidden");
+        }
+        _logger.LogInformation("{LibraryName}: {VisibleCount} visible titles from {SeerrPages} Seerr pages ({SkippedText})",
+            library.Name, visible.Count, state.SeerrPages,
+            skipped == 0 ? "0 skipped" : $"{skipped} skipped: {string.Join(", ", reasons)}");
+
+        return (visible.OfType<JellyseerrMovie>().ToList(), visible.OfType<JellyseerrShow>().ToList());
     }
 
     /// <summary>
@@ -122,24 +155,28 @@ public class DiscoverService
 
     /// <summary>
     /// Fetches discover data for all networks, calling both movies and TV endpoints for each network, with the
-    /// current library's list parameters merged in.
+    /// current library's list parameters merged in. Every endpoint call is one stream that keeps fetching Seerr
+    /// pages until it contributed Pages × 20 visible titles (task 8); the visible titles are then merged
+    /// round-robin and numbered in visible order.
     /// </summary>
     /// <param name="listType">The list being fetched; decides whether a vote floor is sent without a Minimum Rating.</param>
     /// <param name="extraMovieParameters">The list's extra parameters for the movies endpoint (sort order, date window).</param>
     /// <param name="extraTvParameters">The list's extra parameters for the TV endpoint.</param>
     /// <param name="libraryType">Movies-only libraries skip the TV calls, Series-only libraries the movie calls.</param>
-    /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
-    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync(
-        DiscoverListType listType = DiscoverListType.Popular,
-        Dictionary<string, object>? extraMovieParameters = null,
-        Dictionary<string, object>? extraTvParameters = null,
-        DiscoverLibraryType libraryType = DiscoverLibraryType.All)
+    /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
+    /// <param name="pages">The library's Pages; 0 or less means unlimited (no early stop).</param>
+    /// <returns>The library's visible fetched titles, ranked in visible order</returns>
+    private async Task<List<IJellyseerrItem>> FetchDiscoverMediaAsync(
+        DiscoverListType listType,
+        Dictionary<string, object> extraMovieParameters,
+        Dictionary<string, object> extraTvParameters,
+        DiscoverLibraryType libraryType,
+        VisibleFetchState state,
+        int pages)
     {
         // The current library's networks (LibraryScope.GetNetworks), not the global list — the fetcher runs
         // inside LibraryScope.Enter, and reading config.NetworkMap directly would bypass the scope.
         var networkMap = Utils.LibraryScope.GetNetworks();
-        var allMovies = new List<JellyseerrMovie>();
-        var allShows = new List<JellyseerrShow>();
         // This library's titles per network, movies and shows interleaved by page position (task 2b list rank)
         var perNetwork = new List<List<IJellyseerrItem>>();
 
@@ -188,29 +225,21 @@ public class DiscoverService
                 string.Join(", ", movieParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")),
                 string.Join(", ", tvParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
             
-            // Fetch movies for this network (a Series-only library's folder holds no movies)
-            var movies = new List<JellyseerrMovie>();
-            if (libraryType != DiscoverLibraryType.Series)
-            {
-                var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: movieParameters);
-                movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
-            }
-            
-            // Fetch TV shows for this network (a Movies-only library's folder holds no shows)
-            var shows = new List<JellyseerrShow>();
-            if (libraryType != DiscoverLibraryType.Movies)
-            {
-                var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: tvParameters);
-                shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
-            }
+            // One stream per media type the library holds (a Series-only library's folder holds no movies, a
+            // Movies-only one no shows): fetch Seerr page by page until the stream has its Pages × 20 visible
+            // titles, the list ends, or the 5 × Pages page cap is reached (task 8).
+            var movies = libraryType != DiscoverLibraryType.Series
+                ? await FetchVisibleStreamAsync<JellyseerrMovie>(state, JellyseerrEndpoint.DiscoverMovies, movieParameters, pages)
+                : new List<JellyseerrMovie>();
+            var shows = libraryType != DiscoverLibraryType.Movies
+                ? await FetchVisibleStreamAsync<JellyseerrShow>(state, JellyseerrEndpoint.DiscoverTv, tvParameters, pages)
+                : new List<JellyseerrShow>();
             
             // Debug: Log the response data
             _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
             
-            // Collect this network's titles, skipping blocklisted ones in Jellyseerr since they can't be requested
-            var networkItems = InterleaveByPosition(
-                movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList(),
-                shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList());
+            // Collect this network's titles (task 8 already skipped the blocklisted ones — they can't be requested)
+            var networkItems = InterleaveByPosition(movies, shows);
             foreach (var item in networkItems)
             {
                 // Set the network tag for this item
@@ -228,9 +257,11 @@ public class DiscoverService
             _logger.LogTrace("Retrieved {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
         }
         
-        // Number the titles 1, 2, 3... in list order: merge the networks round-robin (rank 1 of every network, then
-        // rank 2, ...), so every network's top pick beats another network's lower ones. Dedupe by media type and TMDB
-        // id keeps the first, best-ranked copy.
+        // Number the titles 1, 2, 3... in the visible order: merge the networks round-robin (rank 1 of every
+        // network, then rank 2, ...), so every network's top pick beats another network's lower ones. Dedupe by
+        // media type and TMDB id keeps the first, best-ranked copy — with the task 8 fetch each stream already
+        // skipped counted duplicates, so this is the safety net and every rank lands 1..N.
+        var merged = new List<IJellyseerrItem>();
         var seenTitles = new HashSet<(JellyseerrModel.MediaType, int)>();
         var rank = 0;
         var longestNetwork = perNetwork.Count == 0 ? 0 : perNetwork.Max(list => list.Count);
@@ -249,18 +280,11 @@ public class DiscoverService
                 }
 
                 item.ListRank = ++rank;
-                if (item is JellyseerrMovie movie)
-                {
-                    allMovies.Add(movie);
-                }
-                else if (item is JellyseerrShow show)
-                {
-                    allShows.Add(show);
-                }
+                merged.Add(item);
             }
         }
 
-        return (allMovies, allShows);
+        return merged;
     }
 
     /// <summary>
@@ -289,49 +313,265 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Fetches Jellyseerr's trending list (movies and shows; people are skipped), keeping each title's position in it.
+    /// Fetches Jellyseerr's trending list (movies and shows; people are skipped), as one mixed stream (task 8):
+    /// page by page until the library's kind holds Pages × 20 visible titles, the list ends (empty page or page
+    /// ≥ totalPages) or the per-stream cap of 5 × Pages pages is reached. ListRank numbers the visible titles
+    /// 1, 2, 3... in visible order — titles of the other kind and hidden ones are skipped while fetching, so
+    /// they occupy no rank.
     /// </summary>
-    /// <returns>Tuple containing lists of trending movies and shows</returns>
-    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchTrendingMediaAsync()
+    /// <param name="libraryType">Movies-only libraries count no shows, Series-only libraries no movies.</param>
+    /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
+    /// <param name="pages">The library's Pages; 0 or less means unlimited.</param>
+    /// <returns>The visible trending titles in Seerr's order, each with its ListRank and the Trending tag</returns>
+    private async Task<List<IJellyseerrItem>> FetchTrendingMediaAsync(DiscoverLibraryType libraryType, VisibleFetchState state, int pages)
     {
-        var movies = new List<JellyseerrMovie>();
-        var shows = new List<JellyseerrShow>();
-        var results = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTrending) as List<System.Text.Json.JsonElement>
-            ?? new List<System.Text.Json.JsonElement>();
-
-        var rank = 0;
+        var target = pages <= 0 ? int.MaxValue : pages * 20;
+        var capPages = pages <= 0 ? int.MaxValue : pages * 5;
+        var visible = new List<IJellyseerrItem>();
+        // TMDB's trending pages can repeat a title; the first position counts
         var seen = new HashSet<(string?, int)>();
-        foreach (var result in results)
+        var rank = 0;
+        for (var page = 1; visible.Count < target && page <= capPages; page++)
         {
-            var mediaType = result.TryGetProperty("mediaType", out var type) ? type.GetString() : null;
-            IJellyseerrItem? item = mediaType switch
+            var (items, totalPages) = await _apiService.CallEndpointPageAsync(JellyseerrEndpoint.DiscoverTrending, page, parameters: null);
+            state.SeerrPages++;
+            var pageItems = new List<IJellyseerrItem>();
+            var pageResults = 0;
+            foreach (var result in items.OfType<System.Text.Json.JsonElement>())
             {
-                "movie" => JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(result.GetRawText()),
-                "tv" => JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(result.GetRawText()),
-                _ => null,
-            };
-            // TMDB's trending pages can repeat a title; the first position counts
-            if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id)))
-            {
-                continue;
+                pageResults++;
+                var mediaType = result.TryGetProperty("mediaType", out var type) ? type.GetString() : null;
+                IJellyseerrItem? item = mediaType switch
+                {
+                    "movie" => JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(result.GetRawText()),
+                    "tv" => JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(result.GetRawText()),
+                    _ => null,
+                };
+                if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id)))
+                {
+                    continue;
+                }
+
+                // The library type filter — counted as a skip in the log line (Trending Movies skips shows)
+                if (libraryType == DiscoverLibraryType.Movies && item.MediaType != JellyseerrModel.MediaType.MOVIE
+                    || libraryType == DiscoverLibraryType.Series && item.MediaType != JellyseerrModel.MediaType.TV)
+                {
+                    state.WrongType++;
+                    continue;
+                }
+
+                pageItems.Add(item);
             }
 
-            // Ranked among the titles only, and before skipping blocklisted ones so the order matches Jellyseerr's page
-            rank++;
-            item.ListRank = rank;
-            item.NetworkTag = DiscoverLibraryConfig.TrendingTag;
-            if (item is JellyseerrMovie movie && movie.MediaInfo?.Status != MediaStatus.BLACKLISTED)
+            if (pageResults == 0)
             {
-                movies.Add(movie);
+                // The list ends here — no point asking for more pages of nothing
+                break;
             }
-            else if (item is JellyseerrShow show && show.MediaInfo?.Status != MediaStatus.BLACKLISTED)
+
+            var pageVisible = await FilterVisibleAsync(state, pageItems, target - visible.Count);
+            foreach (var item in pageVisible)
             {
-                shows.Add(show);
+                item.ListRank = ++rank;
+                item.NetworkTag = DiscoverLibraryConfig.TrendingTag;
+                visible.Add(item);
+            }
+
+            if (totalPages > 0 && page >= totalPages)
+            {
+                break;
             }
         }
 
-        _logger.LogDebug("Fetched {MovieCount} trending movies and {ShowCount} trending shows from Jellyseerr", movies.Count, shows.Count);
-        return (movies, shows);
+        _logger.LogDebug("Fetched {VisibleCount} visible trending titles for the library", visible.Count);
+        return visible;
+    }
+
+    /// <summary>
+    /// Fetches one stream (one endpoint for one network, task 8) page by page until it holds Pages × 20 visible
+    /// titles, the list ends (empty page or page ≥ totalPages) or the cap of 5 × Pages pages is reached.
+    /// Pages ≤ 0 means unlimited: fetch until the list ends.
+    /// </summary>
+    /// <typeparam name="T">JellyseerrMovie or JellyseerrShow — the stream's kind.</typeparam>
+    /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
+    /// <param name="endpoint">The discover endpoint for this stream.</param>
+    /// <param name="parameters">The endpoint's query parameters (network, rating and list filters).</param>
+    /// <param name="pages">The library's Pages; 0 or less means unlimited.</param>
+    /// <returns>The stream's visible titles in Seerr's order</returns>
+    private async Task<List<T>> FetchVisibleStreamAsync<T>(VisibleFetchState state, JellyseerrEndpoint endpoint,
+        Dictionary<string, object> parameters, int pages)
+        where T : IJellyseerrItem
+    {
+        var target = pages <= 0 ? int.MaxValue : pages * 20;
+        var capPages = pages <= 0 ? int.MaxValue : pages * 5;
+        var kept = new List<T>();
+        for (var page = 1; kept.Count < target && page <= capPages; page++)
+        {
+            var (items, totalPages) = await _apiService.CallEndpointPageAsync(endpoint, page, parameters);
+            state.SeerrPages++;
+            var fetched = items.OfType<T>().ToList();
+            if (fetched.Count == 0)
+            {
+                // The list ends here — no point asking for more pages of nothing
+                break;
+            }
+
+            var visible = await FilterVisibleAsync(state, fetched.Cast<IJellyseerrItem>().ToList(), target - kept.Count);
+            kept.AddRange(visible.Cast<T>());
+            if (totalPages > 0 && page >= totalPages)
+            {
+                break;
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// Keeps the titles the current sync would NOT hide (task 8: Pages counts the titles you see). Reuses the
+    /// sync's own hide predicates: the BLACKLISTED status, the (mediaType, TMDB id) and folder-hash dedupe the
+    /// fetcher already does, the existing .ignore file in the title's folder (favorited or requested through
+    /// JellyBridge), and the already-in-a-real-Jellyfin-library match that feeds the sync's ignore step — which
+    /// hides only when ExcludeFromMainLibraries is on (with it off the sync deletes those .ignore files, so the
+    /// title stays visible). A title joins the counted sets only once it is visible, so a hidden title's twin
+    /// on a later page is re-checked instead of silently counted.
+    /// </summary>
+    /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
+    /// <param name="items">The page's freshly fetched titles, in Seerr's order.</param>
+    /// <param name="budget">How many more titles the caller's stream may take (its Pages × 20 minus what it
+    /// already kept); once the budget is used up the rest of the page is left uncounted and unwritten.</param>
+    /// <returns>The titles that count as visible, in Seerr's order</returns>
+    private async Task<List<IJellyseerrItem>> FilterVisibleAsync(VisibleFetchState state, List<IJellyseerrItem> items, int budget)
+    {
+        var visible = new List<IJellyseerrItem>();
+        var needMatch = new List<IJellyseerrItem>();
+        foreach (var item in items)
+        {
+            if (visible.Count >= budget)
+            {
+                // The stream reached its Pages × 20 target mid-page: the titles after it are never counted,
+                // never skipped — the fetch simply stops here (task 8).
+                break;
+            }
+            if (item.MediaInfo?.Status == MediaStatus.BLACKLISTED)
+            {
+                state.Blocked++;
+                continue;
+            }
+
+            if (!MeetsRatingFilter(item))
+            {
+                // The sync's cleanup deletes titles below the Minimum Rating / Votes floor
+                // (CleanupService.DeleteExpiredMedia); a title the Seerr query let through below the floor
+                // would not stay, so it does not count toward the target.
+                state.BelowRating++;
+                continue;
+            }
+
+            if (state.CountedIds.Contains((item.MediaType, item.Id)) || state.CountedFolderHashes.Contains(item.GetFolderHashCode()))
+            {
+                state.Duplicates++;
+                continue;
+            }
+
+            var ignored = _bridgeService.IsItemIgnored(item);
+            if (state.ExcludeMainLibraries)
+            {
+                if (ignored)
+                {
+                    // A .ignore in the title's folder: favorited/requested through JellyBridge — hidden.
+                    state.Hidden++;
+                    continue;
+                }
+
+                needMatch.Add(item);
+            }
+            else if (!ignored)
+            {
+                // Including main libraries: no .ignore, so the title stays visible whichever way the scan matches.
+                AcceptVisible(state, item, visible);
+            }
+            else
+            {
+                // With main libraries included, a real-library match even gets its .ignore deleted — it counts
+                // as visible; only an .ignore whose title is NOT in a real library stays hidden.
+                needMatch.Add(item);
+            }
+        }
+
+        if (needMatch.Count > 0)
+        {
+            state.RealLibraryItems ??= await _bridgeService.GetRealLibraryItemsAsync();
+            var matches = await _bridgeService.ScanLibraryAsync(state.RealLibraryItems, needMatch);
+            var matchedHashes = matches.Select(match => match.JellyseerrItem.GetItemHashCode()).ToHashSet();
+            foreach (var item in needMatch)
+            {
+                if (visible.Count >= budget)
+                {
+                    break;
+                }
+                var isMatch = matchedHashes.Contains(item.GetItemHashCode());
+                if (state.ExcludeMainLibraries ? isMatch : !isMatch)
+                {
+                    state.Hidden++;
+                    continue;
+                }
+
+                AcceptVisible(state, item, visible);
+            }
+        }
+
+        return visible;
+    }
+
+    /// <summary>
+    /// Counts a title as visible: it reserves its (mediaType, TMDB id) and folder hash for the target and joins
+    /// the fetched list.
+    /// </summary>
+    private static void AcceptVisible(VisibleFetchState state, IJellyseerrItem item, List<IJellyseerrItem> visible)
+    {
+        state.CountedIds.Add((item.MediaType, item.Id));
+        state.CountedFolderHashes.Add(item.GetFolderHashCode());
+        visible.Add(item);
+    }
+
+    /// <summary>
+    /// Per-library fetch bookkeeping for the pages-count-visible rule (task 8): the titles already counted
+    /// toward the Pages × 20 target (so a duplicate never counts twice), this library's real-Jellyfin titles
+    /// for the already-available predicate (built lazily — they cannot change during one fetch), and the skip
+    /// counters of the per-library log line.
+    /// </summary>
+    private sealed class VisibleFetchState
+    {
+        /// <summary>Titles already counted, by (media type, TMDB id).</summary>
+        internal readonly HashSet<(JellyseerrModel.MediaType, int)> CountedIds = new();
+
+        /// <summary>Folder hashes already counted (the localized-duplicate predicate).</summary>
+        internal readonly HashSet<int> CountedFolderHashes = new();
+
+        /// <summary>The current library's titles outside the bridge folders; null until first needed.</summary>
+        internal List<JellyfinModels.IJellyfinItem>? RealLibraryItems;
+
+        /// <summary>Seerr pages fetched for the whole library (every stream).</summary>
+        internal int SeerrPages;
+
+        /// <summary>Titles skipped: the other media kind (a Movies/Series library's Trending pages).</summary>
+        internal int WrongType;
+
+        /// <summary>Titles skipped: another copy already counted in this fetch.</summary>
+        internal int Duplicates;
+
+        /// <summary>Titles skipped: BLACKLISTED in Jellyseerr, so they can't be requested.</summary>
+        internal int Blocked;
+        /// <summary>Titles skipped: below the Minimum Rating / Votes floor (the cleanup predicate).</summary>
+        internal int BelowRating;
+
+        /// <summary>Titles skipped: hidden — an existing .ignore, or a real-library match while ExcludeFromMainLibraries is on.</summary>
+        internal int Hidden;
+
+        /// <summary>Whether real-Jellyfin-library matches end up hidden (the sync's ignore-step predicate).</summary>
+        internal readonly bool ExcludeMainLibraries =
+            Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ExcludeFromMainLibraries));
     }
 
     #endregion

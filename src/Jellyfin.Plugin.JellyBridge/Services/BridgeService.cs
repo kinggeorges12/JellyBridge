@@ -174,6 +174,23 @@ public class BridgeService
     public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> BuildJellyfinMatchesAsync(List<IJellyseerrItem> jellyseerrItems)
     {
         // Excludes the JellyBridge folders (Discover and Trending) from the existing titles
+        var jellyfinItems = await GetRealLibraryItemsAsync();
+        // Get matches for jellyseerr items and jellyfin items from non-discover library
+        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
+        var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
+        var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
+        return (matches, unmatched);
+    }
+
+    /// <summary>
+    /// Gets every title in a real (non-JellyBridge) Jellyfin library — the input the hide-if-available step
+    /// (<see cref="IgnoreMatchAsync"/>) matches against, excluding the JellyBridge folders (Discover and Trending).
+    /// The fetch's pages-count-visible check (task 8) reuses the same list and the same
+    /// <see cref="LibraryScanAsync"/> predicate as the sync does.
+    /// </summary>
+    /// <returns>The existing movies and shows outside every bridge folder</returns>
+    public Task<List<IJellyfinItem>> GetRealLibraryItemsAsync()
+    {
         var bridgeLibraryPaths = FolderUtils.GetBridgeDirectories().ToHashSet();
         var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
         var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
@@ -181,12 +198,19 @@ public class BridgeService
         var jellyfinItems = new List<IJellyfinItem>();
         jellyfinItems.AddRange(existingMovies);
         jellyfinItems.AddRange(existingShows);
-        // Get matches for jellyseerr items and jellyfin items from non-discover library
-        var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
-        var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
-        var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
-        return (matches, unmatched);
+        return Task.FromResult(jellyfinItems);
     }
+
+    /// <summary>
+    /// Public entry to the core scan: compares the given Jellyseerr items against the given real-library Jellyfin
+    /// items with the exact matcher the sync uses. Used by the fetch's visible-count check (task 8), which must
+    /// predict what <see cref="BuildJellyfinMatchesAsync"/> will hide before the sync writes any folder.
+    /// </summary>
+    /// <param name="jellyfinItems">The real-library titles (from <see cref="GetRealLibraryItemsAsync"/>).</param>
+    /// <param name="jellyseerrItems">The fetched titles to test against them.</param>
+    /// <returns>The matches</returns>
+    public Task<List<JellyMatch>> ScanLibraryAsync(List<IJellyfinItem> jellyfinItems, List<IJellyseerrItem> jellyseerrItems)
+        => LibraryScanAsync(jellyfinItems, jellyseerrItems);
 
     /// <summary>
     /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
@@ -446,9 +470,10 @@ public class BridgeService
     }
 
     /// <summary>
-    /// Checks if an item is ignored (has .ignore file in its directory).
+    /// Checks if an item is ignored (has .ignore file in its directory). Public so the fetch's
+    /// pages-count-visible check (task 8) asks the same predicate as the sync's filter steps.
     /// </summary>
-    private bool IsItemIgnored(IJellyseerrItem item)
+    public bool IsItemIgnored(IJellyseerrItem item)
     {
         try
         {

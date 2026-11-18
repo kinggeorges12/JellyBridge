@@ -30,12 +30,17 @@ public class JellyseerrPaginatedResponse<T>
     [JsonPropertyName("results")]
     public List<T> Results { get; set; } = new();
     
+    // TMDB-style discover/trending responses carry the page count at the TOP level ("totalPages") instead of
+    // nested under pageInfo; the pages-count-visible fetch (task 8) needs it to know when a list ends.
+    [JsonPropertyName("totalPages")]
+    public int TopLevelTotalPages { get; set; }
+    
     // Convenience properties to maintain compatibility with existing code
     [JsonIgnore]
     public int Page => PageInfo.Page;
     
     [JsonIgnore]
-    public int TotalPages => PageInfo.Pages;
+    public int TotalPages => PageInfo.Pages > 0 ? PageInfo.Pages : TopLevelTotalPages;
     
     [JsonIgnore]
     public int TotalResults => PageInfo.Results;
