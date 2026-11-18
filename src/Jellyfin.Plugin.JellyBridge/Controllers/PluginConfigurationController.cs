@@ -56,6 +56,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
+                    MinimumRating = config.MinimumRating,
+                    MinimumVotes = config.MinimumVotes,
 
                     // Manage Favorite Requests
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
@@ -153,6 +155,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetNetworkMap(configData, config);
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
+                    SetJsonValue<double?>(configData, nameof(config.MinimumRating), config);
+                    SetJsonValue<int?>(configData, nameof(config.MinimumVotes), config);
                     
                     // Manage Favorite Requests
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
