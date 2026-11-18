@@ -46,8 +46,9 @@ public class PlaceholderVideoGenerator
     private static readonly string TitlePromoFontAsset = "promo-font.ttf";
 
     // Layout of the 1920x1080 frame, top to bottom like a streaming service's title page: logo, info line, plot, then the
-    // overlay's "favorite to request" note, which starts at y 720. The text block is stacked upwards from 70 px above the
-    // note and the logo moves up to make room (shrinking when a long plot leaves it less than its usual height); with no
+    // overlay's "favorite to request" button, which starts at y 720 (layout11: the sub line that used to sit under it
+    // is gone from the overlay). The text block is stacked upwards from 70 px above the
+    // button and the logo moves up to make room (shrinking when a long plot leaves it less than its usual height); with no
     // text the logo keeps its old place (bottom at y 630).
     // drawtext puts the top of the text at y; line advances and heights below are measured from Jellyfin's ffmpeg.
     private const int PromoTextLeft = 140;
@@ -1367,7 +1368,7 @@ public class PlaceholderVideoGenerator
             return "none";
         }
         // The layout is part of what is drawn, so a change to it re-renders every title once
-        var joined = string.Join("\n", "layout10", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
+        var joined = string.Join("\n", "layout11", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)))[..12].ToLowerInvariant();
     }
 
