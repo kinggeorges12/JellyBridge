@@ -756,8 +756,15 @@ public class ApiService
         }
         catch (Exception ex)
         {
-            // Same failure shape as the paginated loop of CallEndpointAsync: the stream stops here, the sync continues
-            _logger.LogError(ex, "Failed to get {Operation} page {Page} from Jellyseerr", endpoint, page);
+            // Same failure shape as the paginated loop of CallEndpointAsync: the stream stops here, the sync continues.
+            // 8b fix 6: the empty page reads to the fetcher as "the list ended", so say so with the page and the
+            // HTTP status (MakeApiRequestAsync attaches the status to the HttpRequestException it throws).
+            var status = ex is HttpRequestException httpRequestException
+                ? httpRequestException.StatusCode?.ToString() ?? ex.Data["StatusCode"]?.ToString() ?? "no response"
+                : "no response";
+            _logger.LogWarning("Getting {Operation} page {Page} from Jellyseerr failed with status {Status} (retries exhausted) — the fetch treats the list as ended here: {Error}",
+                operationName, page, status, ex.Message);
+            _logger.LogDebug(ex, "Failed to get {Operation} page {Page} from Jellyseerr", endpoint, page);
             return (items, 0);
         }
     }

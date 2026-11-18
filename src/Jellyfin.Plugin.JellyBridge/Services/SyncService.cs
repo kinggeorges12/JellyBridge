@@ -181,12 +181,15 @@ public partial class SyncService
         // not-fetched by that, so it pins its cut-off to just before the fetch starts.
         var syncStart = DateTimeOffset.Now;
         var fetched = new List<IJellyseerrItem>();
+        // 8b fix 3/4: the titles the fetch judged hidden are only known inside the fetch lambda — collect them here
+        var hiddenTitles = new List<IJellyseerrItem>();
         var result = await SyncFromJellyseerrAsync(async () =>
         {
             // FetchListAsync routes Trending to the trending fetcher and applies the library's Movies/Series filter
-            var (movies, shows) = await _discoverService.FetchListAsync(library);
+            var (movies, shows, hidden) = await _discoverService.FetchListAsync(library);
             fetched.AddRange(movies);
             fetched.AddRange(shows);
+            hiddenTitles.AddRange(hidden);
             return (movies, shows);
         });
         if (!result.Success)
@@ -206,9 +209,24 @@ public partial class SyncService
             }
         }
 
+        if (hiddenTitles.Count > 0)
+        {
+            // 8b fix 4: a hidden title (its .ignore, or a match in a real library) is still ON the list but
+            // never written, so its CreatedDate would keep aging and retention (CleanupService.
+            // DeleteExpiredMedia) would delete the folder even though the list still holds it. Refresh the
+            // CreatedDate in its existing metadata.json so "still on the list" keeps meaning "keep".
+            var touched = await _metadataService.TouchHiddenCreatedDatesAsync(hiddenTitles);
+            if (touched > 0)
+            {
+                _logger.LogDebug("Refreshed the created date of {Count} hidden titles still on '{LibraryName}'", touched, library.Name);
+            }
+        }
+
         if (library.ListType == DiscoverListType.Trending)
         {
-            var removed = await RemoveStaleTrendingAsync(fetched);
+            // 8b fix 3: the visible fetch excludes hidden titles, but they are on the trending list — pass
+            // them to the stale removal too (its own .ignore guard never deletes a requested copy).
+            var removed = await RemoveStaleTrendingAsync(fetched.Concat(hiddenTitles).ToList());
             result.ItemsHidden.AddRange(removed);
             if (removed.Count > 0)
             {
@@ -257,7 +275,8 @@ public partial class SyncService
 
     /// <summary>
     /// Delete the Trending library's titles that are no longer trending. A title someone favorited stays until the favorites
-    /// sync has requested it (it is hidden then).
+    /// sync has requested it (it is hidden then). 8b fix 3: a title the fetch judged HIDDEN but the list still holds is passed
+    /// in with the visible ones, and a folder holding a .ignore is never deleted here.
     /// </summary>
     private async Task<List<IJellyseerrItem>> RemoveStaleTrendingAsync(List<IJellyseerrItem> trending)
     {
@@ -285,8 +304,14 @@ public partial class SyncService
             try
             {
                 var folder = _metadataService.GetJellyBridgeItemDirectory(item);
-                var hidden = File.Exists(Path.Combine(folder, BridgeService.IgnoreFileName));
-                if (!hidden && favoritePaths.Any(path => FolderUtils.IsPathInDirectory(path, folder)))
+                // 8b fix 3: a folder holding a .ignore is a favorited/requested title — never delete it here,
+                // the favorites sync owns that copy.
+                if (File.Exists(Path.Combine(folder, BridgeService.IgnoreFileName)))
+                {
+                    continue;
+                }
+
+                if (favoritePaths.Any(path => FolderUtils.IsPathInDirectory(path, folder)))
                 {
                     continue;
                 }

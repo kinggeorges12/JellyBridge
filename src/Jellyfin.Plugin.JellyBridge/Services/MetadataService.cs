@@ -285,6 +285,57 @@ public class MetadataService
     }
 
     /// <summary>
+    /// 8b fix 4: refresh the CreatedDate in the metadata.json of titles the fetch found ON the list but judged
+    /// HIDDEN (a .ignore in their folder, or a match in a real library). They are never written, so without this
+    /// their age keeps running and CleanupService.DeleteExpiredMedia removes them after the retention days even
+    /// though the list still holds them. Only existing folders are touched — a hidden title is never created
+    /// here, and nothing but the CreatedDate changes. Call inside the library's LibraryScope.Enter.
+    /// </summary>
+    /// <param name="hidden">The titles the current fetch judged hidden.</param>
+    /// <returns>The number of metadata files whose CreatedDate was refreshed.</returns>
+    public async Task<int> TouchHiddenCreatedDatesAsync(IEnumerable<IJellyseerrItem> hidden)
+    {
+        var touched = 0;
+        var seen = new HashSet<(Type, int)>();
+        foreach (var item in hidden)
+        {
+            if (!seen.Add((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            try
+            {
+                var metadataFile = Path.Combine(GetJellyBridgeItemDirectory(item), IJellyseerrItem.GetMetadataFilename());
+                if (!File.Exists(metadataFile))
+                {
+                    continue; // a hidden title is never (re)created — only an existing folder gets its age refreshed
+                }
+
+                // Rewrite the file on disk with only its CreatedDate refreshed (same read/rewrite pattern as
+                // ClearStaleListRanksAsync), so nothing else about the stored record changes.
+                IJellyseerrItem? stored = item is JellyseerrMovie
+                    ? JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(await File.ReadAllTextAsync(metadataFile))
+                    : JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(await File.ReadAllTextAsync(metadataFile));
+                if (stored == null)
+                {
+                    continue;
+                }
+
+                stored.CreatedDate = DateTimeOffset.Now;
+                await File.WriteAllTextAsync(metadataFile, JellyBridgeJsonSerializer.Serialize((object)stored));
+                touched++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not refresh the created date of hidden '{MediaName}'", item.MediaName);
+            }
+        }
+
+        return touched;
+    }
+
+    /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
     private async Task<bool> WriteMetadataAsync(IJellyseerrItem item)
