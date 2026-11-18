@@ -51,8 +51,20 @@ public class RefreshService
     /// Applies the post-sync refresh operations based on the two sync results.
     /// - Calls RefreshBridgeLibrary with computed parameters
     /// - Then scans all libraries and awaits completion
+    /// - Safety net (task 7): afterwards, every bridge library that Jellyfin shows with 0 items while its
+    ///   folder holds title folders gets a targeted refresh — that is the "new library stayed empty" state:
+    ///   the scan-all plan is skipped while Jellyfin's Scan Media Library task is already running.
     /// </summary>
     public async Task ApplyRefreshAsync(List<RefreshableResult?> results)
+    {
+        await ApplyRefreshPlanAsync(results);
+        RefreshEmptyBridgeLibraries();
+    }
+
+    /// <summary>
+    /// The actual refresh-plan application, see <see cref="ApplyRefreshAsync"/>.
+    /// </summary>
+    private async Task ApplyRefreshPlanAsync(List<RefreshableResult?> results)
     {
         List<RefreshableResult> allResults = results.OfType<RefreshableResult>().ToList();
         
@@ -122,47 +134,17 @@ public class RefreshService
             // Remove ignored items
             // Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
             // Create refresh options for refreshing removed items - search for missing metadata only
-            var refreshOptionsRemove = new MetadataRefreshOptions(_directoryService)
-            {
-                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                ReplaceAllMetadata = false,
-                ReplaceAllImages = false,
-                RegenerateTrickplay = false,
-                ForceSave = true,
-                IsAutomated = true,
-                RemoveOldMetadata = false
-            };
+            var refreshOptionsRemove = BuildRemoveRefreshOptions();
 
             // Scan for new and updated files
             // Refresh?Recursive=true&ImageRefreshMode=Default&MetadataRefreshMode=Default&ReplaceAllImages=false&RegenerateTrickplay=false&ReplaceAllMetadata=false
             // Create refresh options for refreshing user data - minimal refresh to reload user data like play counts
-            var refreshOptionsUpdate = new MetadataRefreshOptions(_directoryService)
-            {
-                MetadataRefreshMode = MetadataRefreshMode.Default,
-                ImageRefreshMode = MetadataRefreshMode.Default,
-                ReplaceAllMetadata = false,
-                ReplaceAllImages = false,
-                RegenerateTrickplay = false,
-                ForceSave = true,
-                IsAutomated = true,
-                RemoveOldMetadata = false
-            };
+            var refreshOptionsUpdate = BuildUpdateRefreshOptions();
 
             // Search for missing metadata
             // Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&RegenerateTrickplay=false&ReplaceAllMetadata=true
             // Create refresh options for creating or updating items - replace all metadata
-            var refreshOptionsCreate = new MetadataRefreshOptions(_directoryService)
-            {
-                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                ReplaceAllMetadata = true,
-                ReplaceAllImages = refreshImages,
-                RegenerateTrickplay = false,
-                ForceSave = true,
-                IsAutomated = false,
-                RemoveOldMetadata = false
-            };
+            var refreshOptionsCreate = BuildCreateRefreshOptions(refreshImages);
             
             _logger.LogTrace("Refresh options - Create: Metadata={CreateMeta}, Images={CreateImages}, ReplaceAllMetadata={CreateReplaceMeta}, ReplaceAllImages={CreateReplaceImages}, RegenerateTrickplay={CreateTrick}; Remove: Metadata={RemoveMeta}, Images={RemoveImages}, ReplaceAllMetadata={RemoveReplaceMeta}, ReplaceAllImages={RemoveReplaceImages}, RegenerateTrickplay={RemoveTrick}; Update: Metadata={UpdateMeta}, Images={UpdateImages}, ReplaceAllMetadata={UpdateReplaceMeta}, ReplaceAllImages={UpdateReplaceImages}, RegenerateTrickplay={UpdateTrick}",
                 refreshOptionsCreate.MetadataRefreshMode, refreshOptionsCreate.ImageRefreshMode, refreshOptionsCreate.ReplaceAllMetadata, refreshOptionsCreate.ReplaceAllImages, refreshOptionsCreate.RegenerateTrickplay,
@@ -494,5 +476,187 @@ public class RefreshService
                 _logger.LogError(ex, "Error in background refresh operations");
             }
         });
+    }
+
+    /// <summary>
+    /// Builds the Remove refresh options (search for missing metadata only — detects removed items).
+    /// </summary>
+    private MetadataRefreshOptions BuildRemoveRefreshOptions() => new(_directoryService)
+    {
+        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+        ReplaceAllMetadata = false,
+        ReplaceAllImages = false,
+        RegenerateTrickplay = false,
+        ForceSave = true,
+        IsAutomated = true,
+        RemoveOldMetadata = false
+    };
+
+    /// <summary>
+    /// Builds the Update refresh options (minimal refresh to reload user data like play counts).
+    /// </summary>
+    private MetadataRefreshOptions BuildUpdateRefreshOptions() => new(_directoryService)
+    {
+        MetadataRefreshMode = MetadataRefreshMode.Default,
+        ImageRefreshMode = MetadataRefreshMode.Default,
+        ReplaceAllMetadata = false,
+        ReplaceAllImages = false,
+        RegenerateTrickplay = false,
+        ForceSave = true,
+        IsAutomated = true,
+        RemoveOldMetadata = false
+    };
+
+    /// <summary>
+    /// Builds the Create refresh options (replace all metadata for created/updated items).
+    /// </summary>
+    /// <param name="refreshImages">Whether images are refreshed too.</param>
+    private MetadataRefreshOptions BuildCreateRefreshOptions(bool refreshImages) => new(_directoryService)
+    {
+        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+        ReplaceAllMetadata = true,
+        ReplaceAllImages = refreshImages,
+        RegenerateTrickplay = false,
+        ForceSave = true,
+        IsAutomated = false,
+        RemoveOldMetadata = false
+    };
+
+    /// <summary>
+    /// Queues a targeted refresh of the ONE Jellyfin library that contains the given folder — the same thing
+    /// the REST endpoint <c>POST /Items/&lt;libraryId&gt;/Refresh?Recursive=true</c> does for that folder, and at
+    /// High priority. Unlike <see cref="RefreshBridgeLibrary"/> it touches no other library, and unlike the
+    /// Scan All Libraries plan it is never skipped while Jellyfin's Scan Media Library task is already running —
+    /// that skip is what left new libraries empty on the live server (task 7).
+    /// </summary>
+    /// <param name="libraryDirectory">The library folder to match against the Jellyfin libraries' paths.</param>
+    /// <param name="createMode">Use the Create options (full refresh, replace all metadata).</param>
+    /// <param name="removeMode">Prefer the Remove options (detect removed items).</param>
+    /// <param name="refreshImages">Passed through to the Create options.</param>
+    /// <returns>True when a refresh was queued for the library.</returns>
+    public async Task<bool> QueueLibraryRefreshAsync(string libraryDirectory, bool createMode = true, bool removeMode = false, bool refreshImages = true)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary)))
+        {
+            _logger.LogDebug("Jellyseerr library management is disabled; skipping the targeted refresh of {Directory}", libraryDirectory);
+            return false;
+        }
+
+        try
+        {
+            var folder = await FindBridgeLibraryFolderAsync(libraryDirectory);
+            if (folder == null)
+            {
+                _logger.LogWarning("Could not find the Jellyfin library on {Directory} for a targeted refresh.", libraryDirectory);
+                return false;
+            }
+
+            var refreshOptions = removeMode ? BuildRemoveRefreshOptions() : createMode ? BuildCreateRefreshOptions(refreshImages) : BuildUpdateRefreshOptions();
+            _providerManager.QueueRefresh(folder.Id, refreshOptions, RefreshPriority.High);
+            _logger.LogInformation("Queued targeted refresh of Jellyfin library '{LibraryName}' ({ItemId}).", folder.Name, folder.Id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error queueing the targeted refresh of the Jellyfin library on {Directory}", libraryDirectory);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Safety net (task 7): queue a targeted refresh for every Discover library Jellyfin shows with 0 items
+    /// although its folder holds title folders. Those are libraries Jellyfin never scanned since the sync wrote
+    /// to them — the usual reason is the library being created while the Scan Media Library task is already
+    /// running, which skips it. Called after every applied refresh plan, so an interval sync heals such a library.
+    /// </summary>
+    private void RefreshEmptyBridgeLibraries()
+    {
+        try
+        {
+            var root = DiscoverLibraries.GetRootDirectory();
+            var virtualFolders = _libraryManager.Inner.GetVirtualFolders();
+            foreach (var library in DiscoverLibraries.GetAll())
+            {
+                try
+                {
+                    var directory = library.GetDirectory(root);
+                    if (!Directory.Exists(directory) || !HasTitleFolders(directory))
+                    {
+                        continue;
+                    }
+
+                    var virtualFolder = virtualFolders.FirstOrDefault(folder =>
+                        (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, directory)));
+                    if (virtualFolder == null || string.IsNullOrEmpty(virtualFolder.ItemId) || !Guid.TryParse(virtualFolder.ItemId, out var libraryItemId))
+                    {
+                        continue; // no Jellyfin library yet — Create queues the first refresh itself
+                    }
+
+                    var descendants = _libraryManager.Inner.GetItemList(new MediaBrowser.Controller.Entities.InternalItemsQuery
+                    {
+                        AncestorIds = new[] { libraryItemId },
+                        Recursive = true
+                    });
+                    if (descendants.Count > 0)
+                    {
+                        continue;
+                    }
+
+                    _logger.LogInformation("Library '{LibraryName}' holds title folders but Jellyfin shows 0 items — queueing a targeted refresh.", library.Name);
+                    _providerManager.QueueRefresh(libraryItemId, BuildCreateRefreshOptions(refreshImages: true), RefreshPriority.High);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "The empty-library safety net failed for library {Library}", library.Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "The empty-library safety net failed");
+        }
+    }
+
+    /// <summary>
+    /// True when the folder holds at least one title folder (a folder containing a metadata.json).
+    /// </summary>
+    private bool HasTitleFolders(string directory)
+    {
+        try
+        {
+            return Directory.GetFiles(directory, "metadata.json", SearchOption.AllDirectories).Length > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not count the title folders of {Directory}", directory);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the CollectionFolder of the Jellyfin library whose paths contain the folder, retrying while the
+    /// folder item still materializes after a fresh AddVirtualFolder (the ItemId can briefly be empty, 10.10).
+    /// </summary>
+    private async Task<MediaBrowser.Controller.Entities.Folder?> FindBridgeLibraryFolderAsync(string libraryDirectory)
+    {
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var virtualFolder = _libraryManager.Inner.GetVirtualFolders().FirstOrDefault(folder =>
+                (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, libraryDirectory)));
+            if (virtualFolder != null && Guid.TryParse(virtualFolder.ItemId, out var libraryItemId))
+            {
+                var folder = _libraryManager.Inner.GetItemById(libraryItemId) as MediaBrowser.Controller.Entities.Folder;
+                if (folder != null)
+                {
+                    return folder;
+                }
+            }
+
+            await Task.Delay(500);
+        }
+
+        return null;
     }
 }

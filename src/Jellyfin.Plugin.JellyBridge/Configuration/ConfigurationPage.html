@@ -556,6 +556,12 @@
                     color: #e0c068;
                 }
 
+                /* Task 7: shown on a freshly created library until its first titles land in Jellyfin. */
+                .libraryTagFilling {
+                    background: rgba(0, 164, 220, 0.35);
+                    color: #bfeaf7;
+                }
+
                 .discoverLibraryMeta {
                     color: #888;
                     font-size: .85em;
@@ -720,6 +726,7 @@
                             <span class="libraryStatusItem" id="seerrStatusItem">Seerr: checking…</span>
                             <span class="libraryStatusItem" id="activeLibrariesItem">— active libraries</span>
                             <span class="libraryStatusItem" id="lastSyncItem">Last sync: —</span>
+                            <span class="libraryStatusItem" id="syncWaitItem" style="display: none;"></span>
                             <span class="statusSpacer"></span>
                             <button is="emby-button" type="button" id="syncAllLibraries" class="raised button emby-button"><span>🔄 Sync all</span></button>
                         </div>

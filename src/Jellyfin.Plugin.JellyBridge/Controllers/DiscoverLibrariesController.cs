@@ -24,17 +24,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
     {
         private readonly DebugLogger<DiscoverLibrariesController> _logger;
         private readonly SyncService _syncService;
+        private readonly RefreshService _refreshService;
         private readonly JellyfinILibraryManager _libraryManager;
         private readonly JellyfinIUserManager _userManager;
 
         public DiscoverLibrariesController(
             ILoggerFactory loggerFactory,
             SyncService syncService,
+            RefreshService refreshService,
             JellyfinILibraryManager libraryManager,
             JellyfinIUserManager userManager)
         {
             _logger = new DebugLogger<DiscoverLibrariesController>(loggerFactory.CreateLogger<DiscoverLibrariesController>());
             _syncService = syncService;
+            _refreshService = refreshService;
             _libraryManager = libraryManager;
             _userManager = userManager;
         }
@@ -43,13 +46,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// Get every configured Discover library with its folder path, the Jellyfin library id and name when one
         /// points at that folder, and its title count on disk (folders holding a metadata.json). Wrapped with the
         /// <c>lastSync</c> field (<see cref="SyncService.LastSyncCompleted"/> in UTC, 5c review fix 6) so the
-        /// settings page's status strip can show endpoint-initiated syncs, not only the scheduled task's.
+        /// settings page's status strip can show endpoint-initiated syncs, not only the scheduled task's, and with
+        /// <c>isSyncRunning</c> (task 7) so the page can say "Waiting for the running sync to finish…" while a
+        /// write request sits on the sync lock — the write endpoints don't report queue state.
         /// </summary>
         [HttpGet("Libraries")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<object> GetLibraries()
         {
-            return Ok(new { lastSync = SyncService.LastSyncCompleted?.ToString("O"), libraries = GetLibrariesValue() });
+            return Ok(new
+            {
+                lastSync = SyncService.LastSyncCompleted?.ToString("O"),
+                isSyncRunning = Plugin.IsOperationRunning,
+                libraries = GetLibrariesValue()
+            });
         }
 
         /// <summary>
@@ -119,6 +129,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// Create a library's folder (seeded with a .seed file, because Jellyfin skips empty folders) and the
         /// Jellyfin library pointing at it, with the Default library's Jellyfin options (paths replaced). The new
         /// library is added to every user's LatestItemsExcludes so its placeholders stay out of Continue Watching.
+        /// Then it fills itself (task 7): a sync of just this library, followed by a targeted refresh of its
+        /// CollectionFolder, so the titles appear without waiting for the next interval sync or a library scan.
         /// </summary>
         /// <param name="name">The library name, matched ignoring case.</param>
         [HttpPost("Libraries/{name}/Create")]
@@ -186,7 +198,27 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogInformation("Library '{Name}' already has a Jellyfin library on {Path}.", library.Name, directory);
                 }
 
-                return Ok(new { success = true, message = $"Library '{library.Name}' is ready.", jellyfinLibraryId = jellyfinLibrary?.ItemId });
+                // Task 7: fill the library now instead of waiting for the next interval sync. The sync runs
+                // inside this same write lock (the caller holds it; SyncLibraryAsync does not re-acquire it),
+                // then a targeted refresh of only this library's CollectionFolder makes Jellyfin materialize
+                // the titles — the same thing POST /Items/<libraryId>/Refresh?Recursive=true does, which is
+                // what filled both stuck libraries live within 10 s. A "Scan All Libraries" plan would be
+                // skipped while Jellyfin's Scan Media Library task is already running (every restart, 15+ min
+                // on this server), which is exactly why the new library stayed empty.
+                var syncResult = await _syncService.SyncLibraryAsync(library.Name);
+                _logger.LogInformation("Create: sync of library '{Name}' completed:\n{SyncResult}", library.Name, syncResult.ToString());
+                var refreshQueued = await _refreshService.QueueLibraryRefreshAsync(directory, createMode: true, removeMode: false, refreshImages: true);
+
+                var message = $"Library '{library.Name}' is ready. {syncResult.Message}"
+                    + (refreshQueued ? string.Empty : " The targeted refresh could not be queued — the library fills on the next sync or library scan.");
+                return Ok(new
+                {
+                    success = true,
+                    message,
+                    jellyfinLibraryId = jellyfinLibrary?.ItemId,
+                    syncMessage = syncResult.Message,
+                    refreshQueued
+                });
             });
         }
 
