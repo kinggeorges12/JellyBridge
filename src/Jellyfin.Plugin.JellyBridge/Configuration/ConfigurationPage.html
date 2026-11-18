@@ -972,6 +972,19 @@
                         </div>
                         <br>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="UseTitlePromos" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Title Artwork Promos</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Make each promo video from the title's own backdrop and logo, with its year, rating, genres and plot, the release date of upcoming titles, and a note to favorite it to request it. Titles use the promo above until Jellyfin has saved their backdrop, then switch on a later sync. Needs <i>Save artwork into media folders</i> in the library settings, which <span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span> turns on.</div>
+                        </div>
+                        <br>
+
                         <div class="inputContainer">
                             <input id="PromoVideoDurationSeconds" type="number" is="emby-input" min="1" max="3600" label="Video Duration (seconds)" />
                             <div class="fieldDescription">Length of generated promo videos in the JellyBridge library. The video uses a negligible amount of disk space, e.g., a ten-second video is approximately 100kb.</div>

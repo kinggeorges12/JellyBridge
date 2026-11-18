@@ -1094,6 +1094,7 @@ function initializeUploadPromo(page) {
         browseFolder(CustomSeriesPromo, "Select an Image File for the Series Promo Video", true);
     });
     setInputField(page, 'DefaultSeriesPromo', true);
+    setInputField(page, 'UseTitlePromos', true);
 
     setInputField(page, 'JellyBridgeTempDirectory');
     const JellyBridgeTempDirectory = page.querySelector('#JellyBridgeTempDirectory');
@@ -1542,6 +1543,7 @@ function performPluginReset(page) {
                 DefaultMoviesPromo: null,
                 CustomSeriesPromo: null,
                 DefaultSeriesPromo: null,
+                UseTitlePromos: null,
                 PromoVideoDurationSeconds: null,
                 EnableAutomatedSortTask: null,
                 SortTaskIntervalHours: null,
@@ -1709,6 +1711,7 @@ function savePluginConfiguration(page) {
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
     form.CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
     form.DefaultSeriesPromo = nullIfDefault(page.querySelector('#DefaultSeriesPromo').checked, config.ConfigDefaults.DefaultSeriesPromo);
+    form.UseTitlePromos = nullIfDefault(page.querySelector('#UseTitlePromos').checked, config.ConfigDefaults.UseTitlePromos);
     form.PromoVideoDurationSeconds = safeParseInt(page.querySelector('#PromoVideoDurationSeconds'));
     form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);

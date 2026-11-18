@@ -68,6 +68,14 @@ public class CleanupService
             var processedPlaceholders = await CreateMissingPlaceholderVideosAsync(allItems);
             result.ItemsCreated.AddRange(processedPlaceholders);
 
+            // Titles the sync no longer fetches keep their placeholder until retention; keep their promo current meanwhile
+            var remainingItems = allItems.Except(deletedItems).ToList();
+            var redrawnPromos = await _discoverService.RedrawStalePromosAsync(_bridgeService.FilterAlreadyIgnoredItems(remainingItems));
+            if (redrawnPromos > 0)
+            {
+                _logger.LogDebug("Redrew {Count} placeholders with the current title promo", redrawnPromos);
+            }
+
             // Determine refresh plan
             var hasDeletedItems = result.ItemsDeleted.Count > 0 || result.ItemsCleaned > 0;
             var hasCreatedItems = result.ItemsCreated.Count > 0;

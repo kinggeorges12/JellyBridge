@@ -76,6 +76,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(DefaultMoviesPromo), true },
         { nameof(CustomSeriesPromo), string.Empty },
         { nameof(DefaultSeriesPromo), true },
+        { nameof(UseTitlePromos), false },
         { nameof(PromoVideoDurationSeconds), 10 },
         { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
 
@@ -256,6 +257,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to use the default show promo image (built-in asset).
     /// </summary>
     public bool? DefaultSeriesPromo { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to make each promo video from the title's own backdrop and logo.
+    /// </summary>
+    public bool? UseTitlePromos { get; set; }
 
     /// <summary>
     /// Gets or sets the default duration (in seconds) for generated placeholder videos.
