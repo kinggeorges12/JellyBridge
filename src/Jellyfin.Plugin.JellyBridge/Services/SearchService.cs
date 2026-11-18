@@ -222,20 +222,26 @@ public class SearchService
 
                 await metadataService.CreateFolderMetadataAsync(new List<IJellyseerrItem> { item }).ConfigureAwait(false);
 
-                // Pictures first, so the placeholder videos made next can use them
+                // Pictures first, so the title promo made below can use them
                 await SaveArtworkAsync(item, folder, deadline.Token).ConfigureAwait(false);
-                if (item is JellyseerrShow show)
+
+                // The default promo goes in first (a quick copy) so Jellyfin can build the item right away; the title promo
+                // renders meanwhile and replaces it before the open call returns, so the first play already has it
+                var titlePromos = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos));
+                await CreatePlaceholdersAsync(discoverService, item, defaultPromosOnly: titlePromos).ConfigureAwait(false);
+                var titlePromoTask = titlePromos ? Task.Run(() => RefreshTitlePromosAsync(item)) : Task.CompletedTask;
+
+                Guid created;
+                try
                 {
-                    await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrShow> { show }).ConfigureAwait(false);
-                    await discoverService.EnsureSeasonPlaceholdersAsync(new List<JellyseerrShow> { show },
-                        Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders))).ConfigureAwait(false);
+                    created = await CreateLibraryItemAsync(folder, parent, item is JellyseerrShow, deadline.Token, cancellationToken,
+                        () => RefreshTitlePromosAsync(item)).ConfigureAwait(false);
                 }
-                else if (item is JellyseerrMovie movie)
+                finally
                 {
-                    await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrMovie> { movie }).ConfigureAwait(false);
+                    await titlePromoTask.ConfigureAwait(false);
                 }
 
-                var created = await CreateLibraryItemAsync(folder, parent, item is JellyseerrShow, deadline.Token, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Added {ItemName} to the Discover library from search in {Seconds:0.0} s", item.MediaName, (DateTimeOffset.UtcNow - started).TotalSeconds);
                 return created;
             }
@@ -304,7 +310,8 @@ public class SearchService
             Recursive = true,
         }).FirstOrDefault();
 
-    private async Task<Guid> CreateLibraryItemAsync(string folder, Folder parent, bool isShow, CancellationToken deadline, CancellationToken cancellationToken)
+    private async Task<Guid> CreateLibraryItemAsync(string folder, Folder parent, bool isShow, CancellationToken deadline, CancellationToken cancellationToken,
+        Func<Task>? afterBackgroundRefresh = null)
     {
         // A fresh DirectoryService, a cached listing would not include the files just written
         var directoryService = new DirectoryService(_fileSystem);
@@ -359,6 +366,10 @@ public class SearchService
                     }
 
                     await _providerManager.RefreshFullItem(item, full, CancellationToken.None).ConfigureAwait(false);
+                    if (afterBackgroundRefresh != null)
+                    {
+                        await afterBackgroundRefresh().ConfigureAwait(false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -368,6 +379,49 @@ public class SearchService
         }
 
         return item.Id;
+    }
+
+    /// <summary>
+    /// With title artwork promos on, make the placeholder videos again once the background refresh has saved the rest of the
+    /// artwork (the logo), so they don't have to wait for the next sync.
+    /// </summary>
+    private async Task RefreshTitlePromosAsync(IJellyseerrItem item)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            await CreatePlaceholdersAsync(scope.ServiceProvider.GetRequiredService<DiscoverService>(), item, defaultPromosOnly: false)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Could not make the title promo of {ItemName}: {Message}", item.MediaName, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Make a title's placeholder videos (a show's season placeholders too). With <paramref name="defaultPromosOnly"/> they all
+    /// use the default promo, which is a quick copy.
+    /// </summary>
+    private static async Task CreatePlaceholdersAsync(DiscoverService discoverService, IJellyseerrItem item, bool defaultPromosOnly)
+    {
+        // Set inside this method, so it applies to the calls below and not to the caller
+        PlaceholderVideoGenerator.DefaultPromosOnly.Value = defaultPromosOnly;
+        if (item is JellyseerrShow show)
+        {
+            await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrShow> { show }).ConfigureAwait(false);
+            await discoverService.EnsureSeasonPlaceholdersAsync(new List<JellyseerrShow> { show },
+                Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseSeasonPlaceholders))).ConfigureAwait(false);
+        }
+        else if (item is JellyseerrMovie movie)
+        {
+            await discoverService.CreatePlaceholderVideosAsync(new List<JellyseerrMovie> { movie }).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
