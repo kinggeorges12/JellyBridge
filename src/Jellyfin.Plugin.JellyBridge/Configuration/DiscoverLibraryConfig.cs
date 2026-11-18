@@ -207,6 +207,59 @@ public class DiscoverLibraryConfig
     public bool ListTypeChangedSinceLastSync => LastSyncedListType.HasValue && LastSyncedListType.Value != ListType;
 
     /// <summary>
+    /// Gets or sets the title-rule signature this library last synced against (task 9, reviewer item 6): the
+    /// settings that change WHICH titles belong (list, type, pages, minimum rating/votes, networks). The
+    /// reconciler runs the library's sync when the current <see cref="SyncSignature"/> differs — one stored value
+    /// covers every such setting, so no per-setting change flags are needed. Null until the first sync or save
+    /// after the upgrade records it (an upgrade changes nothing).
+    /// </summary>
+    [JsonPropertyName("lastSyncedSignature")]
+    public string? LastSyncedSignature { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Order"/> the library was last sorted by (task 9, reviewer item 7). The
+    /// reconciler re-sorts the library when this differs from the current <see cref="OrderOrDefault"/>. Null
+    /// until the first save-reconcile records it — upgrading never re-sorts every library.
+    /// </summary>
+    [JsonPropertyName("lastSyncedOrder")]
+    public DiscoverLibraryOrder? LastSyncedOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the old name of a renaming save (task 9, reviewer item 2): the settings page sends it
+    /// transiently with the POST so the server knows which folder to move — it is cleared before the config is
+    /// saved, so it never persists.
+    /// </summary>
+    [JsonPropertyName("renamedFrom")]
+    [XmlIgnore]
+    public string? RenamedFrom { get; set; }
+
+    /// <summary>
+    /// Gets the title-rule signature: every setting that changes which titles the library holds (task 9 reviewer
+    /// item 6). The reconciler compares it with <see cref="LastSyncedSignature"/>; everything else (name, order,
+    /// on/off) is reconciled without a sync.
+    /// </summary>
+    [XmlIgnore]
+    [JsonIgnore]
+    public string SyncSignature => string.Join('|',
+        ListType.ToString(),
+        LibraryType.ToString(),
+        (Pages ?? -1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        (MinimumRating ?? -1).ToString("0.0################", System.Globalization.CultureInfo.InvariantCulture),
+        (MinimumVotes ?? -1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        // 9a-9: keep the networks' stored ORDER — it decides the merge order of the fetch, so a re-order of the
+        // same ids is a real change.
+        string.Join(',', NetworkIds.Select(static id => id.ToString(System.Globalization.CultureInfo.InvariantCulture))));
+
+    /// <summary>
+    /// Gets a value indicating whether the title rules changed since the last sync (task 9). False when no
+    /// signature has been recorded yet — the first sync after an upgrade removes nothing beyond its own cleanup.
+    /// </summary>
+    [XmlIgnore]
+    [JsonIgnore]
+    public bool SyncSignatureChangedSinceLastSync => !string.IsNullOrEmpty(LastSyncedSignature)
+        && LastSyncedSignature != SyncSignature;
+
+    /// <summary>
     /// Gets the folder of this library under the given Library Directory: its subfolder, or the legacy folder a
     /// synthesized library still uses before the migration moved it.
     /// </summary>

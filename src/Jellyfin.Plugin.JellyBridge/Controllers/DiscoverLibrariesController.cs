@@ -27,19 +27,22 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         private readonly RefreshService _refreshService;
         private readonly JellyfinILibraryManager _libraryManager;
         private readonly JellyfinIUserManager _userManager;
+        private readonly DiscoverLibraryReconciler _reconciler;
 
         public DiscoverLibrariesController(
             ILoggerFactory loggerFactory,
             SyncService syncService,
             RefreshService refreshService,
             JellyfinILibraryManager libraryManager,
-            JellyfinIUserManager userManager)
+            JellyfinIUserManager userManager,
+            DiscoverLibraryReconciler reconciler)
         {
             _logger = new DebugLogger<DiscoverLibrariesController>(loggerFactory.CreateLogger<DiscoverLibrariesController>());
             _syncService = syncService;
             _refreshService = refreshService;
             _libraryManager = libraryManager;
             _userManager = userManager;
+            _reconciler = reconciler;
         }
 
         /// <summary>
@@ -63,17 +66,24 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Save the whole library list. Validation (each failure → 400 with a message): at least one library,
-        /// names unique ignoring case, exactly one Default, Default not Trending, Trending libraries without
-        /// networks, usable folder names that don't collide. Names are the identity: a POST that drops a stored
-        /// library is rejected — removals go through Delete and renames through Rename, so folders and Jellyfin
-        /// libraries are never orphaned. The Default library is always saved enabled (decision 7).
+        /// Save the whole library list, then — unless <c>?apply=false</c> — reconcile every library against
+        /// reality: "save applies the change" (task 9). One POST does what earlier needed separate Create,
+        /// Rename and core VirtualFolders/Name calls: folder moves, Jellyfin library create/re-create (display
+        /// name and type), the title sync when the title rules changed, the re-sort when the order changed, and
+        /// the LatestItemsExcludes bookkeeping. Validation (each failure → 400 with a message) runs BEFORE any
+        /// side effect: at least one library, names unique ignoring case, exactly one Default, Default not
+        /// Trending, Trending libraries without networks, usable folder names that don't collide. Names are the
+        /// identity: a POST that drops a stored library is rejected — removals go through Delete; a rename rides
+        /// along as the transient renamedFrom of the renamed entry (task 9 reviewer item 2). The Default library
+        /// is always saved enabled (decision 7). The response carries the per-library reconcile report
+        /// (<c>results</c>, reviewer item 10) so the page can print one short line per library.
         /// </summary>
         /// <param name="libraries">The complete new list.</param>
+        /// <param name="apply">False stores only — no reconcile (task 9 reviewer item 11, for the harness).</param>
         [HttpPost("Libraries")]
-        public async Task<IActionResult> SaveLibraries([FromBody] List<DiscoverLibraryConfig>? libraries)
+        public async Task<IActionResult> SaveLibraries([FromBody] List<DiscoverLibraryConfig>? libraries, [FromQuery] bool apply = true)
         {
-            return await ExecuteWriteAsync("Save Discover Libraries", () =>
+            return await ExecuteWriteAsync("Save Discover Libraries", async () =>
             {
                 var error = ValidateLibraryList(libraries);
                 if (error != null)
@@ -81,56 +91,150 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     return BadRequest(new { success = false, message = error });
                 }
 
-                // Names are the library's identity: a stored name missing from the posted list means the client
-                // deleted or renamed a library, which would orphan its folder and Jellyfin library. New names are
-                // fine (added libraries; the page then calls Create for them).
-                var storedNames = (Plugin.GetConfiguration().DiscoverLibraries ?? new List<DiscoverLibraryConfig>())
-                    .Select(l => l.Name)
-                    .ToList();
+                var previousByName = new Dictionary<string, DiscoverLibraryConfig>(StringComparer.OrdinalIgnoreCase);
+                foreach (var previous in Plugin.GetConfiguration().DiscoverLibraries ?? new List<DiscoverLibraryConfig>())
+                {
+                    previousByName[previous.Name] = previous;
+                }
+
+                // Names are the library's identity: a stored name missing from the posted list (nor covered by a
+                // renamedFrom) means the client deleted a library, which would orphan its folder and Jellyfin
+                // library. A rename is a dropped name PLUS the renamedFrom that says so; new names are fine.
                 var postedNames = new HashSet<string>(libraries!.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
-                var droppedName = storedNames.FirstOrDefault(n => !postedNames.Contains(n));
+                foreach (var library in libraries!)
+                {
+                    if (!string.IsNullOrWhiteSpace(library.RenamedFrom))
+                    {
+                        postedNames.Add(library.RenamedFrom!.Trim());
+                    }
+                }
+
+                var droppedName = previousByName.Keys.FirstOrDefault(n => !postedNames.Contains(n));
                 if (droppedName != null)
                 {
                     return BadRequest(new { success = false, message = $"Use Delete to remove '{droppedName}' and Rename to rename it." });
                 }
 
-                // Decision 7: the Default library is always on — force it, whatever the client posted.
-                libraries!.First(l => l.DefaultOrDefault).IsEnabled = true;
-
-                var config = Plugin.GetConfiguration();
-                var previousByName = new Dictionary<string, DiscoverLibraryConfig>(StringComparer.OrdinalIgnoreCase);
-                foreach (var previous in config.DiscoverLibraries ?? new List<DiscoverLibraryConfig>())
-                {
-                    previousByName[previous.Name] = previous;
-                }
-
+                // 9a-3: renamedFrom validation — BEFORE any side effect, like every other 400. A bad renamedFrom
+                // could otherwise make the move step move ANOTHER library's folder: it must name a stored
+                // library, must not also be a name the POST keeps, must be used by at most one entry, and the
+                // new name must not already belong to another stored library. A Legacy entry ignores it (the
+                // reconciler never touches a Legacy library).
+                var keptNames = new HashSet<string>(libraries!.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
+                var renameSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var library in libraries!)
                 {
-                    // The editor round-trips the libraries it read, lastSyncedListType included; when a client
-                    // leaves it out of a library that existed before, keep the stored value so decision 9's
-                    // "the List changed" detection survives the save.
-                    if (library.LastSyncedListType == null
-                        && previousByName.TryGetValue(library.Name, out var previous)
-                        && previous.LastSyncedListType != null)
+                    if (library.Legacy || string.IsNullOrWhiteSpace(library.RenamedFrom))
                     {
-                        library.LastSyncedListType = previous.LastSyncedListType;
+                        continue;
+                    }
+
+                    var from = library.RenamedFrom!.Trim();
+                    if (string.Equals(from, library.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue; // a no-op rename
+                    }
+
+                    if (!previousByName.ContainsKey(from))
+                    {
+                        return BadRequest(new { success = false, message = $"renamedFrom '{from}' does not name a stored library." });
+                    }
+
+                    if (keptNames.Contains(from))
+                    {
+                        return BadRequest(new { success = false, message = $"renamedFrom '{from}' names a library the POST keeps by that name — a rename drops the old name." });
+                    }
+
+                    if (!renameSources.Add(from))
+                    {
+                        return BadRequest(new { success = false, message = $"renamedFrom '{from}' is used by more than one library." });
+                    }
+
+                    if (previousByName.TryGetValue(library.Name, out var targetOwner)
+                        && !string.Equals(targetOwner.Name, from, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return BadRequest(new { success = false, message = $"'{library.Name}' already names the stored library '{targetOwner.Name}'; cannot be reached by renaming '{from}'." });
                     }
                 }
 
+                // Decision 7: the Default library is always on — force it, whatever the client posted.
+                libraries!.First(l => l.DefaultOrDefault).IsEnabled = true;
+
+                foreach (var library in libraries!)
+                {
+                    // The entry this POST refers to: a renamed entry carries the stored name in renamedFrom.
+                    var key = !string.IsNullOrWhiteSpace(library.RenamedFrom) ? library.RenamedFrom!.Trim() : library.Name;
+                    previousByName.TryGetValue(key, out var previous);
+
+                    // The editor round-trips the libraries it read, the sync bookkeeping included; when a client
+                    // leaves it out of a library that existed before, keep the stored value so decision 9's and
+                    // task 9's "changed since the last sync" detection survives the save.
+                    if (previous != null)
+                    {
+                        library.LastSyncedListType ??= previous.LastSyncedListType;
+                        library.LastSyncedSignature ??= previous.LastSyncedSignature;
+                        library.LastSyncedOrder ??= previous.LastSyncedOrder;
+                    }
+                }
+
+                // renamedFrom is transient (task 9 reviewer item 2): capture it for the reconcile below, then
+                // clear it so it never reaches the saved config.
+                var renamedFromByName = libraries!
+                    .Where(l => !string.IsNullOrWhiteSpace(l.RenamedFrom))
+                    .ToDictionary(l => l.Name, l => l.RenamedFrom!.Trim(), StringComparer.OrdinalIgnoreCase);
+                foreach (var library in libraries!)
+                {
+                    library.RenamedFrom = null;
+                }
+
+                var config = Plugin.GetConfiguration();
                 config.DiscoverLibraries = libraries!;
                 Plugin.Instance?.SaveConfiguration();
                 _logger.LogInformation("Discover libraries saved: {Libraries}",
                     string.Join(", ", libraries!.Select(l => $"{l.Name} [{l.ListType}{(l.DefaultOrDefault ? ", Default" : string.Empty)}]")));
-                return Ok(new { success = true, message = $"Saved {libraries.Count} Discover libraries.", libraries = GetLibrariesValue() });
+
+                // Task 9: save applies the change — one reconcile per library, inside this same write lock (a
+                // sync can take minutes, as Create always did; the page keeps its wait notice). A failed step
+                // fails only that library's report (reviewer item 12's "other libraries still reconcile").
+                var results = new List<DiscoverLibraryReconciler.ReconcileResult>();
+                if (apply)
+                {
+                    foreach (var library in libraries!)
+                    {
+                        var oldName = renamedFromByName.TryGetValue(library.Name, out var from) ? from : null;
+                        var previous = oldName != null && previousByName.TryGetValue(oldName, out var byOld)
+                            ? byOld
+                            : previousByName.TryGetValue(library.Name, out var byName) ? byName : null;
+                        results.Add(await _reconciler.ApplyAsync(library, previous, isNew: previous == null, renamedFrom: oldName));
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = results.All(r => r.Ok),
+                    message = $"Saved {libraries.Count} Discover libraries.",
+                    libraries = GetLibrariesValue(),
+                    results = results.Select(r => new
+                    {
+                        name = r.Name,
+                        ok = r.Ok,
+                        steps = r.Steps,
+                        syncMessage = r.SyncMessage,
+                        titleCount = r.TitleCount,
+                        message = r.Message,
+                        jellyfinLibraryId = r.JellyfinLibraryId
+                    })
+                });
             });
         }
 
         /// <summary>
-        /// Create a library's folder (seeded with a .seed file, because Jellyfin skips empty folders) and the
-        /// Jellyfin library pointing at it, with the Default library's Jellyfin options (paths replaced). The new
-        /// library is added to every user's LatestItemsExcludes so its placeholders stay out of Continue Watching.
-        /// Then it fills itself (task 7): a sync of just this library, followed by a targeted refresh of its
-        /// CollectionFolder, so the titles appear without waiting for the next interval sync or a library scan.
+        /// Create a library (task 9 reviewer item 5): a thin wrapper over the reconciler, which creates the
+        /// folder (seeded, because Jellyfin skips empty folders) and the Jellyfin library with the Default
+        /// library's options, adds the id to every user's LatestItemsExcludes, and then fills the library now
+        /// (task 7): one sync of just this library plus a targeted refresh of its CollectionFolder, so titles
+        /// appear without waiting for the next interval sync or a library scan. Kept for the Add button and
+        /// the "Filling…" tag; POST Libraries now applies the same reconcile itself.
         /// </summary>
         /// <param name="name">The library name, matched ignoring case.</param>
         [HttpPost("Libraries/{name}/Create")]
@@ -144,79 +248,31 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     return NotFound(new { success = false, message = $"No Discover library named '{name}'." });
                 }
 
+                // 9a-6: the reconciler creates folder + Jellyfin library, adds the id to the users'
+                // LatestItemsExcludes, and — when it had to CREATE the Jellyfin library — syncs the library and
+                // queues the targeted refresh itself. isNew stays false on purpose: only a library whose Jellyfin
+                // library was just made re-syncs and re-refreshes, so an extra Create click on a filled library
+                // neither syncs twice nor queues two refreshes.
+                var result = await _reconciler.ApplyAsync(library, previous: null, isNew: false, renamedFrom: null);
+
+                // Task 7's guarantee stays explicit here: queue the refresh only when the reconciler did not
+                // already (9a-6 — exactly one refresh per Create).
                 var directory = library.GetDirectory(DiscoverLibraries.GetRootDirectory());
-                try
-                {
-                    Directory.CreateDirectory(directory);
-                    var seedFile = Path.Combine(directory, ".seed");
-                    if (!System.IO.File.Exists(seedFile))
-                    {
-                        await System.IO.File.WriteAllTextAsync(seedFile, "JellyBridge library folder — the seed keeps Jellyfin from skipping it while it is empty.\n");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Could not create the folder {Directory} of library {Library}", directory, library.Name);
-                    return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Could not create the folder {directory}: {ex.Message}" });
-                }
+                var refreshQueued = result.RefreshQueued
+                    || await _refreshService.QueueLibraryRefreshAsync(directory, createMode: true, removeMode: false, refreshImages: true);
 
-                var jellyfinLibrary = FindVirtualFolder(_libraryManager.Inner.GetVirtualFolders(), directory);
-                if (jellyfinLibrary == null)
-                {
-                    var options = DefaultLibraryOptions();
-                    options.PathInfos = new[] { new MediaPathInfo { Path = directory } };
-                    var collectionType = library.LibraryType switch
-                    {
-                        DiscoverLibraryType.Movies => CollectionTypeOptions.movies,
-                        DiscoverLibraryType.Series => CollectionTypeOptions.tvshows,
-                        _ => (CollectionTypeOptions?)null
-                    };
-
-                    try
-                    {
-                        // refreshLibrary: true on purpose: on 10.10 the CollectionFolder (and with it
-                        // VirtualFolderInfo.ItemId) only materializes once a scan has run over the folder, and the
-                        // folder is empty except the seed, so that scan is trivial.
-                        await _libraryManager.Inner.AddVirtualFolder(library.Name, collectionType, options, refreshLibrary: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Could not create the Jellyfin library for {Library}", library.Name);
-                        return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Could not create the Jellyfin library '{library.Name}': {ex.Message}" });
-                    }
-
-                    jellyfinLibrary = await FindVirtualFolderWithIdAsync(directory);
-                    if (jellyfinLibrary != null)
-                    {
-                        await AddToLatestItemsExcludesAsync(jellyfinLibrary.ItemId);
-                    }
-
-                    _logger.LogInformation("Created Jellyfin library '{Name}' on {Path}.", library.Name, directory);
-                }
-                else
-                {
-                    _logger.LogInformation("Library '{Name}' already has a Jellyfin library on {Path}.", library.Name, directory);
-                }
-
-                // Task 7: fill the library now instead of waiting for the next interval sync. The sync runs
-                // inside this same write lock (the caller holds it; SyncLibraryAsync does not re-acquire it),
-                // then a targeted refresh of only this library's CollectionFolder makes Jellyfin materialize
-                // the titles — the same thing POST /Items/<libraryId>/Refresh?Recursive=true does, which is
-                // what filled both stuck libraries live within 10 s. A "Scan All Libraries" plan would be
-                // skipped while Jellyfin's Scan Media Library task is already running (every restart, 15+ min
-                // on this server), which is exactly why the new library stayed empty.
-                var syncResult = await _syncService.SyncLibraryAsync(library.Name);
-                _logger.LogInformation("Create: sync of library '{Name}' completed:\n{SyncResult}", library.Name, syncResult.ToString());
-                var refreshQueued = await _refreshService.QueueLibraryRefreshAsync(directory, createMode: true, removeMode: false, refreshImages: true);
-
-                var message = $"Library '{library.Name}' is ready. {syncResult.Message}"
-                    + (refreshQueued ? string.Empty : " The targeted refresh could not be queued — the library fills on the next sync or library scan.");
+                var message = result.Ok
+                    ? $"Library '{library.Name}' is ready. {result.SyncMessage}"
+                        + (refreshQueued
+                            ? string.Empty
+                            : " The targeted refresh could not be queued — the library fills on the next sync or library scan.")
+                    : result.Message ?? $"Could not create the library '{library.Name}'.";
                 return Ok(new
                 {
-                    success = true,
+                    success = result.Ok,
                     message,
-                    jellyfinLibraryId = jellyfinLibrary?.ItemId,
-                    syncMessage = syncResult.Message,
+                    jellyfinLibraryId = result.JellyfinLibraryId,
+                    syncMessage = result.SyncMessage,
                     refreshQueued
                 });
             });
@@ -244,17 +300,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Rename a library: move its folder, then update the Jellyfin library that points at it (add the new
-        /// path before removing the old one) and save the config. The Jellyfin library's display name is renamed
-        /// from the settings page with the REST call POST /Library/VirtualFolders/Name — ILibraryManager has no
-        /// rename method.
+        /// Rename a library: validate, store the new name, and hand the whole job to the reconciler (task 9
+        /// reviewer item 2) — folder move, Jellyfin library re-create with the new display name (ILibraryManager
+        /// has no rename; this is the path the task 9 decision chose: new id, watch marks on placeholders reset)
+        /// and the follow-up sync. POST Libraries applies the same for a renamedFrom entry; the page no longer
+        /// needs the core POST /Library/VirtualFolders/Name call.
         /// </summary>
         /// <param name="name">The library's current name, matched ignoring case.</param>
         /// <param name="newName">The new name.</param>
         [HttpPost("Libraries/{name}/Rename")]
         public async Task<IActionResult> RenameLibrary(string name, [FromQuery] string? newName)
         {
-            return await ExecuteWriteAsync("Rename Discover Library", () =>
+            return await ExecuteWriteAsync("Rename Discover Library", async () =>
             {
                 var library = FindLibrary(name);
                 if (library == null)
@@ -292,54 +349,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     return BadRequest(new { success = false, message = $"Different library names cannot share a folder: another library already makes the folder \"{newFolderName}\"." });
                 }
 
-                var root = DiscoverLibraries.GetRootDirectory();
-                var oldDirectory = library.GetDirectory(root);
-                var newDirectory = FolderUtils.GetNormalizedPath(Path.Combine(root, FolderUtils.SanitizeFileName(trimmed)))
-                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-                // Move the folder first, so the new path exists before the Jellyfin library points at it.
-                if (Directory.Exists(oldDirectory) && !FolderUtils.ArePathsEqual(oldDirectory, newDirectory))
-                {
-                    try
-                    {
-                        Directory.Move(oldDirectory, newDirectory);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Could not move the folder of library {Library} from {Old} to {New}", library.Name, oldDirectory, newDirectory);
-                        return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Could not move the library folder: {ex.Message}" });
-                    }
-                }
-
-                // Repoint the Jellyfin library (add the new path before removing the old one; never remove the
-                // old path when adding the new one failed).
-                var jellyfinLibrary = FindVirtualFolder(_libraryManager.Inner.GetVirtualFolders(), oldDirectory);
-                if (jellyfinLibrary != null && !FolderUtils.ArePathsEqual(oldDirectory, newDirectory))
-                {
-                    var locations = (jellyfinLibrary.Locations ?? Array.Empty<string>()).ToList();
-                    try
-                    {
-                        if (!locations.Any(location => FolderUtils.ArePathsEqual(location, newDirectory)))
-                        {
-                            _libraryManager.Inner.AddMediaPath(jellyfinLibrary.Name, new MediaPathInfo { Path = newDirectory });
-                        }
-
-                        if (locations.Any(location => FolderUtils.ArePathsEqual(location, oldDirectory)))
-                        {
-                            _libraryManager.Inner.RemoveMediaPath(jellyfinLibrary.Name, oldDirectory);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Repoint of Jellyfin library {Library} ({Old} -> {New}) failed during rename", jellyfinLibrary.Name, oldDirectory, newDirectory);
-                        return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"The folder moved, but repointing Jellyfin library '{jellyfinLibrary.Name}' failed: {ex.Message}" });
-                    }
-                }
-
+                // Task 9: Rename is a thin wrapper over the reconciler (reviewer item 2) — it moves the folder,
+                // re-creates the Jellyfin library with the new display name (new id, LatestItemsExcludes swap;
+                // placeholder watch marks reset — what the editor warns about) and syncs the library.
                 library.Name = trimmed;
                 Plugin.Instance?.SaveConfiguration();
-                _logger.LogInformation("Renamed library '{Old}' to '{New}' ({OldPath} -> {NewPath}).", name, trimmed, oldDirectory, newDirectory);
-                return Ok(new { success = true, message = $"Renamed library '{name}' to '{trimmed}'.", jellyfinLibraryId = jellyfinLibrary?.ItemId });
+                var result = await _reconciler.ApplyAsync(library, previous: library, isNew: false, renamedFrom: name);
+                _logger.LogInformation("Renamed library '{Old}' to '{New}' (steps: {Steps}).", name, trimmed, string.Join(", ", result.Steps));
+                return Ok(new
+                {
+                    success = result.Ok,
+                    message = result.Ok ? $"Renamed library '{name}' to '{trimmed}'." : result.Message ?? $"Renaming to '{trimmed}' failed.",
+                    jellyfinLibraryId = result.JellyfinLibraryId,
+                    steps = result.Steps
+                });
             });
         }
 
@@ -551,28 +574,6 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             virtualFolders.FirstOrDefault(folder => (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, directory)));
 
         /// <summary>
-        /// Like <see cref="FindVirtualFolder"/>, but retries until the Jellyfin library has a real ItemId: after a
-        /// fresh AddVirtualFolder the folder listing can briefly carry the library without its id (10.10 fills it
-        /// only once the collection folder materializes), and the id is needed for LatestItemsExcludes and the response.
-        /// </summary>
-        private async Task<VirtualFolderInfo?> FindVirtualFolderWithIdAsync(string directory)
-        {
-            for (var attempt = 0; attempt < 40; attempt++)
-            {
-                var folder = FindVirtualFolder(_libraryManager.Inner.GetVirtualFolders(), directory);
-                if (folder != null && !string.IsNullOrEmpty(folder.ItemId))
-                {
-                    return folder;
-                }
-
-                await Task.Delay(500);
-            }
-
-            _logger.LogWarning("The Jellyfin library on {Directory} still has no id after 20s.", directory);
-            return FindVirtualFolder(_libraryManager.Inner.GetVirtualFolders(), directory);
-        }
-
-        /// <summary>
         /// Counts a library's titles on disk: the folders under it that hold a metadata.json (season folders
         /// inside a show hold none). 0 when the folder doesn't exist yet.
         /// </summary>
@@ -592,73 +593,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         }
 
         /// <summary>
-        /// Builds the LibraryOptions for a new Jellyfin library: the Default library's options (shallow copy, the
-        /// caller replaces PathInfos), or a quiet default when the Default library has no Jellyfin library yet.
-        /// </summary>
-        private LibraryOptions DefaultLibraryOptions()
-        {
-            var defaultLibrary = DiscoverLibraries.GetDefault();
-            var defaultInfo = defaultLibrary == null
-                ? null
-                : FindVirtualFolder(_libraryManager.Inner.GetVirtualFolders(), defaultLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory()));
-            if (defaultInfo != null && Guid.TryParse(defaultInfo.ItemId, out var defaultId))
-            {
-                var defaultFolder = _libraryManager.Inner.GetItemById(defaultId);
-                var options = defaultFolder == null ? null : _libraryManager.Inner.GetLibraryOptions(defaultFolder);
-                if (options != null)
-                {
-                    // Round-trip copy: only the copy's PathInfos is replaced, the Default library keeps its own paths.
-                    return System.Text.Json.JsonSerializer.Deserialize<LibraryOptions>(
-                        System.Text.Json.JsonSerializer.Serialize(options))!;
-                }
-            }
-
-            return new LibraryOptions { EnableRealtimeMonitor = false };
-        }
-
-        /// <summary>
-        /// Adds a library's id to every user's LatestItemsExcludes, the same as the live server does for the
-        /// Discover/Trending libraries — otherwise the new library's placeholders show up in Continue Watching.
-        /// </summary>
-        private async Task AddToLatestItemsExcludesAsync(string? itemId)
-        {
-            if (string.IsNullOrEmpty(itemId) || !Guid.TryParse(itemId, out var libraryId))
-            {
-                _logger.LogWarning("Could not add the new library to the users' LatestItemsExcludes: no library id.");
-                return;
-            }
-
-#if !JELLYFIN_10_11_3
-            var users = _userManager.Inner.Users;
-#else
-            var users = _userManager.Inner.GetUsers();
-#endif
-            foreach (var user in users)
-            {
-                try
-                {
-                    // The User entity has no Configuration property on any supported version; the UserDto carries
-                    // the same UserConfiguration UpdateConfigurationAsync takes, so read, change and write that.
-                    var configuration = _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration();
-                    var latestItemsExcludes = new List<Guid>(configuration.LatestItemsExcludes ?? Array.Empty<Guid>());
-                    if (latestItemsExcludes.Contains(libraryId))
-                    {
-                        continue;
-                    }
-
-                    latestItemsExcludes.Add(libraryId);
-                    configuration.LatestItemsExcludes = latestItemsExcludes.ToArray();
-                    await _userManager.Inner.UpdateConfigurationAsync(user.Id, configuration);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Could not add library {LibraryId} to the LatestItemsExcludes of user {User}", libraryId, user.Username);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Best-effort counterpart of <see cref="AddToLatestItemsExcludesAsync"/> for a deleted library (5c review
+        /// Best-effort removal of a library id from the users' LatestItemsExcludes, for a deleted or re-created library (5c review
         /// fix 7): remove its id from every user's LatestItemsExcludes. A stale id is harmless (the library is
         /// gone), so per-user failures are only logged.
         /// </summary>
