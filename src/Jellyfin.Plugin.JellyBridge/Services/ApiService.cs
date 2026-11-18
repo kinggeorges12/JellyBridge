@@ -255,6 +255,13 @@ public class ApiService
             description: "Get TV watch providers"
         ),
 
+        // Search movies, shows and people
+        [JellyseerrEndpoint.Search] = new JellyseerrEndpointConfig(
+            "/api/v1/search",
+            typeof(JellyseerrSearchResponse),
+            description: "Search movies and TV shows"
+        ),
+
         // TV details (seasons + per-season media status)
         [JellyseerrEndpoint.TvDetails] = new JellyseerrEndpointConfig(
             "/api/v1/tv/{tmdbId}",

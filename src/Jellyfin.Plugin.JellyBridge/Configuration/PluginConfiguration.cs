@@ -66,6 +66,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RequestFirstSeason), false },
         { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
+        { nameof(EnableSearchResults), false },
         { nameof(UseSeasonPlaceholders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
@@ -212,6 +213,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
     public bool? UseNetworkFolders { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether Jellyseerr titles that are in no library show up in Jellyfin's search.
+    /// </summary>
+    public bool? EnableSearchResults { get; set; }
 
     /// <summary>
     /// Gets or sets whether to create a placeholder for each requestable season of a show.

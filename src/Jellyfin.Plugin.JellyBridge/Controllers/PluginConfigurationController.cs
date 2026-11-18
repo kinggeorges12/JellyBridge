@@ -64,6 +64,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     RequestFirstSeason = config.RequestFirstSeason,
                     UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
+                    EnableSearchResults = config.EnableSearchResults,
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
@@ -159,6 +160,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
                     SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableSearchResults), config);
                     
                     // Customize Promo Videos
                     SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);
