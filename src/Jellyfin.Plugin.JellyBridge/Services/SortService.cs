@@ -45,13 +45,21 @@ public class SortService
     }
 
     /// <summary>
-    /// Sorts the JellyBridge library by applying the play count algorithm to all discover library items.
-    /// This enables random sorting by play count in Jellyfin.
+    /// Sorts every enabled Discover library by applying its play count algorithm, which enables random sorting by
+    /// play count in Jellyfin. Each library is scoped (LibraryLoop), so its items and settings are its own.
     /// </summary>
     /// <returns>A SortLibraryResult containing successful updates, failed item paths, and skipped item paths (ignored files).</returns>
     public async Task<SortLibraryResult> SortJellyBridge()
     {
         var result = new SortLibraryResult();
+
+        if (LibraryMigrationService.IsMigrationInProgress())
+        {
+            _logger.LogWarning("Refusing the sort: JellyBridge library migration in progress.");
+            result.Success = false;
+            result.Message = "Library migration in progress";
+            return result;
+        }
         
         try
         {
@@ -74,89 +82,44 @@ public class SortService
             
             result.Users = users;
 
-            // Get configuration setting for sort order
+            // Get configuration setting for sort order — the legacy Discover library keeps sorting by it
             var sortOrder = Plugin.GetConfigOrDefault<SortOrderOptions>(nameof(PluginConfiguration.SortOrder));
             result.SortAlgorithm = sortOrder;
 
-            // Get all items first (same for all users)
-            var allItems = await GetAllItems();
-            if (allItems == null || allItems.Count == 0)
+            var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
+                _logger, "sort", library => SortOneLibraryAsync(library, users, sortOrder),
+                (library, ex) => new SortLibraryResult { Success = false, Message = $"{library.Name}: {ex.Message}" });
+
+            if (perLibrary.Count == 0)
             {
                 result.Success = false;
                 result.Message = "No items found to update";
                 return result;
             }
 
-            // Apply the play count algorithm for each user separately (each user gets unique sort order)
-            // Process all users in parallel for better performance
-            var userTasks = users.Select(user => Task.Run(async () =>
-            {
-                // Generate play count map for this specific user (different randomization per user)
-                Dictionary<string, (int playCount, BaseItemKind mediaType)>? itemInfoMap;
-                switch (sortOrder)
-                {
-                    case SortOrderOptions.None:
-                        _logger.LogDebug("Using None sort order - setting play counts to zero for user {UserName}", user.Username);
-                        itemInfoMap = playCountZero(allItems);
-                        break;
-
-                    case SortOrderOptions.Random:
-                        _logger.LogDebug("Using Random sort order - randomizing play counts for user {UserName}", user.Username);
-                        itemInfoMap = playCountRandom(allItems);
-                        break;
-
-                    case SortOrderOptions.Smart:
-                        _logger.LogDebug("Using Smart sort order - genre-based sorting for user {UserName}", user.Username);
-                        itemInfoMap = await playCountSmart(user, allItems);
-                        break;
-
-                    case SortOrderOptions.Smartish:
-                        _logger.LogDebug("Using Smartish sort order - genre-based sorting for user {UserName}", user.Username);
-                        itemInfoMap = await playCountSmartish(user, allItems);
-                        break;
-
-                    default:
-                        _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None for user {UserName}", sortOrder, user.Username);
-                        itemInfoMap = playCountZero(allItems);
-                        break;
-                }
-
-                if (itemInfoMap == null)
-                {
-                    _logger.LogWarning("Failed to generate play count map for user {UserName}", user.Username);
-                    return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(BaseItemKind mediaType, string path)>());
-                }
-
-                // Calculate date mappings from play counts
-                var dateMapping = CalculatePlayDateMapping(itemInfoMap);
-
-                // Combine item info and date mapping using folder string as the common key
-                var combinedInfoMap = itemInfoMap.ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => (kvp.Value.playCount, kvp.Value.mediaType, dateMapping.TryGetValue(kvp.Key, out var date) ? date : null)
-                );
-
-                // Apply the play count algorithm for this user asynchronously (sequential within each user)
-                return await ApplyPlayCountAlgorithmAsync(user, combinedInfoMap).ConfigureAwait(false);
-            }));
-
-            // Wait for all users to complete processing
-            var userResults = await Task.WhenAll(userTasks);
-            
-            // Aggregate results from all users
             var allSuccesses = new List<(IJellyfinItem item, int playCount)>();
             var allSkipped = new List<(BaseItemKind mediaType, string path)>();
             var allFailures = new List<(BaseItemKind mediaType, string folder)>();
-            
-            foreach (var userResult in userResults)
+            var failedLibraries = new List<string>();
+            var success = true;
+
+            foreach (var (library, libraryResult) in perLibrary)
             {
-                allSuccesses.AddRange(userResult.successes);
-                allSkipped.AddRange(userResult.skipped);
-                allFailures.AddRange(userResult.failures);
+                if (!libraryResult.Success)
+                {
+                    failedLibraries.Add($"{library.Name}: {libraryResult.Message}");
+                }
+
+                success &= libraryResult.Success;
+                allSuccesses.AddRange(libraryResult.ItemsSorted);
+                allSkipped.AddRange(libraryResult.ItemsSkipped);
+                allFailures.AddRange(libraryResult.ItemsFailed);
             }
             
-            result.Success = true;
-            result.Message = "✅ Sort library completed successfully";
+            result.Success = success;
+            result.Message = success
+                ? "✅ Sort library completed successfully"
+                : "⚠️ Sorting failed: " + string.Join("; ", failedLibraries);
             
             // Populate ProcessResult
             result.ItemsSorted = allSuccesses;
@@ -185,10 +148,139 @@ public class SortService
     }
 
     /// <summary>
-    /// Set the play counts of the Trending library's titles from their position in Jellyseerr's trending list, for all users,
-    /// so sorting that library by play count (ascending) shows Jellyseerr's order. Call inside TrendingLibrary.Enter.
+    /// Applies one library's play count algorithm, for every user. Runs inside the library loop's scope.
+    /// A Legacy library and the global setting decide the algorithm together; other libraries use their own
+    /// Order: AsList sorts by the list ranks, Random/Smart/Smartish and Jellyfin (zero) go through the
+    /// existing play count algorithms (see <see cref="MapLibraryOrder"/>).
     /// </summary>
-    public async Task<SortLibraryResult> SortTrendingAsync()
+    private async Task<SortLibraryResult> SortOneLibraryAsync(DiscoverLibraryConfig library, List<JellyfinUser> users, SortOrderOptions globalSortOrder)
+    {
+        var result = new SortLibraryResult();
+
+        if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
+        {
+            // "Same as the list": play counts follow the list ranks in metadata.json (the sync refreshes the
+            // ranks of its fetched titles; titles that dropped off fall back to the bottom). A Legacy library
+            // never comes here — its Order stays unset and it keeps sorting by the global SortOrder until the
+            // migration (task 4) maps the old settings onto a real Order.
+            return await SortByListAsync();
+        }
+
+        // Get all items of this library
+        var allItems = await GetAllItems();
+        if (allItems == null || allItems.Count == 0)
+        {
+            // A just-created or not-yet-scanned library has nothing to sort — not a failure, or one new library
+            // would turn every sort run into "Sorting failed".
+            result.Success = true;
+            result.Message = $"✅ {library.Name}: no items yet, skipped";
+            return result;
+        }
+
+        var sortOrder = library.Legacy ? globalSortOrder : MapLibraryOrder(library);
+        if (sortOrder is null)
+        {
+            // A future order value with no play-count algorithm yet: skip it with a warning rather than let it
+            // land on the zeroing algorithm.
+            _logger.LogWarning("Library {LibraryName} has order {Order}, which the sort task does not know yet; skipping it",
+                library.Name, library.OrderOrDefault);
+            result.Success = true;
+            result.Message = $"✅ {library.Name}: skipped (unknown order {library.OrderOrDefault})";
+            return result;
+        }
+
+        // Apply the play count algorithm for each user separately (each user gets unique sort order)
+        // Process all users in parallel for better performance
+        var userTasks = users.Select(user => Task.Run(async () =>
+        {
+            // Generate play count map for this specific user (different randomization per user)
+            Dictionary<string, (int playCount, BaseItemKind mediaType)>? itemInfoMap;
+            switch (sortOrder)
+            {
+                case SortOrderOptions.None:
+                    _logger.LogDebug("Using None sort order - setting play counts to zero for user {UserName}", user.Username);
+                    itemInfoMap = playCountZero(allItems);
+                    break;
+
+                case SortOrderOptions.Random:
+                    _logger.LogDebug("Using Random sort order - randomizing play counts for user {UserName}", user.Username);
+                    itemInfoMap = playCountRandom(allItems);
+                    break;
+
+                case SortOrderOptions.Smart:
+                    _logger.LogDebug("Using Smart sort order - genre-based sorting for user {UserName}", user.Username);
+                    itemInfoMap = await playCountSmart(user, allItems);
+                    break;
+
+                case SortOrderOptions.Smartish:
+                    _logger.LogDebug("Using Smartish sort order - genre-based sorting for user {UserName}", user.Username);
+                    itemInfoMap = await playCountSmartish(user, allItems);
+                    break;
+
+                default:
+                    _logger.LogWarning("Unknown sort order value: {SortOrder}, defaulting to None for user {UserName}", sortOrder, user.Username);
+                    itemInfoMap = playCountZero(allItems);
+                    break;
+            }
+
+            if (itemInfoMap == null)
+            {
+                _logger.LogWarning("Failed to generate play count map for user {UserName}", user.Username);
+                return (successes: new List<(IJellyfinItem item, int playCount)>(), failures: new List<(BaseItemKind mediaType, string folder)>(), skipped: new List<(BaseItemKind mediaType, string path)>());
+            }
+
+            // Calculate date mappings from play counts
+            var dateMapping = CalculatePlayDateMapping(itemInfoMap);
+
+            // Combine item info and date mapping using folder string as the common key
+            var combinedInfoMap = itemInfoMap.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (kvp.Value.playCount, kvp.Value.mediaType, dateMapping.TryGetValue(kvp.Key, out var date) ? date : null)
+            );
+
+            // Apply the play count algorithm for this user asynchronously (sequential within each user)
+            return await ApplyPlayCountAlgorithmAsync(user, combinedInfoMap).ConfigureAwait(false);
+        }));
+
+        // Wait for all users to complete processing
+        var userResults = await Task.WhenAll(userTasks);
+
+        foreach (var userResult in userResults)
+        {
+            result.ItemsSorted.AddRange(userResult.successes);
+            result.ItemsSkipped.AddRange(userResult.skipped);
+            result.ItemsFailed.AddRange(userResult.failures);
+        }
+
+        result.Success = true;
+        result.Message = $"✅ {library.Name} sorted";
+        return result;
+    }
+
+    /// <summary>
+    /// Maps a library's own order onto the existing play count algorithms. Null means the sort task skips the
+    /// library. "Jellyfin" ordering leaves ordering to Jellyfin (today's "None"); "AsList" sorts by the list ranks
+    /// through <see cref="SortByListAsync"/> before we get here. An unknown value (a future enum member) maps to
+    /// null too, so it can never land on the zeroing algorithm by default.
+    /// </summary>
+    private static SortOrderOptions? MapLibraryOrder(DiscoverLibraryConfig library) => library.OrderOrDefault switch
+    {
+        DiscoverLibraryOrder.Random => SortOrderOptions.Random,
+        DiscoverLibraryOrder.Smart => SortOrderOptions.Smart,
+        DiscoverLibraryOrder.Smartish => SortOrderOptions.Smartish,
+        DiscoverLibraryOrder.Jellyfin => SortOrderOptions.None,
+        _ => null
+    };
+
+    /// <summary>
+    /// Set the play counts of a library's titles from their list rank in metadata.json, for all users, so sorting
+    /// that library by play count (ascending) shows the list's own order. Call inside the library's
+    /// LibraryScope.Enter.
+    /// Trusts the stored ranks: the sync rewrites metadata.json on every run — fetched titles get their fresh rank,
+    /// and titles that dropped off the list have their rank cleared — so both the sync and the scheduled sort task
+    /// order the same way. Titles without a rank fall back to the bottom.
+    /// </summary>
+    public async Task<SortLibraryResult> SortByListAsync()
     {
         var result = new SortLibraryResult();
         try
@@ -197,14 +289,14 @@ public class SortService
             if (allItems == null)
             {
                 result.Success = true;
-                result.Message = "No trending titles in Jellyfin yet";
+                result.Message = "No list titles in Jellyfin yet";
                 return result;
             }
 
             // Steps of 100 like the other sort orders, so playing a title doesn't change the order
             var itemInfoMap = allItems
                 .Select(itemData => (folder: _metadataService.GetJellyBridgeItemDirectory(itemData.item),
-                    playCount: 100 * (itemData.item.TrendingRank ?? 1000), itemData.mediaType))
+                    playCount: 100 * (itemData.item.ListRank ?? 1000), itemData.mediaType))
                 .Where(x => !string.IsNullOrEmpty(x.folder))
                 .GroupBy(x => x.folder)
                 .ToDictionary(g => g.Key, g => (g.First().playCount, g.First().mediaType));
@@ -222,14 +314,14 @@ public class SortService
             }
 
             result.Success = true;
-            result.Message = "✅ Trending library sorted";
-            _logger.LogDebug("Set the trending order for {Count} titles", itemInfoMap.Count);
+            result.Message = "✅ Library sorted in list order";
+            _logger.LogDebug("Set the list order for {Count} titles", itemInfoMap.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting the trending order");
+            _logger.LogError(ex, "Error setting the list order");
             result.Success = false;
-            result.Message = $"Error setting the trending order: {ex.Message}";
+            result.Message = $"Error setting the list order: {ex.Message}";
         }
 
         return result;

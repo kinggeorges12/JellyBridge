@@ -49,8 +49,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     // The Trending library's folder, when that library is turned on
                     var trendingFolders = new List<string>();
-                    if (TrendingLibrary.GetDirectory() is { } trendingDirectory)
+                    if (DiscoverLibraries.GetTrending() is { } trendingLibrary)
                     {
+                        var trendingDirectory = trendingLibrary.GetDirectory(DiscoverLibraries.GetRootDirectory());
                         Directory.CreateDirectory(trendingDirectory);
                         trendingFolders.Add(trendingDirectory);
                     }

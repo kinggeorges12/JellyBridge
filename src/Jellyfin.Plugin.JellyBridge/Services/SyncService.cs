@@ -24,7 +24,15 @@ public partial class SyncService
     private readonly MetadataService _metadataService;
     private readonly PlaceholderUserDataService _placeholderUserDataService;
     private readonly SortService _sortService;
-    
+    private readonly CleanupService _cleanupService;
+
+    /// <summary>
+    /// UTC time the last successful discover sync finished — scheduled task or either sync endpoint
+    /// (<see cref="SyncFromJellyseerr"/> and <see cref="SyncLibraryAsync"/> both set it). GET
+    /// /JellyBridge/Libraries returns it as lastSync so the settings page also sees endpoint syncs
+    /// (5c review fix 6: the scheduled task's last result misses those).
+    /// </summary>
+    public static DateTime? LastSyncCompleted { get; private set; }
 
     public SyncService(
         ILogger<SyncService> logger,
@@ -35,7 +43,8 @@ public partial class SyncService
         FavoriteService favoriteService,
         MetadataService metadataService,
         PlaceholderUserDataService placeholderUserDataService,
-        SortService sortService)
+        SortService sortService,
+        CleanupService cleanupService)
     {
         _placeholderUserDataService = placeholderUserDataService;
         _logger = new DebugLogger<SyncService>(logger);
@@ -46,6 +55,7 @@ public partial class SyncService
         _favoriteService = favoriteService;
         _metadataService = metadataService;
         _sortService = sortService;
+        _cleanupService = cleanupService;
     }
 
     /// <summary>
@@ -60,69 +70,176 @@ public partial class SyncService
     /// </summary>
     public async Task<SyncJellyseerrResult> SyncFromJellyseerr()
     {
-        var result = await SyncFromJellyseerrAsync(_discoverService.FetchDiscoverMediaAsync);
-        if (TrendingLibrary.IsEnabled)
+        if (LibraryMigrationService.IsMigrationInProgress())
         {
-            var trendingResult = await SyncTrendingFromJellyseerrAsync();
-            if (!trendingResult.Success)
-            {
-                result.Message = result.Success
-                    ? $"⚠️ Discover library synced, Trending library failed: {trendingResult.Message}"
-                    : $"{result.Message} (Trending library: {trendingResult.Message})";
-            }
+            _logger.LogWarning("Refusing the discover sync: JellyBridge library migration in progress.");
+            return new SyncJellyseerrResult { Success = false, Message = "Library migration in progress" };
+        }
 
-            result.Success &= trendingResult.Success;
+        // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(_logger, "sync", SyncOneLibraryAsync,
+            (library, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {library.Name} failed: {ex.Message}" });
 
-            result.ItemsAdded.AddRange(trendingResult.ItemsAdded);
-            result.ItemsUpdated.AddRange(trendingResult.ItemsUpdated);
-            result.ItemsSkipped.AddRange(trendingResult.ItemsSkipped);
-            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
-            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+        var result = new SyncJellyseerrResult { Success = true };
+        if (perLibrary.Count == 0)
+        {
+            result.Success = false;
+            result.Message = "No enabled Discover libraries";
+            return result;
+        }
+
+        var segments = new List<string>();
+        foreach (var (library, libraryResult) in perLibrary)
+        {
+            segments.Add($"{library.Name}: {libraryResult.Message}");
+            result.Success &= libraryResult.Success;
+            result.ItemsAdded.AddRange(libraryResult.ItemsAdded);
+            result.ItemsUpdated.AddRange(libraryResult.ItemsUpdated);
+            result.ItemsSkipped.AddRange(libraryResult.ItemsSkipped);
+            result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
+            result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
+        }
+
+        result.Message = string.Join("; ", segments);
+        if (result.Success)
+        {
+            LastSyncCompleted = DateTime.UtcNow;
         }
 
         return result;
     }
 
     /// <summary>
-    /// Sync the Trending library: the same steps as for the Discover library, run on the trending folder, then remove the
-    /// titles that are no longer trending and set the play counts that sort the library in Jellyseerr's order.
+    /// Sync one named library — the settings page's per-library Sync button (task 5a): the same per-library body
+    /// <see cref="SyncFromJellyseerr"/> runs in the loop, then this library's favorites hide/ignore step, then the
+    /// refresh plan. Note: Caller is responsible for locking.
     /// </summary>
-    private async Task<SyncJellyseerrResult> SyncTrendingFromJellyseerrAsync()
+    /// <param name="name">The library name, matched ignoring case.</param>
+    /// <returns>The library's sync result; an unknown name fails without touching anything.</returns>
+    public async Task<SyncJellyseerrResult> SyncLibraryAsync(string name)
     {
-        var directory = TrendingLibrary.GetDirectory();
-        if (directory == null)
+        if (LibraryMigrationService.IsMigrationInProgress())
         {
-            _logger.LogWarning("The Trending Directory must be outside the Library Directory; skipping the Trending library");
-            return new SyncJellyseerrResult { Success = false, Message = "📁 The Trending Directory must be outside the Library Directory" };
+            _logger.LogWarning("Refusing the single-library sync: JellyBridge library migration in progress.");
+            return new SyncJellyseerrResult { Success = false, Message = "Library migration in progress" };
         }
 
-        Directory.CreateDirectory(directory);
-        using (TrendingLibrary.Enter())
+        var library = DiscoverLibraries.GetAll()
+            .FirstOrDefault(l => string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (library == null)
         {
-            var trending = new List<IJellyseerrItem>();
-            var result = await SyncFromJellyseerrAsync(async () =>
-            {
-                var (movies, shows) = await _discoverService.FetchTrendingMediaAsync();
-                trending.AddRange(movies);
-                trending.AddRange(shows);
-                return (movies, shows);
-            });
-            if (!result.Success)
-            {
-                return result;
-            }
+            return new SyncJellyseerrResult { Success = false, Message = $"No Discover library named '{name}'." };
+        }
 
-            var removed = await RemoveStaleTrendingAsync(trending);
+        var syncResult = await Utils.LibraryLoop.ForLibraryAsync(_logger, "sync", library, SyncOneLibraryAsync,
+            (lib, ex) => new SyncJellyseerrResult { Success = false, Message = $"❌ {lib.Name} failed: {ex.Message}" });
+
+        // This library's favorites hide/ignore pass, the same step the favorites sync runs per library; a failure
+        // there is logged, but the discover sync's own result is what the endpoint reports.
+        var hideResult = await Utils.LibraryLoop.ForLibraryAsync(
+            _logger, "favorites hide/ignore", library,
+            _ => HideIgnoredStepAsync(),
+            (lib, ex) => new SyncJellyfinResult { Success = false, Message = $"{lib.Name} failed: {ex.Message}" });
+        if (!hideResult.Success)
+        {
+            _logger.LogWarning("Favorites hide/ignore failed for library {Library}: {Message}", library.Name, hideResult.Message);
+        }
+
+        await _refreshService.ApplyRefreshAsync(new List<RefreshableResult?> { syncResult, hideResult });
+        if (syncResult.Success)
+        {
+            LastSyncCompleted = DateTime.UtcNow;
+        }
+
+        return syncResult;
+    }
+
+    /// <summary>
+    /// Sync one library: fetch its list and run the shared sync steps, then the list-specific steps — a Trending
+    /// library removes the titles that are no longer trending, and a non-Legacy library whose "Order in Jellyfin"
+    /// is "Same as the list" gets the play counts that sort it in list order (a Legacy library keeps today's
+    /// behaviour: only the sort task touches its play counts, with the global SortOrder). Runs inside the library
+    /// loop's scope.
+    /// </summary>
+    /// <param name="library">The library being synced.</param>
+    private async Task<SyncJellyseerrResult> SyncOneLibraryAsync(DiscoverLibraryConfig library)
+    {
+        // Titles this sync fetches get a fresh CreatedDate; a list-change cleanup (below) must tell fetched from
+        // not-fetched by that, so it pins its cut-off to just before the fetch starts.
+        var syncStart = DateTimeOffset.Now;
+        var fetched = new List<IJellyseerrItem>();
+        var result = await SyncFromJellyseerrAsync(async () =>
+        {
+            // FetchListAsync routes Trending to the trending fetcher and applies the library's Movies/Series filter
+            var (movies, shows) = await _discoverService.FetchListAsync(library);
+            fetched.AddRange(movies);
+            fetched.AddRange(shows);
+            return (movies, shows);
+        });
+        if (!result.Success)
+        {
+            return result;
+        }
+
+        if (!library.Legacy)
+        {
+            // Keep the stored list ranks always fresh: a title that dropped off this list loses its rank in
+            // metadata.json, so the next scheduled sort task (which trusts the stored ranks) puts it at the
+            // fallback like this sync does instead of restoring the stale rank.
+            var clearedRanks = await _metadataService.ClearStaleListRanksAsync(fetched);
+            if (clearedRanks > 0)
+            {
+                _logger.LogDebug("Cleared the stored list rank of {Count} titles no longer on '{LibraryName}'", clearedRanks, library.Name);
+            }
+        }
+
+        if (library.ListType == DiscoverListType.Trending)
+        {
+            var removed = await RemoveStaleTrendingAsync(fetched);
             result.ItemsHidden.AddRange(removed);
             if (removed.Count > 0)
             {
                 result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
             }
-
-            // Titles Jellyfin hasn't scanned yet get their position on the next sync
-            await _sortService.SortTrendingAsync();
-            return result;
         }
+        else if (!library.Legacy && library.ListTypeChangedSinceLastSync)
+        {
+            // Decision 9: the List changed since the last sync — the old list's titles go now, not after the
+            // retention days. Run this library's cleanup once with the retention cut-off pinned to the sync
+            // start: titles this sync (re)fetched have a fresh CreatedDate and stay; the rest are "expired".
+            // The search-added exemption lives in the cleanup itself.
+            var listCleanup = await _cleanupService.CleanupListChangeAsync(syncStart);
+            if (!listCleanup.Success)
+            {
+                result.Success = false;
+                result.Message = $"❌ {library.Name}: list-change cleanup failed: {listCleanup.Message}";
+                return result;
+            }
+
+            if (listCleanup.ItemsDeleted.Count > 0)
+            {
+                _logger.LogInformation("List change: removed {Count} titles no longer on '{LibraryName}' (retention skipped once)",
+                    listCleanup.ItemsDeleted.Count, library.Name);
+                result.ItemsHidden.AddRange(listCleanup.ItemsDeleted);
+                result.Refresh = MergeRefresh(result.Refresh, new RefreshPlan { RemoveRefresh = true });
+            }
+        }
+
+        if (!library.Legacy && library.OrderOrDefault == DiscoverLibraryOrder.AsList)
+        {
+            // Titles Jellyfin hasn't scanned yet get their position on the next sync. The stored ranks are fresh
+            // (ClearStaleListRanksAsync above), so the sync and the sort task order the same way.
+            await _sortService.SortByListAsync();
+        }
+
+        // Record the list this sync ran against (decision 9 bookkeeping) so the next sync sees an unchanged list.
+        if (!library.Legacy && library.LastSyncedListType != library.ListType)
+        {
+            library.LastSyncedListType = library.ListType;
+            Plugin.Instance?.SaveConfiguration();
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -141,6 +258,13 @@ public partial class SyncService
         foreach (var item in movies.Cast<IJellyseerrItem>().Concat(shows))
         {
             if (current.Contains((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            // Decision 9: search-added titles (SearchService.SearchNetworkId) are never removed by any
+            // list-based removal — they were never on a list. Only the rating cleanup may remove them.
+            if (item.NetworkId == SearchService.SearchNetworkId)
             {
                 continue;
             }
@@ -254,7 +378,6 @@ public partial class SyncService
             // Run library scan to find matches and get unmatched items
             // Matched items get a .ignore file created in their folder
             // Unmatched items get a placeholder file created in their folder
-            // When UseNetworkFolders and AddDuplicateContent are enabled, unmatched items calculates on network directory.
             (var matchedItems, var unmatchedItems) = await _bridgeService.BuildJellyfinMatchesAsync(uniqueDiscoverMedia);
             _logger.LogDebug("Step 5: Library scan produced {MatchCount} matches and {UnmatchedCount} unmatched items", matchedItems.Count, unmatchedItems.Count);
             // Remove any unmatched items that already have an ignore file in their folder
@@ -310,7 +433,7 @@ public partial class SyncService
 
             // Step 9: Filter and ignore items with invalid network IDs
             // (Trending titles have no network)
-            if (!TrendingLibrary.IsActive)
+            if (LibraryScope.Current?.ListType != DiscoverListType.Trending)
             {
                 _logger.LogDebug("Step 9: 🔍 Filtering and ignoring items with invalid network IDs...");
                 var (newIgnoredNetwork, existingIgnoredNetwork) = await _discoverService.IgnoreInvalidNetworkItemsAsync();
@@ -372,68 +495,100 @@ public partial class SyncService
     }
 
     /// <summary>
-    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items, in the Discover library
-    /// and, when turned on, the Trending library.
+    /// Sync data from Jellyfin to Jellyseerr by creating requests for favorited bridge-only items (decision 8: a
+    /// title that has a copy in two libraries is requested once and hides both copies). The request steps run once,
+    /// outside the library loop, over the favorites of every bridge folder (deduped by media type and TMDB id); the
+    /// per-folder hide/ignore steps run once per enabled library inside the loop, so each library's own copy gets
+    /// its .ignore and declined requests lose theirs.
     /// Note: Caller is responsible for locking.
     /// </summary>
     public async Task<SyncJellyfinResult> SyncToJellyseerr()
     {
-        var result = await SyncToJellyseerrAsync();
-        if (TrendingLibrary.GetDirectory() is { } directory && Directory.Exists(directory))
+        if (LibraryMigrationService.IsMigrationInProgress())
         {
-            SyncJellyfinResult trendingResult;
-            using (TrendingLibrary.Enter())
+            _logger.LogWarning("Refusing the favorites sync: JellyBridge library migration in progress.");
+            return new SyncJellyfinResult { Success = false, Message = "Library migration in progress" };
+        }
+
+        if (DiscoverLibraries.GetEnabled().Count == 0)
+        {
+            var noneResult = new SyncJellyfinResult { Success = false, Message = "No enabled Discover libraries" };
+            return noneResult;
+        }
+
+        var result = await RequestFavoritesStepAsync();
+        if (!result.Success)
+        {
+            return result;
+        }
+
+        var perLibrary = await Utils.LibraryLoop.ForEachLibraryAsync(
+            _logger, "favorites hide/ignore", _ => HideIgnoredStepAsync(),
+            (library, ex) => new SyncJellyfinResult { Success = false, Message = $"{library.Name} failed: {ex.Message}" });
+
+        var failures = new List<string>();
+        var segments = new List<string> { $"Requests: {result.Message}" };
+        result.Message = string.Empty;
+        foreach (var (library, libraryResult) in perLibrary)
+        {
+            segments.Add($"{library.Name}: {libraryResult.Message}");
+            if (!libraryResult.Success)
             {
-                trendingResult = await SyncToJellyseerrAsync();
+                failures.Add($"{library.Name}: {libraryResult.Message}");
             }
 
-            if (!trendingResult.Success)
-            {
-                result.Message = result.Success
-                    ? $"⚠️ Discover library favorites synced, Trending library failed: {trendingResult.Message}"
-                    : $"{result.Message} (Trending library: {trendingResult.Message})";
-            }
+            result.Success &= libraryResult.Success;
+            result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
+            result.ItemsCleared.AddRange(libraryResult.ItemsCleared);
+            result.ItemsUnhidden.AddRange(libraryResult.ItemsUnhidden);
+            result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
+        }
 
-            result.Success &= trendingResult.Success;
-            result.ItemsProcessed.AddRange(trendingResult.ItemsProcessed);
-            result.ItemsFound.AddRange(trendingResult.ItemsFound);
-            result.ItemsCreated.AddRange(trendingResult.ItemsCreated);
-            result.ItemsBlocked.AddRange(trendingResult.ItemsBlocked);
-            result.ItemsHidden.AddRange(trendingResult.ItemsHidden);
-            result.ItemsCleared.AddRange(trendingResult.ItemsCleared);
-            result.ItemsUnhidden.AddRange(trendingResult.ItemsUnhidden);
-            result.Refresh = MergeRefresh(result.Refresh, trendingResult.Refresh);
+        if (failures.Count > 0)
+        {
+            result.Message = $"⚠️ Favorite hide/ignore failed for {string.Join("; ", failures)}";
+        }
+        else
+        {
+            // One segment per library, like SyncFromJellyseerr's success message
+            result.Message = string.Join("; ", segments);
         }
 
         return result;
     }
 
-    private async Task<SyncJellyfinResult> SyncToJellyseerrAsync()
+    /// <summary>
+    /// The request steps of the favorites sync, run once for all libraries (outside the library scope): connect to
+    /// Jellyseerr, collect the favorites of every bridge folder and request each favorited (media type, TMDB id)
+    /// exactly once. <see cref="FavoriteService.RequestFavorites"/> skips a second copy of the same title. Also
+    /// called by the libraries migration before it moves anything (the moved titles get new item ids).
+    /// </summary>
+    public async Task<SyncJellyfinResult> RequestFavoritesStepAsync()
     {
         var result = new SyncJellyfinResult();
 
         try
         {
-            _logger.LogDebug("Starting sync from Jellyfin to Jellyseerr...");
+            _logger.LogDebug("Starting favorites-to-requests step for all bridge libraries...");
 
             // Step 0: Test connection first
             var status = (SystemStatus)await _apiService.CallEndpointAsync(JellyseerrEndpoint.Status);
             if (status == null)
             {
-                _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync from Jellyseerr to Jellyfin");
+                _logger.LogWarning("Failed to connect to Jellyseerr, skipping sync from Jellyfin to Jellyseerr");
                 result.Success = false;
                 result.Message = "🔌 Failed to connect to Jellyseerr API";
                 return result;
             }
-            
-            // Step 1: Get all Jellyfin users and their favorites from JellyBridge folder
-            _logger.LogDebug("Step 1: Getting Jellyfin favorites from JellyBridge folder");
+
+            // Step 1: Get all Jellyfin users and their favorites from every JellyBridge library folder
+            _logger.LogDebug("Step 1: Getting Jellyfin favorites from all JellyBridge folders");
             var bridgeFavoritedItems = _favoriteService.GetUserFavorites();
             _logger.LogDebug("Step 1: Retrieved {Count} favorited bridge items", bridgeFavoritedItems.Count);
-            
+
             // Add items to unified collection
             result.ItemsProcessed.AddRange(bridgeFavoritedItems.Select(fav => fav.item));
-            
+
             // Step 2: Get all Jellyseerr users for request creation
             _logger.LogDebug("Step 2: Fetching Jellyseerr users for request creation");
             var jellyseerrUsersTask = _favoriteService.GetJellyseerrUsersAsync();
@@ -441,7 +596,7 @@ public partial class SyncService
             // Step 3: Filter out items that already have requests in Jellyseerr
             _logger.LogDebug("Step 3: Filtering favorites that already have Jellyseerr requests");
             var filteredFavoritesTask = _favoriteService.FilterRequestsFromFavorites(bridgeFavoritedItems);
-            
+
             await Task.WhenAll(jellyseerrUsersTask, filteredFavoritesTask);
             var jellyseerrUsers = await jellyseerrUsersTask;
             var (requestedFavorites, unrequestedFavorites) = await filteredFavoritesTask;
@@ -454,17 +609,51 @@ public partial class SyncService
             _logger.LogDebug("Step 4: Mapping favorites to Jellyseerr users");
             var unrequestedFavoritesWithJellyseerrUser = _favoriteService.EnsureJellyseerrUser(unrequestedFavorites, jellyseerrUsers);
 
-            // Step 5: Create requests for favorited bridge-only items
+            // Step 5: Create requests for favorited bridge-only items (once per media type + TMDB id)
             _logger.LogDebug("Step 5: Creating Jellyseerr requests for mapped favorites");
             var (requestResults, blockedItems) = await _favoriteService.RequestFavorites(unrequestedFavoritesWithJellyseerrUser);
 
             // Add requests to unified collection
             // Several favorited seasons of a show share one request
             result.ItemsCreated.AddRange(requestResults.Select(r => r.request).Where(r => r != null).Distinct());
-            
+
             // Add blocked items to unified collection
             result.ItemsBlocked.AddRange(blockedItems);
-            
+
+            result.Success = true;
+            result.Message = $"✅ {requestResults.Count} favorited titles requested";
+
+            _logger.LogDebug("Favorites-to-requests step completed with {ResultCount} successful requests", requestResults.Count);
+        }
+        catch (MissingMethodException ex)
+        {
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping sync to Jellyseerr");
+            result.Success = false;
+            result.Message = "❌ Using incompatible Jellyfin version. Skipping sync to Jellyseerr";
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during favorites-to-requests step");
+            result.Success = false;
+            result.Message = $"❌ Sync to Jellyseerr failed: {ex.Message}";
+            result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The per-folder hide/ignore steps of the favorites sync, run once per library inside the library loop: mark
+    /// requested titles hidden with an .ignore in the current library's folder (plus every other library folder
+    /// that holds the same title), unfavorite them, and remove the .ignore files of declined requests again.
+    /// </summary>
+    private async Task<SyncJellyfinResult> HideIgnoredStepAsync()
+    {
+        var result = new SyncJellyfinResult();
+
+        try
+        {
             // Step 6: For requested items, unmark as favorite for the user and create an .ignore file in each bridge item directory
             _logger.LogDebug("Step 6: Unfavoriting requested items and creating ignore files");
             var (newlyIgnoredItems, clearedItems, hiddenSeasons) = await _favoriteService.ClearAndIgnoreRequestedAsync();
@@ -473,7 +662,7 @@ public partial class SyncService
             _logger.LogDebug("Step 6: Hidden {NewlyIgnored} items and {HiddenSeasons} requested seasons, cleared {ClearedCount} items",
                 newlyIgnoredItems.Count, hiddenSeasons.Count, clearedItems.Count);
 
-            //Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
+            // Step 8: Check requests again and remove .ignore files for items that are no longer in the requested items in Jellyseerr
             _logger.LogDebug("Step 7: Removing .ignore files for fully declined requests");
             var declinedItems = await _favoriteService.UnignoreDeclinedRequests();
             result.ItemsUnhidden.AddRange(declinedItems);
@@ -498,25 +687,25 @@ public partial class SyncService
 
             // Step 9: Save results
             result.Success = true;
-            result.Message = "✅ Sync to Jellyseerr completed successfully";
-            
-            _logger.LogDebug("Sync to Jellyseerr completed with {ResultCount} successful requests", requestResults.Count);
+            result.Message = "✅ hide/ignore completed";
+
+            _logger.LogDebug("Hide/ignore step completed for the current library");
         }
         catch (MissingMethodException ex)
         {
-            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping sync to Jellyseerr");
+            _logger.LogDebug(ex, "Using incompatible Jellyfin version. Skipping hide/ignore step");
             result.Success = false;
             result.Message = "❌ Using incompatible Jellyfin version. Skipping sync to Jellyseerr";
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during sync to Jellyseerr");
+            _logger.LogError(ex, "Error during hide/ignore step");
             result.Success = false;
             result.Message = $"❌ Sync to Jellyseerr failed: {ex.Message}";
             result.Details = $"Exception type: {ex.GetType().Name}\nStack trace: {ex.StackTrace}";
         }
-        
+
         return result;
     }
 }

@@ -74,11 +74,19 @@ public class SearchService
     }
 
     /// <summary>
-    /// Whether Seerr results are added to Jellyfin's search. Network folders are not supported since search results have no network.
+    /// Whether Seerr results are added to Jellyfin's search. Network folders are not supported since search results have no
+    /// network — once the library list has been migrated that is no longer a reason (each library owns its networks); task 3
+    /// removes the old-settings check entirely.
     /// </summary>
-    public static bool IsEnabled =>
-        Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults))
-        && !Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
+    public static bool IsEnabled
+    {
+        get
+        {
+            // Network Folders used to disable search (search-added titles had no network folder); the
+            // libraries are flat now, so the setting alone decides.
+            return Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.EnableSearchResults));
+        }
+    }
 
     /// <summary>
     /// True for the id of a search result card.
@@ -100,7 +108,11 @@ public class SearchService
     }
 
     /// <summary>
-    /// True when the user can see a library that holds the JellyBridge folder.
+    /// True when the user can see a library that holds a folder titles opened from search land in. Checked against
+    /// the search-open libraries (decision D3), never the Library Directory root: after the migration the root holds
+    /// every library folder, so a root check would be true for a user who can see only one library (e.g. only
+    /// Trending) that search opens can never add to. The user can see Discover when one of their libraries holds
+    /// either search-open folder.
     /// </summary>
     public bool UserCanSeeDiscover(Guid userId)
     {
@@ -110,10 +122,25 @@ public class SearchService
             return false;
         }
 
-        var baseDirectory = FolderUtils.GetBaseDirectory();
+        var root = DiscoverLibraries.GetRootDirectory();
+        var openFolders = new[]
+            {
+                DiscoverLibraries.GetForSearchOpen(isMovie: true),
+                DiscoverLibraries.GetForSearchOpen(isMovie: false)
+            }
+            .Where(library => library != null)
+            .Select(library => library!.GetDirectory(root))
+            .DistinctBy(FolderUtils.GetNormalizedPath)
+            .ToList();
+        if (openFolders.Count == 0)
+        {
+            return false;
+        }
+
         return _libraryManager.GetUserRootFolder().GetChildren(user, true).OfType<CollectionFolder>()
             .Any(library => library.PhysicalLocations.Any(path =>
-                FolderUtils.IsPathInDirectory(path, baseDirectory) || FolderUtils.IsPathInDirectory(baseDirectory, path)));
+                openFolders.Any(folder =>
+                    FolderUtils.IsPathInDirectory(path, folder) || FolderUtils.IsPathInDirectory(folder, path))));
     }
 
     /// <summary>
@@ -187,6 +214,18 @@ public class SearchService
             {
                 return existing.Id;
             }
+
+            // Pick the library to open into (decision D3) and run the whole write inside its scope, so the title
+            // folder, placeholders and artwork all resolve through the scope below.
+            var target = DiscoverLibraries.GetForSearchOpen(item is JellyseerrMovie);
+            if (target == null)
+            {
+                _logger.LogWarning("Cannot add {ItemName} from search: no Discover library is configured", item.MediaName);
+                return null;
+            }
+
+            using var libraryScope = LibraryScope.Enter(target);
+            Directory.CreateDirectory(target.GetDirectory(DiscoverLibraries.GetRootDirectory()));
 
             using var scope = _scopeFactory.CreateScope();
             var metadataService = scope.ServiceProvider.GetRequiredService<MetadataService>();

@@ -60,6 +60,8 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(MinimumVotes), 30 },
 
         // Library Settings
+        { nameof(LibrariesMigrationVersion), 0 },
+        { nameof(ShowLibrariesMigrationNotice), false },
         { nameof(ManageJellyBridgeLibrary), true },
         { nameof(ExcludeFromMainLibraries), true },
         { nameof(ResponsiveFavoriteRequests), true },
@@ -67,14 +69,19 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(UserPermissionRequest4k), true },
         { nameof(RequestFirstSeason), false },
         { nameof(UseMixedMediaLibrary), true },
+        // The libraries migration (task 4) reads these three when converting the old layout
+#pragma warning disable CS0618
         { nameof(UseNetworkFolders), false },
+#pragma warning restore CS0618
         { nameof(EnableSearchResults), false },
         { nameof(UseSeasonPlaceholders), false },
         { nameof(UseTrendingLibrary), false },
         { nameof(TrendingDirectory), string.Empty },
         { nameof(TrendingPages), 3 },
+#pragma warning disable CS0618
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
+#pragma warning restore CS0618
 
         // Customize Promo Videos
         { nameof(CustomMoviesPromo), string.Empty },
@@ -121,10 +128,33 @@ public class PluginConfiguration : BasePluginConfiguration
 
     // ===== Library Settings =====
     /// <summary>
-    /// Gets or sets the library directory.
+    /// Gets or sets the library directory. Every Discover library lives in a subfolder of it.
     /// </summary>
     [Required]
     public string LibraryDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Discover libraries, each one a subfolder of <see cref="LibraryDirectory"/> and a Jellyfin
+    /// library. Empty until the startup migration turns the previous single-library settings into a first library.
+    /// </summary>
+    public List<DiscoverLibraryConfig> DiscoverLibraries { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the version of the Discover libraries migration that has run (0 = old layout, 1 = migrated).
+    /// </summary>
+    public int? LibrariesMigrationVersion { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the settings page shows the one-time notice about the changes the migration made.
+    /// </summary>
+    public bool? ShowLibrariesMigrationNotice { get; set; }
+
+    /// <summary>
+    /// Gets or sets the outstanding Discover libraries migration issues: one human-readable line per Jellyfin
+    /// library repoint that failed during the migration (the library still points at the old folder and needs
+    /// the new path added by hand). Empty after a clean migration; listed by the settings-page banner.
+    /// </summary>
+    public List<string> LibrariesMigrationIssues { get; set; } = new();
 
     /// <summary>
     /// Gets or sets whether the plugin is enabled.
@@ -229,6 +259,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to use network folders for streaming services.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public bool? UseNetworkFolders { get; set; }
 
     /// <summary>
@@ -259,11 +290,13 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets whether to duplicate discover content for JellyBridge libraries, allowing duplicate content from different networks as long as content is unique within each library.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public bool? AddDuplicateContent { get; set; }
 
     /// <summary>
     /// Gets or sets the prefix for streaming service libraries.
     /// </summary>
+    [Obsolete("Read only by the libraries migration")]
     public string NetworkFolderPrefix { get; set; } = string.Empty;
 
     // ===== Customize Promo Videos =====

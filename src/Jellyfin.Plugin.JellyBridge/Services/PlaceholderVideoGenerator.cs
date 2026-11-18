@@ -744,10 +744,10 @@ public class PlaceholderVideoGenerator
         List<string> failures = new List<string>();
 
         // Get the library root once
-        string libraryRoot = FolderUtils.GetBaseDirectory();
-        if (!FolderUtils.FolderExistsThrowNull(libraryRoot))
+        var bridgeDirectories = FolderUtils.GetBridgeDirectories().Where(Directory.Exists).ToList();
+        if (bridgeDirectories.Count == 0)
         {
-            _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
+            _logger.LogDebug("No JellyBridge library folders exist yet, skipping placeholder refresh");
             return (successMovies, successSeries, failures);
         }
 

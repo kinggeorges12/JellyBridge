@@ -97,7 +97,6 @@ public class RefreshService
         try
         {
             var config = Plugin.GetConfiguration();
-            var syncDirectory = FolderUtils.GetBaseDirectory();
             var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
 
             if (!manageJellyBridgeLibrary) {
@@ -342,9 +341,10 @@ public class RefreshService
     /// </summary>
     public async Task<bool?> ScanAllLibraries(bool force=false)
     {
-        var libraryDir = FolderUtils.GetBaseDirectory();
-        var tempDir = Path.Combine(libraryDir, "_Recycle_JellyBridge");
-        var fileCreated = false;
+        // The marker has to sit inside a Jellyfin library folder, so create one per bridge folder: the
+        // Library Directory itself until the libraries migration has run, every library folder after
+        // (after the migration the root is no longer inside any library, so a marker there would be missed).
+        var createdTempDirs = new List<string>();
         try
         {
             var manageJellyBridgeLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.ManageJellyBridgeLibrary));
@@ -357,12 +357,16 @@ public class RefreshService
 
             if (force)
             {
-                if (!FolderUtils.FolderExistsThrowNull(tempDir)){
-                    Directory.CreateDirectory(tempDir);
+                foreach (var bridgeDirectory in FolderUtils.GetBridgeDirectories())
+                {
+                    var tempDir = Path.Combine(bridgeDirectory, "_Recycle_JellyBridge");
+                    if (!FolderUtils.FolderExistsThrowNull(tempDir)){
+                        Directory.CreateDirectory(tempDir);
+                    }
+                    // Create temp file to force refresh
+                    File.Create(Path.Combine(tempDir, ".ignore")).Close();
+                    createdTempDirs.Add(tempDir);
                 }
-                // Create temp file to force refresh
-                File.Create(Path.Combine(tempDir, ".ignore")).Close();
-                fileCreated = true;
             }
 
             _logger.LogDebug("Starting full scan of all Jellyfin libraries...");
@@ -385,10 +389,17 @@ public class RefreshService
         }
         finally
         {
-            if(fileCreated)
+            foreach (var tempDir in createdTempDirs)
             {
-                // Clean up temp directory
-                Directory.Delete(tempDir, true);
+                // Clean up temp directories
+                try
+                {
+                    Directory.Delete(tempDir, true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not remove the scan marker {TempDir}.", tempDir);
+                }
             }
         }
     }

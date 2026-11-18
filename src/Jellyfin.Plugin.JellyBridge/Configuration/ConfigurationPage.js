@@ -28,7 +28,10 @@ export default function (view) {
             // Initialize general settings including test connection
             initializeGeneralSettings(page);
             
-            // Initialize manage discover library settings
+            // Initialize the Discover libraries cards, status strip and migration banner (5b/5d)
+            initializeDiscoverLibraries(page);
+            
+            // Initialize organize library settings (Automated Library Refresh)
             initializeOrganizeLibrary(page);
             
             // Initialize import discover content settings including network interface and sync buttons
@@ -399,253 +402,1060 @@ function performTestConnection(page) {
 
 function initializeOrganizeLibrary(page) {
     setInputField(page, 'ManageJellyBridgeLibrary', true);
-    setInputField(page, 'UseMixedMediaLibrary', true);
-    setInputField(page, 'UseNetworkFolders', true);
-    setInputField(page, 'UseTrendingLibrary', true);
-    setInputField(page, 'TrendingDirectory');
-    setInputField(page, 'TrendingPages');
-    const trendingDirectoryInput = page.querySelector('#TrendingDirectory');
-    const libraryDirectoryInput = page.querySelector('#LibraryDirectory');
-    // Empty means a folder next to the Library Directory, named after it
-    const showTrendingDirectoryDefault = () => {
-        trendingDirectoryInput.placeholder = (libraryDirectoryInput.value || libraryDirectoryInput.placeholder || '').replace(/[\\/]+$/, '') + ' Trending';
-    };
-    showTrendingDirectoryDefault();
-    libraryDirectoryInput.addEventListener('input', showTrendingDirectoryDefault);
-    page.querySelector('#browseTrendingDirectory').addEventListener('click', function() {
-        browseFolder(trendingDirectoryInput, "Select JellyBridge Trending Directory");
-    });
-    setInputField(page, 'AddDuplicateContent', true);
-    setInputField(page, 'NetworkFolderPrefix');
+}
 
-    // Add create default library event listener
-    const createButton = page.querySelector('#createDefaultLibrary');
-    createButton.addEventListener('click', function () {
-        createDefaultLibrary(page);
+// ==========================================
+// DISCOVER LIBRARIES FUNCTIONS (task 5b/5d)
+// ==========================================
+
+// The GET /JellyBridge/Libraries entries [{ library, name, directory, jellyfinLibraryId, jellyfinLibraryName,
+// titleCount }], kept so the toggles can POST the whole list back without a second fetch.
+let discoverLibrariesEntries = [];
+
+function librariesAreMigrated() {
+    const config = window.configJellyBridge || {};
+    return (config.LibrariesMigrationVersion ?? 0) >= 1;
+}
+
+function getLibraryNetworkMap() {
+    const config = window.configJellyBridge || {};
+    if (Array.isArray(config.NetworkMap) && config.NetworkMap.length > 0) {
+        return config.NetworkMap;
+    }
+    return (config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || [];
+}
+
+function libraryListLabel(listType) {
+    switch (listType) {
+        case 'NewReleases': return 'New releases';
+        case 'ComingSoon': return 'Coming soon';
+        case 'Trending': return 'Trending';
+        case 'TopRated': return 'Top rated';
+        default: return 'Popular';
+    }
+}
+
+function libraryOrderLabel(library) {
+    const order = library.order ?? 'AsList';
+    switch (order) {
+        case 'AsList': return 'Seerr order';
+        case 'Jellyfin': return "Jellyfin's own sort";
+        default: return order; // Random / Smart / Smartish
+    }
+}
+
+function librarySummary(entry) {
+    const library = entry.library || {};
+    const parts = [library.libraryType || 'All'];
+    if (library.listType === 'Trending') {
+        parts.push(libraryOrderLabel(library));
+    } else if (Array.isArray(library.networkIds) && library.networkIds.length > 0) {
+        const networkMap = getLibraryNetworkMap();
+        parts.push(library.networkIds.map(id => {
+            const network = networkMap.find(n => n && n.id === id);
+            return network ? network.name : ('#' + id);
+        }).join(', '));
+    } else {
+        parts.push('all networks');
+    }
+    parts.push((entry.titleCount ?? 0) + ' titles');
+    return parts.join(' · ');
+}
+
+function escapeLibraryHtml(text) {
+    return String(text ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+}
+
+function initializeDiscoverLibraries(page) {
+    const syncAllButton = page.querySelector('#syncAllLibraries');
+    if (syncAllButton) {
+        syncAllButton.addEventListener('click', function () {
+            performSyncAllLibraries(page);
+        });
+    }
+
+    const dismissButton = page.querySelector('#dismissLibrariesMigrationBanner');
+    if (dismissButton) {
+        dismissButton.addEventListener('click', function () {
+            dismissLibrariesMigrationNotice(page);
+        });
+    }
+
+    // 5c: template picker, inline library editor, and their stable ids.
+    initializeLibraryEditorBindings(page);
+
+    loadDiscoverLibraries(page); // the Libraries payload carries lastSync (5c review fix 6)
+}
+
+function loadDiscoverLibraries(page) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'GET',
+        dataType: 'json'
+    }).then(function (data) {
+        // 5c review fix 6: GET Libraries answers { lastSync, libraries } (lastSync = SyncService.LastSyncCompleted,
+        // set by endpoint syncs too — the scheduled task alone missed those). A bare list (older payload) still works.
+        discoverLibrariesEntries = Array.isArray(data) ? data : ((data && data.libraries) || []);
+        renderDiscoverLibraries(page);
+        renderLibraryStatusStrip(page);
+        renderLibrariesMigrationBanner(page);
+        if (Array.isArray(data)) {
+            loadLibraryLastSync(page); // no lastSync in the payload: fall back to the scheduled task's result
+        } else {
+            renderLibraryLastSyncValue(page, data.lastSync);
+        }
+    }).catch(function (error) {
+        DisplayMessage('❌ Failed to load Discover libraries: ' + (error?.message || error));
     });
 }
 
-function getDefaultLibrarySettings(page, directories) {
-    // These are default options that need to be validated from the server options
-    let libraryJson = {
-        "LibraryOptions": {
-            "Enabled": true,
-            "PathInfos": directories.map(dir => ({ "Path": dir })),
-            "EnableRealtimeMonitor": false,
-            "MetadataSavers": ["Nfo"],
-            "LocalMetadataReaderOrder": ["Nfo"],
-            "SaveLocalMetadata": true,
-            "AllowEmbeddedSubtitles": "AllowNone",
-            "DisabledSubtitleFetchers": [],
-            "SubtitleFetcherOrder": [],
-            "EnableTrickplayImageExtraction": false,
-            "TypeOptions": [
-                {
-                    "Type": "Series",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
-                },
-                {
-                    "Type": "Season",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB"]
-                },
-                {
-                    "Type": "Episode",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
-                },
-                {
-                    "Type": "Movie",
-                    "MetadataFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "MetadataFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetchers": ["TheMovieDb", "TheTVDB", "The Open Movie Database"],
-                    "ImageFetcherOrder": ["TheMovieDb", "TheTVDB", "The Open Movie Database"]
-                }
-            ]
-        }
-    };
+function renderDiscoverLibraries(page) {
+    const listElement = page.querySelector('#discoverLibraryList');
+    const readOnlyNote = page.querySelector('#discoverLibrariesReadOnlyNote');
+    const addLibraryButton = page.querySelector('#addLibraryButton');
+    if (!listElement) return;
 
-    // Validate library settings
-    return ApiClient.fetch({
-        'url': ApiClient.getUrl('Libraries/AvailableOptions', {'IsNewLibrary': true}),
-        'headers': {'accept': 'application/json'},
-        'dataType': 'json'
-    }).then(function(response) {
-        if (!response) return;
-        
-        // Clean MetadataSavers
-        if (response.MetadataSavers) {
-            const validSaverNames = response.MetadataSavers.map(s => s.Name);
-            libraryJson.LibraryOptions.MetadataSavers = libraryJson.LibraryOptions.MetadataSavers
-                .filter(saver => validSaverNames.includes(saver));
-        }
-        
-        // Clean LocalMetadataReaderOrder
-        if (response.MetadataReaders) {
-            const validReaderNames = response.MetadataReaders.map(r => r.Name);
-            libraryJson.LibraryOptions.LocalMetadataReaderOrder = libraryJson.LibraryOptions.LocalMetadataReaderOrder
-                .filter(reader => validReaderNames.includes(reader));
+    const migrated = librariesAreMigrated();
+    if (readOnlyNote) {
+        readOnlyNote.style.display = migrated ? 'none' : 'block';
+    }
+    if (addLibraryButton) {
+        addLibraryButton.disabled = !migrated;
+    }
+    if (!migrated && libraryEditorDraft) {
+        closeLibraryEditor(page); // editors only exist after the migration
+    }
+
+    // Capture the open editor's current input values before the list (and with it the editor's
+    // current position in the DOM) is rebuilt; attachLibraryEditor puts it back afterwards.
+    if (libraryEditorVisible) {
+        syncLibraryEditorDraft(page);
+    }
+
+    listElement.innerHTML = '';
+    discoverLibrariesEntries.forEach(function (entry) {
+        const library = entry.library || {};
+        const isDefault = library.isDefault ?? false;
+        const isEnabled = migrated && !isDefault ? (library.isEnabled ?? true) : true;
+
+        const card = document.createElement('div');
+        card.className = 'discoverLibraryCard' + (isEnabled ? '' : ' off');
+        card.setAttribute('data-library-name', entry.name || library.name || '');
+
+        const tags = '<span class="libraryTag">' + escapeLibraryHtml(libraryListLabel(library.listType)) + '</span>'
+            + (isDefault ? '<span class="libraryTag libraryTagDefault">★ Default</span>' : '');
+
+        // 5c review fix 2: a plain checkbox — the emby-checkbox markup built with innerHTML never rendered the
+        // tick. The editor's own static emby checkboxes are unaffected.
+        const toggleDisabled = !migrated || isDefault;
+        const toggleTitle = !migrated
+            ? 'Libraries become editable after the one-time migration on the next restart'
+            : (isDefault ? 'The Default library is always on' : (isEnabled ? 'Turn this library off' : 'Turn this library on'));
+
+        // 5c review fix 5: a library shows Create only when it has no Jellyfin library at all — after a rename
+        // the virtual folder can briefly lack its ItemId while jellyfinLibraryName is already there.
+        const createButton = (migrated && !entry.jellyfinLibraryName)
+            ? '<button is="emby-button" type="button" class="raised button emby-button libraryCreateButton" style="min-width: auto;" title="Create this library\'s folder and Jellyfin library"><span>🏗️ Create library</span></button>'
+            : '';
+
+        card.innerHTML =
+            '<div class="discoverLibraryRow">' +
+                '<div class="discoverLibraryInfo">' +
+                    '<span class="discoverLibraryName">' + escapeLibraryHtml(entry.name || library.name) + '</span>' +
+                    tags +
+                    '<div class="discoverLibraryMeta">' + escapeLibraryHtml(librarySummary(entry)) + '</div>' +
+                '</div>' +
+                '<label class="emby-checkbox-label">' +
+                    '<input type="checkbox" class="libraryToggle"' +
+                        (isEnabled ? ' checked' : '') + (toggleDisabled ? ' disabled' : '') + ' title="' + escapeLibraryHtml(toggleTitle) + '" />' +
+                '</label>' +
+                createButton +
+                '<button is="emby-button" type="button" class="libraryGear"' + (migrated ? '' : ' disabled') +
+                    ' title="' + escapeLibraryHtml(migrated ? 'Edit this library' : 'Libraries become editable after the one-time migration on the next restart') + '">⚙️</button>' +
+            '</div>';
+
+        if (migrated && !isDefault) {
+            const toggle = card.querySelector('.libraryToggle');
+            toggle.addEventListener('change', function () {
+                saveLibraryToggle(page, entry.name || library.name, this.checked, card);
+            });
         }
 
-        // Disable all subtitle fetchers
-        if (response.SubtitleFetchers) {
-            let subtitleFetcherNames = response.SubtitleFetchers.map(f => f.Name);
-            libraryJson.LibraryOptions.DisabledSubtitleFetchers = subtitleFetcherNames;
-            libraryJson.LibraryOptions.SubtitleFetcherOrder = subtitleFetcherNames;
+        if (migrated) {
+            const gear = card.querySelector('.libraryGear');
+            gear.addEventListener('click', function () {
+                openLibraryEditorFor(page, entry.name || library.name);
+            });
         }
-        
-        // Clean TypeOptions - remove unavailable fetchers
-        if (response.TypeOptions) {
-            libraryJson.LibraryOptions.TypeOptions = libraryJson.LibraryOptions.TypeOptions
-                .map(typeOption => {
-                    // Find matching server type
-                    const serverType = response.TypeOptions.find(t => t.Type === typeOption.Type);
-                    if (!serverType) return null; // Type not available on server
-                    
-                    // Get available fetchers
-                    const availableFetchers = serverType.MetadataFetchers.map(f => f.Name);
-                    const availableImageFetchers = serverType.ImageFetchers.map(f => f.Name);
-                    
-                    // Filter MetadataFetchers
-                    typeOption.MetadataFetchers = typeOption.MetadataFetchers
-                        .filter(f => availableFetchers.includes(f));
-                    typeOption.MetadataFetcherOrder = typeOption.MetadataFetcherOrder
-                        .filter(f => availableFetchers.includes(f));
-                    
-                    // Filter ImageFetchers
-                    typeOption.ImageFetchers = typeOption.ImageFetchers
-                        .filter(f => availableImageFetchers.includes(f));
-                    typeOption.ImageFetcherOrder = typeOption.ImageFetcherOrder
-                        .filter(f => availableImageFetchers.includes(f));
-                    
-                    return typeOption;
-                })
-                .filter(type => type !== null); // Remove unavailable types
+
+        if (createButton) {
+            const createBtn = card.querySelector('.libraryCreateButton');
+            createBtn.addEventListener('click', function () {
+                performCreateLibrary(page, entry.name || library.name, this);
+            });
         }
-        return libraryJson;
-    }).catch(function(error) {
-        console.error('❌ Error fetching library options:', error);
-        return libraryJson;
+
+        listElement.appendChild(card);
+    });
+
+    // A template/duplicate draft has no saved card yet: render its card marked unsaved so the editor opens inline.
+    if (libraryEditorDraft && libraryEditorDraft.isNew) {
+        const draftCard = document.createElement('div');
+        draftCard.className = 'discoverLibraryCard';
+        draftCard.setAttribute('data-library-name', libraryEditorDraft.library.name || '');
+        draftCard.innerHTML =
+            '<div class="discoverLibraryRow">' +
+                '<div class="discoverLibraryInfo">' +
+                    '<span class="discoverLibraryName">' + escapeLibraryHtml(libraryEditorDraft.library.name) + '</span>' +
+                    '<span class="libraryTag">unsaved</span>' +
+                    '<div class="discoverLibraryMeta">' + escapeLibraryHtml(pendingLibrarySummary(libraryEditorDraft.library)) + '</div>' +
+                '</div>' +
+            '</div>';
+        listElement.appendChild(draftCard);
+    }
+
+    attachLibraryEditor(page);
+}
+
+// The on/off toggle POSTs the whole list (names included — the server rejects lists that drop one).
+function saveLibraryToggle(page, libraryName, enabled, card) {
+    const body = discoverLibrariesEntries.map(function (entry) {
+        const library = JSON.parse(JSON.stringify(entry.library || {}));
+        if ((entry.name || library.name) === libraryName) {
+            library.isEnabled = enabled;
+        }
+        if (library.isDefault ?? false) {
+            library.isEnabled = true; // decision 7: Default is always on
+        }
+        return library;
+    });
+
+    if (card) card.classList.add('off');
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'POST',
+        data: JSON.stringify(body),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (result) {
+        discoverLibrariesEntries = (result && result.libraries) || discoverLibrariesEntries;
+        renderDiscoverLibraries(page);
+        renderLibraryStatusStrip(page);
+        DisplayMessage('✅ ' + ((result && result.message) || 'Libraries saved.'));
+    }).catch(async function (error) {
+        let message = error?.message || 'Unknown error';
+        try {
+            const errorBody = await error.json();
+            if (errorBody && errorBody.message) message = errorBody.message;
+        } catch (e) { /* keep the generic message */ }
+        DisplayMessage('❌ Failed to save the library change: ' + message);
+        renderDiscoverLibraries(page); // reset the toggle to the stored state
     });
 }
 
-function findLibraryUsingFolders(directories) {
-    // Returns the name of an existing library that already contains one of the directories
-    const normalize = path => (path || '').replace(/[\\/]+$/, '');
-    const wanted = directories.map(normalize);
-    return ApiClient.fetch({
-        'url': ApiClient.getUrl('Library/VirtualFolders'),
-        'headers': {'accept': 'application/json'},
-        'dataType': 'json'
-    }).then(function(libraries) {
-        const match = (libraries || []).find(library =>
-            (library.Locations || []).some(location => wanted.includes(normalize(location))));
-        return match ? match.Name : null;
+function renderLibraryStatusStrip(page) {
+    const activeItem = page.querySelector('#activeLibrariesItem');
+    if (activeItem) {
+        const activeCount = discoverLibrariesEntries.filter(function (entry) {
+            const library = entry.library || {};
+            return (library.isDefault ?? false) || (library.isEnabled ?? true);
+        }).length;
+        activeItem.textContent = activeCount + ' active librar' + (activeCount === 1 ? 'y' : 'ies');
+    }
+    checkSeerrConnection(page);
+}
+
+// Seerr connection: reuse the plugin's TestConnection endpoint with the saved settings (the masked
+// ApiKey is accepted and replaced server-side).
+function checkSeerrConnection(page) {
+    const statusItem = page.querySelector('#seerrStatusItem');
+    if (!statusItem) return;
+    const config = window.configJellyBridge || {};
+    statusItem.textContent = 'Seerr: checking…';
+    statusItem.className = 'libraryStatusItem';
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/TestConnection'),
+        type: 'POST',
+        data: JSON.stringify({
+            JellyseerrUrl: config.JellyseerrUrl || '',
+            ApiKey: config.ApiKey || '',
+            LibraryDirectory: config.LibraryDirectory || ''
+        }),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function () {
+        statusItem.textContent = '● Seerr connected';
+        statusItem.className = 'libraryStatusItem okc';
+    }).catch(function () {
+        statusItem.textContent = '● Seerr not connected';
+        statusItem.className = 'libraryStatusItem err';
     });
 }
 
-function createVirtualFolders(page, libraryName, libraryType, directories) {
-    // Skip if a library already uses these folders, otherwise Jellyfin creates a duplicate (e.g. "Discover2")
-    return findLibraryUsingFolders(directories).then(function(existingLibrary) {
-        if (existingLibrary) {
-            DisplayMessage("⚠️ Library '" + existingLibrary + "' already uses the JellyBridge folder. No new library created.");
+// Last sync from the GET Libraries payload (5c review fix 6).
+function renderLibraryLastSyncValue(page, lastSync) {
+    const lastSyncItem = page.querySelector('#lastSyncItem');
+    if (!lastSyncItem) return;
+    lastSyncItem.className = 'libraryStatusItem';
+    lastSyncItem.textContent = lastSync
+        ? 'Last sync: ' + new Date(lastSync).toLocaleString()
+        : 'Last sync: never';
+}
+
+// Fallback last sync: the JellyBridge Sync scheduled task's last result (older payload without lastSync).
+function loadLibraryLastSync(page) {
+    const lastSyncItem = page.querySelector('#lastSyncItem');
+    if (!lastSyncItem || !ApiClient.getScheduledTasks) return;
+    ApiClient.getScheduledTasks().then(function (tasks) {
+        const syncTask = (tasks || []).find(function (task) { return task && task.Name === 'JellyBridge Sync'; });
+        if (!syncTask) {
+            lastSyncItem.textContent = 'Last sync: never';
             return;
         }
-        return createNewVirtualFolders(page, libraryName, libraryType, directories);
+        const lastTime = syncTask.LastExecutionTime || (syncTask.Status && syncTask.Status.EndTime);
+        if (!lastTime) {
+            lastSyncItem.textContent = 'Last sync: never';
+            return;
+        }
+        let label = 'Last sync: ' + new Date(lastTime).toLocaleString();
+        if (syncTask.State === 'Running') {
+            label += ' (running now)';
+            lastSyncItem.className = 'libraryStatusItem warn';
+        } else if (syncTask.Status && syncTask.Status.Status === 'Faulted') {
+            label += ' (failed)';
+            lastSyncItem.className = 'libraryStatusItem err';
+        } else {
+            lastSyncItem.className = 'libraryStatusItem';
+        }
+        lastSyncItem.textContent = label;
+    }).catch(function () {
+        lastSyncItem.textContent = 'Last sync: —';
     });
 }
 
-function createNewVirtualFolders(page, libraryName, libraryType, directories) {
-    // Get settings if available, then create the virtual folder
-    return getDefaultLibrarySettings(page, directories).then(function(libraryJson) {
-        return ApiClient.ajax({
-            url: ApiClient.getUrl('Library/VirtualFolders', {
-                refreshLibrary: true,
-                name: libraryName,
-                collectionType: libraryType
-            }),
+function performSyncAllLibraries(page) {
+    const syncAllButton = page.querySelector('#syncAllLibraries');
+    if (!syncAllButton) return;
+
+    Dashboard.confirm({
+        title: 'Sync all libraries',
+        text: 'Run the Discover sync for every enabled library now?',
+        confirmText: '🔄 Sync now',
+        cancelText: 'Cancel',
+        primary: "confirm"
+    }, 'Title', function (confirmed) {
+        if (!confirmed) return;
+        syncAllButton.disabled = true;
+        Dashboard.showLoadingMsg();
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyBridge/SyncDiscover'),
             type: 'POST',
-            data: JSON.stringify(libraryJson),
-            contentType: 'application/json'
-        }).then(function(response) {
-            DisplayMessage("✅ Default library '" + libraryName + "' created successfully!");
-        }).catch(function(error) {
-            DisplayMessage('❌ Failed to create default library: ' + (error?.message || 'Unknown error'));
-            return Promise.reject(error);
+            data: '{}',
+            contentType: 'application/json',
+            dataType: 'json'
+        }).then(function (syncData) {
+            DisplayMessage(syncOutcomeMessage(syncData, 'Sync all started.'));
+        }).catch(function (error) {
+            DisplayMessage('❌ Sync all failed: ' + (error?.message || 'Unknown error'));
+        }).finally(function() {
+            Dashboard.hideLoadingMsg();
+            syncAllButton.disabled = false;
+            loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
         });
     });
 }
 
-function createDefaultLibrary(page) {
-    const createButton = page.querySelector('#createDefaultLibrary');
-    const config = window.configJellyBridge || {};
-    const UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
-    const libraryDisplayNameInput = page.querySelector('#LibraryDisplayName');
-    const movieLibraryDisplayNameInput = page.querySelector('#MovieLibraryDisplayName');
-    const showLibraryDisplayNameInput = page.querySelector('#ShowLibraryDisplayName');
-    const libraryDisplayName = safeParseString(libraryDisplayNameInput) || libraryDisplayNameInput.placeholder;
-    const movieLibraryDisplayName = safeParseString(movieLibraryDisplayNameInput) || movieLibraryDisplayNameInput.placeholder;
-    const showLibraryDisplayName = safeParseString(showLibraryDisplayNameInput) || showLibraryDisplayNameInput.placeholder;
-    const trendingLibraryDisplayNameInput = page.querySelector('#TrendingLibraryDisplayName');
-    const trendingLibraryDisplayName = safeParseString(trendingLibraryDisplayNameInput) || trendingLibraryDisplayNameInput.placeholder;
-    const libraryDisplayMessage = (UseMixedMediaLibrary === false ?
-        `new libraries "${movieLibraryDisplayName}" (Movies) and "${showLibraryDisplayName}" (Shows)`:
-        `a new library "${libraryDisplayName}"`) +
-        (page.querySelector('#UseTrendingLibrary').checked ? ` and a Trending library "${trendingLibraryDisplayName}"` : '');
+// One-time notice after the Network Folders migration (5d), plus any manual fixes the migration
+// recorded in LibrariesMigrationIssues (failed Jellyfin library repoints).
+function renderLibrariesMigrationBanner(page) {
+    const banner = page.querySelector('#librariesMigrationBanner');
+    const bannerText = page.querySelector('#librariesMigrationBannerText');
+    if (!banner || !bannerText) return;
 
-    // Show confirmation dialog for confirming library creation
+    const config = window.configJellyBridge || {};
+    if (!config.ShowLibrariesMigrationNotice) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    const defaultEntry = discoverLibrariesEntries.find(function (entry) {
+        return entry.library && (entry.library.isDefault ?? false);
+    }) || discoverLibrariesEntries[0];
+    const defaultName = (defaultEntry && (defaultEntry.name || defaultEntry.library?.name)) || 'Discover';
+
+    let text = '⚠️ Network Folders was removed. Your titles were moved into the "' + defaultName + '" library.';
+    (config.LibrariesMigrationIssues || []).forEach(function (issue) {
+        text += '<br>⚠️ ' + escapeLibraryHtml(issue);
+    });
+    bannerText.innerHTML = text;
+    banner.style.display = 'block';
+}
+
+function dismissLibrariesMigrationNotice(page) {
+    const dismissButton = page.querySelector('#dismissLibrariesMigrationBanner');
+    if (dismissButton) dismissButton.disabled = true;
+    ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/PluginConfiguration'),
+        type: 'POST',
+        data: JSON.stringify({ ShowLibrariesMigrationNotice: false, LibrariesMigrationIssues: [] }),
+        contentType: 'application/json',
+        dataType: 'json'
+    }).then(function (result) {
+        if (result && result.success === false) {
+            throw new Error(result.error || 'Failed to save');
+        }
+        const config = window.configJellyBridge || {};
+        config.ShowLibrariesMigrationNotice = false;
+        config.LibrariesMigrationIssues = [];
+        window.configJellyBridge = config;
+        renderLibrariesMigrationBanner(page);
+    }).catch(function (error) {
+        DisplayMessage('❌ Failed to dismiss the notice: ' + (error?.message || 'Unknown error'));
+    }).finally(function () {
+        if (dismissButton) dismissButton.disabled = false;
+    });
+}
+
+// ==========================================
+// LIBRARY TEMPLATE PICKER + EDITOR (task 5c)
+// ==========================================
+
+// The five "+ Add library" templates. Defaults copied per decision 7 and the D1/D2 vote floors are
+// applied in templateLibraryDraft(); order mirrors DiscoverLibraryConfig.ForList (Popular → Smart,
+// everything else → "Same as the list").
+const LIBRARY_TEMPLATES = {
+    Popular: { label: 'Popular', desc: "What's popular on your services", order: 'Smart', networks: true },
+    NewReleases: { label: 'New releases', desc: 'Latest releases, newest first', order: 'AsList', networks: true, minimumVotesFloor: 30 },
+    ComingSoon: { label: 'Coming soon', desc: "Not released yet, most anticipated first", order: 'AsList', networks: true, networksWarning: true },
+    Trending: { label: 'Trending', desc: "Seerr's trending list, in Seerr's order", order: 'AsList', networks: false, noDefault: true },
+    TopRated: { label: 'Top rated', desc: 'Highest TMDB scores, with a vote minimum', order: 'AsList', networks: true, minimumVotesFloor: 300 }
+};
+
+// The open editor: { isNew, originalName, wasDefault, entry, library } — null while closed.
+// libraryEditorOpenName is the saved card the editor sits in; libraryEditorVisible tracks whether
+// the editor DOM is shown so renderDiscoverLibraries knows when to harvest its inputs.
+let libraryEditorDraft = null;
+let libraryEditorOpenName = null;
+let libraryEditorVisible = false;
+let libraryEditorElement = null;
+
+function libraryTypeSuffix(type) {
+    return type === 'Movies' ? ' Movies' : (type === 'Series' ? ' Series' : '');
+}
+
+// Decision 5: Movies/Series appends " Movies"/" Series" to the name; All removes it.
+function withTypeSuffix(name, type) {
+    return String(name || '').replace(/ (Movies|Series)$/, '') + libraryTypeSuffix(type);
+}
+
+// Mirrors FolderUtils.SanitizeFileName closely enough for the folder hint under the name field.
+function sanitizeFolderName(name) {
+    return String(name || '').replace(/[\\/:*?"<>|]/g, '').trim();
+}
+
+// Every known network (global NetworkMap over the shipped defaults), keyed by id.
+function getMergedNetworkMapById() {
+    const config = window.configJellyBridge || {};
+    const byId = new Map();
+    const add = function (network) { if (network && network.id !== undefined) byId.set(network.id, network); };
+    ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || []).forEach(add);
+    (Array.isArray(config.NetworkMap) ? config.NetworkMap : []).forEach(add);
+    return byId;
+}
+
+function pendingLibrarySummary(library) {
+    const parts = [library.libraryType || 'All', libraryListLabel(library.listType)];
+    if (library.listType !== 'Trending') {
+        const byId = getMergedNetworkMapById();
+        const ids = Array.isArray(library.networkIds) ? library.networkIds : [];
+        parts.push(ids.length
+            ? ids.map(function (id) { const n = byId.get(id); return n ? n.name : ('#' + id); }).join(', ')
+            : 'all networks');
+    }
+    parts.push('not saved yet');
+    return parts.join(' · ');
+}
+
+// Call a JellyBridge (or built-in Jellyfin) endpoint with a JSON body; returns the parsed response.
+function librariesApi(method, path, body) {
+    const options = { url: ApiClient.getUrl(path), type: method, dataType: 'json' };
+    if (method !== 'GET') {
+        options.data = body === undefined ? '{}' : (typeof body === 'string' ? body : JSON.stringify(body));
+        options.contentType = 'application/json';
+    }
+    return ApiClient.ajax(options);
+}
+
+// Show the server's { message } from a failed call (errors come back as 400 { message }).
+function handleLibraryError(error, action) {
+    let message = (error && error.message) || 'Unknown error';
+    const bodyPromise = (error && typeof error.json === 'function') ? error.json().catch(function () { return null; }) : Promise.resolve(null);
+    return bodyPromise.then(function (body) {
+        if (body && body.message) message = body.message;
+        DisplayMessage('❌ Failed to ' + action + ': ' + message);
+    });
+}
+
+// 5c review fix 7: the sync endpoints' messages already carry their own status icon ("✅ Sync from…") —
+// prefixing again read "✅ ✅ Sync from…". Add the icon only when the message has none.
+function syncOutcomeMessage(result, fallback) {
+    const ok = !(result && result.success === false);
+    const text = (result && (result.result || result.message)) || fallback;
+    return /^[\u2705\u274C\u26A0]/.test(text) ? text : (ok ? '✅ ' : '❌ ') + text;
+}
+
+// Hide the global networks picker, Discover Pages, Minimum Rating/Votes and retention on migrated
+// servers — they live in each library's editor now (the picker element itself is reused, see below).
+function applyGlobalLibraryFieldsVisibility(page) {
+    const migrated = librariesAreMigrated();
+    ['MaxDiscoverPagesContainer', 'MinimumRatingContainer', 'MinimumVotesContainer', 'MaxRetentionDaysContainer'].forEach(function (id) {
+        const element = page.querySelector('#' + id);
+        if (element) element.style.display = migrated ? 'none' : '';
+    });
+    const slot = page.querySelector('#globalNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    const editorSlot = page.querySelector('#libraryEditorNetworksSlot');
+    if (!slot || !container || !editorSlot) return;
+    slot.style.display = migrated ? 'none' : '';
+    if (!editorSlot.contains(container) && container.parentElement !== slot) {
+        slot.appendChild(container);
+    }
+}
+
+function returnNetworksToGlobal(page) {
+    const slot = page.querySelector('#globalNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    if (slot && container && container.parentElement !== slot) slot.appendChild(container);
+}
+
+// One networks picker, moved (not duplicated) into the open editor.
+function populateNetworksForLibrary(page, networkIds) {
+    const byId = getMergedNetworkMapById();
+    const active = (Array.isArray(networkIds) ? networkIds : []).map(function (id) {
+        return byId.get(id) || { id: id, name: 'Network ' + id, displayPriority: 999 };
+    });
+    const activeSelect = page.querySelector('#activeNetworks');
+    populateSelectWithNetworks(activeSelect, active);
+    sortSelectOptions(activeSelect);
+    updateAvailableNetworks(page, Array.from(byId.values()));
+}
+
+function updateLibraryEditorNetworksWarning(page) {
+    const warning = page.querySelector('#libraryEditorNetworksWarning');
+    if (!warning) return;
+    const slot = page.querySelector('#libraryEditorNetworksSlot');
+    const activeCount = slot ? slot.querySelectorAll('#activeNetworks option').length : 0;
+    warning.style.display = (libraryEditorDraft && libraryEditorDraft.library.listType === 'ComingSoon' && activeCount > 0)
+        ? 'block' : 'none';
+}
+
+function libraryEditorCard(page, name) {
+    const cards = page.querySelectorAll('#discoverLibraryList .discoverLibraryCard');
+    for (const card of cards) {
+        if ((card.getAttribute('data-library-name') || '').toLowerCase() === String(name || '').toLowerCase()) return card;
+    }
+    return null;
+}
+
+// Read the editor inputs back into the draft (called before any re-render and before every save).
+function syncLibraryEditorDraft(page) {
+    const draft = libraryEditorDraft;
+    const editor = libraryEditorElement;
+    if (!draft || !editor) return;
+    const lib = draft.library;
+    const q = function (id) { return editor.querySelector(id); };
+    lib.name = (q('#libraryEditorName').value || '').trim();
+    lib.listType = q('#libraryEditorList').value;
+    lib.libraryType = q('#libraryEditorType').value;
+    lib.isDefault = q('#libraryEditorDefault').checked;
+    lib.order = q('#libraryEditorOrder').value;
+    lib.pages = q('#libraryEditorPages').value.trim() === '' ? null : parseInt(q('#libraryEditorPages').value);
+    lib.minimumRating = q('#libraryEditorMinRating').value.trim() === '' ? null : parseFloat(q('#libraryEditorMinRating').value);
+    lib.minimumVotes = q('#libraryEditorMinVotes').value.trim() === '' ? null : parseInt(q('#libraryEditorMinVotes').value);
+    lib.retentionDays = q('#libraryEditorRetention').value.trim() === '' ? null : parseInt(q('#libraryEditorRetention').value);
+    const editorSlot = editor.querySelector('#libraryEditorNetworksSlot');
+    if (lib.listType === 'Trending') {
+        lib.networkIds = [];
+    } else if (page.querySelector('#networkServicesContainer') && editorSlot.contains(page.querySelector('#networkServicesContainer'))) {
+        lib.networkIds = Array.from(page.querySelector('#activeNetworks').options)
+            .map(function (option) { return parseInt(option.value); })
+            .filter(function (id) { return !isNaN(id); });
+    }
+}
+
+// Fill every editor field from the draft, and wire the list-specific visibility.
+function renderLibraryEditorFields(page) {
+    const draft = libraryEditorDraft;
+    const editor = libraryEditorElement;
+    if (!draft || !editor) return;
+    const lib = draft.library;
+    const config = window.configJellyBridge || {};
+    const defaults = config.ConfigDefaults || {};
+    const q = function (id) { return editor.querySelector(id); };
+    const set = function (id, value) { const el = q(id); if (el) el.value = (value === null || value === undefined) ? '' : value; };
+
+    set('#libraryEditorName', lib.name);
+    const hint = q('#libraryEditorFolderHint');
+    if (hint) hint.textContent = sanitizeFolderName(lib.name) || '…';
+    const template = LIBRARY_TEMPLATES[lib.listType] || LIBRARY_TEMPLATES.Popular;
+    q('#libraryEditorList').value = lib.listType;
+    q('#libraryEditorListHelp').textContent = template.desc + '. Changing the list keeps the name and folder; the next sync replaces the content and removes the old list\'s titles right away.';
+    q('#libraryEditorType').value = lib.libraryType || 'All';
+    q('#libraryEditorOrder').value = lib.order || 'AsList';
+
+    const defaultBox = q('#libraryEditorDefault');
+    const defaultHelp = q('#libraryEditorDefaultHelp');
+    if (draft.wasDefault) {
+        defaultBox.checked = true;
+        defaultBox.disabled = true;
+        defaultHelp.textContent = 'To change the Default library, tick Default on another library.';
+    } else if (lib.listType === 'Trending') {
+        lib.isDefault = false;
+        defaultBox.checked = false;
+        defaultBox.disabled = true;
+        defaultHelp.textContent = "Trending can't be the default: search results aren't on its list.";
+    } else {
+        defaultBox.disabled = false;
+        defaultBox.checked = (lib.isDefault ?? false);
+        defaultHelp.textContent = defaultBox.checked
+            ? 'You are making this the Default library; the current one gives the flag up when you save.'
+            : 'Only one library can be the default.';
+    }
+
+    set('#libraryEditorPages', lib.pages);
+    set('#libraryEditorMinRating', lib.minimumRating);
+    set('#libraryEditorMinVotes', lib.minimumVotes);
+    set('#libraryEditorRetention', lib.retentionDays);
+    const placeholders = {
+        '#libraryEditorPages': config.MaxDiscoverPages ?? defaults.MaxDiscoverPages,
+        '#libraryEditorMinRating': config.MinimumRating ?? defaults.MinimumRating,
+        '#libraryEditorMinVotes': config.MinimumVotes ?? defaults.MinimumVotes,
+        '#libraryEditorRetention': config.MaxRetentionDays ?? defaults.MaxRetentionDays
+    };
+    Object.keys(placeholders).forEach(function (id) {
+        const el = q(id);
+        if (el && placeholders[id] !== undefined && placeholders[id] !== null) el.placeholder = String(placeholders[id]);
+    });
+
+    const editorSlot = q('#libraryEditorNetworksSlot');
+    if (template.networks) {
+        editorSlot.style.display = '';
+        editorSlot.appendChild(page.querySelector('#networkServicesContainer'));
+        populateNetworksForLibrary(page, lib.networkIds);
+    } else {
+        editorSlot.style.display = 'none';
+        returnNetworksToGlobal(page); // Trending never gets networks
+    }
+    updateLibraryEditorNetworksWarning(page);
+
+    q('#libraryEditorSync').disabled = !!draft.isNew;
+    q('#libraryEditorSync').title = draft.isNew ? 'Save the library first' : 'Sync only this library now';
+    const deleteButton = q('#libraryEditorDelete');
+    deleteButton.style.display = draft.isNew ? 'none' : '';
+    // 5c review fix 7: Delete on the ★ Default library is blocked by the server — disable it here with the hint.
+    const isDefaultLibrary = draft.wasDefault || !!(lib.isDefault ?? false);
+    deleteButton.disabled = !draft.isNew && isDefaultLibrary;
+    deleteButton.title = isDefaultLibrary ? 'Tick Default on another library first' : 'Delete this library';
+    const saveLabel = q('#libraryEditorSave').querySelector('span');
+    if (saveLabel) saveLabel.textContent = draft.isNew ? '💾 Add library' : '💾 Save library';
+}
+
+// Put the editor div where it belongs: inside the open card (or the unsaved draft's card), else parked hidden in its host.
+function attachLibraryEditor(page) {
+    const editor = libraryEditorElement || page.querySelector('#libraryEditor');
+    const host = page.querySelector('#libraryEditorHost');
+    if (!editor || !host) return;
+    libraryEditorElement = editor;
+    if (!libraryEditorDraft) {
+        editor.style.display = 'none';
+        if (editor.parentElement !== host) host.appendChild(editor);
+        libraryEditorVisible = false;
+        return;
+    }
+    let target = host;
+    const card = libraryEditorCard(page, libraryEditorDraft.isNew ? libraryEditorDraft.library.name : libraryEditorOpenName);
+    if (card) {
+        target = card;
+        card.classList.add('open');
+    }
+    if (editor.parentElement !== target) target.appendChild(editor);
+    editor.style.display = 'block';
+    libraryEditorVisible = true;
+    renderLibraryEditorFields(page);
+}
+
+function closeLibraryEditor(page) {
+    const wasNew = libraryEditorDraft && libraryEditorDraft.isNew;
+    const openName = libraryEditorOpenName;
+    libraryEditorDraft = null;
+    libraryEditorOpenName = null;
+    libraryEditorVisible = false;
+    returnNetworksToGlobal(page);
+    const confirmBox = page.querySelector('#libraryEditorDeleteConfirm');
+    if (confirmBox) confirmBox.style.display = 'none';
+    const card = openName ? libraryEditorCard(page, openName) : null;
+    if (card) card.classList.remove('open');
+    attachLibraryEditor(page);
+    if (wasNew) renderDiscoverLibraries(page); // drop the unsaved card
+}
+
+// Gear click: one editor at a time; clicking the open card's gear closes it.
+function openLibraryEditorFor(page, name) {
+    const key = String(name || '').toLowerCase();
+    if (libraryEditorDraft && libraryEditorOpenName && libraryEditorOpenName.toLowerCase() === key) {
+        closeLibraryEditor(page);
+        return;
+    }
+    const entry = discoverLibrariesEntries.find(function (e) {
+        return String(e.name || (e.library && e.library.name) || '').toLowerCase() === key;
+    });
+    if (!entry) return;
+    closeLibraryEditor(page);
+    libraryEditorDraft = {
+        isNew: false,
+        originalName: entry.name || entry.library?.name,
+        wasDefault: !!(entry.library && (entry.library.isDefault ?? false)),
+        entry: entry,
+        library: JSON.parse(JSON.stringify(entry.library || {}))
+    };
+    libraryEditorOpenName = libraryEditorDraft.originalName;
+    attachLibraryEditor(page);
+    scrollToElement('libraryEditor');
+}
+
+// Decision 7 + D1/D2: copy type, networks, pages, rating and retention from the Default library;
+// Trending never gets networks; Top rated floors at 300 votes, New releases at 30.
+function templateLibraryDraft(templateKey) {
+    const template = LIBRARY_TEMPLATES[templateKey];
+    const config = window.configJellyBridge || {};
+    const defaultEntry = discoverLibrariesEntries.find(function (e) { return e.library && (e.library.isDefault ?? false); })
+        || discoverLibrariesEntries[0];
+    const dl = (defaultEntry && defaultEntry.library) || {};
+    const type = dl.libraryType || 'All';
+    const trending = templateKey === 'Trending';
+
+    const used = discoverLibrariesEntries.map(function (e) { return String(e.name || (e.library && e.library.name) || '').toLowerCase(); });
+    let name = withTypeSuffix(template.label, type);
+    for (let n = 2; used.includes(name.toLowerCase()); n++) name = withTypeSuffix(template.label + ' ' + n, type);
+
+    const draft = {
+        name: name,
+        listType: templateKey,
+        libraryType: type,
+        networkIds: trending ? [] : (Array.isArray(dl.networkIds) ? dl.networkIds.slice() : []),
+        isDefault: false,
+        isEnabled: true,
+        pages: dl.pages ?? config.MaxDiscoverPages ?? null,
+        minimumRating: trending ? null : (dl.minimumRating ?? config.MinimumRating ?? null),
+        minimumVotes: trending ? null : (dl.minimumVotes ?? config.MinimumVotes ?? null),
+        retentionDays: trending ? null : (dl.retentionDays ?? config.MaxRetentionDays ?? null),
+        order: template.order
+    };
+    if (template.minimumVotesFloor) draft.minimumVotes = template.minimumVotesFloor;
+    return draft;
+}
+
+function createLibraryFromTemplate(page, templateKey) {
+    if (!LIBRARY_TEMPLATES[templateKey]) return;
+    const picker = page.querySelector('#libraryTemplatePicker');
+    if (picker) picker.style.display = 'none';
+    closeLibraryEditor(page);
+    libraryEditorDraft = { isNew: true, originalName: null, wasDefault: false, entry: null, library: templateLibraryDraft(templateKey) };
+    libraryEditorOpenName = null;
+    renderDiscoverLibraries(page);
+    scrollToElement('libraryEditor');
+}
+
+function postLibrariesList(list) {
+    return ApiClient.ajax({
+        url: ApiClient.getUrl('JellyBridge/Libraries'),
+        type: 'POST',
+        data: JSON.stringify(list),
+        contentType: 'application/json',
+        dataType: 'json'
+    });
+}
+
+// Networks the editor moved in but the global NetworkMap doesn't know yet: merge them in, because
+// LibraryScope resolves each library's networkIds against the global NetworkMap.
+function saveEditorNetworkMapUnion(page) {
+    const slot = page.querySelector('#libraryEditorNetworksSlot');
+    const container = page.querySelector('#networkServicesContainer');
+    if (!slot || !container || !slot.contains(container)) return Promise.resolve();
+    const options = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    const config = window.configJellyBridge || {};
+    const current = Array.isArray(config.NetworkMap) ? config.NetworkMap : ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || []);
+    const missing = options.filter(function (option) {
+        return option && option.id !== undefined && !current.some(function (network) { return network && network.id === option.id; });
+    });
+    if (missing.length === 0) return Promise.resolve();
+    return librariesApi('POST', 'JellyBridge/PluginConfiguration', { NetworkMap: current.concat(missing) }).then(function (result) {
+        if (result && result.success === false) throw new Error(result.error || 'Failed to save the networks');
+        config.NetworkMap = current.concat(missing);
+        window.configJellyBridge = config;
+    });
+}
+
+// Save paths (5c notes): setting changes + added libraries go through POST Libraries (never a drop
+// or a rename); a new library is then Created; a rename goes to Rename, then the Jellyfin display
+// name via POST /Library/VirtualFolders/Name when a Jellyfin library with the old name exists.
+function saveLibraryEditor(page) {
+    if (!libraryEditorDraft) return;
+    syncLibraryEditorDraft(page);
+    const draft = libraryEditorDraft;
+    const lib = draft.library;
+    if (!lib.name) {
+        DisplayMessage('❌ Every library needs a name.');
+        return;
+    }
+    const edited = {
+        name: lib.name,
+        listType: lib.listType,
+        libraryType: lib.libraryType,
+        networkIds: Array.isArray(lib.networkIds) ? lib.networkIds.slice() : [],
+        isDefault: lib.isDefault ?? false,
+        isEnabled: (lib.isDefault ?? false) ? true : (lib.isEnabled ?? true),
+        pages: lib.pages ?? null,
+        minimumRating: lib.minimumRating ?? null,
+        minimumVotes: lib.minimumVotes ?? null,
+        retentionDays: lib.retentionDays ?? null,
+        order: lib.order ?? 'AsList'
+    };
+    const nameChanged = !draft.isNew && lib.name.toLowerCase() !== String(draft.originalName).toLowerCase();
+    const savedEntry = draft.isNew ? null : discoverLibrariesEntries.find(function (e) {
+        return String(e.name || (e.library && e.library.name) || '').toLowerCase() === String(draft.originalName).toLowerCase();
+    });
+
+    // 5c review fix 3: moving the ★ Default must never post a list without one — the edited library carries
+    // isDefault: true and every other entry gives the flag up (the old loop cleared it on all entries).
+    const list = discoverLibrariesEntries.map(function (entry) {
+        let out = JSON.parse(JSON.stringify(entry.library || {}));
+        if (!draft.isNew && String(entry.name || '').toLowerCase() === String(draft.originalName).toLowerCase()) {
+            const posted = Object.assign({}, edited);
+            if (nameChanged) posted.name = entry.name; // the Rename endpoint renames it after the list saves
+            out = Object.assign(out, posted);
+            if (edited.isDefault) out.isDefault = true;
+        } else if (edited.isDefault) {
+            out.isDefault = false;
+        }
+        return out;
+    });
+    if (draft.isNew) list.push(edited);
+
+    const saveButton = page.querySelector('#libraryEditorSave');
+    if (saveButton) saveButton.disabled = true;
+    Dashboard.showLoadingMsg();
+
+    postLibrariesList(list).then(function (result) {
+        const message = (result && result.message) || 'Libraries saved.';
+        if (draft.isNew) {
+            return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(lib.name) + '/Create').then(function () { return message; });
+        }
+        if (!nameChanged) return message;
+        return librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(draft.originalName) + '/Rename?newName=' + encodeURIComponent(lib.name))
+            .then(function (renameResult) {
+                // 5c review fix 4: show the Rename endpoint's own message (the save message said nothing about it).
+                const renameMessage = (renameResult && renameResult.message) || message;
+                if (savedEntry && savedEntry.jellyfinLibraryName) {
+                    // 5c review fix 4: POST /Library/VirtualFolders/Name answers 204 with no body — no JSON to
+                    // parse, any 2xx is success; only a real failure gets the warning.
+                    return ApiClient.ajax({
+                        url: ApiClient.getUrl('Library/VirtualFolders/Name?name=' + encodeURIComponent(savedEntry.jellyfinLibraryName) + '&newName=' + encodeURIComponent(lib.name)),
+                        type: 'POST'
+                    }).catch(function () {
+                        DisplayMessage('⚠️ The library renamed, but its Jellyfin display name did not — rename it in the Library Manager to match.');
+                    }).then(function () { return renameMessage; });
+                }
+                return renameMessage;
+            });
+    }).then(function (message) {
+        return saveEditorNetworkMapUnion(page).then(function () { return message; });
+    }).then(function (message) {
+        closeLibraryEditor(page);
+        return loadDiscoverLibraries(page).then(function () {
+            DisplayMessage('✅ ' + message);
+        });
+    }).catch(function (error) {
+        // 5c review fix 3: after any save error the cards go back to the stored list (discoverLibrariesEntries)
+        // instead of keeping the draft's stale ★ Default ticks.
+        return handleLibraryError(error, 'save the library "' + lib.name + '"').then(function () {
+            renderDiscoverLibraries(page);
+        });
+    }).finally(function () {
+        Dashboard.hideLoadingMsg();
+        if (saveButton) saveButton.disabled = false;
+    });
+}
+
+// Duplicate: copies every setting to "<name> copy" (unique ignoring case), opens it unsaved.
+function duplicateLibraryEditorDraft(page) {
+    if (!libraryEditorDraft) return;
+    syncLibraryEditorDraft(page);
+    const src = libraryEditorDraft.library;
+    const used = discoverLibrariesEntries.map(function (e) { return String(e.name || (e.library && e.library.name) || '').toLowerCase(); });
+    used.push(String(src.name || '').toLowerCase());
+    let candidate = src.name + ' copy';
+    for (let n = 2; used.includes(candidate.toLowerCase()); n++) candidate = src.name + ' copy ' + n;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.name = candidate;
+    copy.isDefault = false;
+    copy.lastSyncedListType = null; // a copy has never synced against a list
+    closeLibraryEditor(page);
+    libraryEditorDraft = { isNew: true, originalName: null, wasDefault: false, entry: null, library: copy };
+    libraryEditorOpenName = null;
+    renderDiscoverLibraries(page);
+    scrollToElement('libraryEditor');
+}
+
+function performDeleteLibrary(page, button) {
+    const draft = libraryEditorDraft;
+    if (!draft || draft.isNew) return;
+    const name = draft.originalName;
+    const deleteFiles = page.querySelector('#libraryEditorDeleteFiles').checked;
+    const confirmBox = page.querySelector('#libraryEditorDeleteConfirm');
+    if (confirmBox) confirmBox.style.display = 'none';
+    if (button) button.disabled = true;
+    Dashboard.showLoadingMsg();
+    librariesApi('DELETE', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '?deleteFiles=' + (deleteFiles ? 'true' : 'false'))
+        .then(function (result) {
+            DisplayMessage('✅ ' + ((result && result.message) || ('Deleted library "' + name + '".')));
+            closeLibraryEditor(page);
+            return loadDiscoverLibraries(page);
+        })
+        .catch(function (error) { return handleLibraryError(error, 'delete the library "' + name + '"'); })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+            if (button) button.disabled = false;
+        });
+}
+
+function performLibrarySyncNow(page) {
+    const draft = libraryEditorDraft;
+    if (!draft || draft.isNew) return;
+    const name = draft.originalName;
     Dashboard.confirm({
-        title: 'Confirm New Library',
-        text: 'Save the current configuration and create ' + libraryDisplayMessage + ' with the recommended settings.',
-        confirmText: '💾 Save & Create ✨',
+        title: 'Sync this library',
+        text: 'Run the Discover sync for "' + name + '" now?',
+        confirmText: '🔄 Sync now',
         cancelText: 'Cancel',
         primary: "confirm"
-    }, 'Title', (confirmed) => {
-        if (confirmed) {
-            createButton.disabled = true;
-            Dashboard.showLoadingMsg();
-
-            savePluginConfiguration(page).catch(function(error) {
-                // Catch config save errors
-                DisplayMessage('❌ Failed to save configuration: ' + (error?.message || 'Unknown error'));
-                return Promise.reject(error);
-            }).then(function() {
-                // Generate folders before generating libraries
-                return generateLibraryFolders(page)
-                    .catch(function(error) {
-                        DisplayMessage('❌ Failed to create network folders: ' + (error?.message || 'Unknown error'));
-                        return Promise.reject(error);
-                    });
-            }).then(function (response) {
-                // Send request for a new library
-                let apiCalls;
-                if (UseMixedMediaLibrary === false) {
-                    apiCalls = Promise.all([
-                        createVirtualFolders(page, movieLibraryDisplayName, 'movies', response.movieFolders),
-                        createVirtualFolders(page, showLibraryDisplayName, 'tvshows', response.showFolders)
-                    ]);
-                } else {
-                    apiCalls = createVirtualFolders(page, libraryDisplayName, null, response.mixedFolders);
-                }
-                if (response.trendingFolders && response.trendingFolders.length > 0) {
-                    apiCalls = Promise.all([apiCalls,
-                        createVirtualFolders(page, trendingLibraryDisplayName, null, response.trendingFolders)]);
-                }
-                return apiCalls;
-            }).finally(function() {
-                // Disable scrolling since there is no output container
-                // scrollToElement('createDefaultLibraryContainer');
+    }, 'Title', function (confirmed) {
+        if (!confirmed) return;
+        const button = page.querySelector('#libraryEditorSync');
+        if (button) button.disabled = true;
+        Dashboard.showLoadingMsg();
+        librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Sync')
+            .then(function (result) {
+                DisplayMessage(syncOutcomeMessage(result, 'Sync finished.'));
+            })
+            .catch(function (error) { return handleLibraryError(error, 'sync the library "' + name + '"'); })
+            .finally(function () {
                 Dashboard.hideLoadingMsg();
-                createButton.disabled = false;
+                if (button) button.disabled = false;
+                loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
             });
+    });
+}
+
+function performCreateLibrary(page, name, button) {
+    if (button) button.disabled = true;
+    Dashboard.showLoadingMsg();
+    librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Create')
+        .then(function (result) {
+            DisplayMessage('✅ ' + ((result && result.message) || ('Library "' + name + '" is ready.')));
+        })
+        .catch(function (error) { return handleLibraryError(error, 'create the library "' + name + '"'); })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+            loadDiscoverLibraries(page);
+        });
+}
+
+// Bind the static editor, template picker, and their buttons once per page view.
+function initializeLibraryEditorBindings(page) {
+    const picker = page.querySelector('#libraryTemplatePicker');
+    const addLibraryButton = page.querySelector('#addLibraryButton');
+    if (picker && addLibraryButton) {
+        addLibraryButton.addEventListener('click', function () {
+            if (!librariesAreMigrated()) return;
+            picker.style.display = 'block';
+            scrollToElement('libraryTemplatePicker');
+        });
+        picker.querySelectorAll('button.libraryTemplate').forEach(function (button) {
+            button.addEventListener('click', function () {
+                createLibraryFromTemplate(page, this.getAttribute('data-template'));
+            });
+        });
+        const pickerCancel = page.querySelector('#libraryTemplatePickerCancel');
+        if (pickerCancel) {
+            pickerCancel.addEventListener('click', function () { picker.style.display = 'none'; });
         }
+    }
+
+    const editor = libraryEditorElement = page.querySelector('#libraryEditor');
+    if (!editor) return;
+
+    editor.querySelector('#libraryEditorName').addEventListener('input', function () {
+        const hint = editor.querySelector('#libraryEditorFolderHint');
+        if (hint) hint.textContent = sanitizeFolderName(this.value) || '…';
+    });
+
+    editor.querySelector('#libraryEditorList').addEventListener('change', function () {
+        if (!libraryEditorDraft) return;
+        const defaultBox = editor.querySelector('#libraryEditorDefault');
+        if (this.value === 'Trending' && defaultBox.checked) {
+            DisplayMessage('The Default library cannot use the Trending list. Make another library the default first.');
+            this.value = libraryEditorDraft.library.listType;
+            return;
+        }
+        libraryEditorDraft.library.listType = this.value;
+        if (this.value === 'Trending') libraryEditorDraft.library.networkIds = [];
+        const template = LIBRARY_TEMPLATES[this.value];
+        libraryEditorDraft.library.order = template ? template.order : 'AsList';
+        renderLibraryEditorFields(page);
+    });
+
+    editor.querySelector('#libraryEditorType').addEventListener('change', function () {
+        if (!libraryEditorDraft) return;
+        const nameInput = editor.querySelector('#libraryEditorName');
+        nameInput.value = withTypeSuffix(nameInput.value, this.value);
+        libraryEditorDraft.library.libraryType = this.value;
+        libraryEditorDraft.library.name = nameInput.value.trim();
+        const hint = editor.querySelector('#libraryEditorFolderHint');
+        if (hint) hint.textContent = sanitizeFolderName(nameInput.value) || '…';
+    });
+
+    editor.querySelector('#libraryEditorDefault').addEventListener('change', function () {
+        const help = editor.querySelector('#libraryEditorDefaultHelp');
+        if (help) {
+            help.textContent = this.checked
+                ? 'You are making this the Default library; the current one gives the flag up when you save.'
+                : 'Only one library can be the default.';
+        }
+    });
+
+    // Coming soon + networks warning: moveNetworks mutates the selects without firing change events.
+    const networksSlot = editor.querySelector('#libraryEditorNetworksSlot');
+    const refreshWarningSoon = function () { setTimeout(function () { updateLibraryEditorNetworksWarning(page); }, 0); };
+    networksSlot.addEventListener('click', refreshWarningSoon);
+    networksSlot.addEventListener('dblclick', refreshWarningSoon);
+
+    editor.querySelector('#libraryEditorSave').addEventListener('click', function () { saveLibraryEditor(page); });
+    editor.querySelector('#libraryEditorDuplicate').addEventListener('click', function () { duplicateLibraryEditorDraft(page); });
+    editor.querySelector('#libraryEditorSync').addEventListener('click', function () { performLibrarySyncNow(page); });
+    editor.querySelector('#libraryEditorCancel').addEventListener('click', function () { closeLibraryEditor(page); });
+    editor.querySelector('#libraryEditorDelete').addEventListener('click', function () {
+        if (!libraryEditorDraft || libraryEditorDraft.isNew) return;
+        const confirmBox = editor.querySelector('#libraryEditorDeleteConfirm');
+        confirmBox.style.display = confirmBox.style.display === 'none' ? 'block' : 'none';
+    });
+    editor.querySelector('#libraryEditorDeleteConfirmCancel').addEventListener('click', function () {
+        editor.querySelector('#libraryEditorDeleteConfirm').style.display = 'none';
+    });
+    editor.querySelector('#libraryEditorDeleteConfirmYes').addEventListener('click', function () {
+        performDeleteLibrary(page, this);
     });
 }
 
@@ -805,6 +1615,10 @@ function initializeImportContent(page) {
             });
         });
     }
+
+    // 5c: on migrated servers each library's editor owns the networks, pages, rating and retention
+    // settings; hide the global ones and park the networks picker in its return slot.
+    applyGlobalLibraryFieldsVisibility(page);
 }
 
 function performSyncImportContent(page) {
@@ -1337,17 +2151,6 @@ function initializeManageFavorites(page) {
     });
 }
 
-function generateLibraryFolders(page) {
-    // Call GenerateLibraryFolders endpoint
-    return ApiClient.ajax({
-        url: ApiClient.getUrl('JellyBridge/GenerateLibraryFolders'),
-        type: 'POST',
-        data: '{}',
-        contentType: 'application/json',
-        dataType: 'json'
-    });
-}
-
 function performSyncFavorites(page) {
     const syncFavoritesButton = page.querySelector('#syncFavorites');
     
@@ -1418,14 +2221,6 @@ function initializeAdvancedSettings(page) {
     setInputField(page, 'TaskTimeoutMinutes');
     setInputField(page, 'EnableDebugLogging', true);
     setInputField(page, 'EnableTraceLogging', true);
-    
-    // Library Prefix real-time validation
-    const networkFolderPrefixInput = page.querySelector('#NetworkFolderPrefix');
-    if (networkFolderPrefixInput) {
-        networkFolderPrefixInput.addEventListener('input', function() {
-            validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |');
-        });
-    }
     
     // Add cleanup metadata button functionality
     const cleanupButton = page.querySelector('#cleanupMetadata');
@@ -1558,14 +2353,7 @@ function performPluginReset(page) {
                 UserPermissionRequest4k: null,
                 UseSeasonPlaceholders: null,
                 RequestFirstSeason: null,
-                UseMixedMediaLibrary: null,
-                UseNetworkFolders: null,
                 EnableSearchResults: null,
-                UseTrendingLibrary: null,
-                TrendingDirectory: '',
-                TrendingPages: null,
-                NetworkFolderPrefix: '',
-                AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
                 CustomMoviesPromo: null,
                 DefaultMoviesPromo: null,
@@ -1697,14 +2485,12 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'RequestTimeout', validators.int, 'Request Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
-        if (!validateField(page, 'TrendingPages', validators.int, 'Trending Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
         if (!validateField(page, 'MinimumRating', (value) => validators.double(value) && !(parseFloat(value) > 10), 'Minimum Rating must be a number from 0 to 10').isValid) return;
         if (!validateField(page, 'MinimumVotes', validators.int, 'Minimum Votes must be a positive integer').isValid) return;
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
-        if (!validateField(page, 'NetworkFolderPrefix', validators.windowsFilename, 'Library Prefix contains invalid characters. Cannot start with a space or contain: \\ / : * ? " < > |').isValid) return;
         return true;
     }
     
@@ -1720,7 +2506,13 @@ function savePluginConfiguration(page) {
     form.EnableInMainMenu = nullIfDefault(page.querySelector('#EnableInMainMenu').checked, config.ConfigDefaults.EnableInMainMenu);
     form.SyncIntervalHours = safeParseDouble(page.querySelector('#SyncIntervalHours'));
     form.Region = nullIfDefault(page.querySelector('#selectWatchRegion').value, config.ConfigDefaults.Region);
-    form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    // 5c: on migrated servers the networks picker lives inside the library editor and may hold one
+    // library's subset — keep the saved global NetworkMap (per-library networkIds refer to it).
+    if (librariesAreMigrated()) {
+        form.NetworkMap = Array.isArray(config.NetworkMap) ? config.NetworkMap : ((config.ConfigDefaults && config.ConfigDefaults.NetworkMap) || null);
+    } else {
+        form.NetworkMap = parseNetworkOptions(page.querySelector('#activeNetworks').options);
+    }
     form.RequestTimeout = safeParseInt(page.querySelector('#RequestTimeout'));
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
@@ -1734,14 +2526,7 @@ function savePluginConfiguration(page) {
     form.UserPermissionRequest4k = nullIfDefault(page.querySelector('#UserPermissionRequest4k').checked, config.ConfigDefaults.UserPermissionRequest4k);
     form.UseSeasonPlaceholders = nullIfDefault(page.querySelector('#UseSeasonPlaceholders').checked, config.ConfigDefaults.UseSeasonPlaceholders);
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
-    form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
-    form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
     form.EnableSearchResults = nullIfDefault(page.querySelector('#EnableSearchResults').checked, config.ConfigDefaults.EnableSearchResults);
-    form.UseTrendingLibrary = nullIfDefault(page.querySelector('#UseTrendingLibrary').checked, config.ConfigDefaults.UseTrendingLibrary);
-    form.TrendingDirectory = safeParseString(page.querySelector('#TrendingDirectory'));
-    form.TrendingPages = safeParseInt(page.querySelector('#TrendingPages'));
-    form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
-    form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
     form.CustomMoviesPromo = safeParseString(page.querySelector('#CustomMoviesPromo'));
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);

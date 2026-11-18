@@ -35,15 +35,113 @@ public class DiscoverService
     
 
     /// <summary>
-    /// Fetches discover data for all networks, calling both movies and TV endpoints for each network.
+    /// Fetches the list that fills a Discover library: the trending list for a Trending library, otherwise Discover
+    /// with the list's own sort order and release-date window (New releases, Coming soon, Top rated) or plain
+    /// popularity (Popular). A Movies- or Series-only library gets no titles of the other kind: Discover lists skip
+    /// those endpoint calls, and Trending is filtered after ranking so ranks stay Seerr's positions.
     /// </summary>
-    /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
-    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync()
+    /// <param name="library">The library whose list and type to fetch for.</param>
+    /// <returns>Tuple containing lists of movies and shows fetched for the library</returns>
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchListAsync(DiscoverLibraryConfig library)
     {
-        var config = Plugin.GetConfiguration();
-        var networkMap = config?.NetworkMap;
+        if (library.ListType == DiscoverListType.Trending)
+        {
+            var (trendingMovies, trendingShows) = await FetchTrendingMediaAsync();
+            // Filter after ranking: the ranks are positions in Seerr's single mixed list, and the other kind's
+            // titles still occupied positions in it.
+            if (library.LibraryType == DiscoverLibraryType.Movies)
+            {
+                trendingShows.Clear();
+            }
+            else if (library.LibraryType == DiscoverLibraryType.Series)
+            {
+                trendingMovies.Clear();
+            }
+
+            return (trendingMovies, trendingShows);
+        }
+
+        var (listMovieParameters, listTvParameters) = GetListParameters(library.ListType);
+        return await FetchDiscoverMediaAsync(library.ListType, listMovieParameters, listTvParameters, library.LibraryType);
+    }
+
+    /// <summary>
+    /// The list's own discover parameters (sort order and release-date window), verified against the live Seerr on
+    /// 2026-11-17. Coming soon filters <c>discover/movies</c>/<c>discover/tv</c> by date instead of using the
+    /// <c>upcoming</c> endpoints, because those reject the network parameters. ApiService merges these over the
+    /// endpoints' popularity.desc default, so a sortBy here wins.
+    /// </summary>
+    /// <param name="listType">The list to build parameters for.</param>
+    /// <returns>Extra parameters per endpoint; empty for Popular.</returns>
+    private static (Dictionary<string, object> Movies, Dictionary<string, object> Tv) GetListParameters(DiscoverListType listType)
+    {
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return listType switch
+        {
+            DiscoverListType.NewReleases => (
+                new Dictionary<string, object> { ["sortBy"] = "primary_release_date.desc", ["primaryReleaseDateLte"] = today },
+                new Dictionary<string, object> { ["sortBy"] = "first_air_date.desc", ["firstAirDateLte"] = today }),
+            DiscoverListType.ComingSoon => (
+                new Dictionary<string, object> { ["primaryReleaseDateGte"] = today },
+                new Dictionary<string, object> { ["firstAirDateGte"] = today }),
+            DiscoverListType.TopRated => (
+                new Dictionary<string, object> { ["sortBy"] = "vote_average.desc" },
+                new Dictionary<string, object> { ["sortBy"] = "vote_average.desc" }),
+            _ => (new Dictionary<string, object>(), new Dictionary<string, object>()),
+        };
+    }
+
+    /// <summary>
+    /// The rating parameters to send to the Seerr discover endpoints. With a Minimum Rating set that's the rating and
+    /// vote-count floor; Top rated and New releases also send the library's Minimum Votes on its own when no Minimum
+    /// Rating is set, so a few early votes can't carry a title to the top of those lists. Popular keeps sending
+    /// nothing at rating 0, exactly as before.
+    /// </summary>
+    /// <param name="listType">The list being fetched.</param>
+    /// <returns>The parameters to merge into the network parameters; empty when there is no filter.</returns>
+    private static Dictionary<string, object> GetSeerrRatingParameters(DiscoverListType listType)
+    {
+        var parameters = new Dictionary<string, object>();
+        if (GetRatingFilter() is { } ratingFilter)
+        {
+            // Invariant culture, so a server set to a comma-decimal language still sends 7.5 rather than 7,5
+            parameters["voteAverageGte"] = ratingFilter.MinimumRating.ToString(CultureInfo.InvariantCulture);
+            parameters["voteCountGte"] = ratingFilter.MinimumVotes.ToString(CultureInfo.InvariantCulture);
+        }
+        else if (listType is DiscoverListType.TopRated or DiscoverListType.NewReleases)
+        {
+            var minimumVotes = Math.Max(0, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MinimumVotes)));
+            if (minimumVotes > 0)
+            {
+                parameters["voteCountGte"] = minimumVotes.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return parameters;
+    }
+
+    /// <summary>
+    /// Fetches discover data for all networks, calling both movies and TV endpoints for each network, with the
+    /// current library's list parameters merged in.
+    /// </summary>
+    /// <param name="listType">The list being fetched; decides whether a vote floor is sent without a Minimum Rating.</param>
+    /// <param name="extraMovieParameters">The list's extra parameters for the movies endpoint (sort order, date window).</param>
+    /// <param name="extraTvParameters">The list's extra parameters for the TV endpoint.</param>
+    /// <param name="libraryType">Movies-only libraries skip the TV calls, Series-only libraries the movie calls.</param>
+    /// <returns>Tuple containing lists of movies and shows fetched from all networks</returns>
+    public async Task<(List<JellyseerrMovie>, List<JellyseerrShow>)> FetchDiscoverMediaAsync(
+        DiscoverListType listType = DiscoverListType.Popular,
+        Dictionary<string, object>? extraMovieParameters = null,
+        Dictionary<string, object>? extraTvParameters = null,
+        DiscoverLibraryType libraryType = DiscoverLibraryType.All)
+    {
+        // The current library's networks (LibraryScope.GetNetworks), not the global list — the fetcher runs
+        // inside LibraryScope.Enter, and reading config.NetworkMap directly would bypass the scope.
+        var networkMap = Utils.LibraryScope.GetNetworks();
         var allMovies = new List<JellyseerrMovie>();
         var allShows = new List<JellyseerrShow>();
+        // This library's titles per network, movies and shows interleaved by page position (task 2b list rank)
+        var perNetwork = new List<List<IJellyseerrItem>>();
 
         if (networkMap == null || !networkMap.Any())
         {
@@ -67,47 +165,62 @@ public class DiscoverService
             }
 
             // Let Jellyseerr leave out titles under the minimum rating, so each page is filled with titles that pass
-            if (GetRatingFilter() is { } ratingFilter)
+            foreach (var (parameter, value) in GetSeerrRatingParameters(listType))
             {
-                // Invariant culture, so a server set to a comma-decimal language still sends 7.5 rather than 7,5
-                networkParameters["voteAverageGte"] = ratingFilter.MinimumRating.ToString(CultureInfo.InvariantCulture);
-                networkParameters["voteCountGte"] = ratingFilter.MinimumVotes.ToString(CultureInfo.InvariantCulture);
+                networkParameters[parameter] = value;
+            }
+
+            // The list's own sort order and date window go on top of the network and rating parameters
+            var movieParameters = new Dictionary<string, object>(networkParameters);
+            foreach (var (parameter, value) in extraMovieParameters ?? new Dictionary<string, object>())
+            {
+                movieParameters[parameter] = value;
+            }
+
+            var tvParameters = new Dictionary<string, object>(networkParameters);
+            foreach (var (parameter, value) in extraTvParameters ?? new Dictionary<string, object>())
+            {
+                tvParameters[parameter] = value;
             }
 
             // Debug: Log the parameters being used
-            _logger.LogTrace("Calling discover endpoints with parameters: {Parameters}", 
-                string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+            _logger.LogTrace("Calling discover endpoints with movie parameters: {MovieParameters} and TV parameters: {TvParameters}", 
+                string.Join(", ", movieParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")),
+                string.Join(", ", tvParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
             
-            // Fetch movies for this network
-            var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: networkParameters);
-            var movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
+            // Fetch movies for this network (a Series-only library's folder holds no movies)
+            var movies = new List<JellyseerrMovie>();
+            if (libraryType != DiscoverLibraryType.Series)
+            {
+                var moviesData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverMovies, parameters: movieParameters);
+                movies = moviesData as List<JellyseerrMovie> ?? new List<JellyseerrMovie>();
+            }
             
-            // Fetch TV shows for this network
-            var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: networkParameters);
-            var shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
+            // Fetch TV shows for this network (a Movies-only library's folder holds no shows)
+            var shows = new List<JellyseerrShow>();
+            if (libraryType != DiscoverLibraryType.Movies)
+            {
+                var showsData = await _apiService.CallEndpointAsync(JellyseerrEndpoint.DiscoverTv, parameters: tvParameters);
+                shows = showsData as List<JellyseerrShow> ?? new List<JellyseerrShow>();
+            }
             
             // Debug: Log the response data
             _logger.LogTrace("API calls returned {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
             
-            // Add items to lists (no deduplication), skipping titles blocklisted in Jellyseerr since they can't be requested
-            foreach (var item in movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED))
+            // Collect this network's titles, skipping blocklisted ones in Jellyseerr since they can't be requested
+            var networkItems = InterleaveByPosition(
+                movies.Where(m => m.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList(),
+                shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED).ToList());
+            foreach (var item in networkItems)
             {
                 // Set the network tag for this item
                 item.NetworkTag = network.Name;
                 item.NetworkId = network.Id;
-                allMovies.Add(item);
             }
+            perNetwork.Add(networkItems);
             
-            foreach (var item in shows.Where(s => s.MediaInfo?.Status != MediaStatus.BLACKLISTED))
-            {
-                // Set the network tag for this item
-                item.NetworkTag = network.Name;
-                item.NetworkId = network.Id;
-                allShows.Add(item);
-            }
-            
-            // Only log warning if no items found for either endpoint
-            if (allMovies.Count == 0 && allShows.Count == 0)
+            // Only log warning if this network returned nothing from either endpoint
+            if (networkItems.Count == 0)
             {
                 _logger.LogWarning("No movies or shows returned for network: {NetworkName} (ID: {NetworkId}) [Country: {Country}]", network.Name, network.Id, network.Country);
             }
@@ -115,7 +228,64 @@ public class DiscoverService
             _logger.LogTrace("Retrieved {MovieCount} movies and {ShowCount} shows for {NetworkName}", movies.Count, shows.Count, network.Name);
         }
         
+        // Number the titles 1, 2, 3... in list order: merge the networks round-robin (rank 1 of every network, then
+        // rank 2, ...), so every network's top pick beats another network's lower ones. Dedupe by media type and TMDB
+        // id keeps the first, best-ranked copy.
+        var seenTitles = new HashSet<(JellyseerrModel.MediaType, int)>();
+        var rank = 0;
+        var longestNetwork = perNetwork.Count == 0 ? 0 : perNetwork.Max(list => list.Count);
+        for (var position = 0; position < longestNetwork; position++)
+        {
+            foreach (var networkItems in perNetwork)
+            {
+                if (position >= networkItems.Count)
+                {
+                    continue;
+                }
+                var item = networkItems[position];
+                if (!seenTitles.Add((item.MediaType, item.Id)))
+                {
+                    continue;
+                }
+
+                item.ListRank = ++rank;
+                if (item is JellyseerrMovie movie)
+                {
+                    allMovies.Add(movie);
+                }
+                else if (item is JellyseerrShow show)
+                {
+                    allShows.Add(show);
+                }
+            }
+        }
+
         return (allMovies, allShows);
+    }
+
+    /// <summary>
+    /// Merges one network's movie and show results into one list that alternates page positions (movie 1, show 1,
+    /// movie 2, show 2, ...), so the list's rank mixes the two kinds the way its pages do.
+    /// </summary>
+    /// <param name="movies">The network's movies, in Seerr's order.</param>
+    /// <param name="shows">The network's shows, in Seerr's order.</param>
+    /// <returns>One merged list alternating movies and shows.</returns>
+    private static List<IJellyseerrItem> InterleaveByPosition(List<JellyseerrMovie> movies, List<JellyseerrShow> shows)
+    {
+        var merged = new List<IJellyseerrItem>(movies.Count + shows.Count);
+        for (var position = 0; position < Math.Max(movies.Count, shows.Count); position++)
+        {
+            if (position < movies.Count)
+            {
+                merged.Add(movies[position]);
+            }
+            if (position < shows.Count)
+            {
+                merged.Add(shows[position]);
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>
@@ -148,8 +318,8 @@ public class DiscoverService
 
             // Ranked among the titles only, and before skipping blocklisted ones so the order matches Jellyseerr's page
             rank++;
-            item.TrendingRank = rank;
-            item.NetworkTag = TrendingLibrary.Tag;
+            item.ListRank = rank;
+            item.NetworkTag = DiscoverLibraryConfig.TrendingTag;
             if (item is JellyseerrMovie movie && movie.MediaInfo?.Status != MediaStatus.BLACKLISTED)
             {
                 movies.Add(movie);
@@ -173,7 +343,7 @@ public class DiscoverService
     public static (double MinimumRating, int MinimumVotes)? GetRatingFilter()
     {
         var minimumRating = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.MinimumRating));
-        if (minimumRating <= 0 || TrendingLibrary.IsActive)
+        if (minimumRating <= 0 || LibraryScope.Current?.ListType == DiscoverListType.Trending)
         {
             return null;
         }
@@ -290,7 +460,6 @@ public class DiscoverService
     /// <summary>
     /// Filters duplicate media items from each library using the folder hash code.
     /// Returns a list containing only unique items based on their hash code.
-    /// If UseNetworkFolders and AddDuplicateContent are both enabled, filters by library and excludes existing metadata items.
     /// </summary>
     /// <param name="allItems">List of media items to filter</param>
     /// <param name="uniqueItems">List of unique media items</param>
@@ -299,16 +468,14 @@ public class DiscoverService
     {
         var newlyIgnored = new List<IJellyseerrItem>();
         var existingIgnored = new List<IJellyseerrItem>();
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
         var duplicates = new List<IJellyseerrItem>();
         
-        // Network folders are not used, but we need to filter out localized language duplicates by hash
-        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)));
+        // Filter out localized language duplicates by hash
+        var uniqueFolderHashes = new HashSet<int>(uniqueItems.Select(item => item.GetFolderHashCode()));
 
         foreach (var item in allItems)
         {
-            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent)))
+            if (!uniqueFolderHashes.Contains(item.GetFolderHashCode()))
             {
                 duplicates.Add(item);
             }
@@ -662,7 +829,7 @@ public class DiscoverService
         }
 
         // FetchDiscoverMediaAsync searches all networks (Id 0) when no networks are configured, so those items are valid too
-        var networkMap = Plugin.GetConfiguration()?.NetworkMap;
+        var networkMap = Utils.LibraryScope.GetNetworks();
         if (networkMap == null || !networkMap.Any())
         {
             networkMap = new List<JellyseerrNetwork> { new JellyseerrNetwork { Id = 0, Name = "All", Country = "Default", DisplayPriority = 0 } };

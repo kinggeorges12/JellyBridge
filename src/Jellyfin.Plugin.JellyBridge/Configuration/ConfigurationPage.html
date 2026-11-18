@@ -320,12 +320,6 @@
                     margin-top: 16px;
                 }
                 
-                /* Network folder options - padding below instead of above */
-                #networkFolderOptionsDetails {
-                    margin-top: 0;
-                    margin-bottom: 16px;
-                }
-                
                 details.detailedInstructions summary {
                     cursor: pointer;
                     padding: 8px 12px;
@@ -476,6 +470,179 @@
                     top: 0;
                     bottom: 0;
                 }
+
+                /* Discover libraries status strip and cards (task 5b) */
+                .libraryStatusStrip {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px 18px;
+                    align-items: center;
+                    background-color: rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                    margin: 12px 0;
+                    font-size: .9em;
+                }
+
+                .libraryStatusStrip .statusSpacer {
+                    flex: 1;
+                }
+
+                .libraryStatusItem.okc {
+                    color: #00d4aa;
+                }
+
+                .libraryStatusItem.err {
+                    color: #ff6b6b;
+                }
+
+                .libraryStatusItem.warn {
+                    color: #ff9800;
+                }
+
+                .discoverLibraryCard {
+                    border: 1px solid rgba(155, 155, 155, 0.3);
+                    border-radius: 8px;
+                    margin: 8px 0;
+                }
+
+                .discoverLibraryCard.off .discoverLibraryInfo {
+                    opacity: .5;
+                }
+
+                .discoverLibraryRow {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 10px 12px;
+                }
+
+                .discoverLibraryInfo {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                /* 5c review fix 1: the toggle's label grew to the full row width and squeezed the info to 0px. */
+                .discoverLibraryRow > label {
+                    flex: 0 0 auto;
+                    width: auto;
+                }
+
+                /* 5c review fix 2: plain checkbox on the cards (the emby-checkbox markup never showed the tick
+                   when built via innerHTML). */
+                .libraryToggle {
+                    accent-color: #00a4dc;
+                    width: 20px;
+                    height: 20px;
+                }
+
+                .discoverLibraryName {
+                    font-weight: 600;
+                }
+
+                .libraryTag {
+                    display: inline-block;
+                    font-size: .75em;
+                    padding: 1px 8px;
+                    border-radius: 10px;
+                    background: rgba(0, 164, 220, 0.2);
+                    color: #7fd3f0;
+                    margin-left: 6px;
+                    white-space: nowrap;
+                }
+
+                .libraryTagDefault {
+                    background: rgba(224, 163, 48, 0.2);
+                    color: #e0c068;
+                }
+
+                .discoverLibraryMeta {
+                    color: #888;
+                    font-size: .85em;
+                    margin-top: 2px;
+                }
+
+                .libraryGear {
+                    background: none;
+                    border: 1px solid transparent;
+                    color: inherit;
+                    border-radius: 6px;
+                    padding: 2px 8px;
+                    font-size: 18px;
+                    line-height: 1;
+                    cursor: pointer;
+                    min-width: auto;
+                }
+
+                .libraryGear:hover:not(:disabled) {
+                    border-color: rgba(155, 155, 155, 0.5);
+                }
+
+                #addLibraryButton {
+                    border-style: dashed;
+                    border-color: rgba(155, 155, 155, 0.5);
+                    background: transparent;
+                }
+
+                /* Template picker and inline library editor (task 5c) */
+                #libraryTemplatePicker {
+                    border: 1px solid rgba(0, 164, 220, 0.55);
+                    border-radius: 8px;
+                    padding: 12px 14px;
+                    margin: 8px 0;
+                }
+
+                #libraryTemplatePicker .templateGrid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    gap: 8px;
+                    margin: 10px 0;
+                }
+
+                #libraryTemplatePicker button.libraryTemplate {
+                    white-space: normal;
+                    min-height: auto;
+                    height: auto;
+                    padding: 10px;
+                    text-align: left;
+                    line-height: 1.4;
+                }
+
+                #libraryTemplatePicker button.libraryTemplate small {
+                    display: block;
+                    color: #999;
+                    font-size: .8em;
+                    margin-top: 4px;
+                    white-space: normal;
+                }
+
+                .discoverLibraryCard.open {
+                    border-color: rgba(0, 164, 220, 0.6);
+                }
+
+                #libraryEditor {
+                    border: 1px solid rgba(0, 164, 220, 0.6);
+                    border-radius: 8px;
+                    padding: 12px 14px 14px;
+                    margin: 6px 12px 12px;
+                    background-color: rgba(0, 0, 0, 0.12);
+                }
+
+                .libraryEditorActions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 12px;
+                    padding-top: 12px;
+                    border-top: 1px dashed rgba(155, 155, 155, 0.3);
+                }
+
+                #libraryEditorDeleteConfirm {
+                    border: 1px solid #d32f2f;
+                    border-radius: 6px;
+                    padding: 10px 12px;
+                    margin-top: 10px;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
@@ -496,6 +663,12 @@
                     </legend>
                     
                     <!-- Task Status Progress Bar -->
+                    <div id="librariesMigrationBanner" style="display: none; background-color: rgba(224, 160, 48, 0.15); border: 1px solid #e0a030; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+                        <div id="librariesMigrationBannerText" class="fieldDescription cautionText"></div>
+                        <button is="emby-button" type="button" id="dismissLibrariesMigrationBanner" class="raised button emby-button" style="margin-top: 10px;">
+                            <span>👍 Got it</span>
+                        </button>
+                    </div>
                     <div id="taskStatusContainer" class="taskStatusContainer">
                         <div class="taskStatusHeader">
                             <h3>
@@ -530,6 +703,130 @@
                         <div class="fieldDescription">Directory path for Jellyseerr library files. Ensure that this path is used only for the JellyBridge library. The <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> option will refresh any Jellyfin libraries using this folder.</div>
                     </div>
 
+                    <div class="verticalSection" id="discoverLibrariesSection">
+                        <h2 class="sectionTitle">Discover libraries</h2>
+                        <div class="fieldDescription">Each library is its own folder under the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> and its own Jellyfin library. ★ Default is where search results go.</div>
+                        <div id="discoverLibrariesReadOnlyNote" class="fieldDescription cautionText" style="display: none;">Libraries become editable after the one-time migration on the next restart.</div>
+                        <div id="libraryStatusStrip" class="libraryStatusStrip">
+                            <span class="libraryStatusItem" id="seerrStatusItem">Seerr: checking…</span>
+                            <span class="libraryStatusItem" id="activeLibrariesItem">— active libraries</span>
+                            <span class="libraryStatusItem" id="lastSyncItem">Last sync: —</span>
+                            <span class="statusSpacer"></span>
+                            <button is="emby-button" type="button" id="syncAllLibraries" class="raised button emby-button"><span>🔄 Sync all</span></button>
+                        </div>
+                        <div id="discoverLibraryList"></div>
+                        <div id="libraryEditorHost">
+                            <div id="libraryEditor" style="display: none;">
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" id="libraryEditorName" label="Name" />
+                                    <div class="fieldDescription">Folder <code id="libraryEditorFolderHint"></code> · the Jellyfin library is named the same.</div>
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="libraryEditorList">List</label>
+                                    <select id="libraryEditorList" is="emby-input" class="emby-input emby-select">
+                                        <option value="Popular">Popular</option>
+                                        <option value="NewReleases">New releases</option>
+                                        <option value="ComingSoon">Coming soon</option>
+                                        <option value="Trending">Trending</option>
+                                        <option value="TopRated">Top rated</option>
+                                    </select>
+                                    <div class="fieldDescription" id="libraryEditorListHelp"></div>
+                                </div>
+                                <div id="libraryEditorNetworksSlot"></div>
+                                <div id="libraryEditorNetworksWarning" class="fieldDescription cautionText" style="display: none;">⚠️ Unreleased titles aren't on a streaming service yet, so a network filter leaves this almost empty.</div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="libraryEditorType">Type</label>
+                                    <select id="libraryEditorType" is="emby-input" class="emby-input emby-select">
+                                        <option value="All">All</option>
+                                        <option value="Movies">Movies</option>
+                                        <option value="Series">Series</option>
+                                    </select>
+                                    <div class="fieldDescription">Movies or Series adds the word to the name (e.g. "Popular Movies"); All removes it.</div>
+                                </div>
+                                <details id="libraryEditorMore">
+                                    <summary>More options</summary>
+                                    <br>
+                                    <div class="checkboxContainer checkboxContainer-withDescription">
+                                        <label class="emby-checkbox-label">
+                                            <input id="libraryEditorDefault" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                            <span class="checkboxLabel">Default library — titles opened from search go here</span>
+                                            <span class="checkboxOutline">
+                                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                            </span>
+                                        </label>
+                                        <div class="fieldDescription" id="libraryEditorDefaultHelp">Only one library can be the default.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="libraryEditorOrder">Order in Jellyfin</label>
+                                        <select id="libraryEditorOrder" is="emby-input" class="emby-input emby-select">
+                                            <option value="AsList">Same as the list</option>
+                                            <option value="Smart">Smart</option>
+                                            <option value="Smartish">Smartish</option>
+                                            <option value="Random">Random</option>
+                                            <option value="Jellyfin">Jellyfin's own sort</option>
+                                        </select>
+                                        <div class="fieldDescription">Shows when the library is sorted by <i>Play count</i>. Smart puts each user's favourite genres first.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorPages" type="number" is="emby-input" min="0" label="Pages" />
+                                        <div class="fieldDescription">Pages of 20 titles fetched from Seerr for each type. Leave empty to use the global Discover Pages. Enter 0 to retrieve ALL pages.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorMinRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)" />
+                                        <div class="fieldDescription">Leave empty to use the global Minimum Rating; 0 imports every rating.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorMinVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)" />
+                                        <div class="fieldDescription">Leave empty to use the global Minimum Votes. Top rated and New releases always use it; other lists only with a Minimum Rating.</div>
+                                    </div>
+                                    <div class="inputContainer">
+                                        <input id="libraryEditorRetention" type="number" is="emby-input" min="1" label="Keep titles for (days)" />
+                                        <div class="fieldDescription">Days a title stays after leaving the list. Leave empty to use the global Content Retention Time.</div>
+                                    </div>
+                                </details>
+                                <div class="libraryEditorActions">
+                                    <button is="emby-button" type="button" id="libraryEditorSave" class="raised button-submit emby-button"><span>💾 Save library</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorSync" class="raised button emby-button"><span>🔄 Sync now</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorDuplicate" class="raised button emby-button"><span>📄 Duplicate</span></button>
+                                    <button is="emby-button" type="button" id="libraryEditorDelete" class="raised button emby-button" style="color: #ff6b6b;"><span>🗑️ Delete</span></button>
+                                    <span style="flex: 1;"></span>
+                                    <button is="emby-button" type="button" id="libraryEditorCancel" class="raised button emby-button"><span>Close</span></button>
+                                </div>
+                                <div id="libraryEditorDeleteConfirm" style="display: none;">
+                                    <div class="fieldDescription criticalText">Delete this library? Its Jellyfin library is removed too. This cannot be undone.</div>
+                                    <div class="checkboxContainer">
+                                        <label class="emby-checkbox-label">
+                                            <input id="libraryEditorDeleteFiles" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                            <span class="checkboxLabel">Also delete the files</span>
+                                            <span class="checkboxOutline">
+                                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmYes" class="raised button emby-button" style="background-color: #d32f2f; color: white;"><span>🗑️ Delete</span></button>
+                                        <button is="emby-button" type="button" id="libraryEditorDeleteConfirmCancel" class="button emby-button"><span>Cancel</span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="libraryTemplatePicker" style="display: none;">
+                            <h3 class="sectionTitle" style="margin: 4px 0;">Add a library</h3>
+                            <div class="fieldDescription">Pick a starting point. You can change everything afterwards.</div>
+                            <div class="templateGrid">
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="Popular"><span>🔥 Popular</span><small>What's popular on your services</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="NewReleases"><span>🆕 New releases</span><small>Latest releases, newest first</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="ComingSoon"><span>📅 Coming soon</span><small>Not released yet, most anticipated first</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="Trending"><span>📈 Trending</span><small>Seerr's trending list, in Seerr's order</small></button>
+                                <button is="emby-button" type="button" class="raised button emby-button libraryTemplate" data-template="TopRated"><span>🏆 Top rated</span><small>Highest TMDB scores, with a vote minimum</small></button>
+                            </div>
+                            <button is="emby-button" type="button" id="libraryTemplatePickerCancel" class="button emby-button"><span>Cancel</span></button>
+                        </div>
+                        <button is="emby-button" type="button" id="addLibraryButton" class="raised button block emby-button"><span>➕ Add library</span></button>
+                    </div>
+
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label" id="IsEnabledContainer">
                             <input id="IsEnabled" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
@@ -554,7 +851,7 @@
                         <summary>📚 Library Setup Instructions</summary>
                         <div id="librarySetupInstructionsContent">
                             <p>Before enabling this plugin, be sure that you have created a Jellyfin library.
-                                Try using the automated feature <span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span>.
+                                Libraries are managed in the <span class="link" data-target-page="discoverLibrariesSection">Discover libraries</span> section — every library gets its own folder and its own Jellyfin library.
                                 This activates automatic metadata downloading through Jellyfin, and ensures unique media in each JellyBridge library. You can create your own library using the recommended settings below:</p>
                             <ul>
                                 <li><strong>Content type:</strong> 🎬 Mixed Movies and Shows</li>
@@ -566,7 +863,6 @@
                                 <li>☑️ <strong>Save artwork into media folders</strong></li>
                                 <li><strong>Subtitle downloaders:</strong> 🔳 Open Subtitles (<i>if plugin is active</i>)</li>
                             </ul>
-                            <p>For advanced setup using Network Folders: <i>Manage Discover Library</i> → <span class="link" data-target-page="UseNetworkFoldersContainer"><i>Network Folders</i></span></p>
                         </div>
 
                         <details id="troubleshootingDetails" class="detailedInstructions">
@@ -619,19 +915,7 @@
                         <summary>Organize Discover Library</summary>
                         <br>
                         <div class="fieldDescription">
-                            Organize the JellyBridge library using a configured directory structure. Configure automatic library refreshing and separate directories for movies and series. With a few extra steps, organize discover content based on the network.
-                        </div>
-                        <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                            <strong>💡 Recommended:</strong> If you change the options for
-                                <span class="link" data-target-page="UseMixedMediaLibraryContainer">Mixed Movies and Shows</span> or
-                                <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>, complete the following steps:
-                                <ol>
-                                    <li><svg style="height: 0.7em; width: auto; vertical-align: text-bottom;" class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-iguwhy" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="DeleteIcon"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"></path></svg>
-                                        Remove Jellyfin <span class="link" data-target-router="/dashboard/libraries">Libraries</span> that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.</li>
-                                    <li><span class="link" data-target-page="recycleLibraryData">🗑️ Recycle JellyBridge Library Data</span> to remove the JellyBridge media content.</li>
-                                    <li><span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span> to create a new Jellyfin library.</li>
-                                    <li><span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> to import media content from Jellyseerr.</li>
-                                </ol>
+                            Configure automatic library refreshing for the Jellyfin libraries that use the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>. The Discover libraries and their folders are managed in the <span class="link" data-target-page="discoverLibrariesSection">Discover libraries</span> section.
                         </div>
 
                         <div id="ManageJellyBridgeLibraryContainer" class="checkboxContainer checkboxContainer-withDescription">
@@ -645,108 +929,6 @@
                             </label>
                             <div class="fieldDescription">After syncing, refreshes all Jellyfin libraries that contain the JellyBridge <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span> path. Runs a partial refresh <i>🔄 Search for missing metadata ✅ Replace all images</i> (this may take more time to retrieve new media data from TMDB and other providers), and an additional full refresh <i>🔄Replace all metadata</i> if items are hidden or deleted (this takes less time).</div>
                         </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseMixedMediaLibraryContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseMixedMediaLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Mixed Movies and Shows</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Store all media in a single library. Disabling this setting will create separate libraries for Movies and Shows.</div>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseNetworkFoldersContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseNetworkFolders" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Network Folders</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Create separate folders for each network, e.g., Netflix, Hulu, FOX. Recommended when organizing different networks into multiple Jellyfin libraries, e.g., Network TV, Premium, Streaming. <i>Note: When <span class="link" data-target-page="ManageJellyBridgeLibraryContainer">Automated Library Refresh</span> is enabled, Jellyfin may take a while to refresh all JellyBridge libraries.</i></div>
-                        </div>
-
-                        <details id="networkFolderOptionsDetails" class="detailedInstructions">
-                            <summary>Network Folders Setup</summary>
-                            <div data-depends-on="UseNetworkFolders">
-                                <h4>Instructions</h4>
-                                <p>Do this before clicking <span class="link" data-target-page="syncDiscover">📥 Import Discover Content from Jellyseerr</span> or running the <span class="link" data-target-page="IsEnabledContainer">Automated Task to Sync Jellyseerr and Jellyfin</span>. This allows the sync task to refresh the libraries after importing discover content.</p>
-                                <ol>
-                                    <li>Choose your <span class="link" data-target-page="regionContainer">Watch Region</span>. Select networks from the list available that you want to store in the Jellybridge library: <span class="link" data-target-page="networkServicesContainer">Network Services</span>.</li>
-                                    <li>For each desired library, enter the <span class="link" data-target-page="LibraryDisplayNameContainer">Library Name</span> and click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span>.</li>
-                                    <li>By default, all networks are added to the Jellyfin libraries. Navigate to the Jellyfin libraries and remove unwanted folders in each library.</li>
-                                </ol>
-                                <div class="fieldDescription cautionText" style="margin-bottom: 16px;">
-                                    ⚠️ Caution: To display the items in the Jellyfin library without seeing the annoying folder icons, you must add network subdirectories to the Jellyfin Folders rather than the base <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>.
-                                </div>
-
-                                <div class="checkboxContainer checkboxContainer-withDescription" id="AddDuplicateContentContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input id="AddDuplicateContent" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                        <span class="checkboxLabel">Display Discover Content in Multiple Libraries</span>
-                                        <span class="checkboxOutline">
-                                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                            <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                        </span>
-                                    </label>
-                                    <div class="fieldDescription">Copy content to each JellyBridge library when multiple networks host the same content. For example, both HBO and Hulu have "Friends" in their discover content, and both networks are in separate Jellyfin libraries, then each library has a copy of "Friends". <i>Unchecking this box will only import discover content that is unique across all JellyBridge libraries.</i></div>
-                                    <div id="addDuplicateContentWarning" class="fieldDescription cautionText hide-depends" data-depends-on="AddDuplicateContent">
-                                        <strong>⚠️ Caution:</strong> You should not include the same network in multiple libraries, as duplicates may occur within libraries.
-                                    </div>
-                                </div>
-
-                                <div class="inputContainer" id="NetworkFolderPrefixContainer">
-                                    <input id="NetworkFolderPrefix" type="text" is="emby-input" label="Network Folder Prefix"/>
-                                    <div class="fieldDescription">Prefix for network folder names. The folder structure for the prefix "Network - " would look like:<br><code>/data/JellyBridge/Network - FOX/The Matrix (1999)</code></div>
-                                </div>
-                            </div>
-                        </details>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="UseTrendingLibraryContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="UseTrendingLibrary" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Trending Library</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Keep a separate Trending library with Jellyseerr's current trending movies and shows, in addition to the Discover library. Each sync replaces its titles with the current trending list; favoriting a title requests it as usual. Works the same with or without Mixed Movies and Shows. To show the titles in Jellyseerr's order, sort the library by Play count (ascending).</div>
-                        </div>
-                        <div class="inputContainer file-browser" id="TrendingDirectoryContainer" data-depends-on="UseTrendingLibrary">
-                            <input is="emby-input" type="text" id="TrendingDirectory" label="Trending Directory" />
-                            <button type="button" id="browseTrendingDirectory" is="emby-button">📂</button>
-                            <div class="fieldDescription">Folder for the Trending library. It must be outside the <span class="link" data-target-page="LibraryDirectoryContainer">Library Directory</span>, used only for the Trending library, and visible to Jellyfin (for Docker, mount it like the Library Directory). Leave empty to use a folder next to the Library Directory.</div>
-                        </div>
-                        <div class="inputContainer" id="TrendingPagesContainer" data-depends-on="UseTrendingLibrary">
-                            <input id="TrendingPages" type="number" is="emby-input" min="1" label="Trending Pages"/>
-                            <div class="fieldDescription">Number of pages to import from Jellyseerr's trending list. Each page has about 20 movies and shows.</div>
-                        </div>
-
-                        <div class="fieldDescription" id="createDefaultLibraryContainer">
-                            <div id="LibraryDisplayNameContainer">
-                                <div data-depends-on="UseMixedMediaLibrary" class="inputContainer hide-depends">
-                                    <input is="emby-input" type="text" id="LibraryDisplayName" label="Library Name" placeholder="Discover"/>
-                                    <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate a single library for Mixed Movies and Shows in Jellyfin.</div>
-                                </div>
-                                <div data-depends-off="UseMixedMediaLibrary" class="inputContainer hide-depends">
-                                    <input is="emby-input" type="text" id="MovieLibraryDisplayName" label="Movie Library Name" placeholder="Discover Movies"/>
-                                    <input is="emby-input" type="text" id="ShowLibraryDisplayName" label="Show Library Name" placeholder="Discover Shows"/>
-                                    <div class="fieldDescription">Click <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> to generate separate libraries for Movies and Shows in Jellyfin.</div>
-                                </div>
-                                <div data-depends-on="UseTrendingLibrary" class="inputContainer hide-depends">
-                                    <input is="emby-input" type="text" id="TrendingLibraryDisplayName" label="Trending Library Name" placeholder="Trending"/>
-                                    <div class="fieldDescription">With Trending Library on, <span class="link" data-target-page="createDefaultLibrary">✨ Create Discover Library</span> also generates the Trending library in Jellyfin.</div>
-                                </div>
-                            </div>
-                            <button is="emby-button" type="button" id="createDefaultLibrary" class="raised button block emby-button">
-                                <span>✨ Create Discover Library</span>
-                            </button>
-                        </div>
                     </details>
 
                     <br>
@@ -755,7 +937,7 @@
                         <summary>Import Discover Content</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items.
+                            Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items. Once migrated to Discover libraries, the networks, pages, rating and retention settings live inside each library's editor (gear).
                         </div>
 
                         <div class="inputContainer" id="regionContainer">
@@ -773,6 +955,7 @@
                             <div class="fieldDescription">Select your watch region for networks. Click <span class="link" data-target-page="refreshWatchRegions">🔄</span> to load watch regions from Jellyseerr. This determines which watch providers are displayed for movies and series in the available networks list.</div>
                         </div>
 
+                        <div id="globalNetworksSlot"></div>
                         <div id="networkServicesContainer" class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="availableNetworks">Network Services</label>
                             <div class="fieldDescription">
@@ -824,17 +1007,17 @@
                             <div class="fieldDescription">Maximum number of pages to import from the Jellyseerr discover pages for each network. Each page consists of 20 series for each network. This applies to both movies and series discovery. Enter 0 to retrieve ALL pages (try a smaller number first).</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MinimumRatingContainer">
                             <input id="MinimumRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)"/>
                             <div class="fieldDescription">Only import titles rated at least this high on TMDB (0 to 10, e.g. 7). Leave empty or 0 to import every rating. Titles already in the library below it are removed at the next sync. Titles that are not out yet have no rating, so they are left out while this is set.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MinimumVotesContainer">
                             <input id="MinimumVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)"/>
                             <div class="fieldDescription">Number of TMDB votes a title needs before its rating counts, so a handful of early votes can't carry it over the Minimum Rating. Used only with a Minimum Rating. A higher number such as 300 (TMDB's own Top Rated list) leaves out more new releases.</div>
                         </div>
 
-                        <div class="inputContainer">
+                        <div class="inputContainer" id="MaxRetentionDaysContainer">
                             <input id="MaxRetentionDays" type="number" is="emby-input" min="1" label="Content Retention Time (days)"/>
                             <div class="fieldDescription">Maximum number of days to retain items in the collection before cleanup. JellyBridge items older than this will be removed after running the import task.</div>
                         </div>
@@ -930,7 +1113,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library. <i>Note: Not available with <span class="link" data-target-page="UseNetworkFoldersContainer">Network Folders</span>.</i></div>
+                            <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library.</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
@@ -1016,7 +1199,7 @@
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Make each promo video from the title's own backdrop and logo, with its year, rating, genres and plot, the release date of upcoming titles, and a note to favorite it to request it. Titles use the promo above until Jellyfin has saved their backdrop, then switch on a later sync. Needs <i>Save artwork into media folders</i> in the library settings, which <span class="link" data-target-page="createDefaultLibraryContainer">✨ Create Discover Library</span> turns on.</div>
+                            <div class="fieldDescription">Make each promo video from the title's own backdrop and logo, with its year, rating, genres and plot, the release date of upcoming titles, and a note to favorite it to request it. Titles use the promo above until Jellyfin has saved their backdrop, then switch on a later sync. Needs <i>Save artwork into media folders</i> in the library settings of every JellyBridge library.</div>
                         </div>
                         <br>
 

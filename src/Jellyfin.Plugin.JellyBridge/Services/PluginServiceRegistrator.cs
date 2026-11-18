@@ -55,6 +55,9 @@ namespace Jellyfin.Plugin.JellyBridge.Services
 
             // Register the library service
             serviceCollection.AddTransient<RefreshService>();
+
+            // Register the libraries migration service (planner + executor, task 4)
+            serviceCollection.AddTransient<LibraryMigrationService>();
             
             // Register placeholder video generator as a singleton (created on first use) so its constructor
             // doesn't wipe the placeholder cache every time a service or controller resolves it
@@ -86,6 +89,8 @@ namespace Jellyfin.Plugin.JellyBridge.Services
             serviceCollection.AddScoped<Controllers.CustomizePromoController>();
             serviceCollection.AddScoped<Controllers.SortDiscoverContentController>();
             serviceCollection.AddScoped<Controllers.AdvancedSettingsController>();
+            serviceCollection.AddScoped<Controllers.LibrariesMigrationController>();
+            serviceCollection.AddScoped<Controllers.DiscoverLibrariesController>();
         }
     }
 }
