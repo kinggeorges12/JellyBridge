@@ -171,10 +171,13 @@ public class DiscoverService
     /// Mohammad's correction: Pages × 20 visible titles TOTAL for the library, whatever its type and however
     /// many networks it uses). The streams of every network are pulled round-robin (rank 1 of every network,
     /// then rank 2, ... — the task 2b network merge), and within a network movies and shows alternate by rank
-    /// exactly as task 2b ranked them (movie 1, show 1, movie 2, show 2, ...). Each stream fetches its next
-    /// Seerr page only when its queue runs dry — then the whole arriving page is judged in one
-    /// <see cref="FilterVisibleAsync"/> pass against the shared (mediaType, TMDB id) / folder-hash dedupe —
-    /// and each pulled title takes the next rank. Fetching stops when the library holds Pages × 20 visible
+    /// exactly as task 2b ranked them (movie 1, show 1, movie 2, show 2, ...). Each fill of a dry queue takes only
+    /// a fair share of the remaining budget (remaining / streams still needing a fetch), so one stream's full page
+    /// cannot starve the others (8c — Mohammad: the agreed order alternates, apply it to the fetch budget too).
+    /// Each stream fetches its next Seerr page only when its queue runs dry — the arriving page is judged in one
+    /// <see cref="FilterVisibleAsync"/> pass of the static visibility predicates, and each pulled title is
+    /// checked against the shared (mediaType, TMDB id) / folder-hash dedupe and takes the next rank AT PULL
+    /// TIME, in merged order (8c fix 1). Fetching stops when the library holds Pages × 20 visible
     /// titles or every stream is exhausted (list end, failed page, or the 5 × Pages page cap, which stays PER
     /// stream); Pages ≤ 0 keeps unlimited fetching until the lists end. A Movies-only library gets no show
     /// streams, a Series-only library no movie streams.
@@ -258,7 +261,6 @@ public class DiscoverService
         // together never fetch or count past the target (task 8: past the target is never counted or written).
         var merged = new List<IJellyseerrItem>();
         var hidden = new List<IJellyseerrItem>();
-        var queuedVisible = 0;
         var rank = 0;
         var livePulls = true;
         while (merged.Count < target && livePulls)
@@ -271,17 +273,29 @@ public class DiscoverService
                     break;
                 }
 
-                var budget = target == int.MaxValue ? int.MaxValue : Math.Max(0, target - merged.Count - queuedVisible);
-                var item = await PullNextVisibleAsync(state, pull, capPages, budget, hidden);
+                var item = await PullNextVisibleAsync(state, pull, capPages, target, merged.Count, pulls, hidden);
                 if (item == null)
                 {
                     continue; // this network is exhausted for now
                 }
 
-                queuedVisible--;
+                pulledThisRound = true; // progress even when the pulled copy turns out to be a duplicate
+                // 8c fix 1 (from the 8b review): the shared (mediaType, TMDB id) / folder-hash dedupe runs
+                // HERE, in merged pull order — not when a Seerr page arrives. A copy queued deep in one
+                // stream's page must not block the same title at a better position in another stream's page
+                // (live example: one TV title sat at Netflix page-1 position 16 and Disney+ position 4;
+                // judging at arrival dropped the Disney+ copy and ranked the title at Netflix's turn 16).
+                if (state.CountedIds.Contains((item.MediaType, item.Id))
+                    || state.CountedFolderHashes.Contains(item.GetFolderHashCode()))
+                {
+                    state.Duplicates++;
+                    continue;
+                }
+
+                state.CountedIds.Add((item.MediaType, item.Id));
+                state.CountedFolderHashes.Add(item.GetFolderHashCode());
                 item.ListRank = ++rank;
                 merged.Add(item);
-                pulledThisRound = true;
             }
 
             livePulls = pulledThisRound;
@@ -318,8 +332,10 @@ public class DiscoverService
         var capPages = pages <= 0 ? int.MaxValue : pages * 5;
         var visible = new List<IJellyseerrItem>();
         var hidden = new List<IJellyseerrItem>();
-        // TMDB's trending pages can repeat a title; the first position counts
+        // TMDB's trending pages can repeat a title; the first position counts. The folder-hash predicate
+        // (localized twins) stays here since 8c fix 1 — the shared counted sets are now the pull path's only.
         var seen = new HashSet<(string?, int)>();
+        var seenFolderHash = new HashSet<int>();
         var rank = 0;
         for (var page = 1; visible.Count < target && page <= capPages; page++)
         {
@@ -337,7 +353,8 @@ public class DiscoverService
                     "tv" => JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(result.GetRawText()),
                     _ => null,
                 };
-                if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id)))
+                if (item == null || item.Id <= 0 || !seen.Add((mediaType, item.Id))
+                    || !seenFolderHash.Add(item.GetFolderHashCode()))
                 {
                     continue;
                 }
@@ -390,7 +407,7 @@ public class DiscoverService
     /// <param name="budget">Titles the whole library may still take; a stream fetches no further page without it.</param>
     /// <param name="hiddenOut">Receives the titles still on the list the fetch judged hidden (8b fix 3/4).</param>
     /// <returns>The network's next visible title, or null when the network is exhausted</returns>
-    private async Task<IJellyseerrItem?> PullNextVisibleAsync(VisibleFetchState state, NetworkPull pull, int capPages, int budget, List<IJellyseerrItem> hiddenOut)
+    private async Task<IJellyseerrItem?> PullNextVisibleAsync(VisibleFetchState state, NetworkPull pull, int capPages, int target, int mergedCount, List<NetworkPull> pulls, List<IJellyseerrItem> hiddenOut)
     {
         for (var turn = 0; turn < 2; turn++)
         {
@@ -401,13 +418,29 @@ public class DiscoverService
                 return stream.Queue.Dequeue();
             }
 
-            if (stream is { Done: false } && budget > 0)
+            if (stream is { Done: false })
             {
-                await FillStreamAsync(state, stream, capPages, budget, hiddenOut);
-                if (stream.Queue.Count > 0)
+                // Queued visible titles occupy the budget too, so the streams stop fetching at the target; each fill
+                // takes only a fair share (rounded up, so tiny remainders still move) of what is left between the
+                // streams still needing to fetch. Without the share, one full page queued first consumed the whole
+                // budget and starved every other stream (the agreed fetch order alternates — 8c).
+                var budget = target;
+                if (target != int.MaxValue)
                 {
-                    pull.NextIsMovie = !pull.NextIsMovie;
-                    return stream.Queue.Dequeue();
+                    var queued = pulls.Sum(p => (p.Movies?.Queue.Count ?? 0) + (p.Shows?.Queue.Count ?? 0));
+                    var remaining = Math.Max(0, target - mergedCount - queued);
+                    var needers = pulls.Sum(p => (p.Movies is { Done: false, Queue.Count: 0 } ? 1 : 0) + (p.Shows is { Done: false, Queue.Count: 0 } ? 1 : 0));
+                    budget = (remaining + needers - 1) / Math.Max(1, needers);
+                }
+
+                if (budget > 0)
+                {
+                    await FillStreamAsync(state, stream, capPages, budget, hiddenOut);
+                    if (stream.Queue.Count > 0)
+                    {
+                        pull.NextIsMovie = !pull.NextIsMovie;
+                        return stream.Queue.Dequeue();
+                    }
                 }
             }
 
@@ -419,8 +452,8 @@ public class DiscoverService
 
     /// <summary>
     /// Fetches one Seerr page of the stream (its next page when the queue ran dry, 8b fix 5), judges the
-    /// whole arriving page in one visible-filter pass against the shared dedupe, and queues the visible
-    /// titles. The page cap of 5 × Pages stays PER stream; an empty page or page ≥ totalPages ends the
+    /// whole arriving page in one visible-filter pass of the static predicates (the shared fetch-wide dedupe
+    /// waits at the pull, 8c fix 1), and queues the visible titles. The page cap of 5 × Pages stays PER stream; an empty page or page ≥ totalPages ends the
     /// stream (a failed page ends it too — ApiService logs why).
     /// </summary>
     private async Task FillStreamAsync(VisibleFetchState state, DiscoverStream stream, int capPages, int budget, List<IJellyseerrItem> hiddenOut)
@@ -463,12 +496,14 @@ public class DiscoverService
 
     /// <summary>
     /// Keeps the titles the current sync would NOT hide (task 8: Pages counts the titles you see). Reuses the
-    /// sync's own hide predicates: the BLACKLISTED status, the (mediaType, TMDB id) and folder-hash dedupe the
-    /// fetcher already does, the existing .ignore file in the title's folder (favorited or requested through
+    /// sync's own hide predicates: the BLACKLISTED status, page-local duplicate titles (the shared fetch-wide
+    /// (mediaType, TMDB id) / folder-hash dedupe runs at the pull, in merged order — 8c fix 1), the existing
+    /// .ignore file in the title's folder (favorited or requested through
     /// JellyBridge), and the already-in-a-real-Jellyfin-library match that feeds the sync's ignore step — which
     /// hides only when ExcludeFromMainLibraries is on (with it off the sync deletes those .ignore files, so the
-    /// title stays visible). A title joins the counted sets only once it is visible, so a hidden title's twin
-    /// on a later page is re-checked instead of silently counted. 8b fix 3: the titles skipped as hidden are
+    /// title stays visible). A title is judged per page only; whether it still counts is decided at the pull,
+    /// so a hidden title's twin on a later page is re-checked instead of silently counted. 8b fix 3: the
+    /// titles skipped as hidden are
     /// returned too — the sync still treats them as ON the list (trending removal, retention). 8b fix 6: a
     /// page-local pending check keeps within-page duplicates out of the match batch, and the original page
     /// order is restored before returning (the match batch must not reorder the page).
@@ -483,8 +518,8 @@ public class DiscoverService
         var visible = new List<(int Order, IJellyseerrItem Item)>();
         var hidden = new List<IJellyseerrItem>();
         var needMatch = new List<(int Order, IJellyseerrItem Item)>();
-        // 8b fix 6: a title heading for the match step is not in the counted sets yet, so track the
-        // page-local keys too — otherwise the same title twice on one page matched and counted twice.
+        // 8c fix 1: the fetch-wide dedupe moved to the pull; these page-local keys keep the same title
+        // twice on ONE page (either path, including the match batch) from being judged or queued twice.
         var pendingKeys = new HashSet<(JellyseerrModel.MediaType, int)>();
         var pendingFolderHashes = new HashSet<int>();
         for (var order = 0; order < items.Count; order++)
@@ -511,7 +546,7 @@ public class DiscoverService
                 continue;
             }
 
-            if (state.CountedIds.Contains((item.MediaType, item.Id)) || state.CountedFolderHashes.Contains(item.GetFolderHashCode()))
+            if (!pendingKeys.Add((item.MediaType, item.Id)) || !pendingFolderHashes.Add(item.GetFolderHashCode()))
             {
                 state.Duplicates++;
                 continue;
@@ -528,29 +563,17 @@ public class DiscoverService
                     continue;
                 }
 
-                if (!pendingKeys.Add((item.MediaType, item.Id)) || !pendingFolderHashes.Add(item.GetFolderHashCode()))
-                {
-                    state.Duplicates++;
-                    continue;
-                }
-
                 needMatch.Add((order, item));
             }
             else if (!ignored)
             {
                 // Including main libraries: no .ignore, so the title stays visible whichever way the scan matches.
-                AcceptVisible(state, item, visible, order);
+                visible.Add((order, item));
             }
             else
             {
                 // With main libraries included, a real-library match even gets its .ignore deleted — it counts
                 // as visible; only an .ignore whose title is NOT in a real library stays hidden.
-                if (!pendingKeys.Add((item.MediaType, item.Id)) || !pendingFolderHashes.Add(item.GetFolderHashCode()))
-                {
-                    state.Duplicates++;
-                    continue;
-                }
-
                 needMatch.Add((order, item));
             }
         }
@@ -574,24 +597,13 @@ public class DiscoverService
                     continue;
                 }
 
-                AcceptVisible(state, item, visible, order);
+                visible.Add((order, item));
             }
         }
 
         // 8b fix 6: restore the page's original order — the .ignore'd titles that went through the match
         // batch used to land after the directly accepted ones, reordering the ranks within the page.
         return (visible.OrderBy(v => v.Order).Select(v => v.Item).ToList(), hidden);
-    }
-
-    /// <summary>
-    /// Counts a title as visible: it reserves its (mediaType, TMDB id) and folder hash for the target and joins
-    /// the fetched list, keeping the page position it had (order fix of 8b).
-    /// </summary>
-    private static void AcceptVisible(VisibleFetchState state, IJellyseerrItem item, List<(int Order, IJellyseerrItem Item)> visible, int order)
-    {
-        state.CountedIds.Add((item.MediaType, item.Id));
-        state.CountedFolderHashes.Add(item.GetFolderHashCode());
-        visible.Add((order, item));
     }
 
     /// <summary>

@@ -30,8 +30,10 @@ public class RefreshService
     private readonly IServiceProvider _serviceProvider;
     // 8b fix 2: the .ignore rule instances + their ClearDirectoryCache method, resolved once on first use —
     // the fire-and-forget ScanThenRefreshRunner calls the clear after the request scope may already be disposed.
-    private List<object>? _dotIgnoreRules;
-    private MethodInfo? _dotIgnoreClear;
+    // 8c fix 2: static, so every RefreshService instance (the service is AddTransient) shares one resolved
+    // set of rule instances and one failed scope can never poison another instance's clear.
+    private static List<object>? _dotIgnoreRules;
+    private static MethodInfo? _dotIgnoreClear;
     public RefreshService(ILogger<RefreshService> logger, JellyfinILibraryManager libraryManager, IFileSystem fileSystem, JellyfinIProviderManager providerManager, ITaskManager taskManager, ILocalizationManager localization, IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
@@ -420,8 +422,9 @@ public class RefreshService
         }
         catch (ObjectDisposedException ex)
         {
-            // Nothing cached yet and the scope this was resolving from is already gone: skip quietly, the
-            // next call from a live scope resolves and caches the rules.
+            // Safety net only: 8c fix 2 moved the scope-sensitive GetService inside ResolveDotIgnoreRules,
+            // so a dead scope no longer reaches here. If anything ever does, the rules are resolved and
+            // cached statically and the next call from any scope reuses them.
             _logger.LogDebug("Skipping the .ignore directory cache clear: the service scope was already disposed ({Message})", ex.Message);
         }
         catch (Exception ex)
@@ -450,11 +453,21 @@ public class RefreshService
 
         // The library resolver uses its own rule instances (LibraryManager.EntityResolutionIgnoreRules),
         // separate from the DI singleton used by the library monitor - clear all of them.
+        // 8c fix 2: only the DI lookup can throw ObjectDisposedException (request scope already disposed);
+        // catch it HERE so the library manager's own rule instances — the ones the resolver really uses —
+        // are still collected and cached even when the first call on an instance comes from a dead scope.
         var rules = new List<object>();
-        var diRule = _serviceProvider.GetService(ruleType);
-        if (diRule != null)
+        try
         {
-            rules.Add(diRule);
+            var diRule = _serviceProvider.GetService(ruleType);
+            if (diRule != null)
+            {
+                rules.Add(diRule);
+            }
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug("The service scope was already disposed; collecting only the library manager's .ignore rule instances ({Message})", ex.Message);
         }
         var libraryManager = (object)_libraryManager.Inner;
         var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
