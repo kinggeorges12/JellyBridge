@@ -643,6 +643,15 @@
                     padding: 10px 12px;
                     margin-top: 10px;
                 }
+                /* Dropdown lists: the open list is drawn by the browser with a light
+                   background, so the theme's white option text was unreadable. */
+                #jellyBridgeConfigurationPage select.emby-select {
+                    color-scheme: dark;
+                }
+                #jellyBridgeConfigurationPage select.emby-select option {
+                    background-color: #202020;
+                    color: #fff;
+                }
             </style>
             <form id="jellyBridgeConfigurationForm" autocomplete="off">
                 <fieldset class="verticalSection-extrabottompadding">
