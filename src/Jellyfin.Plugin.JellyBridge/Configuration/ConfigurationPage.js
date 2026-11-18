@@ -545,7 +545,11 @@ function renderDiscoverLibraries(page) {
         card.setAttribute('data-library-name', entry.name || library.name || '');
 
         const tags = '<span class="libraryTag">' + escapeLibraryHtml(libraryListLabel(library.listType)) + '</span>'
-            + (isDefault ? '<span class="libraryTag libraryTagDefault">★ Default</span>' : '');
+            + (isDefault ? '<span class="libraryTag libraryTagDefault">★ Default</span>' : '')
+            // Task 7: a freshly created library keeps this tag until its first titles land (watchLibraryFilling).
+            + (fillingLibraries.has(String(entry.name || library.name || '').toLowerCase())
+                ? '<span class="libraryTag libraryTagFilling">Filling…</span>'
+                : '');
 
         // 5c review fix 2: a plain checkbox — the emby-checkbox markup built with innerHTML never rendered the
         // tick. The editor's own static emby checkboxes are unaffected.
@@ -633,6 +637,7 @@ function saveLibraryToggle(page, libraryName, enabled, card) {
     });
 
     if (card) card.classList.add('off');
+    startSyncWaitNotice(page);
     ApiClient.ajax({
         url: ApiClient.getUrl('JellyBridge/Libraries'),
         type: 'POST',
@@ -640,11 +645,13 @@ function saveLibraryToggle(page, libraryName, enabled, card) {
         contentType: 'application/json',
         dataType: 'json'
     }).then(function (result) {
+        stopSyncWaitNotice(page);
         discoverLibrariesEntries = (result && result.libraries) || discoverLibrariesEntries;
         renderDiscoverLibraries(page);
         renderLibraryStatusStrip(page);
         DisplayMessage('✅ ' + ((result && result.message) || 'Libraries saved.'));
     }).catch(async function (error) {
+        stopSyncWaitNotice(page);
         let message = error?.message || 'Unknown error';
         try {
             const errorBody = await error.json();
@@ -749,6 +756,7 @@ function performSyncAllLibraries(page) {
         if (!confirmed) return;
         syncAllButton.disabled = true;
         Dashboard.showLoadingMsg();
+        startSyncWaitNotice(page);
         ApiClient.ajax({
             url: ApiClient.getUrl('JellyBridge/SyncDiscover'),
             type: 'POST',
@@ -760,6 +768,7 @@ function performSyncAllLibraries(page) {
         }).catch(function (error) {
             DisplayMessage('❌ Sync all failed: ' + (error?.message || 'Unknown error'));
         }).finally(function() {
+            stopSyncWaitNotice(page);
             Dashboard.hideLoadingMsg();
             syncAllButton.disabled = false;
             loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
@@ -904,6 +913,84 @@ function syncOutcomeMessage(result, fallback) {
     const ok = !(result && result.success === false);
     const text = (result && (result.result || result.message)) || fallback;
     return /^[\u2705\u274C\u26A0]/.test(text) ? text : (ok ? '✅ ' : '❌ ') + text;
+}
+
+// Task 7: every write endpoint waits on the sync lock without reporting queue state, so saving a library
+// during a long post-restart sync used to look like a dead spinner. When a write is still unanswered after
+// 3 s, the page shows a strip notice and polls GET Libraries once — the isSyncRunning flag picks the
+// wording. stopSyncWaitNotice runs in each write's finally.
+let syncWaitTimer = null;
+let syncWaitShown = false;
+
+function showSyncWaitNotice(page, text) {
+    const item = page.querySelector('#syncWaitItem');
+    if (!item) return;
+    syncWaitShown = true;
+    item.textContent = text;
+    item.className = 'libraryStatusItem warn';
+    item.style.display = '';
+}
+
+function startSyncWaitNotice(page) {
+    stopSyncWaitNotice(page);
+    syncWaitTimer = setTimeout(function () {
+        syncWaitTimer = null;
+        showSyncWaitNotice(page, '⏳ Still working…');
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyBridge/Libraries'),
+            type: 'GET',
+            dataType: 'json'
+        }).then(function (data) {
+            if (syncWaitShown && data && data.isSyncRunning) {
+                showSyncWaitNotice(page, '⏳ Waiting for the running sync to finish…');
+            }
+        }).catch(function () { /* keep the generic wording */ });
+    }, 3000);
+}
+
+function stopSyncWaitNotice(page) {
+    if (syncWaitTimer) { clearTimeout(syncWaitTimer); syncWaitTimer = null; }
+    syncWaitShown = false;
+    const item = page.querySelector('#syncWaitItem');
+    if (item) {
+        item.style.display = 'none';
+        item.textContent = '';
+        item.className = 'libraryStatusItem';
+    }
+}
+
+// Task 7: after Create the card carries a "Filling…" tag until the library's title count is > 0 (polled
+// every 5 s for up to 2 min — the sync and the targeted refresh inside Create need seconds to materialize
+// in Jellyfin). The tag itself is drawn by renderDiscoverLibraries from this set.
+const fillingLibraries = new Set();
+const libraryFillPollTimers = {};
+
+function watchLibraryFilling(page, name) {
+    const key = String(name || '').toLowerCase();
+    if (!key || libraryFillPollTimers[key]) return;
+    fillingLibraries.add(key);
+    const startedAt = Date.now();
+    libraryFillPollTimers[key] = setInterval(function () {
+        ApiClient.ajax({
+            url: ApiClient.getUrl('JellyBridge/Libraries'),
+            type: 'GET',
+            dataType: 'json'
+        }).then(function (data) {
+            const entries = Array.isArray(data) ? data : ((data && data.libraries) || []);
+            const entry = entries.find(function (e) {
+                return String(e.name || (e.library && e.library.name) || '').toLowerCase() === key;
+            });
+            const filled = !!entry && (entry.titleCount ?? 0) > 0;
+            if (!filled && Date.now() - startedAt <= 120000) return;
+            clearInterval(libraryFillPollTimers[key]);
+            delete libraryFillPollTimers[key];
+            fillingLibraries.delete(key);
+            discoverLibrariesEntries = entries;
+            renderDiscoverLibraries(page);
+            if (filled) DisplayMessage('✅ Library "' + name + '" is filling: ' + entry.titleCount + ' titles so far.');
+        }).catch(function () { /* network hiccup: retry on the next tick */ });
+    }, 5000);
+    renderDiscoverLibraries(page);
 }
 
 // Hide the global networks picker, Discover Pages, Minimum Rating/Votes and retention on migrated
@@ -1247,6 +1334,7 @@ function saveLibraryEditor(page) {
     const saveButton = page.querySelector('#libraryEditorSave');
     if (saveButton) saveButton.disabled = true;
     Dashboard.showLoadingMsg();
+    startSyncWaitNotice(page); // task 7: the save/Create wait on the sync lock
 
     postLibrariesList(list).then(function (result) {
         const message = (result && result.message) || 'Libraries saved.';
@@ -1275,6 +1363,8 @@ function saveLibraryEditor(page) {
     }).then(function (message) {
         closeLibraryEditor(page);
         return loadDiscoverLibraries(page).then(function () {
+            // Task 7: a newly created library fills itself server-side; the card shows "Filling…" meanwhile.
+            if (draft.isNew) watchLibraryFilling(page, lib.name);
             DisplayMessage('✅ ' + message);
         });
     }).catch(function (error) {
@@ -1284,6 +1374,7 @@ function saveLibraryEditor(page) {
             renderDiscoverLibraries(page);
         });
     }).finally(function () {
+        stopSyncWaitNotice(page);
         Dashboard.hideLoadingMsg();
         if (saveButton) saveButton.disabled = false;
     });
@@ -1346,12 +1437,14 @@ function performLibrarySyncNow(page) {
         const button = page.querySelector('#libraryEditorSync');
         if (button) button.disabled = true;
         Dashboard.showLoadingMsg();
+        startSyncWaitNotice(page); // task 7: the sync waits on the same lock
         librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Sync')
             .then(function (result) {
                 DisplayMessage(syncOutcomeMessage(result, 'Sync finished.'));
             })
             .catch(function (error) { return handleLibraryError(error, 'sync the library "' + name + '"'); })
             .finally(function () {
+                stopSyncWaitNotice(page);
                 Dashboard.hideLoadingMsg();
                 if (button) button.disabled = false;
                 loadDiscoverLibraries(page); // also refreshes lastSync in the strip (5c review fix 6)
@@ -1362,12 +1455,17 @@ function performLibrarySyncNow(page) {
 function performCreateLibrary(page, name, button) {
     if (button) button.disabled = true;
     Dashboard.showLoadingMsg();
+    startSyncWaitNotice(page); // task 7: Create syncs the library before it answers
     librariesApi('POST', 'JellyBridge/Libraries/' + encodeURIComponent(name) + '/Create')
         .then(function (result) {
             DisplayMessage('✅ ' + ((result && result.message) || ('Library "' + name + '" is ready.')));
+            // Task 7: Create filled the library server-side (sync + targeted refresh); show "Filling…" on
+            // the card until the first titles land, re-polling every 5 s for up to 2 min.
+            watchLibraryFilling(page, name);
         })
         .catch(function (error) { return handleLibraryError(error, 'create the library "' + name + '"'); })
         .finally(function () {
+            stopSyncWaitNotice(page);
             Dashboard.hideLoadingMsg();
             loadDiscoverLibraries(page);
         });

@@ -145,7 +145,20 @@ public partial class SyncService
             _logger.LogWarning("Favorites hide/ignore failed for library {Library}: {Message}", library.Name, hideResult.Message);
         }
 
-        await _refreshService.ApplyRefreshAsync(new List<RefreshableResult?> { syncResult, hideResult });
+        // Task 7: a single-library sync refreshes only this library's folder (targeted, like the REST
+        // POST /Items/<libraryId>/Refresh) instead of the global plan — the global "Scan All Libraries" plan
+        // is skipped while Jellyfin's Scan Media Library task is already running, which left new libraries
+        // empty. The list-order play counts do not need the refresh: SyncOneLibraryAsync already wrote them
+        // through the user data manager; the Update options below just reload user data like the old refresh did.
+        var refreshPlan = MergeRefresh(syncResult.Refresh, hideResult.Refresh);
+        if (refreshPlan != null)
+        {
+            // Make Jellyfin see .ignore files created/removed since its last scan, as ApplyRefreshAsync does.
+            _refreshService.ClearDotIgnoreCache();
+            var refreshDirectory = library.GetDirectory(DiscoverLibraries.GetRootDirectory());
+            await _refreshService.QueueLibraryRefreshAsync(refreshDirectory,
+                createMode: refreshPlan.CreateRefresh, removeMode: refreshPlan.RemoveRefresh, refreshImages: refreshPlan.RefreshImages);
+        }
         if (syncResult.Success)
         {
             LastSyncCompleted = DateTime.UtcNow;
