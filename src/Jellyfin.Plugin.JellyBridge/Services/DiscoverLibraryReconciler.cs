@@ -113,6 +113,14 @@ public class DiscoverLibraryReconciler
     /// <param name="isNew">True when this library was not in the config before the save.</param>
     /// <param name="renamedFrom">The old name when this save renames the library (the page sends it transiently).</param>
     /// <param name="runSyncAndSort">False for the sync-path safety net: only structural fixes, no sync or sort.</param>
+    /// <remarks>
+    /// 9a-b review fixes: the Jellyfin side is evaluated ONCE up front (FindBridgeJellyfinLibrary) — before any
+    /// folder move — so a blocked name (a Jellyfin library outside the bridge root owns it, finding 1b) or a
+    /// refused playback re-create (finding 2) changes NOTHING, and a rename that must wait persists
+    /// <see cref="DiscoverLibraryConfig.PendingRenameFrom"/> for the next sync's safety net to retry (finding 3).
+    /// A library created by the safety net (runSyncAndSort false) gets its targeted refresh from
+    /// SyncService.SyncFromJellyseerr AFTER the sync wrote its titles, never queued empty beforehand (finding 7).
+    /// </remarks>
     public async Task<ReconcileResult> ApplyAsync(
         DiscoverLibraryConfig library,
         DiscoverLibraryConfig? previous,
@@ -132,17 +140,51 @@ public class DiscoverLibraryReconciler
         var directory = library.GetDirectory(root);
         // 9a-1: the folder a renamed save moves FROM. The Jellyfin library of a renaming library still carries
         // the OLD name and points at the OLD path, so the old directory is how its library is found below.
+        // 9a-b finding 3: a safety-net reconcile passes the persisted PendingRenameFrom as renamedFrom, so a
+        // rename that was refused or failed earlier retries its move + re-create here.
         var oldDirectory = RenameOldDirectory(root, renamedFrom);
 
         try
         {
-            await ApplyFolderAsync(library, oldDirectory, root, directory, result);
+            // 9a-b findings 1b + 2: evaluate the Jellyfin side BEFORE anything moves. A card name owned by a
+            // Jellyfin library OUTSIDE the bridge root blocks the whole apply (repointing or re-creating under
+            // that name would fail inside Jellyfin or, worse, take the user's real library down with it), and
+            // a save that would re-create while something is playing is refused before the folder moves — the
+            // playing stream keeps its media and its library, and the change applies on the next save or sync.
+            var (jellyfinLibrary, foreignNameClash) = FindBridgeJellyfinLibrary(
+                _libraryManager.Inner.GetVirtualFolders(), library.Name, directory, oldDirectory);
+
+            if (foreignNameClash != null)
+            {
+                result.Ok = false;
+                result.Steps.Add("blocked (name used by another library)");
+                result.Message = $"A Jellyfin library named '{library.Name}' already exists outside JellyBridge — rename that library or this card.";
+                _logger.LogWarning(
+                    "JellyBridge library {Library}: the name is used by Jellyfin library {Folder} at {Locations}; refusing to reconcile",
+                    library.Name,
+                    foreignNameClash.Name,
+                    string.Join(", ", foreignNameClash.Locations ?? Array.Empty<string>()));
+                return result;
+            }
+
+            if (jellyfinLibrary != null
+                && library.EnabledOrDefault
+                && NeedsRecreate(jellyfinLibrary, library)
+                && IsLibraryInPlayback(oldDirectory ?? directory))
+            {
+                result.Ok = false;
+                result.Message = $"{library.Name}: something in this library is playing right now; the change applies on the next save or sync.";
+                result.Steps.Add("refused (playing)");
+                return result;
+            }
+
+            await ApplyFolderAsync(library, oldDirectory, root, directory, jellyfinLibrary, result);
             if (!result.Ok)
             {
                 return result;
             }
 
-            await ApplyJellyfinLibraryAsync(library, directory, oldDirectory, result);
+            await ApplyJellyfinLibraryAsync(library, directory, jellyfinLibrary, result);
             if (!result.Ok)
             {
                 return result;
@@ -201,13 +243,28 @@ public class DiscoverLibraryReconciler
                 }
             }
 
-            // Task 7 + 9a-6: exactly one targeted create-mode refresh for a library whose Jellyfin library was just
-            // made, after the sync above wrote its titles (or right away when no sync runs: disabled card, or the
-            // sync-start safety net whose sync follows and whose folder already holds the titles).
-            if (JustCreated(result) && !result.RefreshQueued)
+            // Task 7 + 9a-6: exactly one targeted create-mode refresh for a library whose Jellyfin library was
+            // just made, after the sync above wrote its titles (or right away when no sync runs: a rename save).
+            // 9a-b finding 7: with runSyncAndSort false the queue is NOT done here — the sync that follows this
+            // safety net queues the one refresh after it wrote the titles (SyncService.SyncFromJellyseerr);
+            // queued beforehand it ran on the still-empty folder. An off library is never refreshed.
+            if (JustCreated(result) && !result.RefreshQueued && runSyncAndSort && library.EnabledOrDefault)
             {
                 _refreshService.ClearDotIgnoreCache();
                 result.RefreshQueued = await _refreshService.QueueLibraryRefreshAsync(directory, createMode: true, removeMode: false, refreshImages: true);
+            }
+
+            // 9a-b finding 3: the persisted pending rename is over once folder, Jellyfin name and Jellyfin path
+            // all match the card. Cheap: both are null on every non-rename call.
+            if (result.Ok && !string.IsNullOrEmpty(library.PendingRenameFrom)
+                && Directory.Exists(directory)
+                && _libraryManager.Inner.GetVirtualFolders().Any(folder =>
+                    string.Equals(folder.Name, library.Name, StringComparison.OrdinalIgnoreCase)
+                    && (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, directory))))
+            {
+                library.PendingRenameFrom = null;
+                Plugin.Instance?.SaveConfiguration();
+                result.Steps.Add("pending rename cleared");
             }
         }
         catch (Exception ex)
@@ -234,22 +291,37 @@ public class DiscoverLibraryReconciler
 
     /// <summary>
     /// Folder name = library name: for a save-rename, move the folder old → new; for a disk-only rename (heal),
-    /// move the found old folder back to the name the card says.
+    /// move the found old folder back to the name the card says. <c>jellyfinLibrary</c> is the pre-move
+    /// evaluation from ApplyAsync (9a-b finding 2 moved the lookup ahead of the move).
     /// </summary>
-    private async Task ApplyFolderAsync(DiscoverLibraryConfig library, string? oldDirectory, string root, string directory, ReconcileResult result)
+    private async Task ApplyFolderAsync(DiscoverLibraryConfig library, string? oldDirectory, string root, string directory, VirtualFolderInfo? jellyfinLibrary, ReconcileResult result)
     {
-        if (oldDirectory != null && !FolderUtils.ArePathsEqual(oldDirectory, directory) && Directory.Exists(oldDirectory) && !Directory.Exists(directory))
+        if (oldDirectory != null && !FolderUtils.ArePathsEqual(oldDirectory, directory))
         {
-            try
+            if (Directory.Exists(oldDirectory) && !Directory.Exists(directory))
             {
-                Directory.Move(oldDirectory, directory);
-                result.Steps.Add("moved");
-                _logger.LogInformation("Reconcile: moved library folder {Old} -> {New}.", oldDirectory, directory);
+                try
+                {
+                    Directory.Move(oldDirectory, directory);
+                    result.Steps.Add("moved");
+                    _logger.LogInformation("Reconcile: moved library folder {Old} -> {New}.", oldDirectory, directory);
+                }
+                catch (Exception ex)
+                {
+                    result.Ok = false;
+                    result.Message = $"Could not move the library folder: {ex.Message}";
+                    return;
+                }
             }
-            catch (Exception ex)
+            else if (Directory.Exists(oldDirectory) && Directory.Exists(directory))
             {
+                // 9a-b finding 3: a rename whose TARGET folder already exists must not silently skip the move —
+                // the card's new name would end up owning a folder that is not its old content, while the old
+                // folder is left behind. Refuse until the clash is resolved (a retried pending rename never
+                // lands here: once the folder moved, the old one is gone).
                 result.Ok = false;
-                result.Message = $"Could not move the library folder: {ex.Message}";
+                result.Message = $"'{library.Name}': could not rename the library folder — {directory} already exists.";
+                _logger.LogWarning("{Message}", result.Message);
                 return;
             }
         }
@@ -261,8 +333,6 @@ public class DiscoverLibraryReconciler
         // adopted, so nothing moves when the folder cannot be proven, and two provable candidates refuse rather
         // than guess.
         var virtualFolders = _libraryManager.Inner.GetVirtualFolders();
-        var jellyfinLibrary = FindVirtualFolder(virtualFolders, directory)
-            ?? FindVirtualFolderByName(virtualFolders, library.Name);
         _logger.LogDebug("Reconcile folder check {Library}: dir={Directory} exists={Exists}, Jellyfin library={Vf}",
             library.Name, directory, Directory.Exists(directory), jellyfinLibrary?.Name ?? "none");
         // Adoption needs the library's own Jellyfin library still pointing at the (now missing) folder: without it
@@ -348,19 +418,12 @@ public class DiscoverLibraryReconciler
     /// <summary>
     /// Jellyfin library exists / display name / CollectionType: create when missing, re-create (files kept) when
     /// the name or the type no longer matches the card. A path-only difference repoints in place (keeps the id).
-    /// A renaming library's Jellyfin library is found by the OLD directory / name first (9a-1): after the folder
-    /// move nothing matches the new path or name, and without this the old (dead-path) library would be left
-    /// orphaned while a second one got created.
+    /// <c>jellyfinLibrary</c> is the pre-move evaluation from ApplyAsync (9a-b finding 2): the lookup that used
+    /// to run here after the folder move — for a renaming library it found the OLD library by the old directory
+    /// or name, so after the move nothing matched — now runs before the move, and the playback guard with it.
     /// </summary>
-    private async Task ApplyJellyfinLibraryAsync(DiscoverLibraryConfig library, string directory, string? oldDirectory, ReconcileResult result)
+    private async Task ApplyJellyfinLibraryAsync(DiscoverLibraryConfig library, string directory, VirtualFolderInfo? jellyfinLibrary, ReconcileResult result)
     {
-        var virtualFolders = _libraryManager.Inner.GetVirtualFolders();
-        var jellyfinLibrary = FindVirtualFolder(virtualFolders, directory)
-            ?? (oldDirectory == null ? null : FindVirtualFolder(virtualFolders, oldDirectory))
-            ?? FindVirtualFolderByName(virtualFolders, library.Name)
-            ?? (oldDirectory == null ? null : FindVirtualFolderByName(virtualFolders, Path.GetFileName(oldDirectory)))
-            ?? FindVirtualFolderByStaleBridgePath(virtualFolders, directory);
-
         if (jellyfinLibrary == null)
         {
             await CreateJellyfinLibraryAsync(library, directory, ownOptions: null, result);
@@ -411,14 +474,8 @@ public class DiscoverLibraryReconciler
                 return;
             }
 
-            if (IsLibraryInPlayback(directory))
-            {
-                // Reviewer item 4: never re-create while something of this library is playing; leave it to heal later.
-                result.Ok = false;
-                result.Message = $"{library.Name}: something in this library is playing right now; the change applies on the next save or sync.";
-                result.Steps.Add("refused (playing)");
-                return;
-            }
+            // 9a-b finding 2: the playback guard for this re-create now runs in ApplyAsync, BEFORE the folder
+            // move — a post-move check could never fire for a rename (the playing item is under the OLD path).
 
             var ownOptions = ReadOwnLibraryOptions(jellyfinLibrary.ItemId);
             var oldItemId = jellyfinLibrary.ItemId;
@@ -440,7 +497,13 @@ public class DiscoverLibraryReconciler
             await CreateJellyfinLibraryAsync(library, directory, ownOptions, result);
             if (result.Ok && result.JellyfinLibraryId != null)
             {
-                await RemoveFromLatestItemsExcludesAsync(oldItemId);
+                // 9a-b finding 5: if the re-created library ever ends up with the SAME id (Jellyfin reusing it),
+                // removing it would strip the NEW library's own exclude entry — skip when the ids are equal.
+                if (!string.Equals(oldItemId, result.JellyfinLibraryId, StringComparison.OrdinalIgnoreCase))
+                {
+                    await RemoveFromLatestItemsExcludesAsync(oldItemId);
+                }
+
                 result.Steps.Remove("created");
                 result.Steps.Add("re-created");
             }
@@ -558,11 +621,72 @@ public class DiscoverLibraryReconciler
         _ => true
     };
 
+    /// <summary>True when a re-create would be needed to make the Jellyfin library match the card (9a-b finding 2).</summary>
+    private static bool NeedsRecreate(VirtualFolderInfo jellyfinLibrary, DiscoverLibraryConfig library) =>
+        !string.Equals(jellyfinLibrary.Name, library.Name, StringComparison.OrdinalIgnoreCase)
+        || !CollectionTypeMatches(jellyfinLibrary, library.LibraryType);
+
     private static VirtualFolderInfo? FindVirtualFolder(IEnumerable<VirtualFolderInfo> virtualFolders, string directory) =>
         virtualFolders.FirstOrDefault(folder => (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, directory)));
 
-    private static VirtualFolderInfo? FindVirtualFolderByName(IEnumerable<VirtualFolderInfo> virtualFolders, string name) =>
-        virtualFolders.FirstOrDefault(folder => string.Equals(folder.Name, name, StringComparison.OrdinalIgnoreCase));
+    /// <summary>
+    /// Finds the card's Jellyfin virtual folder BEFORE anything moves (9a-b, review findings 1b + 2), the old
+    /// 9a-1 lookup chain: path of the new name, path of the old name, name of the card, name of the old folder,
+    /// stale path under the bridge root. NAME lookups accept only bridge-owned folders
+    /// (<see cref="IsBridgeVirtualFolder"/>): when the card's name belongs to a Jellyfin library outside the
+    /// bridge root, the second tuple value is that foreign folder and the whole apply must refuse — otherwise
+    /// AddVirtualFolder fails cryptically on the taken name or, worse, the real library gets repointed.
+    /// </summary>
+    private static (VirtualFolderInfo? Folder, VirtualFolderInfo? ForeignNameClash) FindBridgeJellyfinLibrary(
+        IEnumerable<VirtualFolderInfo> virtualFolders, string name, string directory, string? oldDirectory)
+    {
+        var byPath = FindVirtualFolder(virtualFolders, directory)
+            ?? (oldDirectory == null ? null : FindVirtualFolder(virtualFolders, oldDirectory));
+        if (byPath != null)
+        {
+            return (byPath, null);
+        }
+
+        foreach (var candidate in new[] { name, oldDirectory == null ? null : Path.GetFileName(oldDirectory) })
+        {
+            var byName = FindVirtualFolderByName(virtualFolders, candidate);
+            if (byName == null)
+            {
+                continue;
+            }
+
+            return IsBridgeVirtualFolder(byName)
+                ? (byName, null)
+                : (null, byName);
+        }
+
+        return (FindVirtualFolderByStaleBridgePath(virtualFolders, directory), null);
+    }
+
+    private static VirtualFolderInfo? FindVirtualFolderByName(IEnumerable<VirtualFolderInfo> virtualFolders, string? name) =>
+        string.IsNullOrEmpty(name)
+            ? null
+            : virtualFolders.FirstOrDefault(folder => string.Equals(folder.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// True when the virtual folder belongs to JellyBridge: every one of its locations sits inside the bridge
+    /// root (9a-b, review finding 1 — the name lookups must never match a user library outside it). A folder
+    /// with no locations cannot be shown to be foreign, so it counts as bridge-owned.
+    /// </summary>
+    public static bool IsBridgeVirtualFolder(VirtualFolderInfo folder)
+    {
+        var locations = folder.Locations ?? Array.Empty<string>();
+        if (!locations.Any())
+        {
+            return true;
+        }
+
+        var root = DiscoverLibraries.GetRootDirectory().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        return locations.All(location =>
+            !string.IsNullOrEmpty(location)
+            && location.StartsWith(root, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// A virtual folder that points at a now-gone path under the bridge root that no other library claims —

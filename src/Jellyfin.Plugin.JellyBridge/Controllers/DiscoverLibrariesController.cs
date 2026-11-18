@@ -130,6 +130,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     }
 
                     var from = library.RenamedFrom!.Trim();
+                    var carriedRetry = false;
                     if (string.Equals(from, library.Name, StringComparison.OrdinalIgnoreCase))
                     {
                         continue; // a no-op rename
@@ -137,7 +138,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
 
                     if (!previousByName.ContainsKey(from))
                     {
-                        return BadRequest(new { success = false, message = $"renamedFrom '{from}' does not name a stored library." });
+                        // 9a-b finding 3: a RETRY of a rename a previous save already stored but could not
+                        // apply (refused while playing, or it failed) — the store carries the NEW name, and the
+                        // old name lives in that entry's PendingRenameFrom, so renamedFrom may name that too.
+                        carriedRetry = previousByName.TryGetValue(library.Name, out var carriedEntry)
+                            && string.Equals(carriedEntry.PendingRenameFrom?.Trim(), from, StringComparison.OrdinalIgnoreCase);
+                        if (!carriedRetry)
+                        {
+                            return BadRequest(new { success = false, message = $"renamedFrom '{from}' does not name a stored library." });
+                        }
                     }
 
                     if (keptNames.Contains(from))
@@ -150,10 +159,31 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                         return BadRequest(new { success = false, message = $"renamedFrom '{from}' is used by more than one library." });
                     }
 
-                    if (previousByName.TryGetValue(library.Name, out var targetOwner)
+                    if (!carriedRetry
+                        && previousByName.TryGetValue(library.Name, out var targetOwner)
                         && !string.Equals(targetOwner.Name, from, StringComparison.OrdinalIgnoreCase))
                     {
                         return BadRequest(new { success = false, message = $"'{library.Name}' already names the stored library '{targetOwner.Name}'; cannot be reached by renaming '{from}'." });
+                    }
+                }
+
+                // 9a-b finding 1a: a NEW or renamed card must not take a name a Jellyfin library OUTSIDE the
+                // bridge root already owns — the reconciler would block on it forever, so fail the 400 here
+                // like every other check, before any side effect. Stored names not being renamed are not
+                // checked: they already exist, and the reconciler's own gate protects them.
+                foreach (var library in libraries!)
+                {
+                    if (library.Legacy)
+                    {
+                        continue;
+                    }
+
+                    var isNewOrRenamed = !previousByName.ContainsKey(library.Name)
+                        || (!string.IsNullOrWhiteSpace(library.RenamedFrom)
+                            && !string.Equals(library.RenamedFrom.Trim(), library.Name, StringComparison.OrdinalIgnoreCase));
+                    if (isNewOrRenamed && FindForeignNameClash(library.Name) is string clashMessage)
+                    {
+                        return BadRequest(new { success = false, message = clashMessage });
                     }
                 }
 
@@ -178,12 +208,23 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                 }
 
                 // renamedFrom is transient (task 9 reviewer item 2): capture it for the reconcile below, then
-                // clear it so it never reaches the saved config.
+                // clear it so it never reaches the saved config. The validated rename ALSO persists as
+                // PendingRenameFrom (9a-b finding 3): if the reconcile below is refused (something is playing)
+                // or fails, the next sync's safety-net reconcile retries the move + re-create. The value is
+                // never taken from the client: either this POST's validated renamedFrom, or what the stored
+                // entry already carried.
                 var renamedFromByName = libraries!
                     .Where(l => !string.IsNullOrWhiteSpace(l.RenamedFrom))
                     .ToDictionary(l => l.Name, l => l.RenamedFrom!.Trim(), StringComparer.OrdinalIgnoreCase);
                 foreach (var library in libraries!)
                 {
+                    var key = !string.IsNullOrWhiteSpace(library.RenamedFrom) ? library.RenamedFrom!.Trim() : library.Name;
+                    previousByName.TryGetValue(key, out var previousEntry);
+                    library.PendingRenameFrom = library.Legacy ? null
+                        : renamedFromByName.TryGetValue(library.Name, out var pendingFrom)
+                            && !string.Equals(pendingFrom, library.Name, StringComparison.OrdinalIgnoreCase)
+                            ? pendingFrom
+                            : previousEntry?.PendingRenameFrom;
                     library.RenamedFrom = null;
                 }
 
@@ -349,10 +390,20 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     return BadRequest(new { success = false, message = $"Different library names cannot share a folder: another library already makes the folder \"{newFolderName}\"." });
                 }
 
+                // 9a-b finding 1a: the new name must not belong to a Jellyfin library outside the bridge root
+                // either — the same gate POST Libraries runs for renamed cards.
+                if (FindForeignNameClash(trimmed) is string clashMessage)
+                {
+                    return BadRequest(new { success = false, message = clashMessage });
+                }
+
                 // Task 9: Rename is a thin wrapper over the reconciler (reviewer item 2) — it moves the folder,
                 // re-creates the Jellyfin library with the new display name (new id, LatestItemsExcludes swap;
                 // placeholder watch marks reset — what the editor warns about) and syncs the library.
+                // 9a-b finding 3: PendingRenameFrom persists the old name — if the reconcile below is refused
+                // (something is playing) or fails, the next sync's safety net retries; the reconciler clears it.
                 library.Name = trimmed;
+                library.PendingRenameFrom = name;
                 Plugin.Instance?.SaveConfiguration();
                 var result = await _reconciler.ApplyAsync(library, previous: library, isNew: false, renamedFrom: name);
                 _logger.LogInformation("Renamed library '{Old}' to '{New}' (steps: {Steps}).", name, trimmed, string.Join(", ", result.Steps));
@@ -572,6 +623,23 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
         /// </summary>
         private static VirtualFolderInfo? FindVirtualFolder(IEnumerable<VirtualFolderInfo> virtualFolders, string directory) =>
             virtualFolders.FirstOrDefault(folder => (folder.Locations ?? Array.Empty<string>()).Any(location => FolderUtils.ArePathsEqual(location, directory)));
+
+        /// <summary>
+        /// 9a-b finding 1a: returns the 400 message when a Jellyfin library whose folders all sit OUTSIDE the
+        /// bridge root — a library of the user's own, not JellyBridge's — already goes by this name, else null.
+        /// A card taking such a name would block the reconciler forever (it must never repoint, remove or
+        /// re-create the user's library), so the POST endpoints refuse it up front and the reconciler's own
+        /// <c>FindBridgeJellyfinLibrary</c> gate refuses the apply.
+        /// </summary>
+        private string? FindForeignNameClash(string name)
+        {
+            var clash = _libraryManager.Inner.GetVirtualFolders().FirstOrDefault(folder =>
+                string.Equals(folder.Name, name, StringComparison.OrdinalIgnoreCase)
+                && !DiscoverLibraryReconciler.IsBridgeVirtualFolder(folder));
+            return clash == null
+                ? null
+                : $"A Jellyfin library named '{name}' already exists outside JellyBridge (folder {string.Join(", ", clash.Locations ?? Array.Empty<string>())}) — rename that library or this card.";
+        }
 
         /// <summary>
         /// Counts a library's titles on disk: the folders under it that hold a metadata.json (season folders

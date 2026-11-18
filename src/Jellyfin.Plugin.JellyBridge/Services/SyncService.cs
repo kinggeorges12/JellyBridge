@@ -78,7 +78,15 @@ public partial class SyncService
             return null;
         }
 
-        var result = await reconciler.ApplyAsync(library, previous: library, isNew: false, renamedFrom: null, runSyncAndSort: runSyncAndSort);
+        // 9a-b finding 3: a rename that a save refused (playing) or failed persists PendingRenameFrom — the
+        // safety net passes it as renamedFrom, so the move + re-create that the save could not finish retries
+        // now, before the sync fetches anything into the (still-old-named) folder.
+        var result = await reconciler.ApplyAsync(
+            library,
+            previous: library,
+            isNew: false,
+            renamedFrom: string.IsNullOrWhiteSpace(library.PendingRenameFrom) ? null : library.PendingRenameFrom.Trim(),
+            runSyncAndSort: runSyncAndSort);
         if (!result.Ok)
         {
             // 9a-7: the safety net never stays silent.
@@ -163,6 +171,22 @@ public partial class SyncService
             result.ItemsSkipped.AddRange(libraryResult.ItemsSkipped);
             result.ItemsHidden.AddRange(libraryResult.ItemsHidden);
             result.Refresh = MergeRefresh(result.Refresh, libraryResult.Refresh);
+        }
+
+        // 9a-b finding 7: the sync-start safety net does NOT queue the create-mode refresh itself (it would run
+        // on the still-empty folder), and the merged global "Scan All" plan above is skipped while Jellyfin's
+        // Scan Media Library task runs. So a library the safety net (re-)created gets exactly one targeted
+        // refresh queued HERE — after the loop wrote its titles, the same call the endpoint path's
+        // runSyncAndSort=true would have made inside the reconciler.
+        foreach (var library in DiscoverLibraries.GetEnabled())
+        {
+            if (reconcileNotes.TryGetValue(library.Name, out var note)
+                && (note.Steps.Contains("created") || note.Steps.Contains("re-created")))
+            {
+                _refreshService.ClearDotIgnoreCache();
+                await _refreshService.QueueLibraryRefreshAsync(
+                    library.GetDirectory(DiscoverLibraries.GetRootDirectory()), createMode: true, removeMode: false, refreshImages: true);
+            }
         }
 
         result.Message = string.Join("; ", segments);

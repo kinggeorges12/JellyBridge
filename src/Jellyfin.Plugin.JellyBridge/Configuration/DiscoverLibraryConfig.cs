@@ -234,6 +234,17 @@ public class DiscoverLibraryConfig
     public string? RenamedFrom { get; set; }
 
     /// <summary>
+    /// Gets or sets the old name of a rename that has not fully applied yet (9a-b, review finding 3). Unlike
+    /// <see cref="RenamedFrom"/> this PERSISTS: when a rename is refused (something is playing) or fails, the
+    /// next sync's safety-net reconcile reads it and retries the move + re-create — otherwise the safety net
+    /// would see the card's new name with no folder, find no library to adopt and create a SECOND empty
+    /// library while the old one stays orphaned. The reconciler clears it only once folder, Jellyfin name and
+    /// Jellyfin path all match the card.
+    /// </summary>
+    [JsonPropertyName("pendingRenameFrom")]
+    public string? PendingRenameFrom { get; set; }
+
+    /// <summary>
     /// Gets the title-rule signature: every setting that changes which titles the library holds (task 9 reviewer
     /// item 6). The reconciler compares it with <see cref="LastSyncedSignature"/>; everything else (name, order,
     /// on/off) is reconciled without a sync.
