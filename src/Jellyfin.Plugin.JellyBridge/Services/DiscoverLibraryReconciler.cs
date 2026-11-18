@@ -26,7 +26,8 @@ namespace Jellyfin.Plugin.JellyBridge.Services;
 ///   LibraryOptions (reviewer item 4), then swap the old id for the new one in every user's LatestItemsExcludes.
 ///   Refused while one of the library's items is in a /Sessions NowPlayingItem (reviewer item 4).
 /// - titles = List/Networks/Pages/Minimum Rating/Votes/Type: one sync of that library when the stored
-///   LastSyncedSignature differs (the sync's own cleanup removes titles that no longer fit; reviewer item 6).
+///   LastSyncedSignature differs or the save changed the signature since the stored entry (9a findings 6 + 8;
+///   the sync's own cleanup removes titles that no longer fit).
 /// - order = Order in Jellyfin: re-sort that library when LastSyncedOrder differs (reviewer item 7).
 /// - on/off: off never syncs, on syncs now when the save turned it on (reviewer item 8).
 /// Legacy libraries are never touched. Re-entry guard: the sync step calls SyncService.SyncLibraryCoreAsync, the
@@ -66,10 +67,21 @@ public class DiscoverLibraryReconciler
     private readonly DebugLogger<DiscoverLibraryReconciler> _logger;
 
     /// <summary>
-    /// Users whose LatestItemsExcludes this instance already verified or updated for a library id — the
-    /// excludes bookkeeping then reads each <c>UserDto</c> at most once per id per request (reviewer 9a-8).
+    /// One sync pass' (or one save request's) worth of user LatestItemsExcludes state (9a review finding 4,
+    /// finishing 9a-8): each user's <see cref="UserConfiguration"/> is read from the user manager at most
+    /// ONCE per pass, mutated in place and written back on every real add or remove. Created in
+    /// <see cref="SyncService.SyncFromJellyseerr"/> and passed through <see cref="ApplyAsync"/>, so a pass
+    /// costs users reads — not users × libraries as the old per-instance checked-set never achieved.
     /// </summary>
-    private readonly HashSet<(Guid User, Guid Library)> _excludesChecked = new();
+    public sealed class ExcludesCache
+    {
+        /// <summary>Gets the configurations loaded during this pass, keyed by user id.</summary>
+        internal Dictionary<Guid, UserConfiguration> Configurations { get; } = new();
+
+        /// <summary>Gets the number of user configurations read from the user manager (reconcile-test g_excludes).</summary>
+        internal int Reads;
+    }
+
     private readonly JellyfinILibraryManager _libraryManager;
     private readonly JellyfinIUserManager _userManager;
     private readonly SyncService _syncService;
@@ -113,6 +125,7 @@ public class DiscoverLibraryReconciler
     /// <param name="isNew">True when this library was not in the config before the save.</param>
     /// <param name="renamedFrom">The old name when this save renames the library (the page sends it transiently).</param>
     /// <param name="runSyncAndSort">False for the sync-path safety net: only structural fixes, no sync or sort.</param>
+    /// <param name="excludes">Per-pass LatestItemsExcludes state (9a finding 4); null re-reads each user every call.</param>
     /// <remarks>
     /// 9a-b review fixes: the Jellyfin side is evaluated ONCE up front (FindBridgeJellyfinLibrary) — before any
     /// folder move — so a blocked name (a Jellyfin library outside the bridge root owns it, finding 1b) or a
@@ -126,7 +139,8 @@ public class DiscoverLibraryReconciler
         DiscoverLibraryConfig? previous,
         bool isNew,
         string? renamedFrom,
-        bool runSyncAndSort = true)
+        bool runSyncAndSort = true,
+        ExcludesCache? excludes = null)
     {
         var result = new ReconcileResult { Name = library.Name };
         if (library.Legacy)
@@ -184,13 +198,13 @@ public class DiscoverLibraryReconciler
                 return result;
             }
 
-            await ApplyJellyfinLibraryAsync(library, directory, jellyfinLibrary, result);
+            await ApplyJellyfinLibraryAsync(library, directory, jellyfinLibrary, result, excludes);
             if (!result.Ok)
             {
                 return result;
             }
 
-            await ApplyExcludesAsync(result);
+            await ApplyExcludesAsync(result, excludes);
 
             if (runSyncAndSort)
             {
@@ -198,6 +212,17 @@ public class DiscoverLibraryReconciler
                 // "created" counts as needing the follow-up sync too (9a-6): the Create endpoint wrapper passes
                 // isNew=false for an already-stored library, and the reconciler itself is what decides whether a
                 // Jellyfin library had to be made — a Create click on a filled library must not sync again.
+                // 9a finding 8: right after the upgrade LastSyncedSignature is null, so "the rules changed since the last
+                // sync" was false and a save that only changed a title rule synced nothing (and its cleanup, which
+                // keys on the same check, removed nothing). The entry stored before this save is the best record of
+                // what the folder holds, so adopt its signature when none was recorded.
+                if (string.IsNullOrEmpty(library.LastSyncedSignature)
+                    && previous != null
+                    && !string.Equals(previous.SyncSignature, library.SyncSignature, StringComparison.Ordinal))
+                {
+                    library.LastSyncedSignature = previous.SyncSignature;
+                }
+
                 var needsSync = isNew
                     || toggledOn
                     || library.SyncSignatureChangedSinceLastSync
@@ -422,7 +447,7 @@ public class DiscoverLibraryReconciler
     /// to run here after the folder move — for a renaming library it found the OLD library by the old directory
     /// or name, so after the move nothing matched — now runs before the move, and the playback guard with it.
     /// </summary>
-    private async Task ApplyJellyfinLibraryAsync(DiscoverLibraryConfig library, string directory, VirtualFolderInfo? jellyfinLibrary, ReconcileResult result)
+    private async Task ApplyJellyfinLibraryAsync(DiscoverLibraryConfig library, string directory, VirtualFolderInfo? jellyfinLibrary, ReconcileResult result, ExcludesCache? excludes)
     {
         if (jellyfinLibrary == null)
         {
@@ -501,7 +526,7 @@ public class DiscoverLibraryReconciler
                 // removing it would strip the NEW library's own exclude entry — skip when the ids are equal.
                 if (!string.Equals(oldItemId, result.JellyfinLibraryId, StringComparison.OrdinalIgnoreCase))
                 {
-                    await RemoveFromLatestItemsExcludesAsync(oldItemId);
+                    await RemoveFromLatestItemsExcludesAsync(oldItemId, excludes);
                 }
 
                 result.Steps.Remove("created");
@@ -548,11 +573,11 @@ public class DiscoverLibraryReconciler
         _logger.LogInformation("Reconcile: created Jellyfin library '{Name}' on {Path}.", library.Name, directory);
     }
 
-    private async Task ApplyExcludesAsync(ReconcileResult result)
+    private async Task ApplyExcludesAsync(ReconcileResult result, ExcludesCache? excludes)
     {
         if (!string.IsNullOrEmpty(result.JellyfinLibraryId))
         {
-            await AddToLatestItemsExcludesAsync(result.JellyfinLibraryId);
+            await AddToLatestItemsExcludesAsync(result.JellyfinLibraryId, excludes);
         }
     }
 
@@ -745,14 +770,17 @@ public class DiscoverLibraryReconciler
 
     /// <summary>
     /// Counts a library's titles on disk: the folders under it that hold a metadata.json (season folders
-    /// inside a show hold none). 0 when the folder doesn't exist yet.
+    /// inside a show hold none) — WITHOUT the hidden ones (9a finding 6: 9b's "N titles" line and the
+    /// Pages×20 rule must match what the user sees, and a <c>.ignore</c>d folder has no Jellyfin item;
+    /// search-added titles hold no <c>.ignore</c> and stay counted). 0 when the folder doesn't exist yet.
     /// </summary>
     public int CountTitlesOnDisk(string directory)
     {
         try
         {
             return Directory.Exists(directory)
-                ? Directory.GetFiles(directory, "metadata.json", SearchOption.AllDirectories).Length
+                ? Directory.GetFiles(directory, "metadata.json", SearchOption.AllDirectories)
+                    .Count(meta => !File.Exists(Path.Combine(Path.GetDirectoryName(meta) ?? string.Empty, ".ignore")))
                 : 0;
         }
         catch (Exception ex)
@@ -763,10 +791,31 @@ public class DiscoverLibraryReconciler
     }
 
     /// <summary>
+    /// The user's current <see cref="UserConfiguration"/>: from the pass' cache when loaded there, else read
+    /// once and cached (9a finding 4). Writes still go through UpdateConfigurationAsync on every change.
+    /// </summary>
+    private UserConfiguration GetOrLoadConfiguration(Guid userId, Func<UserConfiguration> load, ExcludesCache? cache)
+    {
+        if (cache != null && cache.Configurations.TryGetValue(userId, out var cached))
+        {
+            return cached;
+        }
+
+        var configuration = load();
+        if (cache != null)
+        {
+            cache.Configurations[userId] = configuration;
+            cache.Reads++;
+        }
+
+        return configuration;
+    }
+
+    /// <summary>
     /// Adds a library's id to every user's LatestItemsExcludes, the same as the live server does for the
     /// Discover/Trending libraries — otherwise the new library's placeholders show up in Continue Watching.
     /// </summary>
-    public async Task AddToLatestItemsExcludesAsync(string? itemId)
+    public async Task AddToLatestItemsExcludesAsync(string? itemId, ExcludesCache? cache = null)
     {
         if (string.IsNullOrEmpty(itemId) || !Guid.TryParse(itemId, out var libraryId))
         {
@@ -783,14 +832,9 @@ public class DiscoverLibraryReconciler
         {
             try
             {
-                // 9a-8: within one reconcile each user's excludes are read at most once per library id —
-                // the sync-start safety net calls this for every library on every pass.
-                if (!_excludesChecked.Add((user.Id, libraryId)))
-                {
-                    continue;
-                }
-
-                var configuration = _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration();
+                // 9a finding 4: within one pass each user's configuration is read at most once (and then
+                // mutated in place), so a pass costs users reads, not users × libraries.
+                var configuration = GetOrLoadConfiguration(user.Id, () => _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration(), cache);
                 var latestItemsExcludes = new List<Guid>(configuration.LatestItemsExcludes ?? Array.Empty<Guid>());
                 if (latestItemsExcludes.Contains(libraryId))
                 {
@@ -812,7 +856,7 @@ public class DiscoverLibraryReconciler
     /// Best-effort counterpart of <see cref="AddToLatestItemsExcludesAsync"/> for a re-created or deleted library:
     /// remove its id from every user's LatestItemsExcludes. A stale id is harmless, so per-user failures are logged.
     /// </summary>
-    public async Task RemoveFromLatestItemsExcludesAsync(string? itemId)
+    public async Task RemoveFromLatestItemsExcludesAsync(string? itemId, ExcludesCache? cache = null)
     {
         if (string.IsNullOrEmpty(itemId) || !Guid.TryParse(itemId, out var libraryId))
         {
@@ -828,7 +872,7 @@ public class DiscoverLibraryReconciler
         {
             try
             {
-                var configuration = _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration();
+                var configuration = GetOrLoadConfiguration(user.Id, () => _userManager.Inner.GetUserDto(user).Configuration ?? new UserConfiguration(), cache); // 9a finding 4: once per user per pass
                 var latestItemsExcludes = new List<Guid>(configuration.LatestItemsExcludes ?? Array.Empty<Guid>());
                 if (!latestItemsExcludes.Remove(libraryId))
                 {

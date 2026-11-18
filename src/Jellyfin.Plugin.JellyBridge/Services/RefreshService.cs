@@ -409,13 +409,33 @@ public class RefreshService
             // the DI rule again from that scope throws ObjectDisposedException, the clear is silently skipped
             // and the .ignore cache then goes stale without any sign. The rules live as long as Jellyfin's
             // LibraryManager, so the first resolution is good for every later call.
-            _dotIgnoreRules ??= ResolveDotIgnoreRules();
-            if (_dotIgnoreRules.Count == 0)
+            // 8c-2: a resolve whose DI lookup hit a disposed scope is INCOMPLETE (the DI singleton rule is
+            // missing) — use it once for this call but never cache it, so the next call resolves again and can
+            // pick up the complete set. Only a complete (or genuinely empty) list is process-wide cacheable.
+            List<object> rules;
+            if (_dotIgnoreRules != null)
+            {
+                rules = _dotIgnoreRules;
+            }
+            else
+            {
+                rules = ResolveDotIgnoreRules(out var complete);
+                if (complete)
+                {
+                    _dotIgnoreRules = rules;
+                }
+                else
+                {
+                    _logger.LogDebug("The .ignore rule list was incomplete (dead DI scope); using it once without caching — next clear resolves again");
+                }
+            }
+
+            if (rules.Count == 0)
             {
                 return; // rule class not found (older Jellyfin) — already logged once
             }
 
-            foreach (var rule in _dotIgnoreRules)
+            foreach (var rule in rules)
             {
                 _dotIgnoreClear!.Invoke(rule, null);
             }
@@ -438,8 +458,9 @@ public class RefreshService
     /// for <see cref="ClearDotIgnoreCache"/> to keep — see 8b fix 2. An empty list means the rule class was not
     /// found (older Jellyfin without the cache).
     /// </summary>
-    private List<object> ResolveDotIgnoreRules()
+    private List<object> ResolveDotIgnoreRules(out bool complete)
     {
+        complete = true; // 8c-2: false when the DI rule was unreachable, so the caller must not cache
         var ruleType = AppDomain.CurrentDomain.GetAssemblies()
             .Select(a => a.GetType("Emby.Server.Implementations.Library.DotIgnoreIgnoreRule", throwOnError: false))
             .FirstOrDefault(t => t != null);
@@ -467,6 +488,9 @@ public class RefreshService
         }
         catch (ObjectDisposedException ex)
         {
+            // 8c-2: the DI singleton is missing from this list — it may still clear this call's caches, but
+            // caching it would freeze the incomplete set for the whole process.
+            complete = false;
             _logger.LogDebug("The service scope was already disposed; collecting only the library manager's .ignore rule instances ({Message})", ex.Message);
         }
         var libraryManager = (object)_libraryManager.Inner;

@@ -66,7 +66,7 @@ public partial class SyncService
     /// Returns its report so the caller can surface a refused or failed step in the sync message (9a-7); null
     /// when nothing ran.
     /// </summary>
-    private async Task<DiscoverLibraryReconciler.ReconcileResult?> ReconcileForSyncAsync(DiscoverLibraryConfig library, bool runSyncAndSort)
+    private async Task<DiscoverLibraryReconciler.ReconcileResult?> ReconcileForSyncAsync(DiscoverLibraryConfig library, bool runSyncAndSort, DiscoverLibraryReconciler.ExcludesCache? excludes = null)
     {
         if (library.Legacy)
         {
@@ -86,7 +86,8 @@ public partial class SyncService
             previous: library,
             isNew: false,
             renamedFrom: string.IsNullOrWhiteSpace(library.PendingRenameFrom) ? null : library.PendingRenameFrom.Trim(),
-            runSyncAndSort: runSyncAndSort);
+            runSyncAndSort: runSyncAndSort,
+            excludes: excludes);
         if (!result.Ok)
         {
             // 9a-7: the safety net never stays silent.
@@ -122,17 +123,22 @@ public partial class SyncService
         // before that library's body runs: a folder renamed on disk was replaced by an empty one first, so the heal
         // never saw it missing and the sync filled a second copy next to the renamed folder (reconcile-test misc).
         var reconcileNotes = new Dictionary<string, DiscoverLibraryReconciler.ReconcileResult>(StringComparer.OrdinalIgnoreCase);
+        // 9a finding 4: the whole pass shares one LatestItemsExcludes state — each user's configuration is
+        // read at most once no matter how many libraries a create/re-create touches.
+        var excludesCache = new DiscoverLibraryReconciler.ExcludesCache();
         foreach (var library in DiscoverLibraries.GetEnabled())
         {
             using (LibraryScope.Enter(library))
             {
-                var note = await ReconcileForSyncAsync(library, runSyncAndSort: false);
+                var note = await ReconcileForSyncAsync(library, runSyncAndSort: false, excludesCache);
                 if (note != null)
                 {
                     reconcileNotes[library.Name] = note;
                 }
             }
         }
+
+        _logger.LogDebug("Excludes: {Reads} user reads", excludesCache.Reads);
 
         // One pass per enabled library, inside the loop's scope; FetchListAsync picks the fetcher for the library's list.
         async Task<SyncJellyseerrResult> ReconciledSyncOneLibraryAsync(DiscoverLibraryConfig library)

@@ -376,7 +376,7 @@ public class DiscoverService
                 break;
             }
 
-            var (pageVisible, pageHidden) = await FilterVisibleAsync(state, pageItems, target - visible.Count);
+            var (pageVisible, pageHidden, _) = await FilterVisibleAsync(state, pageItems, target - visible.Count);
             hidden.AddRange(pageHidden);
             foreach (var item in pageVisible)
             {
@@ -398,17 +398,24 @@ public class DiscoverService
     /// <summary>
     /// Pulls the next visible title from one network (8b fix 5): the network's movies and shows streams
     /// alternate by rank (the task 2b order), an empty or absent stream skips its turn. When the preferred
-    /// stream's queue is empty it fetches its next Seerr page and judges the whole arriving page in one
-    /// <see cref="FilterVisibleAsync"/> pass. Returns null when both streams of the network are exhausted.
+    /// stream's queue is empty it first judges that stream's Pending page remainder and only then fetches
+    /// its next Seerr page (8c-1). Returns null when both streams of the network are exhausted.
     /// </summary>
     /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
     /// <param name="pull">The network's stream pair.</param>
     /// <param name="capPages">The per-stream cap of 5 × Pages Seerr pages (int.MaxValue when unlimited).</param>
-    /// <param name="budget">Titles the whole library may still take; a stream fetches no further page without it.</param>
+    /// <param name="target">Titles the whole library may still take (int.MaxValue when unlimited); it feeds the fair-share budget a fill may spend.</param>
+    /// <param name="mergedCount">Titles already taken from every network — feeds the fair-share budget.</param>
+    /// <param name="pulls">Every network's stream pair — the fair share splits what is left between the streams still needing a fill (8c fix 1).</param>
     /// <param name="hiddenOut">Receives the titles still on the list the fetch judged hidden (8b fix 3/4).</param>
     /// <returns>The network's next visible title, or null when the network is exhausted</returns>
     private async Task<IJellyseerrItem?> PullNextVisibleAsync(VisibleFetchState state, NetworkPull pull, int capPages, int target, int mergedCount, List<NetworkPull> pulls, List<IJellyseerrItem> hiddenOut)
     {
+        // 8c-1: a stream still holding raw Pending items needs a fill (judging, not fetching) even when its
+        // Seerr list already ended — only a drained stream counts as done.
+        static bool NeedsFill(DiscoverStream? stream) =>
+            stream is { Queue.Count: 0 } && (!stream.Done || stream.Pending.Count > 0);
+
         for (var turn = 0; turn < 2; turn++)
         {
             var stream = pull.NextIsMovie ? pull.Movies : pull.Shows;
@@ -418,7 +425,7 @@ public class DiscoverService
                 return stream.Queue.Dequeue();
             }
 
-            if (stream is { Done: false })
+            if (stream is { Pending.Count: > 0 } or { Done: false })
             {
                 // Queued visible titles occupy the budget too, so the streams stop fetching at the target; each fill
                 // takes only a fair share (rounded up, so tiny remainders still move) of what is left between the
@@ -429,7 +436,7 @@ public class DiscoverService
                 {
                     var queued = pulls.Sum(p => (p.Movies?.Queue.Count ?? 0) + (p.Shows?.Queue.Count ?? 0));
                     var remaining = Math.Max(0, target - mergedCount - queued);
-                    var needers = pulls.Sum(p => (p.Movies is { Done: false, Queue.Count: 0 } ? 1 : 0) + (p.Shows is { Done: false, Queue.Count: 0 } ? 1 : 0));
+                    var needers = pulls.Sum(p => (NeedsFill(p.Movies) ? 1 : 0) + (NeedsFill(p.Shows) ? 1 : 0));
                     budget = (remaining + needers - 1) / Math.Max(1, needers);
                 }
 
@@ -451,16 +458,39 @@ public class DiscoverService
     }
 
     /// <summary>
-    /// Fetches one Seerr page of the stream (its next page when the queue ran dry, 8b fix 5), judges the
-    /// whole arriving page in one visible-filter pass of the static predicates (the shared fetch-wide dedupe
-    /// waits at the pull, 8c fix 1), and queues the visible titles. The page cap of 5 × Pages stays PER stream; an empty page or page ≥ totalPages ends the
-    /// stream (a failed page ends it too — ApiService logs why).
+    /// Gives the stream up to <c>budget</c> more queued titles: first judges the raw Pending remainder of an
+    /// earlier page (8c-1 — the unjudged tail a previous fill kept instead of dropping), and only when
+    /// Pending is drained does it fetch one Seerr page and judge it in one visible-filter pass (the shared
+    /// fetch-wide dedupe waits at the pull, 8c fix 1), queueing the visible titles and keeping any tail the
+    /// budget cut off as the new Pending. The page cap of 5 × Pages stays PER stream; an empty page, the page
+    /// cap or page ≥ totalPages ends the stream's LIST (<see cref="DiscoverStream.ListEnded"/>; a failed page
+    /// ends it too — ApiService logs why), but the stream is <see cref="DiscoverStream.Done"/> only once the
+    /// Pending remainder has been judged too (8c-1).
     /// </summary>
     private async Task FillStreamAsync(VisibleFetchState state, DiscoverStream stream, int capPages, int budget, List<IJellyseerrItem> hiddenOut)
     {
+        if (stream.Pending.Count > 0)
+        {
+            var (pendVisible, pendHidden, pendConsumed) = await FilterVisibleAsync(state, stream.Pending, budget);
+            EnqueueVisible(stream, pendVisible);
+            hiddenOut.AddRange(pendHidden);
+            stream.VisibleCount += pendVisible.Count;
+            stream.Pending.RemoveRange(0, pendConsumed);
+            if (stream.Pending.Count > 0)
+            {
+                // The budget ran out over the remainder alone — no Seerr call; the next pull judges more (8c-1).
+                return;
+            }
+        }
+
+        if (stream.Done)
+        {
+            return; // the list ended and Pending drained — nothing left to fetch (8c-1)
+        }
+
         if (stream.NextPage > capPages)
         {
-            stream.Done = true;
+            stream.ListEnded = true;
             return;
         }
 
@@ -472,25 +502,36 @@ public class DiscoverService
         if (pageItems.Count == 0)
         {
             // The list ends here — no point asking for more pages of nothing
-            stream.Done = true;
+            stream.ListEnded = true;
             return;
         }
 
-        var (visible, hidden) = await FilterVisibleAsync(state, pageItems, budget);
+        var (visible, hidden, consumed) = await FilterVisibleAsync(state, pageItems, budget);
+        EnqueueVisible(stream, visible);
+        hiddenOut.AddRange(hidden);
+        stream.VisibleCount += visible.Count;
+
+        if (consumed < pageItems.Count)
+        {
+            // 8c-1: the page tail the budget cut off is judged by the next fill — never dropped.
+            stream.Pending.AddRange(pageItems.Skip(consumed));
+        }
+
+        if (totalPages > 0 && stream.NextPage - 1 >= totalPages)
+        {
+            stream.ListEnded = true;
+        }
+    }
+
+    /// <summary>Queues judged titles for the pull, tagging each with the stream's network.</summary>
+    private static void EnqueueVisible(DiscoverStream stream, List<IJellyseerrItem> visible)
+    {
         foreach (var item in visible)
         {
             // Set the network tag for this item
             item.NetworkTag = stream.Network.Name;
             item.NetworkId = stream.Network.Id;
             stream.Queue.Enqueue(item);
-        }
-
-        hiddenOut.AddRange(hidden);
-        stream.VisibleCount += visible.Count;
-
-        if (totalPages > 0 && stream.NextPage - 1 >= totalPages)
-        {
-            stream.Done = true;
         }
     }
 
@@ -511,9 +552,10 @@ public class DiscoverService
     /// <param name="state">This library's fetch bookkeeping (counted titles, skip counters).</param>
     /// <param name="items">The page's freshly fetched titles, in Seerr's order.</param>
     /// <param name="budget">How many more titles the whole library fetch may still take; once the budget is
-    /// used up the rest of the page is left uncounted and unwritten.</param>
-    /// <returns>The titles that count as visible in the page's original order, and the titles hidden</returns>
-    private async Task<(List<IJellyseerrItem> Visible, List<IJellyseerrItem> Hidden)> FilterVisibleAsync(VisibleFetchState state, List<IJellyseerrItem> items, int budget)
+    /// used up the rest of the page is left unjudged — <c>consumed</c> marks where it stopped (8c-1).</param>
+    /// <returns>The titles that count as visible in the page's original order, the titles hidden, and the
+    /// number of leading page items judged — everything past that belongs to the stream's Pending (8c-1)</returns>
+    private async Task<(List<IJellyseerrItem> Visible, List<IJellyseerrItem> Hidden, int Consumed)> FilterVisibleAsync(VisibleFetchState state, List<IJellyseerrItem> items, int budget)
     {
         var visible = new List<(int Order, IJellyseerrItem Item)>();
         var hidden = new List<IJellyseerrItem>();
@@ -522,13 +564,15 @@ public class DiscoverService
         // twice on ONE page (either path, including the match batch) from being judged or queued twice.
         var pendingKeys = new HashSet<(JellyseerrModel.MediaType, int)>();
         var pendingFolderHashes = new HashSet<int>();
+        var consumed = items.Count; // 8c-1: index of the first UNJUDGED item — the tail the stream keeps as Pending
         for (var order = 0; order < items.Count; order++)
         {
             var item = items[order];
             if (visible.Count >= budget)
             {
                 // The library reached its Pages × 20 target mid-page: the titles after it are never counted,
-                // never skipped — the fetch simply stops here (task 8).
+                // never skipped — the fetch stops here and the stream keeps the tail (task 8, 8c-1).
+                consumed = order;
                 break;
             }
             if (item.MediaInfo?.Status == MediaStatus.BLACKLISTED)
@@ -564,6 +608,13 @@ public class DiscoverService
                 }
 
                 needMatch.Add((order, item));
+                if (visible.Count + needMatch.Count >= budget)
+                {
+                    // 8c-1: cap the match batch at the budget — a matched item can still turn hidden, so the
+                    // stream may queue fewer than budget and the next fill judges more Pending without a Seerr call.
+                    consumed = order + 1;
+                    break;
+                }
             }
             else if (!ignored)
             {
@@ -575,6 +626,11 @@ public class DiscoverService
                 // With main libraries included, a real-library match even gets its .ignore deleted — it counts
                 // as visible; only an .ignore whose title is NOT in a real library stays hidden.
                 needMatch.Add((order, item));
+                if (visible.Count + needMatch.Count >= budget)
+                {
+                    consumed = order + 1; // 8c-1: same match-batch cap as the exclude path above
+                    break;
+                }
             }
         }
 
@@ -603,7 +659,7 @@ public class DiscoverService
 
         // 8b fix 6: restore the page's original order — the .ignore'd titles that went through the match
         // batch used to land after the directly accepted ones, reordering the ranks within the page.
-        return (visible.OrderBy(v => v.Order).Select(v => v.Item).ToList(), hidden);
+        return (visible.OrderBy(v => v.Order).Select(v => v.Item).ToList(), hidden, consumed);
     }
 
     /// <summary>
@@ -632,11 +688,18 @@ public class DiscoverService
         /// <summary>Visible titles judged from fetched pages, waiting for their pull.</summary>
         internal readonly Queue<IJellyseerrItem> Queue = new();
 
+        /// <summary>Raw tail of fetched pages not yet judged (8c-1): the next fill judges it before any fetch.</summary>
+        internal readonly List<IJellyseerrItem> Pending = new();
+
         /// <summary>The next Seerr page to fetch (1-based).</summary>
         internal int NextPage = 1;
 
-        /// <summary>True when the stream is exhausted: list end, page cap reached or a failed page.</summary>
-        internal bool Done;
+        /// <summary>True once the stream's Seerr list ended: empty page, page cap reached, last page or a failed page.</summary>
+        internal bool ListEnded;
+
+        /// <summary>True when the stream is exhausted: list end, page cap reached or a failed page — AND its
+        /// Pending remainder judged (8c-1).</summary>
+        internal bool Done => ListEnded && Pending.Count == 0;
 
         /// <summary>Titles this stream judged visible (queued or pulled) — decides the empty-network warning.</summary>
         internal int VisibleCount;
