@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "5.6.12.0",
+        "targetAbi": "12.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.6.12.0.zip",
+        "checksum": "636E048209867E5CB542029417EC3BBA",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.6 - testing: search occurs from global search only",
+        "timestamp": "2026-11-20T19:50:46.277Z"
+      },
+      {
+        "version": "5.6.11.9",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.6.11.9.zip",
+        "checksum": "B008364A6E9B6BAA00658FEBAE92BFAC",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.6 - testing: search occurs from global search only",
+        "timestamp": "2026-11-20T19:50:46.277Z"
+      },
+      {
+        "version": "5.6.11.0",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.6.11.0.zip",
+        "checksum": "35515D00C1123EEDF4FBDA04E2517FE5",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.6 - testing: search occurs from global search only",
+        "timestamp": "2026-11-20T19:50:46.277Z"
+      },
+      {
+        "version": "5.6.10.7",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.6.10.7.zip",
+        "checksum": "08E14DEE053877C38E7A58A1F708834E",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.6 - testing: search occurs from global search only",
+        "timestamp": "2026-11-20T19:50:46.277Z"
+      },
+      {
         "version": "5.5.12.0",
         "targetAbi": "12.0.0",
         "dependencies": [],
