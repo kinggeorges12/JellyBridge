@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "version": "5.4.12.0",
+        "targetAbi": "12.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.4.12.0.zip",
+        "checksum": "53208EFDDDF572962CCD1D8455FC3424",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.4 - testing: changing config page descriptions",
+        "timestamp": "2026-11-20T19:31:25.853Z"
+      },
+      {
+        "version": "5.4.11.9",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.4.11.9.zip",
+        "checksum": "38ECA327CDAE4D8824EEC00DBF034CD3",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.4 - testing: changing config page descriptions",
+        "timestamp": "2026-11-20T19:31:25.853Z"
+      },
+      {
+        "version": "5.4.11.0",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.4.11.0.zip",
+        "checksum": "C5816B73A6B4B09EF69A8870F5FA1195",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.4 - testing: changing config page descriptions",
+        "timestamp": "2026-11-20T19:31:25.853Z"
+      },
+      {
+        "version": "5.4.10.7",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.4.10.7.zip",
+        "checksum": "13164E03862B48977D2CC730BFBBB48D",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.4 - testing: changing config page descriptions",
+        "timestamp": "2026-11-20T19:31:25.853Z"
+      },
+      {
         "version": "5.3.12.0",
         "targetAbi": "12.0.0",
         "dependencies": [],
