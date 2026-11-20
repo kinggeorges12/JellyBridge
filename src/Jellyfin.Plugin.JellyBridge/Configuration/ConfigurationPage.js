@@ -735,6 +735,8 @@ function initializeImportContent(page) {
     // Set Max Discover Pages and Max Retention Days
     setInputField(page, 'MaxDiscoverPages');
     setInputField(page, 'MaxRetentionDays');
+    setInputField(page, 'MinimumRating');
+    setInputField(page, 'MinimumVotes');
 
     // Add sync discover button functionality
     const syncButton = page.querySelector('#syncDiscover');
@@ -1094,6 +1096,7 @@ function initializeUploadPromo(page) {
         browseFolder(CustomSeriesPromo, "Select an Image File for the Series Promo Video", true);
     });
     setInputField(page, 'DefaultSeriesPromo', true);
+    setInputField(page, 'UseTitlePromos', true);
 
     setInputField(page, 'JellyBridgeTempDirectory');
     const JellyBridgeTempDirectory = page.querySelector('#JellyBridgeTempDirectory');
@@ -1304,6 +1307,7 @@ function initializeManageFavorites(page) {
     setInputField(page, 'UserPermissionRequest4k', true);
     setInputField(page, 'UseSeasonPlaceholders', true);
     setInputField(page, 'RequestFirstSeason', true);
+    setInputField(page, 'EnableSearchResults', true);
     
     // Send Discover Library Favorite Requests to Jellyseerr button functionality
     const syncFavoritesButton = page.querySelector('#syncFavorites');
@@ -1525,6 +1529,8 @@ function performPluginReset(page) {
                 RetryAttempts: null,
                 MaxDiscoverPages: null,
                 MaxRetentionDays: null,
+                MinimumRating: null,
+                MinimumVotes: null,
                 ExcludeFromMainLibraries: null,
                 ResponsiveFavoriteRequests: null,
                 RemoveRequestedFromFavorites: null,
@@ -1533,6 +1539,7 @@ function performPluginReset(page) {
                 RequestFirstSeason: null,
                 UseMixedMediaLibrary: null,
                 UseNetworkFolders: null,
+                EnableSearchResults: null,
                 NetworkFolderPrefix: '',
                 AddDuplicateContent: null,
                 ManageJellyBridgeLibrary: null,
@@ -1540,6 +1547,7 @@ function performPluginReset(page) {
                 DefaultMoviesPromo: null,
                 CustomSeriesPromo: null,
                 DefaultSeriesPromo: null,
+                UseTitlePromos: null,
                 PromoVideoDurationSeconds: null,
                 EnableAutomatedSortTask: null,
                 SortTaskIntervalHours: null,
@@ -1666,6 +1674,8 @@ function savePluginConfiguration(page) {
         if (!validateField(page, 'RetryAttempts', validators.int, 'Retry Attempts must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxDiscoverPages', validators.int, 'Max Discover Pages must be a positive integer').isValid) return;
         if (!validateField(page, 'MaxRetentionDays', validators.int, 'Max Retention Days must be a positive integer').isValid) return;
+        if (!validateField(page, 'MinimumRating', (value) => validators.double(value) && !(parseFloat(value) > 10), 'Minimum Rating must be a number from 0 to 10').isValid) return;
+        if (!validateField(page, 'MinimumVotes', validators.int, 'Minimum Votes must be a positive integer').isValid) return;
         if (!validateField(page, 'StartupDelaySeconds', validators.int, 'Startup Delay must be a positive integer').isValid) return;
         if (!validateField(page, 'TaskTimeoutMinutes', validators.int, 'Task Timeout must be a positive integer').isValid) return;
         if (!validateField(page, 'PromoVideoDurationSeconds', validators.int, 'Promo Video Duration must be a positive integer').isValid) return;
@@ -1690,6 +1700,8 @@ function savePluginConfiguration(page) {
     form.RetryAttempts = safeParseInt(page.querySelector('#RetryAttempts'));
     form.MaxDiscoverPages = safeParseInt(page.querySelector('#MaxDiscoverPages'));
     form.MaxRetentionDays = safeParseInt(page.querySelector('#MaxRetentionDays'));
+    form.MinimumRating = safeParseDouble(page.querySelector('#MinimumRating'));
+    form.MinimumVotes = safeParseInt(page.querySelector('#MinimumVotes'));
     form.ManageJellyBridgeLibrary = nullIfDefault(page.querySelector('#ManageJellyBridgeLibrary').checked, config.ConfigDefaults.ManageJellyBridgeLibrary);
     form.ExcludeFromMainLibraries = nullIfDefault(page.querySelector('#ExcludeFromMainLibraries').checked, config.ConfigDefaults.ExcludeFromMainLibraries);
     form.ResponsiveFavoriteRequests = nullIfDefault(page.querySelector('#ResponsiveFavoriteRequests').checked, config.ConfigDefaults.ResponsiveFavoriteRequests);
@@ -1699,6 +1711,7 @@ function savePluginConfiguration(page) {
     form.RequestFirstSeason = nullIfDefault(page.querySelector('#RequestFirstSeason').checked, config.ConfigDefaults.RequestFirstSeason);
     form.UseMixedMediaLibrary = nullIfDefault(page.querySelector('#UseMixedMediaLibrary').checked, config.ConfigDefaults.UseMixedMediaLibrary);
     form.UseNetworkFolders = nullIfDefault(page.querySelector('#UseNetworkFolders').checked, config.ConfigDefaults.UseNetworkFolders);
+    form.EnableSearchResults = nullIfDefault(page.querySelector('#EnableSearchResults').checked, config.ConfigDefaults.EnableSearchResults);
     form.AddDuplicateContent = nullIfDefault(page.querySelector('#AddDuplicateContent').checked, config.ConfigDefaults.AddDuplicateContent);
     form.NetworkFolderPrefix = safeParseString(page.querySelector('#NetworkFolderPrefix'), false);
     form.EnableStartupSync = nullIfDefault(page.querySelector('#EnableStartupSync').checked, config.ConfigDefaults.EnableStartupSync);
@@ -1706,6 +1719,7 @@ function savePluginConfiguration(page) {
     form.DefaultMoviesPromo = nullIfDefault(page.querySelector('#DefaultMoviesPromo').checked, config.ConfigDefaults.DefaultMoviesPromo);
     form.CustomSeriesPromo = safeParseString(page.querySelector('#CustomSeriesPromo'));
     form.DefaultSeriesPromo = nullIfDefault(page.querySelector('#DefaultSeriesPromo').checked, config.ConfigDefaults.DefaultSeriesPromo);
+    form.UseTitlePromos = nullIfDefault(page.querySelector('#UseTitlePromos').checked, config.ConfigDefaults.UseTitlePromos);
     form.PromoVideoDurationSeconds = safeParseInt(page.querySelector('#PromoVideoDurationSeconds'));
     form.JellyBridgeTempDirectory = safeParseString(page.querySelector('#JellyBridgeTempDirectory'));
     form.EnableAutomatedSortTask = nullIfDefault(page.querySelector('#EnableAutomatedSortTask').checked, config.ConfigDefaults.EnableAutomatedSortTask);

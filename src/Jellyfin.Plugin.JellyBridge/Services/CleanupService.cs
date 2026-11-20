@@ -64,9 +64,17 @@ public class CleanupService
             _logger.LogDebug("Processed {ProcessedCount} folders with .nfo files, deleted {DeletedCount} folders without metadata.json", 
                 processedMovies.Count + processedShows.Count, deletedMovies.Count + deletedShows.Count);
 
-            // Run placeholder video creation and collect created items
-            var processedPlaceholders = await CreateMissingPlaceholderVideosAsync(allItems);
+            // Run placeholder video creation and collect created items (skip the folders deleted above)
+            var processedPlaceholders = await CreateMissingPlaceholderVideosAsync(allItems.Except(deletedItems).ToList());
             result.ItemsCreated.AddRange(processedPlaceholders);
+
+            // Titles the sync no longer fetches keep their placeholder until retention; keep their promo current meanwhile
+            var remainingItems = allItems.Except(deletedItems).ToList();
+            var redrawnPromos = await _discoverService.RedrawStalePromosAsync(_bridgeService.FilterAlreadyIgnoredItems(remainingItems));
+            if (redrawnPromos > 0)
+            {
+                _logger.LogDebug("Redrew {Count} placeholders with the current title promo", redrawnPromos);
+            }
 
             // Determine refresh plan
             var hasDeletedItems = result.ItemsDeleted.Count > 0 || result.ItemsCleaned > 0;
@@ -97,7 +105,8 @@ public class CleanupService
     }
 
     /// <summary>
-    /// Deletes expired media items that are older than the specified number of days.
+    /// Deletes expired media items that are older than the specified number of days,
+    /// and items below the Minimum Rating / Minimum Votes when those are set.
     /// Note: Items with invalid NetworkIds are not processed here - they should be ignored in DiscoverService.
     /// </summary>
     private List<IJellyseerrItem> DeleteExpiredMedia(List<IJellyseerrItem> items)
@@ -115,11 +124,17 @@ public class CleanupService
             {
                 // Only delete items that are older than the cutoff date
                 // Treat null CreatedDate as very old (past cutoff date)
-                if (item.CreatedDate == null || item.CreatedDate.Value < cutoffDate)
+                var expired = item.CreatedDate == null || item.CreatedDate.Value < cutoffDate;
+                // Titles imported before a Minimum Rating was set (or raised) go at the next cleanup instead of waiting for retention.
+                // Ratings are refreshed in metadata.json whenever a title is fetched again, so this uses the latest known rating.
+                var belowRating = !DiscoverService.MeetsRatingFilter(item);
+                if (expired || belowRating)
                 {
                     var itemDirectory = FolderUtils.GetExistingFolderOrThrow(_metadataService.GetJellyBridgeItemDirectory(item));
                     
-                    var deletionReason = $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}";
+                    var deletionReason = expired
+                        ? $"Created {item.CreatedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"} is older than cutoff {cutoffDate:yyyy-MM-dd HH:mm:ss}"
+                        : "Below the Minimum Rating / Minimum Votes";
                     Directory.Delete(itemDirectory, true);
                     deletedItems.Add(item);
                     _logger.LogTrace("✅ Removed {ItemType} '{ItemName}' - {Reason}", 

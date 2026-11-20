@@ -56,6 +56,8 @@ public class PluginConfiguration : BasePluginConfiguration
         },
         { nameof(MaxDiscoverPages), 1 },
         { nameof(MaxRetentionDays), 30 },
+        { nameof(MinimumRating), 0.0 },
+        { nameof(MinimumVotes), 30 },
 
         // Library Settings
         { nameof(ManageJellyBridgeLibrary), true },
@@ -66,6 +68,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(RequestFirstSeason), false },
         { nameof(UseMixedMediaLibrary), true },
         { nameof(UseNetworkFolders), false },
+        { nameof(EnableSearchResults), false },
         { nameof(UseSeasonPlaceholders), false },
         { nameof(AddDuplicateContent), true },
         { nameof(NetworkFolderPrefix), string.Empty },
@@ -75,6 +78,7 @@ public class PluginConfiguration : BasePluginConfiguration
         { nameof(DefaultMoviesPromo), true },
         { nameof(CustomSeriesPromo), string.Empty },
         { nameof(DefaultSeriesPromo), true },
+        { nameof(UseTitlePromos), false },
         { nameof(PromoVideoDurationSeconds), 10 },
         { nameof(JellyBridgeTempDirectory), Path.Combine(Path.GetTempPath(), "JellyBridge") },
 
@@ -174,6 +178,17 @@ public class PluginConfiguration : BasePluginConfiguration
     public int? MaxRetentionDays { get; set; }
 
     /// <summary>
+    /// Gets or sets the minimum TMDB rating (0-10) for titles imported into the Discover library (0 = no rating filter).
+    /// </summary>
+    public double? MinimumRating { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum number of TMDB votes a title needs, used together with <see cref="MinimumRating"/>,
+    /// so a few early votes can't carry a title over the rating.
+    /// </summary>
+    public int? MinimumVotes { get; set; }
+
+    /// <summary>
     /// Gets or sets whether to manage libraries with JellyBridge.
     /// </summary>
     public bool? ManageJellyBridgeLibrary { get; set; }
@@ -214,6 +229,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool? UseNetworkFolders { get; set; }
 
     /// <summary>
+    /// Gets or sets whether Jellyseerr titles that are in no library show up in Jellyfin's search.
+    /// </summary>
+    public bool? EnableSearchResults { get; set; }
+
+    /// <summary>
     /// Gets or sets whether to create a placeholder for each requestable season of a show.
     /// </summary>
     public bool? UseSeasonPlaceholders { get; set; }
@@ -250,6 +270,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets whether to use the default show promo image (built-in asset).
     /// </summary>
     public bool? DefaultSeriesPromo { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to make each promo video from the title's own backdrop and logo.
+    /// </summary>
+    public bool? UseTitlePromos { get; set; }
 
     /// <summary>
     /// Gets or sets the default duration (in seconds) for generated placeholder videos.

@@ -66,6 +66,14 @@ public class DiscoverService
                 };
             }
 
+            // Let Jellyseerr leave out titles under the minimum rating, so each page is filled with titles that pass
+            if (GetRatingFilter() is { } ratingFilter)
+            {
+                // Invariant culture, so a server set to a comma-decimal language still sends 7.5 rather than 7,5
+                networkParameters["voteAverageGte"] = ratingFilter.MinimumRating.ToString(CultureInfo.InvariantCulture);
+                networkParameters["voteCountGte"] = ratingFilter.MinimumVotes.ToString(CultureInfo.InvariantCulture);
+            }
+
             // Debug: Log the parameters being used
             _logger.LogTrace("Calling discover endpoints with parameters: {Parameters}", 
                 string.Join(", ", networkParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
@@ -112,7 +120,63 @@ public class DiscoverService
 
     #endregion
 
+    /// <summary>
+    /// The Minimum Rating and Minimum Votes to import Discover titles with, or null when no Minimum Rating is set.
+    /// </summary>
+    public static (double MinimumRating, int MinimumVotes)? GetRatingFilter()
+    {
+        var minimumRating = Plugin.GetConfigOrDefault<double>(nameof(PluginConfiguration.MinimumRating));
+        if (minimumRating <= 0)
+        {
+            return null;
+        }
+        return (Math.Min(minimumRating, 10), Math.Max(0, Plugin.GetConfigOrDefault<int>(nameof(PluginConfiguration.MinimumVotes))));
+    }
+
+    /// <summary>
+    /// Whether a title's TMDB rating and vote count meet the Minimum Rating and Minimum Votes (always true without a Minimum Rating).
+    /// </summary>
+    public static bool MeetsRatingFilter(IJellyseerrItem item)
+    {
+        if (GetRatingFilter() is not { } ratingFilter)
+        {
+            return true;
+        }
+        var (rating, votes) = item switch
+        {
+            JellyseerrMovie movie => (movie.VoteAverage, movie.VoteCount),
+            JellyseerrShow show => (show.VoteAverage, show.VoteCount),
+            _ => (double.MaxValue, int.MaxValue)
+        };
+        return rating >= ratingFilter.MinimumRating && votes >= ratingFilter.MinimumVotes;
+    }
+
     #region Created
+
+    /// <summary>
+    /// Redraws placeholders that aren't their title's current promo (a default promo whose artwork has since arrived, or a
+    /// title promo for older text or an older look), including titles this sync didn't fetch. Returns the number replaced.
+    /// </summary>
+    public async Task<int> RedrawStalePromosAsync(IEnumerable<IJellyseerrItem> items)
+    {
+        if (!Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseTitlePromos)))
+        {
+            return 0;
+        }
+        var upgraded = 0;
+        foreach (var item in items)
+        {
+            try
+            {
+                upgraded += await _placeholderVideoGenerator.RedrawStalePromosAsync(_metadataService.GetJellyBridgeItemDirectory(item));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not redraw the promo of {ItemName}", item.MediaName);
+            }
+        }
+        return upgraded;
+    }
     
     /// <summary>
     /// Creates placeholder videos for the provided unmatched items.
@@ -564,6 +628,12 @@ public class DiscoverService
         {
             try
             {
+                // Titles added from search have no network; they stay until the retention cleanup removes them
+                if (item.NetworkId == SearchService.SearchNetworkId)
+                {
+                    continue;
+                }
+
                 // Check if NetworkId is valid
                 if (!item.NetworkId.HasValue)
                 {

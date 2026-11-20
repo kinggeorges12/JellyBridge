@@ -56,6 +56,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     NetworkMap = Plugin.GetConfigOrDefault<List<JellyseerrNetwork>>(nameof(PluginConfiguration.NetworkMap), config),
                     MaxDiscoverPages = config.MaxDiscoverPages,
                     MaxRetentionDays = config.MaxRetentionDays,
+                    MinimumRating = config.MinimumRating,
+                    MinimumVotes = config.MinimumVotes,
 
                     // Manage Favorite Requests
                     ExcludeFromMainLibraries = config.ExcludeFromMainLibraries,
@@ -64,6 +66,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     RequestFirstSeason = config.RequestFirstSeason,
                     UserPermissionRequest4k = config.UserPermissionRequest4k,
                     RemoveRequestedFromFavorites = config.RemoveRequestedFromFavorites,
+                    EnableSearchResults = config.EnableSearchResults,
 
                     // Sort Content
                     EnableAutomatedSortTask = config.EnableAutomatedSortTask,
@@ -77,6 +80,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     CustomSeriesPromo = config.CustomSeriesPromo,
                     DefaultMoviesPromo = config.DefaultMoviesPromo,
                     DefaultSeriesPromo = config.DefaultSeriesPromo,
+                    UseTitlePromos = config.UseTitlePromos,
                     PromoVideoDurationSeconds = config.PromoVideoDurationSeconds,
                     JellyBridgeTempDirectory = config.JellyBridgeTempDirectory,
 
@@ -151,6 +155,8 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetNetworkMap(configData, config);
                     SetJsonValue<int?>(configData, nameof(config.MaxDiscoverPages), config);
                     SetJsonValue<int?>(configData, nameof(config.MaxRetentionDays), config);
+                    SetJsonValue<double?>(configData, nameof(config.MinimumRating), config);
+                    SetJsonValue<int?>(configData, nameof(config.MinimumVotes), config);
                     
                     // Manage Favorite Requests
                     SetJsonValue<bool?>(configData, nameof(config.ExcludeFromMainLibraries), config);
@@ -159,12 +165,14 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     SetJsonValue<bool?>(configData, nameof(config.RequestFirstSeason), config);
                     SetJsonValue<bool?>(configData, nameof(config.UserPermissionRequest4k), config);
                     SetJsonValue<bool?>(configData, nameof(config.RemoveRequestedFromFavorites), config);
+                    SetJsonValue<bool?>(configData, nameof(config.EnableSearchResults), config);
                     
                     // Customize Promo Videos
                     SetJsonValue<string>(configData, nameof(config.CustomMoviesPromo), config);
                     SetJsonValue<bool?>(configData, nameof(config.DefaultMoviesPromo), config);
                     SetJsonValue<string>(configData, nameof(config.CustomSeriesPromo), config);
                     SetJsonValue<bool?>(configData, nameof(config.DefaultSeriesPromo), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseTitlePromos), config);
                     SetJsonValue<int?>(configData, nameof(config.PromoVideoDurationSeconds), config);
                     SetJsonValue<string>(configData, nameof(config.JellyBridgeTempDirectory), config);
 
