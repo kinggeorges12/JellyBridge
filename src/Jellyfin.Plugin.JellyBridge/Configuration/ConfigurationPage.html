@@ -1052,6 +1052,18 @@
                             Configure how content is discovered and imported from Jellyseerr. Select which geographic region and networks to pull content from, control how much content is fetched, and set retention policies for discovered items. Once migrated to Discover libraries, the networks, pages, rating and retention settings live inside each library's editor (gear).
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription" id="EnableSearchResultsContainer">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableSearchResults" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
+                                <span class="checkboxLabel">Search Integration</span>
+                                <span class="checkboxOutline">
+                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <div class="fieldDescription">Directly query Jellyseerr when searching from Jellyfin. Users with access to the JellyBridge Library can search for new media content, open the content from the results, and request content from Jellyseerr. The global search in Jellyfin displays the Jellyseerr content immediately. Opening a result will begin to import the media item into the <span class="link" data-target-page="discoverLibrariesSection">Default library</span>.</div>
+                        </div>
+
                         <div class="inputContainer" id="regionContainer">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1;">
@@ -1120,13 +1132,13 @@
                         </div>
 
                         <div class="inputContainer" id="MinimumRatingContainer">
-                            <input id="MinimumRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating (TMDB)"/>
-                            <div class="fieldDescription">Only import titles rated at least this high on TMDB (0 to 10, e.g. 7). Leave empty or 0 to import every rating. Titles already in the library below it are removed at the next sync. Titles that are not out yet have no rating, so they are left out while this is set.</div>
+                            <input id="MinimumRating" type="number" is="emby-input" min="0" max="10" step="0.1" label="Minimum Rating"/>
+                            <div class="fieldDescription">Minimum rating on TMDB (0 to 10, e.g. 7) required to import a media item. Default is zero to import all content. This option removes media items that are missing ratings from the import.</div>
                         </div>
 
-                        <div class="inputContainer" id="MinimumVotesContainer">
-                            <input id="MinimumVotes" type="number" is="emby-input" min="0" label="Minimum Votes (TMDB)"/>
-                            <div class="fieldDescription">Number of TMDB votes a title needs before its rating counts, so a handful of early votes can't carry it over the Minimum Rating. Used only with a Minimum Rating. A higher number such as 300 (TMDB's own Top Rated list) leaves out more new releases.</div>
+                        <div class="inputContainer" id="MinimumVotesContainer" data-depends-on="MinimumRating">
+                            <input id="MinimumVotes" type="number" is="emby-input" min="0" label="Minimum Votes"/>
+                            <div class="fieldDescription">Minimum number of votes (TMDB) a media item needs before applying the Minimum Rating. This removes obscure media items from the Jellyseerr import. A higher number such as 300 (TMDB's own Top Rated list) skips newer releases.</div>
                         </div>
 
                         <div class="inputContainer" id="MaxRetentionDaysContainer">
@@ -1216,17 +1228,7 @@
                             </label>
                             <div class="fieldDescription">By default, all requests will be for non-4k content. Enable this option to request 4k content for users with the Request 4K Movies or Request 4K Series permissions in Jellyseerr.</div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription" id="EnableSearchResultsContainer">
-                            <label class="emby-checkbox-label">
-                                <input id="EnableSearchResults" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Jellyseerr Results in Search</span>
-                                <span class="checkboxOutline">
-                                    <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                                    <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
-                                </span>
-                            </label>
-                            <div class="fieldDescription">Show titles from Jellyseerr that are not in any library below Jellyfin's search results. Opening one adds it to the JellyBridge library, where it can be favorited to request it. Only for users who can see the JellyBridge library.</div>
-                        </div>
+
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -1255,8 +1257,7 @@
                         <summary>Customize Promo Videos</summary>
                         <br>
                         <div class="fieldDescription" style="margin-bottom: 16px;">
-                            Select a custom image (png, jpg, etc.) from your Jellyfin server to display to users when they play content from the JellyBridge library. Promos expand to fit 1920x1080 screen size with black bars to avoid stretching. Upload the promo images to the Jellyfin server, or install a plugin, e.g., <a target="_blank" href="https://github.com/grandguyjs/media-upload-plugin" style="color: #2196f3;">media-upload-plugin</a>.
-                        </div>
+                            Select a custom image (png, jpg, etc.) from your Jellyfin server to display to users when they play content from the JellyBridge library. Promos expand to fit 1920x1080 screen size with black bars to avoid stretching. Requires the setting <i>Save artwork into media folders</i> in the library settings, which the plugin enables by default when it creates each Discover library. Upload the promo images to the Jellyfin server, or install a plugin, e.g., <a target="_blank" href="https://github.com/grandguyjs/media-upload-plugin" style="color: #2196f3;">media-upload-plugin</a>. All promo videos are generated using <a target="_blank" href="https://jellyfin.org/docs/general/post-install/transcoding/hardware-acceleration/" style="color: #2196f3;">Jellyfin's FFmpeg</a>.</div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
@@ -1305,13 +1306,13 @@
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="UseTitlePromos" type="checkbox" is="emby-checkbox" data-embycheckbox="true" class="emby-checkbox" />
-                                <span class="checkboxLabel">Title Artwork Promos</span>
+                                <span class="checkboxLabel">Media Artwork Promos</span>
                                 <span class="checkboxOutline">
                                     <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                                     <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                                 </span>
                             </label>
-                            <div class="fieldDescription">Make each promo video from the title's own backdrop and logo, with its year, rating, genres and plot, the release date of upcoming titles, and a note to favorite it to request it. Titles use the promo above until Jellyfin has saved their backdrop, then switch on a later sync. Needs <i>Save artwork into media folders</i> in the library settings of every JellyBridge library.</div>
+                            <div class="fieldDescription">Generate a custom promo video for each media item. The promo video displays the backdrop and logo with a text description that includes year, rating, genres, plot, upcoming release dates, and a note to the user with instructions to favorite the media item. While waiting for each video to generate, media items display the default or custom promo video as a placeholder until this process finishes. Needs <i>Save artwork into media folders</i> in the library settings of every JellyBridge library. Performance depends on hardware capabilities of the server.</div>
                             <div class="jbCostNote"><svg width="18" height="18" viewBox="0 0 24 24" style="flex:none;margin-top:.1em" fill="#e0a030" aria-hidden="true"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg><span>Uses the server's CPU: ffmpeg renders a video for each title (about 0.1–0.25 s each), again when its text changes. The first sync after turning this on takes longer, e.g. ~1–2 min for 450 titles.</span></div>
                         </div>
                         <br>
