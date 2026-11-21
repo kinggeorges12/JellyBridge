@@ -46,8 +46,9 @@ public class PlaceholderVideoGenerator
     private static readonly string TitlePromoFontAsset = "promo-font.ttf";
 
     // Layout of the 1920x1080 frame, top to bottom like a streaming service's title page: logo, info line, plot, then the
-    // overlay's "favorite to request" note, which starts at y 720. The text block is stacked upwards from 70 px above the
-    // note and the logo moves up to make room (shrinking when a long plot leaves it less than its usual height); with no
+    // overlay's "favorite to request" button, which starts at y 720 (layout11: the sub line that used to sit under it
+    // is gone from the overlay). The text block is stacked upwards from 70 px above the
+    // button and the logo moves up to make room (shrinking when a long plot leaves it less than its usual height); with no
     // text the logo keeps its old place (bottom at y 630).
     // drawtext puts the top of the text at y; line advances and heights below are measured from Jellyfin's ffmpeg.
     private const int PromoTextLeft = 140;
@@ -744,10 +745,10 @@ public class PlaceholderVideoGenerator
         List<string> failures = new List<string>();
 
         // Get the library root once
-        string libraryRoot = FolderUtils.GetBaseDirectory();
-        if (!FolderUtils.FolderExistsThrowNull(libraryRoot))
+        var bridgeDirectories = FolderUtils.GetBridgeDirectories().Where(Directory.Exists).ToList();
+        if (bridgeDirectories.Count == 0)
         {
-            _logger.LogDebug("Library directory not configured or doesn't exist, skipping placeholder refresh");
+            _logger.LogDebug("No JellyBridge library folders exist yet, skipping placeholder refresh");
             return (successMovies, successSeries, failures);
         }
 
@@ -761,8 +762,11 @@ public class PlaceholderVideoGenerator
             ConcurrentBag<string> taskSuccessSeries = new ConcurrentBag<string>();
             ConcurrentBag<string> taskFailure = new ConcurrentBag<string>();
 
-            // Find all existing placeholder files in the library
-            var existingFiles = Directory.GetFiles(libraryRoot, AssetSearchPattern, SearchOption.AllDirectories);
+            // Find all existing placeholder files in the library (and the Trending library, when turned on)
+            var existingFiles = FolderUtils.GetBridgeDirectories()
+                .Where(Directory.Exists)
+                .SelectMany(directory => Directory.GetFiles(directory, AssetSearchPattern, SearchOption.AllDirectories))
+                .ToArray();
 
             // Process each existing placeholder file in parallel
             foreach (string existingFile in existingFiles)
@@ -1364,7 +1368,7 @@ public class PlaceholderVideoGenerator
             return "none";
         }
         // The layout is part of what is drawn, so a change to it re-renders every title once
-        var joined = string.Join("\n", "layout10", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
+        var joined = string.Join("\n", "layout11", text.Info ?? "", text.Plot ?? "", text.Badge ?? "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)))[..12].ToLowerInvariant();
     }
 

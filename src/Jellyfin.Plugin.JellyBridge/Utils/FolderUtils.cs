@@ -116,6 +116,24 @@ public static class FolderUtils
     }
 
     /// <summary>
+    /// Gets every folder JellyBridge writes titles to: the folder of every Discover library plus, until the libraries
+    /// migration has run, the Library Directory itself. Unlike <see cref="GetBaseDirectory"/>, this does not depend
+    /// on the current scope.
+    /// </summary>
+    public static List<string> GetBridgeDirectories()
+    {
+        return DiscoverLibraries.GetAllDirectories();
+    }
+
+    /// <summary>
+    /// Check if a path is within the Library Directory or the Trending library's folder.
+    /// </summary>
+    public static bool IsPathInAnyBridgeDirectory(string? pathToCheck)
+    {
+        return GetBridgeDirectories().Any(directory => IsPathInDirectory(pathToCheck, directory));
+    }
+
+    /// <summary>
     /// Sanitize filename by removing invalid characters.
     /// </summary>
     public static string SanitizeFileName(string fileName)

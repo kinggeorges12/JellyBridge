@@ -242,6 +242,100 @@ public class MetadataService
     }
 
     /// <summary>
+    /// Clear the stored list rank of every title in the current library's folder that the current sync did not
+    /// fetch, so the ranks in metadata.json are always the ranks of the latest sync. Without this, a title that
+    /// dropped off the list keeps its old rank on disk and the next scheduled sort task (which trusts the stored
+    /// ranks) puts it back among the fresh titles. .ignore'd and search-added titles are otherwise left alone —
+    /// only the rank is removed. Call inside the library's LibraryScope.Enter.
+    /// </summary>
+    /// <param name="fetched">The items the current sync fetched.</param>
+    /// <returns>The number of metadata files whose list rank was cleared.</returns>
+    public async Task<int> ClearStaleListRanksAsync(IReadOnlyCollection<IJellyseerrItem> fetched)
+    {
+        var freshKeys = fetched.Select(item => (item.GetType(), item.Id)).ToHashSet();
+        var (movies, shows) = await ReadMetadataAsync();
+        var cleared = 0;
+
+        foreach (IJellyseerrItem item in movies.Cast<IJellyseerrItem>().Concat(shows))
+        {
+            if (item.ListRank == null || freshKeys.Contains((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            try
+            {
+                var metadataFile = Path.Combine(GetJellyBridgeItemDirectory(item), IJellyseerrItem.GetMetadataFilename());
+                if (!File.Exists(metadataFile))
+                {
+                    continue;
+                }
+                item.ListRank = null;
+                await File.WriteAllTextAsync(metadataFile, JellyBridgeJsonSerializer.Serialize((object)item));
+                cleared++;
+                _logger.LogDebug("Cleared the stored list rank of '{MediaName}' (Id: {Id}) — it is no longer on the list", item.MediaName, item.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not clear the stale list rank of '{MediaName}'", item.MediaName);
+            }
+        }
+
+        return cleared;
+    }
+
+    /// <summary>
+    /// 8b fix 4: refresh the CreatedDate in the metadata.json of titles the fetch found ON the list but judged
+    /// HIDDEN (a .ignore in their folder, or a match in a real library). They are never written, so without this
+    /// their age keeps running and CleanupService.DeleteExpiredMedia removes them after the retention days even
+    /// though the list still holds them. Only existing folders are touched — a hidden title is never created
+    /// here, and nothing but the CreatedDate changes. Call inside the library's LibraryScope.Enter.
+    /// </summary>
+    /// <param name="hidden">The titles the current fetch judged hidden.</param>
+    /// <returns>The number of metadata files whose CreatedDate was refreshed.</returns>
+    public async Task<int> TouchHiddenCreatedDatesAsync(IEnumerable<IJellyseerrItem> hidden)
+    {
+        var touched = 0;
+        var seen = new HashSet<(Type, int)>();
+        foreach (var item in hidden)
+        {
+            if (!seen.Add((item.GetType(), item.Id)))
+            {
+                continue;
+            }
+
+            try
+            {
+                var metadataFile = Path.Combine(GetJellyBridgeItemDirectory(item), IJellyseerrItem.GetMetadataFilename());
+                if (!File.Exists(metadataFile))
+                {
+                    continue; // a hidden title is never (re)created — only an existing folder gets its age refreshed
+                }
+
+                // Rewrite the file on disk with only its CreatedDate refreshed (same read/rewrite pattern as
+                // ClearStaleListRanksAsync), so nothing else about the stored record changes.
+                IJellyseerrItem? stored = item is JellyseerrMovie
+                    ? JellyBridgeJsonSerializer.Deserialize<JellyseerrMovie>(await File.ReadAllTextAsync(metadataFile))
+                    : JellyBridgeJsonSerializer.Deserialize<JellyseerrShow>(await File.ReadAllTextAsync(metadataFile));
+                if (stored == null)
+                {
+                    continue;
+                }
+
+                stored.CreatedDate = DateTimeOffset.Now;
+                await File.WriteAllTextAsync(metadataFile, JellyBridgeJsonSerializer.Serialize((object)stored));
+                touched++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not refresh the created date of hidden '{MediaName}'", item.MediaName);
+            }
+        }
+
+        return touched;
+    }
+
+    /// <summary>
     /// Write metadata for a single item to the appropriate folder.
     /// </summary>
     private async Task<bool> WriteMetadataAsync(IJellyseerrItem item)
@@ -289,59 +383,6 @@ public class MetadataService
         }
     }
 
-
-    /// <summary>
-    /// Create empty network folders based on the network configuration.
-    /// </summary>
-    /// <returns>Tuple containing lists of created and existing folder names</returns>
-    public (List<string> createdFolders, List<string> existingFolders) CreateEmptyNetworkFolders(string baseDirectory)
-    {
-        var createdFolders = new List<string>();
-        var existingFolders = new List<string>();
-        var networkMap = Plugin.GetConfiguration().NetworkMap ?? new List<JellyseerrNetwork>();
-        _logger.LogInformation("Starting library folder generation - Base Directory: {BaseDirectory}, Network Count: {NetworkCount}", 
-            baseDirectory, networkMap.Count);
-        foreach (var network in networkMap)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(network.Name))
-                {
-                    _logger.LogWarning("Skipping network with empty name: {NetworkId}", network.Id);
-                    continue;
-                }
-                
-                // Use GetNetworkFolder which handles the prefix
-                var networkFolderPath = GetNetworkFolder(baseDirectory, network.Name);
-                if (string.IsNullOrEmpty(networkFolderPath))
-                {
-                    _logger.LogWarning("Network Folders did not create the network name: {NetworkName}", network.Name);
-                    continue;
-                }
-                
-                if (FolderUtils.FolderExistsThrowNull(networkFolderPath))
-                {
-                    existingFolders.Add(networkFolderPath);
-                    _logger.LogTrace("Network folder already exists: {NetworkFolder}", networkFolderPath);
-                }
-                else
-                {
-                    Directory.CreateDirectory(networkFolderPath);
-                    createdFolders.Add(networkFolderPath);
-                    _logger.LogDebug("Created network folder: {NetworkFolder}", networkFolderPath);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating folder for network: {NetworkName}", network.Name);
-                throw; // Re-throw to fail the entire operation
-            }
-        }
-        
-        _logger.LogInformation("Network folder generation completed - Created: {Created}, Existing: {Existing}", 
-            createdFolders.Count, existingFolders.Count);
-        return (createdFolders, existingFolders);
-    }
     public async Task<(List<string> movieFolders, List<string> showFolders, List<string> mixedFolders)> CreateEmptyLibraryFoldersAsync()
     {
         var folders = new Dictionary<string, List<string>>();
@@ -351,7 +392,6 @@ public class MetadataService
         
         var baseDirectory = FolderUtils.GetBaseDirectory();
         var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
 
         if (!useMixedMediaLibrary)
         {
@@ -367,25 +407,8 @@ public class MetadataService
                     Directory.CreateDirectory(mediaFolderPath);
                     _logger.LogDebug("Created media type folder: {MediaFolder}", mediaFolderPath);
                 }
-                
-                if (useNetworkFolders)
-                {
-                    // Create empty network folders for this media type
-                    var (existingNetworkFolders, createdNetworkFolders) = CreateEmptyNetworkFolders(mediaFolderPath);
-                    folders[libraryType].AddRange(existingNetworkFolders);
-                    folders[libraryType].AddRange(createdNetworkFolders);
-                }
-                else
-                {
-                    folders[libraryType].Add(mediaFolderPath);
-                }
+                folders[libraryType].Add(mediaFolderPath);
             }
-        }
-        else if (useNetworkFolders)
-        { 
-            var (existingNetworkFolders, createdNetworkFolders) = CreateEmptyNetworkFolders(baseDirectory);
-            folders[string.Empty].AddRange(existingNetworkFolders);
-            folders[string.Empty].AddRange(createdNetworkFolders);
         }
         else
         {
@@ -411,19 +434,6 @@ public class MetadataService
     #region Helpers
 
     /// <summary>
-    /// Get the network folder path if UseNetworkFolders is enabled, otherwise returns null.
-    /// </summary>
-    /// <param name="baseDirectory">The base directory for the network folder</param>
-    /// <param name="networkName">The name of the network (from NetworkTag or network.Name)</param>
-    /// <returns>Network folder path if enabled, null otherwise</returns>
-    public string GetNetworkFolder(string baseDirectory, string? networkName)
-    {
-        var networkPrefix = Plugin.GetConfigOrDefault<string>(nameof(PluginConfiguration.NetworkFolderPrefix));
-        var networkFolderName = FolderUtils.SanitizeFileName(networkPrefix + networkName);
-        return Path.Combine(baseDirectory, networkFolderName);
-    }
-
-    /// <summary>
     /// Get the directory path for a specific item.
     /// </summary>
     public string GetJellyBridgeItemDirectory(IJellyseerrItem? item = null)
@@ -431,7 +441,6 @@ public class MetadataService
         var baseDirectory = FolderUtils.GetBaseDirectory();
         var combinedPath = baseDirectory;
         var useMixedMediaLibrary = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseMixedMediaLibrary));
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
 
         if (item == null)
         {
@@ -461,16 +470,8 @@ public class MetadataService
             }
         }
 
-        if (useNetworkFolders)
-        {
-            var networkFolder = GetNetworkFolder(baseDirectory, item.NetworkTag);
-            combinedPath = Path.Combine(networkFolder, itemFolder);
-        }
-        else
-        {
-            // If not using network prefix, just store in the base directory with the folder name
-            combinedPath = Path.Combine(baseDirectory, itemFolder);
-        }
+        // Store in the library's folder with the folder name (Legacy separate mode: under Movies/Shows above)
+        combinedPath = Path.Combine(baseDirectory, itemFolder);
         
         return combinedPath;
     }

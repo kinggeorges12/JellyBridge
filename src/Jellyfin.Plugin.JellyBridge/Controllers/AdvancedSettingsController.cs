@@ -99,6 +99,7 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             {
                 // Get library directory from saved configuration
                 var libraryDir = FolderUtils.GetBaseDirectory();
+                _logger.LogDebug("Recycling every JellyBridge library folder; the Library Directory is {LibraryDir}", libraryDir);
                 
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var success = await Plugin.ExecuteWithLockAsync<bool>(async () =>
@@ -109,30 +110,50 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     
                     try
                     {
-                        // Get all subdirectories and files
-                        var subdirs = System.IO.Directory.GetDirectories(libraryDir);
-                        var files = System.IO.Directory.GetFiles(libraryDir);
-                        
-                        // Delete all files in the root directory
-                        foreach (var file in files)
+                        // Delete the contents of every JellyBridge library folder, and of the Library Directory root
+                        // itself (its leftover non-library entries), while keeping the library folders in place.
+                        var bridgeDirectories = FolderUtils.GetBridgeDirectories();
+                        var cleanupDirectories = bridgeDirectories
+                            .Append(DiscoverLibraries.GetRootDirectory())
+                            .DistinctBy(FolderUtils.GetNormalizedPath);
+
+                        foreach (var directory in cleanupDirectories)
                         {
-                            System.IO.File.Delete(file);
-                            _logger.LogTrace("Deleted file: {File}", file);
+                            if (!Directory.Exists(directory))
+                            {
+                                continue;
+                            }
+
+                            foreach (var file in Directory.GetFiles(directory))
+                            {
+                                System.IO.File.Delete(file);
+                                _logger.LogTrace("Deleted file: {File}", file);
+                            }
+
+                            foreach (var subdir in Directory.GetDirectories(directory))
+                            {
+                                // A subdirectory stays only when it is a library folder or contains one. Note the
+                                // direction: GetNormalizedPath ends with '/', so testing the reverse would also
+                                // "keep" every title folder inside a library.
+                                var normalizedSubdir = FolderUtils.GetNormalizedPath(subdir);
+                                if (bridgeDirectories.Any(libraryDirectory =>
+                                    FolderUtils.GetNormalizedPath(libraryDirectory).StartsWith(normalizedSubdir, StringComparison.Ordinal)))
+                                {
+                                    _logger.LogDebug("Kept library folder: {Subdir}", subdir);
+                                    continue;
+                                }
+
+                                System.IO.Directory.Delete(subdir, true);
+                                _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
+                            }
                         }
                         
-                        // Delete all subdirectories (recursively)
-                        foreach (var subdir in subdirs)
-                        {
-                            System.IO.Directory.Delete(subdir, true);
-                            _logger.LogTrace("Deleted subdirectory: {Subdir}", subdir);
-                        }
-                        
-                        _logger.LogInformation("Successfully deleted all contents inside library directory: {LibraryDir}", libraryDir);
+                        _logger.LogInformation("Successfully deleted all contents of the JellyBridge libraries");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to delete contents of library directory: {LibraryDir}", libraryDir);
-                        throw new InvalidOperationException($"Failed to delete contents of library directory: {ex.Message}");
+                        _logger.LogError(ex, "Failed to delete contents of the JellyBridge libraries");
+                        throw new InvalidOperationException($"Failed to delete contents of the JellyBridge libraries: {ex.Message}");
                     }
                     
                     // Refresh the JellyBridge library after data deletion

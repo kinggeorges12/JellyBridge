@@ -32,7 +32,9 @@ public class FavoriteService
     }
 
     /// <summary>
-    /// Get all user favorites from Jellyfin and filter to only items in the JellyBridge folder.
+    /// Get all user favorites from Jellyfin and filter to only items in any JellyBridge library folder. The result
+    /// is library-independent on purpose: the favorites-to-requests step runs once for all libraries (decision 8),
+    /// so favorites from every bridge folder must be collected outside the library scope.
     /// </summary>
     /// <returns>The filtered favorites in a flat list of (user, item) pairs</returns>
     public List<(JellyfinUser user, IJellyfinItem item)> GetUserFavorites()
@@ -62,8 +64,13 @@ public class FavoriteService
             }
 
             var path = fav.item?.Path;
-            var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInSyncDirectory(path);
-            // A missing season of a show in any library can also be favorited to request it
+            // Favorites are collected for every JellyBridge library at once (the request steps run once outside the
+            // library loop), so the folder check must cover all bridge folders, not just a scoped one.
+            var inBridgeFolder = !string.IsNullOrEmpty(path) && FolderUtils.IsPathInAnyBridgeDirectory(path);
+            // A missing season of a show can also be favorited to request it. Two libraries holding the same show
+            // each have their own virtual season copy; RequestFavorites skips a title whose (media type, TMDB id)
+            // was already requested and RequestSeasonFavoritesAsync merges the seasons per (user, show) with
+            // distinct season numbers, so the same season is never requested twice by one user.
             var isMissingSeason = fav.item is JellyfinSeason virtualSeason && virtualSeason.IsVirtual;
             if (!inBridgeFolder && !isMissingSeason)
             {
@@ -99,6 +106,8 @@ public class FavoriteService
         var requestResults = new List<(IJellyfinItem item, JellyseerrMediaRequest request)>();
         var blockedItems = new List<IJellyfinItem>();
         var successfullyProcessedItems = new HashSet<Guid>(); // Track items that have been successfully requested
+        // Decision 8: a title with a copy in two JellyBridge libraries is requested once — track requested media
+        var requestedMedia = new HashSet<(string MediaType, int TmdbId)>();
 
         // Randomize the order of tuples
         var random = new Random();
@@ -136,6 +145,15 @@ public class FavoriteService
             var mediaType = IJellyseerrItem.GetMediaType(item).ToString().ToLower();
             var mediaPermission4k = IJellyseerrItem.GetMediaPermission4k(item);
 
+            // Skip a second copy of a title already requested in this sync (same title in two libraries).
+            // Only successful requests are in the set (added next to successfullyProcessedItems below), so a
+            // failed request (quota, permission, 4K) doesn't block another user's favorite of the same title.
+            if (requestedMedia.Contains((mediaType, tmdbId.Value)))
+            {
+                _logger.LogDebug("Skipping favorite '{ItemName}' - the same title was already requested from another library in this sync", item.Name);
+                continue;
+            }
+
             try
             {
                 var requestParams = new Dictionary<string, object>
@@ -161,6 +179,7 @@ public class FavoriteService
                 {
                     // Only mark as successfully processed after receiving a valid response
                     successfullyProcessedItems.Add(item.Id);
+                    requestedMedia.Add((mediaType, tmdbId.Value));
                     requestResults.Add((item, request));
                     _logger.LogTrace("Successfully created request for {ItemName} on behalf of {UserName}", 
                         item.Name, username);
@@ -580,6 +599,10 @@ public async Task<(List<IJellyseerrItem> newIgnored, List<IJellyseerrItem> clear
 			newIgnored.AddRange(newIgnoredMatches);
 			_logger.LogTrace("Created/updated ignore files for matched items ({NewlyIgnored} newly ignored, {ExistingIgnored} already ignored)", 
                 newIgnoredMatches.Count, existingIgnored.Count);
+
+            // Decision 8 (hiding either copy hides both) needs no cross-library pass: this whole method runs
+            // once per library, and the match step above reads that library's own metadata.json, so every copy
+            // of a requested title gets its .ignore from its own library's pass.
 
             // Collect tasks for unfavoriting and marking as unplayed
             var unfavoriteTasks = new List<(Task<bool>? favoriteTask, Task<JellyfinWrapperResult> playStatusTask, JellyfinUser user, IJellyfinItem item, IJellyseerrItem jellyseerrItem)>();

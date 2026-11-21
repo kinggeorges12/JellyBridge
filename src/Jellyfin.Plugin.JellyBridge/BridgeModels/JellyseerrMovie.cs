@@ -116,6 +116,19 @@ public class JellyseerrMovie
     public int? NetworkId { get; set; }
 
     /// <summary>
+    /// Position in the library's fetched list (1 = first), used for "Same as the list" order.
+    /// </summary>
+    [JsonPropertyName("listRank")]
+    public int? ListRank { get; set; }
+
+    /// <summary>
+    /// Reads the old "trendingRank" key from a metadata.json written before list rank existed; the getter returns
+    /// null so the custom serializer never writes the key back.
+    /// </summary>
+    [JsonPropertyName("trendingRank")]
+    public int? LegacyTrendingRank { get => null; set => ListRank ??= value; }
+
+    /// <summary>
     /// Equality comparison with a JellyfinMovie item.
     /// </summary>
     public bool EqualsMovie(JellyfinMovie? other)

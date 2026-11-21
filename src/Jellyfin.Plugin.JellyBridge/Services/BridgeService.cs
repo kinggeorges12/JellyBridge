@@ -173,24 +173,44 @@ public class BridgeService
     /// </summary>
     public async Task<(List<JellyMatch> matched, List<IJellyseerrItem> unmatched)> BuildJellyfinMatchesAsync(List<IJellyseerrItem> jellyseerrItems)
     {
-        // Excludes base directory from shows
-        var libraryDirectory = FolderUtils.GetBaseDirectory();
-        var bridgeLibraryPaths = new HashSet<string>()
-        {
-            libraryDirectory
-        };
-        var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
-        var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
-        // Combine movies and shows
-        var jellyfinItems = new List<IJellyfinItem>();
-        jellyfinItems.AddRange(existingMovies);
-        jellyfinItems.AddRange(existingShows);
+        // Excludes the JellyBridge folders (Discover and Trending) from the existing titles
+        var jellyfinItems = await GetRealLibraryItemsAsync();
         // Get matches for jellyseerr items and jellyfin items from non-discover library
         var matches = await LibraryScanAsync(jellyfinItems, jellyseerrItems);
         var libraryMatchedItems = matches.Select(m => m.JellyseerrItem).ToList();
         var unmatched = GetNonMatchingJellyseerrItems(libraryMatchedItems, jellyseerrItems);
         return (matches, unmatched);
     }
+
+    /// <summary>
+    /// Gets every title in a real (non-JellyBridge) Jellyfin library — the input the hide-if-available step
+    /// (<see cref="IgnoreMatchAsync"/>) matches against, excluding the JellyBridge folders (Discover and Trending).
+    /// The fetch's pages-count-visible check (task 8) reuses the same list and the same
+    /// <see cref="LibraryScanAsync"/> predicate as the sync does.
+    /// </summary>
+    /// <returns>The existing movies and shows outside every bridge folder</returns>
+    public Task<List<IJellyfinItem>> GetRealLibraryItemsAsync()
+    {
+        var bridgeLibraryPaths = FolderUtils.GetBridgeDirectories().ToHashSet();
+        var existingMovies = _libraryManager.GetExistingItems<JellyfinMovie>(excludePaths: bridgeLibraryPaths);
+        var existingShows = _libraryManager.GetExistingItems<JellyfinSeries>(excludePaths: bridgeLibraryPaths);
+        // Combine movies and shows
+        var jellyfinItems = new List<IJellyfinItem>();
+        jellyfinItems.AddRange(existingMovies);
+        jellyfinItems.AddRange(existingShows);
+        return Task.FromResult(jellyfinItems);
+    }
+
+    /// <summary>
+    /// Public entry to the core scan: compares the given Jellyseerr items against the given real-library Jellyfin
+    /// items with the exact matcher the sync uses. Used by the fetch's visible-count check (task 8), which must
+    /// predict what <see cref="BuildJellyfinMatchesAsync"/> will hide before the sync writes any folder.
+    /// </summary>
+    /// <param name="jellyfinItems">The real-library titles (from <see cref="GetRealLibraryItemsAsync"/>).</param>
+    /// <param name="jellyseerrItems">The fetched titles to test against them.</param>
+    /// <returns>The matches</returns>
+    public Task<List<JellyMatch>> ScanLibraryAsync(List<IJellyfinItem> jellyfinItems, List<IJellyseerrItem> jellyseerrItems)
+        => LibraryScanAsync(jellyfinItems, jellyseerrItems);
 
     /// <summary>
     /// Overload: Scan providing a flat list of Jellyfin items. Fetch Jellyseerr metadata via ReadMetadataAsync.
@@ -285,15 +305,15 @@ public class BridgeService
     /// <summary>
     /// Maps items to libraries by directory.
     /// Filters out items that already exist in their target library or are duplicates in the incoming list.
+    /// The existing-metadata comparison is library-local: <see cref="ReadMetadataLibraries"/> reads only the current
+    /// library's folder (<see cref="LibraryScope"/>), so a copy of a title that lives in another JellyBridge library
+    /// is not a duplicate — every library keeps its own copy (decision 8). A copy in a real, non-JellyBridge library
+    /// is still a duplicate: <see cref="BuildJellyfinMatchesAsync"/> finds it while excluding every bridge folder.
     /// </summary>
     /// <param name="items">List of Jellyseerr items to map (from Jellyseerr API)</param>
     /// <returns>List of unique Jellyseerr items to sync</returns>
     public async Task<List<IJellyseerrItem>> FilterDuplicatesByLibrary(List<IJellyseerrItem> items)
     {
-        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-        
         if (items == null || items.Count == 0)
         {
             return new List<IJellyseerrItem>();
@@ -317,7 +337,7 @@ public class BridgeService
 
             // 3. Build a dictionary: library name -> set of existing item hashes in that library
             // Use the BridgeLibrary's built-in ToDeduplicationSet() method
-            var libraryItemHashes = new Dictionary<string, HashSet<(int ItemHash, int FolderHash, int NetworkHash)>>();
+            var libraryItemHashes = new Dictionary<string, HashSet<(int ItemHash, int FolderHash)>>();
             
             foreach (var library in existingLibraries)
             {
@@ -329,8 +349,7 @@ public class BridgeService
                 var hashes = filteredItems
                     .Select(item => (
                         ItemHash: item.GetItemHashCode(),
-                        FolderHash: item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent),
-                        NetworkHash: item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent)
+                        FolderHash: item.GetFolderHashCode()
                     ))
                     .ToHashSet();
                 libraryItemHashes[libraryName] = hashes;
@@ -357,8 +376,6 @@ public class BridgeService
                     continue;
                 }
                 // 4. Process each input item
-                var seenInLibrary = new HashSet<int>(); // Track duplicates within the incoming list
-
                 foreach (var item in items)
                 {
                     var directory = _metadataService.GetJellyBridgeItemDirectory(item);
@@ -379,16 +396,8 @@ public class BridgeService
                     // Ensure we capture those items that are not in a library
                     var itemHash = item.GetItemHashCode();
                     var seenFirstTime = seenInAnyLibrary.Add(itemHash);
-                    seenInAnyLibrary.Add(item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent));
 
-                    // Look for new items or duplicate items with different folder names
-                    if(useNetworkFolders && addDuplicateContent && !seenInLibrary.Add(itemHash))
-                    {
-                        _logger.LogTrace("Filtered duplicate from input list (within library '{LibraryName}'): {MediaName} (ItemHash: {ItemHash})",
-                            string.IsNullOrEmpty(library.LibraryName) ? "(Empty)" : library.LibraryName, item.MediaName, itemHash);
-                        continue;
-                    }
-                    else if(!(useNetworkFolders && addDuplicateContent) && !seenFirstTime)
+                    if (!seenFirstTime)
                     {
                         _logger.LogTrace("Filtered duplicate from input list (across libraries): {MediaName} (ItemHash: {ItemHash})",
                             item.MediaName, itemHash);
@@ -397,7 +406,7 @@ public class BridgeService
 
                     // Check for duplicates within the current library, add only if the existing folder hash matches
                     var existingLibrary = libraryItemHashes[library.LibraryName];
-                    var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
+                    var folderHash = item.GetFolderHashCode();
                     if (existingLibrary.Any(tuple => tuple.FolderHash == folderHash))
                     {
                         mappedItems.Add(item);
@@ -421,16 +430,14 @@ public class BridgeService
                 }
             }
             
-            // Flatten the library list to search all hashes, making sure to include the network for duplicate content if enabled
-            var unknownLibraryHashes = useNetworkFolders && addDuplicateContent ?
-                libraryItemHashes[string.Empty].Select(t => t.NetworkHash).ToHashSet():
-                libraryItemHashes[string.Empty].Select(t => t.ItemHash).ToHashSet();
+            // Flatten the default-folder library hashes
+            var unknownLibraryHashes = libraryItemHashes[string.Empty].Select(t => t.ItemHash).ToHashSet();
             var unknownFolderHashes = libraryItemHashes[string.Empty].Select(t => t.FolderHash).ToHashSet();
             // Catch-all for items that did not appear in ANY library or existing items
             foreach (var item in items)
             {
-                var itemHash = item.GetItemHashCode(network: useNetworkFolders && addDuplicateContent);
-                var folderHash = item.GetFolderHashCode(network: useNetworkFolders && addDuplicateContent);
+                var itemHash = item.GetItemHashCode();
+                var folderHash = item.GetFolderHashCode();
 
                 // If not using network folders, check if the item is in other libraries and if its unique, add it.
                 if (unknownFolderHashes.Contains(folderHash)){
@@ -463,9 +470,10 @@ public class BridgeService
     }
 
     /// <summary>
-    /// Checks if an item is ignored (has .ignore file in its directory).
+    /// Checks if an item is ignored (has .ignore file in its directory). Public so the fetch's
+    /// pages-count-visible check (task 8) asks the same predicate as the sync's filter steps.
     /// </summary>
-    private bool IsItemIgnored(IJellyseerrItem item)
+    public bool IsItemIgnored(IJellyseerrItem item)
     {
         try
         {
@@ -505,24 +513,17 @@ public class BridgeService
     }
 
     /// <summary>
-    /// Compare two Jellyseerr item lists for equivalence based on configuration.
-    /// When UseNetworkFolders is enabled, compares by composite key (Id + normalized directory).
-    /// Otherwise, compares by Id only.
+    /// Compare two Jellyseerr item lists for equivalence: items in the second list whose item hash (Id, extra id,
+    /// media type) is not in the first list.
     /// The first list represents library matches; the second represents test items.
     /// </summary>
     /// <param name="libraryMatches">Items discovered from library/scan context</param>
     /// <param name="testItems">Items to compare against libraryMatches</param>
-    /// <returns>True if sets are equivalent under the configured comparison mode</returns>
+    /// <returns>The test items that have no match in the library list</returns>
     private List<IJellyseerrItem> GetNonMatchingJellyseerrItems(List<IJellyseerrItem> libraryMatches, List<IJellyseerrItem> testItems)
     {
-        // If both UseNetworkFolders and AddDuplicateContent are enabled, skip filtering
-        var useNetworkFolders = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.UseNetworkFolders));
-        var addDuplicateContent = Plugin.GetConfigOrDefault<bool>(nameof(PluginConfiguration.AddDuplicateContent));
-
-        var unmatched = new List<IJellyseerrItem>();
-
-        var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemHashCode(network: useNetworkFolders && addDuplicateContent)));
-        unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemHashCode(network: useNetworkFolders && addDuplicateContent))).ToList();
+        var libHashCodes = new HashSet<int>(libraryMatches.Select(i => i.GetItemHashCode()));
+        var unmatched = testItems.Where(t => !libHashCodes.Contains(t.GetItemHashCode())).ToList();
         _logger.LogTrace("{UnmatchedCount} unmatched items", unmatched.Count);
         return unmatched;
     }

@@ -143,24 +143,16 @@ public interface IJellyseerrItem
     /// <summary>
     /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetItemHashCode(bool network = false)
+    int GetItemHashCode()
     {
-        if (network)
-        {
-            return HashCode.Combine(Id, ExtraId, MediaType, NetworkTag);
-        }
         return HashCode.Combine(Id, ExtraId, MediaType);
     }
     
     /// <summary>
     /// Returns a hash code for the movie that can be used for matching.
     /// </summary>
-    int GetFolderHashCode(bool network = false)
+    int GetFolderHashCode()
     {
-        if (network)
-        {
-            return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType, NetworkTag);
-        }
         return HashCode.Combine(Id, MediaName, Year, ExtraId, MediaType);
     }
     
@@ -205,4 +197,11 @@ public interface IJellyseerrItem
     /// </summary>
     [JsonIgnore]
     int? NetworkId { get; set; }
+
+    /// <summary>
+    /// Position in the library's fetched list (1 = first), every fetcher numbers its titles in Seerr's order.
+    /// Written to metadata.json as "listRank"; read back from the old "trendingRank" key by the concrete models.
+    /// </summary>
+    [JsonIgnore]
+    int? ListRank { get; set; }
 }

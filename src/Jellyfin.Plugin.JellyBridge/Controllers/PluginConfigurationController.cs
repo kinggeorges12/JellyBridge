@@ -47,9 +47,15 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     ManageJellyBridgeLibrary = config.ManageJellyBridgeLibrary,
                     UseMixedMediaLibrary = config.UseMixedMediaLibrary,
-                    UseNetworkFolders = config.UseNetworkFolders,
-                    AddDuplicateContent = config.AddDuplicateContent,
-                    NetworkFolderPrefix = config.NetworkFolderPrefix,
+                    UseTrendingLibrary = config.UseTrendingLibrary,
+                    TrendingDirectory = config.TrendingDirectory,
+                    TrendingPages = config.TrendingPages,
+
+                    // Discover Libraries (issue #83)
+                    DiscoverLibraries = config.DiscoverLibraries,
+                    LibrariesMigrationVersion = config.LibrariesMigrationVersion,
+                    ShowLibrariesMigrationNotice = config.ShowLibrariesMigrationNotice,
+                    LibrariesMigrationIssues = config.LibrariesMigrationIssues,
 
                     // Import Discover Content
                     Region = config.Region,
@@ -119,6 +125,9 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
             
             try
             {
+                // Set when the Discover libraries payload is bad; aborts the save so a typo in the field can't pass as success.
+                string? librariesError = null;
+
                 // Use Jellyfin-style locking that pauses instead of canceling
                 var result = Plugin.ExecuteWithLockAsync<bool>(async () =>
                 {
@@ -146,10 +155,18 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     // Organize Discover Library
                     SetJsonValue<bool?>(configData, nameof(config.ManageJellyBridgeLibrary), config);
                     SetJsonValue<bool?>(configData, nameof(config.UseMixedMediaLibrary), config);
-                    SetJsonValue<bool?>(configData, nameof(config.UseNetworkFolders), config);
-                    SetJsonValue<bool?>(configData, nameof(config.AddDuplicateContent), config);
-                    SetJsonValue<string>(configData, nameof(config.NetworkFolderPrefix), config);
+                    SetJsonValue<bool?>(configData, nameof(config.UseTrendingLibrary), config);
+                    SetJsonValue<string>(configData, nameof(config.TrendingDirectory), config);
+                    SetJsonValue<int?>(configData, nameof(config.TrendingPages), config);
+                    SetJsonValue<int?>(configData, nameof(config.LibrariesMigrationVersion), config);
+                    SetJsonValue<bool?>(configData, nameof(config.ShowLibrariesMigrationNotice), config);
+                    librariesError = SetDiscoverLibraries(configData, config);
+                    if (librariesError != null)
+                    {
+                        return false;
+                    }
 
+                    SetLibrariesMigrationIssues(configData, config);
                     // Import Discover Content
                     SetJsonValue<string>(configData, nameof(config.Region), config);
                     SetNetworkMap(configData, config);
@@ -347,6 +364,83 @@ namespace Jellyfin.Plugin.JellyBridge.Controllers
                     _logger.LogWarning("NetworkMap not provided in payload and existing value is empty. Using defaults.");
                     config.NetworkMap = new List<JellyseerrNetwork>((List<JellyseerrNetwork>)PluginConfiguration.DefaultValues[nameof(config.NetworkMap)]);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Deserializes the Discover libraries from the payload. A bad payload fails the whole update (400) rather
+        /// than silently keeping the old libraries — a settings page that typos this field must learn about it.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration to update.</param>
+        /// <returns>An error message when the payload is bad, null when applied (or absent).</returns>
+        private string? SetDiscoverLibraries(JsonElement configData, PluginConfiguration config)
+        {
+            if (!configData.TryGetProperty(nameof(config.DiscoverLibraries), out var librariesElement))
+            {
+                return null;
+            }
+
+            if (librariesElement.ValueKind == JsonValueKind.Null)
+            {
+                config.DiscoverLibraries = new List<DiscoverLibraryConfig>();
+                _logger.LogInformation("DiscoverLibraries explicitly set to null by client (treated as no libraries yet).");
+                return null;
+            }
+
+            if (librariesElement.ValueKind != JsonValueKind.Array)
+            {
+                return "DiscoverLibraries must be an array of library objects.";
+            }
+
+            try
+            {
+                config.DiscoverLibraries = librariesElement.Deserialize<List<DiscoverLibraryConfig>>() ?? new List<DiscoverLibraryConfig>();
+                _logger.LogTrace("Successfully deserialized DiscoverLibraries as array with {Count} libraries", config.DiscoverLibraries.Count);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to deserialize DiscoverLibraries as array. JSON: {Json}", librariesElement.GetRawText());
+                return $"DiscoverLibraries could not be parsed: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Handles LibrariesMigrationIssues: supports explicit null (reset to empty), an array of strings, or
+        /// preserves the existing value when absent. Round-tripped like <see cref="SetDiscoverLibraries"/> so the
+        /// settings page can read the failed-repoint lines and clear them once the user fixed the libraries.
+        /// </summary>
+        /// <param name="configData">The JSON data.</param>
+        /// <param name="config">The configuration to update.</param>
+        private void SetLibrariesMigrationIssues(JsonElement configData, PluginConfiguration config)
+        {
+            if (!configData.TryGetProperty(nameof(config.LibrariesMigrationIssues), out var issuesElement))
+            {
+                return;
+            }
+
+            if (issuesElement.ValueKind == JsonValueKind.Null)
+            {
+                config.LibrariesMigrationIssues = new List<string>();
+                _logger.LogInformation("LibrariesMigrationIssues explicitly set to null by client (cleared).");
+                return;
+            }
+
+            if (issuesElement.ValueKind != JsonValueKind.Array)
+            {
+                _logger.LogWarning("LibrariesMigrationIssues must be an array of strings; keeping the existing value.");
+                return;
+            }
+
+            try
+            {
+                config.LibrariesMigrationIssues = issuesElement.Deserialize<List<string>>() ?? new List<string>();
+                _logger.LogTrace("Successfully deserialized LibrariesMigrationIssues as array with {Count} issues", config.LibrariesMigrationIssues.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to deserialize LibrariesMigrationIssues as array. JSON: {Json}", issuesElement.GetRawText());
             }
         }
 
