@@ -1754,6 +1754,16 @@ function savePluginConfiguration(page) {
 // DEPENDENCY CHECKBOXES
 // ==========================================
 
+// A dependency can be a checkbox or a text/number box (e.g. Minimum Rating gating Minimum Votes).
+// Text/number boxes have no "checked" state: treat "has a value other than zero" as on.
+function isDependencyActive(control) {
+    if (control.type === 'checkbox' || control.type === 'radio') {
+        return control.checked;
+    }
+    const v = (control.value || '').trim();
+    return v !== '' && Number(v) !== 0;
+}
+
 function initDependentCheckboxes(page) {
     // Find all dependent elements
     const dependentElementsOn = page.querySelectorAll('[data-depends-on]');
@@ -1772,7 +1782,10 @@ function initDependentCheckboxes(page) {
         // Add change listener to the checkbox
         checkbox.addEventListener('change', function() {
             updateStartupSyncDescription();
-            toggleDependentElement(element, this.checked);
+            toggleDependentElement(element, isDependencyActive(this));
+        });
+        checkbox.addEventListener('input', function() {
+            toggleDependentElement(element, isDependencyActive(this));
         });
         
         // Add click listener to the dependent element when disabled
@@ -1785,7 +1798,7 @@ function initDependentCheckboxes(page) {
         });
         
         // Set initial state
-        toggleDependentElement(element, checkbox.checked);
+        toggleDependentElement(element, isDependencyActive(checkbox));
     });
     
     // Loop through each dependent element
@@ -1801,7 +1814,10 @@ function initDependentCheckboxes(page) {
         // Add change listener to the checkbox
         checkbox.addEventListener('change', function() {
             updateStartupSyncDescription();
-            toggleDependentElement(element, !this.checked);
+            toggleDependentElement(element, !isDependencyActive(this));
+        });
+        checkbox.addEventListener('input', function() {
+            toggleDependentElement(element, !isDependencyActive(this));
         });
         
         // Add click listener to the dependent element when disabled
@@ -1814,7 +1830,7 @@ function initDependentCheckboxes(page) {
         });
         
         // Set initial state
-        toggleDependentElement(element, !checkbox.checked);
+        toggleDependentElement(element, !isDependencyActive(checkbox));
     });
 }
 

@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "timestamp": "2026-11-22T17:28:16.298Z",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.7 - testing: adding dependent element check for the votes counter",
+        "checksum": "54E1C6F48EF9F82A844443E946D1C218",
+        "targetAbi": "12.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.7.12.0.zip",
+        "version": "5.7.12.0"
+      },
+      {
+        "timestamp": "2026-11-22T17:28:16.298Z",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.7 - testing: adding dependent element check for the votes counter",
+        "checksum": "EB4B2646D512F67EE339B738C9E22B7E",
+        "targetAbi": "10.11.9.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.7.11.9.zip",
+        "version": "5.7.11.9"
+      },
+      {
+        "timestamp": "2026-11-22T17:28:16.298Z",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.7 - testing: adding dependent element check for the votes counter",
+        "checksum": "2DD9BDBFA53574D03D5B8727CD22AC92",
+        "targetAbi": "10.11.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.7.11.0.zip",
+        "version": "5.7.11.0"
+      },
+      {
+        "timestamp": "2026-11-22T17:28:16.298Z",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.7 - testing: adding dependent element check for the votes counter",
+        "checksum": "CD0989DC1D441FE9085480D65425AD31",
+        "targetAbi": "10.10.0.0",
+        "dependencies": [],
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.7.10.7.zip",
+        "version": "5.7.10.7"
+      },
+      {
         "version": "5.6.12.0",
         "targetAbi": "12.0.0",
         "dependencies": [],
