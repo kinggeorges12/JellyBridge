@@ -74,9 +74,10 @@ For Kodi add-on setup, see the official [Jellyfin Kodi client docs](https://jell
    - Jellycon: Open Add-ons → Video Add-ons → Jellycon → Jellyfin Libraries → JellyBridge Library (Movies or Series) → Show All
    - Jellyfin for Kodi: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Series) → Random Items / Recommended Items / any other view
 - **Jellyseer Requests**:
-   - Jellycon → Open any Library view → right-click a movie or series (open series to favorite season, if enabled) → Set Favourite
-   - Jellyfin for Kodi → Open any Library view → right-click a movie or series (open series to favorite season, if enabled) → Jellyfin options → Add to favorites
-- **Search Integration**: Jellycon → Add-on Actions → Search → Jellyfin options → Set Favourite
+   - Jellycon → Open any Library view → right-click a movie or series → Set Favourite
+   - Jellyfin for Kodi → Open any Library view → right-click a movie or series → Jellyfin options → Add to favorites
+   - If Request Seasons is enabled → Request a specific season by opening any series and adding the season to favorites
+- **Search Integration**: Jellycon → Add-on Actions → Search → Movies / TV Shows → enter search terms → right-click a movie or series → Set Favourite
 
 ![Jellycon Add-on](Screenshots/Kodi-Jellycon.png)
 
