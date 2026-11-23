@@ -9,6 +9,42 @@
     "repositoryUrl": "https://github.com/kinggeorges12/JellyBridge",
     "versions": [
       {
+        "dependencies": [],
+        "version": "5.8.12.0",
+        "checksum": "F1A12F560504BA6A4A086A977C944C1C",
+        "changelog": "Jellyfin 12.0.0: JellyBridge v5.8 - updating docs",
+        "targetAbi": "12.0.0",
+        "timestamp": "2026-11-23T17:18:20.452Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.8.12.0.zip"
+      },
+      {
+        "dependencies": [],
+        "version": "5.8.11.9",
+        "checksum": "AD04B6EACB77133750573BAF85ACFF53",
+        "changelog": "Jellyfin 10.11.9: JellyBridge v5.8 - updating docs",
+        "targetAbi": "10.11.9.0",
+        "timestamp": "2026-11-23T17:18:20.452Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.8.11.9.zip"
+      },
+      {
+        "dependencies": [],
+        "version": "5.8.11.0",
+        "checksum": "551A23E54ABD92BE767362A374BC371F",
+        "changelog": "Jellyfin 10.11.0: JellyBridge v5.8 - updating docs",
+        "targetAbi": "10.11.0.0",
+        "timestamp": "2026-11-23T17:18:20.452Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.8.11.0.zip"
+      },
+      {
+        "dependencies": [],
+        "version": "5.8.10.7",
+        "checksum": "9EF2F54D4ECF350FF77B4F55627CCB33",
+        "changelog": "Jellyfin 10.10.7: JellyBridge v5.8 - updating docs",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-11-23T17:18:20.452Z",
+        "sourceUrl": "https://raw.githubusercontent.com/kinggeorges12/JellyBridge/feature-promos-search/release/JellyBridge-5.8.10.7.zip"
+      },
+      {
         "timestamp": "2026-11-22T17:28:16.298Z",
         "changelog": "Jellyfin 12.0.0: JellyBridge v5.7 - testing: adding dependent element check for the votes counter",
         "checksum": "54E1C6F48EF9F82A844443E946D1C218",
