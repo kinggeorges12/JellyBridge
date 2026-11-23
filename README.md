@@ -11,13 +11,18 @@
 
 A Jellyfin plugin that bridges Jellyfin with Jellyseerr (and Seerr\*) for seamless movie and series discovery and download requests.
 
+## 📣 Changes coming in Version 6.0
+- More JellyBridge libraries! Release date is December 2nd. You will see a pop-up notice of the upgrade to your JellyBridge libraries. Read about it in [PR #84](https://github.com/kinggeorges12/JellyBridge/pull/84).
+![JellyBridge Library](https://raw.githubusercontent.com/MoFaye/JellyBridge/24eeaba0f9112122574a49ff04e8d09df80f92de/pr-discover-libraries.png)
+
 ## ✨ Features
 
 - **Native Jellyfin Support**: Whether you use Android TV or Kodi to sync videos and favorites with Jellyfin, this plugin has you covered
-- **New Discover Content**: Updates movies and series listings from selected networks (Netflix, Prime Video, etc.)
+- **New Discover Content**: Updates movies and series listings from selected networks (e.g., Netflix), Trending, or New Releases
 - **Make Jellyseerr Requests**: Enables requesting new movies and series directly from a Jellyfin library, making this accessible from mobile apps, Android TV, and even Kodi Sync Queue!
 - **More Content**: Integrates with [Jellyseerr's existing services](https://docs.seerr.dev/using-jellyseerr/settings/services) when you mark movies or series as favorites in Jellyfin
 - **Scheduled Tasks**: Automatically syncs movies and series on a configurable schedule and on Jellyfin startup
+- **Search Integration**: Provides Jellyseerr results directly in the native Jellyfin search
 - **Smart Exclusion**: Uses native Jellyfin configuration files to exclude movies and series that already exist in your other Jellyfin libraries
 - **Shuffle Content**: Native support on Android TV for random or smart-sort for browsing discover content, always fresh!
 
@@ -61,12 +66,19 @@ After installing Jellyseerr, disable the JellyBridge library to prevent requests
 
 Browse with Kodi and request content from Jellyfin via the Jellyfin add-on.
 
-![Jellyfin for Kodi Add-on](Screenshots/Kodi.png)
- 
-For native Jellyfin support, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). For plugin setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/). *Note*: Incompatible with JellyCon for Kodi.
+![Jellyfin for Kodi Add-on](Screenshots/Kodi-Jellyfin.png)
 
-- **Discover Content**: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Series) → Random Items / Recommended Items / any other view
-- **Jellyseer Requests**: Open any Library view → right-click a movie or series → Jellyfin options → Add to favorites
+For Kodi add-on setup, see the official [Jellyfin Kodi client docs](https://jellyfin.org/docs/general/clients/kodi/). Restart Kodi after installing the Jellycon add-on to load the native Jellyfin context (right-click) menu. For faster Jellyfin performance, install [Kodi Sync Queue](https://github.com/jellyfin/jellyfin-plugin-kodisyncqueue). *Note*: Search Integration is only compatible with Jellycon.
+
+- **Discover Content**:
+   - Jellycon: Open Add-ons → Video Add-ons → Jellycon → Jellyfin Libraries → JellyBridge Library (Movies or Series) → Show All
+   - Jellyfin for Kodi: Open Add-ons → Video Add-ons → Jellyfin → JellyBridge Library (Movies or Series) → Random Items / Recommended Items / any other view
+- **Jellyseer Requests**:
+   - Jellycon → Open any Library view → right-click a movie or series (open series to favorite season, if enabled) → Set Favourite
+   - Jellyfin for Kodi → Open any Library view → right-click a movie or series (open series to favorite season, if enabled) → Jellyfin options → Add to favorites
+- **Search Integration**: Jellycon → Add-on Actions → Search → Jellyfin options → Set Favourite
+
+![Jellycon Add-on](Screenshots/Kodi-Jellycon.png)
 
 ## 📦 Installation
 
@@ -139,9 +151,12 @@ Access the configuration using the plugin page on the host machine at: `http://l
 
 ![Import Discover Content](Screenshots/Import.png)
 
+- **Search Integration**: Add Jellyseerr results to the Jellyfin search and import discover content when opening media content
 - **Watch Region**: Which geographic region to search for available networks
 - **Network Services**: Choose networks to import discover content from
 - **Discover Pages**: The number of pages to import per network
+- **Minimum Rating**: The lower limit for ratings on TMDB (1-10 stars) when importing media content
+- **Minimum Votes**: The minimum rating must have at least this many votes on TMDB before importing media content
 - **Content Retention Time (days)**: How long to keep discover content before automatic cleanup
 - **Import Discover Content from Jellyseerr**: Manually trigger the task to sync media content
 
@@ -150,10 +165,10 @@ Access the configuration using the plugin page on the host machine at: `http://l
 ![Manage Favorite Requests](Screenshots/Manage.png)
 
 - **Hide Existing Discover Content**: Excludes movies and series from the JellyBridge library if they already exist in your other Jellyfin libraries
-- **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
 - **Request Seasons**: Allow users to request individual seasons from a series
 - **Request Only First Season**: New favorited series will only request the first season instead of the entire series
 - **Request 4k Content**: Request 4k media content if the Jellyseerr user has permission
+- **Responsive Favorite Requests**: Send requests to Jellyseerr immediately when favoriting items
 - **Favorite Cleanup**: Unfavorite items from the JellyBridge library after requesting them from Jellyseerr
 - **Send Discover Library Favorite Requests to Jellyseerr**: Manually trigger the task to sync favorites
 
@@ -161,8 +176,9 @@ Access the configuration using the plugin page on the host machine at: `http://l
 
 ![Customize Promo Videos](Screenshots/Promo.png)
 
-- **Custom Movies & Series Promo**: Select an image file to generate the promo video for movies and series content.
+- **Custom Movies & Series Promo**: Select an image file to generate the promo video for movies and series content
 - **Default Movies & Series Promo**: The pre-packaged promo video for JellyBridge
+- **Media Artwork Promos**: Customize each movies and series promo video with artwork from the media content
 - **Promo Video Duration**: A short video to teach users how to request the discover content
 - **Temp Directory**: Storage for generating promo video files, usually the operating system default
 - **Generate Promo Videos**: Replace existing promo videos with the custom or default for all movies and series

@@ -2,7 +2,7 @@
 
 \* [Seerr v3.0.0 has recently released](https://docs.seerr.dev/blog/seerr-release) as the next iteration of Jellyseerr v2.7.3. The API appears to be unchanged, and my tests have not found any compatibility problems. Enjoy the new release! Please submit any issues with Seerr to this project, and I will try to expedite a fix. As for our documentation, I will wait until the next major update to switch to the new name.
 
-This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3 and Seerr 3.0.1. Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.6, or Jellyseerr versions before 2.7.3.
+This plugin has been *fully tested using Jellyfin 10.10.7 and 10.11.\* with Jellyseerr 2.7.3 and Seerr 3.5+ (using seerr:latest in docker). Previous versions lacked compatibility with Jellyfin 10.11.\*, but that has been resolved as of the plugin version 1.3.0.\*! Unknown compatibility with Jellyfin versions before 10.10.0 or after 10.11.6, or Jellyseerr versions before 2.7.3.
 
 # 📣 Release Notes
 

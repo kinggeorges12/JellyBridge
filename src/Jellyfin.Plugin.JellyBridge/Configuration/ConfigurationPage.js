@@ -1754,6 +1754,16 @@ function savePluginConfiguration(page) {
 // DEPENDENCY CHECKBOXES
 // ==========================================
 
+// A dependency can be a checkbox or a text/number box (e.g. Minimum Rating gating Minimum Votes).
+// Text/number boxes have no "checked" state: treat "has a value other than zero" as on.
+function isDependencyActive(control) {
+    if (control.type === 'checkbox' || control.type === 'radio') {
+        return control.checked;
+    }
+    const v = (control.value || '').trim();
+    return v !== '' && Number(v) !== 0;
+}
+
 function initDependentCheckboxes(page) {
     // Find all dependent elements
     const dependentElementsOn = page.querySelectorAll('[data-depends-on]');
@@ -1772,7 +1782,10 @@ function initDependentCheckboxes(page) {
         // Add change listener to the checkbox
         checkbox.addEventListener('change', function() {
             updateStartupSyncDescription();
-            toggleDependentElement(element, this.checked);
+            toggleDependentElement(element, isDependencyActive(this));
+        });
+        checkbox.addEventListener('input', function() {
+            toggleDependentElement(element, isDependencyActive(this));
         });
         
         // Add click listener to the dependent element when disabled
@@ -1780,12 +1793,12 @@ function initDependentCheckboxes(page) {
             if (this.classList.contains('disabled')) {
                 e.preventDefault();
                 e.stopPropagation();
-                scrollToCheckboxAndHighlight(checkbox);
+                scrollToContainerAndHighlight(checkbox);
             }
         });
         
         // Set initial state
-        toggleDependentElement(element, checkbox.checked);
+        toggleDependentElement(element, isDependencyActive(checkbox));
     });
     
     // Loop through each dependent element
@@ -1801,7 +1814,10 @@ function initDependentCheckboxes(page) {
         // Add change listener to the checkbox
         checkbox.addEventListener('change', function() {
             updateStartupSyncDescription();
-            toggleDependentElement(element, !this.checked);
+            toggleDependentElement(element, !isDependencyActive(this));
+        });
+        checkbox.addEventListener('input', function() {
+            toggleDependentElement(element, !isDependencyActive(this));
         });
         
         // Add click listener to the dependent element when disabled
@@ -1809,12 +1825,12 @@ function initDependentCheckboxes(page) {
             if (this.classList.contains('disabled')) {
                 e.preventDefault();
                 e.stopPropagation();
-                scrollToCheckboxAndHighlight(checkbox);
+                scrollToContainerAndHighlight(checkbox);
             }
         });
         
         // Set initial state
-        toggleDependentElement(element, !checkbox.checked);
+        toggleDependentElement(element, !isDependencyActive(checkbox));
     });
 }
 
@@ -1929,26 +1945,26 @@ function browseFolder(inputElement, title, includeFiles = false) {
     });
 }
 
-// Scroll to a checkbox and highlight it
-// targetCheckbox: Query selector string or element for the checkbox to scroll to
-function scrollToCheckboxAndHighlight(targetCheckbox) {
+// Scroll to a container and highlight it
+// targetContainer: Query selector string or element for the checkbox to scroll to
+function scrollToContainerAndHighlight(targetContainer) {
     // Get the target checkbox (either from selector string or element)
-    const checkbox = typeof targetCheckbox === 'string' 
-        ? document.querySelector(targetCheckbox)
-        : targetCheckbox;
+    const containerScroll = typeof targetContainer === 'string' 
+        ? document.querySelector(targetContainer)
+        : targetContainer;
     
-    if (checkbox) {
-        checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (containerScroll) {
+        containerScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // Briefly highlight the checkbox
-        const container = checkbox.closest('.checkboxContainer');
-        if (container) {
-            container.style.transition = 'background-color 0.3s ease';
-            container.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
+        // Briefly highlight the container
+        const containerHighlight = containerScroll.closest('.checkboxContainer') || containerScroll.closest('.inputContainer');
+        if (containerHighlight) {
+            containerHighlight.style.transition = 'background-color 0.3s ease';
+            containerHighlight.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
             setTimeout(() => {
-                container.style.backgroundColor = '';
+                containerHighlight.style.backgroundColor = '';
                 setTimeout(() => {
-                    container.style.transition = '';
+                    containerHighlight.style.transition = '';
                 }, 300);
             }, 1000);
         }
