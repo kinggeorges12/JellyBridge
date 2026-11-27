@@ -57,7 +57,7 @@ When users mark movies or series as favorites in Jellyfin, the plugin automatica
 
 Get Jellyseerr here: [seerr.dev](https://seerr.dev). For setup, see the official [installation guide](https://docs.seerr.dev/getting-started).
 
-*Note*: To enable approval of requests created by JellyBridge ([see related issue](https://github.com/kinggeorges12/JellyBridge/issues/17#issuecomment-3572018193)), you must use a patched version of Jellyseerr 2.7.3 in this Docker image: `kinggeorges12/jellyseerr:latest`
+*Note*: We are working on a patch to address the approval of requests created by JellyBridge ([see related issue](https://github.com/kinggeorges12/JellyBridge/issues/17#issuecomment-3572018193)). If you have the patched version of Jellyseerr 2.7.3 in the custom Docker image \(`kinggeorges12/jellyseerr:latest`\), the [maintainers of Jellyseerr recommend to remove it for security reasons](https://github.com/kinggeorges12/JellyBridge/issues/86#issuecomment-7218925244).
 
 After installing Jellyseerr, disable the JellyBridge library to prevent requests from being marked as Available.
 ![Jellyseerr Requests](Screenshots/Jellyseerr.png)
